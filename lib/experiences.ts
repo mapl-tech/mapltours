@@ -18,6 +18,7 @@ export interface Experience {
   title: string
   price: number
   duration: string
+  youtubeId?: string
   rating: number
   reviews: number
   category: ExperienceCategory
@@ -68,7 +69,7 @@ export const DESTINATION_IMAGES: Record<string, string> = {
 // Free stock videos from Pexels (no API key needed for direct links)
 const VIDEOS = {
   cliffDiving: 'https://videos.pexels.com/video-files/854572/854572-hd_1920_1080_25fps.mp4',
-  mountains: 'https://videos.pexels.com/video-files/3365440/3365440-hd_1920_1080_30fps.mp4',
+  mountains: '/coffee-trek-video.mp4',
   music: 'https://videos.pexels.com/video-files/4985239/4985239-hd_1080_1920_25fps.mp4',
   cooking: 'https://videos.pexels.com/video-files/3207798/3207798-hd_1920_1080_24fps.mp4',
   waterfall: 'https://videos.pexels.com/video-files/5744454/5744454-hd_1920_1080_24fps.mp4',
@@ -149,7 +150,7 @@ export const experiences: Experience[] = [
     gradient: 'linear-gradient(170deg, #1A0A00 0%, #4B2A00 52%, #FFB300 100%)',
     emoji: '🎵',
     image: EXPERIENCE_IMAGES[3],
-    video: VIDEOS.music,
+    video: '/reggae-studio-video.mp4',
     description: 'Step inside a real Kingston studio where legends recorded. Feel the bass shake your chest at a neighborhood sound system dance.',
     tags: ['Reggae', 'Studio Tour', 'Sound System'],
     highlights: ['Historic Tuff Gong Studios', 'Meet local musicians', 'Sound system experience', 'Vinyl record souvenir'],
@@ -295,7 +296,7 @@ export const experiences: Experience[] = [
     gradient: 'linear-gradient(170deg, #002B5B 0%, #0066A0 52%, #00B4D8 100%)',
     emoji: '🤿',
     image: EXPERIENCE_IMAGES[9],
-    video: VIDEOS.snorkeling,
+    video: '/seven-mile-video.mp4',
     description: 'Snorkel crystal reefs just offshore, then float in turquoise shallows with a rum punch in hand. Pure Caribbean vibes.',
     tags: ['Snorkeling', 'Beach', 'Rum Punch'],
     highlights: ['Coral reef snorkeling', 'Equipment provided', 'Unlimited rum punch', 'Beach lounger included'],
@@ -341,6 +342,7 @@ export const experiences: Experience[] = [
     category: 'Adventure',
     creator: 'jamrock.finest',
     followers: '198K',
+    youtubeId: '9KbrrQstrT4',
     gradient: 'linear-gradient(170deg, #003D4A 0%, #00758A 52%, #00B4CC 100%)',
     emoji: '💎',
     image: EXPERIENCE_IMAGES[11],
@@ -468,7 +470,7 @@ export const experiences: Experience[] = [
     gradient: 'linear-gradient(170deg, #4A2800 0%, #8B5000 52%, #C48A20 100%)',
     emoji: '🥟',
     image: EXPERIENCE_IMAGES[16],
-    video: VIDEOS.streetFood,
+    video: '/devon-house-video.mp4',
     description: 'Taste Jamaica\'s most famous patty at Devon House -flaky, golden, stuffed with spiced beef. Then cool down with their legendary ice cream.',
     tags: ['Patties', 'Ice Cream', 'Devon House'],
     highlights: ['Famous Devon House beef patty', 'I Scream ice cream parlour', 'Historic Great House tour', 'Mango and soursop flavors'],
@@ -492,7 +494,7 @@ export const experiences: Experience[] = [
     gradient: 'linear-gradient(170deg, #1A3040 0%, #2A5070 52%, #3A80B0 100%)',
     emoji: '🐟',
     image: EXPERIENCE_IMAGES[17],
-    video: VIDEOS.cooking,
+    video: '/port-royal-video.mp4',
     description: 'Feast on escovitch fish and festival at Gloria\'s -the legendary seaside restaurant in Port Royal, once the "wickedest city on earth."',
     tags: ['Escovitch Fish', 'Port Royal', 'History'],
     highlights: ['Gloria\'s legendary fried fish', 'Port Royal pirate history walk', 'Fort Charles tour', 'Sunset over Kingston Harbour'],
@@ -540,7 +542,7 @@ export const experiences: Experience[] = [
     gradient: 'linear-gradient(170deg, #2A1A00 0%, #5A3A00 52%, #8A6A10 100%)',
     emoji: '🍛',
     image: EXPERIENCE_IMAGES[19],
-    video: VIDEOS.cooking,
+    video: '/miss-t-video.mp4',
     description: 'Cook authentic Jamaican dishes with Miss T -curry goat, oxtail, ackee & saltfish. Her kitchen has been featured on CNN and Anthony Bourdain.',
     tags: ['Cooking Class', 'Curry Goat', 'Ackee & Saltfish'],
     highlights: ['Cook 3 traditional dishes', 'Miss T\'s secret recipes', 'Featured on CNN Travel', 'Take home recipe booklet'],

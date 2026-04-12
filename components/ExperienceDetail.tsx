@@ -19,13 +19,27 @@ function Reel({ exp, isActive, totalCount, currentIndex }: { exp: Experience; is
   const toggleCart = () => { if (inCart) { removeItem(exp.id) } else { addItem(exp) } }
 
   useEffect(() => {
-    if (!videoRef.current) return
+    const video = videoRef.current
+    if (!video) return
+
     if (isActive) {
-      videoRef.current.currentTime = 0
-      videoRef.current.play().catch(() => {})
+      video.muted = true
+      video.currentTime = 0
+      // Wait for video to be ready before playing
+      const tryPlay = () => {
+        video.play().then(() => setPaused(false)).catch(() => {
+          // Retry once
+          setTimeout(() => video.play().then(() => setPaused(false)).catch(() => {}), 300)
+        })
+      }
+      if (video.readyState >= 2) {
+        tryPlay()
+      } else {
+        video.addEventListener('loadeddata', tryPlay, { once: true })
+      }
       setPaused(false)
     } else {
-      videoRef.current.pause()
+      video.pause()
     }
   }, [isActive])
 
@@ -50,6 +64,13 @@ function Reel({ exp, isActive, totalCount, currentIndex }: { exp: Experience; is
         overflow: 'hidden', background: '#000',
       }}
     >
+      {exp.youtubeId ? (
+        <iframe
+          src={`https://www.youtube.com/embed/${exp.youtubeId}?autoplay=1&mute=1&loop=1&controls=0&showinfo=0&modestbranding=1&playlist=${exp.youtubeId}&playsinline=1`}
+          allow="autoplay; encrypted-media"
+          style={{ width: '100%', height: '100%', border: 'none' }}
+        />
+      ) : (
       <video
         ref={videoRef}
         src={exp.video}
@@ -57,6 +78,7 @@ function Reel({ exp, isActive, totalCount, currentIndex }: { exp: Experience; is
         poster={exp.image}
         style={{ width: '100%', height: '100%', objectFit: 'cover' }}
       />
+      )}
 
       {/* Pause overlay */}
       {paused && (
@@ -185,7 +207,7 @@ function Reel({ exp, isActive, totalCount, currentIndex }: { exp: Experience; is
       </div>
 
       {/* ── Bottom info (Snapchat style — bold, stacked, left-aligned) ── */}
-      <div style={{
+      <div className="reel-bottom-info" style={{
         position: 'absolute', bottom: 0, left: 0, right: 72,
         padding: '0 16px 20px', zIndex: 10,
       }}>
@@ -432,24 +454,35 @@ export default function ExperienceDetail({ slug }: { slug: string }) {
 
   useEffect(() => {
     if (scrollRef.current && startIdx >= 0) {
-      scrollRef.current.scrollTo({ top: startIdx * window.innerHeight, behavior: 'instant' as ScrollBehavior })
+      const children = scrollRef.current.children
+      const childHeight = children.length ? (children[0] as HTMLElement).offsetHeight : window.innerHeight
+      scrollRef.current.scrollTo({ top: startIdx * childHeight, behavior: 'instant' as ScrollBehavior })
     }
   }, [startIdx])
 
   const handleScroll = useCallback(() => {
     if (!scrollRef.current) return
-    const idx = Math.round(scrollRef.current.scrollTop / window.innerHeight)
-    if (idx !== activeIndex && idx >= 0 && idx < experiences.length) {
-      setActiveIndex(idx)
-    }
-  }, [activeIndex])
+    const container = scrollRef.current
+    const children = container.children
+    if (!children.length) return
+
+    // Use actual child height instead of window.innerHeight
+    const childHeight = (children[0] as HTMLElement).offsetHeight
+    if (childHeight === 0) return
+
+    const idx = Math.round(container.scrollTop / childHeight)
+    const clampedIdx = Math.max(0, Math.min(idx, experiences.length - 1))
+    setActiveIndex(clampedIdx)
+  }, [])
 
   const scrollToReel = (direction: 'prev' | 'next') => {
     if (!scrollRef.current) return
+    const children = scrollRef.current.children
+    const childHeight = children.length ? (children[0] as HTMLElement).offsetHeight : window.innerHeight
     const target = direction === 'prev'
       ? Math.max(0, activeIndex - 1)
       : Math.min(experiences.length - 1, activeIndex + 1)
-    scrollRef.current.scrollTo({ top: target * window.innerHeight, behavior: 'smooth' })
+    scrollRef.current.scrollTo({ top: target * childHeight, behavior: 'smooth' })
   }
 
   const addComment = () => {

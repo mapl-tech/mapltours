@@ -57,6 +57,20 @@ export default function ExpCard({ exp }: { exp: Experience }) {
           />
 
           {/* Video (loads on hover) */}
+          {exp.youtubeId && hovering ? (
+            <iframe
+              src={`https://www.youtube.com/embed/${exp.youtubeId}?autoplay=1&mute=1&loop=1&controls=0&showinfo=0&modestbranding=1&playlist=${exp.youtubeId}`}
+              allow="autoplay"
+              style={{
+                position: 'absolute', inset: 0,
+                width: '100%', height: '100%',
+                border: 'none',
+                opacity: hovering ? 1 : 0,
+                transition: 'opacity 0.3s ease',
+                pointerEvents: 'none',
+              }}
+            />
+          ) : (
           <video
             ref={videoRef}
             src={exp.video}
@@ -74,6 +88,7 @@ export default function ExpCard({ exp }: { exp: Experience }) {
               transition: 'opacity 0.3s ease',
             }}
           />
+          )}
 
           <div className="overlay-bottom" />
 

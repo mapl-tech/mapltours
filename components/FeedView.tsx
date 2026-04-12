@@ -696,7 +696,7 @@ export default function FeedView() {
           </div>
 
           {/* Language switcher */}
-          <div style={{ paddingBottom: 24, marginBottom: 24, borderBottom: '1px solid var(--border-on-dark)' }}>
+          <div className="footer-lang" style={{ paddingBottom: 24, marginBottom: 24, borderBottom: '1px solid var(--border-on-dark)' }}>
             <LanguageSwitcher variant="footer" />
           </div>
 
@@ -737,10 +737,31 @@ export default function FeedView() {
             paddingBottom: 36, borderBottom: '1px solid var(--border-on-dark)',
           }}>
             {[
-              { title: 'Company', links: ['About', 'Careers', 'Press', 'Blog'] },
-              { title: 'Resources', links: ['Help Center', 'Safety', 'Accessibility', 'Gift Cards'] },
-              { title: 'Destinations', links: ['Negril', 'Kingston', 'Portland', 'Ocho Rios', 'Blue Mountains'] },
-              { title: 'Connect', links: ['Instagram', 'Twitter', 'TikTok', 'YouTube'] },
+              { title: 'Company', links: [
+                { label: 'About', href: '/about' },
+                { label: 'Careers', href: '/careers' },
+                { label: 'Press', href: '/press' },
+                { label: 'Blog', href: '/blog' },
+              ]},
+              { title: 'Resources', links: [
+                { label: 'Help Center', href: '/help' },
+                { label: 'Safety', href: '/safety' },
+                { label: 'Accessibility', href: '/accessibility' },
+                { label: 'Gift Cards', href: '/gifts' },
+              ]},
+              { title: 'Destinations', links: [
+                { label: 'Negril', href: '/explore' },
+                { label: 'Kingston', href: '/explore' },
+                { label: 'Portland', href: '/explore' },
+                { label: 'Ocho Rios', href: '/explore' },
+                { label: 'Blue Mountains', href: '/explore' },
+              ]},
+              { title: 'Connect', links: [
+                { label: 'Instagram', href: '#' },
+                { label: 'Twitter', href: '#' },
+                { label: 'TikTok', href: '#' },
+                { label: 'YouTube', href: '#' },
+              ]},
             ].map((col) => (
               <div key={col.title}>
                 <p style={{
@@ -751,14 +772,14 @@ export default function FeedView() {
                   {col.title}
                 </p>
                 {col.links.map((l) => (
-                  <p key={l} style={{
-                    fontSize: 14, color: 'var(--text-on-dark-2)',
+                  <a key={l.label} href={l.href} style={{
+                    display: 'block', fontSize: 14, color: 'var(--text-on-dark-2)',
                     fontFamily: 'var(--font-dm-sans)', marginBottom: 12,
                     cursor: 'pointer', transition: 'color 0.15s ease',
                   }}
                     onMouseEnter={(e) => { e.currentTarget.style.color = 'white' }}
                     onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--text-on-dark-2)' }}
-                  >{l}</p>
+                  >{l.label}</a>
                 ))}
               </div>
             ))}

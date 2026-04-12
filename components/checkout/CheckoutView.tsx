@@ -9,6 +9,43 @@ import { ArrowLeft, Check, ShieldCheck, Lock, CreditCard, MapPin, Users, Calenda
 import { useCartStore } from '@/lib/cart'
 import { stripePromise } from '@/lib/stripe'
 import { useI18n } from '@/lib/i18n'
+import { calculateTransportation, GAS_PRICE_USD_PER_LITER, GAS_PRICE_JMD_PER_LITER, fetchGasPrice } from '@/lib/transportation'
+import { Fuel, Car, Route } from 'lucide-react'
+
+/* ── Jamaica Locations with Addresses ── */
+const jamaicaLocations = [
+  { name: 'Sandals Negril Beach Resort', address: 'Norman Manley Blvd, Negril, Westmoreland' },
+  { name: 'Sandals Royal Caribbean, Montego Bay', address: 'Mahoe Bay, Montego Bay, St. James' },
+  { name: 'Sandals Ochi Beach Resort, Ocho Rios', address: 'Main St, Ocho Rios, St. Ann' },
+  { name: 'Riu Negril', address: 'Norman Manley Blvd, Negril, Westmoreland' },
+  { name: 'Riu Montego Bay', address: 'Mahoe Bay, Ironshore, Montego Bay, St. James' },
+  { name: 'Hyatt Ziva Rose Hall, Montego Bay', address: 'Rose Hall Rd, Montego Bay, St. James' },
+  { name: 'Hilton Rose Hall Resort, Montego Bay', address: 'Rose Hall, Montego Bay, St. James' },
+  { name: 'Grand Palladium Jamaica, Lucea', address: 'Point, Lucea, Hanover' },
+  { name: 'Royalton Blue Waters, Montego Bay', address: 'Seawind Dr, Montego Bay, St. James' },
+  { name: 'Royalton Negril', address: 'Norman Manley Blvd, Negril, Westmoreland' },
+  { name: 'Secrets Wild Orchid, Montego Bay', address: 'Freeport Peninsula, Montego Bay, St. James' },
+  { name: 'Secrets St. James, Montego Bay', address: 'Freeport Peninsula, Montego Bay, St. James' },
+  { name: 'Breathless Montego Bay', address: 'Freeport Peninsula, Montego Bay, St. James' },
+  { name: 'Moon Palace Jamaica, Ocho Rios', address: 'Main St, Ocho Rios, St. Ann' },
+  { name: 'Jamaica Inn, Ocho Rios', address: 'Main St, Ocho Rios, St. Ann' },
+  { name: 'Strawberry Hill, Blue Mountains', address: 'Irish Town, St. Andrew' },
+  { name: 'GoldenEye, Oracabessa', address: 'Oracabessa Bay, St. Mary' },
+  { name: 'Round Hill Hotel, Montego Bay', address: 'John Pringle Dr, Hopewell, Hanover' },
+  { name: 'Rockhouse Hotel, Negril', address: 'West End Rd, Negril, Westmoreland' },
+  { name: 'The Cliff Hotel, Negril', address: 'West End Rd, Negril, Westmoreland' },
+  { name: 'Geejam Hotel, Port Antonio', address: 'San San, Port Antonio, Portland' },
+  { name: 'Trident Hotel, Port Antonio', address: 'Anchovy, Port Antonio, Portland' },
+  { name: 'Jakes Hotel, Treasure Beach', address: 'Calabash Bay, Treasure Beach, St. Elizabeth' },
+  { name: 'Spanish Court Hotel, Kingston', address: '1 St Lucia Ave, Kingston 5' },
+  { name: 'Terra Nova All Suite Hotel, Kingston', address: '17 Waterloo Rd, Kingston 10' },
+  { name: 'Courtleigh Hotel, Kingston', address: '85 Knutsford Blvd, Kingston 5' },
+  { name: 'Norman Manley International Airport (KIN)', address: 'Palisadoes, Kingston' },
+  { name: 'Sangster International Airport (MBJ)', address: 'Sunset Dr, Montego Bay, St. James' },
+  { name: 'Kingston Cruise Terminal', address: 'Port Royal St, Kingston' },
+  { name: 'Falmouth Cruise Port', address: 'Falmouth, Trelawny' },
+  { name: 'Ocho Rios Cruise Port', address: 'Turtle Beach Rd, Ocho Rios, St. Ann' },
+]
 
 /* ── Step Indicator ── */
 function StepIndicator({ step }: { step: number }) {
@@ -134,20 +171,24 @@ function ReviewStep() {
           <button
             onClick={() => {
               if (customDates) {
-                // Switching back to shared — sync all to first item's date
                 setAllDates(items[0]?.date || sharedDate)
               }
               setCustomDates(!customDates)
             }}
             style={{
-              background: 'none', border: 'none', cursor: 'pointer',
-              fontSize: 13, fontWeight: 600, fontFamily: 'var(--font-dm-sans)',
-              color: 'var(--accent)',
-              display: 'flex', alignItems: 'center', gap: 6,
-              transition: 'opacity 0.15s ease',
+              width: '100%',
+              padding: '12px 18px',
+              borderRadius: 'var(--r-md)',
+              background: customDates ? 'var(--accent)' : 'var(--surface)',
+              border: customDates ? 'none' : '1px solid var(--border)',
+              cursor: 'pointer',
+              fontSize: 13.5, fontWeight: 600, fontFamily: 'var(--font-dm-sans)',
+              color: customDates ? 'white' : 'var(--accent)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+              transition: 'all 0.2s ease',
             }}
           >
-            <Calendar size={13} />
+            <Calendar size={14} />
             {customDates ? t('Use same date for all tours') : t('Choose different dates for each tour')}
           </button>
         </div>
@@ -271,19 +312,20 @@ function DetailsStep({ waiverAccepted, setWaiverAccepted, waiverError, formData,
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
         {[
-          { key: 'firstName', label: 'First Name', placeholder: 'First name', span: 1 },
-          { key: 'lastName', label: 'Last Name', placeholder: 'Last name', span: 1 },
-          { key: 'email', label: 'Email', placeholder: 'you@email.com', span: 2, type: 'email' },
-          { key: 'phone', label: 'Phone', placeholder: '+1 (555) 000-0000', span: 1, type: 'tel' },
-          { key: 'country', label: 'Country', placeholder: 'Country', span: 1 },
+          { key: 'firstName', label: 'First Name', placeholder: 'First name', span: 1, auto: 'given-name' },
+          { key: 'lastName', label: 'Last Name', placeholder: 'Last name', span: 1, auto: 'family-name' },
+          { key: 'email', label: 'Email', placeholder: 'you@email.com', span: 2, type: 'email', auto: 'email' },
+          { key: 'phone', label: 'Phone', placeholder: '+1 (555) 000-0000', span: 1, type: 'tel', auto: 'tel' },
         ].map((f) => (
-          <div key={f.key} style={{ gridColumn: f.span === 2 ? 'span 2' : undefined }}>
+          <div key={f.key} data-field={f.key} style={{ gridColumn: f.span === 2 ? 'span 2' : undefined }}>
             <label style={{ fontSize: 12.5, color: formErrors[f.key] ? '#c00' : 'var(--text-secondary)', fontFamily: 'var(--font-dm-sans)', fontWeight: 600, display: 'block', marginBottom: 6 }}>
-              {f.label} {formErrors[f.key] && <span style={{ fontWeight: 400 }}>- required</span>}
+              {f.label} {formErrors[f.key] && <span style={{ fontWeight: 400 }}>- {f.key === 'email' && formData[f.key]?.trim() ? 'invalid email' : f.key === 'phone' && formData[f.key]?.trim() ? 'invalid phone' : 'required'}</span>}
             </label>
             <input
               className="field-input"
               type={f.type || 'text'}
+              name={f.key}
+              autoComplete={f.auto}
               placeholder={f.placeholder}
               value={formData[f.key] || ''}
               onChange={(e) => updateField(f.key, e.target.value)}
@@ -294,6 +336,137 @@ function DetailsStep({ waiverAccepted, setWaiverAccepted, waiverError, formData,
             />
           </div>
         ))}
+        {/* Country dropdown */}
+        <div data-field="country">
+          <label style={{ fontSize: 12.5, color: formErrors['country'] ? '#c00' : 'var(--text-secondary)', fontFamily: 'var(--font-dm-sans)', fontWeight: 600, display: 'block', marginBottom: 6 }}>
+            Country {formErrors['country'] && <span style={{ fontWeight: 400 }}>- required</span>}
+          </label>
+          <select
+            className="field-input"
+            name="country"
+            autoComplete="country-name"
+            value={formData['country'] || ''}
+            onChange={(e) => updateField('country', e.target.value)}
+            style={{
+              height: 46,
+              borderColor: formErrors['country'] ? 'rgba(200,0,0,0.4)' : undefined,
+              color: formData['country'] ? 'var(--text-primary)' : 'var(--text-tertiary)',
+              appearance: 'none',
+              WebkitAppearance: 'none',
+              backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%235E5C57' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")`,
+              backgroundRepeat: 'no-repeat',
+              backgroundPosition: 'right 14px center',
+              paddingRight: 36,
+            }}
+          >
+            <option value="" disabled>Select country</option>
+            {[
+              'United States', 'Canada', 'United Kingdom', 'Jamaica', 'Trinidad and Tobago',
+              'Barbados', 'Bahamas', 'Cayman Islands', 'Germany', 'France',
+              'Netherlands', 'Spain', 'Italy', 'Japan', 'China',
+              'South Korea', 'Australia', 'Brazil', 'Mexico', 'Colombia',
+              'Argentina', 'India', 'Nigeria', 'Ghana', 'South Africa',
+              'Kenya', 'Sweden', 'Norway', 'Denmark', 'Switzerland',
+              'Ireland', 'Portugal', 'Belgium', 'Austria', 'New Zealand',
+              'Singapore', 'Philippines', 'Thailand', 'Costa Rica', 'Panama',
+            ].sort().map((c) => (
+              <option key={c} value={c}>{c}</option>
+            ))}
+          </select>
+        </div>
+        {/* ── Pickup & Drop-off — Prominent Section ── */}
+        <div style={{
+          gridColumn: 'span 2',
+          marginTop: 8,
+          padding: '20px',
+          borderRadius: 'var(--r-lg)',
+          background: 'var(--bg-warm)',
+          border: '1px solid var(--border)',
+        }}>
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: 10, marginBottom: 18,
+          }}>
+            <div style={{
+              width: 36, height: 36, borderRadius: 10,
+              background: 'var(--accent)', display: 'flex',
+              alignItems: 'center', justifyContent: 'center',
+            }}>
+              <MapPin size={18} color="#fff" />
+            </div>
+            <div>
+              <p style={{ fontSize: 14, fontWeight: 700, fontFamily: 'var(--font-syne)', color: 'var(--text-primary)' }}>
+                Transportation Details
+              </p>
+              <p style={{ fontSize: 12, color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-sans)', marginTop: 1 }}>
+                We&apos;ll arrange your pickup and return
+              </p>
+            </div>
+          </div>
+
+          {/* Pickup */}
+          <div data-field="pickup" style={{ marginBottom: 16 }}>
+            <label style={{ fontSize: 12.5, color: formErrors['pickup'] ? '#c00' : 'var(--text-secondary)', fontFamily: 'var(--font-dm-sans)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
+              <span style={{ width: 8, height: 8, borderRadius: '50%', background: formErrors['pickup'] ? '#c00' : 'var(--emerald)', flexShrink: 0 }} />
+              Pickup Location {formErrors['pickup'] && <span style={{ fontWeight: 400 }}>- required</span>}
+            </label>
+            <input
+              className="field-input"
+              placeholder="Search hotel, resort, or airport..."
+              value={formData['pickup'] || ''}
+              onChange={(e) => updateField('pickup', e.target.value)}
+              list="jamaica-locations-pickup"
+              style={{ height: 50, fontSize: 15, background: '#fff', fontWeight: 500, borderColor: formErrors['pickup'] ? 'rgba(200,0,0,0.4)' : undefined }}
+            />
+            {formData['pickup'] && jamaicaLocations.find(l => l.name === formData['pickup']) && (
+              <p style={{ fontSize: 12, color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-sans)', marginTop: 6, paddingLeft: 2, display: 'flex', alignItems: 'center', gap: 4 }}>
+                <MapPin size={11} color="var(--text-tertiary)" />
+                {jamaicaLocations.find(l => l.name === formData['pickup'])?.address}
+              </p>
+            )}
+          </div>
+
+          {/* Visual connector */}
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: 8, margin: '0 0 16px 3px',
+          }}>
+            <div style={{ width: 2, height: 20, background: 'var(--border-strong)', borderRadius: 1, marginLeft: 3 }} />
+          </div>
+
+          {/* Drop-off */}
+          <div data-field="dropoff">
+            <label style={{ fontSize: 12.5, color: formErrors['dropoff'] ? '#c00' : 'var(--text-secondary)', fontFamily: 'var(--font-dm-sans)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
+              <span style={{ width: 8, height: 8, borderRadius: '50%', background: formErrors['dropoff'] ? '#c00' : 'var(--gold)', flexShrink: 0 }} />
+              Drop-off Location {formErrors['dropoff'] && <span style={{ fontWeight: 400 }}>- required</span>}
+            </label>
+            <input
+              className="field-input"
+              placeholder="Same as pickup or different location..."
+              value={formData['dropoff'] || ''}
+              onChange={(e) => updateField('dropoff', e.target.value)}
+              list="jamaica-locations-dropoff"
+              style={{ height: 50, fontSize: 15, background: '#fff', fontWeight: 500, borderColor: formErrors['dropoff'] ? 'rgba(200,0,0,0.4)' : undefined }}
+            />
+            {formData['dropoff'] && jamaicaLocations.find(l => l.name === formData['dropoff']) && (
+              <p style={{ fontSize: 12, color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-sans)', marginTop: 6, paddingLeft: 2, display: 'flex', alignItems: 'center', gap: 4 }}>
+                <MapPin size={11} color="var(--text-tertiary)" />
+                {jamaicaLocations.find(l => l.name === formData['dropoff'])?.address}
+              </p>
+            )}
+          </div>
+        </div>
+
+        {/* Autofill datalists for Jamaica locations */}
+        <datalist id="jamaica-locations-pickup">
+          {jamaicaLocations.map((loc) => (
+            <option key={loc.name} value={loc.name}>{loc.address}</option>
+          ))}
+        </datalist>
+        <datalist id="jamaica-locations-dropoff">
+          {jamaicaLocations.map((loc) => (
+            <option key={loc.name} value={loc.name}>{loc.address}</option>
+          ))}
+        </datalist>
+
         <div style={{ gridColumn: 'span 2' }}>
           <label style={{ fontSize: 12.5, color: 'var(--text-secondary)', fontFamily: 'var(--font-dm-sans)', fontWeight: 600, display: 'block', marginBottom: 6 }}>Special Requests</label>
           <textarea className="field-input" placeholder="Dietary restrictions, accessibility needs, anything we should know..." rows={4} />
@@ -312,7 +485,7 @@ function DetailsStep({ waiverAccepted, setWaiverAccepted, waiverError, formData,
       </div>
 
       {/* Waiver agreement */}
-      <div style={{
+      <div data-field="waiver" style={{
         marginTop: 24, padding: '18px 20px', borderRadius: 'var(--r-lg)',
         border: `1px solid ${waiverError && !waiverAccepted ? 'rgba(200,0,0,0.4)' : 'var(--border)'}`,
         background: waiverError && !waiverAccepted ? 'rgba(200,0,0,0.03)' : '#fff',
@@ -703,8 +876,27 @@ export default function CheckoutView() {
   const [formData, setFormData] = useState<Record<string, string>>({})
   const [formErrors, setFormErrors] = useState<Record<string, boolean>>({})
   const [stripeError, setStripeError] = useState<string | null>(null)
+  const [gasRate, setGasRate] = useState({ usd: GAS_PRICE_USD_PER_LITER, jmd: GAS_PRICE_JMD_PER_LITER })
   const { items, subtotal, fee, grandTotal } = useCartStore()
   const { t, formatPrice } = useI18n()
+
+  // Fetch live gas price on mount
+  useEffect(() => {
+    fetchGasPrice().then((rate) => setGasRate(rate))
+  }, [])
+
+  // ── Transportation cost calculation ──
+  // Default pickup: Sangster International Airport (most common entry point)
+  const pickupLoc = formData['pickup'] || 'Sangster International Airport (MBJ)'
+  const dropoffLoc = formData['dropoff'] || pickupLoc
+  const transportCost = calculateTransportation(
+    pickupLoc,
+    items.map((i) => ({ destination: i.destination, date: i.date })),
+    dropoffLoc
+  )
+
+  const transportTotal = transportCost?.totalTransportUsd || 0
+  const finalTotal = grandTotal() + transportTotal
 
   // Create PaymentIntent when moving to step 3
   useEffect(() => {
@@ -713,7 +905,7 @@ export default function CheckoutView() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          amount: grandTotal(),
+          amount: finalTotal,
           items: items.map((i) => ({
             title: i.title,
             travelers: i.travelers,
@@ -732,6 +924,7 @@ export default function CheckoutView() {
         })
         .catch(() => setStripeError('Failed to initialize payment. Please try again.'))
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [step, clientSecret, items, grandTotal])
 
   if (confirmed) return <ConfirmedView />
@@ -749,7 +942,7 @@ export default function CheckoutView() {
     )
   }
 
-  const ctas = [`${t('Continue to details')} →`, `${t('Continue to payment')} →`, `${t('Complete booking')} · ${formatPrice(grandTotal())}`]
+  const ctas = [`${t('Continue to details')} →`, `${t('Continue to payment')} →`, `${t('Complete booking')} · ${formatPrice(finalTotal)}`]
 
   return (
     <div style={{ minHeight: '100vh', paddingTop: 72, background: 'var(--bg-warm)' }}>
@@ -767,9 +960,9 @@ export default function CheckoutView() {
       </div>
 
       {/* Body */}
-      <div className="checkout-body">
+      <div className={`checkout-body${step === 3 ? ' checkout-step-3' : ''}`}>
         {/* Left — form */}
-        <div style={{ flex: 1, maxWidth: 640 }}>
+        <div className={step === 3 ? 'checkout-payment-form' : ''} style={{ flex: 1, maxWidth: 640 }}>
           {step === 1 && <ReviewStep />}
           {step === 2 && <DetailsStep waiverAccepted={waiverAccepted} setWaiverAccepted={setWaiverAccepted} waiverError={waiverError} formData={formData} setFormData={setFormData} formErrors={formErrors} />}
           {step === 3 && (
@@ -819,7 +1012,7 @@ export default function CheckoutView() {
         </div>
 
         {/* Right — summary */}
-        <div style={{ width: '100%', maxWidth: 340, flexShrink: 0, position: 'sticky', top: 120, alignSelf: 'flex-start' }}>
+        <div className="checkout-summary" style={{ width: '100%', maxWidth: 340, flexShrink: 0, position: 'sticky', top: 120, alignSelf: 'flex-start' }}>
           <div style={{
             borderRadius: 'var(--r-xl)', overflow: 'hidden',
             border: '1px solid var(--border)', background: '#fff',
@@ -852,8 +1045,140 @@ export default function CheckoutView() {
                   <span>{r.l}</span><span>{formatPrice(r.v)}</span>
                 </div>
               ))}
+
+              {/* ── Transportation & Fuel (payment step only) ── */}
+              {step === 3 && transportCost && (
+                <div style={{ marginTop: 12, paddingTop: 16, borderTop: '1px solid var(--border)' }}>
+                  {/* Section header */}
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                      <div style={{ width: 32, height: 32, borderRadius: 9, background: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <Car size={15} color="#fff" />
+                      </div>
+                      <div>
+                        <span style={{ fontSize: 14, fontWeight: 700, fontFamily: 'var(--font-dm-sans)', color: 'var(--text-primary)', display: 'block', lineHeight: 1.2 }}>
+                          Private Transport
+                        </span>
+                        <span style={{ fontSize: 12, color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-sans)' }}>
+                          Door-to-door service
+                        </span>
+                      </div>
+                    </div>
+                    <span style={{
+                      fontSize: 11, fontWeight: 600, fontFamily: 'var(--font-dm-sans)',
+                      color: 'var(--emerald)', background: 'var(--emerald-dim)',
+                      padding: '4px 12px', borderRadius: 9999,
+                    }}>
+                      {transportCost.rentalDays} day{transportCost.rentalDays > 1 ? 's' : ''}
+                    </span>
+                  </div>
+
+                  {/* Route itinerary — per-day cards */}
+                  {transportCost.dayBreakdowns.map((day, idx) => (
+                    <div key={day.date} style={{
+                      marginBottom: 10, padding: '14px 16px',
+                      borderRadius: 'var(--r-md)',
+                      background: idx % 2 === 0 ? 'var(--bg-warm)' : '#fff',
+                      border: '1px solid var(--border)',
+                    }}>
+                      {/* Day header */}
+                      <div style={{ display: 'flex', alignItems: 'center', marginBottom: 10 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+                          <Calendar size={13} color="var(--text-secondary)" />
+                          <span style={{ fontSize: 13, fontWeight: 700, fontFamily: 'var(--font-dm-sans)', color: 'var(--text-primary)' }}>
+                            {transportCost.isMultiDay
+                              ? `Day ${idx + 1} · ${new Date(day.date + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}`
+                              : new Date(day.date + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })
+                            }
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Route visualization */}
+                      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, marginBottom: 10 }}>
+                        {/* Route dots */}
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', paddingTop: 4, flexShrink: 0 }}>
+                          <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--emerald)' }} />
+                          {day.destinations.map((_, i) => (
+                            <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                              <div style={{ width: 1.5, height: 14, background: 'var(--border-strong)' }} />
+                              <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--gold)' }} />
+                            </div>
+                          ))}
+                          <div style={{ width: 1.5, height: 14, background: 'var(--border-strong)' }} />
+                          <div style={{ width: 8, height: 8, borderRadius: '50%', border: '2px solid var(--emerald)', background: '#fff' }} />
+                        </div>
+                        {/* Route labels */}
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <p style={{ fontSize: 12.5, color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-sans)', marginBottom: 4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            {formData['pickup'] || 'Sangster Airport (MBJ)'}
+                          </p>
+                          {day.destinations.map((dest, i) => (
+                            <p key={i} style={{ fontSize: 13.5, fontWeight: 600, fontFamily: 'var(--font-dm-sans)', color: 'var(--text-primary)', marginBottom: 4, marginTop: 10 }}>
+                              {dest}
+                            </p>
+                          ))}
+                          <p style={{ fontSize: 12.5, color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-sans)', marginTop: 10, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            {formData['dropoff'] || formData['pickup'] || 'Sangster Airport (MBJ)'}
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Day stats */}
+                      <div style={{
+                        display: 'flex', gap: 0, borderTop: '1px solid var(--border)', paddingTop: 10,
+                      }}>
+                        <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 5 }}>
+                          <Route size={12} color="var(--text-tertiary)" />
+                          <span style={{ fontSize: 12.5, color: 'var(--text-secondary)', fontFamily: 'var(--font-dm-sans)' }}>
+                            {day.distanceKm} km
+                          </span>
+                        </div>
+                        <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 5 }}>
+                          <Fuel size={12} color="var(--text-tertiary)" />
+                          <span style={{ fontSize: 12.5, color: 'var(--text-secondary)', fontFamily: 'var(--font-dm-sans)' }}>
+                            {day.litersNeeded}L
+                          </span>
+                        </div>
+                        <div style={{ flex: 1, textAlign: 'right' }}>
+                          <span style={{ fontSize: 13, fontWeight: 700, fontFamily: 'var(--font-dm-sans)', color: 'var(--text-primary)' }}>
+                            {formatPrice(day.fuelCost)}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+
+                  {/* Cost summary rows */}
+                  <div style={{ marginTop: 12 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13.5, fontFamily: 'var(--font-dm-sans)', color: 'var(--text-secondary)', marginBottom: 6 }}>
+                      <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <Car size={13} color="var(--text-tertiary)" />
+                        Vehicle rental · {transportCost.rentalDays} day{transportCost.rentalDays > 1 ? 's' : ''}
+                      </span>
+                      <span style={{ fontWeight: 600 }}>{formatPrice(transportCost.rentalCostUsd)}</span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13.5, fontFamily: 'var(--font-dm-sans)', color: 'var(--text-secondary)', marginBottom: 6 }}>
+                      <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <Fuel size={13} color="var(--text-tertiary)" />
+                        Fuel · {transportCost.totalDistanceKm} km · {transportCost.litersNeeded}L
+                      </span>
+                      <span style={{ fontWeight: 600 }}>{formatPrice(transportCost.fuelCostUsd)}</span>
+                    </div>
+                    <p style={{ fontSize: 11.5, color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-sans)', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 5 }}>
+                      <span style={{ width: 5, height: 5, borderRadius: '50%', background: 'var(--emerald)', flexShrink: 0 }} />
+                      J${gasRate.jmd}/L (${gasRate.usd}/L USD) · Petrojam live pricing
+                    </p>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 14.5, fontFamily: 'var(--font-dm-sans)', fontWeight: 700, color: 'var(--text-primary)', paddingTop: 10, borderTop: '1px solid var(--border)' }}>
+                      <span>Transport</span>
+                      <span>{formatPrice(transportCost.totalTransportUsd)}</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               <div style={{ display: 'flex', justifyContent: 'space-between', fontFamily: 'var(--font-dm-sans)', fontWeight: 800, fontSize: 20, marginTop: 10, paddingTop: 12, borderTop: '1px solid var(--border)' }}>
-                <span>{t('Total')}</span><span>{formatPrice(grandTotal())}</span>
+                <span>{t('Total')}</span><span>{formatPrice(step === 3 ? finalTotal : grandTotal())}</span>
               </div>
             </div>
 
@@ -862,7 +1187,7 @@ export default function CheckoutView() {
                 <button className="btn-primary" onClick={() => {
                   if (step === 2) {
                     // Validate required fields
-                    const required = ['firstName', 'lastName', 'email', 'phone', 'country']
+                    const required = ['firstName', 'lastName', 'email', 'phone', 'country', 'pickup', 'dropoff']
                     const errors: Record<string, boolean> = {}
                     let hasError = false
                     required.forEach((key) => {
@@ -871,6 +1196,16 @@ export default function CheckoutView() {
                         hasError = true
                       }
                     })
+                    // Email format validation
+                    if (formData['email']?.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData['email'].trim())) {
+                      errors['email'] = true
+                      hasError = true
+                    }
+                    // Phone validation — at least 7 digits
+                    if (formData['phone']?.trim() && formData['phone'].replace(/\D/g, '').length < 7) {
+                      errors['phone'] = true
+                      hasError = true
+                    }
                     setFormErrors(errors)
 
                     if (!waiverAccepted) {
@@ -880,7 +1215,20 @@ export default function CheckoutView() {
                       setWaiverError(false)
                     }
 
-                    if (hasError) return
+                    if (hasError) {
+                      // Scroll to first error field
+                      setTimeout(() => {
+                        const firstErrorKey = required.find((key) => errors[key])
+                        if (firstErrorKey) {
+                          const el = document.querySelector(`[data-field="${firstErrorKey}"]`) as HTMLElement
+                          if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+                        } else if (!waiverAccepted) {
+                          const waiver = document.querySelector('[data-field="waiver"]') as HTMLElement
+                          if (waiver) waiver.scrollIntoView({ behavior: 'smooth', block: 'center' })
+                        }
+                      }, 100)
+                      return
+                    }
                   }
                   setWaiverError(false)
                   setFormErrors({})

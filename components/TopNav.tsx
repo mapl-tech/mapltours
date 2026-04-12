@@ -85,6 +85,7 @@ export default function TopNav({ onCartClick }: { onCartClick?: () => void }) {
         left: 0,
         right: 0,
         zIndex: 100,
+        height: 56,
         display: 'flex',
         alignItems: 'center',
         transition: 'all 0.35s cubic-bezier(0.22,1,0.36,1)',
@@ -406,11 +407,6 @@ export default function TopNav({ onCartClick }: { onCartClick?: () => void }) {
           <LanguageSwitcher dark={dark} />
         </div>
 
-        {/* ── Desktop language (inline) ── */}
-        <div className="hide-mobile" style={{ flexShrink: 0 }}>
-          <LanguageSwitcher dark={dark} />
-        </div>
-
         {/* ── Right ── */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
           <Link
@@ -423,6 +419,8 @@ export default function TopNav({ onCartClick }: { onCartClick?: () => void }) {
           >
             {t('Explore')}
           </Link>
+
+          <div className="hide-mobile"><LanguageSwitcher dark={dark} /></div>
 
           {items.length > 0 ? (
             <button
