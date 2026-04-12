@@ -8,12 +8,15 @@ import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-
 import { ArrowLeft, Check, ShieldCheck, Lock, CreditCard, MapPin, Users, Calendar, Leaf, Star } from 'lucide-react'
 import { useCartStore } from '@/lib/cart'
 import { stripePromise } from '@/lib/stripe'
+import { useI18n } from '@/lib/i18n'
 
 /* ── Step Indicator ── */
 function StepIndicator({ step }: { step: number }) {
+  const { t } = useI18n()
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 0 }}>
-      {['Review', 'Details', 'Payment'].map((label, i) => {
+      {['Review', 'Details', 'Payment'].map((rawLabel, i) => {
+        const label = t(rawLabel)
         const n = i + 1
         const done = step > n
         const active = step === n
@@ -47,6 +50,7 @@ function StepIndicator({ step }: { step: number }) {
 /* ── Review Step ── */
 function ReviewStep() {
   const { items, removeItem, updateDate } = useCartStore()
+  const { t, formatPrice } = useI18n()
   const [customDates, setCustomDates] = useState(false)
 
   // Get the shared date from the first item
@@ -59,7 +63,7 @@ function ReviewStep() {
   return (
     <div>
       <div style={{ marginBottom: 28 }}>
-        <h3 style={{ fontFamily: 'var(--font-syne)', fontWeight: 700, fontSize: 22, marginBottom: 6 }}>Review your trip</h3>
+        <h3 style={{ fontFamily: 'var(--font-syne)', fontWeight: 700, fontSize: 22, marginBottom: 6 }}>{t('Review your trip')}</h3>
         <p style={{ fontSize: 14, color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-sans)' }}>
           {items.length} experience{items.length !== 1 ? 's' : ''} in your Jamaica itinerary
         </p>
@@ -80,10 +84,10 @@ function ReviewStep() {
             <Calendar size={18} color="var(--text-secondary)" />
             <div>
               <span style={{ fontSize: 14, fontWeight: 600, fontFamily: 'var(--font-dm-sans)' }}>
-                {customDates ? 'Select dates for each tour' : 'Trip date'}
+                {customDates ? t('Choose different dates for each tour') : t('Trip date')}
               </span>
               <p style={{ fontSize: 12, color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-sans)', marginTop: 1 }}>
-                {customDates ? 'Each experience can be on a different day' : 'All experiences on the same day'}
+                {customDates ? t('Each experience can be on a different day') : t('All experiences on the same day')}
               </p>
             </div>
           </div>
@@ -144,7 +148,7 @@ function ReviewStep() {
             }}
           >
             <Calendar size={13} />
-            {customDates ? 'Use same date for all tours' : 'Choose different dates for each tour'}
+            {customDates ? t('Use same date for all tours') : t('Choose different dates for each tour')}
           </button>
         </div>
       </div>
@@ -200,10 +204,10 @@ function ReviewStep() {
               </div>
               <div style={{ textAlign: 'right' }}>
                 <span style={{ fontFamily: 'var(--font-dm-sans)', fontWeight: 800, fontSize: 18 }}>
-                  ${(item.price * item.travelers).toLocaleString()}
+                  {formatPrice(item.price * item.travelers)}
                 </span>
                 <p style={{ fontSize: 11, color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-sans)', marginTop: 1 }}>
-                  ${item.price} × {item.travelers}
+                  {formatPrice(item.price)} × {item.travelers}
                 </p>
               </div>
             </div>
@@ -224,6 +228,7 @@ function DetailsStep({ waiverAccepted, setWaiverAccepted, waiverError, formData,
   formErrors: Record<string, boolean>
 }) {
   const { items, updateTravelers } = useCartStore()
+  const { t } = useI18n()
   const [modalContent, setModalContent] = useState<'waiver' | 'terms' | null>(null)
 
   const updateField = (key: string, value: string) => {
@@ -232,7 +237,7 @@ function DetailsStep({ waiverAccepted, setWaiverAccepted, waiverError, formData,
   return (
     <div>
       <div style={{ marginBottom: 28 }}>
-        <h3 style={{ fontFamily: 'var(--font-syne)', fontWeight: 700, fontSize: 22, marginBottom: 6 }}>Your details</h3>
+        <h3 style={{ fontFamily: 'var(--font-syne)', fontWeight: 700, fontSize: 22, marginBottom: 6 }}>{t('Your details')}</h3>
         <p style={{ fontSize: 14, color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-sans)' }}>
           We&apos;ll use this to confirm your booking
         </p>
@@ -249,7 +254,7 @@ function DetailsStep({ waiverAccepted, setWaiverAccepted, waiverError, formData,
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <Users size={18} color="var(--text-secondary)" />
           <div>
-            <span style={{ fontSize: 14, fontWeight: 600, fontFamily: 'var(--font-dm-sans)' }}>Number of guests</span>
+            <span style={{ fontSize: 14, fontWeight: 600, fontFamily: 'var(--font-dm-sans)' }}>{t('Number of guests')}</span>
             <p style={{ fontSize: 12, color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-sans)', marginTop: 1 }}>
               Applies to all {items.length} experience{items.length !== 1 ? 's' : ''}
             </p>
@@ -602,6 +607,7 @@ function PaymentStep({ onPaymentSuccess }: { onPaymentSuccess: () => void }) {
 /* ── Confirmed ── */
 function ConfirmedView() {
   const { items, grandTotal, clearCart } = useCartStore()
+  const { t, formatPrice } = useI18n()
   const router = useRouter()
   const total = grandTotal()
   const confirmedItems = [...items]
@@ -619,7 +625,7 @@ function ConfirmedView() {
         <Check size={32} strokeWidth={2.5} />
       </div>
 
-      <h1 style={{ fontFamily: 'var(--font-syne)', fontWeight: 800, fontSize: 32, marginBottom: 8, letterSpacing: '-0.02em' }}>Booking Confirmed</h1>
+      <h1 style={{ fontFamily: 'var(--font-syne)', fontWeight: 800, fontSize: 32, marginBottom: 8, letterSpacing: '-0.02em' }}>{t('Booking Confirmed')}</h1>
       <p style={{ fontSize: 16, color: 'var(--text-secondary)', fontFamily: 'var(--font-dm-sans)', maxWidth: 420, lineHeight: 1.65, marginBottom: 36 }}>
         Your Jamaican adventure is booked. Check your email for confirmation details and everything you need to know.
       </p>
@@ -657,7 +663,7 @@ function ConfirmedView() {
                 </p>
               </div>
               <span style={{ fontSize: 14, fontWeight: 700, fontFamily: 'var(--font-dm-sans)', flexShrink: 0 }}>
-                ${(item.price * item.travelers).toLocaleString()}
+                {formatPrice(item.price * item.travelers)}
               </span>
             </div>
           ))}
@@ -670,7 +676,7 @@ function ConfirmedView() {
           display: 'flex', justifyContent: 'space-between', alignItems: 'center',
         }}>
           <span style={{ fontSize: 14, fontFamily: 'var(--font-dm-sans)', fontWeight: 600, color: 'var(--text-secondary)' }}>Total Paid</span>
-          <span style={{ fontFamily: 'var(--font-dm-sans)', fontWeight: 800, fontSize: 22 }}>${total.toLocaleString()}</span>
+          <span style={{ fontFamily: 'var(--font-dm-sans)', fontWeight: 800, fontSize: 22 }}>{formatPrice(total)}</span>
         </div>
       </div>
 
@@ -698,6 +704,7 @@ export default function CheckoutView() {
   const [formErrors, setFormErrors] = useState<Record<string, boolean>>({})
   const [stripeError, setStripeError] = useState<string | null>(null)
   const { items, subtotal, fee, grandTotal } = useCartStore()
+  const { t, formatPrice } = useI18n()
 
   // Create PaymentIntent when moving to step 3
   useEffect(() => {
@@ -735,14 +742,14 @@ export default function CheckoutView() {
         <div style={{ width: 64, height: 64, borderRadius: '50%', background: 'var(--surface)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 20 }}>
           <Leaf size={24} color="var(--text-tertiary)" />
         </div>
-        <p style={{ fontSize: 20, fontFamily: 'var(--font-syne)', fontWeight: 700, marginBottom: 8 }}>Your itinerary is empty</p>
+        <p style={{ fontSize: 20, fontFamily: 'var(--font-syne)', fontWeight: 700, marginBottom: 8 }}>{t('Your itinerary is empty')}</p>
         <p style={{ fontSize: 14, color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-sans)', marginBottom: 24, maxWidth: 300 }}>Start exploring Jamaica and add experiences to build your trip</p>
-        <Link href="/" className="btn-primary" style={{ height: 46, padding: '0 28px', fontSize: 14 }}>Browse experiences</Link>
+        <Link href="/" className="btn-primary" style={{ height: 46, padding: '0 28px', fontSize: 14 }}>{t('Browse experiences')}</Link>
       </div>
     )
   }
 
-  const ctas = ['Continue to details →', 'Continue to payment →', `Complete booking · $${grandTotal().toLocaleString()}`]
+  const ctas = [`${t('Continue to details')} →`, `${t('Continue to payment')} →`, `${t('Complete booking')} · ${formatPrice(grandTotal())}`]
 
   return (
     <div style={{ minHeight: '100vh', paddingTop: 72, background: 'var(--bg-warm)' }}>
@@ -753,7 +760,7 @@ export default function CheckoutView() {
             <ArrowLeft size={15} /> Back
           </Link>
           <div style={{ textAlign: 'center' }}>
-            <h2 style={{ fontFamily: 'var(--font-syne)', fontWeight: 700, fontSize: 18 }}>Checkout</h2>
+            <h2 style={{ fontFamily: 'var(--font-syne)', fontWeight: 700, fontSize: 18 }}>{t('Checkout')}</h2>
           </div>
           <div className="hide-mobile"><StepIndicator step={step} /></div>
         </div>
@@ -818,7 +825,7 @@ export default function CheckoutView() {
             border: '1px solid var(--border)', background: '#fff',
           }}>
             <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--border)' }}>
-              <h4 style={{ fontFamily: 'var(--font-syne)', fontWeight: 700, fontSize: 16, marginBottom: 2 }}>Order Summary</h4>
+              <h4 style={{ fontFamily: 'var(--font-syne)', fontWeight: 700, fontSize: 16, marginBottom: 2 }}>{t('Order Summary')}</h4>
               <p style={{ fontSize: 12, color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-sans)' }}>Jamaica · {items.length} experience{items.length !== 1 ? 's' : ''}</p>
             </div>
 
@@ -830,10 +837,10 @@ export default function CheckoutView() {
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <p style={{ fontSize: 13, fontFamily: 'var(--font-dm-sans)', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.title}</p>
-                    <p style={{ fontSize: 11.5, color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-sans)' }}>{item.travelers} × ${item.price}</p>
+                    <p style={{ fontSize: 11.5, color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-sans)' }}>{item.travelers} × {formatPrice(item.price)}</p>
                   </div>
                   <span style={{ fontSize: 13, fontWeight: 700, fontFamily: 'var(--font-dm-sans)', flexShrink: 0 }}>
-                    ${(item.price * item.travelers).toLocaleString()}
+                    {formatPrice(item.price * item.travelers)}
                   </span>
                 </div>
               ))}
@@ -842,11 +849,11 @@ export default function CheckoutView() {
             <div style={{ padding: '16px 24px', background: 'var(--bg-warm)', borderTop: '1px solid var(--border)' }}>
               {[{ l: 'Subtotal', v: subtotal() }, { l: 'Booking fee (5%)', v: fee() }].map((r) => (
                 <div key={r.l} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13.5, fontFamily: 'var(--font-dm-sans)', color: 'var(--text-secondary)', marginBottom: 6 }}>
-                  <span>{r.l}</span><span>${r.v.toLocaleString()}</span>
+                  <span>{r.l}</span><span>{formatPrice(r.v)}</span>
                 </div>
               ))}
               <div style={{ display: 'flex', justifyContent: 'space-between', fontFamily: 'var(--font-dm-sans)', fontWeight: 800, fontSize: 20, marginTop: 10, paddingTop: 12, borderTop: '1px solid var(--border)' }}>
-                <span>Total</span><span>${grandTotal().toLocaleString()}</span>
+                <span>{t('Total')}</span><span>{formatPrice(grandTotal())}</span>
               </div>
             </div>
 

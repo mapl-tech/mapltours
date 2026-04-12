@@ -72,6 +72,8 @@ export default function TopNav({ onCartClick }: { onCartClick?: () => void }) {
   const dark = isHome && !scrolled
   const linkColor = dark ? 'rgba(255,255,255,0.75)' : 'var(--text-secondary)'
 
+  if (isExperience) return null
+
   return (
     <header
       style={{
@@ -178,7 +180,7 @@ export default function TopNav({ onCartClick }: { onCartClick?: () => void }) {
               letterSpacing: '0.08em', color: 'var(--text-tertiary)',
               fontFamily: 'var(--font-dm-sans)', lineHeight: 1, marginBottom: 1,
             }}>
-              Where
+              {t('Where')}
             </span>
             <input
               type="text"
@@ -215,7 +217,7 @@ export default function TopNav({ onCartClick }: { onCartClick?: () => void }) {
                   letterSpacing: '0.06em', color: 'var(--text-tertiary)',
                   fontFamily: 'var(--font-dm-sans)', padding: '8px 16px 6px',
                 }}>
-                  {where ? 'Results' : 'Popular destinations'}
+                  {where ? t('Results') : t('Popular destinations')}
                 </p>
                 {destinations
                   .filter((d) => !where || d.name.toLowerCase().includes(where.toLowerCase()) || d.parish.toLowerCase().includes(where.toLowerCase()))
@@ -252,7 +254,7 @@ export default function TopNav({ onCartClick }: { onCartClick?: () => void }) {
                   ))}
                 {where && destinations.filter((d) => d.name.toLowerCase().includes(where.toLowerCase()) || d.parish.toLowerCase().includes(where.toLowerCase())).length === 0 && (
                   <p style={{ padding: '12px 16px', fontSize: 13, color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-sans)' }}>
-                    No destinations found
+                    {t('No destinations found')}
                   </p>
                 )}
               </div>
@@ -274,7 +276,7 @@ export default function TopNav({ onCartClick }: { onCartClick?: () => void }) {
               letterSpacing: '0.08em', color: 'var(--text-tertiary)',
               fontFamily: 'var(--font-dm-sans)', lineHeight: 1, marginBottom: 1,
             }}>
-              When
+              {t('When')}
             </span>
             <span style={{
               fontSize: 13, fontFamily: 'var(--font-dm-sans)', fontWeight: 500,
@@ -282,7 +284,7 @@ export default function TopNav({ onCartClick }: { onCartClick?: () => void }) {
             }}>
               {when
                 ? new Date(when + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-                : 'Any dates'}
+                : t('Any dates')}
             </span>
             <input
               ref={dateRef}
@@ -312,13 +314,13 @@ export default function TopNav({ onCartClick }: { onCartClick?: () => void }) {
               letterSpacing: '0.08em', color: 'var(--text-tertiary)',
               fontFamily: 'var(--font-dm-sans)', lineHeight: 1, marginBottom: 1,
             }}>
-              Who
+              {t('Who')}
             </span>
             <span style={{
               fontSize: 13, fontFamily: 'var(--font-dm-sans)', fontWeight: 500,
               color: guests > 0 ? 'var(--text-primary)' : 'var(--text-tertiary)',
             }}>
-              {guests > 0 ? `${guests} guest${guests !== 1 ? 's' : ''}` : 'Guests'}
+              {guests > 0 ? `${guests} ${t('Guests')}` : t('Guests')}
             </span>
 
             {/* Guest dropdown */}
@@ -443,7 +445,7 @@ export default function TopNav({ onCartClick }: { onCartClick?: () => void }) {
                 borderRadius: 9999, transition: 'color 0.15s ease',
               }}
             >
-              Profile
+              {t('Profile')}
             </Link>
           )}
         </div>

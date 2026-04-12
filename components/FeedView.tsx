@@ -39,12 +39,13 @@ const destinations = [
 ]
 
 function SectionHeader({ label, action }: { label: string; action?: { text: string; href: string } }) {
+  const { t } = useI18n()
   return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18 }}>
-      <span className="text-label">{label}</span>
+      <span className="text-label">{t(label)}</span>
       {action && (
         <a href={action.href} style={{ fontSize: 13, fontFamily: 'var(--font-dm-sans)', fontWeight: 500, color: 'var(--text-tertiary)' }}>
-          {action.text} →
+          {t(action.text)} →
         </a>
       )}
     </div>
@@ -54,7 +55,7 @@ function SectionHeader({ label, action }: { label: string; action?: { text: stri
 
 function FoodSection() {
   const scrollRef = useRef<HTMLDivElement>(null)
-  const { formatPrice } = useI18n()
+  const { t, formatPrice } = useI18n()
 
   const scroll = (dir: 'left' | 'right') => {
     if (!scrollRef.current) return
@@ -75,7 +76,7 @@ function FoodSection() {
                 fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.08em',
                 color: 'var(--gold-warm)',
               }}>
-                Food & Culture
+                {t('Food & Culture')}
               </span>
             </div>
             <h2 style={{
@@ -83,7 +84,7 @@ function FoodSection() {
               fontSize: 'clamp(1.5rem, 2.5vw, 2rem)',
               color: 'white', lineHeight: 1.15, letterSpacing: '-0.02em',
             }}>
-              A Taste of Jamaica
+              {t('A Taste of Jamaica')}
             </h2>
             <p style={{
               fontSize: 14.5, color: '#cccccc',
@@ -328,6 +329,7 @@ function DestinationsSection() {
 }
 
 function AllExperiencesSection() {
+  const { t } = useI18n()
   const [visibleCount, setVisibleCount] = useState(15)
   const visible = experiences.slice(0, visibleCount)
   const hasMore = visibleCount < experiences.length
@@ -369,7 +371,7 @@ function AllExperiencesSection() {
               e.currentTarget.style.color = 'var(--text-primary)'
             }}
           >
-            Load more ({remaining > 10 ? 10 : remaining} more)
+            {t('Load more')} ({remaining > 10 ? 10 : remaining} {t('more')})
           </button>
         </div>
       )}
@@ -460,7 +462,7 @@ export default function FeedView() {
               fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.08em',
               color: 'var(--gold-warm)',
             }}>
-              Trending Now
+              {t('Trending Now')}
             </span>
           </div>
           <p style={{
@@ -604,7 +606,7 @@ export default function FeedView() {
               color: 'white', lineHeight: 1.12, letterSpacing: '-0.02em',
               marginBottom: 4,
             }}>
-              The authenticity of local culture.
+              {t('The authenticity of local culture.')}
             </h2>
             <p style={{
               fontFamily: 'var(--font-syne)', fontWeight: 700,
@@ -612,7 +614,7 @@ export default function FeedView() {
               color: 'var(--text-on-dark-3)', lineHeight: 1.12, letterSpacing: '-0.02em',
               marginBottom: 48,
             }}>
-              The comfort of a curated trip.
+              {t('The comfort of a curated trip.')}
             </p>
 
             <div className="grid-features">
@@ -637,7 +639,7 @@ export default function FeedView() {
                     fontFamily: 'var(--font-dm-sans)', fontWeight: 600,
                     fontSize: 14.5, color: 'white', marginBottom: 6,
                   }}>
-                    {item.title}
+                    {t(item.title)}
                   </h4>
                   <p style={{
                     fontSize: 13.5, color: 'var(--text-on-dark-2)',
@@ -691,6 +693,11 @@ export default function FeedView() {
             }}>
               Discover Jamaica beyond the resort. Curated experiences from the people who know Jamaica best.
             </p>
+          </div>
+
+          {/* Language switcher */}
+          <div style={{ paddingBottom: 24, marginBottom: 24, borderBottom: '1px solid var(--border-on-dark)' }}>
+            <LanguageSwitcher variant="footer" />
           </div>
 
           {/* TripAdvisor badge — centered on mobile */}
@@ -755,11 +762,6 @@ export default function FeedView() {
                 ))}
               </div>
             ))}
-          </div>
-
-          {/* Language switcher in footer */}
-          <div style={{ paddingTop: 28, paddingBottom: 20, borderBottom: '1px solid var(--border-on-dark)' }}>
-            <LanguageSwitcher variant="footer" />
           </div>
 
           {/* Bottom bar — stacks on mobile */}

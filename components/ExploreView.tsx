@@ -4,6 +4,7 @@ import { useState, useMemo, useEffect, useRef } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { Search, Calendar } from 'lucide-react'
 import { experiences } from '@/lib/experiences'
+import { useI18n } from '@/lib/i18n'
 import type { ExperienceCategory } from '@/lib/experiences'
 import ExpCard from './ExpCard'
 import MobileShort from './MobileShort'
@@ -18,6 +19,7 @@ export default function ExploreView() {
   const [activeCat, setActiveCat] = useState<string>('All')
   const [activeParish, setActiveParish] = useState('All Parishes')
   const [filterHidden, setFilterHidden] = useState(false)
+  const { t } = useI18n()
   const lastScrollY = useRef(0)
 
   useEffect(() => {
@@ -74,7 +76,7 @@ export default function ExploreView() {
       }}>
         <div className="container" style={{ paddingTop: 18, paddingBottom: 16 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 14, flexWrap: 'wrap' }}>
-            <h1 style={{ fontFamily: 'var(--font-syne)', fontWeight: 700, fontSize: 20, letterSpacing: '-0.02em' }}>Explore</h1>
+            <h1 style={{ fontFamily: 'var(--font-syne)', fontWeight: 700, fontSize: 20, letterSpacing: '-0.02em' }}>{t('Explore')}</h1>
             <div style={{
               display: 'flex', alignItems: 'center', gap: 10,
               background: '#fff', border: '1px solid var(--border)',
