@@ -1,6 +1,6 @@
 'use client'
 
-import { useRef, useState } from 'react'
+import { useRef, useState, memo } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { Experience, CATEGORY_COLORS, slugify } from '@/lib/experiences'
@@ -8,7 +8,7 @@ import { useCartStore } from '@/lib/cart'
 import { Plus, Check, Play, MapPin, Star } from 'lucide-react'
 import { useI18n } from '@/lib/i18n'
 
-export default function ExpCard({ exp }: { exp: Experience }) {
+export default memo(function ExpCard({ exp }: { exp: Experience }) {
   const { addItem, removeItem, isInCart } = useCartStore()
   const { t, formatPrice } = useI18n()
   const inCart = isInCart(exp.id)
@@ -161,4 +161,4 @@ export default function ExpCard({ exp }: { exp: Experience }) {
       </Link>
     </article>
   )
-}
+})

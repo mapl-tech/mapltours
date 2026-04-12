@@ -10,7 +10,7 @@ import ExpCard from './ExpCard'
 import MobileShort from './MobileShort'
 
 const categories: ('All' | ExperienceCategory)[] = ['All', 'Adventure', 'Nature', 'Music', 'Food', 'Culture', 'Water']
-const parishes = ['All Parishes', 'Kingston', 'St. Andrew', 'St. Ann', 'Westmoreland', 'Portland', 'St. Elizabeth']
+const parishes = ['All Parishes', 'Negril', 'Montego Bay', 'Kingston', 'Ocho Rios', 'Port Antonio', 'Blue Mountains', 'St. Andrew', 'St. Ann', 'Westmoreland', 'Portland', 'St. Elizabeth']
 
 export default function ExploreView() {
   const searchParams = useSearchParams()
@@ -44,7 +44,7 @@ export default function ExploreView() {
   const filtered = useMemo(() => {
     return experiences.filter((exp) => {
       if (activeCat !== 'All' && exp.category !== activeCat) return false
-      if (activeParish !== 'All Parishes' && exp.parish !== activeParish) return false
+      if (activeParish !== 'All Parishes' && exp.parish !== activeParish && exp.destination !== activeParish) return false
       if (search) {
         const q = search.toLowerCase()
         if (

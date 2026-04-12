@@ -1,9 +1,11 @@
 'use client'
 
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { useCartStore } from '@/lib/cart'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { createClient } from '@/lib/supabase/client'
+import type { User } from '@supabase/supabase-js'
 
 const navItems = [
   { icon: '▶', label: 'Feed', href: '/' },
@@ -13,8 +15,27 @@ const navItems = [
 
 export default function LeftNav() {
   const pathname = usePathname()
+  const router = useRouter()
   const items = useCartStore((s) => s.items)
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null)
+  const [user, setUser] = useState<User | null>(null)
+  const supabase = createClient()
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data: { user } }) => setUser(user))
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (_event, session) => setUser(session?.user ?? null)
+    )
+
+    return () => subscription.unsubscribe()
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
+  async function handleSignOut() {
+    await supabase.auth.signOut()
+    router.push('/')
+    router.refresh()
+  }
 
   return (
     <nav
@@ -106,6 +127,50 @@ export default function LeftNav() {
           )
         })}
       </div>
+
+      {/* Auth button */}
+      {user ? (
+        <button
+          onClick={handleSignOut}
+          title="Sign out"
+          style={{
+            width: 44,
+            height: 44,
+            borderRadius: 12,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: 18,
+            background: 'transparent',
+            border: '1px solid transparent',
+            color: 'rgba(255,255,255,0.4)',
+            cursor: 'pointer',
+            marginBottom: 8,
+          }}
+        >
+          ↪
+        </button>
+      ) : (
+        <Link
+          href="/login"
+          title="Sign in"
+          style={{
+            width: 44,
+            height: 44,
+            borderRadius: 12,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: 18,
+            textDecoration: 'none',
+            background: pathname === '/login' ? 'rgba(255,179,0,0.15)' : 'transparent',
+            border: pathname === '/login' ? '1px solid rgba(255,179,0,0.3)' : '1px solid transparent',
+            color: pathname === '/login' ? 'var(--gold)' : 'rgba(255,255,255,0.4)',
+          }}
+        >
+          ⊕
+        </Link>
+      )}
 
       {/* Cart icon */}
       {items.length > 0 && (

@@ -7,6 +7,7 @@ import { useI18n } from '@/lib/i18n'
 import { useCartStore } from '@/lib/cart'
 import Link from 'next/link'
 import { Heart, MessageCircle, Plus, Check, Play, ChevronLeft, ChevronRight, X, ThumbsUp, Send, MapPin, Star, Clock, ShoppingBag } from 'lucide-react'
+import { useExperienceLike, useComments } from '@/lib/supabase/hooks'
 
 /* ── Single Reel (Snapchat style) ── */
 function Reel({ exp, isActive, totalCount, currentIndex }: { exp: Experience; isActive: boolean; totalCount: number; currentIndex: number }) {
@@ -14,7 +15,7 @@ function Reel({ exp, isActive, totalCount, currentIndex }: { exp: Experience; is
   const [paused, setPaused] = useState(false)
   const { addItem, removeItem, isInCart } = useCartStore()
   const { t, formatPrice } = useI18n()
-  const [liked, setLiked] = useState(false)
+  const { liked, likeCount, toggleLike } = useExperienceLike(exp.id)
   const inCart = isInCart(exp.id)
   const toggleCart = () => { if (inCart) { removeItem(exp.id) } else { addItem(exp) } }
 
@@ -25,10 +26,8 @@ function Reel({ exp, isActive, totalCount, currentIndex }: { exp: Experience; is
     if (isActive) {
       video.muted = true
       video.currentTime = 0
-      // Wait for video to be ready before playing
       const tryPlay = () => {
         video.play().then(() => setPaused(false)).catch(() => {
-          // Retry once
           setTimeout(() => video.play().then(() => setPaused(false)).catch(() => {}), 300)
         })
       }
@@ -40,6 +39,13 @@ function Reel({ exp, isActive, totalCount, currentIndex }: { exp: Experience; is
       setPaused(false)
     } else {
       video.pause()
+      // Free memory for off-screen videos
+      video.removeAttribute('src')
+      video.load()
+    }
+
+    return () => {
+      video.removeEventListener('loadeddata', () => {})
     }
   }, [isActive])
 
@@ -73,10 +79,11 @@ function Reel({ exp, isActive, totalCount, currentIndex }: { exp: Experience; is
       ) : (
       <video
         ref={videoRef}
-        src={exp.video}
+        src={isActive ? exp.video : undefined}
         loop muted playsInline
+        preload={isActive ? 'auto' : 'none'}
         poster={exp.image}
-        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+        style={{ width: '100%', height: '100%', objectFit: 'cover', willChange: 'opacity' }}
       />
       )}
 
@@ -146,7 +153,7 @@ function Reel({ exp, isActive, totalCount, currentIndex }: { exp: Experience; is
 
         {/* Like */}
         <button
-          onClick={(e) => { e.stopPropagation(); setLiked(!liked) }}
+          onClick={(e) => { e.stopPropagation(); toggleLike() }}
           style={{
             display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2,
             background: 'none', border: 'none', cursor: 'pointer', color: 'white',
@@ -154,7 +161,7 @@ function Reel({ exp, isActive, totalCount, currentIndex }: { exp: Experience; is
         >
           <Heart size={26} fill={liked ? '#FF4081' : 'none'} color={liked ? '#FF4081' : 'white'} strokeWidth={1.8} />
           <span style={{ fontSize: 11, fontWeight: 700, fontFamily: 'var(--font-dm-sans)' }}>
-            {liked ? (exp.reviews + 1).toLocaleString() : exp.reviews.toLocaleString()}
+            {(exp.reviews + likeCount).toLocaleString()}
           </span>
         </button>
 
@@ -299,16 +306,20 @@ function Reel({ exp, isActive, totalCount, currentIndex }: { exp: Experience; is
    MAIN COMPONENT
    ═══════════════════════════════════ */
 /* ── Draggable Mobile Comments Sheet ── */
-function MobileCommentsSheet({ comments, commentText, setCommentText, addComment, onClose }: {
-  comments: Comment[]
+function MobileCommentsSheet({ comments, commentText, setCommentText, addComment, onClose, replyingTo, setReplyingTo, isLoggedIn, slug }: {
+  comments: any[]
   commentText: string
   setCommentText: (v: string) => void
   addComment: () => void
   onClose: () => void
+  replyingTo: { id: string; user: string } | null
+  setReplyingTo: (v: { id: string; user: string } | null) => void
+  isLoggedIn: boolean
+  slug: string
 }) {
   const { t } = useI18n()
   const sheetRef = useRef<HTMLDivElement>(null)
-  const [sheetHeight, setSheetHeight] = useState(60) // percentage of viewport
+  const [sheetHeight, setSheetHeight] = useState(60)
   const [dragging, setDragging] = useState(false)
   const dragStartY = useRef(0)
   const dragStartHeight = useRef(60)
@@ -329,7 +340,6 @@ function MobileCommentsSheet({ comments, commentText, setCommentText, addComment
 
   const onTouchEnd = () => {
     setDragging(false)
-    // Snap to positions: close (<25%), half (25-80%), full (>80%)
     if (sheetHeight < 25) {
       onClose()
     } else if (sheetHeight > 80) {
@@ -362,10 +372,7 @@ function MobileCommentsSheet({ comments, commentText, setCommentText, addComment
           onTouchStart={onTouchStart}
           onTouchMove={onTouchMove}
           onTouchEnd={onTouchEnd}
-          style={{
-            display: 'flex', justifyContent: 'center', padding: '12px 0 8px',
-            cursor: 'grab', touchAction: 'none',
-          }}
+          style={{ display: 'flex', justifyContent: 'center', padding: '12px 0 8px', cursor: 'grab', touchAction: 'none' }}
         >
           <div style={{ width: 40, height: 5, borderRadius: 3, background: 'rgba(255,255,255,0.2)' }} />
         </div>
@@ -378,14 +385,10 @@ function MobileCommentsSheet({ comments, commentText, setCommentText, addComment
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             {sheetHeight < 100 && (
-              <button onClick={() => setSheetHeight(100)} style={{ width: 32, height: 32, borderRadius: '50%', background: 'rgba(255,255,255,0.06)', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#cccccc', fontSize: 14 }}>
-                ↑
-              </button>
+              <button onClick={() => setSheetHeight(100)} style={{ width: 32, height: 32, borderRadius: '50%', background: 'rgba(255,255,255,0.06)', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#cccccc', fontSize: 14 }}>↑</button>
             )}
             {sheetHeight >= 100 && (
-              <button onClick={() => setSheetHeight(60)} style={{ width: 32, height: 32, borderRadius: '50%', background: 'rgba(255,255,255,0.06)', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#cccccc', fontSize: 14 }}>
-                ↓
-              </button>
+              <button onClick={() => setSheetHeight(60)} style={{ width: 32, height: 32, borderRadius: '50%', background: 'rgba(255,255,255,0.06)', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#cccccc', fontSize: 14 }}>↓</button>
             )}
             <button onClick={onClose} style={{ width: 32, height: 32, borderRadius: '50%', background: 'rgba(255,255,255,0.06)', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#cccccc' }}>
               <X size={16} />
@@ -398,36 +401,87 @@ function MobileCommentsSheet({ comments, commentText, setCommentText, addComment
           {comments.length === 0 ? (
             <p style={{ textAlign: 'center', padding: '40px 0', color: '#cccccc', fontSize: 14, fontFamily: 'var(--font-dm-sans)' }}>No comments yet. Be the first!</p>
           ) : (
-            comments.map((comment) => (
-              <div key={comment.id} style={{ marginBottom: 20, display: 'flex', gap: 10 }}>
-                <div style={{ width: 34, height: 34, borderRadius: '50%', background: 'rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, flexShrink: 0 }}>{comment.avatar}</div>
-                <div style={{ flex: 1 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 3 }}>
-                    <span style={{ fontSize: 13, fontWeight: 600, fontFamily: 'var(--font-dm-sans)', color: 'white' }}>@{comment.user}</span>
-                    <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', fontFamily: 'var(--font-dm-sans)' }}>{comment.time}</span>
-                  </div>
-                  <p style={{ fontSize: 14, color: '#cccccc', fontFamily: 'var(--font-dm-sans)', lineHeight: 1.5, marginBottom: 8 }}>{comment.text}</p>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-                    <button style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, color: 'rgba(255,255,255,0.35)', fontFamily: 'var(--font-dm-sans)' }}><ThumbsUp size={13} /> {comment.likes}</button>
-                    <button style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 12, color: 'rgba(255,255,255,0.35)', fontFamily: 'var(--font-dm-sans)' }}>{t('Reply')}</button>
+            comments.map((comment: any) => (
+              <div key={comment.id} style={{ marginBottom: 20 }}>
+                <div style={{ display: 'flex', gap: 10 }}>
+                  <div style={{ width: 34, height: 34, borderRadius: '50%', background: 'rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, flexShrink: 0 }}>{comment.avatar}</div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 3 }}>
+                      <span style={{ fontSize: 13, fontWeight: 600, fontFamily: 'var(--font-dm-sans)', color: 'white' }}>@{comment.user}</span>
+                      <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', fontFamily: 'var(--font-dm-sans)' }}>{comment.time}</span>
+                    </div>
+                    <p style={{ fontSize: 14, color: '#cccccc', fontFamily: 'var(--font-dm-sans)', lineHeight: 1.5, marginBottom: 8 }}>{comment.text}</p>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+                      <button style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, color: 'rgba(255,255,255,0.35)', fontFamily: 'var(--font-dm-sans)' }}><ThumbsUp size={13} /> {comment.likes}</button>
+                      <button
+                        onClick={() => {
+                          if (!isLoggedIn) {
+                            window.location.href = `/login?redirect=/experience/${slug}`
+                            return
+                          }
+                          if (comment.supabaseId) {
+                            setReplyingTo({ id: comment.supabaseId, user: comment.user })
+                            setCommentText(`@${comment.user} `)
+                          }
+                        }}
+                        style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 12, color: 'rgba(255,255,255,0.35)', fontFamily: 'var(--font-dm-sans)' }}
+                      >{t('Reply')}</button>
+                    </div>
                   </div>
                 </div>
+
+                {/* Replies */}
+                {comment.replies?.length > 0 && (
+                  <div style={{ marginLeft: 44, marginTop: 10, borderLeft: '2px solid rgba(255,255,255,0.06)', paddingLeft: 12 }}>
+                    {comment.replies.map((reply: any) => (
+                      <div key={reply.id} style={{ marginBottom: 12, display: 'flex', gap: 8 }}>
+                        <div style={{ width: 26, height: 26, borderRadius: '50%', background: 'rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, flexShrink: 0 }}>{reply.avatar}</div>
+                        <div style={{ flex: 1 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 }}>
+                            <span style={{ fontSize: 12, fontWeight: 600, fontFamily: 'var(--font-dm-sans)', color: 'white' }}>@{reply.user}</span>
+                            <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.25)', fontFamily: 'var(--font-dm-sans)' }}>{reply.time}</span>
+                          </div>
+                          <p style={{ fontSize: 12.5, color: 'rgba(255,255,255,0.6)', fontFamily: 'var(--font-dm-sans)', lineHeight: 1.5 }}>{reply.text}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             ))
           )}
         </div>
 
         {/* Comment input */}
-        <div style={{ padding: '10px 20px', paddingBottom: 'max(12px, env(safe-area-inset-bottom))', borderTop: '1px solid rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
-          <div style={{ width: 30, height: 30, borderRadius: '50%', background: 'rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, flexShrink: 0 }}>🧑🏽</div>
-          <input type="text" placeholder="Add a comment..." value={commentText} onChange={(e) => setCommentText(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && addComment()}
-            style={{ flex: 1, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 9999, padding: '10px 16px', fontSize: 15, fontFamily: 'var(--font-dm-sans)', color: 'white', outline: 'none' }}
-          />
-          {commentText.trim() && (
-            <button onClick={addComment} style={{ width: 34, height: 34, borderRadius: '50%', background: '#FFFC00', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <Send size={15} color="#000" />
-            </button>
+        <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', flexShrink: 0 }}>
+          {replyingTo && (
+            <div style={{
+              padding: '6px 20px 0', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              fontSize: 12, color: 'rgba(255,255,255,0.4)', fontFamily: 'var(--font-dm-sans)',
+            }}>
+              <span>Replying to <span style={{ color: 'white', fontWeight: 600 }}>@{replyingTo.user}</span></span>
+              <button onClick={() => { setReplyingTo(null); setCommentText('') }} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 12, color: 'rgba(255,255,255,0.35)', fontFamily: 'var(--font-dm-sans)' }}>Cancel</button>
+            </div>
           )}
+          <div style={{ padding: '10px 20px', paddingBottom: 'max(12px, env(safe-area-inset-bottom))', display: 'flex', alignItems: 'center', gap: 10 }}>
+            <div style={{ width: 30, height: 30, borderRadius: '50%', background: 'rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, flexShrink: 0 }}>🧑🏽</div>
+            <input type="text"
+              placeholder={replyingTo ? `Reply to @${replyingTo.user}...` : 'Add a comment...'}
+              value={commentText} onChange={(e) => setCommentText(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && addComment()}
+              style={{
+                flex: 1, background: 'rgba(255,255,255,0.06)',
+                border: replyingTo ? '1px solid rgba(255,179,0,0.3)' : '1px solid rgba(255,255,255,0.06)',
+                borderRadius: 9999, padding: '10px 16px', fontSize: 15,
+                fontFamily: 'var(--font-dm-sans)', color: 'white', outline: 'none',
+              }}
+            />
+            {commentText.trim() && (
+              <button onClick={addComment} style={{ width: 34, height: 34, borderRadius: '50%', background: '#FFFC00', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Send size={15} color="#000" />
+              </button>
+            )}
+          </div>
         </div>
       </div>
     </div>
@@ -443,14 +497,10 @@ export default function ExperienceDetail({ slug }: { slug: string }) {
   const [activeIndex, setActiveIndex] = useState(startIdx >= 0 ? startIdx : 0)
   const [commentText, setCommentText] = useState('')
   const [mobileComments, setMobileComments] = useState(false)
-  const [allComments, setAllComments] = useState<Record<number, Comment[]>>(() => {
-    const map: Record<number, Comment[]> = {}
-    experiences.forEach((e) => { map[e.id] = [...e.comments] })
-    return map
-  })
 
   const activeExp = experiences[activeIndex]
-  const activeComments = allComments[activeExp?.id] || []
+  const { addComment: addSupabaseComment, toDisplayComments, isLoggedIn, user: currentUser, replyingTo, setReplyingTo } = useComments(activeExp?.id || 0)
+  const activeComments = activeExp ? toDisplayComments(activeExp.comments) : []
 
   useEffect(() => {
     if (scrollRef.current && startIdx >= 0) {
@@ -485,17 +535,15 @@ export default function ExperienceDetail({ slug }: { slug: string }) {
     scrollRef.current.scrollTo({ top: target * childHeight, behavior: 'smooth' })
   }
 
-  const addComment = () => {
+  const addComment = async () => {
     if (!commentText.trim() || !activeExp) return
-    const newComment: Comment = {
-      id: Date.now(), user: 'You', avatar: '🧑🏽',
-      text: commentText.trim(), time: 'Just now', likes: 0,
+    if (!isLoggedIn) {
+      window.location.href = `/login?redirect=/experience/${slugify(activeExp.title)}`
+      return
     }
-    setAllComments((prev) => ({
-      ...prev,
-      [activeExp.id]: [newComment, ...(prev[activeExp.id] || [])],
-    }))
+    await addSupabaseComment(commentText, replyingTo?.id || undefined)
     setCommentText('')
+    setReplyingTo(null)
   }
 
   if (!activeExp) {
@@ -726,38 +774,82 @@ export default function ExperienceDetail({ slug }: { slug: string }) {
             </div>
           ) : (
             activeComments.map((comment) => (
-              <div key={comment.id} style={{ marginBottom: 22, display: 'flex', gap: 10 }}>
-                <div style={{
-                  width: 34, height: 34, borderRadius: '50%',
-                  background: 'rgba(255,255,255,0.08)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: 16, flexShrink: 0,
-                }}>{comment.avatar}</div>
-                <div style={{ flex: 1 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 3 }}>
-                    <span style={{ fontSize: 13, fontWeight: 600, fontFamily: 'var(--font-dm-sans)', color: 'white' }}>
-                      @{comment.user}
-                    </span>
-                    <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', fontFamily: 'var(--font-dm-sans)' }}>
-                      {comment.time}
-                    </span>
-                  </div>
-                  <p style={{
-                    fontSize: 13.5, color: '#cccccc',
-                    fontFamily: 'var(--font-dm-sans)', lineHeight: 1.5, marginBottom: 8,
-                  }}>{comment.text}</p>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-                    <button style={{
-                      background: 'none', border: 'none', cursor: 'pointer',
-                      display: 'flex', alignItems: 'center', gap: 4,
-                      fontSize: 12, color: 'rgba(255,255,255,0.35)', fontFamily: 'var(--font-dm-sans)',
-                    }}><ThumbsUp size={12} /> {comment.likes}</button>
-                    <button style={{
-                      background: 'none', border: 'none', cursor: 'pointer',
-                      fontSize: 12, color: 'rgba(255,255,255,0.35)', fontFamily: 'var(--font-dm-sans)',
-                    }}>{t('Reply')}</button>
+              <div key={comment.id} style={{ marginBottom: 22 }}>
+                <div style={{ display: 'flex', gap: 10 }}>
+                  <div style={{
+                    width: 34, height: 34, borderRadius: '50%',
+                    background: 'rgba(255,255,255,0.08)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontSize: 16, flexShrink: 0,
+                  }}>{comment.avatar}</div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 3 }}>
+                      <span style={{ fontSize: 13, fontWeight: 600, fontFamily: 'var(--font-dm-sans)', color: 'white' }}>
+                        @{comment.user}
+                      </span>
+                      <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', fontFamily: 'var(--font-dm-sans)' }}>
+                        {comment.time}
+                      </span>
+                    </div>
+                    <p style={{
+                      fontSize: 13.5, color: '#cccccc',
+                      fontFamily: 'var(--font-dm-sans)', lineHeight: 1.5, marginBottom: 8,
+                    }}>{comment.text}</p>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+                      <button style={{
+                        background: 'none', border: 'none', cursor: 'pointer',
+                        display: 'flex', alignItems: 'center', gap: 4,
+                        fontSize: 12, color: 'rgba(255,255,255,0.35)', fontFamily: 'var(--font-dm-sans)',
+                      }}><ThumbsUp size={12} /> {comment.likes}</button>
+                      <button
+                        onClick={() => {
+                          if (!isLoggedIn && activeExp) {
+                            window.location.href = `/login?redirect=/experience/${slugify(activeExp.title)}`
+                            return
+                          }
+                          if ('supabaseId' in comment && comment.supabaseId) {
+                            setReplyingTo({ id: comment.supabaseId as string, user: comment.user })
+                            setCommentText(`@${comment.user} `)
+                          }
+                        }}
+                        style={{
+                          background: 'none', border: 'none', cursor: 'pointer',
+                          fontSize: 12, color: 'rgba(255,255,255,0.35)', fontFamily: 'var(--font-dm-sans)',
+                        }}
+                      >{t('Reply')}</button>
+                    </div>
                   </div>
                 </div>
+
+                {/* Replies */}
+                {'replies' in comment && (comment as any).replies?.length > 0 && (
+                  <div style={{ marginLeft: 44, marginTop: 12, borderLeft: '2px solid rgba(255,255,255,0.06)', paddingLeft: 14 }}>
+                    {(comment as any).replies.map((reply: any) => (
+                      <div key={reply.id} style={{ marginBottom: 14, display: 'flex', gap: 8 }}>
+                        <div style={{
+                          width: 26, height: 26, borderRadius: '50%',
+                          background: 'rgba(255,255,255,0.08)',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          fontSize: 12, flexShrink: 0,
+                        }}>{reply.avatar}</div>
+                        <div style={{ flex: 1 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 }}>
+                            <span style={{ fontSize: 12, fontWeight: 600, fontFamily: 'var(--font-dm-sans)', color: 'white' }}>
+                              @{reply.user}
+                            </span>
+                            <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.25)', fontFamily: 'var(--font-dm-sans)' }}>
+                              {reply.time}
+                            </span>
+                          </div>
+                          <p style={{
+                            fontSize: 12.5, color: 'rgba(255,255,255,0.6)',
+                            fontFamily: 'var(--font-dm-sans)', lineHeight: 1.5,
+                          }}>{reply.text}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             ))
           )}
@@ -766,41 +858,70 @@ export default function ExperienceDetail({ slug }: { slug: string }) {
         {/* Comment input */}
         <div style={{
           padding: '12px 24px', borderTop: '1px solid rgba(255,255,255,0.06)',
-          display: 'flex', alignItems: 'center', gap: 10,
         }}>
-          <div style={{
-            width: 30, height: 30, borderRadius: '50%',
-            background: 'rgba(255,255,255,0.08)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: 14, flexShrink: 0,
-          }}>🧑🏽</div>
-          <input
-            type="text"
-            placeholder="Add a comment..."
-            value={commentText}
-            onChange={(e) => setCommentText(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && addComment()}
-            style={{
-              flex: 1, background: 'rgba(255,255,255,0.06)',
-              border: '1px solid rgba(255,255,255,0.06)',
-              borderRadius: 9999,
-              padding: '9px 14px', fontSize: 13,
-              fontFamily: 'var(--font-dm-sans)',
-              color: 'white', outline: 'none',
-            }}
-          />
-          {commentText.trim() && (
-            <button
-              onClick={addComment}
-              style={{
-                width: 34, height: 34, borderRadius: '50%',
-                background: '#FFFC00', border: 'none', cursor: 'pointer',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-              }}
-            >
-              <Send size={15} color="#000" />
-            </button>
+          {/* Reply indicator */}
+          {replyingTo && (
+            <div style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              padding: '6px 0 8px',
+              fontSize: 12, color: 'rgba(255,255,255,0.4)', fontFamily: 'var(--font-dm-sans)',
+            }}>
+              <span>Replying to <span style={{ color: 'white', fontWeight: 600 }}>@{replyingTo.user}</span></span>
+              <button
+                onClick={() => { setReplyingTo(null); setCommentText('') }}
+                style={{
+                  background: 'none', border: 'none', cursor: 'pointer',
+                  fontSize: 12, color: 'rgba(255,255,255,0.35)', fontFamily: 'var(--font-dm-sans)',
+                }}
+              >
+                Cancel
+              </button>
+            </div>
           )}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <div style={{
+              width: 30, height: 30, borderRadius: '50%',
+              background: 'rgba(255,255,255,0.08)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: 14, flexShrink: 0, overflow: 'hidden',
+            }}>
+              {currentUser?.user_metadata?.avatar_url ? (
+                <img src={currentUser.user_metadata.avatar_url} alt="" width={30} height={30} style={{ objectFit: 'cover' }} />
+              ) : '🧑🏽'}
+            </div>
+            <input
+              type="text"
+              placeholder={isLoggedIn ? (replyingTo ? `Reply to @${replyingTo.user}...` : 'Add a comment...') : 'Sign in to comment...'}
+              value={commentText}
+              onChange={(e) => setCommentText(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && addComment()}
+              onFocus={() => {
+                if (!isLoggedIn && activeExp) {
+                  window.location.href = `/login?redirect=/experience/${slugify(activeExp.title)}`
+                }
+              }}
+              style={{
+                flex: 1, background: 'rgba(255,255,255,0.06)',
+                border: replyingTo ? '1px solid rgba(255,179,0,0.3)' : '1px solid rgba(255,255,255,0.06)',
+                borderRadius: 9999,
+                padding: '9px 14px', fontSize: 13,
+                fontFamily: 'var(--font-dm-sans)',
+                color: 'white', outline: 'none',
+              }}
+            />
+            {commentText.trim() && (
+              <button
+                onClick={addComment}
+                style={{
+                  width: 34, height: 34, borderRadius: '50%',
+                  background: '#FFFC00', border: 'none', cursor: 'pointer',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                }}
+              >
+                <Send size={15} color="#000" />
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
@@ -862,6 +983,10 @@ export default function ExperienceDetail({ slug }: { slug: string }) {
           setCommentText={setCommentText}
           addComment={addComment}
           onClose={() => setMobileComments(false)}
+          replyingTo={replyingTo}
+          setReplyingTo={setReplyingTo}
+          isLoggedIn={isLoggedIn}
+          slug={activeExp ? slugify(activeExp.title) : ''}
         />
       )}
     </div>

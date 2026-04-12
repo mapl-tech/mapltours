@@ -426,11 +426,13 @@ export default function FeedView() {
         {/* Video background */}
         <video
           autoPlay muted loop playsInline
+          preload="metadata"
           poster={HERO_IMAGE}
           style={{
             position: 'absolute', inset: 0,
             width: '100%', height: '100%',
             objectFit: 'cover', objectPosition: 'center 35%',
+            willChange: 'transform',
           }}
         >
           <source src={HERO_VIDEO} type="video/mp4" />

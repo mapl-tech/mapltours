@@ -1,12 +1,15 @@
 'use client'
 
 import Link from 'next/link'
+import Image from 'next/image'
 import { usePathname, useRouter } from 'next/navigation'
 import { useCartStore } from '@/lib/cart'
 import { useState, useEffect, useRef } from 'react'
 import { Search, Leaf, MapPin, ShoppingBag } from 'lucide-react'
 import LanguageSwitcher from './LanguageSwitcher'
 import { useI18n } from '@/lib/i18n'
+import { createClient } from '@/lib/supabase/client'
+import type { User } from '@supabase/supabase-js'
 
 const destinations = [
   { name: 'Negril', parish: 'Westmoreland' },
@@ -35,6 +38,8 @@ export default function TopNav({ onCartClick }: { onCartClick?: () => void }) {
   const dateRef = useRef<HTMLInputElement>(null)
   const lastScrollY = useRef(0)
   const { t } = useI18n()
+  const [user, setUser] = useState<User | null>(null)
+  const supabase = createClient()
   const isHome = pathname === '/'
   const isExperience = pathname.startsWith('/experience')
   const isCheckout = pathname.startsWith('/checkout')
@@ -57,6 +62,14 @@ export default function TopNav({ onCartClick }: { onCartClick?: () => void }) {
     window.addEventListener('scroll', onScroll, { passive: true })
     return () => window.removeEventListener('scroll', onScroll)
   }, [])
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data: { user } }) => setUser(user))
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (_event, session) => setUser(session?.user ?? null)
+    )
+    return () => subscription.unsubscribe()
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Close dropdowns on outside click
   useEffect(() => {
@@ -398,13 +411,31 @@ export default function TopNav({ onCartClick }: { onCartClick?: () => void }) {
           </button>
         </div>}
 
-        {/* ── Mobile language row ── */}
+        {/* ── Mobile language + profile row ── */}
         <div className="hide-desktop nav-lang-row" style={{
           position: 'absolute', top: 0, left: 0, right: 0,
           height: 32, display: 'flex', alignItems: 'center', justifyContent: 'flex-end',
-          paddingRight: 16,
+          paddingRight: 16, gap: 8,
         }}>
           <LanguageSwitcher dark={dark} />
+          <Link href={user ? '/profile' : '/login'} style={{
+            width: 26, height: 26, borderRadius: '50%',
+            overflow: 'hidden', flexShrink: 0,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            background: user?.user_metadata?.avatar_url
+              ? 'transparent'
+              : dark ? 'rgba(255,255,255,0.12)' : 'var(--surface)',
+            border: dark ? '1px solid rgba(255,255,255,0.16)' : '1px solid var(--border-strong)',
+          }}>
+            {user?.user_metadata?.avatar_url ? (
+              <Image src={user.user_metadata.avatar_url} alt="" width={26} height={26} style={{ objectFit: 'cover' }} />
+            ) : (
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={dark ? 'rgba(255,255,255,0.7)' : 'var(--text-secondary)'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                <circle cx="12" cy="7" r="4" />
+              </svg>
+            )}
+          </Link>
         </div>
 
         {/* ── Right ── */}
@@ -422,7 +453,7 @@ export default function TopNav({ onCartClick }: { onCartClick?: () => void }) {
 
           <div className="hide-mobile"><LanguageSwitcher dark={dark} /></div>
 
-          {items.length > 0 ? (
+          {items.length > 0 && (
             <button
               onClick={onCartClick}
               style={{
@@ -449,18 +480,32 @@ export default function TopNav({ onCartClick }: { onCartClick?: () => void }) {
                 {items.length}
               </span>
             </button>
-          ) : (
-            <Link
-              href="/profile"
-              style={{
-                padding: '6px 12px', fontSize: 13, fontWeight: 500,
-                fontFamily: 'var(--font-dm-sans)', color: linkColor,
-                borderRadius: 9999, transition: 'color 0.15s ease',
-              }}
-            >
-              {t('Profile')}
-            </Link>
           )}
+
+          {/* Profile icon — always visible on desktop */}
+          <Link
+            href={user ? '/profile' : '/login'}
+            className="hide-mobile"
+            style={{
+              width: 32, height: 32, borderRadius: '50%',
+              overflow: 'hidden', flexShrink: 0,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              background: user?.user_metadata?.avatar_url
+                ? 'transparent'
+                : dark ? 'rgba(255,255,255,0.1)' : 'var(--surface)',
+              border: dark ? '1.5px solid rgba(255,255,255,0.2)' : '1.5px solid var(--border-strong)',
+              transition: 'all 0.15s ease',
+            }}
+          >
+            {user?.user_metadata?.avatar_url ? (
+              <Image src={user.user_metadata.avatar_url} alt="" width={32} height={32} style={{ objectFit: 'cover' }} />
+            ) : (
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={dark ? 'rgba(255,255,255,0.7)' : 'var(--text-secondary)'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                <circle cx="12" cy="7" r="4" />
+              </svg>
+            )}
+          </Link>
         </div>
       </div>
     </header>

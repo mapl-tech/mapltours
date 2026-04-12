@@ -74,6 +74,28 @@ body {
 a { text-decoration: none; color: inherit; }
 img { display: block; max-width: 100%; }
 
+/* GPU acceleration for video containers and animated elements */
+video {
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+}
+.photo-card, .exp-card {
+  will-change: transform;
+  transform: translateZ(0);
+}
+/* Reduce paint on scroll containers */
+.no-scrollbar {
+  -webkit-overflow-scrolling: touch;
+}
+.scroll-x {
+  -webkit-overflow-scrolling: touch;
+}
+/* Composited layers for fixed elements */
+.nav-header {
+  will-change: transform;
+  transform: translateZ(0);
+}
+
 /* ═══════════════════════════════════
    TYPOGRAPHY SCALE
    ═══════════════════════════════════ */

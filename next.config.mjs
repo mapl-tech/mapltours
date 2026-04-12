@@ -18,6 +18,7 @@ const nextConfig = {
       { protocol: 'https', hostname: 'oaccessjamaica.com' },
       { protocol: 'https', hostname: 'media.tacdn.com' },
       { protocol: 'https', hostname: 'mobayvacations.com' },
+      { protocol: 'https', hostname: 'lh3.googleusercontent.com' },
     ],
     formats: ['image/avif', 'image/webp'],
     minimumCacheTTL: 60 * 60 * 24 * 30, // 30 days
@@ -27,6 +28,20 @@ const nextConfig = {
   compress: true,
   poweredByHeader: false,
   reactStrictMode: true,
+  headers: async () => [
+    {
+      source: '/:path*.mp4',
+      headers: [
+        { key: 'Cache-Control', value: 'public, max-age=31536000, immutable' },
+      ],
+    },
+    {
+      source: '/:path*.webm',
+      headers: [
+        { key: 'Cache-Control', value: 'public, max-age=31536000, immutable' },
+      ],
+    },
+  ],
 };
 
 export default nextConfig;

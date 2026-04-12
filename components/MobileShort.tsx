@@ -1,6 +1,6 @@
 'use client'
 
-import { useRef, useEffect, useState } from 'react'
+import { useRef, useEffect, useState, memo } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { Experience, slugify } from '@/lib/experiences'
@@ -8,7 +8,7 @@ import { useI18n } from '@/lib/i18n'
 import { useCartStore } from '@/lib/cart'
 import { Plus, Check, Star, MapPin, Clock, Play } from 'lucide-react'
 
-export default function MobileShort({ exp }: { exp: Experience }) {
+export default memo(function MobileShort({ exp }: { exp: Experience }) {
   const { addItem, removeItem, isInCart } = useCartStore()
   const { t, formatPrice } = useI18n()
   const inCart = isInCart(exp.id)
@@ -20,8 +20,9 @@ export default function MobileShort({ exp }: { exp: Experience }) {
   const [videoMounted, setVideoMounted] = useState(false)
   const [isPlaying, setIsPlaying] = useState(false)
   const playAttempted = useRef(false)
+  const retryTimer = useRef<ReturnType<typeof setTimeout>>()
 
-  // Intersection Observer - low threshold for early detection
+  // Intersection Observer — generous rootMargin for early video loading
   useEffect(() => {
     const el = containerRef.current
     if (!el) return
@@ -32,66 +33,75 @@ export default function MobileShort({ exp }: { exp: Experience }) {
         setIsVisible(visible)
 
         if (visible) {
-          // Mount the video element
           setVideoMounted(true)
-        } else if (videoRef.current) {
-          videoRef.current.pause()
-          setIsPlaying(false)
+        } else {
+          // Pause and reset when off-screen
+          if (videoRef.current) {
+            videoRef.current.pause()
+            setIsPlaying(false)
+          }
           playAttempted.current = false
         }
       },
-      { threshold: 0.15, rootMargin: '100px 0px' }
+      { threshold: 0.1, rootMargin: '200px 0px' }
     )
 
     observer.observe(el)
     return () => observer.disconnect()
   }, [])
 
-  // Play video whenever it becomes visible and is mounted
+  // Play video when visible
   useEffect(() => {
     if (!isVisible || !videoMounted) return
     const video = videoRef.current
-    if (!video) return
-    if (playAttempted.current) return
+    if (!video || playAttempted.current) return
 
     const onPlaying = () => setIsPlaying(true)
     video.addEventListener('playing', onPlaying)
 
     const attemptPlay = () => {
       playAttempted.current = true
-      // Ensure muted for autoplay policy
       video.muted = true
       video.play()
         .then(() => setIsPlaying(true))
         .catch(() => {
-          // Retry once after short delay
-          setTimeout(() => {
+          // Retry with increasing delay
+          retryTimer.current = setTimeout(() => {
             video.muted = true
             video.play()
               .then(() => setIsPlaying(true))
-              .catch(() => {}) // Give up - show image
-          }, 300)
+              .catch(() => {
+                // Final retry
+                retryTimer.current = setTimeout(() => {
+                  video.muted = true
+                  video.play().then(() => setIsPlaying(true)).catch(() => {})
+                }, 500)
+              })
+          }, 200)
         })
     }
 
-    // Try immediately, or wait for data
     if (video.readyState >= 2) {
       attemptPlay()
     } else {
       video.addEventListener('loadeddata', attemptPlay, { once: true })
-      // Also set a timeout fallback
+      // Timeout fallback for slow connections
       const timeout = setTimeout(() => {
         if (!playAttempted.current && video.readyState >= 1) {
           attemptPlay()
         }
-      }, 1000)
+      }, 2000)
       return () => {
         clearTimeout(timeout)
+        if (retryTimer.current) clearTimeout(retryTimer.current)
         video.removeEventListener('playing', onPlaying)
       }
     }
 
-    return () => video.removeEventListener('playing', onPlaying)
+    return () => {
+      if (retryTimer.current) clearTimeout(retryTimer.current)
+      video.removeEventListener('playing', onPlaying)
+    }
   }, [isVisible, videoMounted])
 
   return (
@@ -104,6 +114,8 @@ export default function MobileShort({ exp }: { exp: Experience }) {
           overflow: 'hidden',
           background: '#000',
           boxShadow: '0 8px 32px rgba(0,0,0,0.12)',
+          willChange: 'transform',
+          transform: 'translateZ(0)',
         }}>
           {/* Static image — shows until video plays */}
           <Image
@@ -116,11 +128,11 @@ export default function MobileShort({ exp }: { exp: Experience }) {
             style={{
               objectFit: 'cover',
               opacity: isPlaying ? 0 : 1,
-              transition: 'opacity 0.4s ease',
+              transition: 'opacity 0.3s ease',
             }}
           />
 
-          {/* Video — loads when first visible, plays/pauses based on viewport */}
+          {/* Video — mounts when near viewport, plays when visible */}
           {videoMounted && (
             <video
               ref={videoRef}
@@ -135,7 +147,8 @@ export default function MobileShort({ exp }: { exp: Experience }) {
                 width: '100%', height: '100%',
                 objectFit: 'cover',
                 opacity: isPlaying ? 1 : 0,
-                transition: 'opacity 0.4s ease',
+                transition: 'opacity 0.3s ease',
+                willChange: 'opacity',
               }}
             />
           )}
@@ -147,7 +160,7 @@ export default function MobileShort({ exp }: { exp: Experience }) {
             pointerEvents: 'none',
           }} />
 
-          {/* Bottom gradient — richer for mobile readability */}
+          {/* Bottom gradient */}
           <div style={{
             position: 'absolute', bottom: 0, left: 0, right: 0, height: '60%',
             background: 'linear-gradient(0deg, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.3) 50%, transparent 100%)',
@@ -194,12 +207,11 @@ export default function MobileShort({ exp }: { exp: Experience }) {
             {inCart ? <Check size={15} strokeWidth={2.5} /> : <Plus size={15} strokeWidth={2} />}
           </button>
 
-          {/* Bottom info — generous editorial spacing */}
+          {/* Bottom info */}
           <div style={{
             position: 'absolute', bottom: 0, left: 0, right: 0,
             padding: '0 16px 18px', zIndex: 2,
           }}>
-            {/* Creator */}
             <p style={{
               fontSize: 12, fontWeight: 600, color: 'rgba(255,255,255,0.6)',
               fontFamily: 'var(--font-dm-sans)', marginBottom: 6,
@@ -208,7 +220,6 @@ export default function MobileShort({ exp }: { exp: Experience }) {
               @{exp.creator}
             </p>
 
-            {/* Title */}
             <h3 style={{
               fontFamily: 'var(--font-syne)', fontWeight: 700,
               fontSize: 17, color: 'white', lineHeight: 1.2,
@@ -219,7 +230,6 @@ export default function MobileShort({ exp }: { exp: Experience }) {
               {t(exp.title)}
             </h3>
 
-            {/* Meta row */}
             <div style={{
               display: 'flex', alignItems: 'center', gap: 10,
               fontSize: 11.5, color: '#cccccc', fontFamily: 'var(--font-dm-sans)',
@@ -237,7 +247,6 @@ export default function MobileShort({ exp }: { exp: Experience }) {
               </span>
             </div>
 
-            {/* Price + CTA */}
             <div style={{
               display: 'flex', alignItems: 'center',
               gap: 12, marginTop: 4,
@@ -273,4 +282,4 @@ export default function MobileShort({ exp }: { exp: Experience }) {
       </Link>
     </div>
   )
-}
+})

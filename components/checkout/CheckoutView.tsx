@@ -268,12 +268,15 @@ function DetailsStep({ waiverAccepted, setWaiverAccepted, waiverError, formData,
   setFormData: (d: Record<string, string>) => void
   formErrors: Record<string, boolean>
 }) {
-  const { items, updateTravelers } = useCartStore()
+  const { items, updateTravelers, setPickup, setDropoff } = useCartStore()
   const { t } = useI18n()
   const [modalContent, setModalContent] = useState<'waiver' | 'terms' | null>(null)
 
   const updateField = (key: string, value: string) => {
     setFormData({ ...formData, [key]: value })
+    // Sync pickup/dropoff to cart store so guide fee includes travel time
+    if (key === 'pickup') setPickup(value)
+    if (key === 'dropoff') setDropoff(value)
   }
   return (
     <div>
