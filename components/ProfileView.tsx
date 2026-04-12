@@ -3,6 +3,7 @@
 import Image from 'next/image'
 import { useCartStore } from '@/lib/cart'
 import { experiences } from '@/lib/experiences'
+import { useI18n } from '@/lib/i18n'
 
 const pastTrips = [
   { title: "Rick's Cafe Cliff Diving", destination: 'Negril', date: 'Dec 2024', rating: 5, image: experiences[0].image },
@@ -18,6 +19,7 @@ const savedCreators = [
 
 export default function ProfileView() {
   const items = useCartStore((s) => s.items)
+  const { t } = useI18n()
 
   return (
     <div style={{ minHeight: '100vh', paddingTop: 72 }}>
@@ -53,7 +55,7 @@ export default function ProfileView() {
           display: 'flex', borderRadius: 'var(--r-lg)', overflow: 'hidden',
           border: '1px solid var(--border)', marginBottom: 32,
         }}>
-          {[{ label: 'Trips', value: '3' }, { label: 'Parishes', value: '4' }, { label: 'Saved', value: '12' }].map((s, i) => (
+          {[{ label: t('Trips'), value: '3' }, { label: t('Parishes'), value: '4' }, { label: t('Saved'), value: '12' }].map((s, i) => (
             <div key={s.label} style={{
               flex: 1, textAlign: 'center', padding: '22px 0', background: '#fff',
               borderRight: i < 2 ? '1px solid var(--border)' : 'none',
@@ -74,7 +76,7 @@ export default function ProfileView() {
         {/* ── Sections ── */}
         {[
           {
-            title: 'Upcoming trips',
+            title: t('Upcoming trips'),
             content: items.length === 0
               ? <div className="surface-card" style={{ padding: 36, textAlign: 'center' }}><p style={{ fontSize: 13, color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-sans)' }}>No upcoming trips. Start exploring! 🌴</p></div>
               : items.map((item) => (
@@ -90,7 +92,7 @@ export default function ProfileView() {
               )),
           },
           {
-            title: 'Past trips',
+            title: t('Past trips'),
             content: pastTrips.map((t) => (
               <div key={t.title} className="surface-card" style={{ padding: '16px 18px', display: 'flex', alignItems: 'center', gap: 14, marginBottom: 10 }}>
                 <div style={{ width: 48, height: 48, borderRadius: 'var(--r-md)', overflow: 'hidden', flexShrink: 0, position: 'relative' }}>
@@ -105,7 +107,7 @@ export default function ProfileView() {
             )),
           },
           {
-            title: 'Saved creators',
+            title: t('Saved creators'),
             content: savedCreators.map((c) => (
               <div key={c.handle} className="surface-card" style={{ padding: '16px 18px', display: 'flex', alignItems: 'center', gap: 14, marginBottom: 10 }}>
                 <div style={{ width: 40, height: 40, borderRadius: '50%', overflow: 'hidden', flexShrink: 0, position: 'relative' }}>

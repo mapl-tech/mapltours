@@ -847,7 +847,7 @@ export default function CheckoutView() {
             </div>
 
             <div style={{ padding: '16px 24px', background: 'var(--bg-warm)', borderTop: '1px solid var(--border)' }}>
-              {[{ l: 'Subtotal', v: subtotal() }, { l: 'Booking fee (5%)', v: fee() }].map((r) => (
+              {[{ l: t('Subtotal'), v: subtotal() }, { l: t('Booking fee (5%)'), v: fee() }].map((r) => (
                 <div key={r.l} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13.5, fontFamily: 'var(--font-dm-sans)', color: 'var(--text-secondary)', marginBottom: 6 }}>
                   <span>{r.l}</span><span>{formatPrice(r.v)}</span>
                 </div>

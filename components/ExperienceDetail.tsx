@@ -284,6 +284,7 @@ function MobileCommentsSheet({ comments, commentText, setCommentText, addComment
   addComment: () => void
   onClose: () => void
 }) {
+  const { t } = useI18n()
   const sheetRef = useRef<HTMLDivElement>(null)
   const [sheetHeight, setSheetHeight] = useState(60) // percentage of viewport
   const [dragging, setDragging] = useState(false)
@@ -386,7 +387,7 @@ function MobileCommentsSheet({ comments, commentText, setCommentText, addComment
                   <p style={{ fontSize: 14, color: '#cccccc', fontFamily: 'var(--font-dm-sans)', lineHeight: 1.5, marginBottom: 8 }}>{comment.text}</p>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
                     <button style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, color: 'rgba(255,255,255,0.35)', fontFamily: 'var(--font-dm-sans)' }}><ThumbsUp size={13} /> {comment.likes}</button>
-                    <button style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 12, color: 'rgba(255,255,255,0.35)', fontFamily: 'var(--font-dm-sans)' }}>Reply</button>
+                    <button style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 12, color: 'rgba(255,255,255,0.35)', fontFamily: 'var(--font-dm-sans)' }}>{t('Reply')}</button>
                   </div>
                 </div>
               </div>
@@ -414,6 +415,7 @@ function MobileCommentsSheet({ comments, commentText, setCommentText, addComment
 export default function ExperienceDetail({ slug }: { slug: string }) {
   const router = useRouter()
   const items = useCartStore((s) => s.items)
+  const { t } = useI18n()
   const scrollRef = useRef<HTMLDivElement>(null)
   const startIdx = experiences.findIndex((e) => slugify(e.title) === slug)
   const [activeIndex, setActiveIndex] = useState(startIdx >= 0 ? startIdx : 0)
@@ -720,7 +722,7 @@ export default function ExperienceDetail({ slug }: { slug: string }) {
                     <button style={{
                       background: 'none', border: 'none', cursor: 'pointer',
                       fontSize: 12, color: 'rgba(255,255,255,0.35)', fontFamily: 'var(--font-dm-sans)',
-                    }}>Reply</button>
+                    }}>{t('Reply')}</button>
                   </div>
                 </div>
               </div>

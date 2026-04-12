@@ -400,7 +400,8 @@ export default function TopNav({ onCartClick }: { onCartClick?: () => void }) {
         {/* ── Mobile language row ── */}
         <div className="hide-desktop nav-lang-row" style={{
           position: 'absolute', top: 0, left: 0, right: 0,
-          height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center',
+          height: 32, display: 'flex', alignItems: 'center', justifyContent: 'flex-end',
+          paddingRight: 16,
           borderBottom: dark ? 'none' : '1px solid var(--border)',
         }}>
           <LanguageSwitcher dark={dark} />
