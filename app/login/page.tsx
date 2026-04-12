@@ -1,12 +1,20 @@
 'use client'
 
-import { useState } from 'react'
+import { Suspense, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { getSafeRedirect } from '@/lib/safe-redirect'
 
 export default function LoginPage() {
+  return (
+    <Suspense>
+      <LoginContent />
+    </Suspense>
+  )
+}
+
+function LoginContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const redirect = getSafeRedirect(searchParams.get('redirect'))

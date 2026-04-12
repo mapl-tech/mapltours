@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next'
 import { Playfair_Display, DM_Sans } from 'next/font/google'
+import Script from 'next/script'
 import './globals.css'
 import LayoutShell from '@/components/LayoutShell'
 
@@ -193,27 +194,6 @@ export default function RootLayout({
       <head>
         <JsonLd />
         <meta name="google-site-verification" content="NfZAf4Mh4YPVRIeaJT6pHB57jI10V5fTXOgX2WT4k3U" />
-        <script async src="https://www.googletagmanager.com/gtag/js?id=G-2JVWPL4GBE" />
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `window.dataLayer = window.dataLayer || [];
-function gtag(){dataLayer.push(arguments);}
-gtag('js', new Date());
-gtag('config', 'G-2JVWPL4GBE');`,
-          }}
-        />
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `(function(h,o,t,j,a,r){
-h.hj=h.hj||function(){(h.hj.q=h.hj.q||[]).push(arguments)};
-h._hjSettings={hjid:6688839,hjsv:6};
-a=o.getElementsByTagName('head')[0];
-r=o.createElement('script');r.async=1;
-r.src=t+h._hjSettings.hjid+j+h._hjSettings.hjsv;
-a.appendChild(r);
-})(window,document,'https://static.hotjar.com/c/hotjar-','.js?sv=');`,
-          }}
-        />
         <link rel="preconnect" href="https://images.pexels.com" crossOrigin="anonymous" />
         <link rel="preconnect" href="https://images.unsplash.com" crossOrigin="anonymous" />
         <link rel="preconnect" href="https://videos.pexels.com" crossOrigin="anonymous" />
@@ -222,6 +202,23 @@ a.appendChild(r);
       </head>
       <body className={`${playfair.variable} ${dmSans.variable}`}>
         <LayoutShell>{children}</LayoutShell>
+        <Script src="https://www.googletagmanager.com/gtag/js?id=G-2JVWPL4GBE" strategy="afterInteractive" />
+        <Script id="gtag-init" strategy="afterInteractive">
+          {`window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments);}
+gtag('js', new Date());
+gtag('config', 'G-2JVWPL4GBE');`}
+        </Script>
+        <Script id="hotjar" strategy="afterInteractive">
+          {`(function(h,o,t,j,a,r){
+h.hj=h.hj||function(){(h.hj.q=h.hj.q||[]).push(arguments)};
+h._hjSettings={hjid:6688839,hjsv:6};
+a=o.getElementsByTagName('head')[0];
+r=o.createElement('script');r.async=1;
+r.src=t+h._hjSettings.hjid+j+h._hjSettings.hjsv;
+a.appendChild(r);
+})(window,document,'https://static.hotjar.com/c/hotjar-','.js?sv=');`}
+        </Script>
       </body>
     </html>
   )

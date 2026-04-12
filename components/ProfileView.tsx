@@ -240,7 +240,6 @@ export default function ProfileView() {
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   const displayName = profile.name || user?.user_metadata?.full_name || user?.user_metadata?.name || 'Traveler'
-  const firstName = displayName.split(' ')[0]
   const avatarUrl = profile.avatar_url || user?.user_metadata?.avatar_url
   const email = user?.email || ''
   const memberSince = user?.created_at

@@ -2,12 +2,12 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import { experiences, Comment, Experience, slugify } from '@/lib/experiences'
+import { experiences, Experience, slugify } from '@/lib/experiences'
 import { useI18n } from '@/lib/i18n'
 import { useCartStore } from '@/lib/cart'
 import Link from 'next/link'
 import { Heart, MessageCircle, Plus, Check, Play, ChevronLeft, ChevronRight, X, ThumbsUp, Send, MapPin, Star, Clock, ShoppingBag } from 'lucide-react'
-import { useExperienceLike, useComments } from '@/lib/supabase/hooks'
+import { useExperienceLike, useComments, DisplayComment } from '@/lib/supabase/hooks'
 
 /* ── Single Reel (Snapchat style) ── */
 function Reel({ exp, isActive, totalCount, currentIndex }: { exp: Experience; isActive: boolean; totalCount: number; currentIndex: number }) {
@@ -307,7 +307,7 @@ function Reel({ exp, isActive, totalCount, currentIndex }: { exp: Experience; is
    ═══════════════════════════════════ */
 /* ── Draggable Mobile Comments Sheet ── */
 function MobileCommentsSheet({ comments, commentText, setCommentText, addComment, onClose, replyingTo, setReplyingTo, isLoggedIn, slug }: {
-  comments: any[]
+  comments: DisplayComment[]
   commentText: string
   setCommentText: (v: string) => void
   addComment: () => void
@@ -401,7 +401,7 @@ function MobileCommentsSheet({ comments, commentText, setCommentText, addComment
           {comments.length === 0 ? (
             <p style={{ textAlign: 'center', padding: '40px 0', color: '#cccccc', fontSize: 14, fontFamily: 'var(--font-dm-sans)' }}>No comments yet. Be the first!</p>
           ) : (
-            comments.map((comment: any) => (
+            comments.map((comment) => (
               <div key={comment.id} style={{ marginBottom: 20 }}>
                 <div style={{ display: 'flex', gap: 10 }}>
                   <div style={{ width: 34, height: 34, borderRadius: '50%', background: 'rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, flexShrink: 0 }}>{comment.avatar}</div>
@@ -431,9 +431,9 @@ function MobileCommentsSheet({ comments, commentText, setCommentText, addComment
                 </div>
 
                 {/* Replies */}
-                {comment.replies?.length > 0 && (
+                {comment.replies && comment.replies.length > 0 && (
                   <div style={{ marginLeft: 44, marginTop: 10, borderLeft: '2px solid rgba(255,255,255,0.06)', paddingLeft: 12 }}>
-                    {comment.replies.map((reply: any) => (
+                    {comment.replies.map((reply) => (
                       <div key={reply.id} style={{ marginBottom: 12, display: 'flex', gap: 8 }}>
                         <div style={{ width: 26, height: 26, borderRadius: '50%', background: 'rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, flexShrink: 0 }}>{reply.avatar}</div>
                         <div style={{ flex: 1 }}>
@@ -807,8 +807,8 @@ export default function ExperienceDetail({ slug }: { slug: string }) {
                             window.location.href = `/login?redirect=/experience/${slugify(activeExp.title)}`
                             return
                           }
-                          if ('supabaseId' in comment && comment.supabaseId) {
-                            setReplyingTo({ id: comment.supabaseId as string, user: comment.user })
+                          if (comment.supabaseId) {
+                            setReplyingTo({ id: comment.supabaseId, user: comment.user })
                             setCommentText(`@${comment.user} `)
                           }
                         }}
@@ -822,9 +822,9 @@ export default function ExperienceDetail({ slug }: { slug: string }) {
                 </div>
 
                 {/* Replies */}
-                {'replies' in comment && (comment as any).replies?.length > 0 && (
+                {comment.replies && comment.replies.length > 0 && (
                   <div style={{ marginLeft: 44, marginTop: 12, borderLeft: '2px solid rgba(255,255,255,0.06)', paddingLeft: 14 }}>
-                    {(comment as any).replies.map((reply: any) => (
+                    {comment.replies.map((reply) => (
                       <div key={reply.id} style={{ marginBottom: 14, display: 'flex', gap: 8 }}>
                         <div style={{
                           width: 26, height: 26, borderRadius: '50%',
@@ -885,6 +885,7 @@ export default function ExperienceDetail({ slug }: { slug: string }) {
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               fontSize: 14, flexShrink: 0, overflow: 'hidden',
             }}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
               {currentUser?.user_metadata?.avatar_url ? (
                 <img src={currentUser.user_metadata.avatar_url} alt="" width={30} height={30} style={{ objectFit: 'cover' }} />
               ) : '🧑🏽'}
