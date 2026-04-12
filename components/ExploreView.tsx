@@ -64,9 +64,9 @@ export default function ExploreView() {
   }, [search, activeCat, activeParish])
 
   return (
-    <div style={{ minHeight: '100vh', paddingTop: 56 }}>
+    <div className="page-top-mobile" style={{ minHeight: '100vh', paddingTop: 56 }}>
       {/* Sticky filters */}
-      <div style={{
+      <div className="explore-sticky-bar" style={{
         position: 'sticky', top: 56, zIndex: 20,
         background: 'rgba(255,255,255,0.97)',
         backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)',

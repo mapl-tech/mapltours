@@ -17,21 +17,20 @@ export default function MobileShort({ exp }: { exp: Experience }) {
   const containerRef = useRef<HTMLDivElement>(null)
   const videoRef = useRef<HTMLVideoElement>(null)
   const [isVisible, setIsVisible] = useState(false)
-  const [videoLoaded, setVideoLoaded] = useState(false)
+  const [videoReady, setVideoReady] = useState(false)
+  const [isPlaying, setIsPlaying] = useState(false)
 
-  // Intersection Observer — play when 30% visible (lower threshold for tall cards)
+  // Intersection Observer
   useEffect(() => {
     const el = containerRef.current
     if (!el) return
 
     const observer = new IntersectionObserver(
       ([entry]) => {
-        const visible = entry.isIntersecting
-        setIsVisible(visible)
-        if (visible) {
-          setVideoLoaded(true)
-        } else if (videoRef.current) {
+        setIsVisible(entry.isIntersecting)
+        if (!entry.isIntersecting && videoRef.current) {
           videoRef.current.pause()
+          setIsPlaying(false)
         }
       },
       { threshold: 0.3 }
@@ -41,24 +40,34 @@ export default function MobileShort({ exp }: { exp: Experience }) {
     return () => observer.disconnect()
   }, [])
 
-  // Play video after it's loaded and visible
+  // Load and play video when visible
   useEffect(() => {
-    if (isVisible && videoLoaded && videoRef.current) {
-      const video = videoRef.current
-      // Wait for video to be ready
-      const tryPlay = () => {
-        video.play().catch(() => {
-          // Retry after a short delay if play fails
-          setTimeout(() => video.play().catch(() => {}), 500)
-        })
-      }
-      if (video.readyState >= 2) {
-        tryPlay()
-      } else {
-        video.addEventListener('canplay', tryPlay, { once: true })
-      }
+    if (!isVisible) return
+    setVideoReady(true)
+  }, [isVisible])
+
+  // Attempt play when video element is ready and visible
+  useEffect(() => {
+    if (!isVisible || !videoReady || !videoRef.current) return
+    const video = videoRef.current
+
+    const onPlaying = () => setIsPlaying(true)
+    video.addEventListener('playing', onPlaying)
+
+    const tryPlay = () => {
+      video.play().then(() => setIsPlaying(true)).catch(() => {
+        // Mobile browsers may block autoplay - keep image showing
+      })
     }
-  }, [isVisible, videoLoaded])
+
+    if (video.readyState >= 3) {
+      tryPlay()
+    } else {
+      video.addEventListener('canplay', tryPlay, { once: true })
+    }
+
+    return () => video.removeEventListener('playing', onPlaying)
+  }, [isVisible, videoReady])
 
   return (
     <div ref={containerRef}>
@@ -81,25 +90,25 @@ export default function MobileShort({ exp }: { exp: Experience }) {
             loading="lazy"
             style={{
               objectFit: 'cover',
-              opacity: isVisible && videoLoaded ? 0 : 1,
+              opacity: isPlaying ? 0 : 1,
               transition: 'opacity 0.4s ease',
             }}
           />
 
           {/* Video — loads when first visible, plays/pauses based on viewport */}
-          {videoLoaded && (
+          {videoReady && (
             <video
               ref={videoRef}
               src={exp.video}
               muted
               loop
               playsInline
-              preload="metadata"
+              preload="auto"
               style={{
                 position: 'absolute', inset: 0,
                 width: '100%', height: '100%',
                 objectFit: 'cover',
-                opacity: isVisible ? 1 : 0,
+                opacity: isPlaying ? 1 : 0,
                 transition: 'opacity 0.4s ease',
               }}
             />
@@ -120,7 +129,7 @@ export default function MobileShort({ exp }: { exp: Experience }) {
           }} />
 
           {/* Play icon — only shows when video is NOT playing */}
-          {!isVisible && (
+          {!isPlaying && (
             <div style={{
               position: 'absolute', top: '40%', left: '50%', transform: 'translate(-50%, -50%)',
               width: 44, height: 44, borderRadius: '50%',

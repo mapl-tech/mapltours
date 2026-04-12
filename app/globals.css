@@ -233,6 +233,16 @@ img { display: block; max-width: 100%; }
     padding-right: 16px !important;
   }
 
+  /* ── Nav — two rows on mobile ── */
+  .nav-header {
+    height: 84px !important;
+    flex-wrap: wrap !important;
+    padding-top: 32px !important;
+  }
+  .nav-lang-row {
+    background: inherit;
+  }
+
   /* ── Hero on mobile ── */
   .hero-section {
     aspect-ratio: 1 / 1 !important;
@@ -370,6 +380,14 @@ img { display: block; max-width: 100%; }
   /* ── Experience cards — no lift on mobile (tap instead) ── */
   .exp-card:hover {
     transform: none !important;
+  }
+
+  /* ── Page top padding for taller mobile nav ── */
+  .page-top-mobile {
+    padding-top: 84px !important;
+  }
+  .explore-sticky-bar {
+    top: 84px !important;
   }
 
   /* ── Checkout — stack gracefully ── */

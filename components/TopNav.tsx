@@ -44,11 +44,13 @@ export default function TopNav({ onCartClick }: { onCartClick?: () => void }) {
     const onScroll = () => {
       const y = window.scrollY
       setScrolled(y > 10)
-      // Hide when scrolling up, show when scrolling down or at top
-      if (y < 80 || y > lastScrollY.current) {
-        setHidden(false)
-      } else {
-        setHidden(true)
+      // Show when scrolling down, hide when scrolling up
+      if (y < 10) {
+        setHidden(false) // Always show at very top
+      } else if (y > lastScrollY.current + 5) {
+        setHidden(false) // Scrolling down - show
+      } else if (y < lastScrollY.current - 5) {
+        setHidden(true) // Scrolling up - hide
       }
       lastScrollY.current = y
     }
@@ -76,13 +78,13 @@ export default function TopNav({ onCartClick }: { onCartClick?: () => void }) {
 
   return (
     <header
+      className="nav-header"
       style={{
         position: 'fixed',
         top: 0,
         left: 0,
         right: 0,
         zIndex: 100,
-        height: 56,
         display: 'flex',
         alignItems: 'center',
         transition: 'all 0.35s cubic-bezier(0.22,1,0.36,1)',
@@ -395,9 +397,22 @@ export default function TopNav({ onCartClick }: { onCartClick?: () => void }) {
           </button>
         </div>}
 
+        {/* ── Mobile language row ── */}
+        <div className="hide-desktop nav-lang-row" style={{
+          position: 'absolute', top: 0, left: 0, right: 0,
+          height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center',
+          borderBottom: dark ? 'none' : '1px solid var(--border)',
+        }}>
+          <LanguageSwitcher dark={dark} />
+        </div>
+
+        {/* ── Desktop language (inline) ── */}
+        <div className="hide-mobile" style={{ flexShrink: 0 }}>
+          <LanguageSwitcher dark={dark} />
+        </div>
+
         {/* ── Right ── */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
-          <LanguageSwitcher dark={dark} />
           <Link
             href="/explore"
             style={{
