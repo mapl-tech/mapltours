@@ -176,7 +176,7 @@ export default function MobileShort({ exp }: { exp: Experience }) {
             fontFamily: 'var(--font-dm-sans)', textTransform: 'uppercase',
             letterSpacing: '0.05em',
           }}>
-            {exp.category}
+            {t(exp.category)}
           </span>
 
           {/* Add button top-right */}
@@ -216,7 +216,7 @@ export default function MobileShort({ exp }: { exp: Experience }) {
               marginBottom: 10,
               display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden',
             }}>
-              {exp.title}
+              {t(exp.title)}
             </h3>
 
             {/* Meta row */}

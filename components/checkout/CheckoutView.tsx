@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
 import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js'
-import { ArrowLeft, Check, ShieldCheck, Lock, CreditCard, MapPin, Users, Calendar, Leaf, Star } from 'lucide-react'
+import { ArrowLeft, Check, ShieldCheck, Lock, CreditCard, MapPin, Users, Calendar, Leaf } from 'lucide-react'
 import { useCartStore } from '@/lib/cart'
 import { stripePromise } from '@/lib/stripe'
 import { useI18n } from '@/lib/i18n'
@@ -99,7 +99,7 @@ function ReviewStep() {
 
   return (
     <div>
-      <div style={{ marginBottom: 28 }}>
+      <div className="hide-mobile" style={{ marginBottom: 28 }}>
         <h3 style={{ fontFamily: 'var(--font-syne)', fontWeight: 700, fontSize: 22, marginBottom: 6 }}>{t('Review your trip')}</h3>
         <p style={{ fontSize: 14, color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-sans)' }}>
           {items.length} experience{items.length !== 1 ? 's' : ''} in your Jamaica itinerary
@@ -147,7 +147,7 @@ function ReviewStep() {
             borderBottom: i < items.length - 1 ? '1px solid var(--border)' : 'none',
           }}>
             <div style={{ flex: 1, minWidth: 0 }}>
-              <p style={{ fontSize: 13.5, fontWeight: 600, fontFamily: 'var(--font-dm-sans)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.title}</p>
+              <p style={{ fontSize: 13.5, fontWeight: 600, fontFamily: 'var(--font-dm-sans)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t(item.title)}</p>
               <p style={{ fontSize: 12, color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-sans)', marginTop: 1 }}>
                 {item.destination} · {item.duration}
               </p>
@@ -208,7 +208,7 @@ function ReviewStep() {
               <div style={{ flex: 1, padding: '18px 22px' }}>
                 <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 6 }}>
                   <div>
-                    <h4 style={{ fontFamily: 'var(--font-syne)', fontWeight: 700, fontSize: 16, marginBottom: 4, lineHeight: 1.25 }}>{item.title}</h4>
+                    <h4 style={{ fontFamily: 'var(--font-syne)', fontWeight: 700, fontSize: 16, marginBottom: 4, lineHeight: 1.25 }}>{t(item.title)}</h4>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 12.5, color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-sans)' }}>
                       <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}><MapPin size={12} /> {item.destination}, {item.parish}</span>
                       <span>·</span>
@@ -227,7 +227,7 @@ function ReviewStep() {
                   </button>
                 </div>
                 <div style={{ display: 'flex', gap: 5, marginTop: 8, flexWrap: 'wrap' }}>
-                  {item.tags.map((t) => <span key={t} className="tag">{t}</span>)}
+                  {item.tags.map((tag) => <span key={tag} className="tag">{t(tag)}</span>)}
                 </div>
               </div>
             </div>
@@ -277,7 +277,7 @@ function DetailsStep({ waiverAccepted, setWaiverAccepted, waiverError, formData,
   }
   return (
     <div>
-      <div style={{ marginBottom: 28 }}>
+      <div className="hide-mobile" style={{ marginBottom: 28 }}>
         <h3 style={{ fontFamily: 'var(--font-syne)', fontWeight: 700, fontSize: 22, marginBottom: 6 }}>{t('Your details')}</h3>
         <p style={{ fontSize: 14, color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-sans)' }}>
           We&apos;ll use this to confirm your booking
@@ -395,10 +395,10 @@ function DetailsStep({ waiverAccepted, setWaiverAccepted, waiverError, formData,
             </div>
             <div>
               <p style={{ fontSize: 14, fontWeight: 700, fontFamily: 'var(--font-syne)', color: 'var(--text-primary)' }}>
-                Transportation Details
+                {t('Transportation Details')}
               </p>
               <p style={{ fontSize: 12, color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-sans)', marginTop: 1 }}>
-                We&apos;ll arrange your pickup and return
+                {t('We\'ll arrange your pickup and return')}
               </p>
             </div>
           </div>
@@ -407,11 +407,11 @@ function DetailsStep({ waiverAccepted, setWaiverAccepted, waiverError, formData,
           <div data-field="pickup" style={{ marginBottom: 16 }}>
             <label style={{ fontSize: 12.5, color: formErrors['pickup'] ? '#c00' : 'var(--text-secondary)', fontFamily: 'var(--font-dm-sans)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
               <span style={{ width: 8, height: 8, borderRadius: '50%', background: formErrors['pickup'] ? '#c00' : 'var(--emerald)', flexShrink: 0 }} />
-              Pickup Location {formErrors['pickup'] && <span style={{ fontWeight: 400 }}>- required</span>}
+              {t('Pickup Location')} {formErrors['pickup'] && <span style={{ fontWeight: 400 }}>- required</span>}
             </label>
             <input
               className="field-input"
-              placeholder="Search hotel, resort, or airport..."
+              placeholder={t('Search hotel, resort, or airport...')}
               value={formData['pickup'] || ''}
               onChange={(e) => updateField('pickup', e.target.value)}
               list="jamaica-locations-pickup"
@@ -436,11 +436,11 @@ function DetailsStep({ waiverAccepted, setWaiverAccepted, waiverError, formData,
           <div data-field="dropoff">
             <label style={{ fontSize: 12.5, color: formErrors['dropoff'] ? '#c00' : 'var(--text-secondary)', fontFamily: 'var(--font-dm-sans)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
               <span style={{ width: 8, height: 8, borderRadius: '50%', background: formErrors['dropoff'] ? '#c00' : 'var(--gold)', flexShrink: 0 }} />
-              Drop-off Location {formErrors['dropoff'] && <span style={{ fontWeight: 400 }}>- required</span>}
+              {t('Drop-off Location')} {formErrors['dropoff'] && <span style={{ fontWeight: 400 }}>- required</span>}
             </label>
             <input
               className="field-input"
-              placeholder="Same as pickup or different location..."
+              placeholder={t('Same as pickup or different location...')}
               value={formData['dropoff'] || ''}
               onChange={(e) => updateField('dropoff', e.target.value)}
               list="jamaica-locations-dropoff"
@@ -623,7 +623,7 @@ function DetailsStep({ waiverAccepted, setWaiverAccepted, waiverError, formData,
                   <p style={{ marginBottom: 16 }}>MAPL Tours Jamaica is a product of MAPL Tech. We operate an online platform that connects travelers with curated, locally-created experiences across Jamaica. We act as an intermediary between you (the &ldquo;Guest&rdquo;) and independent local experience creators (the &ldquo;Creators&rdquo;). MAPL Tours Jamaica does not directly provide the experiences listed on our platform.</p>
 
                   <p style={{ fontWeight: 600, color: 'var(--text-primary)', marginBottom: 6 }}>2. Booking & Payment</p>
-                  <p style={{ marginBottom: 16 }}>All prices are listed in USD. A 5% booking fee is applied to all transactions to cover platform costs and customer support. Payment is processed securely through Stripe. Your card will be charged at the time of booking. You will receive a confirmation email with your booking details, meeting point, and creator contact information within 24 hours.</p>
+                  <p style={{ marginBottom: 16 }}>All prices are listed in USD. A service fee is applied to all transactions to cover your tour guide, platform costs, and customer support. Payment is processed securely through Stripe. Your card will be charged at the time of booking. You will receive a confirmation email with your booking details, meeting point, and creator contact information within 24 hours.</p>
 
                   <p style={{ fontWeight: 600, color: 'var(--text-primary)', marginBottom: 6 }}>3. Cancellation & Refunds</p>
                   <p style={{ marginBottom: 16 }}>Free cancellation is available within 48 hours of booking for a full refund. Cancellations made more than 48 hours after booking but at least 7 days before the experience date will receive a 50% refund. Cancellations made less than 7 days before the experience date are non-refundable. If a Creator cancels an experience, you will receive a full refund or the option to rebook. Weather-related cancellations will be rescheduled at no additional cost.</p>
@@ -677,6 +677,7 @@ function DetailsStep({ waiverAccepted, setWaiverAccepted, waiverError, formData,
 function PaymentStep({ onPaymentSuccess }: { onPaymentSuccess: () => void }) {
   const stripe = useStripe()
   const elements = useElements()
+  const { t } = useI18n()
   const [error, setError] = useState<string | null>(null)
   const [processing, setProcessing] = useState(false)
 
@@ -710,28 +711,41 @@ function PaymentStep({ onPaymentSuccess }: { onPaymentSuccess: () => void }) {
 
   return (
     <div>
-      <div style={{ marginBottom: 28 }}>
-        <h3 style={{ fontFamily: 'var(--font-syne)', fontWeight: 700, fontSize: 22, marginBottom: 6 }}>Payment</h3>
-        <p style={{ fontSize: 14, color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-sans)' }}>
-          Your card will only be charged after confirmation
-        </p>
-      </div>
-
       {/* Stripe Payment Element */}
       <div style={{
         borderRadius: 'var(--r-xl)', overflow: 'hidden',
         border: '1px solid var(--border)',
+        boxShadow: '0 4px 24px rgba(0,0,0,0.04)',
       }}>
+        {/* Card header */}
         <div style={{
-          padding: '18px 24px',
+          padding: '18px 22px',
           background: 'var(--accent)',
-          display: 'flex', alignItems: 'center', gap: 10,
         }}>
-          <CreditCard size={18} color="#fff" />
-          <span style={{ fontSize: 14, fontWeight: 600, color: '#fff', fontFamily: 'var(--font-dm-sans)' }}>Payment Details</span>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <CreditCard size={17} color="#fff" />
+              <span style={{ fontSize: 15, fontWeight: 700, color: '#fff', fontFamily: 'var(--font-dm-sans)' }}>
+                {t('Payment Details')}
+              </span>
+            </div>
+            <Lock size={13} color="rgba(255,255,255,0.4)" />
+          </div>
+          {/* Inline trust badges */}
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            {['SSL Encrypted', 'PCI Compliant', 'Stripe'].map((b) => (
+              <span key={b} style={{
+                fontSize: 10, fontWeight: 500, fontFamily: 'var(--font-dm-sans)',
+                color: 'rgba(255,255,255,0.5)', background: 'rgba(255,255,255,0.08)',
+                padding: '3px 10px', borderRadius: 9999,
+              }}>
+                {b}
+              </span>
+            ))}
+          </div>
         </div>
 
-        <div style={{ padding: '24px', background: '#fff' }}>
+        <div style={{ padding: '24px 22px', background: '#fff' }}>
           <PaymentElement
             options={{
               layout: 'tabs',
@@ -745,10 +759,12 @@ function PaymentStep({ onPaymentSuccess }: { onPaymentSuccess: () => void }) {
 
       {error && (
         <div style={{
-          marginTop: 16, padding: '12px 16px', borderRadius: 'var(--r-md)',
-          background: 'rgba(200,0,0,0.05)', border: '1px solid rgba(200,0,0,0.15)',
+          marginTop: 14, padding: '12px 16px', borderRadius: 'var(--r-md)',
+          background: 'rgba(200,0,0,0.04)', border: '1px solid rgba(200,0,0,0.12)',
           fontSize: 13, color: '#c00', fontFamily: 'var(--font-dm-sans)',
+          display: 'flex', alignItems: 'center', gap: 8,
         }}>
+          <span style={{ flexShrink: 0 }}>&#9888;</span>
           {error}
         </div>
       )}
@@ -758,21 +774,32 @@ function PaymentStep({ onPaymentSuccess }: { onPaymentSuccess: () => void }) {
         onClick={handleSubmit}
         disabled={!stripe || processing}
         style={{
-          width: '100%', height: 48, fontSize: 15, marginTop: 20,
+          width: '100%', height: 52, fontSize: 15, fontWeight: 700, marginTop: 18,
           opacity: processing ? 0.6 : 1,
           cursor: processing ? 'not-allowed' : 'pointer',
+          boxShadow: processing ? 'none' : '0 4px 16px rgba(23,22,20,0.15)',
         }}
       >
-        {processing ? 'Processing...' : 'Complete booking'}
+        {processing ? (
+          <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span style={{ width: 16, height: 16, border: '2px solid rgba(255,255,255,0.3)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin 0.6s linear infinite', display: 'inline-block' }} />
+            {t('Processing...')}
+          </span>
+        ) : (
+          <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <Lock size={14} />
+            {t('Complete Booking')}
+          </span>
+        )}
       </button>
 
-      <div style={{
-        marginTop: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-        fontSize: 12, color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-sans)',
+      <p style={{
+        marginTop: 12, textAlign: 'center',
+        fontSize: 11.5, color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-sans)',
       }}>
-        <Lock size={13} />
-        <span>Payments are secure and encrypted. Free cancellation within 48 hours.</span>
-      </div>
+        <ShieldCheck size={11} color="var(--emerald)" style={{ display: 'inline', verticalAlign: '-2px', marginRight: 4 }} />
+        {t('Encrypted & secure')} · {t('Free cancellation within 48 hrs')}
+      </p>
     </div>
   )
 }
@@ -830,7 +857,7 @@ function ConfirmedView() {
                 <Image src={item.image} alt={item.title} fill sizes="48px" style={{ objectFit: 'cover' }} />
               </div>
               <div style={{ flex: 1 }}>
-                <p style={{ fontSize: 14, fontWeight: 600, fontFamily: 'var(--font-dm-sans)' }}>{item.title}</p>
+                <p style={{ fontSize: 14, fontWeight: 600, fontFamily: 'var(--font-dm-sans)' }}>{t(item.title)}</p>
                 <p style={{ fontSize: 12, color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-sans)', marginTop: 2 }}>
                   {item.date} · {item.travelers} traveler{item.travelers !== 1 ? 's' : ''} · {item.destination}
                 </p>
@@ -945,10 +972,10 @@ export default function CheckoutView() {
   const ctas = [`${t('Continue to details')} →`, `${t('Continue to payment')} →`, `${t('Complete booking')} · ${formatPrice(finalTotal)}`]
 
   return (
-    <div style={{ minHeight: '100vh', paddingTop: 72, background: 'var(--bg-warm)' }}>
+    <div className="checkout-wrapper" style={{ minHeight: '100vh', paddingTop: 56, background: step === 3 ? 'var(--bg)' : 'var(--bg-warm)' }}>
       {/* Top bar */}
       <div style={{ borderBottom: '1px solid var(--border)', background: '#fff' }}>
-        <div className="container" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 16px', maxWidth: 1100 }}>
+        <div className="container checkout-top-bar" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 16px', maxWidth: 1100 }}>
           <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13.5, fontFamily: 'var(--font-dm-sans)', fontWeight: 500, color: 'var(--text-secondary)', transition: 'color 0.15s ease' }}>
             <ArrowLeft size={15} /> Back
           </Link>
@@ -959,6 +986,16 @@ export default function CheckoutView() {
         </div>
       </div>
 
+      {/* Mobile step label */}
+      <div className="hide-desktop container" style={{ paddingTop: 16, paddingBottom: 4 }}>
+        <p style={{ fontSize: 11, fontWeight: 600, fontFamily: 'var(--font-dm-sans)', textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--gold)', marginBottom: 4 }}>
+          Step {step} of 3
+        </p>
+        <h3 style={{ fontFamily: 'var(--font-syne)', fontWeight: 700, fontSize: 22 }}>
+          {step === 1 ? t('Review your trip') : step === 2 ? t('Your details') : 'Payment'}
+        </h3>
+      </div>
+
       {/* Body */}
       <div className={`checkout-body${step === 3 ? ' checkout-step-3' : ''}`}>
         {/* Left — form */}
@@ -966,7 +1003,8 @@ export default function CheckoutView() {
           {step === 1 && <ReviewStep />}
           {step === 2 && <DetailsStep waiverAccepted={waiverAccepted} setWaiverAccepted={setWaiverAccepted} waiverError={waiverError} formData={formData} setFormData={setFormData} formErrors={formErrors} />}
           {step === 3 && (
-            clientSecret ? (
+            <>
+            {clientSecret ? (
               <Elements stripe={stripePromise} options={{ clientSecret, appearance: {
                 theme: 'stripe',
                 variables: {
@@ -997,7 +1035,8 @@ export default function CheckoutView() {
               <div style={{ padding: '60px', textAlign: 'center' }}>
                 <p style={{ fontSize: 14, color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-sans)' }}>Setting up secure payment...</p>
               </div>
-            )
+            )}
+            </>
           )}
           {step > 1 && step < 3 && (
             <button className="btn-outline" onClick={() => { setStep(step - 1); window.scrollTo({ top: 0, behavior: 'smooth' }) }} style={{ marginTop: 24, gap: 6 }}>
@@ -1029,7 +1068,7 @@ export default function CheckoutView() {
                     <Image src={item.image} alt={item.title} fill sizes="42px" style={{ objectFit: 'cover' }} />
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <p style={{ fontSize: 13, fontFamily: 'var(--font-dm-sans)', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.title}</p>
+                    <p style={{ fontSize: 13, fontFamily: 'var(--font-dm-sans)', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t(item.title)}</p>
                     <p style={{ fontSize: 11.5, color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-sans)' }}>{item.travelers} × {formatPrice(item.price)}</p>
                   </div>
                   <span style={{ fontSize: 13, fontWeight: 700, fontFamily: 'var(--font-dm-sans)', flexShrink: 0 }}>
@@ -1040,7 +1079,7 @@ export default function CheckoutView() {
             </div>
 
             <div style={{ padding: '16px 24px', background: 'var(--bg-warm)', borderTop: '1px solid var(--border)' }}>
-              {[{ l: t('Subtotal'), v: subtotal() }, { l: t('Booking fee (5%)'), v: fee() }].map((r) => (
+              {[{ l: t('Subtotal'), v: subtotal() }, { l: t('Service fee'), v: fee() }].map((r) => (
                 <div key={r.l} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13.5, fontFamily: 'var(--font-dm-sans)', color: 'var(--text-secondary)', marginBottom: 6 }}>
                   <span>{r.l}</span><span>{formatPrice(r.v)}</span>
                 </div>
@@ -1245,18 +1284,6 @@ export default function CheckoutView() {
             )}
           </div>
 
-          {/* Trust badges */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 16, marginTop: 20 }}>
-            {[
-              { icon: <ShieldCheck size={14} />, text: 'SSL Encrypted' },
-              { icon: <Star size={14} fill="var(--gold)" strokeWidth={0} />, text: '4.9 Rating' },
-            ].map((badge) => (
-              <div key={badge.text} style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11.5, color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-sans)' }}>
-                {badge.icon}
-                <span>{badge.text}</span>
-              </div>
-            ))}
-          </div>
         </div>
       </div>
     </div>

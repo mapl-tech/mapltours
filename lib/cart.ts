@@ -7,6 +7,16 @@ export interface CartItem extends Experience {
   date: string
 }
 
+// Tour guide rate: ~JMD $555/hr ≈ $4 USD/hr (one guide per experience)
+const GUIDE_RATE_USD_PER_HOUR = 4
+
+function parseDurationHours(duration: string): number {
+  if (/full\s*day/i.test(duration)) return 8
+  if (/half\s*day/i.test(duration)) return 4
+  const match = duration.match(/([\d.]+)\s*hr/i)
+  return match ? parseFloat(match[1]) : 3
+}
+
 interface CartStore {
   items: CartItem[]
   addItem: (exp: Experience) => void
@@ -16,6 +26,7 @@ interface CartStore {
   clearCart: () => void
   isInCart: (id: number) => boolean
   subtotal: () => number
+  guideCost: () => number
   fee: () => number
   grandTotal: () => number
 }
@@ -61,7 +72,14 @@ export const useCartStore = create<CartStore>()(
 
       subtotal: () => get().items.reduce((sum, i) => sum + i.price * i.travelers, 0),
 
-      fee: () => Math.round(get().subtotal() * 0.05),
+      guideCost: () => get().items.reduce((sum, i) => sum + parseDurationHours(i.duration) * GUIDE_RATE_USD_PER_HOUR, 0),
+
+      // Service fee = guide cost + 20% platform fee on (subtotal + guide cost)
+      fee: () => {
+        const guide = get().guideCost()
+        const sub = get().subtotal()
+        return Math.round((sub + guide) * 0.20) + guide
+      },
 
       grandTotal: () => get().subtotal() + get().fee(),
     }),

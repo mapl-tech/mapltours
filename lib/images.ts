@@ -37,8 +37,8 @@ export const EXPERIENCE_IMAGES: Record<number, string> = {
   9: P(5005121),    // Snorkeling — tropical beach with palm trees and sailboats, Jamaica
   10: 'https://oaccessjamaica.com/wp-content/uploads/2015/07/nesta-michael-asafa-coronation-market.jpg', // Coronation Market Kingston
   11: P(10907379),  // Blue Hole — turquoise river through vibrant forest, Jamaica
-  12: P(11479687),  // Luminous Lagoon — sunset over Caribbean Sea, Negril Jamaica
-  13: P(16181426),  // Mystic Mountain — aerial tropical beach resort, Ocho Rios
+  12: 'https://mobayvacations.com/wp-content/uploads/2024/06/luminous-lagoon-falmouth.jpg',  // Luminous Lagoon — bioluminescent night swim
+  13: 'https://media.tacdn.com/media/attractions-splice-spp-674x446/07/9a/88/aa.jpg',  // Mystic Mountain — bobsled & rainforest, Ocho Rios
   14: 'https://media-cdn.tripadvisor.com/media/attractions-splice-spp-720x480/07/84/a6/8e.jpg', // Rastafari Indigenous Village
   15: P(10907379),  // Reach Falls — turquoise river through forest with boulders
   16: 'https://jamdownfoodie.com/wp-content/uploads/2022/07/IMG_2003-768x1024.jpg', // Devon House Patty & Ice Cream

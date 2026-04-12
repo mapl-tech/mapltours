@@ -16,6 +16,8 @@ const nextConfig = {
       { protocol: 'https', hostname: 'i.ytimg.com' },
       { protocol: 'https', hostname: 'www.researchgate.net' },
       { protocol: 'https', hostname: 'oaccessjamaica.com' },
+      { protocol: 'https', hostname: 'media.tacdn.com' },
+      { protocol: 'https', hostname: 'mobayvacations.com' },
     ],
     formats: ['image/avif', 'image/webp'],
     minimumCacheTTL: 60 * 60 * 24 * 30, // 30 days

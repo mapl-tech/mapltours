@@ -8,7 +8,7 @@ import MobileShort from './MobileShort'
 import LanguageSwitcher from './LanguageSwitcher'
 import { useI18n } from '@/lib/i18n'
 import { useRef, useState } from 'react'
-import { Leaf, Award, Users, Headphones, ShieldCheck, Star, Heart, UtensilsCrossed, TrendingUp, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Leaf, Award, Users, Headphones, ShieldCheck, Star, Heart, UtensilsCrossed, TrendingUp, ChevronLeft, ChevronRight, MapPin } from 'lucide-react'
 
 const foodExperiences = experiences.filter((e) => e.category === 'Food')
 
@@ -52,6 +52,44 @@ function SectionHeader({ label, action }: { label: string; action?: { text: stri
   )
 }
 
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function StepCarousel({ steps, renderCard }: { steps: any[]; renderCard: (s: any, i: number) => any }) {
+  const scrollRef = useRef<HTMLDivElement>(null)
+  const scroll = (dir: 'left' | 'right') => {
+    if (!scrollRef.current) return
+    scrollRef.current.scrollBy({ left: dir === 'left' ? -292 : 292, behavior: 'smooth' })
+  }
+  return (
+    <div>
+      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginBottom: 14, paddingRight: 4 }}>
+        <button onClick={() => scroll('left')} style={{
+          width: 36, height: 36, borderRadius: '50%', background: 'transparent',
+          border: '1px solid rgba(255,255,255,0.15)', cursor: 'pointer',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          color: 'rgba(255,255,255,0.5)', transition: 'all 0.15s ease',
+        }}>
+          <ChevronLeft size={18} />
+        </button>
+        <button onClick={() => scroll('right')} style={{
+          width: 36, height: 36, borderRadius: '50%', background: 'var(--gold)',
+          border: 'none', cursor: 'pointer',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          color: '#fff', transition: 'all 0.15s ease',
+        }}>
+          <ChevronRight size={18} />
+        </button>
+      </div>
+      <div ref={scrollRef} className="no-scrollbar" style={{
+        display: 'flex', gap: 12, overflowX: 'auto',
+        scrollSnapType: 'x mandatory', WebkitOverflowScrolling: 'touch',
+        paddingLeft: 16, paddingRight: 16,
+      }}>
+        {steps.map((s, i) => renderCard(s, i))}
+      </div>
+    </div>
+  )
+}
 
 function FoodSection() {
   const scrollRef = useRef<HTMLDivElement>(null)
@@ -201,7 +239,7 @@ function FoodSection() {
                 fontSize: 14.5, color: 'white', lineHeight: 1.3,
                 marginBottom: 6,
               }}>
-                {exp.title}
+                {t(exp.title)}
               </h3>
               <p style={{
                 fontSize: 12.5, color: '#cccccc',
@@ -209,7 +247,7 @@ function FoodSection() {
                 marginBottom: 12,
                 display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden',
               }}>
-                {exp.description}
+                {t(exp.description)}
               </p>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <span style={{
@@ -428,6 +466,115 @@ export default function FeedView() {
         </div>
       </section>
 
+      {/* ═══ CONCIERGE PROMISE ═══ */}
+      <section style={{ background: 'var(--bg-dark)', paddingTop: 72, paddingBottom: 72 }}>
+        <div className="container" style={{ maxWidth: 1100, margin: '0 auto' }}>
+          {/* Headline */}
+          <div style={{ textAlign: 'center', marginBottom: 52 }}>
+            <span style={{
+              fontSize: 10.5, fontWeight: 600, fontFamily: 'var(--font-dm-sans)',
+              textTransform: 'uppercase', letterSpacing: '0.14em',
+              color: 'var(--gold-warm)', marginBottom: 16, display: 'block',
+            }}>
+              The MAPL Experience
+            </span>
+            <h2 style={{
+              fontFamily: 'var(--font-syne)', fontWeight: 800,
+              fontSize: 'clamp(1.65rem, 3.5vw, 2.4rem)',
+              letterSpacing: '-0.025em', lineHeight: 1.1,
+              marginBottom: 14, color: '#fff',
+            }}>
+              You explore. We take care of everything.
+            </h2>
+            <p className="concierge-body" style={{
+              fontSize: 15.5, color: '#cccccc',
+              fontFamily: 'var(--font-dm-sans)', lineHeight: 1.65,
+              maxWidth: 460, margin: '0 auto',
+            }}>
+              Pick the experiences you love. We arrange your private transport, guide, and full itinerary from door to door.
+            </p>
+          </div>
+
+          {(() => {
+            const steps = [
+              { icon: <Heart size={22} color="var(--gold-warm)" />, title: 'Choose what excites you', body: 'Browse experiences crafted by locals. Add the ones that speak to you.' },
+              { icon: <MapPin size={22} color="var(--gold-warm)" />, title: 'Tell us where you\'re staying', body: 'Your hotel, villa, or airport. We plan the route, the guide, and the transport.' },
+              { icon: <ShieldCheck size={22} color="var(--gold-warm)" />, title: 'Show up and enjoy', body: 'We pick you up, your guide handles the rest, and we bring you back when it\'s done.' },
+            ]
+            const stepCard = (pillar: typeof steps[0], idx: number) => (
+              <div key={pillar.title} style={{
+                padding: '32px 28px',
+                borderRadius: 'var(--r-xl)',
+                background: 'rgba(255,255,255,0.04)',
+                border: '1px solid rgba(255,255,255,0.07)',
+                textAlign: 'center',
+                position: 'relative',
+                flex: '0 0 280px',
+                scrollSnapAlign: 'start',
+              }}>
+                <span style={{
+                  position: 'absolute', top: 14, left: 18,
+                  fontSize: 11, fontWeight: 700, fontFamily: 'var(--font-dm-sans)',
+                  color: 'rgba(255,255,255,0.2)', letterSpacing: '0.04em',
+                }}>
+                  Step {idx + 1}
+                </span>
+                <div style={{
+                  width: 52, height: 52, borderRadius: 14,
+                  background: 'rgba(196,164,74,0.08)', border: '1px solid rgba(196,164,74,0.15)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  margin: '0 auto 20px',
+                }}>
+                  {pillar.icon}
+                </div>
+                <h4 style={{
+                  fontFamily: 'var(--font-syne)', fontWeight: 700, fontSize: 16,
+                  marginBottom: 8, lineHeight: 1.3, color: '#fff',
+                }}>
+                  {pillar.title}
+                </h4>
+                <p style={{
+                  fontSize: 13.5, color: 'rgba(255,255,255,0.4)',
+                  fontFamily: 'var(--font-dm-sans)', lineHeight: 1.6,
+                }}>
+                  {pillar.body}
+                </p>
+              </div>
+            )
+            return (
+              <>
+                {/* Desktop: grid */}
+                <div className="hide-mobile" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16, marginBottom: 48 }}>
+                  {steps.map((s, i) => stepCard(s, i))}
+                </div>
+                {/* Mobile: carousel with arrows */}
+                <div className="hide-desktop" style={{ marginBottom: 0 }}>
+                  <StepCarousel steps={steps} renderCard={stepCard} />
+                </div>
+              </>
+            )
+          })()}
+
+          {/* Bottom trust line (desktop only) */}
+          <div className="hide-mobile" style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 24, flexWrap: 'wrap',
+          }}>
+            {[
+              { icon: <Users size={14} color="#cccccc" />, text: 'Personal local guides' },
+              { icon: <MapPin size={14} color="#cccccc" />, text: 'Private door-to-door transport' },
+              { icon: <ShieldCheck size={14} color="#cccccc" />, text: 'Free cancellation within 48 hrs' },
+            ].map((t) => (
+              <span key={t.text} style={{
+                display: 'inline-flex', alignItems: 'center', gap: 6,
+                fontSize: 12.5, fontFamily: 'var(--font-dm-sans)', color: '#cccccc', fontWeight: 500,
+              }}>
+                {t.icon} {t.text}
+              </span>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* ═══ DESTINATIONS ═══ */}
       <DestinationsSection />
 
@@ -504,13 +651,13 @@ export default function FeedView() {
                     fontFamily: 'var(--font-syne)', fontWeight: 700, fontSize: 22,
                     color: 'white', lineHeight: 1.2, marginBottom: 6,
                   }}>
-                    {viralExperiences[0].title}
+                    {t(viralExperiences[0].title)}
                   </h3>
                   <p style={{
                     fontSize: 13.5, color: '#cccccc', fontFamily: 'var(--font-dm-sans)',
                     lineHeight: 1.45, marginBottom: 10, maxWidth: 360,
                   }}>
-                    {viralExperiences[0].description}
+                    {t(viralExperiences[0].description)}
                   </p>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                     <span style={{ fontFamily: 'var(--font-dm-sans)', fontWeight: 700, fontSize: 18, color: 'white' }}>
@@ -548,7 +695,7 @@ export default function FeedView() {
                     fontFamily: 'var(--font-dm-sans)', fontWeight: 600, fontSize: 14,
                     color: 'white', lineHeight: 1.25, marginBottom: 5,
                   }}>
-                    {exp.title}
+                    {t(exp.title)}
                   </h4>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                     <span style={{ fontSize: 14, fontWeight: 700, color: 'white', fontFamily: 'var(--font-dm-sans)' }}>
@@ -691,7 +838,7 @@ export default function FeedView() {
               fontSize: 14, color: 'var(--text-on-dark-2)',
               fontFamily: 'var(--font-dm-sans)', lineHeight: 1.65, maxWidth: 300,
             }}>
-              Discover Jamaica beyond the resort. Curated experiences from the people who know Jamaica best.
+              {t('Discover Jamaica beyond the resort. Curated experiences from the people who know Jamaica best.')}
             </p>
           </div>
 
@@ -707,7 +854,7 @@ export default function FeedView() {
             display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap',
           }}>
             <span style={{ fontSize: 10.5, color: 'var(--text-on-dark-3)', fontFamily: 'var(--font-dm-sans)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-              Recommended on
+              {t('Recommended on')}
             </span>
             <a href="https://www.tripadvisor.com" target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', gap: 8, opacity: 0.8 }}>
               <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
@@ -728,7 +875,7 @@ export default function FeedView() {
               fontFamily: 'var(--font-dm-sans)',
               display: 'flex', alignItems: 'center', gap: 4,
             }}>
-              <Star size={10} fill="#34E0A1" strokeWidth={0} /> 4.9 Excellent
+              <Star size={10} fill="#34E0A1" strokeWidth={0} /> 4.9 {t('Excellent')}
             </span>
           </div>
 
@@ -769,7 +916,7 @@ export default function FeedView() {
                   color: 'white', marginBottom: 14, textTransform: 'uppercase',
                   letterSpacing: '0.06em',
                 }}>
-                  {col.title}
+                  {t(col.title)}
                 </p>
                 {col.links.map((l) => (
                   <a key={l.label} href={l.href} style={{
@@ -779,7 +926,7 @@ export default function FeedView() {
                   }}
                     onMouseEnter={(e) => { e.currentTarget.style.color = 'white' }}
                     onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--text-on-dark-2)' }}
-                  >{l.label}</a>
+                  >{t(l.label)}</a>
                 ))}
               </div>
             ))}
@@ -792,13 +939,13 @@ export default function FeedView() {
             fontSize: 12.5, color: 'var(--text-on-dark-3)',
             fontFamily: 'var(--font-dm-sans)', flexWrap: 'wrap', gap: 16,
           }}>
-            <p>© 2025 MAPL Tours. All rights reserved. A <a href="https://www.mapltech.com" target="_blank" rel="noopener noreferrer" style={{ color: 'white', fontWeight: 600 }}>MAPL TECH</a> company.</p>
+            <p>© 2025 MAPL Tours. {t('All rights reserved.')} A <a href="https://www.mapltech.com" target="_blank" rel="noopener noreferrer" style={{ color: 'white', fontWeight: 600 }}>MAPL TECH</a> company.</p>
             <div className="footer-legal" style={{ display: 'flex', gap: 20, flexWrap: 'wrap' }}>
-              {['Privacy Policy', 'Terms of Service', 'Cookie Preferences'].map((t) => (
-                <span key={t} style={{ cursor: 'pointer', transition: 'color 0.15s ease' }}
+              {['Privacy Policy', 'Terms of Service', 'Cookie Preferences'].map((label) => (
+                <span key={label} style={{ cursor: 'pointer', transition: 'color 0.15s ease' }}
                   onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--text-on-dark-2)' }}
                   onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--text-on-dark-3)' }}
-                >{t}</span>
+                >{t(label)}</span>
               ))}
             </div>
           </div>

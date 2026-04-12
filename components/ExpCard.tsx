@@ -141,11 +141,11 @@ export default function ExpCard({ exp }: { exp: Experience }) {
           fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em',
           color: CATEGORY_COLORS[exp.category], fontFamily: 'var(--font-dm-sans)',
         }}>
-          {exp.category}
+          {t(exp.category)}
         </span>
         <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, alignItems: 'flex-start', marginTop: 3 }}>
           <h3 style={{ fontFamily: 'var(--font-dm-sans)', fontWeight: 600, fontSize: 14, lineHeight: 1.35 }}>
-            {exp.title}
+            {t(exp.title)}
           </h3>
           <span style={{ fontSize: 13, fontFamily: 'var(--font-dm-sans)', fontWeight: 500, flexShrink: 0, marginTop: 1, display: 'flex', alignItems: 'center', gap: 3 }}>
             <Star size={13} fill="currentColor" strokeWidth={0} /> {exp.rating}

@@ -57,10 +57,10 @@ export default function ItineraryPanel({ open, onClose }: { open: boolean; onClo
               </div>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <p style={{ fontSize: 13.5, fontWeight: 600, fontFamily: 'var(--font-dm-sans)', marginBottom: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  {item.title}
+                  {t(item.title)}
                 </p>
                 <p style={{ fontSize: 12, color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-sans)', marginBottom: 5 }}>
-                  {item.destination} · {item.duration}
+                  {item.destination} · {t(item.duration)}
                 </p>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                   <span style={{ fontSize: 13.5, fontFamily: 'var(--font-dm-sans)', fontWeight: 700 }}>

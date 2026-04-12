@@ -2,6 +2,7 @@
 
 import { Experience, CATEGORY_COLORS } from '@/lib/experiences'
 import { useCartStore } from '@/lib/cart'
+import { useI18n } from '@/lib/i18n'
 import { useState } from 'react'
 
 interface ReelCardProps {
@@ -73,6 +74,7 @@ export default function ReelCard({
   onToggleLike,
 }: ReelCardProps) {
   const { addItem, isInCart } = useCartStore()
+  const { t, formatPrice } = useI18n()
   const inCart = isInCart(exp.id)
   const catColor = CATEGORY_COLORS[exp.category]
   const [heartPop, setHeartPop] = useState(false)
@@ -289,7 +291,7 @@ export default function ReelCard({
               fontFamily: 'var(--font-dm-sans)',
             }}
           >
-            {exp.category}
+            {t(exp.category)}
           </span>
           <span
             style={{
@@ -312,7 +314,7 @@ export default function ReelCard({
             marginBottom: 8,
           }}
         >
-          {exp.title}
+          {t(exp.title)}
         </h2>
 
         {/* Rating + duration */}
@@ -328,14 +330,14 @@ export default function ReelCard({
           }}
         >
           <span>⭐ {exp.rating} ({exp.reviews.toLocaleString()})</span>
-          <span>🕐 {exp.duration}</span>
+          <span>🕐 {t(exp.duration)}</span>
         </div>
 
         {/* Tags */}
         <div style={{ display: 'flex', gap: 6, marginBottom: 14, flexWrap: 'wrap' }}>
           {exp.tags.map((tag) => (
             <span key={tag} className="tag">
-              {tag}
+              {t(tag)}
             </span>
           ))}
         </div>
@@ -359,7 +361,7 @@ export default function ReelCard({
                 fontWeight: 600,
               }}
             >
-              FROM
+              {t('From')}
             </span>
             <span
               style={{
@@ -369,7 +371,7 @@ export default function ReelCard({
                 color: 'white',
               }}
             >
-              ${exp.price}
+              {formatPrice(exp.price)}
             </span>
             <span
               style={{
@@ -378,7 +380,7 @@ export default function ReelCard({
                 fontFamily: 'var(--font-dm-sans)',
               }}
             >
-              /person
+              {t('/person')}
             </span>
           </div>
           <div style={{ flex: 1 }} />
@@ -392,7 +394,7 @@ export default function ReelCard({
               background: inCart ? 'var(--green)' : 'var(--gold)',
             }}
           >
-            {inCart ? '✓ Added to Trip' : '→ Add to Itinerary'}
+            {inCart ? t('✓ Added') : t('Add to Trip')}
           </button>
         </div>
       </div>

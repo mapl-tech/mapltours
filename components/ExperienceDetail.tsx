@@ -224,7 +224,7 @@ function Reel({ exp, isActive, totalCount, currentIndex }: { exp: Experience; is
           fontFamily: 'var(--font-syne)', fontWeight: 700, fontSize: 18,
           color: 'white', lineHeight: 1.2, marginBottom: 6,
         }}>
-          {exp.title}
+          {t(exp.title)}
         </h2>
 
         {/* Description — 2 line clamp */}
@@ -233,7 +233,7 @@ function Reel({ exp, isActive, totalCount, currentIndex }: { exp: Experience; is
           fontFamily: 'var(--font-dm-sans)', lineHeight: 1.4, marginBottom: 10,
           display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden',
         }}>
-          {exp.description}
+          {t(exp.description)}
         </p>
 
         {/* Info chips row */}

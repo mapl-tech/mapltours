@@ -85,7 +85,7 @@ export default function ProfileView() {
                     <Image src={item.image} alt={item.title} fill sizes="48px" style={{ objectFit: 'cover' }} />
                   </div>
                   <div style={{ flex: 1 }}>
-                    <p style={{ fontSize: 13.5, fontWeight: 600, fontFamily: 'var(--font-dm-sans)' }}>{item.title}</p>
+                    <p style={{ fontSize: 13.5, fontWeight: 600, fontFamily: 'var(--font-dm-sans)' }}>{t(item.title)}</p>
                     <p style={{ fontSize: 12, color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-sans)', marginTop: 1 }}>{item.date} · {item.travelers} travelers</p>
                   </div>
                 </div>
