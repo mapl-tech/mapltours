@@ -3,6 +3,7 @@
 import { useState, useMemo } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
+import Footer from './Footer'
 import { DESTINATION_IMAGES } from '@/lib/experiences'
 
 // ── FAQ Data ──
@@ -591,6 +592,8 @@ export default function HelpCenter() {
           </>
         )}
       </div>
+
+      <Footer />
     </div>
   )
 }

@@ -2,6 +2,7 @@
 
 import Image from 'next/image'
 import { DESTINATION_IMAGES } from '@/lib/experiences'
+import Footer from './Footer'
 
 const bannerImages: Record<string, string> = {
   about: DESTINATION_IMAGES['Negril'],
@@ -71,6 +72,8 @@ export default function EditorialPage({
           {children}
         </div>
       </div>
+
+      <Footer />
     </div>
   )
 }

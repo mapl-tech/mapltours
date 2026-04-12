@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import Image from 'next/image'
 import { DESTINATION_IMAGES } from '@/lib/experiences'
+import Footer from './Footer'
 
 const presetAmounts = [
   { amount: 50, label: '$50', tagline: 'A taste of Jamaica', desc: 'Street food crawl or sunrise fishing' },
@@ -499,6 +500,8 @@ export default function GiftCardsView() {
           </a>
         </div>
       </div>
+
+      <Footer />
     </div>
   )
 }
