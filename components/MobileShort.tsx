@@ -17,57 +17,82 @@ export default function MobileShort({ exp }: { exp: Experience }) {
   const containerRef = useRef<HTMLDivElement>(null)
   const videoRef = useRef<HTMLVideoElement>(null)
   const [isVisible, setIsVisible] = useState(false)
-  const [videoReady, setVideoReady] = useState(false)
+  const [videoMounted, setVideoMounted] = useState(false)
   const [isPlaying, setIsPlaying] = useState(false)
+  const playAttempted = useRef(false)
 
-  // Intersection Observer
+  // Intersection Observer - low threshold for early detection
   useEffect(() => {
     const el = containerRef.current
     if (!el) return
 
     const observer = new IntersectionObserver(
       ([entry]) => {
-        setIsVisible(entry.isIntersecting)
-        if (!entry.isIntersecting && videoRef.current) {
+        const visible = entry.isIntersecting
+        setIsVisible(visible)
+
+        if (visible) {
+          // Mount the video element
+          setVideoMounted(true)
+        } else if (videoRef.current) {
           videoRef.current.pause()
           setIsPlaying(false)
+          playAttempted.current = false
         }
       },
-      { threshold: 0.3 }
+      { threshold: 0.15, rootMargin: '100px 0px' }
     )
 
     observer.observe(el)
     return () => observer.disconnect()
   }, [])
 
-  // Load and play video when visible
+  // Play video whenever it becomes visible and is mounted
   useEffect(() => {
-    if (!isVisible) return
-    setVideoReady(true)
-  }, [isVisible])
-
-  // Attempt play when video element is ready and visible
-  useEffect(() => {
-    if (!isVisible || !videoReady || !videoRef.current) return
+    if (!isVisible || !videoMounted) return
     const video = videoRef.current
+    if (!video) return
+    if (playAttempted.current) return
 
     const onPlaying = () => setIsPlaying(true)
     video.addEventListener('playing', onPlaying)
 
-    const tryPlay = () => {
-      video.play().then(() => setIsPlaying(true)).catch(() => {
-        // Mobile browsers may block autoplay - keep image showing
-      })
+    const attemptPlay = () => {
+      playAttempted.current = true
+      // Ensure muted for autoplay policy
+      video.muted = true
+      video.play()
+        .then(() => setIsPlaying(true))
+        .catch(() => {
+          // Retry once after short delay
+          setTimeout(() => {
+            video.muted = true
+            video.play()
+              .then(() => setIsPlaying(true))
+              .catch(() => {}) // Give up - show image
+          }, 300)
+        })
     }
 
-    if (video.readyState >= 3) {
-      tryPlay()
+    // Try immediately, or wait for data
+    if (video.readyState >= 2) {
+      attemptPlay()
     } else {
-      video.addEventListener('canplay', tryPlay, { once: true })
+      video.addEventListener('loadeddata', attemptPlay, { once: true })
+      // Also set a timeout fallback
+      const timeout = setTimeout(() => {
+        if (!playAttempted.current && video.readyState >= 1) {
+          attemptPlay()
+        }
+      }, 1000)
+      return () => {
+        clearTimeout(timeout)
+        video.removeEventListener('playing', onPlaying)
+      }
     }
 
     return () => video.removeEventListener('playing', onPlaying)
-  }, [isVisible, videoReady])
+  }, [isVisible, videoMounted])
 
   return (
     <div ref={containerRef}>
@@ -96,11 +121,12 @@ export default function MobileShort({ exp }: { exp: Experience }) {
           />
 
           {/* Video — loads when first visible, plays/pauses based on viewport */}
-          {videoReady && (
+          {videoMounted && (
             <video
               ref={videoRef}
               src={exp.video}
               muted
+              autoPlay
               loop
               playsInline
               preload="auto"
