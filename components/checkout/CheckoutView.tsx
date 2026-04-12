@@ -1,0 +1,909 @@
+'use client'
+
+import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
+import Link from 'next/link'
+import Image from 'next/image'
+import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js'
+import { ArrowLeft, Check, ShieldCheck, Lock, CreditCard, MapPin, Users, Calendar, Leaf, Star } from 'lucide-react'
+import { useCartStore } from '@/lib/cart'
+import { stripePromise } from '@/lib/stripe'
+
+/* ── Step Indicator ── */
+function StepIndicator({ step }: { step: number }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 0 }}>
+      {['Review', 'Details', 'Payment'].map((label, i) => {
+        const n = i + 1
+        const done = step > n
+        const active = step === n
+        return (
+          <div key={label} style={{ display: 'flex', alignItems: 'center' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
+              <div style={{
+                width: 34, height: 34, borderRadius: '50%',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: 13, fontWeight: 600, fontFamily: 'var(--font-dm-sans)',
+                transition: 'all 0.3s ease',
+                background: done ? 'var(--accent)' : active ? '#fff' : 'var(--surface)',
+                border: active ? '2px solid var(--accent)' : done ? 'none' : '1px solid var(--border)',
+                color: done ? '#fff' : active ? 'var(--accent)' : 'var(--text-tertiary)',
+                boxShadow: active ? '0 0 0 4px rgba(23,22,20,0.06)' : 'none',
+              }}>
+                {done ? <Check size={14} strokeWidth={3} /> : n}
+              </div>
+              <span style={{ fontSize: 11, fontFamily: 'var(--font-dm-sans)', color: active ? 'var(--text-primary)' : 'var(--text-tertiary)', fontWeight: active ? 600 : 400 }}>
+                {label}
+              </span>
+            </div>
+            {i < 2 && <div style={{ width: 48, height: 1.5, background: done ? 'var(--accent)' : 'var(--border)', margin: '0 10px', marginBottom: 22, borderRadius: 1 }} />}
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
+/* ── Review Step ── */
+function ReviewStep() {
+  const { items, removeItem, updateDate } = useCartStore()
+  const [customDates, setCustomDates] = useState(false)
+
+  // Get the shared date from the first item
+  const sharedDate = items[0]?.date || ''
+
+  const setAllDates = (date: string) => {
+    items.forEach((item) => updateDate(item.id, date))
+  }
+
+  return (
+    <div>
+      <div style={{ marginBottom: 28 }}>
+        <h3 style={{ fontFamily: 'var(--font-syne)', fontWeight: 700, fontSize: 22, marginBottom: 6 }}>Review your trip</h3>
+        <p style={{ fontSize: 14, color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-sans)' }}>
+          {items.length} experience{items.length !== 1 ? 's' : ''} in your Jamaica itinerary
+        </p>
+      </div>
+
+      {/* ── Trip date selector ── */}
+      <div style={{
+        borderRadius: 'var(--r-xl)', overflow: 'hidden',
+        border: '1px solid var(--border)', background: '#fff',
+        marginBottom: 24,
+      }}>
+        <div style={{
+          padding: '18px 22px',
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          borderBottom: customDates ? '1px solid var(--border)' : 'none',
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <Calendar size={18} color="var(--text-secondary)" />
+            <div>
+              <span style={{ fontSize: 14, fontWeight: 600, fontFamily: 'var(--font-dm-sans)' }}>
+                {customDates ? 'Select dates for each tour' : 'Trip date'}
+              </span>
+              <p style={{ fontSize: 12, color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-sans)', marginTop: 1 }}>
+                {customDates ? 'Each experience can be on a different day' : 'All experiences on the same day'}
+              </p>
+            </div>
+          </div>
+          {!customDates && (
+            <input
+              type="date"
+              value={sharedDate}
+              onChange={(e) => setAllDates(e.target.value)}
+              className="field-input"
+              style={{ maxWidth: 160, height: 40, fontSize: 13 }}
+            />
+          )}
+        </div>
+
+        {/* Individual dates when custom mode is on */}
+        {customDates && items.map((item, i) => (
+          <div key={item.id} style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            padding: '14px 22px',
+            borderBottom: i < items.length - 1 ? '1px solid var(--border)' : 'none',
+          }}>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <p style={{ fontSize: 13.5, fontWeight: 600, fontFamily: 'var(--font-dm-sans)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.title}</p>
+              <p style={{ fontSize: 12, color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-sans)', marginTop: 1 }}>
+                {item.destination} · {item.duration}
+              </p>
+            </div>
+            <input
+              type="date"
+              value={item.date}
+              onChange={(e) => updateDate(item.id, e.target.value)}
+              className="field-input"
+              style={{ maxWidth: 155, height: 38, fontSize: 13, flexShrink: 0, marginLeft: 16 }}
+            />
+          </div>
+        ))}
+
+        {/* Toggle */}
+        <div style={{
+          padding: '12px 22px',
+          borderTop: '1px solid var(--border)',
+          background: 'var(--bg-warm)',
+        }}>
+          <button
+            onClick={() => {
+              if (customDates) {
+                // Switching back to shared — sync all to first item's date
+                setAllDates(items[0]?.date || sharedDate)
+              }
+              setCustomDates(!customDates)
+            }}
+            style={{
+              background: 'none', border: 'none', cursor: 'pointer',
+              fontSize: 13, fontWeight: 600, fontFamily: 'var(--font-dm-sans)',
+              color: 'var(--accent)',
+              display: 'flex', alignItems: 'center', gap: 6,
+              transition: 'opacity 0.15s ease',
+            }}
+          >
+            <Calendar size={13} />
+            {customDates ? 'Use same date for all tours' : 'Choose different dates for each tour'}
+          </button>
+        </div>
+      </div>
+
+      {/* ── Experience cards ── */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+        {items.map((item) => (
+          <div key={item.id} style={{
+            borderRadius: 'var(--r-xl)', overflow: 'hidden',
+            border: '1px solid var(--border)', background: '#fff',
+          }}>
+            <div style={{ display: 'flex' }}>
+              <div style={{ width: 140, position: 'relative', flexShrink: 0 }}>
+                <Image src={item.image} alt={item.title} fill sizes="140px" style={{ objectFit: 'cover' }} />
+              </div>
+              <div style={{ flex: 1, padding: '18px 22px' }}>
+                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 6 }}>
+                  <div>
+                    <h4 style={{ fontFamily: 'var(--font-syne)', fontWeight: 700, fontSize: 16, marginBottom: 4, lineHeight: 1.25 }}>{item.title}</h4>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 12.5, color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-sans)' }}>
+                      <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}><MapPin size={12} /> {item.destination}, {item.parish}</span>
+                      <span>·</span>
+                      <span>{item.duration}</span>
+                    </div>
+                  </div>
+                  <button onClick={() => removeItem(item.id)} style={{
+                    background: 'none', border: 'none', color: 'var(--text-tertiary)',
+                    fontSize: 12, fontFamily: 'var(--font-dm-sans)', cursor: 'pointer',
+                    padding: '4px 8px', borderRadius: 6, transition: 'all 0.15s ease',
+                  }}
+                    onMouseEnter={(e) => { e.currentTarget.style.color = '#c00'; e.currentTarget.style.background = 'rgba(200,0,0,0.05)' }}
+                    onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--text-tertiary)'; e.currentTarget.style.background = 'none' }}
+                  >
+                    Remove
+                  </button>
+                </div>
+                <div style={{ display: 'flex', gap: 5, marginTop: 8, flexWrap: 'wrap' }}>
+                  {item.tags.map((t) => <span key={t} className="tag">{t}</span>)}
+                </div>
+              </div>
+            </div>
+
+            {/* Footer — date + price */}
+            <div style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              padding: '12px 22px',
+              borderTop: '1px solid var(--border)',
+              background: 'var(--bg-warm)',
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12.5, color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-sans)' }}>
+                <Calendar size={13} />
+                <span>{new Date(item.date + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+              </div>
+              <div style={{ textAlign: 'right' }}>
+                <span style={{ fontFamily: 'var(--font-dm-sans)', fontWeight: 800, fontSize: 18 }}>
+                  ${(item.price * item.travelers).toLocaleString()}
+                </span>
+                <p style={{ fontSize: 11, color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-sans)', marginTop: 1 }}>
+                  ${item.price} × {item.travelers}
+                </p>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+/* ── Details Step ── */
+function DetailsStep({ waiverAccepted, setWaiverAccepted, waiverError, formData, setFormData, formErrors }: {
+  waiverAccepted: boolean
+  setWaiverAccepted: (v: boolean) => void
+  waiverError: boolean
+  formData: Record<string, string>
+  setFormData: (d: Record<string, string>) => void
+  formErrors: Record<string, boolean>
+}) {
+  const { items, updateTravelers } = useCartStore()
+  const [modalContent, setModalContent] = useState<'waiver' | 'terms' | null>(null)
+
+  const updateField = (key: string, value: string) => {
+    setFormData({ ...formData, [key]: value })
+  }
+  return (
+    <div>
+      <div style={{ marginBottom: 28 }}>
+        <h3 style={{ fontFamily: 'var(--font-syne)', fontWeight: 700, fontSize: 22, marginBottom: 6 }}>Your details</h3>
+        <p style={{ fontSize: 14, color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-sans)' }}>
+          We&apos;ll use this to confirm your booking
+        </p>
+      </div>
+
+      {/* Single guest count for all experiences */}
+      <div style={{
+        borderRadius: 'var(--r-xl)', overflow: 'hidden',
+        border: '1px solid var(--border)', background: '#fff',
+        marginBottom: 24,
+        padding: '18px 22px',
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <Users size={18} color="var(--text-secondary)" />
+          <div>
+            <span style={{ fontSize: 14, fontWeight: 600, fontFamily: 'var(--font-dm-sans)' }}>Number of guests</span>
+            <p style={{ fontSize: 12, color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-sans)', marginTop: 1 }}>
+              Applies to all {items.length} experience{items.length !== 1 ? 's' : ''}
+            </p>
+          </div>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center' }}>
+          <button className="btn-outline" style={{ width: 38, height: 38, padding: 0, borderRadius: '10px 0 0 10px', fontSize: 16 }} onClick={() => items.forEach((item) => updateTravelers(item.id, item.travelers - 1))}>−</button>
+          <div style={{ width: 52, height: 38, display: 'flex', alignItems: 'center', justifyContent: 'center', borderTop: '1px solid var(--border)', borderBottom: '1px solid var(--border)', fontSize: 16, fontWeight: 700, fontFamily: 'var(--font-dm-sans)' }}>
+            {items[0]?.travelers || 2}
+          </div>
+          <button className="btn-outline" style={{ width: 38, height: 38, padding: 0, borderRadius: '0 10px 10px 0', fontSize: 16 }} onClick={() => items.forEach((item) => updateTravelers(item.id, item.travelers + 1))}>+</button>
+        </div>
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+        {[
+          { key: 'firstName', label: 'First Name', placeholder: 'First name', span: 1 },
+          { key: 'lastName', label: 'Last Name', placeholder: 'Last name', span: 1 },
+          { key: 'email', label: 'Email', placeholder: 'you@email.com', span: 2, type: 'email' },
+          { key: 'phone', label: 'Phone', placeholder: '+1 (555) 000-0000', span: 1, type: 'tel' },
+          { key: 'country', label: 'Country', placeholder: 'Country', span: 1 },
+        ].map((f) => (
+          <div key={f.key} style={{ gridColumn: f.span === 2 ? 'span 2' : undefined }}>
+            <label style={{ fontSize: 12.5, color: formErrors[f.key] ? '#c00' : 'var(--text-secondary)', fontFamily: 'var(--font-dm-sans)', fontWeight: 600, display: 'block', marginBottom: 6 }}>
+              {f.label} {formErrors[f.key] && <span style={{ fontWeight: 400 }}>- required</span>}
+            </label>
+            <input
+              className="field-input"
+              type={f.type || 'text'}
+              placeholder={f.placeholder}
+              value={formData[f.key] || ''}
+              onChange={(e) => updateField(f.key, e.target.value)}
+              style={{
+                height: 46,
+                borderColor: formErrors[f.key] ? 'rgba(200,0,0,0.4)' : undefined,
+              }}
+            />
+          </div>
+        ))}
+        <div style={{ gridColumn: 'span 2' }}>
+          <label style={{ fontSize: 12.5, color: 'var(--text-secondary)', fontFamily: 'var(--font-dm-sans)', fontWeight: 600, display: 'block', marginBottom: 6 }}>Special Requests</label>
+          <textarea className="field-input" placeholder="Dietary restrictions, accessibility needs, anything we should know..." rows={4} />
+        </div>
+      </div>
+      <div style={{
+        marginTop: 24, padding: '14px 18px', borderRadius: 'var(--r-md)',
+        background: 'var(--emerald-dim)', border: '1px solid rgba(29,122,80,0.12)',
+        display: 'flex', alignItems: 'center', gap: 12,
+      }}>
+        <ShieldCheck size={18} color="var(--emerald)" />
+        <div>
+          <p style={{ fontSize: 13, color: 'var(--emerald)', fontFamily: 'var(--font-dm-sans)', fontWeight: 600 }}>Secure & encrypted</p>
+          <p style={{ fontSize: 12, color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-sans)', marginTop: 1 }}>Your information is protected with 256-bit SSL encryption</p>
+        </div>
+      </div>
+
+      {/* Waiver agreement */}
+      <div style={{
+        marginTop: 24, padding: '18px 20px', borderRadius: 'var(--r-lg)',
+        border: `1px solid ${waiverError && !waiverAccepted ? 'rgba(200,0,0,0.4)' : 'var(--border)'}`,
+        background: waiverError && !waiverAccepted ? 'rgba(200,0,0,0.03)' : '#fff',
+        transition: 'all 0.2s ease',
+      }}>
+        <label style={{ display: 'flex', gap: 12, cursor: 'pointer', alignItems: 'flex-start' }}>
+          <div style={{
+            width: 22, height: 22, borderRadius: 6, flexShrink: 0, marginTop: 1,
+            border: waiverAccepted ? 'none' : `2px solid ${waiverError ? 'rgba(200,0,0,0.5)' : 'var(--border-strong)'}`,
+            background: waiverAccepted ? 'var(--accent)' : '#fff',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            transition: 'all 0.15s ease',
+          }}>
+            {waiverAccepted && <Check size={14} strokeWidth={3} color="#fff" />}
+          </div>
+          <input
+            type="checkbox"
+            checked={waiverAccepted}
+            onChange={(e) => setWaiverAccepted(e.target.checked)}
+            style={{ display: 'none' }}
+          />
+          <div>
+            <p style={{ fontSize: 13.5, fontFamily: 'var(--font-dm-sans)', fontWeight: 600, color: 'var(--text-primary)', lineHeight: 1.4, marginBottom: 4 }}>
+              Activity Waiver & Release
+            </p>
+            <p style={{ fontSize: 12.5, fontFamily: 'var(--font-dm-sans)', color: 'var(--text-tertiary)', lineHeight: 1.55 }}>
+              I acknowledge that the experiences booked involve physical activities including but not limited to swimming, hiking, cliff jumping, and water sports. I accept all associated risks and agree to the{' '}
+              <span
+                onClick={(e) => { e.preventDefault(); setModalContent('waiver') }}
+                style={{ color: 'var(--accent)', fontWeight: 600, textDecoration: 'underline', textUnderlineOffset: 2, cursor: 'pointer' }}
+              >
+                Activity Waiver & Release of Liability
+              </span>
+              {' '}and{' '}
+              <span
+                onClick={(e) => { e.preventDefault(); setModalContent('terms') }}
+                style={{ color: 'var(--accent)', fontWeight: 600, textDecoration: 'underline', textUnderlineOffset: 2, cursor: 'pointer' }}
+              >
+                Terms of Service
+              </span>
+              .
+            </p>
+          </div>
+        </label>
+      </div>
+
+      {waiverError && !waiverAccepted && (
+        <p style={{
+          marginTop: 10, fontSize: 13, color: '#c00',
+          fontFamily: 'var(--font-dm-sans)', fontWeight: 500,
+          display: 'flex', alignItems: 'center', gap: 6,
+        }}>
+          Please accept the activity waiver to continue
+        </p>
+      )}
+
+      {/* ── Legal Modal ── */}
+      {modalContent && (
+        <>
+          <div
+            onClick={() => setModalContent(null)}
+            style={{
+              position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)',
+              zIndex: 1000, animation: 'fadeIn 0.2s ease',
+            }}
+          />
+          <div style={{
+            position: 'fixed', top: '50%', left: '50%',
+            transform: 'translate(-50%, -50%)',
+            width: '90%', maxWidth: 600, maxHeight: '80vh',
+            background: '#fff', borderRadius: 'var(--r-xl)',
+            boxShadow: '0 24px 64px rgba(0,0,0,0.2)',
+            zIndex: 1001, display: 'flex', flexDirection: 'column',
+            overflow: 'hidden',
+          }}>
+            {/* Modal header */}
+            <div style={{
+              padding: '20px 24px', borderBottom: '1px solid var(--border)',
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              flexShrink: 0,
+            }}>
+              <h3 style={{ fontFamily: 'var(--font-syne)', fontWeight: 700, fontSize: 18 }}>
+                {modalContent === 'waiver' ? 'Activity Waiver & Release of Liability' : 'Terms of Service'}
+              </h3>
+              <button
+                onClick={() => setModalContent(null)}
+                style={{
+                  width: 34, height: 34, borderRadius: '50%',
+                  border: '1px solid var(--border)', background: '#fff',
+                  cursor: 'pointer', display: 'flex',
+                  alignItems: 'center', justifyContent: 'center',
+                  color: 'var(--text-secondary)', fontSize: 18,
+                }}
+              >×</button>
+            </div>
+
+            {/* Modal body */}
+            <div className="no-scrollbar" style={{
+              padding: '24px', overflowY: 'auto', flex: 1,
+              fontSize: 13.5, fontFamily: 'var(--font-dm-sans)',
+              color: 'var(--text-secondary)', lineHeight: 1.7,
+            }}>
+              {modalContent === 'waiver' ? (
+                <>
+                  <p style={{ fontWeight: 600, color: 'var(--text-primary)', marginBottom: 12 }}>MAPL Tours Jamaica - Activity Waiver & Release of Liability</p>
+                  <p style={{ marginBottom: 12 }}>Effective Date: January 1, 2025</p>
+
+                  <p style={{ fontWeight: 600, color: 'var(--text-primary)', marginBottom: 6 }}>1. Acknowledgment of Risk</p>
+                  <p style={{ marginBottom: 16 }}>I understand that the experiences offered through MAPL Tours Jamaica involve physical activities that carry inherent risks, including but not limited to: cliff diving, waterfall climbing, bamboo rafting, snorkeling, hiking through mountainous terrain, swimming in natural bodies of water, and participation in cultural activities. I acknowledge that these activities may result in injury, illness, or in rare cases, death.</p>
+
+                  <p style={{ fontWeight: 600, color: 'var(--text-primary)', marginBottom: 6 }}>2. Assumption of Risk</p>
+                  <p style={{ marginBottom: 16 }}>I voluntarily assume all risks associated with participating in any experience booked through MAPL Tours Jamaica, including risks arising from the negligence of MAPL Tours Jamaica, its partners, guides, affiliates, and local experience creators. I understand that natural environments in Jamaica may present hazards including uneven terrain, strong currents, wildlife, weather changes, and remote locations with limited medical access.</p>
+
+                  <p style={{ fontWeight: 600, color: 'var(--text-primary)', marginBottom: 6 }}>3. Release of Liability</p>
+                  <p style={{ marginBottom: 16 }}>I hereby release, discharge, and hold harmless MAPL Tours Jamaica, MAPL Tech, its officers, employees, agents, partners, and local experience creators from any and all claims, demands, or causes of action arising out of or related to any loss, damage, or injury sustained during or as a result of participation in any booked experience.</p>
+
+                  <p style={{ fontWeight: 600, color: 'var(--text-primary)', marginBottom: 6 }}>4. Medical Fitness</p>
+                  <p style={{ marginBottom: 16 }}>I certify that I am physically fit and have no medical conditions that would prevent my participation in the booked activities. I agree to inform my experience guide of any medical conditions, allergies, or physical limitations prior to the start of any activity. If I am booking on behalf of minors, I certify that they are also fit to participate and I accept responsibility for their safety.</p>
+
+                  <p style={{ fontWeight: 600, color: 'var(--text-primary)', marginBottom: 6 }}>5. Photo & Video Consent</p>
+                  <p style={{ marginBottom: 16 }}>I grant MAPL Tours Jamaica permission to use photographs and video recordings taken during my experience for promotional purposes, including social media, website content, and marketing materials, unless I notify my guide in writing before the activity begins.</p>
+
+                  <p style={{ fontWeight: 600, color: 'var(--text-primary)', marginBottom: 6 }}>6. Governing Law</p>
+                  <p style={{ marginBottom: 16 }}>This waiver shall be governed by the laws of Jamaica. Any disputes arising from this agreement shall be resolved in the courts of Kingston, Jamaica.</p>
+
+                  <p style={{ fontWeight: 600, color: 'var(--text-primary)', marginBottom: 6 }}>7. Severability</p>
+                  <p>If any provision of this waiver is found to be unenforceable, the remaining provisions shall continue in full force and effect. By checking the waiver box during checkout, you acknowledge that you have read, understood, and agree to be bound by the terms of this Activity Waiver & Release of Liability.</p>
+                </>
+              ) : (
+                <>
+                  <p style={{ fontWeight: 600, color: 'var(--text-primary)', marginBottom: 12 }}>MAPL Tours Jamaica - Terms of Service</p>
+                  <p style={{ marginBottom: 12 }}>Effective Date: January 1, 2025</p>
+
+                  <p style={{ fontWeight: 600, color: 'var(--text-primary)', marginBottom: 6 }}>1. About MAPL Tours Jamaica</p>
+                  <p style={{ marginBottom: 16 }}>MAPL Tours Jamaica is a product of MAPL Tech. We operate an online platform that connects travelers with curated, locally-created experiences across Jamaica. We act as an intermediary between you (the &ldquo;Guest&rdquo;) and independent local experience creators (the &ldquo;Creators&rdquo;). MAPL Tours Jamaica does not directly provide the experiences listed on our platform.</p>
+
+                  <p style={{ fontWeight: 600, color: 'var(--text-primary)', marginBottom: 6 }}>2. Booking & Payment</p>
+                  <p style={{ marginBottom: 16 }}>All prices are listed in USD. A 5% booking fee is applied to all transactions to cover platform costs and customer support. Payment is processed securely through Stripe. Your card will be charged at the time of booking. You will receive a confirmation email with your booking details, meeting point, and creator contact information within 24 hours.</p>
+
+                  <p style={{ fontWeight: 600, color: 'var(--text-primary)', marginBottom: 6 }}>3. Cancellation & Refunds</p>
+                  <p style={{ marginBottom: 16 }}>Free cancellation is available within 48 hours of booking for a full refund. Cancellations made more than 48 hours after booking but at least 7 days before the experience date will receive a 50% refund. Cancellations made less than 7 days before the experience date are non-refundable. If a Creator cancels an experience, you will receive a full refund or the option to rebook. Weather-related cancellations will be rescheduled at no additional cost.</p>
+
+                  <p style={{ fontWeight: 600, color: 'var(--text-primary)', marginBottom: 6 }}>4. Guest Responsibilities</p>
+                  <p style={{ marginBottom: 16 }}>Guests must arrive at the designated meeting point on time. Guests must follow all safety instructions provided by the Creator or guide. Guests must be of legal drinking age to participate in experiences involving alcohol. Guests are responsible for their own travel insurance and personal belongings. Guests must treat Creators, local communities, and the natural environment with respect.</p>
+
+                  <p style={{ fontWeight: 600, color: 'var(--text-primary)', marginBottom: 6 }}>5. Creator Responsibilities</p>
+                  <p style={{ marginBottom: 16 }}>All Creators on the MAPL Tours Jamaica platform are vetted and approved by our team. Creators are required to maintain valid insurance, certifications, and licenses where applicable. Creators are responsible for providing the experience as described on the platform. MAPL Tours Jamaica reserves the right to remove any Creator who fails to meet our quality standards.</p>
+
+                  <p style={{ fontWeight: 600, color: 'var(--text-primary)', marginBottom: 6 }}>6. Intellectual Property</p>
+                  <p style={{ marginBottom: 16 }}>All content on the MAPL Tours Jamaica platform, including text, images, videos, logos, and design elements, is the property of MAPL Tech and is protected by copyright law. User-generated content, including reviews and comments, grants MAPL Tours Jamaica a non-exclusive, royalty-free license to use, display, and distribute such content.</p>
+
+                  <p style={{ fontWeight: 600, color: 'var(--text-primary)', marginBottom: 6 }}>7. Limitation of Liability</p>
+                  <p style={{ marginBottom: 16 }}>MAPL Tours Jamaica shall not be liable for any indirect, incidental, special, or consequential damages arising from the use of our platform or participation in any experience. Our total liability shall not exceed the amount paid for the specific experience in question.</p>
+
+                  <p style={{ fontWeight: 600, color: 'var(--text-primary)', marginBottom: 6 }}>8. Privacy</p>
+                  <p style={{ marginBottom: 16 }}>We collect and process personal data in accordance with our Privacy Policy. By using our platform, you consent to the collection and processing of your data as described therein. We do not sell your personal data to third parties.</p>
+
+                  <p style={{ fontWeight: 600, color: 'var(--text-primary)', marginBottom: 6 }}>9. Governing Law</p>
+                  <p style={{ marginBottom: 16 }}>These Terms of Service shall be governed by the laws of Jamaica. Any disputes shall be resolved in the courts of Kingston, Jamaica.</p>
+
+                  <p style={{ fontWeight: 600, color: 'var(--text-primary)', marginBottom: 6 }}>10. Changes to Terms</p>
+                  <p>MAPL Tours Jamaica reserves the right to modify these Terms of Service at any time. Continued use of the platform after changes constitutes acceptance of the updated terms. Users will be notified of material changes via email.</p>
+                </>
+              )}
+            </div>
+
+            {/* Modal footer */}
+            <div style={{
+              padding: '16px 24px', borderTop: '1px solid var(--border)',
+              display: 'flex', justifyContent: 'flex-end',
+              flexShrink: 0,
+            }}>
+              <button
+                className="btn-primary"
+                onClick={() => setModalContent(null)}
+                style={{ height: 40, padding: '0 24px', fontSize: 13 }}
+              >
+                I understand
+              </button>
+            </div>
+          </div>
+        </>
+      )}
+    </div>
+  )
+}
+
+/* ── Payment Step (Stripe Elements) ── */
+function PaymentStep({ onPaymentSuccess }: { onPaymentSuccess: () => void }) {
+  const stripe = useStripe()
+  const elements = useElements()
+  const [error, setError] = useState<string | null>(null)
+  const [processing, setProcessing] = useState(false)
+
+  const handleSubmit = async () => {
+    if (!stripe || !elements) return
+    setProcessing(true)
+    setError(null)
+
+    const { error: submitError } = await elements.submit()
+    if (submitError) {
+      setError(submitError.message || 'Payment failed')
+      setProcessing(false)
+      return
+    }
+
+    const { error: confirmError } = await stripe.confirmPayment({
+      elements,
+      confirmParams: {
+        return_url: window.location.origin + '/checkout',
+      },
+      redirect: 'if_required',
+    })
+
+    if (confirmError) {
+      setError(confirmError.message || 'Payment failed')
+      setProcessing(false)
+    } else {
+      onPaymentSuccess()
+    }
+  }
+
+  return (
+    <div>
+      <div style={{ marginBottom: 28 }}>
+        <h3 style={{ fontFamily: 'var(--font-syne)', fontWeight: 700, fontSize: 22, marginBottom: 6 }}>Payment</h3>
+        <p style={{ fontSize: 14, color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-sans)' }}>
+          Your card will only be charged after confirmation
+        </p>
+      </div>
+
+      {/* Stripe Payment Element */}
+      <div style={{
+        borderRadius: 'var(--r-xl)', overflow: 'hidden',
+        border: '1px solid var(--border)',
+      }}>
+        <div style={{
+          padding: '18px 24px',
+          background: 'var(--accent)',
+          display: 'flex', alignItems: 'center', gap: 10,
+        }}>
+          <CreditCard size={18} color="#fff" />
+          <span style={{ fontSize: 14, fontWeight: 600, color: '#fff', fontFamily: 'var(--font-dm-sans)' }}>Payment Details</span>
+        </div>
+
+        <div style={{ padding: '24px', background: '#fff' }}>
+          <PaymentElement
+            options={{
+              layout: 'tabs',
+              defaultValues: {
+                billingDetails: { address: { country: 'US' } },
+              },
+            }}
+          />
+        </div>
+      </div>
+
+      {error && (
+        <div style={{
+          marginTop: 16, padding: '12px 16px', borderRadius: 'var(--r-md)',
+          background: 'rgba(200,0,0,0.05)', border: '1px solid rgba(200,0,0,0.15)',
+          fontSize: 13, color: '#c00', fontFamily: 'var(--font-dm-sans)',
+        }}>
+          {error}
+        </div>
+      )}
+
+      <button
+        className="btn-primary"
+        onClick={handleSubmit}
+        disabled={!stripe || processing}
+        style={{
+          width: '100%', height: 48, fontSize: 15, marginTop: 20,
+          opacity: processing ? 0.6 : 1,
+          cursor: processing ? 'not-allowed' : 'pointer',
+        }}
+      >
+        {processing ? 'Processing...' : 'Complete booking'}
+      </button>
+
+      <div style={{
+        marginTop: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+        fontSize: 12, color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-sans)',
+      }}>
+        <Lock size={13} />
+        <span>Payments are secure and encrypted. Free cancellation within 48 hours.</span>
+      </div>
+    </div>
+  )
+}
+
+/* ── Confirmed ── */
+function ConfirmedView() {
+  const { items, grandTotal, clearCart } = useCartStore()
+  const router = useRouter()
+  const total = grandTotal()
+  const confirmedItems = [...items]
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', padding: '120px 40px 80px', textAlign: 'center' }}>
+      {/* Success icon */}
+      <div style={{
+        width: 72, height: 72, borderRadius: '50%',
+        background: 'var(--emerald)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        color: '#fff', marginBottom: 24,
+        boxShadow: '0 8px 32px rgba(29,122,80,0.3)',
+      }}>
+        <Check size={32} strokeWidth={2.5} />
+      </div>
+
+      <h1 style={{ fontFamily: 'var(--font-syne)', fontWeight: 800, fontSize: 32, marginBottom: 8, letterSpacing: '-0.02em' }}>Booking Confirmed</h1>
+      <p style={{ fontSize: 16, color: 'var(--text-secondary)', fontFamily: 'var(--font-dm-sans)', maxWidth: 420, lineHeight: 1.65, marginBottom: 36 }}>
+        Your Jamaican adventure is booked. Check your email for confirmation details and everything you need to know.
+      </p>
+
+      {/* Summary card */}
+      <div style={{
+        borderRadius: 'var(--r-xl)', overflow: 'hidden',
+        border: '1px solid var(--border)', maxWidth: 480, width: '100%',
+        textAlign: 'left', marginBottom: 36,
+      }}>
+        {/* Card header */}
+        <div style={{
+          padding: '16px 24px', background: 'var(--accent)',
+          display: 'flex', alignItems: 'center', gap: 10,
+        }}>
+          <Leaf size={16} color="#fff" />
+          <span style={{ fontSize: 14, fontWeight: 600, color: '#fff', fontFamily: 'var(--font-dm-sans)' }}>MAPL Tours Jamaica</span>
+          <span style={{ marginLeft: 'auto', fontSize: 12, color: 'rgba(255,255,255,0.5)', fontFamily: 'var(--font-dm-sans)' }}>Booking confirmed</span>
+        </div>
+
+        {/* Items */}
+        <div style={{ padding: '8px 24px' }}>
+          {confirmedItems.map((item, i) => (
+            <div key={item.id} style={{
+              display: 'flex', alignItems: 'center', gap: 14, padding: '14px 0',
+              borderBottom: i < confirmedItems.length - 1 ? '1px solid var(--border)' : 'none',
+            }}>
+              <div style={{ width: 48, height: 48, borderRadius: 'var(--r-md)', overflow: 'hidden', flexShrink: 0, position: 'relative' }}>
+                <Image src={item.image} alt={item.title} fill sizes="48px" style={{ objectFit: 'cover' }} />
+              </div>
+              <div style={{ flex: 1 }}>
+                <p style={{ fontSize: 14, fontWeight: 600, fontFamily: 'var(--font-dm-sans)' }}>{item.title}</p>
+                <p style={{ fontSize: 12, color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-sans)', marginTop: 2 }}>
+                  {item.date} · {item.travelers} traveler{item.travelers !== 1 ? 's' : ''} · {item.destination}
+                </p>
+              </div>
+              <span style={{ fontSize: 14, fontWeight: 700, fontFamily: 'var(--font-dm-sans)', flexShrink: 0 }}>
+                ${(item.price * item.travelers).toLocaleString()}
+              </span>
+            </div>
+          ))}
+        </div>
+
+        {/* Total */}
+        <div style={{
+          padding: '16px 24px', background: 'var(--bg-warm)',
+          borderTop: '1px solid var(--border)',
+          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+        }}>
+          <span style={{ fontSize: 14, fontFamily: 'var(--font-dm-sans)', fontWeight: 600, color: 'var(--text-secondary)' }}>Total Paid</span>
+          <span style={{ fontFamily: 'var(--font-dm-sans)', fontWeight: 800, fontSize: 22 }}>${total.toLocaleString()}</span>
+        </div>
+      </div>
+
+      <button className="btn-primary" onClick={() => { clearCart(); router.push('/') }} style={{ height: 48, padding: '0 36px', fontSize: 15 }}>
+        Explore more experiences →
+      </button>
+
+      <p style={{ marginTop: 16, fontSize: 12.5, color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-sans)' }}>
+        Free cancellation within 48 hours · No problem.
+      </p>
+    </div>
+  )
+}
+
+/* ═══════════════════════════════════
+   MAIN CHECKOUT VIEW
+   ═══════════════════════════════════ */
+export default function CheckoutView() {
+  const [step, setStep] = useState(1)
+  const [confirmed, setConfirmed] = useState(false)
+  const [clientSecret, setClientSecret] = useState<string | null>(null)
+  const [waiverAccepted, setWaiverAccepted] = useState(false)
+  const [waiverError, setWaiverError] = useState(false)
+  const [formData, setFormData] = useState<Record<string, string>>({})
+  const [formErrors, setFormErrors] = useState<Record<string, boolean>>({})
+  const [stripeError, setStripeError] = useState<string | null>(null)
+  const { items, subtotal, fee, grandTotal } = useCartStore()
+
+  // Create PaymentIntent when moving to step 3
+  useEffect(() => {
+    if (step === 3 && !clientSecret && items.length > 0) {
+      fetch('/api/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          amount: grandTotal(),
+          items: items.map((i) => ({
+            title: i.title,
+            travelers: i.travelers,
+            date: i.date,
+            price: i.price,
+          })),
+        }),
+      })
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.error) {
+            setStripeError(data.error)
+          } else {
+            setClientSecret(data.clientSecret)
+          }
+        })
+        .catch(() => setStripeError('Failed to initialize payment. Please try again.'))
+    }
+  }, [step, clientSecret, items, grandTotal])
+
+  if (confirmed) return <ConfirmedView />
+
+  if (items.length === 0) {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', paddingTop: 72, textAlign: 'center' }}>
+        <div style={{ width: 64, height: 64, borderRadius: '50%', background: 'var(--surface)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 20 }}>
+          <Leaf size={24} color="var(--text-tertiary)" />
+        </div>
+        <p style={{ fontSize: 20, fontFamily: 'var(--font-syne)', fontWeight: 700, marginBottom: 8 }}>Your itinerary is empty</p>
+        <p style={{ fontSize: 14, color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-sans)', marginBottom: 24, maxWidth: 300 }}>Start exploring Jamaica and add experiences to build your trip</p>
+        <Link href="/" className="btn-primary" style={{ height: 46, padding: '0 28px', fontSize: 14 }}>Browse experiences</Link>
+      </div>
+    )
+  }
+
+  const ctas = ['Continue to details →', 'Continue to payment →', `Complete booking · $${grandTotal().toLocaleString()}`]
+
+  return (
+    <div style={{ minHeight: '100vh', paddingTop: 72, background: 'var(--bg-warm)' }}>
+      {/* Top bar */}
+      <div style={{ borderBottom: '1px solid var(--border)', background: '#fff' }}>
+        <div className="container" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 16px', maxWidth: 1100 }}>
+          <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13.5, fontFamily: 'var(--font-dm-sans)', fontWeight: 500, color: 'var(--text-secondary)', transition: 'color 0.15s ease' }}>
+            <ArrowLeft size={15} /> Back
+          </Link>
+          <div style={{ textAlign: 'center' }}>
+            <h2 style={{ fontFamily: 'var(--font-syne)', fontWeight: 700, fontSize: 18 }}>Checkout</h2>
+          </div>
+          <div className="hide-mobile"><StepIndicator step={step} /></div>
+        </div>
+      </div>
+
+      {/* Body */}
+      <div className="checkout-body">
+        {/* Left — form */}
+        <div style={{ flex: 1, maxWidth: 640 }}>
+          {step === 1 && <ReviewStep />}
+          {step === 2 && <DetailsStep waiverAccepted={waiverAccepted} setWaiverAccepted={setWaiverAccepted} waiverError={waiverError} formData={formData} setFormData={setFormData} formErrors={formErrors} />}
+          {step === 3 && (
+            clientSecret ? (
+              <Elements stripe={stripePromise} options={{ clientSecret, appearance: {
+                theme: 'stripe',
+                variables: {
+                  colorPrimary: '#171614',
+                  colorBackground: '#ffffff',
+                  colorText: '#171614',
+                  colorDanger: '#c00',
+                  fontFamily: 'DM Sans, sans-serif',
+                  borderRadius: '12px',
+                  spacingUnit: '4px',
+                },
+                rules: {
+                  '.Input': { border: '1px solid rgba(0,0,0,0.08)', padding: '14px', fontSize: '15px' },
+                  '.Input:focus': { borderColor: '#171614', boxShadow: '0 0 0 3px rgba(23,22,20,0.06)' },
+                  '.Label': { fontWeight: '600', fontSize: '12.5px', marginBottom: '6px' },
+                  '.Tab': { borderRadius: '10px', border: '1px solid rgba(0,0,0,0.08)' },
+                  '.Tab--selected': { borderColor: '#171614', backgroundColor: '#171614', color: '#fff' },
+                },
+              }}}>
+                <PaymentStep onPaymentSuccess={() => setConfirmed(true)} />
+              </Elements>
+            ) : stripeError ? (
+              <div style={{ padding: '40px', textAlign: 'center' }}>
+                <p style={{ fontSize: 14, color: '#c00', fontFamily: 'var(--font-dm-sans)', marginBottom: 16 }}>{stripeError}</p>
+                <button className="btn-outline" onClick={() => { setStripeError(null); setClientSecret(null) }}>Try again</button>
+              </div>
+            ) : (
+              <div style={{ padding: '60px', textAlign: 'center' }}>
+                <p style={{ fontSize: 14, color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-sans)' }}>Setting up secure payment...</p>
+              </div>
+            )
+          )}
+          {step > 1 && step < 3 && (
+            <button className="btn-outline" onClick={() => { setStep(step - 1); window.scrollTo({ top: 0, behavior: 'smooth' }) }} style={{ marginTop: 24, gap: 6 }}>
+              <ArrowLeft size={14} /> Previous step
+            </button>
+          )}
+          {step === 3 && (
+            <button className="btn-outline" onClick={() => { setStep(2); setClientSecret(null); window.scrollTo({ top: 0, behavior: 'smooth' }) }} style={{ marginTop: 24, gap: 6 }}>
+              <ArrowLeft size={14} /> Previous step
+            </button>
+          )}
+        </div>
+
+        {/* Right — summary */}
+        <div style={{ width: '100%', maxWidth: 340, flexShrink: 0, position: 'sticky', top: 120, alignSelf: 'flex-start' }}>
+          <div style={{
+            borderRadius: 'var(--r-xl)', overflow: 'hidden',
+            border: '1px solid var(--border)', background: '#fff',
+          }}>
+            <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--border)' }}>
+              <h4 style={{ fontFamily: 'var(--font-syne)', fontWeight: 700, fontSize: 16, marginBottom: 2 }}>Order Summary</h4>
+              <p style={{ fontSize: 12, color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-sans)' }}>Jamaica · {items.length} experience{items.length !== 1 ? 's' : ''}</p>
+            </div>
+
+            <div style={{ padding: '12px 24px' }}>
+              {items.map((item) => (
+                <div key={item.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 0', borderBottom: '1px solid var(--border)' }}>
+                  <div style={{ width: 42, height: 42, borderRadius: 'var(--r-md)', overflow: 'hidden', flexShrink: 0, position: 'relative' }}>
+                    <Image src={item.image} alt={item.title} fill sizes="42px" style={{ objectFit: 'cover' }} />
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <p style={{ fontSize: 13, fontFamily: 'var(--font-dm-sans)', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.title}</p>
+                    <p style={{ fontSize: 11.5, color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-sans)' }}>{item.travelers} × ${item.price}</p>
+                  </div>
+                  <span style={{ fontSize: 13, fontWeight: 700, fontFamily: 'var(--font-dm-sans)', flexShrink: 0 }}>
+                    ${(item.price * item.travelers).toLocaleString()}
+                  </span>
+                </div>
+              ))}
+            </div>
+
+            <div style={{ padding: '16px 24px', background: 'var(--bg-warm)', borderTop: '1px solid var(--border)' }}>
+              {[{ l: 'Subtotal', v: subtotal() }, { l: 'Booking fee (5%)', v: fee() }].map((r) => (
+                <div key={r.l} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13.5, fontFamily: 'var(--font-dm-sans)', color: 'var(--text-secondary)', marginBottom: 6 }}>
+                  <span>{r.l}</span><span>${r.v.toLocaleString()}</span>
+                </div>
+              ))}
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontFamily: 'var(--font-dm-sans)', fontWeight: 800, fontSize: 20, marginTop: 10, paddingTop: 12, borderTop: '1px solid var(--border)' }}>
+                <span>Total</span><span>${grandTotal().toLocaleString()}</span>
+              </div>
+            </div>
+
+            {step < 3 && (
+              <div style={{ padding: '16px 24px' }}>
+                <button className="btn-primary" onClick={() => {
+                  if (step === 2) {
+                    // Validate required fields
+                    const required = ['firstName', 'lastName', 'email', 'phone', 'country']
+                    const errors: Record<string, boolean> = {}
+                    let hasError = false
+                    required.forEach((key) => {
+                      if (!formData[key]?.trim()) {
+                        errors[key] = true
+                        hasError = true
+                      }
+                    })
+                    setFormErrors(errors)
+
+                    if (!waiverAccepted) {
+                      setWaiverError(true)
+                      hasError = true
+                    } else {
+                      setWaiverError(false)
+                    }
+
+                    if (hasError) return
+                  }
+                  setWaiverError(false)
+                  setFormErrors({})
+                  setStep(step + 1)
+                  window.scrollTo({ top: 0, behavior: 'smooth' })
+                }} style={{ width: '100%', height: 48, fontSize: 14 }}>
+                  {ctas[step - 1]}
+                </button>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: 12, fontSize: 11.5, color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-sans)' }}>
+                  <Lock size={11} />
+                  <span>Secure checkout · Free cancellation 48hrs</span>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Trust badges */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 16, marginTop: 20 }}>
+            {[
+              { icon: <ShieldCheck size={14} />, text: 'SSL Encrypted' },
+              { icon: <Star size={14} fill="var(--gold)" strokeWidth={0} />, text: '4.9 Rating' },
+            ].map((badge) => (
+              <div key={badge.text} style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11.5, color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-sans)' }}>
+                {badge.icon}
+                <span>{badge.text}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}

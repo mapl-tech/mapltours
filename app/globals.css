@@ -2,26 +2,653 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ═══════════════════════════════════════════
+   MAPL TOURS — "Caribbean Editorial" System
+   Inspired by Wander.com, Condé Nast Traveler
+   ═══════════════════════════════════════════ */
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Surfaces */
+  --bg:             #FFFFFF;
+  --bg-warm:        #FAF9F7;
+  --bg-dark:        #111110;
+  --bg-dark-warm:   #1A1917;
+  --card-bg:        #FFFFFF;
+  --surface:        #F3F2EF;
+  --surface-hover:  #EBEAE6;
+
+  /* Borders */
+  --border:         rgba(0, 0, 0, 0.07);
+  --border-strong:  rgba(0, 0, 0, 0.13);
+  --border-on-dark: rgba(255, 255, 255, 0.08);
+
+  /* Brand */
+  --accent:         #171614;
+  --gold:           #A68B3C;
+  --gold-warm:      #C4A44A;
+  --emerald:        #1D7A50;
+  --emerald-dim:    rgba(29, 122, 80, 0.07);
+
+  /* Text */
+  --text-primary:   #171614;
+  --text-secondary: #5E5C57;
+  --text-tertiary:  #6E6C67;
+  --text-on-dark:   #FFFFFF;
+  --text-on-dark-2: #cccccc;
+  --text-on-dark-3: #cccccc;
+
+  /* Radii */
+  --r-sm: 8px;
+  --r-md: 12px;
+  --r-lg: 16px;
+  --r-xl: 20px;
+  --r-2xl: 28px;
+
+  /* Shadows */
+  --shadow-xs:  0 1px 2px rgba(0,0,0,0.03);
+  --shadow-sm:  0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.02);
+  --shadow-md:  0 4px 12px rgba(0,0,0,0.06);
+  --shadow-lg:  0 12px 32px rgba(0,0,0,0.08);
+  --shadow-xl:  0 20px 48px rgba(0,0,0,0.10);
+  --shadow-card-hover: 0 16px 40px rgba(0,0,0,0.10);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  scroll-behavior: smooth;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 body {
-  color: var(--foreground);
-  background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--bg);
+  color: var(--text-primary);
+  font-family: var(--font-dm-sans), sans-serif;
 }
 
-@layer utilities {
-  .text-balance {
-    text-wrap: balance;
+a { text-decoration: none; color: inherit; }
+img { display: block; max-width: 100%; }
+
+/* ═══════════════════════════════════
+   TYPOGRAPHY SCALE
+   ═══════════════════════════════════ */
+
+.text-display {
+  font-family: var(--font-syne);
+  font-weight: 700;
+  font-size: clamp(2.25rem, 4.5vw, 3.5rem);
+  line-height: 1.06;
+  letter-spacing: -0.03em;
+}
+
+.text-headline-lg {
+  font-family: var(--font-syne);
+  font-weight: 700;
+  font-size: 1.75rem;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+}
+
+.text-headline {
+  font-family: var(--font-syne);
+  font-weight: 700;
+  font-size: 1.25rem;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+}
+
+.text-label {
+  font-family: var(--font-dm-sans);
+  font-weight: 600;
+  font-size: 0.8125rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-primary);
+}
+
+/* ═══════════════════════════════════
+   LAYOUT
+   ═══════════════════════════════════ */
+
+.container {
+  max-width: 1832px;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: 16px;
+  padding-right: 16px;
+}
+@media (min-width: 768px) {
+  .container { padding-left: 24px; padding-right: 24px; }
+}
+@media (min-width: 1024px) {
+  .container { padding-left: 32px; padding-right: 32px; }
+}
+@media (min-width: 1536px) {
+  .container { padding-left: 48px; padding-right: 48px; }
+}
+
+/* Responsive grids */
+.grid-destinations {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+@media (min-width: 768px) {
+  .grid-destinations {
+    grid-template-columns: repeat(6, 1fr);
+    gap: 10px;
   }
+}
+
+/* Trending grid */
+.grid-trending {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+}
+@media (min-width: 768px) {
+  .grid-trending {
+    grid-template-columns: 1.8fr 1fr 1fr;
+  }
+}
+
+/* Feature grid */
+.grid-features {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 28px;
+}
+@media (min-width: 768px) {
+  .grid-features {
+    grid-template-columns: 1fr 1fr;
+    gap: 40px 48px;
+  }
+}
+
+/* Footer grid */
+.grid-footer {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+}
+@media (min-width: 768px) {
+  .grid-footer {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 32px;
+  }
+}
+
+/* Checkout layout */
+.checkout-body {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  padding: 24px 16px 60px;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+@media (min-width: 768px) {
+  .checkout-body {
+    flex-direction: row;
+    gap: 40px;
+    padding: 40px 48px 80px;
+  }
+}
+
+/* MAPL difference section */
+.mapl-diff {
+  display: flex;
+  flex-direction: column;
+}
+@media (min-width: 768px) {
+  .mapl-diff { flex-direction: row; }
+}
+.mapl-diff-image {
+  position: relative;
+  min-height: 280px;
+}
+@media (min-width: 768px) {
+  .mapl-diff-image {
+    flex: 0 0 45%;
+    min-height: 600px;
+  }
+}
+
+/* ═══════════════════════════════════════════
+   MOBILE LUXURY — "Caribbean Prestige"
+   Every pixel intentional. Every space generous.
+   ═══════════════════════════════════════════ */
+
+@media (max-width: 767px) {
+  .hide-mobile { display: none !important; }
+
+  /* ── Container — 16px from screen edge ── */
+  .container {
+    padding-left: 16px !important;
+    padding-right: 16px !important;
+  }
+
+  /* ── Hero on mobile ── */
+  .hero-section {
+    aspect-ratio: 1 / 1 !important;
+  }
+
+  /* ── Typography — bolder, more editorial ── */
+  .text-display {
+    font-size: 2rem !important;
+    line-height: 1.08 !important;
+    letter-spacing: -0.035em !important;
+  }
+  .text-headline-lg {
+    font-size: 1.5rem !important;
+  }
+  .text-headline {
+    font-size: 1.15rem !important;
+  }
+  .text-label {
+    font-size: 0.6875rem !important;
+    letter-spacing: 0.1em !important;
+    margin-bottom: 14px !important;
+  }
+
+  /* ── Shorts grid — single column, generous spacing ── */
+  .mobile-shorts-grid {
+    grid-template-columns: 1fr !important;
+    gap: 20px !important;
+  }
+
+  /* ── Photo cards — cinematic portrait ── */
+  .photo-card {
+    aspect-ratio: 9 / 16 !important;
+    border-radius: var(--r-2xl) !important;
+  }
+
+  /* ── Destination cards — 2-col editorial thumbnails ── */
+  .grid-destinations {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 12px !important;
+  }
+  .grid-destinations .photo-card {
+    aspect-ratio: 3 / 4 !important;
+    border-radius: var(--r-xl) !important;
+  }
+  .mobile-dest-card {
+    height: 250px !important;
+    aspect-ratio: unset !important;
+  }
+  .mobile-dest-scroll {
+    margin-left: 16px !important;
+  }
+
+  /* ── Trending — full-bleed stacked ── */
+  .grid-trending {
+    grid-template-columns: 1fr !important;
+    gap: 16px !important;
+  }
+  .grid-trending .photo-card {
+    min-height: 320px !important;
+    border-radius: var(--r-2xl) !important;
+  }
+
+  /* ── Features — stacked with breathing room ── */
+  .grid-features {
+    grid-template-columns: 1fr !important;
+    gap: 32px !important;
+  }
+
+  /* ── Footer — elegant single column, centered ── */
+  .grid-footer {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 32px 20px !important;
+  }
+  .footer-brand {
+    text-align: center !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+  }
+  .footer-trust {
+    flex-direction: column !important;
+    align-items: center !important;
+    text-align: center !important;
+  }
+  .footer-bottom {
+    flex-direction: column !important;
+    align-items: center !important;
+    text-align: center !important;
+  }
+  .footer-legal {
+    justify-content: center !important;
+  }
+
+  /* ── MAPL Difference — magazine spread ── */
+  .mapl-diff-image {
+    min-height: 320px !important;
+    border-radius: 0 !important;
+    margin-left: -16px !important;
+    margin-right: -16px !important;
+  }
+  .mapl-diff-content {
+    padding: 32px 0 40px !important;
+  }
+
+  /* ── Buttons — bigger touch targets ── */
+  .btn-primary {
+    height: 48px !important;
+    font-size: 14.5px !important;
+    padding: 0 28px !important;
+  }
+  .btn-outline {
+    height: 44px !important;
+    font-size: 14px !important;
+  }
+
+  /* ── Inputs — taller for fat fingers ── */
+  .field-input {
+    height: 50px !important;
+    font-size: 16px !important;
+    border-radius: var(--r-lg) !important;
+  }
+
+  /* ── Tags — slightly bigger ── */
+  .tag {
+    height: 28px !important;
+    font-size: 11.5px !important;
+    padding: 0 12px !important;
+  }
+
+  /* ── Cards — softer corners, more shadow ── */
+  .surface-card {
+    border-radius: var(--r-xl) !important;
+  }
+
+  /* ── Experience cards — no lift on mobile (tap instead) ── */
+  .exp-card:hover {
+    transform: none !important;
+  }
+
+  /* ── Checkout — stack gracefully ── */
+  .checkout-body {
+    padding: 20px 16px 48px !important;
+    gap: 28px !important;
+  }
+
+  /* ── Scroll containers — snap for premium feel ── */
+  .scroll-x {
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+  }
+  .scroll-x > * {
+    scroll-snap-align: start;
+  }
+}
+
+@media (min-width: 768px) {
+  .hide-desktop { display: none !important; }
+}
+
+/* ═══════════════════════════════════
+   BUTTONS
+   ═══════════════════════════════════ */
+
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 42px;
+  padding: 0 24px;
+  background: var(--accent);
+  color: white;
+  font-family: var(--font-dm-sans);
+  font-weight: 500;
+  font-size: 13.5px;
+  border-radius: 9999px;
+  border: none;
+  cursor: pointer;
+  transition: background 0.15s ease, transform 0.15s ease, box-shadow 0.2s ease;
+}
+.btn-primary:hover {
+  background: #2A2926;
+  box-shadow: var(--shadow-md);
+}
+.btn-primary:active { transform: scale(0.98); }
+
+.btn-outline {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 42px;
+  padding: 0 22px;
+  background: transparent;
+  color: var(--text-primary);
+  font-family: var(--font-dm-sans);
+  font-weight: 500;
+  font-size: 13.5px;
+  border-radius: 9999px;
+  border: 1px solid var(--border-strong);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.btn-outline:hover {
+  background: var(--surface);
+  border-color: var(--border-strong);
+}
+
+.btn-glass {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 42px;
+  padding: 0 22px;
+  background: rgba(255,255,255,0.08);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  color: white;
+  font-family: var(--font-dm-sans);
+  font-weight: 500;
+  font-size: 13.5px;
+  border-radius: 9999px;
+  border: 1px solid rgba(255,255,255,0.10);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.btn-glass:hover {
+  background: rgba(255,255,255,0.15);
+}
+
+/* ═══════════════════════════════════
+   FORM ELEMENTS
+   ═══════════════════════════════════ */
+
+.field-input {
+  width: 100%;
+  height: 44px;
+  padding: 0 14px;
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  color: var(--text-primary);
+  font-family: var(--font-dm-sans);
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.field-input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(23,22,20,0.06);
+}
+.field-input::placeholder { color: var(--text-tertiary); }
+
+textarea.field-input {
+  height: auto;
+  padding: 12px 14px;
+  resize: vertical;
+}
+
+/* ═══════════════════════════════════
+   CARDS & SURFACES
+   ═══════════════════════════════════ */
+
+.surface-card {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+}
+
+.tag {
+  display: inline-flex;
+  align-items: center;
+  height: 24px;
+  padding: 0 10px;
+  border-radius: 9999px;
+  background: var(--surface);
+  color: var(--text-secondary);
+  font-family: var(--font-dm-sans);
+  font-size: 11px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+/* ═══════════════════════════════════
+   SCROLLBAR
+   ═══════════════════════════════════ */
+
+.scroll-x {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.scroll-x::-webkit-scrollbar { display: none; }
+
+.no-scrollbar { scrollbar-width: none; }
+.no-scrollbar::-webkit-scrollbar { display: none; }
+
+/* ═══════════════════════════════════
+   ANIMATIONS
+   ═══════════════════════════════════ */
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(18px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes slideInRight {
+  from { opacity: 0; transform: translateX(100%); }
+  to { opacity: 1; transform: translateX(0); }
+}
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.96); }
+  to { opacity: 1; transform: scale(1); }
+}
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+@keyframes slideUp {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+
+.animate-fade-up { animation: fadeUp 0.55s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
+.animate-fade-in { animation: fadeIn 0.35s ease forwards; }
+.animate-slide-right { animation: slideInRight 0.35s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
+.animate-scale-in { animation: scaleIn 0.3s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
+
+/* Stagger delays */
+.stagger-1 { animation-delay: 0.06s; opacity: 0; }
+.stagger-2 { animation-delay: 0.12s; opacity: 0; }
+.stagger-3 { animation-delay: 0.18s; opacity: 0; }
+.stagger-4 { animation-delay: 0.24s; opacity: 0; }
+.stagger-5 { animation-delay: 0.30s; opacity: 0; }
+.stagger-6 { animation-delay: 0.36s; opacity: 0; }
+
+/* Hero responsive */
+.hero-section {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: flex-end;
+  aspect-ratio: 1 / 1;
+}
+@media (min-width: 768px) {
+  .hero-section {
+    aspect-ratio: 16 / 4;
+  }
+}
+
+/* Photo card hover */
+.photo-card {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--r-xl);
+}
+.photo-card img {
+  transition: transform 0.55s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.photo-card:hover img {
+  transform: scale(1.04);
+}
+
+/* Experience card lift */
+.exp-card {
+  transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.3s ease;
+}
+.exp-card:hover {
+  transform: translateY(-4px);
+}
+
+/* Overlay gradient utility */
+.overlay-bottom {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 50%;
+  background: linear-gradient(0deg, rgba(0,0,0,0.45) 0%, transparent 100%);
+  pointer-events: none;
+}
+
+/* Jamaica flag text mask */
+.flag-text {
+  background-image: url('/jamaica-flag.png');
+  background-size: 100% 400%;
+  background-position: center 0%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  display: inline;
+  -webkit-text-stroke: 0.5px #cccccc;
+  paint-order: stroke fill;
+}
+
+/* Page transitions */
+.page-enter {
+  animation: pageIn 0.25s ease forwards;
+}
+@keyframes pageIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* Section divider */
+.section-divider {
+  width: 100%;
+  height: 1px;
+  background: var(--border);
 }
