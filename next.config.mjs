@@ -29,6 +29,7 @@ const nextConfig = {
   poweredByHeader: false,
   reactStrictMode: true,
   headers: async () => [
+    // Videos — immutable, 1 year
     {
       source: '/:path*.mp4',
       headers: [
@@ -39,6 +40,30 @@ const nextConfig = {
       source: '/:path*.webm',
       headers: [
         { key: 'Cache-Control', value: 'public, max-age=31536000, immutable' },
+      ],
+    },
+    // Static assets — immutable, 1 year
+    {
+      source: '/:path*.woff2',
+      headers: [
+        { key: 'Cache-Control', value: 'public, max-age=31536000, immutable' },
+      ],
+    },
+    // Images in public — 30 days
+    {
+      source: '/images/:path*',
+      headers: [
+        { key: 'Cache-Control', value: 'public, max-age=2592000, stale-while-revalidate=86400' },
+      ],
+    },
+    // HTML pages — short cache with revalidation
+    {
+      source: '/:path*',
+      headers: [
+        { key: 'X-Content-Type-Options', value: 'nosniff' },
+        { key: 'X-Frame-Options', value: 'DENY' },
+        { key: 'X-XSS-Protection', value: '1; mode=block' },
+        { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
       ],
     },
   ],

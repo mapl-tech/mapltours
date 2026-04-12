@@ -2,56 +2,50 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { createClient } from './client'
-import type { User } from '@supabase/supabase-js'
+import { useAuth } from './auth-context'
 import type { Comment } from '@/lib/experiences'
 
 const supabase = createClient()
 
-// ── Auth helper ──
+// ── Re-export useAuth as useUser for backward compat ──
 export function useUser() {
-  const [user, setUser] = useState<User | null>(null)
-
-  useEffect(() => {
-    supabase.auth.getUser().then(({ data: { user } }) => setUser(user))
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, session) => setUser(session?.user ?? null)
-    )
-    return () => subscription.unsubscribe()
-  }, [])
-
-  return user
+  return useAuth().user
 }
 
 // ── Experience Likes ──
 export function useExperienceLike(experienceId: number) {
-  const user = useUser()
+  const { user } = useAuth()
   const [liked, setLiked] = useState(false)
   const [likeCount, setLikeCount] = useState(0)
   const [loading, setLoading] = useState(false)
+  const [fetched, setFetched] = useState(false)
 
   useEffect(() => {
-    // Get total like count for this experience
-    supabase
-      .from('experience_likes')
-      .select('id', { count: 'exact', head: true })
-      .eq('experience_id', experienceId)
-      .then(({ count }) => {
-        if (count !== null) setLikeCount(count)
-      })
+    if (fetched) return
 
-    // Check if current user has liked it
-    if (user) {
-      supabase
-        .from('experience_likes')
-        .select('id')
-        .eq('experience_id', experienceId)
-        .eq('user_id', user.id)
-        .maybeSingle()
-        .then(({ data }) => {
-          setLiked(!!data)
-        })
+    async function fetchLikes() {
+      const [countRes, likeRes] = await Promise.all([
+        supabase
+          .from('experience_likes')
+          .select('id', { count: 'exact', head: true })
+          .eq('experience_id', experienceId),
+        user
+          ? supabase
+              .from('experience_likes')
+              .select('id')
+              .eq('experience_id', experienceId)
+              .eq('user_id', user.id)
+              .maybeSingle()
+          : Promise.resolve({ data: null }),
+      ])
+
+      if (countRes.count !== null) setLikeCount(countRes.count)
+      if (likeRes.data) setLiked(true)
+      setFetched(true)
     }
-  }, [experienceId, user])
+
+    fetchLikes()
+  }, [experienceId, user, fetched])
 
   const toggleLike = useCallback(async () => {
     if (loading) return
@@ -63,21 +57,19 @@ export function useExperienceLike(experienceId: number) {
     setLoading(true)
 
     if (liked) {
-      // Unlike
+      setLiked(false)
+      setLikeCount((c) => Math.max(0, c - 1))
       await supabase
         .from('experience_likes')
         .delete()
         .eq('experience_id', experienceId)
         .eq('user_id', user.id)
-      setLiked(false)
-      setLikeCount((c) => Math.max(0, c - 1))
     } else {
-      // Like
+      setLiked(true)
+      setLikeCount((c) => c + 1)
       await supabase
         .from('experience_likes')
         .insert({ experience_id: experienceId, user_id: user.id })
-      setLiked(true)
-      setLikeCount((c) => c + 1)
     }
 
     setLoading(false)
@@ -88,30 +80,30 @@ export function useExperienceLike(experienceId: number) {
 
 // ── Comment Likes ──
 export function useCommentLike(commentId: string) {
-  const user = useUser()
+  const { user } = useAuth()
   const [liked, setLiked] = useState(false)
   const [likeCount, setLikeCount] = useState(0)
 
   useEffect(() => {
-    supabase
-      .from('comment_likes')
-      .select('id', { count: 'exact', head: true })
-      .eq('comment_id', commentId)
-      .then(({ count }) => {
-        if (count !== null) setLikeCount(count)
-      })
-
-    if (user) {
-      supabase
-        .from('comment_likes')
-        .select('id')
-        .eq('comment_id', commentId)
-        .eq('user_id', user.id)
-        .maybeSingle()
-        .then(({ data }) => {
-          setLiked(!!data)
-        })
+    async function fetch() {
+      const [countRes, likeRes] = await Promise.all([
+        supabase
+          .from('comment_likes')
+          .select('id', { count: 'exact', head: true })
+          .eq('comment_id', commentId),
+        user
+          ? supabase
+              .from('comment_likes')
+              .select('id')
+              .eq('comment_id', commentId)
+              .eq('user_id', user.id)
+              .maybeSingle()
+          : Promise.resolve({ data: null }),
+      ])
+      if (countRes.count !== null) setLikeCount(countRes.count)
+      if (likeRes.data) setLiked(true)
     }
+    fetch()
   }, [commentId, user])
 
   const toggleLike = useCallback(async () => {
@@ -121,19 +113,19 @@ export function useCommentLike(commentId: string) {
     }
 
     if (liked) {
+      setLiked(false)
+      setLikeCount((c) => Math.max(0, c - 1))
       await supabase
         .from('comment_likes')
         .delete()
         .eq('comment_id', commentId)
         .eq('user_id', user.id)
-      setLiked(false)
-      setLikeCount((c) => Math.max(0, c - 1))
     } else {
+      setLiked(true)
+      setLikeCount((c) => c + 1)
       await supabase
         .from('comment_likes')
         .insert({ comment_id: commentId, user_id: user.id })
-      setLiked(true)
-      setLikeCount((c) => c + 1)
     }
   }, [user, liked, commentId])
 
@@ -160,31 +152,30 @@ export interface DisplayComment extends Comment {
   replyToUser?: string
 }
 
+const COMMENTS_LIMIT = 20
+
 export function useComments(experienceId: number) {
-  const user = useUser()
+  const { user } = useAuth()
   const [comments, setComments] = useState<SupabaseComment[]>([])
   const [loading, setLoading] = useState(true)
   const [replyingTo, setReplyingTo] = useState<{ id: string; user: string } | null>(null)
 
-  // Load comments from Supabase
   const fetchComments = useCallback(async () => {
     const { data } = await supabase
       .from('comments')
       .select('id, experience_id, user_id, text, created_at, parent_id')
       .eq('experience_id', experienceId)
       .order('created_at', { ascending: true })
+      .limit(COMMENTS_LIMIT)
 
-    if (data) {
+    if (data && data.length > 0) {
       const userIds = Array.from(new Set(data.map((c) => c.user_id)))
-      let userMap = new Map<string, { id: string; name: string | null; avatar_url: string | null }>()
+      const { data: users } = await supabase
+        .from('users')
+        .select('id, name, avatar_url')
+        .in('id', userIds)
 
-      if (userIds.length > 0) {
-        const { data: users } = await supabase
-          .from('users')
-          .select('id, name, avatar_url')
-          .in('id', userIds)
-        userMap = new Map(users?.map((u) => [u.id, u]) || [])
-      }
+      const userMap = new Map(users?.map((u) => [u.id, u]) || [])
 
       setComments(
         data.map((c) => ({
@@ -242,9 +233,7 @@ export function useComments(experienceId: number) {
     setComments((prev) => prev.filter((c) => c.id !== commentId && c.parent_id !== commentId))
   }, [user])
 
-  // Build threaded display comments, merging hardcoded + Supabase
   const displayComments = useMemo(() => {
-    // Convert Supabase comments to display format
     const allDisplay: DisplayComment[] = comments.map((c) => ({
       id: parseInt(c.id.replace(/-/g, '').slice(0, 8), 16) || Date.now(),
       supabaseId: c.id,
@@ -258,7 +247,6 @@ export function useComments(experienceId: number) {
       replies: [],
     }))
 
-    // Separate top-level and replies
     const topLevel: DisplayComment[] = []
     const replyMap = new Map<string, DisplayComment[]>()
 
@@ -272,7 +260,6 @@ export function useComments(experienceId: number) {
       }
     }
 
-    // Attach replies to parents
     for (const c of topLevel) {
       if (c.supabaseId) {
         c.replies = replyMap.get(c.supabaseId) || []
@@ -283,7 +270,6 @@ export function useComments(experienceId: number) {
   }, [comments, user])
 
   function toDisplayComments(hardcodedComments: Comment[]): DisplayComment[] {
-    // Hardcoded comments get empty replies arrays
     const hardcoded: DisplayComment[] = hardcodedComments.map((c) => ({
       ...c,
       replies: [],

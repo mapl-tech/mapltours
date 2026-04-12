@@ -8,8 +8,8 @@ import { useState, useEffect, useRef } from 'react'
 import { Search, Leaf, MapPin, ShoppingBag } from 'lucide-react'
 import LanguageSwitcher from './LanguageSwitcher'
 import { useI18n } from '@/lib/i18n'
+import { useAuth } from '@/lib/supabase/auth-context'
 import { createClient } from '@/lib/supabase/client'
-import type { User } from '@supabase/supabase-js'
 
 const destinations = [
   { name: 'Negril', parish: 'Westmoreland' },
@@ -38,7 +38,8 @@ export default function TopNav({ onCartClick }: { onCartClick?: () => void }) {
   const dateRef = useRef<HTMLInputElement>(null)
   const lastScrollY = useRef(0)
   const { t } = useI18n()
-  const [user, setUser] = useState<User | null>(null)
+  const { user } = useAuth()
+  const [showProfileMenu, setShowProfileMenu] = useState(false)
   const supabase = createClient()
   const isHome = pathname === '/'
   const isExperience = pathname.startsWith('/experience')
@@ -63,22 +64,15 @@ export default function TopNav({ onCartClick }: { onCartClick?: () => void }) {
     return () => window.removeEventListener('scroll', onScroll)
   }, [])
 
-  useEffect(() => {
-    supabase.auth.getUser().then(({ data: { user } }) => setUser(user))
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, session) => setUser(session?.user ?? null)
-    )
-    return () => subscription.unsubscribe()
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
-
   // Close dropdowns on outside click
   useEffect(() => {
-    if (!showGuests && !showWhere) return
+    if (!showGuests && !showWhere && !showProfileMenu) return // eslint-disable-line react-hooks/exhaustive-deps
     const close = (e: MouseEvent) => {
       const target = e.target as HTMLElement
       if (target.closest('[data-dropdown]')) return
       setShowGuests(false)
       setShowWhere(false)
+      setShowProfileMenu(false)
     }
     document.addEventListener('mousedown', close)
     return () => document.removeEventListener('mousedown', close)
@@ -418,24 +412,88 @@ export default function TopNav({ onCartClick }: { onCartClick?: () => void }) {
           paddingRight: 16, gap: 8,
         }}>
           <LanguageSwitcher dark={dark} />
-          <Link href={user ? '/profile' : '/login'} style={{
-            width: 26, height: 26, borderRadius: '50%',
-            overflow: 'hidden', flexShrink: 0,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            background: user?.user_metadata?.avatar_url
-              ? 'transparent'
-              : dark ? 'rgba(255,255,255,0.12)' : 'var(--surface)',
-            border: dark ? '1px solid rgba(255,255,255,0.16)' : '1px solid var(--border-strong)',
-          }}>
-            {user?.user_metadata?.avatar_url ? (
-              <Image src={user.user_metadata.avatar_url} alt="" width={26} height={26} style={{ objectFit: 'cover' }} />
+          <div data-dropdown style={{ position: 'relative' }}>
+            {user ? (
+              <button
+                onClick={() => setShowProfileMenu(!showProfileMenu)}
+                style={{
+                  width: 26, height: 26, borderRadius: '50%',
+                  overflow: 'hidden', flexShrink: 0,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  background: user.user_metadata?.avatar_url
+                    ? 'transparent'
+                    : dark ? 'rgba(255,255,255,0.12)' : 'var(--surface)',
+                  border: dark ? '1px solid rgba(255,255,255,0.16)' : '1px solid var(--border-strong)',
+                  cursor: 'pointer', padding: 0,
+                }}
+              >
+                {user.user_metadata?.avatar_url ? (
+                  <Image src={user.user_metadata.avatar_url} alt="" width={26} height={26} style={{ objectFit: 'cover' }} />
+                ) : (
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={dark ? 'rgba(255,255,255,0.7)' : 'var(--text-secondary)'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                    <circle cx="12" cy="7" r="4" />
+                  </svg>
+                )}
+              </button>
             ) : (
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={dark ? 'rgba(255,255,255,0.7)' : 'var(--text-secondary)'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-                <circle cx="12" cy="7" r="4" />
-              </svg>
+              <Link href="/login" style={{
+                width: 26, height: 26, borderRadius: '50%',
+                overflow: 'hidden', flexShrink: 0,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                background: dark ? 'rgba(255,255,255,0.12)' : 'var(--surface)',
+                border: dark ? '1px solid rgba(255,255,255,0.16)' : '1px solid var(--border-strong)',
+              }}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={dark ? 'rgba(255,255,255,0.7)' : 'var(--text-secondary)'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                  <circle cx="12" cy="7" r="4" />
+                </svg>
+              </Link>
             )}
-          </Link>
+
+            {/* Mobile profile dropdown */}
+            {showProfileMenu && user && (
+              <div style={{
+                position: 'absolute', top: '100%', right: 0, marginTop: 8,
+                background: '#fff', borderRadius: 'var(--r-lg)',
+                border: '1px solid var(--border)',
+                boxShadow: '0 8px 32px rgba(0,0,0,0.12)',
+                padding: '8px 0', minWidth: 180,
+                zIndex: 10,
+              }}>
+                <Link
+                  href="/profile"
+                  onClick={() => setShowProfileMenu(false)}
+                  style={{
+                    display: 'block', padding: '10px 16px',
+                    fontSize: 14, color: 'var(--text-primary)',
+                    fontFamily: 'var(--font-dm-sans)',
+                  }}
+                >
+                  Profile
+                </Link>
+                <div style={{ height: 1, background: 'var(--border)', margin: '4px 0' }} />
+                <button
+                  onClick={async () => {
+                    await supabase.auth.signOut()
+                    setShowProfileMenu(false)
+                    // Auth context handles state update via onAuthStateChange
+                    router.push('/')
+                    router.refresh()
+                  }}
+                  style={{
+                    display: 'block', width: '100%', textAlign: 'left',
+                    padding: '10px 16px',
+                    fontSize: 14, color: 'var(--text-primary)',
+                    fontFamily: 'var(--font-dm-sans)',
+                    background: 'none', border: 'none', cursor: 'pointer',
+                  }}
+                >
+                  Sign out
+                </button>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* ── Right ── */}
@@ -483,29 +541,127 @@ export default function TopNav({ onCartClick }: { onCartClick?: () => void }) {
           )}
 
           {/* Profile icon — always visible on desktop */}
-          <Link
-            href={user ? '/profile' : '/login'}
-            className="hide-mobile"
-            style={{
-              width: 32, height: 32, borderRadius: '50%',
-              overflow: 'hidden', flexShrink: 0,
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              background: user?.user_metadata?.avatar_url
-                ? 'transparent'
-                : dark ? 'rgba(255,255,255,0.1)' : 'var(--surface)',
-              border: dark ? '1.5px solid rgba(255,255,255,0.2)' : '1.5px solid var(--border-strong)',
-              transition: 'all 0.15s ease',
-            }}
-          >
-            {user?.user_metadata?.avatar_url ? (
-              <Image src={user.user_metadata.avatar_url} alt="" width={32} height={32} style={{ objectFit: 'cover' }} />
+          <div data-dropdown className="hide-mobile" style={{ position: 'relative' }}>
+            {user ? (
+              <button
+                onClick={() => setShowProfileMenu(!showProfileMenu)}
+                style={{
+                  width: 32, height: 32, borderRadius: '50%',
+                  overflow: 'hidden', flexShrink: 0,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  background: user.user_metadata?.avatar_url
+                    ? 'transparent'
+                    : dark ? 'rgba(255,255,255,0.1)' : 'var(--surface)',
+                  border: dark ? '1.5px solid rgba(255,255,255,0.2)' : '1.5px solid var(--border-strong)',
+                  cursor: 'pointer', padding: 0,
+                  transition: 'all 0.15s ease',
+                }}
+              >
+                {user.user_metadata?.avatar_url ? (
+                  <Image src={user.user_metadata.avatar_url} alt="" width={32} height={32} style={{ objectFit: 'cover' }} />
+                ) : (
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={dark ? 'rgba(255,255,255,0.7)' : 'var(--text-secondary)'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                    <circle cx="12" cy="7" r="4" />
+                  </svg>
+                )}
+              </button>
             ) : (
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={dark ? 'rgba(255,255,255,0.7)' : 'var(--text-secondary)'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-                <circle cx="12" cy="7" r="4" />
-              </svg>
+              <Link
+                href="/login"
+                style={{
+                  width: 32, height: 32, borderRadius: '50%',
+                  overflow: 'hidden', flexShrink: 0,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  background: dark ? 'rgba(255,255,255,0.1)' : 'var(--surface)',
+                  border: dark ? '1.5px solid rgba(255,255,255,0.2)' : '1.5px solid var(--border-strong)',
+                  transition: 'all 0.15s ease',
+                }}
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={dark ? 'rgba(255,255,255,0.7)' : 'var(--text-secondary)'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                  <circle cx="12" cy="7" r="4" />
+                </svg>
+              </Link>
             )}
-          </Link>
+
+            {/* Profile dropdown menu */}
+            {showProfileMenu && user && (
+              <div style={{
+                position: 'absolute', top: '100%', right: 0, marginTop: 8,
+                background: '#fff', borderRadius: 'var(--r-lg)',
+                border: '1px solid var(--border)',
+                boxShadow: '0 8px 32px rgba(0,0,0,0.12)',
+                padding: '8px 0', minWidth: 200,
+                zIndex: 10,
+              }}>
+                {/* User info */}
+                <div style={{
+                  padding: '12px 16px 10px', borderBottom: '1px solid var(--border)',
+                }}>
+                  <p style={{
+                    fontSize: 14, fontWeight: 600, color: 'var(--text-primary)',
+                    fontFamily: 'var(--font-dm-sans)',
+                  }}>
+                    {user.user_metadata?.full_name || user.user_metadata?.name || 'Traveler'}
+                  </p>
+                  <p style={{
+                    fontSize: 12, color: 'var(--text-tertiary)',
+                    fontFamily: 'var(--font-dm-sans)', marginTop: 2,
+                  }}>
+                    {user.email}
+                  </p>
+                </div>
+
+                {/* Menu items */}
+                {[
+                  { label: 'Profile', href: '/profile' },
+                  { label: 'Help Center', href: '/help' },
+                ].map((item) => (
+                  <Link
+                    key={item.label}
+                    href={item.href}
+                    onClick={() => setShowProfileMenu(false)}
+                    style={{
+                      display: 'block', padding: '10px 16px',
+                      fontSize: 14, color: 'var(--text-primary)',
+                      fontFamily: 'var(--font-dm-sans)',
+                      transition: 'background 0.1s ease',
+                    }}
+                    onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--surface)' }}
+                    onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent' }}
+                  >
+                    {item.label}
+                  </Link>
+                ))}
+
+                <div style={{ height: 1, background: 'var(--border)', margin: '4px 0' }} />
+
+                {/* Sign out */}
+                <button
+                  onClick={async () => {
+                    await supabase.auth.signOut()
+                    setShowProfileMenu(false)
+                    // Auth context handles state update via onAuthStateChange
+                    router.push('/')
+                    router.refresh()
+                  }}
+                  style={{
+                    display: 'block', width: '100%', textAlign: 'left',
+                    padding: '10px 16px',
+                    fontSize: 14, color: 'var(--text-primary)',
+                    fontFamily: 'var(--font-dm-sans)',
+                    background: 'none', border: 'none', cursor: 'pointer',
+                    transition: 'background 0.1s ease',
+                  }}
+                  onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--surface)' }}
+                  onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent' }}
+                >
+                  Sign out
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </header>

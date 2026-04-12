@@ -141,7 +141,7 @@ export default memo(function MobileShort({ exp }: { exp: Experience }) {
               autoPlay
               loop
               playsInline
-              preload="auto"
+              preload={isVisible ? 'auto' : 'metadata'}
               style={{
                 position: 'absolute', inset: 0,
                 width: '100%', height: '100%',

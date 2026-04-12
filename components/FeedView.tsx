@@ -7,10 +7,74 @@ import ExpCard from './ExpCard'
 import MobileShort from './MobileShort'
 import Footer from './Footer'
 import { useI18n } from '@/lib/i18n'
-import { useRef, useState } from 'react'
+import { useRef, useState, useEffect } from 'react'
 import { Award, Users, Headphones, ShieldCheck, Star, Heart, UtensilsCrossed, TrendingUp, ChevronLeft, ChevronRight, MapPin } from 'lucide-react'
 
 const foodExperiences = experiences.filter((e) => e.category === 'Food')
+
+/* Hero video — lazy loads on fast connections, shows poster on slow/mobile data */
+function HeroVideo({ src, poster }: { src: string; poster: string }) {
+  const videoRef = useRef<HTMLVideoElement>(null)
+  const [shouldLoad, setShouldLoad] = useState(false)
+  const [isPlaying, setIsPlaying] = useState(false)
+
+  useEffect(() => {
+    const nav = navigator as Navigator & { connection?: { effectiveType?: string; saveData?: boolean } }
+    const conn = nav.connection
+    if (conn?.saveData || conn?.effectiveType === '2g' || conn?.effectiveType === 'slow-2g') {
+      return
+    }
+    const timer = setTimeout(() => setShouldLoad(true), 1000)
+    return () => clearTimeout(timer)
+  }, [])
+
+  useEffect(() => {
+    if (!shouldLoad || !videoRef.current) return
+    const video = videoRef.current
+
+    const onPlaying = () => setIsPlaying(true)
+    video.addEventListener('playing', onPlaying)
+
+    video.play().catch(() => {})
+
+    return () => video.removeEventListener('playing', onPlaying)
+  }, [shouldLoad])
+
+  return (
+    <>
+      {/* Poster — visible until video is actually playing */}
+      <Image
+        src={poster}
+        alt=""
+        fill
+        sizes="100vw"
+        priority
+        style={{
+          objectFit: 'cover', objectPosition: 'center 35%',
+          opacity: isPlaying ? 0 : 1,
+          transition: 'opacity 1.2s ease',
+          zIndex: 1,
+        }}
+      />
+      {shouldLoad && (
+        <video
+          ref={videoRef}
+          muted loop playsInline
+          preload="auto"
+          style={{
+            position: 'absolute', inset: 0,
+            width: '100%', height: '100%',
+            objectFit: 'cover', objectPosition: 'center 35%',
+            opacity: isPlaying ? 1 : 0,
+            transition: 'opacity 1.2s ease',
+          }}
+        >
+          <source src={src} type="video/mp4" />
+        </video>
+      )}
+    </>
+  )
+}
 
 /* Responsive grid: cards on desktop, shorts on mobile */
 function ResponsiveGrid({ items, cols = 3 }: { items: typeof experiences; cols?: number }) {
@@ -424,19 +488,7 @@ export default function FeedView() {
       {/* ═══ HERO — 16/4 desktop, 1/1 mobile ═══ */}
       <section className="hero-section">
         {/* Video background */}
-        <video
-          autoPlay muted loop playsInline
-          preload="metadata"
-          poster={HERO_IMAGE}
-          style={{
-            position: 'absolute', inset: 0,
-            width: '100%', height: '100%',
-            objectFit: 'cover', objectPosition: 'center 35%',
-            willChange: 'transform',
-          }}
-        >
-          <source src={HERO_VIDEO} type="video/mp4" />
-        </video>
+        <HeroVideo src={HERO_VIDEO} poster={HERO_IMAGE} />
         {/* Top scrim for nav readability */}
         <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 140, background: 'linear-gradient(180deg, rgba(0,0,0,0.5) 0%, transparent 100%)', pointerEvents: 'none' }} />
         {/* Strong bottom black gradient — text must be readable */}

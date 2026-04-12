@@ -1,12 +1,12 @@
 'use client'
 
 import Image from 'next/image'
-import Link from 'next/link'
-import { useCartStore } from '@/lib/cart'
+// Cart store no longer used on profile — upcoming trips come from confirmed bookings
 import { experiences } from '@/lib/experiences'
 import { useI18n } from '@/lib/i18n'
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { useAuth } from '@/lib/supabase/auth-context'
 import type { User } from '@supabase/supabase-js'
 
 interface PastBooking {
@@ -171,8 +171,8 @@ function EditableField({ label, value, placeholder, type, onSave, verified }: {
 }
 
 export default function ProfileView() {
-  const { items, removeItem } = useCartStore()
   const { t } = useI18n()
+  const { user: authUser } = useAuth()
   const [user, setUser] = useState<User | null>(null)
   const [profile, setProfile] = useState<ProfileData>({ name: null, avatar_url: null, location: null })
   const [pastBookings, setPastBookings] = useState<PastBooking[]>([])
@@ -182,15 +182,16 @@ export default function ProfileView() {
   const [loading, setLoading] = useState(true)
   const [phone, setPhone] = useState('')
   const [identity, setIdentity] = useState('')
-  const [cancellingId, setCancellingId] = useState<number | null>(null)
   const supabase = createClient()
 
   useEffect(() => {
     async function loadProfile() {
-      const { data: { user } } = await supabase.auth.getUser()
-      setUser(user)
+      // Use auth context user instead of separate getUser() call
+      const currentUser = authUser
+      setUser(currentUser)
 
-      if (user) {
+      if (currentUser) {
+        const user = currentUser
         // DB tables may not exist yet — wrap in try/catch so the profile
         // still renders with empty states instead of crashing.
         try {
@@ -236,8 +237,9 @@ export default function ProfileView() {
       setLoading(false)
     }
 
-    loadProfile()
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+    if (authUser) loadProfile()
+    else setLoading(false)
+  }, [authUser]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const displayName = profile.name || user?.user_metadata?.full_name || user?.user_metadata?.name || 'Traveler'
   const avatarUrl = profile.avatar_url || user?.user_metadata?.avatar_url
@@ -246,7 +248,17 @@ export default function ProfileView() {
     ? new Date(user.created_at).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
     : 'recently'
 
-  const tripsCompleted = pastBookings.length
+  const today = new Date().toISOString().split('T')[0]
+
+  // Split bookings into upcoming (has future dates) and past
+  const upcomingBookings = pastBookings.filter(b =>
+    b.booking_items.some(i => i.date >= today)
+  )
+  const completedBookings = pastBookings.filter(b =>
+    b.booking_items.every(i => i.date < today)
+  )
+
+  const tripsCompleted = completedBookings.length
   const parishesExplored = new Set(
     pastBookings.flatMap(b => b.booking_items.map(i => i.destination))
   ).size
@@ -283,15 +295,6 @@ export default function ProfileView() {
   async function updateLocation(newLocation: string) {
     await supabase.from('users').update({ location: newLocation }).eq('id', user!.id)
     setProfile((p) => ({ ...p, location: newLocation }))
-  }
-
-  function handleCancelTrip(id: number) {
-    setCancellingId(id)
-  }
-
-  function confirmCancel(id: number) {
-    removeItem(id)
-    setCancellingId(null)
   }
 
   if (loading) {
@@ -547,176 +550,87 @@ export default function ProfileView() {
               />
             </section>
 
-            {/* ── Upcoming Trips (with cancel) ── */}
-            <section style={{ marginBottom: 48 }}>
-              <div style={{
-                display: 'flex', alignItems: 'baseline', justifyContent: 'space-between',
-                marginBottom: 20,
-              }}>
-                <h2 style={{
-                  fontFamily: 'var(--font-syne)', fontWeight: 800, fontSize: 22,
-                  color: 'var(--text-primary)', letterSpacing: '-0.02em',
-                }}>
-                  {t('Upcoming trips')}
-                </h2>
-                {items.length > 0 && (
-                  <Link href="/checkout" style={{
-                    fontSize: 13, fontWeight: 600, color: 'var(--text-primary)',
-                    fontFamily: 'var(--font-dm-sans)', textDecoration: 'underline',
+            {/* ── Upcoming Trips (confirmed bookings with future dates) ── */}
+            {upcomingBookings.length > 0 && (
+              <>
+                <section style={{ marginBottom: 48 }}>
+                  <h2 style={{
+                    fontFamily: 'var(--font-syne)', fontWeight: 800, fontSize: 22,
+                    color: 'var(--text-primary)', letterSpacing: '-0.02em',
+                    marginBottom: 20,
                   }}>
-                    View checkout
-                  </Link>
-                )}
-              </div>
+                    {t('Upcoming trips')}
+                  </h2>
 
-              {items.length === 0 ? (
-                <div style={{
-                  padding: '48px 24px', textAlign: 'center',
-                  borderRadius: 'var(--r-xl)',
-                  border: '1px dashed var(--border-strong)',
-                  background: 'var(--bg-warm)',
-                }}>
-                  <p style={{ fontSize: 36, marginBottom: 12 }}>🌴</p>
-                  <p style={{
-                    fontSize: 15, fontWeight: 600, color: 'var(--text-primary)',
-                    fontFamily: 'var(--font-syne)', marginBottom: 6,
-                  }}>
-                    No upcoming trips
-                  </p>
-                  <p style={{
-                    fontSize: 13, color: 'var(--text-tertiary)',
-                    fontFamily: 'var(--font-dm-sans)', marginBottom: 20,
-                  }}>
-                    Your next Jamaican adventure is waiting
-                  </p>
-                  <Link href="/explore" className="btn-primary" style={{
-                    display: 'inline-flex', padding: '10px 28px',
-                    fontSize: 13, fontWeight: 600,
-                  }}>
-                    Explore experiences
-                  </Link>
-                </div>
-              ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                  {items.map((item) => (
-                    <div key={item.id} style={{
-                      borderRadius: 'var(--r-lg)',
-                      border: '1px solid var(--border)',
-                      overflow: 'hidden',
-                      background: 'var(--card-bg)',
-                      boxShadow: '0 2px 8px rgba(0,0,0,0.03)',
-                    }}>
-                      <div style={{ display: 'flex', gap: 0 }}>
-                        <div style={{
-                          width: 140, flexShrink: 0, position: 'relative',
-                          background: 'var(--surface)',
-                        }}>
-                          <Image src={item.image} alt={item.title} fill sizes="140px" style={{ objectFit: 'cover' }} />
-                        </div>
-                        <div style={{ flex: 1, padding: '18px 20px' }}>
-                          <p style={{
-                            fontSize: 16, fontWeight: 600, fontFamily: 'var(--font-dm-sans)',
-                            color: 'var(--text-primary)', marginBottom: 4,
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                    {upcomingBookings.map((booking) => (
+                      <div key={booking.id} style={{
+                        background: 'var(--card-bg)', borderRadius: 'var(--r-xl)',
+                        border: '1px solid var(--border)',
+                        boxShadow: '0 2px 8px rgba(0,0,0,0.03)',
+                        overflow: 'hidden',
+                      }}>
+                        {booking.booking_items.map((item, i) => (
+                          <div key={i} style={{
+                            display: 'flex', gap: 0,
+                            borderBottom: i < booking.booking_items.length - 1 ? '1px solid var(--border)' : 'none',
                           }}>
-                            {t(item.title)}
-                          </p>
-                          <p style={{
-                            fontSize: 13, color: 'var(--text-tertiary)',
-                            fontFamily: 'var(--font-dm-sans)', marginBottom: 8,
-                          }}>
-                            {item.destination} · {item.duration} · {item.travelers} {item.travelers === 1 ? 'guest' : 'guests'}
-                          </p>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-                            <span style={{
-                              display: 'inline-flex', alignItems: 'center', gap: 4,
-                              padding: '4px 10px', borderRadius: 9999,
-                              background: 'var(--surface)',
-                              fontSize: 12, fontWeight: 500, color: 'var(--text-secondary)',
-                              fontFamily: 'var(--font-dm-sans)',
-                            }}>
-                              {new Date(item.date + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                            </span>
-                            <span style={{
-                              fontSize: 15, fontWeight: 700, fontFamily: 'var(--font-syne)',
-                              color: 'var(--text-primary)',
-                            }}>
-                              ${item.price * item.travelers}
-                            </span>
-                          </div>
-
-                          {/* Cancel flow */}
-                          {cancellingId === item.id ? (
                             <div style={{
-                              padding: '12px 14px', borderRadius: 'var(--r-sm)',
-                              background: '#FEF2F2', border: '1px solid #FECACA',
+                              width: 120, flexShrink: 0, position: 'relative',
+                              background: 'var(--surface)',
                             }}>
-                              <p style={{
-                                fontSize: 13, fontWeight: 500, color: '#991B1B',
-                                fontFamily: 'var(--font-dm-sans)', marginBottom: 10,
-                              }}>
-                                Are you sure you want to cancel this trip?
-                              </p>
-                              <div style={{ display: 'flex', gap: 8 }}>
-                                <button
-                                  onClick={() => confirmCancel(item.id)}
-                                  style={{
-                                    height: 34, padding: '0 16px',
-                                    borderRadius: 'var(--r-sm)',
-                                    background: '#DC2626', color: '#fff',
-                                    border: 'none', fontSize: 13, fontWeight: 600,
-                                    fontFamily: 'var(--font-dm-sans)',
-                                    cursor: 'pointer',
-                                  }}
-                                >
-                                  Yes, cancel trip
-                                </button>
-                                <button
-                                  onClick={() => setCancellingId(null)}
-                                  style={{
-                                    height: 34, padding: '0 16px',
-                                    borderRadius: 'var(--r-sm)',
-                                    background: 'transparent',
-                                    border: '1px solid var(--border-strong)',
-                                    fontSize: 13, fontWeight: 500,
-                                    fontFamily: 'var(--font-dm-sans)',
-                                    color: 'var(--text-secondary)',
-                                    cursor: 'pointer',
-                                  }}
-                                >
-                                  Keep trip
-                                </button>
-                              </div>
+                              <Image src={getExpImage(item.experience_id)} alt={item.title} fill sizes="120px" style={{ objectFit: 'cover' }} />
                             </div>
-                          ) : (
-                            <button
-                              onClick={() => handleCancelTrip(item.id)}
-                              style={{
-                                background: 'none', border: 'none', cursor: 'pointer',
-                                fontSize: 13, fontWeight: 600, color: 'var(--text-tertiary)',
+                            <div style={{ flex: 1, padding: '16px 18px' }}>
+                              <p style={{
+                                fontSize: 15, fontWeight: 600, fontFamily: 'var(--font-dm-sans)',
+                                color: 'var(--text-primary)', marginBottom: 4,
+                              }}>
+                                {item.title}
+                              </p>
+                              <p style={{
+                                fontSize: 13, color: 'var(--text-tertiary)',
+                                fontFamily: 'var(--font-dm-sans)', marginBottom: 4,
+                              }}>
+                                {item.destination} · {item.travelers} {item.travelers === 1 ? 'guest' : 'guests'}
+                              </p>
+                              <span style={{
+                                display: 'inline-flex', alignItems: 'center', gap: 4,
+                                padding: '4px 10px', borderRadius: 9999,
+                                background: 'var(--emerald-dim)',
+                                fontSize: 12, fontWeight: 500, color: 'var(--emerald)',
                                 fontFamily: 'var(--font-dm-sans)',
-                                textDecoration: 'underline',
-                                padding: 0,
-                              }}
-                            >
-                              Cancel trip
-                            </button>
-                          )}
+                              }}>
+                                {new Date(item.date + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                              </span>
+                            </div>
+                          </div>
+                        ))}
+                        <div style={{
+                          padding: '10px 18px', display: 'flex', justifyContent: 'space-between',
+                          alignItems: 'center', background: 'var(--bg-warm)',
+                        }}>
+                          <span style={{
+                            fontSize: 11, color: 'var(--text-tertiary)',
+                            fontFamily: 'var(--font-dm-sans)', fontWeight: 500,
+                          }}>
+                            Booked {new Date(booking.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                          </span>
+                          <span style={{
+                            fontSize: 14, fontWeight: 800, color: 'var(--text-primary)',
+                            fontFamily: 'var(--font-syne)',
+                          }}>
+                            ${Number(booking.total_paid).toFixed(0)}
+                          </span>
                         </div>
                       </div>
-                    </div>
-                  ))}
-                  <p style={{
-                    fontSize: 12, color: 'var(--text-tertiary)',
-                    fontFamily: 'var(--font-dm-sans)',
-                    marginTop: 4,
-                  }}>
-                    Free cancellation up to 48 hours before your experience.
-                  </p>
-                </div>
-              )}
-            </section>
+                    ))}
+                  </div>
+                </section>
 
-            <div style={{ height: 1, background: 'var(--border)', marginBottom: 48 }} />
+                <div style={{ height: 1, background: 'var(--border)', marginBottom: 48 }} />
+              </>
+            )}
 
             {/* ── Past Trips ── */}
             <section style={{ marginBottom: 48 }}>
@@ -728,7 +642,7 @@ export default function ProfileView() {
                 {t('Past trips')}
               </h2>
 
-              {pastBookings.length === 0 ? (
+              {completedBookings.length === 0 ? (
                 <p style={{
                   fontSize: 14, color: 'var(--text-tertiary)',
                   fontFamily: 'var(--font-dm-sans)', lineHeight: 1.5,
@@ -738,10 +652,10 @@ export default function ProfileView() {
               ) : (
                 <div style={{
                   display: 'grid',
-                  gridTemplateColumns: pastBookings.length === 1 ? '1fr' : '1fr 1fr',
+                  gridTemplateColumns: completedBookings.length === 1 ? '1fr' : '1fr 1fr',
                   gap: 16,
                 }}>
-                  {pastBookings.map((booking) => {
+                  {completedBookings.map((booking) => {
                     const firstItem = booking.booking_items[0]
                     return (
                       <div key={booking.id} style={{
