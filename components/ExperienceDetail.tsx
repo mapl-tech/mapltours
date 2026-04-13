@@ -214,7 +214,7 @@ function Reel({ exp, isActive, totalCount, currentIndex }: { exp: Experience; is
       </div>
 
       {/* ── Bottom info (Snapchat style — bold, stacked, left-aligned) ── */}
-      <div className="reel-bottom-info" style={{
+      <div className="reel-bottom-info reel-bottom-mobile-pad" style={{
         position: 'absolute', bottom: 0, left: 0, right: 72,
         padding: '0 16px 20px', zIndex: 10,
       }}>

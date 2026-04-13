@@ -210,7 +210,7 @@ export default memo(function MobileShort({ exp }: { exp: Experience }) {
           {/* Bottom info */}
           <div style={{
             position: 'absolute', bottom: 0, left: 0, right: 0,
-            padding: '0 16px 100px', zIndex: 2,
+            padding: '0 16px 18px', zIndex: 2,
           }}>
             <p style={{
               fontSize: 12, fontWeight: 600, color: 'rgba(255,255,255,0.6)',
