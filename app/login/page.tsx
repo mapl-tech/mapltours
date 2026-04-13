@@ -3,6 +3,7 @@
 import { Suspense, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
+import { Leaf } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { getSafeRedirect } from '@/lib/safe-redirect'
 
@@ -83,28 +84,71 @@ function LoginContent() {
       justifyContent: 'center',
       background: 'var(--bg-warm)',
       padding: 24,
+      position: 'relative',
     }}>
+      {/* Back to home */}
+      <Link
+        href="/"
+        style={{
+          position: 'absolute', top: 24, left: 24,
+          display: 'flex', alignItems: 'center', gap: 8,
+          fontSize: 14, fontWeight: 600, color: 'var(--text-primary)',
+          fontFamily: 'var(--font-dm-sans)',
+          padding: '10px 18px 10px 14px',
+          borderRadius: 9999,
+          background: 'var(--card-bg)',
+          border: '1px solid var(--border-strong)',
+          boxShadow: 'var(--shadow-sm)',
+          transition: 'all 0.15s ease',
+        }}
+      >
+        <span style={{ fontSize: 18, lineHeight: 1 }}>←</span>
+        Back to Home
+      </Link>
+
       <div style={{
         width: '100%',
         maxWidth: 420,
       }}>
         {/* Logo */}
         <div style={{ textAlign: 'center', marginBottom: 36 }}>
-          <Link href="/" style={{ textDecoration: 'none' }}>
-            <span style={{
-              fontFamily: 'var(--font-syne)',
-              fontWeight: 800,
-              fontSize: 32,
-              color: 'var(--text-primary)',
+          <Link href="/" style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 10 }}>
+            <div style={{
+              width: 36, height: 36, borderRadius: 10,
+              background: 'var(--accent)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
             }}>
-              MAPL
-            </span>
+              <Leaf size={18} strokeWidth={2.5} color="#fff" />
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1, textAlign: 'left' }}>
+              <span style={{
+                fontFamily: 'var(--font-syne)',
+                fontWeight: 800,
+                fontSize: 17,
+                letterSpacing: '0.06em',
+                textTransform: 'uppercase',
+                color: 'var(--text-primary)',
+              }}>
+                MAPL
+              </span>
+              <span style={{
+                fontFamily: 'var(--font-dm-sans)',
+                fontWeight: 700,
+                fontSize: 10,
+                letterSpacing: '0.12em',
+                textTransform: 'uppercase',
+                color: 'var(--text-secondary)',
+                marginTop: 1,
+              }}>
+                Tours Jamaica
+              </span>
+            </div>
           </Link>
           <p style={{
             fontSize: 14,
             color: 'var(--text-tertiary)',
             fontFamily: 'var(--font-dm-sans)',
-            marginTop: 8,
+            marginTop: 16,
           }}>
             {mode === 'login' ? 'Welcome back' : 'Create your account'}
           </p>
