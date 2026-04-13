@@ -378,7 +378,7 @@ video {
     padding-bottom: max(80px, calc(60px + env(safe-area-inset-bottom))) !important;
   }
   .reel-bottom-mobile-pad {
-    padding-bottom: max(100px, calc(100px + env(safe-area-inset-bottom))) !important;
+    padding-bottom: max(140px, calc(140px + env(safe-area-inset-bottom))) !important;
   }
   textarea.field-input {
     min-height: 250px !important;

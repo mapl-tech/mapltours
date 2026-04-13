@@ -125,8 +125,8 @@ function Reel({ exp, isActive, totalCount, currentIndex }: { exp: Experience; is
 
       {/* Bottom gradient — stronger for Snapchat readability */}
       <div style={{
-        position: 'absolute', bottom: 0, left: 0, right: 0, height: '55%',
-        background: 'linear-gradient(0deg, rgba(0,0,0,0.82) 0%, rgba(0,0,0,0.3) 50%, transparent 100%)',
+        position: 'absolute', bottom: 0, left: 0, right: 0, height: '65%',
+        background: 'linear-gradient(0deg, rgba(0,0,0,0.88) 0%, rgba(0,0,0,0.4) 45%, transparent 100%)',
         pointerEvents: 'none',
       }} />
 
