@@ -18,34 +18,64 @@ function Reel({ exp, isActive, totalCount, currentIndex }: { exp: Experience; is
   const { liked, likeCount, toggleLike } = useExperienceLike(exp.id)
   const inCart = isInCart(exp.id)
   const toggleCart = () => { if (inCart) { removeItem(exp.id) } else { addItem(exp) } }
-  const [sharedToast, setSharedToast] = useState<'copied' | 'failed' | null>(null)
+  const [shareToast, setShareToast] = useState<string | null>(null)
+
+  // Robust copy-to-clipboard with a fallback for non-secure contexts
+  // (navigator.clipboard only exists on HTTPS / localhost).
+  const copyToClipboard = async (text: string): Promise<boolean> => {
+    try {
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(text)
+        return true
+      }
+    } catch {
+      // fall through to legacy path
+    }
+    try {
+      const ta = document.createElement('textarea')
+      ta.value = text
+      ta.style.position = 'fixed'
+      ta.style.top = '-9999px'
+      ta.style.opacity = '0'
+      document.body.appendChild(ta)
+      ta.focus()
+      ta.select()
+      const ok = document.execCommand('copy')
+      document.body.removeChild(ta)
+      return ok
+    } catch {
+      return false
+    }
+  }
 
   const handleShare = async () => {
     const url = `${window.location.origin}/experience/${slugify(exp.title)}`
-    const shareData = {
+    const shareData: ShareData = {
       title: exp.title,
       text: `${exp.title} — ${exp.destination}, Jamaica`,
       url,
     }
-    try {
-      if (typeof navigator !== 'undefined' && 'share' in navigator && navigator.canShare?.(shareData) !== false) {
-        await navigator.share(shareData)
-        return
-      }
-      await navigator.clipboard.writeText(url)
-      setSharedToast('copied')
-      setTimeout(() => setSharedToast(null), 1800)
-    } catch (err) {
-      // User cancelled the native sheet — treat as no-op
-      if ((err as DOMException)?.name === 'AbortError') return
-      try {
-        await navigator.clipboard.writeText(url)
-        setSharedToast('copied')
-      } catch {
-        setSharedToast('failed')
-      }
-      setTimeout(() => setSharedToast(null), 1800)
+    const showToast = (msg: string) => {
+      setShareToast(msg)
+      setTimeout(() => setShareToast(null), 2000)
     }
+
+    // Prefer the native share sheet (mobile). canShare is not available on
+    // older iOS — fall through if it's missing but share exists.
+    if (typeof navigator !== 'undefined' && typeof navigator.share === 'function') {
+      try {
+        if (!navigator.canShare || navigator.canShare(shareData)) {
+          await navigator.share(shareData)
+          return
+        }
+      } catch (err) {
+        if ((err as DOMException)?.name === 'AbortError') return
+        // Share failed for another reason — fall through to clipboard
+      }
+    }
+
+    const copied = await copyToClipboard(url)
+    showToast(copied ? 'Link copied — share the vibes' : 'Couldn’t copy — long-press the link')
   }
 
   useEffect(() => {
@@ -218,11 +248,67 @@ function Reel({ exp, isActive, totalCount, currentIndex }: { exp: Experience; is
         >
           <Send size={24} strokeWidth={1.8} />
           <span style={{ fontSize: 11, fontWeight: 700, fontFamily: 'var(--font-dm-sans)' }}>
-            {sharedToast === 'copied' ? 'Copied' : sharedToast === 'failed' ? 'Error' : 'Send'}
+            Send
           </span>
         </button>
 
       </div>
+
+      {/* Share toast — MAPL brand: gold accent on ink-black, Syne label */}
+      {shareToast && (
+        <div
+          style={{
+            position: 'absolute',
+            bottom: 'calc(var(--reel-bottom-offset, 100px) + 16px)',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            zIndex: 20,
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 10,
+            padding: '11px 18px 11px 14px',
+            borderRadius: 9999,
+            background: 'rgba(8, 8, 10, 0.92)',
+            border: '1px solid rgba(255, 179, 0, 0.35)',
+            boxShadow: '0 10px 40px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(255, 179, 0, 0.08)',
+            backdropFilter: 'blur(14px)',
+            WebkitBackdropFilter: 'blur(14px)',
+            color: 'white',
+            whiteSpace: 'nowrap',
+            pointerEvents: 'none',
+            animation: 'fadeUp 0.28s ease',
+          }}
+        >
+          <span
+            style={{
+              width: 22,
+              height: 22,
+              borderRadius: '50%',
+              background: 'var(--gold, #FFB300)',
+              color: '#08080A',
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: 13,
+              fontWeight: 800,
+              flexShrink: 0,
+            }}
+          >
+            ✓
+          </span>
+          <span
+            style={{
+              fontFamily: 'var(--font-syne)',
+              fontWeight: 700,
+              fontSize: 13,
+              letterSpacing: '-0.01em',
+              color: 'white',
+            }}
+          >
+            {shareToast}
+          </span>
+        </div>
+      )}
 
       {/* ── Bottom info (Snapchat style — bold, stacked, left-aligned) ── */}
       <div className="reel-bottom-info reel-bottom-mobile-pad" style={{
@@ -996,7 +1082,13 @@ export default function ExperienceDetail({ slug }: { slug: string }) {
         display: 'flex', alignItems: 'center', gap: 10,
       }}>
         <button
-          onClick={() => setMobileComments(true)}
+          onClick={() => {
+            if (!isLoggedIn && activeExp) {
+              window.location.href = `/login?redirect=/experience/${slugify(activeExp.title)}`
+              return
+            }
+            setMobileComments(true)
+          }}
           style={{
             flex: 1, display: 'flex', alignItems: 'center', gap: 8,
             background: 'rgba(255,255,255,0.08)', border: 'none',
@@ -1006,10 +1098,16 @@ export default function ExperienceDetail({ slug }: { slug: string }) {
             textAlign: 'left',
           }}
         >
-          Add a comment...
+          {isLoggedIn ? 'Add a comment...' : 'Sign in to comment...'}
         </button>
         <button
-          onClick={() => setMobileComments(true)}
+          onClick={() => {
+            if (!isLoggedIn && activeExp) {
+              window.location.href = `/login?redirect=/experience/${slugify(activeExp.title)}`
+              return
+            }
+            setMobileComments(true)
+          }}
           style={{
             display: 'flex', alignItems: 'center', gap: 4,
             background: 'none', border: 'none', cursor: 'pointer',
