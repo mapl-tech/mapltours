@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useState, useEffect, type ReactNode } from 'react'
 import { createClient } from './client'
+import { clearCache } from '@/lib/swr-cache'
 import type { User } from '@supabase/supabase-js'
 
 interface AuthContextType {
@@ -24,7 +25,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     })
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, session) => setUser(session?.user ?? null)
+      (event, session) => {
+        setUser(session?.user ?? null)
+        // Clear all per-user cached data when the session ends so the next
+        // user doesn't see stale profile/likes/comments from the previous one.
+        if (event === 'SIGNED_OUT') clearCache()
+      }
     )
 
     return () => subscription.unsubscribe()

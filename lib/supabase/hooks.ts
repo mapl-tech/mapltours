@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { createClient } from './client'
 import { useAuth } from './auth-context'
+import { useSwrCache } from '@/lib/swr-cache'
 import type { Comment } from '@/lib/experiences'
 
 const supabase = createClient()
@@ -13,17 +14,18 @@ export function useUser() {
 }
 
 // ── Experience Likes ──
+interface LikeSnapshot { liked: boolean; count: number }
+
 export function useExperienceLike(experienceId: number) {
   const { user } = useAuth()
-  const [liked, setLiked] = useState(false)
-  const [likeCount, setLikeCount] = useState(0)
   const [loading, setLoading] = useState(false)
-  const [fetched, setFetched] = useState(false)
 
-  useEffect(() => {
-    if (fetched) return
-
-    async function fetchLikes() {
+  // Cache key includes user id so logging in/out doesn't show a stale "liked"
+  // state. For anonymous visitors we still cache the public count.
+  const cacheKey = `like:${experienceId}:${user?.id ?? 'anon'}`
+  const { data, mutate } = useSwrCache<LikeSnapshot>(
+    cacheKey,
+    async () => {
       const [countRes, likeRes] = await Promise.all([
         supabase
           .from('experience_likes')
@@ -38,14 +40,15 @@ export function useExperienceLike(experienceId: number) {
               .maybeSingle()
           : Promise.resolve({ data: null }),
       ])
-
-      if (countRes.count !== null) setLikeCount(countRes.count)
-      if (likeRes.data) setLiked(true)
-      setFetched(true)
+      return {
+        liked: !!likeRes.data,
+        count: countRes.count ?? 0,
+      }
     }
+  )
 
-    fetchLikes()
-  }, [experienceId, user, fetched])
+  const liked = data?.liked ?? false
+  const likeCount = data?.count ?? 0
 
   const toggleLike = useCallback(async () => {
     if (loading) return
@@ -55,25 +58,36 @@ export function useExperienceLike(experienceId: number) {
     }
 
     setLoading(true)
+    const wasLiked = liked
 
-    if (liked) {
-      setLiked(false)
-      setLikeCount((c) => Math.max(0, c - 1))
-      await supabase
-        .from('experience_likes')
-        .delete()
-        .eq('experience_id', experienceId)
-        .eq('user_id', user.id)
-    } else {
-      setLiked(true)
-      setLikeCount((c) => c + 1)
-      await supabase
-        .from('experience_likes')
-        .insert({ experience_id: experienceId, user_id: user.id })
+    // Optimistic update — paints instantly and persists to cache
+    mutate((prev) => ({
+      liked: !wasLiked,
+      count: Math.max(0, (prev?.count ?? 0) + (wasLiked ? -1 : 1)),
+    }))
+
+    try {
+      if (wasLiked) {
+        await supabase
+          .from('experience_likes')
+          .delete()
+          .eq('experience_id', experienceId)
+          .eq('user_id', user.id)
+      } else {
+        await supabase
+          .from('experience_likes')
+          .insert({ experience_id: experienceId, user_id: user.id })
+      }
+    } catch {
+      // Roll back on failure
+      mutate((prev) => ({
+        liked: wasLiked,
+        count: Math.max(0, (prev?.count ?? 0) + (wasLiked ? 1 : -1)),
+      }))
     }
 
     setLoading(false)
-  }, [user, liked, experienceId, loading])
+  }, [user, liked, experienceId, loading, mutate])
 
   return { liked, likeCount, toggleLike, isLoggedIn: !!user }
 }
@@ -156,19 +170,22 @@ const COMMENTS_LIMIT = 20
 
 export function useComments(experienceId: number) {
   const { user } = useAuth()
-  const [comments, setComments] = useState<SupabaseComment[]>([])
-  const [loading, setLoading] = useState(true)
   const [replyingTo, setReplyingTo] = useState<{ id: string; user: string } | null>(null)
 
-  const fetchComments = useCallback(async () => {
-    const { data } = await supabase
-      .from('comments')
-      .select('id, experience_id, user_id, text, created_at, parent_id')
-      .eq('experience_id', experienceId)
-      .order('created_at', { ascending: true })
-      .limit(COMMENTS_LIMIT)
+  // Cached per-experience so revisiting a reel paints comments from last load
+  // while a fresh fetch resolves in the background.
+  const { data, loading, mutate } = useSwrCache<SupabaseComment[]>(
+    `comments:${experienceId}`,
+    async () => {
+      const { data } = await supabase
+        .from('comments')
+        .select('id, experience_id, user_id, text, created_at, parent_id')
+        .eq('experience_id', experienceId)
+        .order('created_at', { ascending: true })
+        .limit(COMMENTS_LIMIT)
 
-    if (data && data.length > 0) {
+      if (!data || data.length === 0) return []
+
       const userIds = Array.from(new Set(data.map((c) => c.user_id)))
       const { data: users } = await supabase
         .from('users')
@@ -176,22 +193,14 @@ export function useComments(experienceId: number) {
         .in('id', userIds)
 
       const userMap = new Map(users?.map((u) => [u.id, u]) || [])
-
-      setComments(
-        data.map((c) => ({
-          ...c,
-          user_name: userMap.get(c.user_id)?.name || 'Anonymous',
-          user_avatar: userMap.get(c.user_id)?.avatar_url || null,
-        }))
-      )
+      return data.map((c) => ({
+        ...c,
+        user_name: userMap.get(c.user_id)?.name || 'Anonymous',
+        user_avatar: userMap.get(c.user_id)?.avatar_url || null,
+      }))
     }
-
-    setLoading(false)
-  }, [experienceId])
-
-  useEffect(() => {
-    fetchComments()
-  }, [fetchComments])
+  )
+  const comments = data ?? []
 
   const addComment = useCallback(async (text: string, parentId?: string) => {
     if (!user || !text.trim()) return null
@@ -215,13 +224,13 @@ export function useComments(experienceId: number) {
         user_name: user.user_metadata?.full_name || user.user_metadata?.name || 'You',
         user_avatar: user.user_metadata?.avatar_url || null,
       }
-      setComments((prev) => [...prev, newComment])
+      mutate((prev) => [...(prev ?? []), newComment])
       setReplyingTo(null)
       return newComment
     }
 
     return null
-  }, [user, experienceId])
+  }, [user, experienceId, mutate])
 
   const deleteComment = useCallback(async (commentId: string) => {
     if (!user) return
@@ -230,8 +239,8 @@ export function useComments(experienceId: number) {
       .delete()
       .eq('id', commentId)
       .eq('user_id', user.id)
-    setComments((prev) => prev.filter((c) => c.id !== commentId && c.parent_id !== commentId))
-  }, [user])
+    mutate((prev) => (prev ?? []).filter((c) => c.id !== commentId && c.parent_id !== commentId))
+  }, [user, mutate])
 
   const displayComments = useMemo(() => {
     const allDisplay: DisplayComment[] = comments.map((c) => ({

@@ -154,10 +154,15 @@ video {
   .container { padding-left: 48px; padding-right: 48px; }
 }
 
-/* Right action rail on reel cards — desktop default (mobile overridden below
-   to sit above the dynamic bottom bar). */
+/* Reel right action rail + "Add to Trip" pill both sit above the mobile
+   bottom bar. JS (ExperienceDetail) writes --reel-bottom-offset to
+   (bar height + 12px) whenever the bar is visible. When the bar is hidden
+   (desktop), the var is cleared and the fallback applies. */
 .reel-right-rail {
-  bottom: 100px;
+  bottom: var(--reel-bottom-offset, 100px);
+}
+.reel-bottom-mobile-pad {
+  padding-bottom: var(--reel-bottom-offset, max(80px, calc(60px + env(safe-area-inset-bottom))));
 }
 
 /* Responsive grids */
@@ -383,14 +388,9 @@ video {
   .reel-bottom-info {
     padding-bottom: max(80px, calc(60px + env(safe-area-inset-bottom))) !important;
   }
-  .reel-bottom-mobile-pad {
-    /* --mobile-bar-height is measured at runtime in ExperienceDetail.tsx.
-       Fallback covers the first paint before JS runs. */
-    padding-bottom: calc(var(--mobile-bar-height, 72px) + 12px) !important;
-  }
-  .reel-right-rail {
-    bottom: calc(var(--mobile-bar-height, 72px) + 12px) !important;
-  }
+  /* .reel-bottom-mobile-pad and .reel-right-rail use --reel-bottom-offset
+     defined at the top level — it's driven live by JS so it tracks any
+     change in the comment-bar's rendered height. */
   textarea.field-input {
     min-height: 250px !important;
   }

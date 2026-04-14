@@ -7,6 +7,7 @@ import { useI18n } from '@/lib/i18n'
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useAuth } from '@/lib/supabase/auth-context'
+import { useSwrCache } from '@/lib/swr-cache'
 import type { User } from '@supabase/supabase-js'
 
 interface PastBooking {
@@ -170,76 +171,78 @@ function EditableField({ label, value, placeholder, type, onSave, verified }: {
   )
 }
 
+interface ProfileBundle {
+  profile: ProfileData
+  pastBookings: PastBooking[]
+  savedCreators: SavedCreator[]
+  badges: Badge[]
+  likedCount: number
+}
+
+const EMPTY_BUNDLE: ProfileBundle = {
+  profile: { name: null, avatar_url: null, location: null },
+  pastBookings: [],
+  savedCreators: [],
+  badges: [],
+  likedCount: 0,
+}
+
 export default function ProfileView() {
   const { t } = useI18n()
   const { user: authUser } = useAuth()
-  const [user, setUser] = useState<User | null>(null)
-  const [profile, setProfile] = useState<ProfileData>({ name: null, avatar_url: null, location: null })
-  const [pastBookings, setPastBookings] = useState<PastBooking[]>([])
-  const [savedCreators, setSavedCreators] = useState<SavedCreator[]>([])
-  const [badges, setBadges] = useState<Badge[]>([])
-  const [likedCount, setLikedCount] = useState(0)
-  const [loading, setLoading] = useState(true)
+  const user: User | null = authUser
+  const supabase = createClient()
   const [phone, setPhone] = useState('')
   const [identity, setIdentity] = useState('')
-  const supabase = createClient()
+
+  // Single SWR-cached fetch of everything the profile needs. localStorage key
+  // is scoped per-user so switching accounts shows the right data instantly.
+  const cacheKey = user ? `profile:${user.id}` : null
+  const { data: bundle, loading: initialLoading, mutate } = useSwrCache<ProfileBundle>(
+    cacheKey,
+    async () => {
+      if (!user) return EMPTY_BUNDLE
+      try {
+        const [profileRes, bookingsRes, creatorsRes, badgesRes, likesRes] = await Promise.all([
+          supabase.from('users').select('name, avatar_url, location').eq('id', user.id).single(),
+          supabase
+            .from('bookings')
+            .select('id, created_at, total_paid, booking_items(title, destination, travelers, date, experience_id)')
+            .eq('user_id', user.id)
+            .order('created_at', { ascending: false }),
+          supabase.from('saved_creators').select('creator_handle').eq('user_id', user.id),
+          supabase.from('user_badges').select('badge_name, earned_at').eq('user_id', user.id),
+          supabase.from('experience_likes').select('id', { count: 'exact', head: true }).eq('user_id', user.id),
+        ])
+        return {
+          profile: (profileRes.data as ProfileData) ?? EMPTY_BUNDLE.profile,
+          pastBookings: (bookingsRes.data as PastBooking[]) ?? [],
+          savedCreators: (creatorsRes.data as SavedCreator[]) ?? [],
+          badges: (badgesRes.data as Badge[]) ?? [],
+          likedCount: likesRes.count ?? 0,
+        }
+      } catch {
+        // Tables may not exist yet — return empty so UI still renders
+        return EMPTY_BUNDLE
+      }
+    },
+    { enabled: !!user }
+  )
+
+  const profile = bundle?.profile ?? EMPTY_BUNDLE.profile
+  const pastBookings = bundle?.pastBookings ?? []
+  const savedCreators = bundle?.savedCreators ?? []
+  const badges = bundle?.badges ?? []
+  const likedCount = bundle?.likedCount ?? 0
+  // Only block on a full-screen loader the very first time (no cache at all).
+  const loading = !user ? false : initialLoading
 
   useEffect(() => {
-    async function loadProfile() {
-      // Use auth context user instead of separate getUser() call
-      const currentUser = authUser
-      setUser(currentUser)
-
-      if (currentUser) {
-        const user = currentUser
-        // DB tables may not exist yet — wrap in try/catch so the profile
-        // still renders with empty states instead of crashing.
-        try {
-          const [profileRes, bookingsRes, creatorsRes, badgesRes, likesRes] = await Promise.all([
-            supabase
-              .from('users')
-              .select('name, avatar_url, location')
-              .eq('id', user.id)
-              .single(),
-            supabase
-              .from('bookings')
-              .select('id, created_at, total_paid, booking_items(title, destination, travelers, date, experience_id)')
-              .eq('user_id', user.id)
-              .order('created_at', { ascending: false }),
-            supabase
-              .from('saved_creators')
-              .select('creator_handle')
-              .eq('user_id', user.id),
-            supabase
-              .from('user_badges')
-              .select('badge_name, earned_at')
-              .eq('user_id', user.id),
-            supabase
-              .from('experience_likes')
-              .select('id', { count: 'exact', head: true })
-              .eq('user_id', user.id),
-          ])
-
-          if (profileRes.data) setProfile(profileRes.data)
-          if (bookingsRes.data) setPastBookings(bookingsRes.data as PastBooking[])
-          if (creatorsRes.data) setSavedCreators(creatorsRes.data)
-          if (badgesRes.data) setBadges(badgesRes.data)
-          if (likesRes.count !== null) setLikedCount(likesRes.count)
-        } catch {
-          // Tables don't exist yet — profile renders with default empty states
-        }
-
-        // Load phone/identity from user metadata
-        setPhone(user.user_metadata?.phone || '')
-        setIdentity(user.user_metadata?.identity_number || '')
-      }
-
-      setLoading(false)
+    if (user) {
+      setPhone(user.user_metadata?.phone || '')
+      setIdentity(user.user_metadata?.identity_number || '')
     }
-
-    if (authUser) loadProfile()
-    else setLoading(false)
-  }, [authUser]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [user])
 
   const displayName = profile.name || user?.user_metadata?.full_name || user?.user_metadata?.name || 'Traveler'
   const avatarUrl = profile.avatar_url || user?.user_metadata?.avatar_url
@@ -289,12 +292,18 @@ export default function ProfileView() {
   async function updateName(newName: string) {
     await supabase.auth.updateUser({ data: { full_name: newName } })
     await supabase.from('users').update({ name: newName }).eq('id', user!.id)
-    setProfile((p) => ({ ...p, name: newName }))
+    mutate((prev) => ({
+      ...(prev ?? EMPTY_BUNDLE),
+      profile: { ...((prev ?? EMPTY_BUNDLE).profile), name: newName },
+    }))
   }
 
   async function updateLocation(newLocation: string) {
     await supabase.from('users').update({ location: newLocation }).eq('id', user!.id)
-    setProfile((p) => ({ ...p, location: newLocation }))
+    mutate((prev) => ({
+      ...(prev ?? EMPTY_BUNDLE),
+      profile: { ...((prev ?? EMPTY_BUNDLE).profile), location: newLocation },
+    }))
   }
 
   if (loading) {

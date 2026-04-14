@@ -18,6 +18,35 @@ function Reel({ exp, isActive, totalCount, currentIndex }: { exp: Experience; is
   const { liked, likeCount, toggleLike } = useExperienceLike(exp.id)
   const inCart = isInCart(exp.id)
   const toggleCart = () => { if (inCart) { removeItem(exp.id) } else { addItem(exp) } }
+  const [sharedToast, setSharedToast] = useState<'copied' | 'failed' | null>(null)
+
+  const handleShare = async () => {
+    const url = `${window.location.origin}/experience/${slugify(exp.title)}`
+    const shareData = {
+      title: exp.title,
+      text: `${exp.title} — ${exp.destination}, Jamaica`,
+      url,
+    }
+    try {
+      if (typeof navigator !== 'undefined' && 'share' in navigator && navigator.canShare?.(shareData) !== false) {
+        await navigator.share(shareData)
+        return
+      }
+      await navigator.clipboard.writeText(url)
+      setSharedToast('copied')
+      setTimeout(() => setSharedToast(null), 1800)
+    } catch (err) {
+      // User cancelled the native sheet — treat as no-op
+      if ((err as DOMException)?.name === 'AbortError') return
+      try {
+        await navigator.clipboard.writeText(url)
+        setSharedToast('copied')
+      } catch {
+        setSharedToast('failed')
+      }
+      setTimeout(() => setSharedToast(null), 1800)
+    }
+  }
 
   useEffect(() => {
     const video = videoRef.current
@@ -181,14 +210,16 @@ function Reel({ exp, isActive, totalCount, currentIndex }: { exp: Experience; is
 
         {/* Share */}
         <button
-          onClick={(e) => e.stopPropagation()}
+          onClick={(e) => { e.stopPropagation(); handleShare() }}
           style={{
             display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2,
             background: 'none', border: 'none', cursor: 'pointer', color: 'white',
           }}
         >
           <Send size={24} strokeWidth={1.8} />
-          <span style={{ fontSize: 11, fontWeight: 700, fontFamily: 'var(--font-dm-sans)' }}>Send</span>
+          <span style={{ fontSize: 11, fontWeight: 700, fontFamily: 'var(--font-dm-sans)' }}>
+            {sharedToast === 'copied' ? 'Copied' : sharedToast === 'failed' ? 'Error' : 'Send'}
+          </span>
         </button>
 
       </div>
@@ -482,39 +513,54 @@ export default function ExperienceDetail({ slug }: { slug: string }) {
   const { addComment: addSupabaseComment, toDisplayComments, isLoggedIn, user: currentUser, replyingTo, setReplyingTo } = useComments(activeExp?.id || 0)
   const activeComments = activeExp ? toDisplayComments(activeExp.comments) : []
 
-  // Measure the mobile bottom bar so the reel's "Add to Trip" row can sit
-  // exactly 12px above it regardless of safe-area / bar-content height.
-  // Callback ref so measurement runs the moment the element mounts (and
-  // re-runs if it unmounts/remounts). ResizeObserver + viewport listeners
-  // keep the value in sync with rotation, safe-area changes, and keyboard.
+  // Measure the mobile bottom bar live so the reel's right rail and
+  // "Add to Trip" pill can sit exactly 12px above it regardless of safe-area,
+  // keyboard, or bar-content changes. The CSS var is the *total* offset
+  // (bar height + 12px gap), or cleared entirely when the bar is hidden so
+  // CSS falls back to the desktop default.
   const mobileBarRef = useCallback((el: HTMLDivElement | null) => {
     const root = document.documentElement
     if (!el) {
-      root.style.removeProperty('--mobile-bar-height')
+      root.style.removeProperty('--reel-bottom-offset')
       return
     }
+    let cleanup: (() => void) | undefined
     const update = () => {
       const rect = el.getBoundingClientRect()
-      root.style.setProperty('--mobile-bar-height', `${Math.round(rect.height)}px`)
+      // If the bar is display:none (desktop via .hide-desktop), rect.height
+      // is 0 — clear the var so the desktop fallback in CSS applies.
+      if (rect.height === 0) {
+        root.style.removeProperty('--reel-bottom-offset')
+      } else {
+        root.style.setProperty('--reel-bottom-offset', `${Math.round(rect.height) + 12}px`)
+      }
     }
     update()
     const ro = new ResizeObserver(update)
     ro.observe(el)
+    // Also observe the viewport — `hide-desktop` flips on resize/rotation,
+    // and the keyboard changes visualViewport height.
+    const mql = window.matchMedia('(min-width: 768px)')
+    const onMql = () => update()
+    mql.addEventListener('change', onMql)
     window.addEventListener('resize', update)
     window.addEventListener('orientationchange', update)
     const vv = window.visualViewport
     vv?.addEventListener('resize', update)
-    ;(el as HTMLDivElement & { __cleanup?: () => void }).__cleanup = () => {
+    cleanup = () => {
       ro.disconnect()
+      mql.removeEventListener('change', onMql)
       window.removeEventListener('resize', update)
       window.removeEventListener('orientationchange', update)
       vv?.removeEventListener('resize', update)
     }
+    ;(el as HTMLDivElement & { __cleanup?: () => void }).__cleanup = cleanup
   }, [])
   useEffect(() => {
     return () => {
       const el = document.querySelector<HTMLDivElement>('[data-mobile-bottom-bar]')
       ;(el as (HTMLDivElement & { __cleanup?: () => void }) | null)?.__cleanup?.()
+      document.documentElement.style.removeProperty('--reel-bottom-offset')
     }
   }, [])
 
