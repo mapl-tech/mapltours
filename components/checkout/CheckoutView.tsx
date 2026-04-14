@@ -8,6 +8,8 @@ import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-
 import { ArrowLeft, Check, ShieldCheck, Lock, CreditCard, MapPin, Users, Calendar, Leaf } from 'lucide-react'
 import { useCartStore, DAILY_HOUR_LIMIT } from '@/lib/cart'
 import TripTimeBar from '@/components/TripTimeBar'
+import { useAvailableReward, consumeReward } from '@/lib/tour-videos'
+import { Award } from 'lucide-react'
 import { stripePromise } from '@/lib/stripe'
 import { useI18n } from '@/lib/i18n'
 import { calculateTransportation, GAS_PRICE_USD_PER_LITER, GAS_PRICE_JMD_PER_LITER, fetchGasPrice } from '@/lib/transportation'
@@ -977,7 +979,16 @@ export default function CheckoutView() {
   )
 
   const transportTotal = transportCost?.totalTransportUsd || 0
-  const finalTotal = grandTotal() + transportTotal
+  const baseTotal = grandTotal() + transportTotal
+
+  // ── Video-reward discount (auto-applied when the user has one unused) ──
+  const availableReward = useAvailableReward()
+  const [rewardApplied, setRewardApplied] = useState(true)
+  const activeReward = rewardApplied ? availableReward : null
+  const rewardDiscount = activeReward
+    ? Math.round(baseTotal * (activeReward.percent / 100))
+    : 0
+  const finalTotal = Math.max(0, baseTotal - rewardDiscount)
 
   // Create PaymentIntent when moving to step 3
   useEffect(() => {
@@ -1078,7 +1089,15 @@ export default function CheckoutView() {
                   '.Tab--selected': { borderColor: '#171614', backgroundColor: '#171614', color: '#fff' },
                 },
               }}}>
-                <PaymentStep onPaymentSuccess={() => setConfirmed(true)} />
+                <PaymentStep onPaymentSuccess={async () => {
+                  // Mark the reward as used. The status flip prevents re-use
+                  // on future checkouts; booking_id can be back-filled once
+                  // bookings are persisted server-side.
+                  if (activeReward) {
+                    await consumeReward(activeReward.id).catch(() => {})
+                  }
+                  setConfirmed(true)
+                }} />
               </Elements>
             ) : stripeError ? (
               <div style={{ padding: '40px', textAlign: 'center' }}>
@@ -1267,6 +1286,68 @@ export default function CheckoutView() {
                       <span>{formatPrice(transportCost.totalTransportUsd)}</span>
                     </div>
                   </div>
+                </div>
+              )}
+
+              {/* Video-reward discount strip */}
+              {availableReward && (
+                <div style={{
+                  marginTop: 12,
+                  padding: '12px 14px',
+                  borderRadius: 12,
+                  border: '1px solid rgba(255,179,0,0.3)',
+                  background: 'rgba(255,179,0,0.06)',
+                  display: 'flex', alignItems: 'center', gap: 12,
+                }}>
+                  <div style={{
+                    width: 34, height: 34, borderRadius: '50%',
+                    background: 'var(--gold, #FFB300)',
+                    color: '#111',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    flexShrink: 0,
+                  }}>
+                    <Award size={17} strokeWidth={2} />
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <p style={{
+                      fontFamily: 'var(--font-syne)', fontWeight: 800, fontSize: 13.5,
+                      color: 'var(--text-primary)', letterSpacing: '-0.005em',
+                    }}>
+                      {availableReward.percent}% MAPL reward
+                    </p>
+                    <p style={{
+                      fontFamily: 'var(--font-dm-sans)', fontSize: 11.5,
+                      color: 'var(--text-tertiary)', marginTop: 1,
+                      whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+                    }}>
+                      {availableReward.code}
+                    </p>
+                  </div>
+                  <label style={{
+                    display: 'inline-flex', alignItems: 'center', gap: 6,
+                    fontFamily: 'var(--font-dm-sans)', fontSize: 12, fontWeight: 600,
+                    color: 'var(--text-secondary)', cursor: 'pointer',
+                  }}>
+                    <input
+                      type="checkbox"
+                      checked={rewardApplied}
+                      onChange={(e) => setRewardApplied(e.target.checked)}
+                      style={{ accentColor: 'var(--gold, #FFB300)' }}
+                    />
+                    Apply
+                  </label>
+                </div>
+              )}
+
+              {rewardApplied && availableReward && rewardDiscount > 0 && step === 3 && (
+                <div style={{
+                  display: 'flex', justifyContent: 'space-between',
+                  marginTop: 10, fontSize: 13.5,
+                  fontFamily: 'var(--font-dm-sans)', fontWeight: 600,
+                  color: 'var(--emerald, #00A550)',
+                }}>
+                  <span>Reward discount</span>
+                  <span>−{formatPrice(rewardDiscount)}</span>
                 </div>
               )}
 

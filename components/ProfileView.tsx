@@ -8,6 +8,8 @@ import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useAuth } from '@/lib/supabase/auth-context'
 import { useSwrCache } from '@/lib/swr-cache'
+import { useMyVideoProgress, VIDEO_REWARD_MILESTONE } from '@/lib/tour-videos'
+import { Award } from 'lucide-react'
 import type { User } from '@supabase/supabase-js'
 
 interface PastBooking {
@@ -734,6 +736,20 @@ export default function ProfileView() {
 
             <div style={{ height: 1, background: 'var(--border)', marginBottom: 48 }} />
 
+            {/* ── MAPL Rewards (tour-video uploads) ── */}
+            <section style={{ marginBottom: 48 }}>
+              <h2 style={{
+                fontFamily: 'var(--font-syne)', fontWeight: 800, fontSize: 22,
+                marginBottom: 20, color: 'var(--text-primary)',
+                letterSpacing: '-0.02em',
+              }}>
+                MAPL Rewards
+              </h2>
+              <MaplRewardsCard />
+            </section>
+
+            <div style={{ height: 1, background: 'var(--border)', marginBottom: 48 }} />
+
             {/* ── Saved Creators ── */}
             <section style={{ marginBottom: 48 }}>
               <h2 style={{
@@ -812,6 +828,155 @@ export default function ProfileView() {
           }
         }
       `}</style>
+    </div>
+  )
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   MAPL Rewards card — mirrors the band shown on the experience page but in
+   a richer profile-context variant (shows history of unlocked / used codes).
+   ═══════════════════════════════════════════════════════════════════════════ */
+function MaplRewardsCard() {
+  const { approved, pending, towardNext, availableRewards, allRewards, loading } = useMyVideoProgress()
+  const usedRewards = allRewards.filter((r) => r.status === 'used')
+  const hasActive = availableRewards.length > 0
+  const pct = hasActive ? 100 : (towardNext / VIDEO_REWARD_MILESTONE) * 100
+
+  if (loading) {
+    return (
+      <div style={{
+        padding: 22, borderRadius: 16,
+        background: 'var(--card-bg)', border: '1px solid var(--border)',
+        fontFamily: 'var(--font-dm-sans)', color: 'var(--text-tertiary)',
+      }}>
+        Loading your rewards…
+      </div>
+    )
+  }
+
+  return (
+    <div style={{
+      padding: '22px 22px 20px',
+      borderRadius: 18,
+      background: 'var(--card-bg)',
+      border: '1px solid rgba(255,179,0,0.22)',
+      boxShadow: '0 4px 14px rgba(0,0,0,0.03)',
+      position: 'relative', overflow: 'hidden',
+    }}>
+      <div style={{
+        position: 'absolute', top: 0, left: 0, right: 0, height: 2,
+        background: 'linear-gradient(90deg, transparent, var(--gold, #FFB300) 50%, transparent)',
+        opacity: 0.6,
+      }} />
+
+      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 14 }}>
+        <div style={{
+          width: 44, height: 44, borderRadius: '50%',
+          background: hasActive ? 'var(--emerald, #00A550)' : 'var(--gold, #FFB300)',
+          color: hasActive ? '#fff' : '#111',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          flexShrink: 0,
+        }}>
+          <Award size={20} strokeWidth={2} />
+        </div>
+
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <p style={{
+            fontFamily: 'var(--font-dm-sans)',
+            fontSize: 11, fontWeight: 600,
+            letterSpacing: '0.1em', textTransform: 'uppercase',
+            color: hasActive ? 'var(--emerald)' : 'var(--gold)',
+            marginBottom: 4,
+          }}>
+            {hasActive ? 'Reward unlocked' : 'Video reward'}
+          </p>
+          <h3 style={{
+            fontFamily: 'var(--font-syne)', fontWeight: 800, fontSize: 18,
+            letterSpacing: '-0.01em', color: 'var(--text-primary)',
+            marginBottom: 4, lineHeight: 1.2,
+          }}>
+            {hasActive
+              ? `5% off ready to use`
+              : approved === 0
+                ? 'Upload 5 tour videos, earn 5% off your next trip'
+                : `${towardNext} of ${VIDEO_REWARD_MILESTONE} approved`}
+          </h3>
+          <p style={{
+            fontFamily: 'var(--font-dm-sans)', fontSize: 13,
+            color: 'var(--text-secondary)', lineHeight: 1.45,
+          }}>
+            {approved} approved · {pending} in review
+          </p>
+
+          <div style={{
+            position: 'relative', marginTop: 14,
+            height: 6, borderRadius: 9999,
+            background: 'rgba(0,0,0,0.08)', overflow: 'hidden',
+          }}>
+            <div style={{
+              position: 'absolute', left: 0, top: 0, bottom: 0,
+              width: `${pct}%`,
+              background: hasActive
+                ? 'var(--emerald, #00A550)'
+                : 'linear-gradient(90deg, var(--gold, #FFB300), #E69A00)',
+              borderRadius: 9999,
+              transition: 'width 0.5s cubic-bezier(0.4, 0, 0.2, 1)',
+            }} />
+          </div>
+        </div>
+      </div>
+
+      {/* Codes */}
+      {(availableRewards.length + usedRewards.length) > 0 && (
+        <div style={{ marginTop: 18, display: 'flex', flexDirection: 'column', gap: 8 }}>
+          {availableRewards.map((r) => (
+            <RewardRow key={r.id} code={r.code} status="available" percent={r.percent} />
+          ))}
+          {usedRewards.map((r) => (
+            <RewardRow key={r.id} code={r.code} status="used" percent={r.percent} />
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function RewardRow({ code, status, percent }: { code: string; status: 'available' | 'used'; percent: number }) {
+  const used = status === 'used'
+  return (
+    <div style={{
+      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+      padding: '10px 14px',
+      borderRadius: 12,
+      background: used ? 'rgba(0,0,0,0.03)' : 'var(--bg-warm, rgba(255,179,0,0.06))',
+      border: used ? '1px solid var(--border)' : '1px solid rgba(255,179,0,0.28)',
+    }}>
+      <div style={{ minWidth: 0 }}>
+        <p style={{
+          fontFamily: 'var(--font-dm-sans)', fontWeight: 700, fontSize: 13,
+          color: used ? 'var(--text-tertiary)' : 'var(--text-primary)',
+          textDecoration: used ? 'line-through' : 'none',
+          letterSpacing: '-0.005em',
+        }}>
+          {code}
+        </p>
+        <p style={{
+          fontFamily: 'var(--font-dm-sans)', fontSize: 11,
+          color: 'var(--text-tertiary)', marginTop: 1,
+        }}>
+          {percent}% off · {used ? 'Used' : 'Available on your next booking'}
+        </p>
+      </div>
+      <span style={{
+        padding: '3px 10px', borderRadius: 9999,
+        fontSize: 10.5, fontWeight: 700,
+        fontFamily: 'var(--font-dm-sans)',
+        letterSpacing: '0.06em', textTransform: 'uppercase',
+        background: used ? 'rgba(0,0,0,0.08)' : 'rgba(0,165,80,0.12)',
+        color: used ? 'var(--text-tertiary)' : 'var(--emerald, #00A550)',
+      }}>
+        {used ? 'Used' : 'Active'}
+      </span>
     </div>
   )
 }

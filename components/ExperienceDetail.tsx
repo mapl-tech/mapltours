@@ -6,8 +6,9 @@ import { experiences, Experience, slugify } from '@/lib/experiences'
 import { useI18n } from '@/lib/i18n'
 import { useCartStore, DAILY_HOUR_LIMIT } from '@/lib/cart'
 import Link from 'next/link'
-import { Heart, MessageCircle, Play, ChevronLeft, ChevronRight, X, ThumbsUp, Send, MapPin, Star, Clock, ShoppingBag } from 'lucide-react'
+import { Heart, MessageCircle, Play, ChevronLeft, ChevronRight, X, ThumbsUp, Send, MapPin, Star, Clock, ShoppingBag, Film } from 'lucide-react'
 import { useExperienceLike, useComments, DisplayComment } from '@/lib/supabase/hooks'
+import UserTourVideos from '@/components/UserTourVideos'
 
 /** Brand-palette quick emojis — evokes MAPL's Jamaica-beyond-the-resort voice. */
 const QUICK_EMOJIS = ['🔥', '❤️', '🌴', '🌊', '☀️', '🏝️', '✨', '🙌'] as const
@@ -133,6 +134,7 @@ function Reel({ exp, isActive, totalCount, currentIndex }: { exp: Experience; is
   const inCart = isInCart(exp.id)
   const toggleCart = () => { if (inCart) { removeItem(exp.id) } else { addItem(exp) } }
   const [shareToast, setShareToast] = useState<string | null>(null)
+  const [clipsOpen, setClipsOpen] = useState(false)
 
   // Robust copy-to-clipboard with a fallback for non-secure contexts
   // (navigator.clipboard only exists on HTTPS / localhost).
@@ -366,7 +368,76 @@ function Reel({ exp, isActive, totalCount, currentIndex }: { exp: Experience; is
           </span>
         </button>
 
+        {/* Guest clips — opens UserTourVideos overlay */}
+        <button
+          onClick={(e) => { e.stopPropagation(); setClipsOpen(true) }}
+          aria-label="Guest tour videos"
+          style={{
+            display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2,
+            background: 'none', border: 'none', cursor: 'pointer', color: 'white',
+          }}
+        >
+          <Film size={24} strokeWidth={1.8} />
+          <span style={{ fontSize: 11, fontWeight: 700, fontFamily: 'var(--font-dm-sans)' }}>
+            Clips
+          </span>
+        </button>
+
       </div>
+
+      {/* Full-screen Guest Clips overlay (gallery + upload + reward) */}
+      {clipsOpen && (
+        <div
+          onClick={() => setClipsOpen(false)}
+          role="dialog" aria-modal="true"
+          style={{
+            position: 'fixed', inset: 0, zIndex: 1200,
+            background: 'rgba(8, 8, 10, 0.88)',
+            backdropFilter: 'blur(10px)',
+            display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
+            animation: 'fadeUp 0.22s ease',
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              width: '100%', maxWidth: 680,
+              maxHeight: '92vh', overflowY: 'auto',
+              background: 'var(--bg, #fff)',
+              borderRadius: 'var(--r-xl, 20px) var(--r-xl, 20px) 0 0',
+              boxShadow: '0 -20px 60px rgba(0,0,0,0.35)',
+              padding: '14px 12px 24px',
+              WebkitOverflowScrolling: 'touch',
+            }}
+          >
+            <div style={{
+              display: 'flex', justifyContent: 'center', marginBottom: 8,
+            }}>
+              <div style={{
+                width: 44, height: 4, borderRadius: 9999,
+                background: 'rgba(0,0,0,0.15)',
+              }} />
+            </div>
+            <div style={{
+              display: 'flex', justifyContent: 'flex-end', marginBottom: 4,
+            }}>
+              <button
+                onClick={() => setClipsOpen(false)}
+                aria-label="Close"
+                style={{
+                  width: 36, height: 36, borderRadius: '50%',
+                  background: 'rgba(0,0,0,0.06)', border: 'none', cursor: 'pointer',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  color: 'var(--text-secondary)',
+                }}
+              >
+                <X size={16} />
+              </button>
+            </div>
+            <UserTourVideos experienceId={exp.id} experienceTitle={exp.title} />
+          </div>
+        </div>
+      )}
 
       {/* Share toast — MAPL brand: gold accent on ink-black, Syne label */}
       {shareToast && (
