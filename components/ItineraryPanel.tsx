@@ -5,6 +5,7 @@ import Image from 'next/image'
 import { useCartStore } from '@/lib/cart'
 import { X } from 'lucide-react'
 import { useI18n } from '@/lib/i18n'
+import TripTimeBar from '@/components/TripTimeBar'
 
 export default function ItineraryPanel({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { items, removeItem, subtotal, fee, grandTotal } = useCartStore()
@@ -43,6 +44,15 @@ export default function ItineraryPanel({ open, onClose }: { open: boolean; onClo
             alignItems: 'center', justifyContent: 'center',
             color: 'var(--text-secondary)', transition: 'all 0.15s ease',
           }}><X size={16} /></button>
+        </div>
+
+        {/* Day plan */}
+        <div style={{
+          padding: '16px 24px',
+          borderBottom: '1px solid var(--border)',
+          background: 'var(--bg-warm, rgba(255, 179, 0, 0.03))',
+        }}>
+          <TripTimeBar compact />
         </div>
 
         {/* Items */}

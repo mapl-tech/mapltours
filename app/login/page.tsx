@@ -86,25 +86,48 @@ function LoginContent() {
       padding: 24,
       position: 'relative',
     }}>
-      {/* Back to home */}
+      {/* Back to home — icon-only on mobile so it never covers the logo */}
       <Link
         href="/"
+        aria-label="Back to home"
+        className="login-back-btn"
         style={{
-          position: 'absolute', top: 24, left: 24,
+          position: 'absolute', top: 'max(16px, env(safe-area-inset-top))', left: 16,
           display: 'flex', alignItems: 'center', gap: 8,
           fontSize: 14, fontWeight: 600, color: 'var(--text-primary)',
           fontFamily: 'var(--font-dm-sans)',
-          padding: '10px 18px 10px 14px',
           borderRadius: 9999,
           background: 'var(--card-bg)',
           border: '1px solid var(--border-strong)',
           boxShadow: 'var(--shadow-sm)',
           transition: 'all 0.15s ease',
+          zIndex: 2,
         }}
       >
         <span style={{ fontSize: 18, lineHeight: 1 }}>←</span>
-        Back to Home
+        <span className="login-back-label">Back to Home</span>
       </Link>
+      <style jsx>{`
+        .login-back-btn {
+          /* desktop/tablet: full pill with label */
+          padding: 10px 18px 10px 14px;
+        }
+        .login-back-label {
+          display: inline;
+        }
+        @media (max-width: 480px) {
+          .login-back-btn {
+            /* mobile: icon-only circular button so the MAPL logo is never covered */
+            padding: 0;
+            width: 40px;
+            height: 40px;
+            justify-content: center;
+          }
+          .login-back-label {
+            display: none;
+          }
+        }
+      `}</style>
 
       <div style={{
         width: '100%',

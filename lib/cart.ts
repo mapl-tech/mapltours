@@ -13,7 +13,13 @@ const GUIDE_RATE_USD_PER_HOUR = 4
 // Average driving speed in Jamaica (km/h) — winding mountain & coastal roads
 const AVG_DRIVING_SPEED_KMH = 40
 
-function parseDurationHours(duration: string): number {
+/**
+ * Maximum tour hours allowed per single travel day. Beyond this, the user
+ * must either remove experiences or move them to a different date.
+ */
+export const DAILY_HOUR_LIMIT = 8
+
+export function parseDurationHours(duration: string): number {
   if (/full\s*day/i.test(duration)) return 8
   if (/half\s*day/i.test(duration)) return 4
   const match = duration.match(/([\d.]+)\s*hr/i)
@@ -142,6 +148,14 @@ interface CartStore {
   guideCost: () => number
   fee: () => number
   grandTotal: () => number
+  /** Total tour hours per booking date, e.g. { '2026-05-01': 7, '2026-05-02': 4 }. */
+  hoursByDate: () => Record<string, number>
+  /** The largest single day's tour-hours — the one that would hit the 8-hr cap. */
+  maxDailyHours: () => number
+  /** True if any date exceeds DAILY_HOUR_LIMIT. */
+  isDayOverLimit: () => boolean
+  /** Hours still available on the *least loaded* day that has any items; 8 when cart is empty. */
+  remainingHoursToday: () => number
 }
 
 function defaultDate(): string {
@@ -229,6 +243,35 @@ export const useCartStore = create<CartStore>()(
       },
 
       grandTotal: () => get().subtotal() + get().fee(),
+
+      hoursByDate: () => {
+        const map: Record<string, number> = {}
+        for (const item of get().items) {
+          const key = item.date || 'unset'
+          map[key] = (map[key] ?? 0) + parseDurationHours(item.duration)
+        }
+        return map
+      },
+
+      maxDailyHours: () => {
+        const by = get().hoursByDate()
+        const values = Object.values(by)
+        return values.length ? Math.max(...values) : 0
+      },
+
+      isDayOverLimit: () => {
+        const by = get().hoursByDate()
+        return Object.values(by).some((h) => h > DAILY_HOUR_LIMIT)
+      },
+
+      remainingHoursToday: () => {
+        const by = get().hoursByDate()
+        const values = Object.values(by)
+        if (values.length === 0) return DAILY_HOUR_LIMIT
+        // Use the busiest day as the reference — that's the one that will
+        // overflow next. Clamp at 0 when the cap is already met/exceeded.
+        return Math.max(0, DAILY_HOUR_LIMIT - Math.max(...values))
+      },
     }),
     { name: 'mapl-cart' }
   )

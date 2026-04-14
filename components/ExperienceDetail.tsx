@@ -1,13 +1,127 @@
 'use client'
 
-import { useState, useRef, useEffect, useCallback } from 'react'
+import { useState, useRef, useEffect, useCallback, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { experiences, Experience, slugify } from '@/lib/experiences'
 import { useI18n } from '@/lib/i18n'
-import { useCartStore } from '@/lib/cart'
+import { useCartStore, DAILY_HOUR_LIMIT } from '@/lib/cart'
 import Link from 'next/link'
 import { Heart, MessageCircle, Play, ChevronLeft, ChevronRight, X, ThumbsUp, Send, MapPin, Star, Clock, ShoppingBag } from 'lucide-react'
 import { useExperienceLike, useComments, DisplayComment } from '@/lib/supabase/hooks'
+
+/** Brand-palette quick emojis — evokes MAPL's Jamaica-beyond-the-resort voice. */
+const QUICK_EMOJIS = ['🔥', '❤️', '🌴', '🌊', '☀️', '🏝️', '✨', '🙌'] as const
+
+/**
+ * Emoji quick-react button that sits beside the comment bar. Tapping the
+ * trigger opens an ink-black popover with a row of Jamaica-themed emojis;
+ * picking one posts it as a comment in one tap (Instagram Reels pattern).
+ * Styled to match the MAPL toast: gold hairline border, ink surface, blur.
+ */
+function EmojiQuickReact({ onPick }: { onPick: (emoji: string) => void | Promise<void> }) {
+  const [open, setOpen] = useState(false)
+  const ref = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!open) return
+    const onDoc = (e: MouseEvent | TouchEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
+    }
+    document.addEventListener('mousedown', onDoc)
+    document.addEventListener('touchstart', onDoc, { passive: true })
+    return () => {
+      document.removeEventListener('mousedown', onDoc)
+      document.removeEventListener('touchstart', onDoc)
+    }
+  }, [open])
+
+  return (
+    <div ref={ref} style={{ position: 'relative' }}>
+      <button
+        onClick={() => setOpen((v) => !v)}
+        aria-label="Quick emoji react"
+        style={{
+          width: 40, height: 40, borderRadius: '50%',
+          background: open ? 'rgba(255,179,0,0.18)' : 'rgba(255,255,255,0.08)',
+          border: open ? '1px solid rgba(255,179,0,0.4)' : '1px solid rgba(255,255,255,0.06)',
+          cursor: 'pointer',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          fontSize: 18, lineHeight: 1,
+          transition: 'all 0.2s ease',
+          flexShrink: 0,
+        }}
+      >
+        <span style={{ filter: open ? 'none' : 'grayscale(0.15)' }}>😊</span>
+      </button>
+
+      {open && (
+        <div
+          role="menu"
+          style={{
+            position: 'absolute',
+            bottom: 'calc(100% + 10px)',
+            right: 0,
+            zIndex: 20,
+            display: 'inline-flex', gap: 2,
+            padding: 6,
+            borderRadius: 9999,
+            background: 'rgba(8, 8, 10, 0.94)',
+            border: '1px solid rgba(255, 179, 0, 0.3)',
+            boxShadow: '0 14px 44px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,179,0,0.06)',
+            backdropFilter: 'blur(14px)',
+            WebkitBackdropFilter: 'blur(14px)',
+            animation: 'fadeUp 0.22s ease',
+          }}
+        >
+          {QUICK_EMOJIS.map((emoji) => (
+            <button
+              key={emoji}
+              onClick={async () => {
+                setOpen(false)
+                await onPick(emoji)
+              }}
+              style={{
+                width: 38, height: 38, borderRadius: '50%',
+                background: 'transparent', border: 'none',
+                cursor: 'pointer',
+                fontSize: 20, lineHeight: 1,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                transition: 'transform 0.15s ease, background 0.15s ease',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = 'rgba(255,179,0,0.14)'
+                e.currentTarget.style.transform = 'scale(1.18)'
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = 'transparent'
+                e.currentTarget.style.transform = ''
+              }}
+            >
+              {emoji}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+/** Deterministic Fisher-Yates shuffle seeded by a string — same seed gives
+ *  the same order, so the feed doesn't rearrange itself mid-scroll. */
+function shuffle<T>(arr: T[], seed: string): T[] {
+  let s = 0
+  for (let i = 0; i < seed.length; i++) s = (s * 31 + seed.charCodeAt(i)) | 0
+  const rand = () => {
+    s = (s * 1664525 + 1013904223) | 0
+    return ((s >>> 0) % 1_000_000) / 1_000_000
+  }
+  const out = arr.slice()
+  for (let i = out.length - 1; i > 0; i--) {
+    const j = Math.floor(rand() * (i + 1))
+    ;[out[i], out[j]] = [out[j], out[i]]
+  }
+  return out
+}
 
 /* ── Single Reel (Snapchat style) ── */
 function Reel({ exp, isActive, totalCount, currentIndex }: { exp: Experience; isActive: boolean; totalCount: number; currentIndex: number }) {
@@ -588,14 +702,32 @@ function MobileCommentsSheet({ comments, commentText, setCommentText, addComment
 export default function ExperienceDetail({ slug }: { slug: string }) {
   const router = useRouter()
   const items = useCartStore((s) => s.items)
+  const maxDailyHours = useCartStore((s) => s.maxDailyHours())
   const { t } = useI18n()
   const scrollRef = useRef<HTMLDivElement>(null)
-  const startIdx = experiences.findIndex((e) => slugify(e.title) === slug)
-  const [activeIndex, setActiveIndex] = useState(startIdx >= 0 ? startIdx : 0)
   const [commentText, setCommentText] = useState('')
   const [mobileComments, setMobileComments] = useState(false)
 
-  const activeExp = experiences[activeIndex]
+  // When the busiest day in the cart hits the 8-hour cap, surface tours
+  // already in the cart first (randomised, deduped) so the feed pivots to
+  // helping the user review their day instead of adding more. The stable
+  // dependency list keeps the order fixed across scrolls — it only
+  // reshuffles when the cart contents actually change.
+  const dayIsFull = maxDailyHours >= DAILY_HOUR_LIMIT
+  const cartIdsKey = items.map((i) => i.id).sort((a, b) => a - b).join(',')
+  const feedExperiences = useMemo(() => {
+    if (!dayIsFull || items.length === 0) return experiences
+    const cartIdSet = new Set(items.map((i) => i.id))
+    const cartExps = experiences.filter((e) => cartIdSet.has(e.id))
+    const otherExps = experiences.filter((e) => !cartIdSet.has(e.id))
+    return [...shuffle(cartExps, cartIdsKey), ...shuffle(otherExps, cartIdsKey)]
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dayIsFull, cartIdsKey])
+
+  const startIdx = feedExperiences.findIndex((e) => slugify(e.title) === slug)
+  const [activeIndex, setActiveIndex] = useState(startIdx >= 0 ? startIdx : 0)
+
+  const activeExp = feedExperiences[activeIndex]
   const { addComment: addSupabaseComment, toDisplayComments, isLoggedIn, user: currentUser, replyingTo, setReplyingTo } = useComments(activeExp?.id || 0)
   const activeComments = activeExp ? toDisplayComments(activeExp.comments) : []
 
@@ -669,9 +801,9 @@ export default function ExperienceDetail({ slug }: { slug: string }) {
     if (childHeight === 0) return
 
     const idx = Math.round(container.scrollTop / childHeight)
-    const clampedIdx = Math.max(0, Math.min(idx, experiences.length - 1))
+    const clampedIdx = Math.max(0, Math.min(idx, feedExperiences.length - 1))
     setActiveIndex(clampedIdx)
-  }, [])
+  }, [feedExperiences.length])
 
   const scrollToReel = (direction: 'prev' | 'next') => {
     if (!scrollRef.current) return
@@ -679,7 +811,7 @@ export default function ExperienceDetail({ slug }: { slug: string }) {
     const childHeight = children.length ? (children[0] as HTMLElement).offsetHeight : window.innerHeight
     const target = direction === 'prev'
       ? Math.max(0, activeIndex - 1)
-      : Math.min(experiences.length - 1, activeIndex + 1)
+      : Math.min(feedExperiences.length - 1, activeIndex + 1)
     scrollRef.current.scrollTo({ top: target * childHeight, behavior: 'smooth' })
   }
 
@@ -774,10 +906,10 @@ export default function ExperienceDetail({ slug }: { slug: string }) {
             fontFamily: 'var(--font-dm-sans)', pointerEvents: 'auto',
           }}>
             {activeIndex + 1}
-            <span style={{ color: 'rgba(255,255,255,0.35)', fontWeight: 500 }}> / {experiences.length}</span>
+            <span style={{ color: 'rgba(255,255,255,0.35)', fontWeight: 500 }}> / {feedExperiences.length}</span>
           </span>
 
-          {activeIndex < experiences.length - 1 ? (
+          {activeIndex < feedExperiences.length - 1 ? (
             <button
               onClick={() => scrollToReel('next')}
               style={{
@@ -815,8 +947,8 @@ export default function ExperienceDetail({ slug }: { slug: string }) {
             scrollSnapType: 'y mandatory',
           }}
         >
-          {experiences.map((exp, i) => (
-            <Reel key={exp.id} exp={exp} isActive={i === activeIndex} totalCount={experiences.length} currentIndex={activeIndex} />
+          {feedExperiences.map((exp, i) => (
+            <Reel key={exp.id} exp={exp} isActive={i === activeIndex} totalCount={feedExperiences.length} currentIndex={activeIndex} />
           ))}
         </div>
       </div>
@@ -1100,25 +1232,18 @@ export default function ExperienceDetail({ slug }: { slug: string }) {
         >
           {isLoggedIn ? 'Add a comment...' : 'Sign in to comment...'}
         </button>
-        <button
-          onClick={() => {
+        {/* Quick-emoji react — replaces redundant comment counter.
+            One tap posts the chosen emoji as a comment (or routes to login).
+            Brand: ink-black surface, gold accent, Syne label on the trigger. */}
+        <EmojiQuickReact
+          onPick={async (emoji) => {
             if (!isLoggedIn && activeExp) {
               window.location.href = `/login?redirect=/experience/${slugify(activeExp.title)}`
               return
             }
-            setMobileComments(true)
+            await addSupabaseComment(emoji)
           }}
-          style={{
-            display: 'flex', alignItems: 'center', gap: 4,
-            background: 'none', border: 'none', cursor: 'pointer',
-            color: 'white', padding: '8px',
-          }}
-        >
-          <MessageCircle size={22} strokeWidth={1.8} />
-          <span style={{ fontSize: 12, fontWeight: 700, fontFamily: 'var(--font-dm-sans)' }}>
-            {activeComments.length}
-          </span>
-        </button>
+        />
         {items.length > 0 && (
           <Link
             href="/checkout"

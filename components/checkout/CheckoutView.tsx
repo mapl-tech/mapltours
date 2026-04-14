@@ -6,7 +6,8 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js'
 import { ArrowLeft, Check, ShieldCheck, Lock, CreditCard, MapPin, Users, Calendar, Leaf } from 'lucide-react'
-import { useCartStore } from '@/lib/cart'
+import { useCartStore, DAILY_HOUR_LIMIT } from '@/lib/cart'
+import TripTimeBar from '@/components/TripTimeBar'
 import { stripePromise } from '@/lib/stripe'
 import { useI18n } from '@/lib/i18n'
 import { calculateTransportation, GAS_PRICE_USD_PER_LITER, GAS_PRICE_JMD_PER_LITER, fetchGasPrice } from '@/lib/transportation'
@@ -105,6 +106,20 @@ function ReviewStep() {
           {items.length} experience{items.length !== 1 ? 's' : ''} in your Jamaica itinerary
         </p>
       </div>
+
+      {/* ── Day plan (8-hour cap) ── */}
+      {items.length > 0 && (
+        <div style={{
+          marginBottom: 24,
+          padding: '18px 22px',
+          borderRadius: 'var(--r-xl)',
+          background: 'var(--card-bg, #fff)',
+          border: '1px solid var(--border)',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.02)',
+        }}>
+          <TripTimeBar />
+        </div>
+      )}
 
       {/* ── Trip date selector ── */}
       <div style={{
@@ -907,7 +922,8 @@ export default function CheckoutView() {
   const [formErrors, setFormErrors] = useState<Record<string, boolean>>({})
   const [stripeError, setStripeError] = useState<string | null>(null)
   const [gasRate, setGasRate] = useState({ usd: GAS_PRICE_USD_PER_LITER, jmd: GAS_PRICE_JMD_PER_LITER })
-  const { items, subtotal, fee, grandTotal } = useCartStore()
+  const [limitModalOpen, setLimitModalOpen] = useState(false)
+  const { items, subtotal, fee, grandTotal, isDayOverLimit, hoursByDate } = useCartStore()
   const { t, formatPrice } = useI18n()
 
   // Fetch live gas price on mount
@@ -1227,6 +1243,11 @@ export default function CheckoutView() {
             {step < 3 && (
               <div style={{ padding: '16px 24px' }}>
                 <button className="btn-primary" onClick={() => {
+                  // Hard gate: every step must pass the 8-hour daily cap.
+                  if (isDayOverLimit()) {
+                    setLimitModalOpen(true)
+                    return
+                  }
                   if (step === 2) {
                     // Validate required fields
                     const required = ['firstName', 'lastName', 'email', 'phone', 'country', 'pickup', 'dropoff']
@@ -1288,6 +1309,145 @@ export default function CheckoutView() {
           </div>
 
         </div>
+      </div>
+
+      {/* ── 8-hour cap modal ── */}
+      {limitModalOpen && (
+        <DailyLimitModal
+          hoursByDate={hoursByDate()}
+          onClose={() => setLimitModalOpen(false)}
+        />
+      )}
+    </div>
+  )
+}
+
+/* ═══════════════════════════════════
+   Daily limit modal — high-end, brand, mobile-first
+   ═══════════════════════════════════ */
+function DailyLimitModal({ hoursByDate, onClose }: {
+  hoursByDate: Record<string, number>
+  onClose: () => void
+}) {
+  const overDays = Object.entries(hoursByDate)
+    .filter(([, hrs]) => hrs > DAILY_HOUR_LIMIT)
+    .sort((a, b) => b[1] - a[1])
+
+  return (
+    <div
+      onClick={onClose}
+      role="dialog"
+      aria-modal="true"
+      style={{
+        position: 'fixed', inset: 0, zIndex: 1000,
+        background: 'rgba(8, 8, 10, 0.72)',
+        backdropFilter: 'blur(8px)',
+        WebkitBackdropFilter: 'blur(8px)',
+        display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
+        padding: 16,
+        animation: 'fadeUp 0.22s ease',
+      }}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          width: '100%', maxWidth: 440,
+          background: 'var(--card-bg, #fff)',
+          border: '1px solid rgba(255, 179, 0, 0.25)',
+          borderRadius: 'var(--r-xl)',
+          boxShadow: '0 24px 72px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(255,179,0,0.06)',
+          padding: '28px 26px 24px',
+          margin: '0 auto',
+          position: 'relative',
+          animation: 'slideInRight 0.28s ease',
+          marginBottom: 'max(16px, env(safe-area-inset-bottom))',
+        }}
+      >
+        <div style={{
+          width: 44, height: 44, borderRadius: '50%',
+          background: 'rgba(255, 90, 54, 0.1)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          marginBottom: 18,
+        }}>
+          <span style={{ fontSize: 22 }}>🕐</span>
+        </div>
+
+        <h3 style={{
+          fontFamily: 'var(--font-syne)',
+          fontWeight: 800,
+          fontSize: 22,
+          letterSpacing: '-0.02em',
+          color: 'var(--text-primary)',
+          marginBottom: 8,
+          lineHeight: 1.2,
+        }}>
+          Your day is a little packed
+        </h3>
+
+        <p style={{
+          fontFamily: 'var(--font-dm-sans)',
+          fontSize: 14.5,
+          lineHeight: 1.55,
+          color: 'var(--text-secondary)',
+          marginBottom: 20,
+        }}>
+          We cap travel days at {DAILY_HOUR_LIMIT} hours so every experience lands with full energy — not rushed. Remove a tour, or move one to another day to continue.
+        </p>
+
+        {overDays.length > 0 && (
+          <div style={{
+            padding: '14px 16px',
+            borderRadius: 'var(--r-md)',
+            background: 'var(--bg-warm, rgba(255, 179, 0, 0.06))',
+            border: '1px solid rgba(255, 179, 0, 0.18)',
+            marginBottom: 22,
+          }}>
+            <p style={{
+              fontFamily: 'var(--font-dm-sans)',
+              fontSize: 11,
+              fontWeight: 600,
+              textTransform: 'uppercase',
+              letterSpacing: '0.08em',
+              color: 'var(--text-tertiary)',
+              marginBottom: 10,
+            }}>
+              Over capacity
+            </p>
+            {overDays.map(([date, hrs]) => {
+              const pretty = date === 'unset'
+                ? 'Unassigned day'
+                : new Date(date + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
+              return (
+                <div key={date} style={{
+                  display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                  padding: '4px 0',
+                  fontFamily: 'var(--font-dm-sans)',
+                  fontSize: 13.5,
+                  color: 'var(--text-primary)',
+                }}>
+                  <span>{pretty}</span>
+                  <span style={{
+                    fontFamily: 'var(--font-syne)', fontWeight: 700,
+                    color: 'var(--coral, #FF5A36)',
+                  }}>
+                    {hrs} / {DAILY_HOUR_LIMIT} hrs
+                  </span>
+                </div>
+              )
+            })}
+          </div>
+        )}
+
+        <button
+          onClick={onClose}
+          className="btn-primary"
+          style={{
+            width: '100%', height: 48, fontSize: 14,
+            fontFamily: 'var(--font-dm-sans)', fontWeight: 700,
+          }}
+        >
+          Adjust my trip
+        </button>
       </div>
     </div>
   )
