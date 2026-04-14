@@ -813,7 +813,6 @@ export default function ExperienceDetail({ slug }: { slug: string }) {
       root.style.removeProperty('--reel-bottom-offset')
       return
     }
-    let cleanup: (() => void) | undefined
     const update = () => {
       const rect = el.getBoundingClientRect()
       // If the bar is display:none (desktop via .hide-desktop), rect.height
@@ -836,7 +835,7 @@ export default function ExperienceDetail({ slug }: { slug: string }) {
     window.addEventListener('orientationchange', update)
     const vv = window.visualViewport
     vv?.addEventListener('resize', update)
-    cleanup = () => {
+    const cleanup = () => {
       ro.disconnect()
       mql.removeEventListener('change', onMql)
       window.removeEventListener('resize', update)
