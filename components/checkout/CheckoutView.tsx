@@ -107,16 +107,51 @@ function ReviewStep() {
         </p>
       </div>
 
-      {/* ── Day plan (8-hour cap) ── */}
+      {/* ── Day Builder (score + stages) ── */}
       {items.length > 0 && (
         <div style={{
           marginBottom: 24,
-          padding: '18px 22px',
+          padding: '22px 22px 20px',
           borderRadius: 'var(--r-xl)',
           background: 'var(--card-bg, #fff)',
           border: '1px solid var(--border)',
-          boxShadow: '0 2px 8px rgba(0,0,0,0.02)',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.03)',
+          position: 'relative',
+          overflow: 'hidden',
         }}>
+          {/* Subtle gold hairline top — prestige cue */}
+          <div style={{
+            position: 'absolute', top: 0, left: 0, right: 0, height: 2,
+            background: 'linear-gradient(90deg, transparent, var(--gold, #FFB300) 50%, transparent)',
+            opacity: 0.5,
+            pointerEvents: 'none',
+          }} />
+          <div style={{
+            display: 'flex', alignItems: 'baseline', justifyContent: 'space-between',
+            marginBottom: 16, gap: 12, flexWrap: 'wrap',
+          }}>
+            <div>
+              <p style={{
+                fontFamily: 'var(--font-dm-sans)',
+                fontSize: 11, fontWeight: 600,
+                letterSpacing: '0.1em', textTransform: 'uppercase',
+                color: 'var(--text-tertiary)',
+                marginBottom: 4,
+              }}>
+                Day Builder
+              </p>
+              <h3 style={{
+                fontFamily: 'var(--font-syne)',
+                fontWeight: 800,
+                fontSize: 19,
+                letterSpacing: '-0.02em',
+                color: 'var(--text-primary)',
+                lineHeight: 1.15,
+              }}>
+                Build your perfect day
+              </h3>
+            </div>
+          </div>
           <TripTimeBar />
         </div>
       )}
@@ -1381,7 +1416,7 @@ function DailyLimitModal({ hoursByDate, onClose }: {
           marginBottom: 8,
           lineHeight: 1.2,
         }}>
-          Your day is a little packed
+          Let’s build two perfect days
         </h3>
 
         <p style={{
@@ -1391,7 +1426,7 @@ function DailyLimitModal({ hoursByDate, onClose }: {
           color: 'var(--text-secondary)',
           marginBottom: 20,
         }}>
-          We cap travel days at {DAILY_HOUR_LIMIT} hours so every experience lands with full energy — not rushed. Remove a tour, or move one to another day to continue.
+          A perfect day tops out at {DAILY_HOUR_LIMIT} hours so every experience lands with full energy. Split your picks across another day, or remove one to continue.
         </p>
 
         {overDays.length > 0 && (

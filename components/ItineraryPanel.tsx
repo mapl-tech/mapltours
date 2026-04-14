@@ -46,12 +46,22 @@ export default function ItineraryPanel({ open, onClose }: { open: boolean; onClo
           }}><X size={16} /></button>
         </div>
 
-        {/* Day plan */}
+        {/* Day Builder */}
         <div style={{
-          padding: '16px 24px',
+          padding: '16px 24px 18px',
           borderBottom: '1px solid var(--border)',
           background: 'var(--bg-warm, rgba(255, 179, 0, 0.03))',
+          position: 'relative',
         }}>
+          <p style={{
+            fontFamily: 'var(--font-dm-sans)',
+            fontSize: 10.5, fontWeight: 600,
+            letterSpacing: '0.1em', textTransform: 'uppercase',
+            color: 'var(--text-tertiary)',
+            marginBottom: 8,
+          }}>
+            Day Builder
+          </p>
           <TripTimeBar compact />
         </div>
 
