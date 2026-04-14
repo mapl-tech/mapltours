@@ -154,6 +154,12 @@ video {
   .container { padding-left: 48px; padding-right: 48px; }
 }
 
+/* Right action rail on reel cards — desktop default (mobile overridden below
+   to sit above the dynamic bottom bar). */
+.reel-right-rail {
+  bottom: 100px;
+}
+
 /* Responsive grids */
 .grid-destinations {
   display: grid;
@@ -378,7 +384,12 @@ video {
     padding-bottom: max(80px, calc(60px + env(safe-area-inset-bottom))) !important;
   }
   .reel-bottom-mobile-pad {
-    padding-bottom: max(140px, calc(140px + env(safe-area-inset-bottom))) !important;
+    /* --mobile-bar-height is measured at runtime in ExperienceDetail.tsx.
+       Fallback covers the first paint before JS runs. */
+    padding-bottom: calc(var(--mobile-bar-height, 72px) + 12px) !important;
+  }
+  .reel-right-rail {
+    bottom: calc(var(--mobile-bar-height, 72px) + 12px) !important;
   }
   textarea.field-input {
     min-height: 250px !important;

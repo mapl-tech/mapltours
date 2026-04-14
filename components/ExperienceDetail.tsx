@@ -6,7 +6,7 @@ import { experiences, Experience, slugify } from '@/lib/experiences'
 import { useI18n } from '@/lib/i18n'
 import { useCartStore } from '@/lib/cart'
 import Link from 'next/link'
-import { Heart, MessageCircle, Plus, Check, Play, ChevronLeft, ChevronRight, X, ThumbsUp, Send, MapPin, Star, Clock, ShoppingBag } from 'lucide-react'
+import { Heart, MessageCircle, Play, ChevronLeft, ChevronRight, X, ThumbsUp, Send, MapPin, Star, Clock, ShoppingBag } from 'lucide-react'
 import { useExperienceLike, useComments, DisplayComment } from '@/lib/supabase/hooks'
 
 /* ── Single Reel (Snapchat style) ── */
@@ -131,8 +131,8 @@ function Reel({ exp, isActive, totalCount, currentIndex }: { exp: Experience; is
       }} />
 
       {/* ── Right action column (Snapchat style — tight, no labels) ── */}
-      <div style={{
-        position: 'absolute', right: 12, bottom: 100, zIndex: 10,
+      <div className="reel-right-rail" style={{
+        position: 'absolute', right: 12, zIndex: 10,
         display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16,
       }}>
         {/* Creator avatar */}
@@ -191,26 +191,6 @@ function Reel({ exp, isActive, totalCount, currentIndex }: { exp: Experience; is
           <span style={{ fontSize: 11, fontWeight: 700, fontFamily: 'var(--font-dm-sans)' }}>Send</span>
         </button>
 
-        {/* Add to trip */}
-        <button
-          onClick={(e) => { e.stopPropagation(); toggleCart() }}
-          style={{
-            display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2,
-            background: 'none', border: 'none', cursor: 'pointer', color: 'white',
-          }}
-        >
-          <div style={{
-            width: 40, height: 40, borderRadius: 12,
-            background: inCart ? 'var(--emerald)' : 'rgba(255,255,255,0.15)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            transition: 'all 0.2s ease',
-          }}>
-            {inCart ? <Check size={20} strokeWidth={2.5} /> : <Plus size={20} strokeWidth={2} />}
-          </div>
-          <span style={{ fontSize: 10, fontWeight: 700, fontFamily: 'var(--font-dm-sans)' }}>
-            {inCart ? 'Added' : 'Trip'}
-          </span>
-        </button>
       </div>
 
       {/* ── Bottom info (Snapchat style — bold, stacked, left-aligned) ── */}
@@ -501,6 +481,42 @@ export default function ExperienceDetail({ slug }: { slug: string }) {
   const activeExp = experiences[activeIndex]
   const { addComment: addSupabaseComment, toDisplayComments, isLoggedIn, user: currentUser, replyingTo, setReplyingTo } = useComments(activeExp?.id || 0)
   const activeComments = activeExp ? toDisplayComments(activeExp.comments) : []
+
+  // Measure the mobile bottom bar so the reel's "Add to Trip" row can sit
+  // exactly 12px above it regardless of safe-area / bar-content height.
+  // Callback ref so measurement runs the moment the element mounts (and
+  // re-runs if it unmounts/remounts). ResizeObserver + viewport listeners
+  // keep the value in sync with rotation, safe-area changes, and keyboard.
+  const mobileBarRef = useCallback((el: HTMLDivElement | null) => {
+    const root = document.documentElement
+    if (!el) {
+      root.style.removeProperty('--mobile-bar-height')
+      return
+    }
+    const update = () => {
+      const rect = el.getBoundingClientRect()
+      root.style.setProperty('--mobile-bar-height', `${Math.round(rect.height)}px`)
+    }
+    update()
+    const ro = new ResizeObserver(update)
+    ro.observe(el)
+    window.addEventListener('resize', update)
+    window.addEventListener('orientationchange', update)
+    const vv = window.visualViewport
+    vv?.addEventListener('resize', update)
+    ;(el as HTMLDivElement & { __cleanup?: () => void }).__cleanup = () => {
+      ro.disconnect()
+      window.removeEventListener('resize', update)
+      window.removeEventListener('orientationchange', update)
+      vv?.removeEventListener('resize', update)
+    }
+  }, [])
+  useEffect(() => {
+    return () => {
+      const el = document.querySelector<HTMLDivElement>('[data-mobile-bottom-bar]')
+      ;(el as (HTMLDivElement & { __cleanup?: () => void }) | null)?.__cleanup?.()
+    }
+  }, [])
 
   useEffect(() => {
     if (scrollRef.current && startIdx >= 0) {
@@ -927,7 +943,7 @@ export default function ExperienceDetail({ slug }: { slug: string }) {
       </div>
 
       {/* ── Mobile bottom bar (YouTube Shorts style) ── */}
-      <div className="hide-desktop" style={{
+      <div ref={mobileBarRef} data-mobile-bottom-bar className="hide-desktop" style={{
         position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 310,
         background: 'var(--bg-dark)', borderTop: '1px solid rgba(255,255,255,0.08)',
         padding: '10px 16px', paddingBottom: 'max(10px, env(safe-area-inset-bottom))',

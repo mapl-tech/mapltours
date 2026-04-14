@@ -346,11 +346,11 @@ export default function ReelCard({
         <div
           style={{
             display: 'flex',
-            alignItems: 'center',
+            alignItems: 'stretch',
             gap: 8,
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: 4 }}>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: 4, alignSelf: 'center' }}>
             <span
               style={{
                 fontSize: 9,
@@ -388,10 +388,14 @@ export default function ReelCard({
             className="btn-primary"
             onClick={() => addItem(exp)}
             style={{
-              padding: '10px 20px',
+              alignSelf: 'stretch',
+              padding: '0 20px',
               fontSize: 13,
               fontFamily: 'var(--font-dm-sans)',
               background: inCart ? 'var(--green)' : 'var(--gold)',
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
             }}
           >
             {inCart ? t('✓ Added') : t('Add to Trip')}
