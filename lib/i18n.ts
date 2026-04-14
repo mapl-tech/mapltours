@@ -93,7 +93,7 @@ const T: Record<string, Record<string, string>> = {
     'Your Jamaican adventure is booked.': 'Tu aventura jamaicana esta reservada.',
     // Concierge section
     'The MAPL Experience': 'La experiencia MAPL',
-    'You explore. We take care of everything.': 'Tu exploras. Nosotros nos encargamos de todo.',
+    'Build your perfect day in Jamaica.': 'Construye tu dia perfecto en Jamaica.',
     'Pick the experiences you love. We arrange your private transport, guide, and full itinerary from door to door.': 'Elige las experiencias que te gusten. Organizamos tu transporte privado, guia e itinerario completo de puerta a puerta.',
     'Choose what excites you': 'Elige lo que te emociona',
     'Browse experiences crafted by locals. Add the ones that speak to you.': 'Explora experiencias creadas por locales. Agrega las que te hablen.',

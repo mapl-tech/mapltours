@@ -538,7 +538,7 @@ export default function FeedView() {
               letterSpacing: '-0.025em', lineHeight: 1.1,
               marginBottom: 14, color: '#fff',
             }}>
-              You explore. We take care of everything.
+              Build your perfect day in Jamaica.
             </h2>
             <p className="concierge-body" style={{
               fontSize: 15.5, color: '#cccccc',
