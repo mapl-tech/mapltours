@@ -207,12 +207,27 @@ export function useComments(experienceId: number) {
   const addComment = useCallback(async (text: string, parentId?: string) => {
     if (!user || !text.trim()) return null
 
+    // Ensure the user has a row in public.users (required by the comments
+    // user_id foreign key). Idempotent upsert — safe to call every time.
+    await supabase
+      .from('users')
+      .upsert(
+        {
+          id: user.id,
+          name: user.user_metadata?.full_name ?? user.user_metadata?.name ?? null,
+          avatar_url: user.user_metadata?.avatar_url ?? null,
+        },
+        { onConflict: 'id' }
+      )
+
     const insertData: Record<string, unknown> = {
       experience_id: experienceId,
       user_id: user.id,
       text: text.trim(),
     }
-    if (parentId) insertData.parent_id = parentId
+    // Only attach parent_id if it's a real UUID (i.e. from a DB comment,
+    // not a hardcoded seed comment from the experience JSON).
+    if (parentId && isUuid(parentId)) insertData.parent_id = parentId
 
     const { data, error } = await supabase
       .from('comments')
@@ -220,7 +235,13 @@ export function useComments(experienceId: number) {
       .select('id, experience_id, user_id, text, created_at, parent_id')
       .single()
 
-    if (data && !error) {
+    if (error) {
+      // Surface the reason — "nothing happened" is the worst possible UX.
+      console.error('[comments] insert failed', error)
+      return null
+    }
+
+    if (data) {
       const newComment: SupabaseComment = {
         ...data,
         user_name: user.user_metadata?.full_name || user.user_metadata?.name || 'You',
@@ -295,6 +316,9 @@ export function useComments(experienceId: number) {
     replyingTo, setReplyingTo,
   }
 }
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+function isUuid(v: string): boolean { return UUID_RE.test(v) }
 
 function getRelativeTime(dateStr: string): string {
   const now = new Date()

@@ -117,6 +117,20 @@ function EmojiQuickReact({ onPick }: { onPick: (emoji: string) => void | Promise
   )
 }
 
+/** True when an experience's creator handle is owned by MAPL itself — we
+ *  render the MAPL favicon instead of a coloured initial disk. Centralised
+ *  so new MAPL-owned handles can be added in one place. */
+const MAPL_CREATOR_HANDLES = new Set([
+  'mapl',
+  'mapltours',
+  'mapl.tours',
+  'mapltech',
+])
+function isMaplCreator(handle: string | null | undefined): boolean {
+  if (!handle) return false
+  return MAPL_CREATOR_HANDLES.has(handle.toLowerCase().trim())
+}
+
 /** Deterministic Fisher-Yates shuffle seeded by a string — same seed gives
  *  the same order, so the feed doesn't rearrange itself mid-scroll. */
 function shuffle<T>(arr: T[], seed: string): T[] {
@@ -320,20 +334,33 @@ function Reel({ exp, isActive, totalCount, currentIndex }: { exp: Experience; is
         position: 'absolute', right: 12, zIndex: 10,
         display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16,
       }}>
-        {/* Creator avatar */}
-        <div style={{ position: 'relative', marginBottom: 4 }}>
-          <div style={{
-            width: 44, height: 44, borderRadius: '50%',
-            background: exp.gradient,
-            border: '2px solid white',
-          }} />
-          <div style={{
-            position: 'absolute', bottom: -4, left: '50%', transform: 'translateX(-50%)',
-            width: 18, height: 18, borderRadius: '50%',
-            background: '#FF4081', border: '2px solid black',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: 10, color: 'white', fontWeight: 700,
-          }}>+</div>
+        {/* Creator avatar — MAPL logo when posted by us, otherwise the
+            creator's initial disk (coloured by handle). No follow badge. */}
+        <div style={{ marginBottom: 4 }}>
+          {isMaplCreator(exp.creator) ? (
+            <div
+              aria-label="MAPL Tours"
+              style={{
+                width: 44, height: 44, borderRadius: '50%',
+                background: '#FFB300',
+                border: '2px solid white',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontFamily: 'var(--font-syne)',
+                fontWeight: 800, fontSize: 20,
+                color: '#08080A',
+                letterSpacing: '-0.02em',
+                lineHeight: 1,
+              }}
+            >
+              M
+            </div>
+          ) : (
+            <Avatar
+              name={exp.creator}
+              size={44}
+              style={{ boxShadow: '0 0 0 2px #fff' }}
+            />
+          )}
         </div>
 
         {/* Like */}
@@ -712,10 +739,14 @@ function MobileCommentsSheet({ comments, commentText, setCommentText, addComment
                             window.location.href = `/login?redirect=/experience/${slug}`
                             return
                           }
+                          // Seed comments have no supabaseId — fall back to a
+                          // top-level @-mention so the Reply button always works.
                           if (comment.supabaseId) {
                             setReplyingTo({ id: comment.supabaseId, user: comment.user })
-                            setCommentText(`@${comment.user} `)
+                          } else {
+                            setReplyingTo(null)
                           }
+                          setCommentText(`@${comment.user} `)
                         }}
                         style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 12, color: 'rgba(255,255,255,0.35)', fontFamily: 'var(--font-dm-sans)' }}
                       >{t('Reply')}</button>
@@ -1167,10 +1198,15 @@ export default function ExperienceDetail({ slug }: { slug: string }) {
                             window.location.href = `/login?redirect=/experience/${slugify(activeExp.title)}`
                             return
                           }
+                          // Seed comments (from the experience JSON) have no
+                          // supabaseId — fall back to a plain @-mention so the
+                          // Reply button still works.
                           if (comment.supabaseId) {
                             setReplyingTo({ id: comment.supabaseId, user: comment.user })
-                            setCommentText(`@${comment.user} `)
+                          } else {
+                            setReplyingTo(null)
                           }
+                          setCommentText(`@${comment.user} `)
                         }}
                         style={{
                           background: 'none', border: 'none', cursor: 'pointer',
