@@ -1459,7 +1459,7 @@ function DailyLimitModal({ hoursByDate, onClose }: {
         background: 'rgba(8, 8, 10, 0.72)',
         backdropFilter: 'blur(8px)',
         WebkitBackdropFilter: 'blur(8px)',
-        display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
         padding: 16,
         animation: 'fadeUp 0.22s ease',
       }}
@@ -1475,8 +1475,9 @@ function DailyLimitModal({ hoursByDate, onClose }: {
           padding: '28px 26px 24px',
           margin: '0 auto',
           position: 'relative',
-          animation: 'slideInRight 0.28s ease',
-          marginBottom: 'max(16px, env(safe-area-inset-bottom))',
+          animation: 'fadeUp 0.28s ease',
+          maxHeight: 'calc(100vh - 32px)',
+          overflowY: 'auto',
         }}
       >
         <div style={{
