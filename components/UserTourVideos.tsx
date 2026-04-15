@@ -28,6 +28,7 @@ import {
   type TourVideo,
 } from '@/lib/tour-videos'
 import { useAuth } from '@/lib/supabase/auth-context'
+import Avatar from '@/components/Avatar'
 
 interface Props {
   experienceId: number
@@ -293,20 +294,28 @@ function VideoStripe({
             pointerEvents: 'none',
           }} />
 
-          {/* Uploader overlay — Syne for editorial prestige */}
+          {/* Uploader overlay — avatar + handle, Syne for editorial prestige */}
           <div style={{
             position: 'absolute', left: 0, right: 0, bottom: 0,
-            padding: '24px 12px 12px',
-            color: '#fff',
+            padding: '24px 10px 10px',
+            display: 'flex', alignItems: 'center', gap: 8,
             textAlign: 'left',
           }}>
+            <Avatar
+              src={v.uploader_avatar_url}
+              name={v.uploader_name}
+              size={24}
+              ring
+            />
             <p style={{
               margin: 0,
               fontFamily: 'var(--font-syne)',
-              fontSize: 13, fontWeight: 700,
+              fontSize: 12.5, fontWeight: 700,
               letterSpacing: '-0.01em',
+              color: '#fff',
               whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
               textShadow: '0 1px 6px rgba(0,0,0,0.6)',
+              flex: 1, minWidth: 0,
             }}>
               @{v.uploader_name || 'guest'}
             </p>
@@ -650,7 +659,7 @@ function SwiperSlide({
         </div>
       )}
 
-      {/* Uploader byline */}
+      {/* Uploader byline — avatar + handle + caption */}
       <div style={{
         position: 'absolute',
         left: 16, right: 16,
@@ -658,13 +667,33 @@ function SwiperSlide({
         zIndex: 2,
         color: '#fff',
         fontFamily: 'var(--font-dm-sans)',
+        display: 'flex', alignItems: 'flex-start', gap: 10,
       }}>
-        <p style={{ fontWeight: 700, fontSize: 14, marginBottom: 2 }}>
-          @{video.uploader_name || 'guest'}
-        </p>
-        {video.caption && (
-          <p style={{ fontSize: 13, opacity: 0.85, lineHeight: 1.45 }}>{video.caption}</p>
-        )}
+        <Avatar
+          src={video.uploader_avatar_url}
+          name={video.uploader_name}
+          size={36}
+          ring
+        />
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <p style={{
+            fontFamily: 'var(--font-syne)',
+            fontWeight: 700, fontSize: 15,
+            letterSpacing: '-0.01em',
+            marginBottom: 2,
+            textShadow: '0 1px 8px rgba(0,0,0,0.5)',
+          }}>
+            @{video.uploader_name || 'guest'}
+          </p>
+          {video.caption && (
+            <p style={{
+              fontSize: 13, opacity: 0.85, lineHeight: 1.45,
+              textShadow: '0 1px 6px rgba(0,0,0,0.5)',
+            }}>
+              {video.caption}
+            </p>
+          )}
+        </div>
       </div>
     </div>
   )

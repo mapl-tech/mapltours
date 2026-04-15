@@ -164,6 +164,8 @@ export interface DisplayComment extends Comment {
   parentId?: string | null
   replies?: DisplayComment[]
   replyToUser?: string
+  /** Real user profile image URL (null for guests / hardcoded seed comments) */
+  avatarUrl?: string | null
 }
 
 const COMMENTS_LIMIT = 20
@@ -248,7 +250,8 @@ export function useComments(experienceId: number) {
       supabaseId: c.id,
       parentId: c.parent_id,
       user: c.user_name || 'Anonymous',
-      avatar: c.user_avatar ? '👤' : '🧑🏽',
+      avatar: c.user_avatar ? '👤' : '🧑🏽', // legacy fallback for places still using emoji
+      avatarUrl: c.user_avatar || null,
       text: c.text,
       time: getRelativeTime(c.created_at),
       likes: 0,

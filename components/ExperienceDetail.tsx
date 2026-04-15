@@ -9,6 +9,8 @@ import Link from 'next/link'
 import dynamic from 'next/dynamic'
 import { Heart, MessageCircle, Play, ChevronLeft, ChevronRight, X, ThumbsUp, Send, MapPin, Star, Clock, ShoppingBag, Film } from 'lucide-react'
 import { useExperienceLike, useComments, DisplayComment } from '@/lib/supabase/hooks'
+import { useAuth } from '@/lib/supabase/auth-context'
+import Avatar from '@/components/Avatar'
 
 // Heavy, only-used-on-demand surfaces — code-split so they never ship with
 // the main reel bundle. `ssr: false` because they are all client-interaction
@@ -608,6 +610,7 @@ function MobileCommentsSheet({ comments, commentText, setCommentText, addComment
   slug: string
 }) {
   const { t } = useI18n()
+  const { user: currentUser } = useAuth()
   const sheetRef = useRef<HTMLDivElement>(null)
   const [sheetHeight, setSheetHeight] = useState(60)
   const [dragging, setDragging] = useState(false)
@@ -694,7 +697,7 @@ function MobileCommentsSheet({ comments, commentText, setCommentText, addComment
             comments.map((comment) => (
               <div key={comment.id} style={{ marginBottom: 20 }}>
                 <div style={{ display: 'flex', gap: 10 }}>
-                  <div style={{ width: 34, height: 34, borderRadius: '50%', background: 'rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, flexShrink: 0 }}>{comment.avatar}</div>
+                  <Avatar src={comment.avatarUrl} name={comment.user} size={34} />
                   <div style={{ flex: 1 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 3 }}>
                       <span style={{ fontSize: 13, fontWeight: 600, fontFamily: 'var(--font-dm-sans)', color: 'white' }}>@{comment.user}</span>
@@ -725,7 +728,7 @@ function MobileCommentsSheet({ comments, commentText, setCommentText, addComment
                   <div style={{ marginLeft: 44, marginTop: 10, borderLeft: '2px solid rgba(255,255,255,0.06)', paddingLeft: 12 }}>
                     {comment.replies.map((reply) => (
                       <div key={reply.id} style={{ marginBottom: 12, display: 'flex', gap: 8 }}>
-                        <div style={{ width: 26, height: 26, borderRadius: '50%', background: 'rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, flexShrink: 0 }}>{reply.avatar}</div>
+                        <Avatar src={reply.avatarUrl} name={reply.user} size={26} />
                         <div style={{ flex: 1 }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 }}>
                             <span style={{ fontSize: 12, fontWeight: 600, fontFamily: 'var(--font-dm-sans)', color: 'white' }}>@{reply.user}</span>
@@ -754,7 +757,11 @@ function MobileCommentsSheet({ comments, commentText, setCommentText, addComment
             </div>
           )}
           <div style={{ padding: '10px 20px', paddingBottom: 'max(12px, env(safe-area-inset-bottom))', display: 'flex', alignItems: 'center', gap: 10 }}>
-            <div style={{ width: 30, height: 30, borderRadius: '50%', background: 'rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, flexShrink: 0 }}>🧑🏽</div>
+            <Avatar
+              src={currentUser?.user_metadata?.avatar_url ?? null}
+              name={currentUser?.user_metadata?.full_name ?? currentUser?.user_metadata?.name ?? currentUser?.email ?? 'You'}
+              size={30}
+            />
             <input type="text"
               placeholder={replyingTo ? `Reply to @${replyingTo.user}...` : 'Add a comment...'}
               value={commentText} onChange={(e) => setCommentText(e.target.value)}
@@ -1134,12 +1141,7 @@ export default function ExperienceDetail({ slug }: { slug: string }) {
             activeComments.map((comment) => (
               <div key={comment.id} style={{ marginBottom: 22 }}>
                 <div style={{ display: 'flex', gap: 10 }}>
-                  <div style={{
-                    width: 34, height: 34, borderRadius: '50%',
-                    background: 'rgba(255,255,255,0.08)',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    fontSize: 16, flexShrink: 0,
-                  }}>{comment.avatar}</div>
+                  <Avatar src={comment.avatarUrl} name={comment.user} size={34} />
                   <div style={{ flex: 1 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 3 }}>
                       <span style={{ fontSize: 13, fontWeight: 600, fontFamily: 'var(--font-dm-sans)', color: 'white' }}>
@@ -1184,12 +1186,7 @@ export default function ExperienceDetail({ slug }: { slug: string }) {
                   <div style={{ marginLeft: 44, marginTop: 12, borderLeft: '2px solid rgba(255,255,255,0.06)', paddingLeft: 14 }}>
                     {comment.replies.map((reply) => (
                       <div key={reply.id} style={{ marginBottom: 14, display: 'flex', gap: 8 }}>
-                        <div style={{
-                          width: 26, height: 26, borderRadius: '50%',
-                          background: 'rgba(255,255,255,0.08)',
-                          display: 'flex', alignItems: 'center', justifyContent: 'center',
-                          fontSize: 12, flexShrink: 0,
-                        }}>{reply.avatar}</div>
+                        <Avatar src={reply.avatarUrl} name={reply.user} size={26} />
                         <div style={{ flex: 1 }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 }}>
                             <span style={{ fontSize: 12, fontWeight: 600, fontFamily: 'var(--font-dm-sans)', color: 'white' }}>
@@ -1237,17 +1234,11 @@ export default function ExperienceDetail({ slug }: { slug: string }) {
             </div>
           )}
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <div style={{
-              width: 30, height: 30, borderRadius: '50%',
-              background: 'rgba(255,255,255,0.08)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: 14, flexShrink: 0, overflow: 'hidden',
-            }}>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              {currentUser?.user_metadata?.avatar_url ? (
-                <img src={currentUser.user_metadata.avatar_url} alt="" width={30} height={30} style={{ objectFit: 'cover' }} />
-              ) : '🧑🏽'}
-            </div>
+            <Avatar
+              src={currentUser?.user_metadata?.avatar_url ?? null}
+              name={currentUser?.user_metadata?.full_name ?? currentUser?.user_metadata?.name ?? currentUser?.email ?? 'You'}
+              size={30}
+            />
             <input
               type="text"
               placeholder={isLoggedIn ? (replyingTo ? `Reply to @${replyingTo.user}...` : 'Add a comment...') : 'Sign in to comment...'}
