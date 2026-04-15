@@ -107,6 +107,8 @@ export function useSwrCache<T>(
       setData(fresh)
       setError(null)
     } catch (err) {
+      // Surface fetch failures — "nothing shows up" is the worst possible UX.
+      console.error(`[swr-cache] fetch failed for "${key}"`, err)
       setError(err)
     } finally {
       setRevalidating(false)

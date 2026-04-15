@@ -176,26 +176,37 @@ export function useComments(experienceId: number) {
 
   // Cached per-experience so revisiting a reel paints comments from last load
   // while a fresh fetch resolves in the background.
-  const { data, loading, mutate } = useSwrCache<SupabaseComment[]>(
+  const { data, loading, mutate, refresh } = useSwrCache<SupabaseComment[]>(
     `comments:${experienceId}`,
     async () => {
-      const { data } = await supabase
+      const { data: rows, error: commentsErr } = await supabase
         .from('comments')
         .select('id, experience_id, user_id, text, created_at, parent_id')
         .eq('experience_id', experienceId)
         .order('created_at', { ascending: true })
         .limit(COMMENTS_LIMIT)
 
-      if (!data || data.length === 0) return []
+      if (commentsErr) {
+        console.error('[comments] select failed', commentsErr)
+        throw commentsErr
+      }
+      if (!rows || rows.length === 0) return []
 
-      const userIds = Array.from(new Set(data.map((c) => c.user_id)))
-      const { data: users } = await supabase
+      // Look up display info. The users table currently has RLS that only
+      // allows reading your own row, so for other users this returns nothing
+      // — we degrade gracefully to 'Anonymous' rather than crashing.
+      const userIds = Array.from(new Set(rows.map((c) => c.user_id)))
+      const { data: users, error: usersErr } = await supabase
         .from('users')
         .select('id, name, avatar_url')
         .in('id', userIds)
 
+      if (usersErr) {
+        console.warn('[comments] users lookup failed (comments will still render)', usersErr)
+      }
+
       const userMap = new Map(users?.map((u) => [u.id, u]) || [])
-      return data.map((c) => ({
+      return rows.map((c) => ({
         ...c,
         user_name: userMap.get(c.user_id)?.name || 'Anonymous',
         user_avatar: userMap.get(c.user_id)?.avatar_url || null,
@@ -249,11 +260,13 @@ export function useComments(experienceId: number) {
       }
       mutate((prev) => [...(prev ?? []), newComment])
       setReplyingTo(null)
+      // Also re-fetch so any server-side trigger/derivation lands quickly.
+      refresh().catch(() => {})
       return newComment
     }
 
     return null
-  }, [user, experienceId, mutate])
+  }, [user, experienceId, mutate, refresh])
 
   const deleteComment = useCallback(async (commentId: string) => {
     if (!user) return
