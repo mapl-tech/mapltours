@@ -221,16 +221,9 @@ function RewardProgressBand({ onStart }: { onStart: () => void }) {
           }} />
         </div>
       </div>
-
-      {/* Right: single prestige CTA */}
-      <button
-        onClick={onStart}
-        aria-label="Share a clip"
-        style={goldCtaStyle}
-      >
-        <Upload size={15} strokeWidth={2.25} />
-        <span>Share</span>
-      </button>
+      {/* No CTA here by design — the sole upload entry point is the
+          "Share yours" card at the end of the stripe (or the empty-state
+          button when no videos exist yet). */}
     </div>
   )
 }
