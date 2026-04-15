@@ -41,52 +41,70 @@ export default function UserTourVideos({ experienceId, experienceTitle }: Props)
 
   return (
     <section style={{
-      padding: '28px 20px 40px',
-      background: 'var(--bg-warm, #FAF8F3)',
-      borderRadius: 'var(--r-xl, 20px)',
-      border: '1px solid var(--border, rgba(0,0,0,0.06))',
+      padding: '36px 24px 40px',
+      background: '#0F0F12',
+      borderRadius: 'var(--r-xl, 22px)',
+      border: '1px solid rgba(255, 179, 0, 0.14)',
+      boxShadow: '0 18px 50px rgba(0, 0, 0, 0.18)',
+      position: 'relative',
+      overflow: 'hidden',
+      color: '#fff',
     }}>
-      {/* Header */}
+      {/* Top gold hairline — prestige cue, same as checkout Day Builder */}
       <div style={{
-        display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between',
-        gap: 16, marginBottom: 22,
-      }}>
-        <div style={{ minWidth: 0 }}>
-          <p style={{
-            fontFamily: 'var(--font-dm-sans)',
-            fontSize: 11, fontWeight: 600,
-            letterSpacing: '0.1em', textTransform: 'uppercase',
-            color: 'var(--text-tertiary, rgba(0,0,0,0.4))',
-            marginBottom: 6,
-          }}>
-            From guests on this tour
-          </p>
-          <h2 style={{
-            fontFamily: 'var(--font-syne)',
-            fontWeight: 800,
-            fontSize: 22,
-            letterSpacing: '-0.02em',
-            color: 'var(--text-primary, #111)',
-            lineHeight: 1.15,
-          }}>
-            Seen on {experienceTitle}
-          </h2>
-        </div>
+        position: 'absolute', top: 0, left: 0, right: 0, height: 2,
+        background: 'linear-gradient(90deg, transparent, #FFB300 50%, transparent)',
+        opacity: 0.7, pointerEvents: 'none',
+      }} />
 
-        <UploadButton onClick={() => setUploadOpen(true)} />
+      {/* Editorial header — no CTA, just setting the stage */}
+      <div style={{ marginBottom: 26 }}>
+        <p style={{
+          fontFamily: 'var(--font-dm-sans)',
+          fontSize: 11, fontWeight: 600,
+          letterSpacing: '0.16em', textTransform: 'uppercase',
+          color: '#FFB300',
+          marginBottom: 8,
+        }}>
+          The MAPL Feed · Guest Clips
+        </p>
+        <h2 style={{
+          fontFamily: 'var(--font-syne)',
+          fontWeight: 800,
+          fontSize: 24,
+          letterSpacing: '-0.025em',
+          color: '#ffffff',
+          lineHeight: 1.15,
+          marginBottom: 6,
+        }}>
+          Seen on {experienceTitle}
+        </h2>
+        <p style={{
+          fontFamily: 'var(--font-dm-sans)',
+          fontSize: 13.5,
+          lineHeight: 1.5,
+          color: 'rgba(255, 255, 255, 0.55)',
+          maxWidth: 460,
+        }}>
+          Real moments filmed on this tour by guests like you.
+        </p>
       </div>
 
-      {/* Reward progress band — sits above the gallery so users see the why */}
+      {/* Reward progress band — sole entry point to upload; no duplicate CTAs */}
       <RewardProgressBand onStart={() => setUploadOpen(true)} />
 
       {/* Gallery */}
-      <div style={{ marginTop: 22 }}>
+      <div style={{ marginTop: 26 }}>
         {loading ? (
           <GallerySkeleton />
         ) : videos.length === 0 ? (
           <EmptyState onUpload={() => setUploadOpen(true)} />
         ) : (
-          <VideoStripe videos={videos} onOpen={(i) => setGalleryIndex(i)} />
+          <VideoStripe
+            videos={videos}
+            onOpen={(i) => setGalleryIndex(i)}
+            onAdd={() => setUploadOpen(true)}
+          />
         )}
       </div>
 
@@ -116,69 +134,53 @@ export default function UserTourVideos({ experienceId, experienceTitle }: Props)
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   Upload button — compact CTA that adapts to screen width
-   ═══════════════════════════════════════════════════════════════════════════ */
-function UploadButton({ onClick }: { onClick: () => void }) {
-  return (
-    <button
-      onClick={onClick}
-      className="tour-upload-cta"
-      style={{
-        flexShrink: 0,
-        display: 'inline-flex', alignItems: 'center', gap: 8,
-        padding: '10px 16px',
-        borderRadius: 9999,
-        background: 'var(--text-primary, #111)',
-        color: 'var(--bg, #fff)',
-        border: 'none', cursor: 'pointer',
-        fontFamily: 'var(--font-dm-sans)',
-        fontWeight: 700, fontSize: 13,
-        letterSpacing: '-0.005em',
-        transition: 'transform 0.15s ease, box-shadow 0.2s ease',
-        boxShadow: '0 8px 20px rgba(0,0,0,0.12)',
-      }}
-      onMouseEnter={(e) => {
-        e.currentTarget.style.transform = 'translateY(-1px)'
-        e.currentTarget.style.boxShadow = '0 10px 28px rgba(0,0,0,0.18)'
-      }}
-      onMouseLeave={(e) => {
-        e.currentTarget.style.transform = ''
-        e.currentTarget.style.boxShadow = '0 8px 20px rgba(0,0,0,0.12)'
-      }}
-    >
-      <Plus size={16} strokeWidth={2.5} />
-      <span>Upload</span>
-    </button>
-  )
-}
-
-/* ═══════════════════════════════════════════════════════════════════════════
-   Reward progress band — X / 5 with gold fill and unlock state
+   Reward progress band — single prestige CTA that doubles as the upload entry
    ═══════════════════════════════════════════════════════════════════════════ */
 function RewardProgressBand({ onStart }: { onStart: () => void }) {
   const { user } = useAuth()
   const { approved, towardNext, availableRewards, loading } = useMyVideoProgress()
 
+  const baseCard: React.CSSProperties = {
+    display: 'flex', alignItems: 'center', gap: 14,
+    padding: '14px 16px',
+    borderRadius: 14,
+    background: 'rgba(255, 255, 255, 0.04)',
+    border: '1px solid rgba(255, 179, 0, 0.2)',
+  }
+  const kicker: React.CSSProperties = {
+    margin: 0,
+    fontFamily: 'var(--font-dm-sans)',
+    fontSize: 10.5, fontWeight: 600,
+    letterSpacing: '0.14em', textTransform: 'uppercase',
+    color: '#FFB300',
+  }
+  const title: React.CSSProperties = {
+    margin: '4px 0 0',
+    fontFamily: 'var(--font-syne)',
+    fontWeight: 700, fontSize: 14,
+    letterSpacing: '-0.005em',
+    color: '#ffffff',
+    lineHeight: 1.35,
+  }
+
   if (!user) {
     return (
-      <div style={rewardCardStyle}>
-        <div>
-          <p style={rewardKickerStyle}>MAPL Reward</p>
-          <p style={rewardTitleStyle}>
-            Upload 5 tour videos, get 5% off your next trip
-          </p>
+      <div style={baseCard}>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <p style={kicker}>MAPL Reward</p>
+          <p style={title}>Upload 5 tour videos, get 5% off your next trip</p>
         </div>
-        <button onClick={onStart} style={ghostButtonStyle}>Learn more</button>
+        <button onClick={onStart} style={ghostCtaStyle}>Sign in</button>
       </div>
     )
   }
 
   if (loading) {
     return (
-      <div style={{ ...rewardCardStyle, opacity: 0.55 }}>
-        <div>
-          <p style={rewardKickerStyle}>MAPL Reward</p>
-          <p style={rewardTitleStyle}>Loading your progress…</p>
+      <div style={{ ...baseCard, opacity: 0.55 }}>
+        <div style={{ flex: 1 }}>
+          <p style={kicker}>MAPL Reward</p>
+          <p style={title}>Loading your progress…</p>
         </div>
       </div>
     )
@@ -189,48 +191,64 @@ function RewardProgressBand({ onStart }: { onStart: () => void }) {
   const remaining = VIDEO_REWARD_MILESTONE - towardNext
 
   return (
-    <div style={rewardCardStyle}>
+    <div style={baseCard}>
+      {/* Left: textual progress */}
       <div style={{ flex: 1, minWidth: 0 }}>
-        <p style={rewardKickerStyle}>
-          {hasReward ? '🎉 Reward unlocked' : 'MAPL Reward'}
+        <p style={kicker}>
+          {hasReward ? 'Reward unlocked' : 'MAPL Reward'}
         </p>
-        <p style={rewardTitleStyle}>
+        <p style={title}>
           {hasReward
-            ? `5% off ready to use · ${availableRewards[0].code}`
+            ? `5% off ready · ${availableRewards[0].code}`
             : approved === 0
-              ? 'Upload 5 tour videos, get 5% off your next trip'
-              : `${towardNext} of ${VIDEO_REWARD_MILESTONE} approved — ${remaining} to go`}
+              ? 'Share 5 clips, earn 5% off'
+              : `${towardNext} of ${VIDEO_REWARD_MILESTONE} — ${remaining} to go`}
         </p>
-
-        {/* Progress rail — gold when earning, emerald when unlocked */}
         <div style={{
-          position: 'relative', marginTop: 12,
-          height: 6, borderRadius: 9999,
-          background: 'rgba(0,0,0,0.08)', overflow: 'hidden',
+          position: 'relative', marginTop: 10,
+          height: 5, borderRadius: 9999,
+          background: 'rgba(255, 255, 255, 0.08)',
+          overflow: 'hidden',
         }}>
           <div style={{
             position: 'absolute', left: 0, top: 0, bottom: 0,
             width: `${pct}%`,
             background: hasReward
               ? 'var(--emerald, #00A550)'
-              : 'linear-gradient(90deg, var(--gold, #FFB300), #E69A00)',
+              : 'linear-gradient(90deg, #FFB300, #E69A00)',
             borderRadius: 9999,
             transition: 'width 0.5s cubic-bezier(0.4, 0, 0.2, 1)',
           }} />
         </div>
       </div>
+
+      {/* Right: single prestige CTA */}
+      <button
+        onClick={onStart}
+        aria-label="Share a clip"
+        style={goldCtaStyle}
+      >
+        <Upload size={15} strokeWidth={2.25} />
+        <span>Share</span>
+      </button>
     </div>
   )
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   Video stripe (the pre-open preview row)
+   Video stripe — prestige reel cards with a trailing "Share yours" affordance
    ═══════════════════════════════════════════════════════════════════════════ */
-function VideoStripe({ videos, onOpen }: { videos: TourVideo[]; onOpen: (i: number) => void }) {
+function VideoStripe({
+  videos, onOpen, onAdd,
+}: {
+  videos: TourVideo[]
+  onOpen: (i: number) => void
+  onAdd: () => void
+}) {
   return (
     <div className="no-scrollbar" style={{
-      display: 'flex', gap: 10,
-      overflowX: 'auto', paddingBottom: 4,
+      display: 'flex', gap: 12,
+      overflowX: 'auto', paddingBottom: 6,
       scrollSnapType: 'x mandatory',
       WebkitOverflowScrolling: 'touch',
     }}>
@@ -240,26 +258,25 @@ function VideoStripe({ videos, onOpen }: { videos: TourVideo[]; onOpen: (i: numb
           onClick={() => onOpen(i)}
           style={{
             flexShrink: 0, scrollSnapAlign: 'start',
-            width: 150, aspectRatio: '9 / 16',
-            borderRadius: 14,
+            width: 170, aspectRatio: '9 / 16',
+            borderRadius: 16,
             overflow: 'hidden',
-            border: '1px solid rgba(0,0,0,0.06)',
+            border: '1px solid rgba(255, 255, 255, 0.06)',
             background: '#000',
             cursor: 'pointer', padding: 0,
             position: 'relative',
-            boxShadow: '0 4px 16px rgba(0,0,0,0.08)',
-            transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+            boxShadow: '0 10px 28px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 179, 0, 0.05)',
+            transition: 'transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.25s ease',
           }}
           onMouseEnter={(e) => {
-            e.currentTarget.style.transform = 'translateY(-2px)'
-            e.currentTarget.style.boxShadow = '0 10px 24px rgba(0,0,0,0.14)'
+            e.currentTarget.style.transform = 'translateY(-3px)'
+            e.currentTarget.style.boxShadow = '0 16px 40px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 179, 0, 0.22)'
           }}
           onMouseLeave={(e) => {
             e.currentTarget.style.transform = ''
-            e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,0,0,0.08)'
+            e.currentTarget.style.boxShadow = '0 10px 28px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 179, 0, 0.05)'
           }}
         >
-          {/* Poster image if we have one; otherwise first frame via video */}
           {v.thumbnail_url ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
@@ -275,33 +292,103 @@ function VideoStripe({ videos, onOpen }: { videos: TourVideo[]; onOpen: (i: numb
               style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
             />
           )}
-          {/* Uploader overlay */}
+
+          {/* Prestige scrim — deeper gradient, more cinematic */}
+          <div style={{
+            position: 'absolute', inset: 0,
+            background: 'linear-gradient(180deg, rgba(0,0,0,0.25) 0%, rgba(0,0,0,0) 45%, rgba(0,0,0,0.78) 100%)',
+            pointerEvents: 'none',
+          }} />
+
+          {/* Uploader overlay — Syne for editorial prestige */}
           <div style={{
             position: 'absolute', left: 0, right: 0, bottom: 0,
-            padding: '30px 10px 10px',
-            background: 'linear-gradient(0deg, rgba(0,0,0,0.85), transparent)',
+            padding: '24px 12px 12px',
             color: '#fff',
-            fontFamily: 'var(--font-dm-sans)',
-            fontSize: 11.5, fontWeight: 600,
-            letterSpacing: '-0.005em',
             textAlign: 'left',
-            whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
           }}>
-            @{v.uploader_name || 'guest'}
+            <p style={{
+              margin: 0,
+              fontFamily: 'var(--font-syne)',
+              fontSize: 13, fontWeight: 700,
+              letterSpacing: '-0.01em',
+              whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+              textShadow: '0 1px 6px rgba(0,0,0,0.6)',
+            }}>
+              @{v.uploader_name || 'guest'}
+            </p>
           </div>
-          {/* Tiny play glyph */}
+
+          {/* Subtle gold play glyph */}
           <div style={{
             position: 'absolute', top: 10, right: 10,
-            width: 28, height: 28, borderRadius: '50%',
-            background: 'rgba(255,255,255,0.18)',
-            backdropFilter: 'blur(8px)',
+            width: 30, height: 30, borderRadius: '50%',
+            background: 'rgba(255, 179, 0, 0.92)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            color: '#fff',
+            color: '#08080A',
+            boxShadow: '0 4px 14px rgba(0, 0, 0, 0.4)',
           }}>
-            <Play size={12} fill="currentColor" strokeWidth={0} />
+            <Play size={11} fill="currentColor" strokeWidth={0} />
           </div>
         </button>
       ))}
+
+      {/* Trailing "Share yours" card — native to social/premium apps, eliminates redundancy */}
+      <button
+        onClick={onAdd}
+        aria-label="Share your own clip"
+        style={{
+          flexShrink: 0, scrollSnapAlign: 'start',
+          width: 170, aspectRatio: '9 / 16',
+          borderRadius: 16,
+          border: '1.5px dashed rgba(255, 179, 0, 0.35)',
+          background: 'linear-gradient(180deg, rgba(255, 179, 0, 0.08) 0%, rgba(255, 179, 0, 0.02) 100%)',
+          cursor: 'pointer', padding: 0,
+          display: 'flex', flexDirection: 'column',
+          alignItems: 'center', justifyContent: 'center',
+          gap: 12,
+          transition: 'all 0.25s ease',
+          color: '#fff',
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.borderColor = 'rgba(255, 179, 0, 0.7)'
+          e.currentTarget.style.background = 'linear-gradient(180deg, rgba(255, 179, 0, 0.14) 0%, rgba(255, 179, 0, 0.04) 100%)'
+          e.currentTarget.style.transform = 'translateY(-3px)'
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.borderColor = 'rgba(255, 179, 0, 0.35)'
+          e.currentTarget.style.background = 'linear-gradient(180deg, rgba(255, 179, 0, 0.08) 0%, rgba(255, 179, 0, 0.02) 100%)'
+          e.currentTarget.style.transform = ''
+        }}
+      >
+        <div style={{
+          width: 50, height: 50, borderRadius: '50%',
+          background: '#FFB300',
+          color: '#08080A',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          boxShadow: '0 8px 22px rgba(255, 179, 0, 0.28)',
+        }}>
+          <Plus size={22} strokeWidth={2.5} />
+        </div>
+        <div style={{ textAlign: 'center', padding: '0 12px' }}>
+          <p style={{
+            margin: 0,
+            fontFamily: 'var(--font-syne)', fontWeight: 700, fontSize: 14,
+            letterSpacing: '-0.01em',
+            color: '#ffffff',
+          }}>
+            Share yours
+          </p>
+          <p style={{
+            margin: '4px 0 0',
+            fontFamily: 'var(--font-dm-sans)', fontSize: 11, fontWeight: 500,
+            color: 'rgba(255, 255, 255, 0.55)',
+            lineHeight: 1.4,
+          }}>
+            Earn 5% off
+          </p>
+        </div>
+      </button>
     </div>
   )
 }
@@ -674,7 +761,15 @@ function UploadSheet({
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, marginBottom: 18 }}>
           <div style={{ minWidth: 0 }}>
-            <p style={rewardKickerStyle}>Share your experience</p>
+            <p style={{
+              fontFamily: 'var(--font-dm-sans)',
+              fontSize: 10.5, fontWeight: 600,
+              letterSpacing: '0.14em', textTransform: 'uppercase',
+              color: '#FFB300',
+              margin: 0,
+            }}>
+              Share your experience
+            </p>
             <h3 style={{
               fontFamily: 'var(--font-syne)', fontWeight: 800, fontSize: 20,
               letterSpacing: '-0.02em', color: 'var(--text-primary, #111)',
@@ -883,37 +978,36 @@ function UploadSheet({
 function EmptyState({ onUpload }: { onUpload: () => void }) {
   return (
     <div style={{
-      padding: '36px 24px',
+      padding: '44px 28px',
       textAlign: 'center',
-      borderRadius: 16,
-      border: '1px dashed rgba(0,0,0,0.12)',
-      background: 'var(--bg, #fff)',
+      borderRadius: 18,
+      border: '1px dashed rgba(255, 179, 0, 0.28)',
+      background: 'linear-gradient(180deg, rgba(255, 179, 0, 0.04) 0%, rgba(255, 179, 0, 0.01) 100%)',
     }}>
-      <p style={{ fontSize: 34, marginBottom: 10 }}>🎥</p>
+      {/* Editorial ornament */}
+      <div style={{
+        width: 2, height: 26, background: '#FFB300',
+        margin: '0 auto 18px',
+      }} />
       <p style={{
-        fontFamily: 'var(--font-syne)', fontWeight: 800, fontSize: 17,
-        color: 'var(--text-primary)', marginBottom: 6, letterSpacing: '-0.01em',
+        fontFamily: 'var(--font-syne)', fontWeight: 800, fontSize: 20,
+        color: '#ffffff', marginBottom: 8, letterSpacing: '-0.015em',
+        lineHeight: 1.2,
       }}>
-        Be the first to share your experience
+        Be the first to share this one
       </p>
       <p style={{
-        fontFamily: 'var(--font-dm-sans)', fontSize: 13,
-        color: 'var(--text-tertiary)', lineHeight: 1.55,
-        maxWidth: 320, margin: '0 auto 18px',
+        fontFamily: 'var(--font-dm-sans)', fontSize: 13.5,
+        color: 'rgba(255, 255, 255, 0.55)', lineHeight: 1.55,
+        maxWidth: 340, margin: '0 auto 22px',
       }}>
-        Upload 5 tour videos and unlock <strong>5% off your next trip</strong>.
+        A handful of approved clips unlocks <strong style={{ color: '#FFB300' }}>5% off your next trip</strong> — and puts you on the feed for future travellers.
       </p>
       <button
         onClick={onUpload}
-        style={{
-          display: 'inline-flex', alignItems: 'center', gap: 8,
-          padding: '12px 20px', borderRadius: 9999,
-          background: 'var(--text-primary, #111)', color: '#fff', border: 'none',
-          cursor: 'pointer',
-          fontFamily: 'var(--font-dm-sans)', fontWeight: 700, fontSize: 13.5,
-        }}
+        style={goldCtaStyle}
       >
-        <Upload size={15} />
+        <Upload size={15} strokeWidth={2.25} />
         Share a clip
       </button>
     </div>
@@ -923,13 +1017,13 @@ function EmptyState({ onUpload }: { onUpload: () => void }) {
 function GallerySkeleton() {
   const placeholders = useMemo(() => Array.from({ length: 4 }), [])
   return (
-    <div style={{ display: 'flex', gap: 10, overflow: 'hidden' }}>
+    <div style={{ display: 'flex', gap: 12, overflow: 'hidden' }}>
       {placeholders.map((_, i) => (
         <div key={i} style={{
           flexShrink: 0,
-          width: 150, aspectRatio: '9 / 16',
-          borderRadius: 14,
-          background: 'linear-gradient(90deg, rgba(0,0,0,0.04), rgba(0,0,0,0.08), rgba(0,0,0,0.04))',
+          width: 170, aspectRatio: '9 / 16',
+          borderRadius: 16,
+          background: 'linear-gradient(90deg, rgba(255,255,255,0.04), rgba(255,255,255,0.08), rgba(255,255,255,0.04))',
           backgroundSize: '200% 100%',
           animation: 'shimmer 1.6s ease-in-out infinite',
         }} />
@@ -947,34 +1041,33 @@ function GallerySkeleton() {
 /* ═══════════════════════════════════════════════════════════════════════════
    Shared styles (inline so the component is self-contained)
    ═══════════════════════════════════════════════════════════════════════════ */
-const rewardCardStyle: React.CSSProperties = {
-  display: 'flex', alignItems: 'center', gap: 16,
-  padding: '16px 18px',
-  borderRadius: 16,
-  background: 'var(--bg, #fff)',
-  border: '1px solid rgba(255,179,0,0.22)',
-  boxShadow: '0 4px 14px rgba(0,0,0,0.03)',
-  position: 'relative',
-}
-const rewardKickerStyle: React.CSSProperties = {
+/* Primary prestige CTA — gold pill, ink text, used as the *only* upload
+   entry point so CTAs don't duplicate. */
+const goldCtaStyle: React.CSSProperties = {
+  flexShrink: 0,
+  display: 'inline-flex', alignItems: 'center', gap: 6,
+  padding: '10px 18px',
+  borderRadius: 9999,
+  background: '#FFB300',
+  color: '#08080A',
+  border: 'none', cursor: 'pointer',
   fontFamily: 'var(--font-dm-sans)',
-  fontSize: 10.5, fontWeight: 600,
-  letterSpacing: '0.1em', textTransform: 'uppercase',
-  color: 'var(--gold, #FFB300)',
-  marginBottom: 4,
+  fontWeight: 700, fontSize: 13,
+  letterSpacing: '-0.005em',
+  boxShadow: '0 8px 22px rgba(255, 179, 0, 0.28)',
+  transition: 'transform 0.15s ease, box-shadow 0.2s ease',
 }
-const rewardTitleStyle: React.CSSProperties = {
-  fontFamily: 'var(--font-syne)', fontWeight: 700,
-  fontSize: 14.5, color: 'var(--text-primary, #111)',
-  letterSpacing: '-0.01em', lineHeight: 1.35,
-}
-const ghostButtonStyle: React.CSSProperties = {
-  padding: '8px 14px', borderRadius: 9999,
+
+/* Secondary CTA — used only by the logged-out state of the reward band */
+const ghostCtaStyle: React.CSSProperties = {
+  flexShrink: 0,
+  padding: '9px 16px', borderRadius: 9999,
   background: 'transparent',
-  border: '1px solid rgba(0,0,0,0.12)',
-  color: 'var(--text-primary, #111)',
-  cursor: 'pointer', fontSize: 12, fontWeight: 700,
+  border: '1px solid rgba(255, 255, 255, 0.2)',
+  color: '#ffffff',
+  cursor: 'pointer',
   fontFamily: 'var(--font-dm-sans)',
+  fontWeight: 600, fontSize: 12.5,
   whiteSpace: 'nowrap',
 }
 

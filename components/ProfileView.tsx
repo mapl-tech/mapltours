@@ -12,6 +12,10 @@ import { useMyVideoProgress, VIDEO_REWARD_MILESTONE } from '@/lib/tour-videos'
 import { Award } from 'lucide-react'
 import type { User } from '@supabase/supabase-js'
 
+// Create the Supabase client once per module load, not per render —
+// keeps referential equality stable across renders.
+const supabase = createClient()
+
 interface PastBooking {
   id: string
   created_at: string
@@ -193,7 +197,6 @@ export default function ProfileView() {
   const { t } = useI18n()
   const { user: authUser } = useAuth()
   const user: User | null = authUser
-  const supabase = createClient()
   const [phone, setPhone] = useState('')
   const [identity, setIdentity] = useState('')
 

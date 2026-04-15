@@ -6,9 +6,17 @@ import { experiences, Experience, slugify } from '@/lib/experiences'
 import { useI18n } from '@/lib/i18n'
 import { useCartStore, DAILY_HOUR_LIMIT } from '@/lib/cart'
 import Link from 'next/link'
+import dynamic from 'next/dynamic'
 import { Heart, MessageCircle, Play, ChevronLeft, ChevronRight, X, ThumbsUp, Send, MapPin, Star, Clock, ShoppingBag, Film } from 'lucide-react'
 import { useExperienceLike, useComments, DisplayComment } from '@/lib/supabase/hooks'
-import UserTourVideos from '@/components/UserTourVideos'
+
+// Heavy, only-used-on-demand surfaces — code-split so they never ship with
+// the main reel bundle. `ssr: false` because they are all client-interaction
+// driven (overlays opened via tap) and never rendered on first paint.
+const UserTourVideos = dynamic(() => import('@/components/UserTourVideos'), {
+  ssr: false,
+  loading: () => null,
+})
 
 /** Brand-palette quick emojis — evokes MAPL's Jamaica-beyond-the-resort voice. */
 const QUICK_EMOJIS = ['🔥', '❤️', '🌴', '🌊', '☀️', '🏝️', '✨', '🙌'] as const

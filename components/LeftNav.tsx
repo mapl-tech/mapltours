@@ -7,6 +7,9 @@ import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import type { User } from '@supabase/supabase-js'
 
+// One module-level client — don't recreate on every render.
+const supabase = createClient()
+
 const navItems = [
   { icon: '▶', label: 'Feed', href: '/' },
   { icon: '◉', label: 'Explore', href: '/explore' },
@@ -19,7 +22,6 @@ export default function LeftNav() {
   const items = useCartStore((s) => s.items)
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null)
   const [user, setUser] = useState<User | null>(null)
-  const supabase = createClient()
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => setUser(user))

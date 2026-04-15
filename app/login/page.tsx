@@ -7,6 +7,9 @@ import { Leaf } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { getSafeRedirect } from '@/lib/safe-redirect'
 
+// One module-level client — don't recreate on every render.
+const supabase = createClient()
+
 export default function LoginPage() {
   return (
     <Suspense>
@@ -27,8 +30,6 @@ function LoginContent() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [message, setMessage] = useState('')
-
-  const supabase = createClient()
 
   async function handleEmailAuth(e: React.FormEvent) {
     e.preventDefault()

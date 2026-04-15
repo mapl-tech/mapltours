@@ -11,6 +11,9 @@ import { useI18n } from '@/lib/i18n'
 import { useAuth } from '@/lib/supabase/auth-context'
 import { createClient } from '@/lib/supabase/client'
 
+// One module-level client — don't recreate on every render.
+const supabase = createClient()
+
 const destinations = [
   { name: 'Negril', parish: 'Westmoreland' },
   { name: 'Blue Mountains', parish: 'St. Andrew' },
@@ -40,7 +43,6 @@ export default function TopNav({ onCartClick }: { onCartClick?: () => void }) {
   const { t } = useI18n()
   const { user } = useAuth()
   const [showProfileMenu, setShowProfileMenu] = useState(false)
-  const supabase = createClient()
   const isHome = pathname === '/'
   const isExperience = pathname.startsWith('/experience')
   const isCheckout = pathname.startsWith('/checkout')
