@@ -932,12 +932,18 @@ export default function ExperienceDetail({ slug }: { slug: string }) {
   }
 
   const addComment = async () => {
-    if (!commentText.trim() || !activeExp) return
+    console.log('[comments] submit clicked', { text: commentText, activeExpId: activeExp?.id, isLoggedIn, replyingTo })
+    if (!commentText.trim() || !activeExp) {
+      console.warn('[comments] aborted — empty text or no activeExp')
+      return
+    }
     if (!isLoggedIn) {
+      console.warn('[comments] aborted — not logged in, redirecting to /login')
       window.location.href = `/login?redirect=/experience/${slugify(activeExp.title)}`
       return
     }
-    await addSupabaseComment(commentText, replyingTo?.id || undefined)
+    const result = await addSupabaseComment(commentText, replyingTo?.id || undefined)
+    console.log('[comments] addSupabaseComment returned', result)
     setCommentText('')
     setReplyingTo(null)
   }

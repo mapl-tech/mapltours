@@ -216,11 +216,13 @@ export function useComments(experienceId: number) {
   const comments = data ?? []
 
   const addComment = useCallback(async (text: string, parentId?: string) => {
-    if (!user || !text.trim()) return null
+    console.log('[comments.hook] addComment start', { text, parentId, experienceId, hasUser: !!user })
+    if (!user) { console.warn('[comments.hook] aborted — no user from useAuth()'); return null }
+    if (!text.trim()) { console.warn('[comments.hook] aborted — empty text'); return null }
 
-    // Ensure the user has a row in public.users (required by the comments
+    // Ensure the user has a row in public.users (required by the comments.
     // user_id foreign key). Idempotent upsert — safe to call every time.
-    await supabase
+    const { error: upsertErr } = await supabase
       .from('users')
       .upsert(
         {
@@ -230,14 +232,33 @@ export function useComments(experienceId: number) {
         },
         { onConflict: 'id' }
       )
+    if (upsertErr) console.warn('[comments.hook] users upsert warning', upsertErr)
+    else console.log('[comments.hook] users upsert ok')
 
+    // ── Optimistic insert ─────────────────────────────────────────────
+    // Paint the comment immediately so the UI always feels responsive.
+    // If the server-side insert fails, we roll it back and log the error.
+    const tempId = `temp-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
+    const optimistic: SupabaseComment = {
+      id: tempId,
+      experience_id: experienceId,
+      user_id: user.id,
+      text: text.trim(),
+      created_at: new Date().toISOString(),
+      parent_id: parentId && isUuid(parentId) ? parentId : null,
+      user_name: user.user_metadata?.full_name || user.user_metadata?.name || 'You',
+      user_avatar: user.user_metadata?.avatar_url || null,
+    }
+    console.log('[comments.hook] optimistic add', { tempId, cacheKey: `comments:${experienceId}` })
+    mutate((prev) => [...(prev ?? []), optimistic])
+    setReplyingTo(null)
+
+    // ── Real insert ───────────────────────────────────────────────────
     const insertData: Record<string, unknown> = {
       experience_id: experienceId,
       user_id: user.id,
       text: text.trim(),
     }
-    // Only attach parent_id if it's a real UUID (i.e. from a DB comment,
-    // not a hardcoded seed comment from the experience JSON).
     if (parentId && isUuid(parentId)) insertData.parent_id = parentId
 
     const { data, error } = await supabase
@@ -246,26 +267,26 @@ export function useComments(experienceId: number) {
       .select('id, experience_id, user_id, text, created_at, parent_id')
       .single()
 
-    if (error) {
-      // Surface the reason — "nothing happened" is the worst possible UX.
-      console.error('[comments] insert failed', error)
+    console.log('[comments.hook] insert result', { hasData: !!data, error })
+
+    if (error || !data) {
+      // Roll back the optimistic row so the user gets honest feedback.
+      console.error('[comments.hook] insert failed — rolling back', error)
+      mutate((prev) => (prev ?? []).filter((c) => c.id !== tempId))
       return null
     }
 
-    if (data) {
-      const newComment: SupabaseComment = {
-        ...data,
-        user_name: user.user_metadata?.full_name || user.user_metadata?.name || 'You',
-        user_avatar: user.user_metadata?.avatar_url || null,
-      }
-      mutate((prev) => [...(prev ?? []), newComment])
-      setReplyingTo(null)
-      // Also re-fetch so any server-side trigger/derivation lands quickly.
-      refresh().catch(() => {})
-      return newComment
+    // ── Reconcile ─────────────────────────────────────────────────────
+    // Replace the optimistic row with the real one (same content, real id).
+    const newComment: SupabaseComment = {
+      ...data,
+      user_name: optimistic.user_name,
+      user_avatar: optimistic.user_avatar,
     }
-
-    return null
+    mutate((prev) => (prev ?? []).map((c) => (c.id === tempId ? newComment : c)))
+    // Also re-fetch so anything server-derived (e.g. user name via join) lands.
+    refresh().catch(() => {})
+    return newComment
   }, [user, experienceId, mutate, refresh])
 
   const deleteComment = useCallback(async (commentId: string) => {
