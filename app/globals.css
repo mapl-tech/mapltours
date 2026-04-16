@@ -155,16 +155,21 @@ video {
 }
 
 /* Reel right action rail + "Add to Trip" pill both sit above the mobile
-   bottom bar. JS (ExperienceDetail) writes --reel-bottom-offset to
-   (bar height + 12px) whenever the bar is visible. When the bar is hidden
-   (desktop), the var is cleared and the fallback applies.
-   !important is required because the bottom-info div has an inline
-   `padding` shorthand which would otherwise clobber padding-bottom. */
+   bottom bar on mobile. On desktop there is no bar, so the right rail
+   gets a tight 24px bottom gap and the bottom-info's inline 20px padding
+   wins (no !important on desktop). On mobile, the --reel-bottom-offset
+   var (written live by ExperienceDetail's ResizeObserver) is forced via
+   !important to beat the inline `padding` shorthand on the bottom-info. */
 .reel-right-rail {
-  bottom: var(--reel-bottom-offset, 100px) !important;
+  bottom: 24px;
 }
-.reel-bottom-mobile-pad {
-  padding-bottom: var(--reel-bottom-offset, max(96px, calc(76px + env(safe-area-inset-bottom)))) !important;
+@media (max-width: 767px) {
+  .reel-right-rail {
+    bottom: var(--reel-bottom-offset, max(96px, calc(76px + env(safe-area-inset-bottom)))) !important;
+  }
+  .reel-bottom-mobile-pad {
+    padding-bottom: var(--reel-bottom-offset, max(96px, calc(76px + env(safe-area-inset-bottom)))) !important;
+  }
 }
 
 /* Responsive grids */

@@ -157,8 +157,8 @@ function RewardProgressBand({ onStart }: { onStart: () => void }) {
   }
   const title: React.CSSProperties = {
     margin: '4px 0 0',
-    fontFamily: 'var(--font-syne)',
-    fontWeight: 700, fontSize: 14,
+    fontFamily: 'var(--font-dm-sans)',
+    fontWeight: 600, fontSize: 14,
     letterSpacing: '-0.005em',
     color: '#ffffff',
     lineHeight: 1.35,
