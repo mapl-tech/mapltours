@@ -263,7 +263,7 @@ function Reel({ exp, isActive, totalCount, currentIndex }: { exp: Experience; is
     <div
       onClick={togglePlay}
       style={{
-        height: '100vh', width: '100%',
+        height: '100dvh', width: '100%',
         position: 'relative', cursor: 'pointer',
         scrollSnapAlign: 'start', scrollSnapStop: 'always',
         overflow: 'hidden', background: '#000',
