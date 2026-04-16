@@ -157,12 +157,14 @@ video {
 /* Reel right action rail + "Add to Trip" pill both sit above the mobile
    bottom bar. JS (ExperienceDetail) writes --reel-bottom-offset to
    (bar height + 12px) whenever the bar is visible. When the bar is hidden
-   (desktop), the var is cleared and the fallback applies. */
+   (desktop), the var is cleared and the fallback applies.
+   !important is required because the bottom-info div has an inline
+   `padding` shorthand which would otherwise clobber padding-bottom. */
 .reel-right-rail {
-  bottom: var(--reel-bottom-offset, 100px);
+  bottom: var(--reel-bottom-offset, 100px) !important;
 }
 .reel-bottom-mobile-pad {
-  padding-bottom: var(--reel-bottom-offset, max(80px, calc(60px + env(safe-area-inset-bottom))));
+  padding-bottom: var(--reel-bottom-offset, max(96px, calc(76px + env(safe-area-inset-bottom)))) !important;
 }
 
 /* Responsive grids */
@@ -385,12 +387,11 @@ video {
     display: flex !important;
     justify-content: center !important;
   }
-  .reel-bottom-info {
-    padding-bottom: max(80px, calc(60px + env(safe-area-inset-bottom))) !important;
-  }
   /* .reel-bottom-mobile-pad and .reel-right-rail use --reel-bottom-offset
      defined at the top level — it's driven live by JS so it tracks any
-     change in the comment-bar's rendered height. */
+     change in the comment-bar's rendered height. The mobile-specific
+     override that used a static fallback has been removed so the dynamic
+     var always wins. */
   textarea.field-input {
     min-height: 250px !important;
   }
