@@ -20,103 +20,6 @@ const UserTourVideos = dynamic(() => import('@/components/UserTourVideos'), {
   loading: () => null,
 })
 
-/** Brand-palette quick emojis — evokes MAPL's Jamaica-beyond-the-resort voice. */
-const QUICK_EMOJIS = ['🔥', '❤️', '🌴', '🌊', '☀️', '🏝️', '✨', '🙌'] as const
-
-/**
- * Emoji quick-react button that sits beside the comment bar. Tapping the
- * trigger opens an ink-black popover with a row of Jamaica-themed emojis;
- * picking one posts it as a comment in one tap (Instagram Reels pattern).
- * Styled to match the MAPL toast: gold hairline border, ink surface, blur.
- */
-function EmojiQuickReact({ onPick }: { onPick: (emoji: string) => void | Promise<void> }) {
-  const [open, setOpen] = useState(false)
-  const ref = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    if (!open) return
-    const onDoc = (e: MouseEvent | TouchEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
-    }
-    document.addEventListener('mousedown', onDoc)
-    document.addEventListener('touchstart', onDoc, { passive: true })
-    return () => {
-      document.removeEventListener('mousedown', onDoc)
-      document.removeEventListener('touchstart', onDoc)
-    }
-  }, [open])
-
-  return (
-    <div ref={ref} style={{ position: 'relative' }}>
-      <button
-        onClick={() => setOpen((v) => !v)}
-        aria-label="Quick emoji react"
-        style={{
-          width: 40, height: 40, borderRadius: '50%',
-          background: open ? 'rgba(255,179,0,0.18)' : 'rgba(255,255,255,0.08)',
-          border: open ? '1px solid rgba(255,179,0,0.4)' : '1px solid rgba(255,255,255,0.06)',
-          cursor: 'pointer',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontSize: 18, lineHeight: 1,
-          transition: 'all 0.2s ease',
-          flexShrink: 0,
-        }}
-      >
-        <span style={{ filter: open ? 'none' : 'grayscale(0.15)' }}>😊</span>
-      </button>
-
-      {open && (
-        <div
-          role="menu"
-          style={{
-            position: 'absolute',
-            bottom: 'calc(100% + 10px)',
-            right: 0,
-            zIndex: 20,
-            display: 'inline-flex', gap: 2,
-            padding: 6,
-            borderRadius: 9999,
-            background: 'rgba(8, 8, 10, 0.94)',
-            border: '1px solid rgba(255, 179, 0, 0.3)',
-            boxShadow: '0 14px 44px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,179,0,0.06)',
-            backdropFilter: 'blur(14px)',
-            WebkitBackdropFilter: 'blur(14px)',
-            animation: 'fadeUp 0.22s ease',
-          }}
-        >
-          {QUICK_EMOJIS.map((emoji) => (
-            <button
-              key={emoji}
-              onClick={async () => {
-                setOpen(false)
-                await onPick(emoji)
-              }}
-              style={{
-                width: 38, height: 38, borderRadius: '50%',
-                background: 'transparent', border: 'none',
-                cursor: 'pointer',
-                fontSize: 20, lineHeight: 1,
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                transition: 'transform 0.15s ease, background 0.15s ease',
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.background = 'rgba(255,179,0,0.14)'
-                e.currentTarget.style.transform = 'scale(1.18)'
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.background = 'transparent'
-                e.currentTarget.style.transform = ''
-              }}
-            >
-              {emoji}
-            </button>
-          ))}
-        </div>
-      )}
-    </div>
-  )
-}
-
 /** True when an experience's creator handle is owned by MAPL itself — we
  *  render the MAPL favicon instead of a coloured initial disk. Centralised
  *  so new MAPL-owned handles can be added in one place. */
@@ -639,7 +542,16 @@ function MobileCommentsSheet({ comments, commentText, setCommentText, addComment
   const { t } = useI18n()
   const { user: currentUser } = useAuth()
   const sheetRef = useRef<HTMLDivElement>(null)
+  const inputRef = useRef<HTMLInputElement>(null)
   const [sheetHeight, setSheetHeight] = useState(60)
+
+  // Submit then blur the input so iOS dismisses the keyboard and resets
+  // any residual zoom state. The input itself is 16px to prevent iOS
+  // Safari's focus-zoom behaviour in the first place.
+  const submitAndBlur = () => {
+    addComment()
+    inputRef.current?.blur()
+  }
   const [dragging, setDragging] = useState(false)
   const dragStartY = useRef(0)
   const dragStartHeight = useRef(60)
@@ -681,10 +593,17 @@ function MobileCommentsSheet({ comments, commentText, setCommentText, addComment
         style={{
           position: 'absolute', bottom: 0, left: 0, right: 0,
           height: `${sheetHeight}vh`,
+          // When the sheet is near full-screen the rounded corners disappear
+          // and the sheet top reaches the device edge. Push content down by
+          // the iOS safe-area-inset-top so the drag handle and close button
+          // sit below the status bar / dynamic island.
+          paddingTop: sheetHeight >= 90 ? 'env(safe-area-inset-top)' : 0,
           background: 'var(--bg-dark-warm)',
           borderRadius: sheetHeight >= 100 ? 0 : '20px 20px 0 0',
           display: 'flex', flexDirection: 'column', overflow: 'hidden',
-          transition: dragging ? 'none' : 'height 0.3s cubic-bezier(0.22,1,0.36,1), border-radius 0.3s ease',
+          transition: dragging
+            ? 'padding-top 0.3s ease'
+            : 'height 0.3s cubic-bezier(0.22,1,0.36,1), border-radius 0.3s ease, padding-top 0.3s ease',
         }}
       >
         {/* Drag handle */}
@@ -794,18 +713,19 @@ function MobileCommentsSheet({ comments, commentText, setCommentText, addComment
               size={30}
             />
             <input type="text"
+              ref={inputRef}
               placeholder={replyingTo ? `Reply to @${replyingTo.user}...` : 'Add a comment...'}
               value={commentText} onChange={(e) => setCommentText(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && addComment()}
+              onKeyDown={(e) => { if (e.key === 'Enter') submitAndBlur() }}
               style={{
                 flex: 1, background: 'rgba(255,255,255,0.06)',
                 border: replyingTo ? '1px solid rgba(255,179,0,0.3)' : '1px solid rgba(255,255,255,0.06)',
-                borderRadius: 9999, padding: '10px 16px', fontSize: 15,
+                borderRadius: 9999, padding: '10px 16px', fontSize: 16,
                 fontFamily: 'var(--font-dm-sans)', color: 'white', outline: 'none',
               }}
             />
             {commentText.trim() && (
-              <button onClick={addComment} style={{ width: 34, height: 34, borderRadius: '50%', background: '#FFFC00', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <button onClick={submitAndBlur} style={{ width: 34, height: 34, borderRadius: '50%', background: '#FFFC00', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <Send size={15} color="#000" />
               </button>
             )}
@@ -1343,18 +1263,6 @@ export default function ExperienceDetail({ slug }: { slug: string }) {
         >
           {isLoggedIn ? 'Add a comment...' : 'Sign in to comment...'}
         </button>
-        {/* Quick-emoji react — replaces redundant comment counter.
-            One tap posts the chosen emoji as a comment (or routes to login).
-            Brand: ink-black surface, gold accent, Syne label on the trigger. */}
-        <EmojiQuickReact
-          onPick={async (emoji) => {
-            if (!isLoggedIn && activeExp) {
-              window.location.href = `/login?redirect=/experience/${slugify(activeExp.title)}`
-              return
-            }
-            await addSupabaseComment(emoji)
-          }}
-        />
         {items.length > 0 && (
           <Link
             href="/checkout"

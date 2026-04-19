@@ -43,7 +43,7 @@ export default memo(function MobileShort({ exp }: { exp: Experience }) {
           playAttempted.current = false
         }
       },
-      { threshold: 0.1, rootMargin: '200px 0px' }
+      { threshold: 0, rootMargin: '200px 0px' }
     )
 
     observer.observe(el)

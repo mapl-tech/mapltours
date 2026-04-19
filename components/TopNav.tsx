@@ -87,7 +87,7 @@ export default function TopNav({ onCartClick }: { onCartClick?: () => void }) {
 
   return (
     <header
-      className="nav-header"
+      className={`nav-header${isCheckout ? ' nav-checkout' : ''}`}
       style={{
         position: 'fixed',
         top: 0,
