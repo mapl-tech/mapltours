@@ -545,6 +545,40 @@ function MobileCommentsSheet({ comments, commentText, setCommentText, addComment
   const inputRef = useRef<HTMLInputElement>(null)
   const [sheetHeight, setSheetHeight] = useState(60)
 
+  // Live visual viewport — tracks Safari's top URL bar and bottom chrome
+  // as they show/hide during scroll, plus the on-screen keyboard. We size
+  // and position the sheet against this (not layout viewport / 100vh) so
+  // the drag handle and close button never slide behind iOS chrome.
+  const [vv, setVv] = useState(() => ({
+    height: typeof window !== 'undefined' ? window.innerHeight : 800,
+    offsetTop: 0,
+  }))
+  useEffect(() => {
+    const visual = typeof window !== 'undefined' ? window.visualViewport : null
+    const update = () => {
+      if (visual) {
+        setVv({ height: visual.height, offsetTop: visual.offsetTop })
+      } else {
+        setVv({ height: window.innerHeight, offsetTop: 0 })
+      }
+    }
+    update()
+    if (visual) {
+      visual.addEventListener('resize', update)
+      visual.addEventListener('scroll', update)
+    }
+    window.addEventListener('resize', update)
+    window.addEventListener('orientationchange', update)
+    return () => {
+      if (visual) {
+        visual.removeEventListener('resize', update)
+        visual.removeEventListener('scroll', update)
+      }
+      window.removeEventListener('resize', update)
+      window.removeEventListener('orientationchange', update)
+    }
+  }, [])
+
   // Submit then blur the input so iOS dismisses the keyboard and resets
   // any residual zoom state. The input itself is 16px to prevent iOS
   // Safari's focus-zoom behaviour in the first place.
@@ -565,7 +599,7 @@ function MobileCommentsSheet({ comments, commentText, setCommentText, addComment
   const onTouchMove = (e: React.TouchEvent) => {
     if (!dragging) return
     const delta = dragStartY.current - e.touches[0].clientY
-    const deltaPercent = (delta / window.innerHeight) * 100
+    const deltaPercent = (delta / vv.height) * 100
     const newHeight = Math.max(10, Math.min(100, dragStartHeight.current + deltaPercent))
     setSheetHeight(newHeight)
   }
@@ -582,7 +616,21 @@ function MobileCommentsSheet({ comments, commentText, setCommentText, addComment
   }
 
   return (
-    <div className="hide-desktop" style={{ position: 'fixed', inset: 0, zIndex: 320 }}>
+    <div
+      className="hide-desktop"
+      style={{
+        // Pin the entire sheet container to the *visual* viewport so the
+        // top edge never slides under Safari's URL bar / notch. When the
+        // keyboard opens, visualViewport.height shrinks and the sheet
+        // follows automatically.
+        position: 'fixed',
+        top: vv.offsetTop,
+        left: 0,
+        right: 0,
+        height: vv.height,
+        zIndex: 320,
+      }}
+    >
       <div onClick={onClose} style={{
         position: 'absolute', inset: 0,
         background: `rgba(0,0,0,${Math.min(0.6, sheetHeight / 100 * 0.6)})`,
@@ -592,18 +640,13 @@ function MobileCommentsSheet({ comments, commentText, setCommentText, addComment
         ref={sheetRef}
         style={{
           position: 'absolute', bottom: 0, left: 0, right: 0,
-          height: `${sheetHeight}vh`,
-          // When the sheet is near full-screen the rounded corners disappear
-          // and the sheet top reaches the device edge. Push content down by
-          // the iOS safe-area-inset-top so the drag handle and close button
-          // sit below the status bar / dynamic island.
-          paddingTop: sheetHeight >= 90 ? 'env(safe-area-inset-top)' : 0,
+          height: `${sheetHeight}%`,
           background: 'var(--bg-dark-warm)',
           borderRadius: sheetHeight >= 100 ? 0 : '20px 20px 0 0',
           display: 'flex', flexDirection: 'column', overflow: 'hidden',
           transition: dragging
-            ? 'padding-top 0.3s ease'
-            : 'height 0.3s cubic-bezier(0.22,1,0.36,1), border-radius 0.3s ease, padding-top 0.3s ease',
+            ? 'none'
+            : 'height 0.3s cubic-bezier(0.22,1,0.36,1), border-radius 0.3s ease',
         }}
       >
         {/* Drag handle */}
