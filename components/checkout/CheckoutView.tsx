@@ -1,19 +1,34 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import dynamic from 'next/dynamic'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
-import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js'
-import { ArrowLeft, Check, ShieldCheck, Lock, CreditCard, MapPin, Users, Calendar, Leaf } from 'lucide-react'
+import { ArrowLeft, Check, MapPin, Users, Calendar, Leaf, Lock, ShieldCheck } from 'lucide-react'
 import { useCartStore, DAILY_HOUR_LIMIT } from '@/lib/cart'
 import TripTimeBar from '@/components/TripTimeBar'
 import { useAvailableReward, consumeReward } from '@/lib/tour-videos'
 import { Award } from 'lucide-react'
-import { stripePromise } from '@/lib/stripe'
 import { useI18n } from '@/lib/i18n'
 import { calculateTransportation, GAS_PRICE_USD_PER_LITER, GAS_PRICE_JMD_PER_LITER, fetchGasPrice } from '@/lib/transportation'
 import { Fuel, Car, Route } from 'lucide-react'
+
+// Stripe SDK is ~80 KB gz — only load it when the user actually reaches
+// step 3 by dynamic-importing the panel (which in turn pulls Stripe in).
+const StripePaymentPanel = dynamic(
+  () => import('./StripePaymentPanel'),
+  {
+    ssr: false,
+    loading: () => (
+      <div style={{ padding: '60px', textAlign: 'center' }}>
+        <p style={{ fontSize: 14, color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-sans)' }}>
+          Setting up secure payment...
+        </p>
+      </div>
+    ),
+  }
+)
 
 /* ── Jamaica Locations with Addresses ── */
 const jamaicaLocations = [
@@ -326,7 +341,6 @@ function DetailsStep({ waiverAccepted, setWaiverAccepted, waiverError, formData,
 
   const updateField = (key: string, value: string) => {
     setFormData({ ...formData, [key]: value })
-    // Sync pickup/dropoff to cart store so guide fee includes travel time
     if (key === 'pickup') setPickup(value)
     if (key === 'dropoff') setDropoff(value)
   }
@@ -728,137 +742,6 @@ function DetailsStep({ waiverAccepted, setWaiverAccepted, waiverError, formData,
   )
 }
 
-/* ── Payment Step (Stripe Elements) ── */
-function PaymentStep({ onPaymentSuccess }: { onPaymentSuccess: () => void }) {
-  const stripe = useStripe()
-  const elements = useElements()
-  const { t } = useI18n()
-  const [error, setError] = useState<string | null>(null)
-  const [processing, setProcessing] = useState(false)
-
-  const handleSubmit = async () => {
-    if (!stripe || !elements) return
-    setProcessing(true)
-    setError(null)
-
-    const { error: submitError } = await elements.submit()
-    if (submitError) {
-      setError(submitError.message || 'Payment failed')
-      setProcessing(false)
-      return
-    }
-
-    const { error: confirmError } = await stripe.confirmPayment({
-      elements,
-      confirmParams: {
-        return_url: window.location.origin + '/checkout',
-      },
-      redirect: 'if_required',
-    })
-
-    if (confirmError) {
-      setError(confirmError.message || 'Payment failed')
-      setProcessing(false)
-    } else {
-      onPaymentSuccess()
-    }
-  }
-
-  return (
-    <div>
-      {/* Stripe Payment Element */}
-      <div style={{
-        borderRadius: 'var(--r-xl)', overflow: 'hidden',
-        border: '1px solid var(--border)',
-        boxShadow: '0 4px 24px rgba(0,0,0,0.04)',
-      }}>
-        {/* Card header */}
-        <div style={{
-          padding: '18px 22px',
-          background: 'var(--accent)',
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <CreditCard size={17} color="#fff" />
-              <span style={{ fontSize: 15, fontWeight: 700, color: '#fff', fontFamily: 'var(--font-dm-sans)' }}>
-                {t('Payment Details')}
-              </span>
-            </div>
-            <Lock size={13} color="rgba(255,255,255,0.4)" />
-          </div>
-          {/* Inline trust badges */}
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-            {['SSL Encrypted', 'PCI Compliant', 'Stripe'].map((b) => (
-              <span key={b} style={{
-                fontSize: 10, fontWeight: 500, fontFamily: 'var(--font-dm-sans)',
-                color: 'rgba(255,255,255,0.5)', background: 'rgba(255,255,255,0.08)',
-                padding: '3px 10px', borderRadius: 9999,
-              }}>
-                {b}
-              </span>
-            ))}
-          </div>
-        </div>
-
-        <div style={{ padding: '24px 22px', background: '#fff' }}>
-          <PaymentElement
-            options={{
-              layout: 'tabs',
-              defaultValues: {
-                billingDetails: { address: { country: 'US' } },
-              },
-            }}
-          />
-        </div>
-      </div>
-
-      {error && (
-        <div style={{
-          marginTop: 14, padding: '12px 16px', borderRadius: 'var(--r-md)',
-          background: 'rgba(200,0,0,0.04)', border: '1px solid rgba(200,0,0,0.12)',
-          fontSize: 13, color: '#c00', fontFamily: 'var(--font-dm-sans)',
-          display: 'flex', alignItems: 'center', gap: 8,
-        }}>
-          <span style={{ flexShrink: 0 }}>&#9888;</span>
-          {error}
-        </div>
-      )}
-
-      <button
-        className="btn-primary"
-        onClick={handleSubmit}
-        disabled={!stripe || processing}
-        style={{
-          width: '100%', height: 52, fontSize: 15, fontWeight: 700, marginTop: 18,
-          opacity: processing ? 0.6 : 1,
-          cursor: processing ? 'not-allowed' : 'pointer',
-          boxShadow: processing ? 'none' : '0 4px 16px rgba(23,22,20,0.15)',
-        }}
-      >
-        {processing ? (
-          <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span style={{ width: 16, height: 16, border: '2px solid rgba(255,255,255,0.3)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin 0.6s linear infinite', display: 'inline-block' }} />
-            {t('Processing...')}
-          </span>
-        ) : (
-          <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <Lock size={14} />
-            {t('Complete Booking')}
-          </span>
-        )}
-      </button>
-
-      <p style={{
-        marginTop: 12, textAlign: 'center',
-        fontSize: 11.5, color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-sans)',
-      }}>
-        <ShieldCheck size={11} color="var(--emerald)" style={{ display: 'inline', verticalAlign: '-2px', marginRight: 4 }} />
-        {t('Encrypted & secure')} · {t('Free cancellation within 48 hrs')}
-      </p>
-    </div>
-  )
-}
-
 /* ── Confirmed ── */
 function ConfirmedView() {
   const { items, grandTotal, clearCart } = useCartStore()
@@ -1070,26 +953,9 @@ export default function CheckoutView() {
           {step === 3 && (
             <>
             {clientSecret ? (
-              <Elements stripe={stripePromise} options={{ clientSecret, appearance: {
-                theme: 'stripe',
-                variables: {
-                  colorPrimary: '#171614',
-                  colorBackground: '#ffffff',
-                  colorText: '#171614',
-                  colorDanger: '#c00',
-                  fontFamily: 'DM Sans, sans-serif',
-                  borderRadius: '12px',
-                  spacingUnit: '4px',
-                },
-                rules: {
-                  '.Input': { border: '1px solid rgba(0,0,0,0.08)', padding: '14px', fontSize: '15px' },
-                  '.Input:focus': { borderColor: '#171614', boxShadow: '0 0 0 3px rgba(23,22,20,0.06)' },
-                  '.Label': { fontWeight: '600', fontSize: '12.5px', marginBottom: '6px' },
-                  '.Tab': { borderRadius: '10px', border: '1px solid rgba(0,0,0,0.08)' },
-                  '.Tab--selected': { borderColor: '#171614', backgroundColor: '#171614', color: '#fff' },
-                },
-              }}}>
-                <PaymentStep onPaymentSuccess={async () => {
+              <StripePaymentPanel
+                clientSecret={clientSecret}
+                onPaymentSuccess={async () => {
                   // Mark the reward as used. The status flip prevents re-use
                   // on future checkouts; booking_id can be back-filled once
                   // bookings are persisted server-side.
@@ -1097,8 +963,8 @@ export default function CheckoutView() {
                     await consumeReward(activeReward.id).catch(() => {})
                   }
                   setConfirmed(true)
-                }} />
-              </Elements>
+                }}
+              />
             ) : stripeError ? (
               <div style={{ padding: '40px', textAlign: 'center' }}>
                 <p style={{ fontSize: 14, color: '#c00', fontFamily: 'var(--font-dm-sans)', marginBottom: 16 }}>{stripeError}</p>

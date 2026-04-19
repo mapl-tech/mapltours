@@ -49,6 +49,7 @@ function HeroVideo({ src, poster }: { src: string; poster: string }) {
         fill
         sizes="100vw"
         priority
+        fetchPriority="high"
         style={{
           objectFit: 'cover', objectPosition: 'center 35%',
           opacity: isPlaying ? 0 : 1,

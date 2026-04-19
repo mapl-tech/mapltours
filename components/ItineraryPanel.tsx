@@ -101,7 +101,7 @@ export default function ItineraryPanel({ open, onClose }: { open: boolean; onClo
         <div style={{ borderTop: '1px solid var(--border)', padding: '18px 24px 24px' }}>
           {[
             { label: t('Subtotal'), value: subtotal() },
-            { label: t('Booking fee (5%)'), value: fee() },
+            { label: t('Service fee (20%)'), value: fee() },
           ].map((row) => (
             <div key={row.label} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13.5, fontFamily: 'var(--font-dm-sans)', color: 'var(--text-secondary)', marginBottom: 6 }}>
               <span>{row.label}</span>
