@@ -411,8 +411,26 @@ export default function TopNav({ onCartClick }: { onCartClick?: () => void }) {
         <div className="hide-desktop nav-lang-row" style={{
           position: 'absolute', top: 0, left: 0, right: 0,
           height: 32, display: 'flex', alignItems: 'center', justifyContent: 'flex-end',
-          paddingRight: 16, gap: 8,
+          paddingRight: 16, gap: 10,
         }}>
+          <Link
+            href="/transfers"
+            style={{
+              fontFamily: 'var(--font-dm-sans)',
+              fontSize: 12,
+              fontWeight: 600,
+              color: linkColor,
+              letterSpacing: '0.02em',
+              whiteSpace: 'nowrap',
+              padding: '2px 0',
+            }}
+          >
+            {t('Transfers')}
+          </Link>
+          <span aria-hidden style={{
+            width: 1, height: 12,
+            background: dark ? 'rgba(255,255,255,0.2)' : 'var(--border-strong)',
+          }} />
           <LanguageSwitcher dark={dark} />
           <div data-dropdown style={{ position: 'relative' }}>
             {user ? (
@@ -513,6 +531,7 @@ export default function TopNav({ onCartClick }: { onCartClick?: () => void }) {
 
           <Link
             href="/transfers"
+            className="hide-mobile"
             style={{
               padding: '6px 12px', fontSize: 13, fontWeight: 500,
               fontFamily: 'var(--font-dm-sans)', color: linkColor,

@@ -711,11 +711,14 @@ export default function TransfersView() {
         }
         .xfer-hero-image {
           position: relative;
+          width: 100%;
           aspect-ratio: 4 / 5;
+          min-height: 360px;
           border-radius: var(--r-xl);
           overflow: hidden;
           box-shadow: var(--shadow-lg);
           border: 1px solid var(--border);
+          background: var(--surface);
         }
         .xfer-hero-image-scrim {
           position: absolute;
@@ -901,7 +904,10 @@ export default function TransfersView() {
         }
         .xfer-zone-img {
           position: relative;
+          width: 100%;
           aspect-ratio: 16 / 10;
+          min-height: 180px;
+          flex-shrink: 0;
           background: var(--surface);
         }
         .xfer-zone-img-scrim {
