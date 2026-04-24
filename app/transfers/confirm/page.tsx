@@ -112,14 +112,14 @@ export default async function TransferConfirmPage({
     <div
       style={{
         minHeight: '100vh',
-        paddingTop: 72,
-        background: 'var(--bg)',
+        paddingTop: 56,
+        background: 'var(--bg-warm)',
         color: 'var(--text-primary)',
       }}
     >
       <div
         className="container"
-        style={{ maxWidth: 640, padding: '72px 20px', textAlign: 'center' }}
+        style={{ maxWidth: 720, padding: '80px 20px 80px', textAlign: 'center' }}
       >
         {data.status === 'succeeded' ? (
           <Success data={data} />
@@ -135,7 +135,7 @@ export default async function TransferConfirmPage({
           style={{
             marginTop: 40,
             display: 'flex',
-            gap: 14,
+            gap: 12,
             justifyContent: 'center',
             flexWrap: 'wrap',
           }}
@@ -143,24 +143,14 @@ export default async function TransferConfirmPage({
           <Link
             href="/explore"
             className="btn-primary"
-            style={{ height: 46, padding: '0 28px', fontSize: 14 }}
+            style={{ height: 46, padding: '0 26px' }}
           >
             Add tours to your trip
           </Link>
           <Link
             href="/transfers"
-            style={{
-              height: 46,
-              padding: '0 24px',
-              fontSize: 14,
-              display: 'inline-flex',
-              alignItems: 'center',
-              borderRadius: 9999,
-              border: '1px solid var(--border-subtle)',
-              color: 'var(--text-primary)',
-              textDecoration: 'none',
-              fontFamily: 'var(--font-dm-sans)',
-            }}
+            className="btn-outline"
+            style={{ height: 46, padding: '0 22px' }}
           >
             Book another transfer
           </Link>
@@ -178,11 +168,11 @@ function Success({ data }: { data: ConfirmData }) {
       <p
         style={{
           fontFamily: 'var(--font-dm-sans)',
-          fontSize: 11,
+          fontSize: 10.5,
           fontWeight: 700,
           letterSpacing: '0.22em',
           textTransform: 'uppercase',
-          color: 'var(--emerald, #00A550)',
+          color: 'var(--emerald)',
           marginBottom: 16,
         }}
       >
@@ -191,13 +181,17 @@ function Success({ data }: { data: ConfirmData }) {
       <h1
         style={{
           fontFamily: 'var(--font-syne)',
-          fontWeight: 800,
-          fontSize: 'clamp(2rem, 5vw, 3.25rem)',
-          lineHeight: 1.05,
+          fontWeight: 700,
+          fontSize: 'clamp(2.25rem, 5vw, 3.5rem)',
+          lineHeight: 1.02,
+          letterSpacing: '-0.025em',
           marginBottom: 16,
         }}
       >
-        Your ride is booked.
+        Your driver{' '}
+        <span style={{ fontStyle: 'italic', fontWeight: 500 }}>
+          will be there.
+        </span>
       </h1>
       <p
         style={{
@@ -205,14 +199,15 @@ function Success({ data }: { data: ConfirmData }) {
           fontStyle: 'italic',
           fontSize: 17,
           color: 'var(--text-secondary)',
-          maxWidth: 520,
+          maxWidth: 560,
           margin: '0 auto 28px',
+          lineHeight: 1.5,
         }}
       >
         {data.email
-          ? `Confirmation on its way to ${data.email}.`
-          : 'Confirmation email on the way.'}{' '}
-        Your driver will meet you at arrivals.
+          ? `A confirmation is on its way to ${data.email}.`
+          : 'A confirmation email is on the way.'}{' '}
+        Save your booking reference — your driver will look for it.
       </p>
 
       {data.bookingRef && (
@@ -220,15 +215,15 @@ function Success({ data }: { data: ConfirmData }) {
           style={{
             display: 'inline-block',
             padding: '12px 22px',
-            borderRadius: 12,
-            border: '1px solid rgba(255,179,0,0.3)',
-            background: 'rgba(255,179,0,0.06)',
+            borderRadius: 'var(--r-md)',
+            border: '1px solid var(--border-strong)',
+            background: '#fff',
             fontFamily: 'var(--font-dm-sans)',
-            fontSize: 16,
+            fontSize: 15,
             fontWeight: 700,
             letterSpacing: '0.08em',
-            color: 'var(--gold, #FFB300)',
-            marginBottom: 24,
+            color: 'var(--text-primary)',
+            marginBottom: 32,
           }}
         >
           {data.bookingRef}
@@ -238,21 +233,66 @@ function Success({ data }: { data: ConfirmData }) {
       {data.transfers.length > 0 && (
         <div
           style={{
-            marginTop: 16,
+            position: 'relative',
             textAlign: 'left',
-            background: 'var(--card-bg)',
-            border: '1px solid var(--border-subtle)',
-            borderRadius: 16,
-            padding: '20px 24px',
+            background: '#fff',
+            border: '1px solid var(--border)',
+            borderRadius: 'var(--r-xl)',
+            overflow: 'hidden',
+            boxShadow: 'var(--shadow-sm)',
           }}
         >
+          <div
+            aria-hidden
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              height: 2,
+              background:
+                'linear-gradient(90deg, transparent, var(--gold) 50%, transparent)',
+              opacity: 0.55,
+            }}
+          />
+          <div
+            style={{
+              padding: '20px 24px',
+              borderBottom: '1px solid var(--border)',
+            }}
+          >
+            <p
+              style={{
+                fontFamily: 'var(--font-dm-sans)',
+                fontSize: 10.5,
+                fontWeight: 700,
+                letterSpacing: '0.22em',
+                textTransform: 'uppercase',
+                color: 'var(--text-tertiary)',
+                marginBottom: 4,
+              }}
+            >
+              Your itinerary
+            </p>
+            <h4
+              style={{
+                fontFamily: 'var(--font-syne)',
+                fontWeight: 700,
+                fontSize: 18,
+                letterSpacing: '-0.005em',
+              }}
+            >
+              {data.transfers.length} transfer
+              {data.transfers.length !== 1 ? 's' : ''}
+            </h4>
+          </div>
           {data.transfers.map((t, i) => (
             <div
               key={i}
               style={{
-                padding: '14px 0',
+                padding: '16px 24px',
                 borderBottom:
-                  i < data.transfers.length - 1 ? '1px solid var(--border-subtle)' : 'none',
+                  i < data.transfers.length - 1 ? '1px solid var(--border)' : 'none',
               }}
             >
               <p
@@ -260,6 +300,7 @@ function Success({ data }: { data: ConfirmData }) {
                   fontFamily: 'var(--font-syne)',
                   fontWeight: 700,
                   fontSize: 16,
+                  letterSpacing: '-0.005em',
                   marginBottom: 4,
                 }}
               >
@@ -268,8 +309,9 @@ function Success({ data }: { data: ConfirmData }) {
               <p
                 style={{
                   fontFamily: 'var(--font-dm-sans)',
-                  fontSize: 13,
-                  color: 'var(--text-secondary)',
+                  fontSize: 12.5,
+                  color: 'var(--text-tertiary)',
+                  marginBottom: 4,
                 }}
               >
                 Zone {t.zone} ·{' '}
@@ -281,12 +323,23 @@ function Success({ data }: { data: ConfirmData }) {
                   style={{
                     fontFamily: 'var(--font-dm-sans)',
                     fontSize: 12.5,
-                    color: 'var(--text-tertiary)',
-                    marginTop: 4,
+                    color: 'var(--text-secondary)',
                   }}
                 >
-                  Arrival: {new Date(t.arrivalAt).toLocaleString()}
+                  Arrival · {new Date(t.arrivalAt).toLocaleString()}
                   {t.arrivalFlight ? ` · ${t.arrivalFlight}` : ''}
+                </p>
+              )}
+              {t.tripType === 'round_trip' && t.departureAt && (
+                <p
+                  style={{
+                    fontFamily: 'var(--font-dm-sans)',
+                    fontSize: 12.5,
+                    color: 'var(--text-secondary)',
+                  }}
+                >
+                  Departure · {new Date(t.departureAt).toLocaleString()}
+                  {t.departureFlight ? ` · ${t.departureFlight}` : ''}
                 </p>
               )}
             </div>
@@ -297,9 +350,9 @@ function Success({ data }: { data: ConfirmData }) {
                 display: 'flex',
                 justifyContent: 'space-between',
                 alignItems: 'center',
-                paddingTop: 14,
-                marginTop: 6,
-                borderTop: '1px solid var(--border-subtle)',
+                padding: '16px 24px',
+                background: 'var(--bg-warm)',
+                borderTop: '1px solid var(--border)',
               }}
             >
               <span
@@ -307,6 +360,7 @@ function Success({ data }: { data: ConfirmData }) {
                   fontFamily: 'var(--font-dm-sans)',
                   fontSize: 13,
                   color: 'var(--text-secondary)',
+                  fontWeight: 600,
                 }}
               >
                 Total paid
@@ -315,8 +369,9 @@ function Success({ data }: { data: ConfirmData }) {
                 style={{
                   fontFamily: 'var(--font-syne)',
                   fontWeight: 800,
-                  fontSize: 20,
-                  color: 'var(--gold, #FFB300)',
+                  fontSize: 22,
+                  letterSpacing: '-0.01em',
+                  color: 'var(--text-primary)',
                 }}
               >
                 {data.currency === 'USD' ? '$' : data.currency + ' '}
@@ -333,15 +388,32 @@ function Success({ data }: { data: ConfirmData }) {
 function Processing() {
   return (
     <>
+      <p
+        style={{
+          fontFamily: 'var(--font-dm-sans)',
+          fontSize: 10.5,
+          fontWeight: 700,
+          letterSpacing: '0.22em',
+          textTransform: 'uppercase',
+          color: 'var(--text-tertiary)',
+          marginBottom: 16,
+        }}
+      >
+        Processing
+      </p>
       <h1
         style={{
           fontFamily: 'var(--font-syne)',
-          fontWeight: 800,
+          fontWeight: 700,
           fontSize: 'clamp(2rem, 4.5vw, 3rem)',
+          letterSpacing: '-0.02em',
           marginBottom: 14,
         }}
       >
-        Payment processing.
+        Your bank{' '}
+        <span style={{ fontStyle: 'italic', fontWeight: 500 }}>
+          is still confirming.
+        </span>
       </h1>
       <p
         style={{
@@ -349,10 +421,12 @@ function Processing() {
           fontStyle: 'italic',
           fontSize: 17,
           color: 'var(--text-secondary)',
+          maxWidth: 480,
+          margin: '0 auto',
+          lineHeight: 1.5,
         }}
       >
-        We&rsquo;ll email you the moment your bank confirms — usually under a
-        minute.
+        We&rsquo;ll email you the moment it clears — usually under a minute.
       </p>
     </>
   )
@@ -361,15 +435,30 @@ function Processing() {
 function Failed() {
   return (
     <>
+      <p
+        style={{
+          fontFamily: 'var(--font-dm-sans)',
+          fontSize: 10.5,
+          fontWeight: 700,
+          letterSpacing: '0.22em',
+          textTransform: 'uppercase',
+          color: '#c00',
+          marginBottom: 16,
+        }}
+      >
+        Payment not completed
+      </p>
       <h1
         style={{
           fontFamily: 'var(--font-syne)',
-          fontWeight: 800,
+          fontWeight: 700,
           fontSize: 'clamp(2rem, 4.5vw, 3rem)',
+          letterSpacing: '-0.02em',
           marginBottom: 14,
         }}
       >
-        Payment didn&rsquo;t go through.
+        Nothing{' '}
+        <span style={{ fontStyle: 'italic', fontWeight: 500 }}>was charged.</span>
       </h1>
       <p
         style={{
@@ -377,19 +466,20 @@ function Failed() {
           fontStyle: 'italic',
           fontSize: 17,
           color: 'var(--text-secondary)',
+          maxWidth: 480,
+          margin: '0 auto 24px',
+          lineHeight: 1.5,
         }}
       >
-        Nothing was charged. Try another card.
+        Try another card and we&rsquo;ll have your ride on the books.
       </p>
-      <div style={{ marginTop: 24 }}>
-        <Link
-          href="/transfers/checkout"
-          className="btn-primary"
-          style={{ height: 46, padding: '0 28px' }}
-        >
-          Try again
-        </Link>
-      </div>
+      <Link
+        href="/transfers/checkout"
+        className="btn-primary"
+        style={{ height: 46, padding: '0 26px' }}
+      >
+        Try again
+      </Link>
     </>
   )
 }
@@ -400,12 +490,16 @@ function Unknown() {
       <h1
         style={{
           fontFamily: 'var(--font-syne)',
-          fontWeight: 800,
+          fontWeight: 700,
           fontSize: 'clamp(2rem, 4.5vw, 3rem)',
+          letterSpacing: '-0.02em',
           marginBottom: 14,
         }}
       >
-        We can&rsquo;t find that transfer.
+        We can&rsquo;t find{' '}
+        <span style={{ fontStyle: 'italic', fontWeight: 500 }}>
+          that booking.
+        </span>
       </h1>
       <p
         style={{
@@ -413,9 +507,13 @@ function Unknown() {
           fontStyle: 'italic',
           fontSize: 17,
           color: 'var(--text-secondary)',
+          maxWidth: 480,
+          margin: '0 auto',
+          lineHeight: 1.5,
         }}
       >
-        If you just paid, your email will arrive shortly.
+        If you just paid, your email will arrive shortly. Otherwise, start a new
+        booking below.
       </p>
     </>
   )

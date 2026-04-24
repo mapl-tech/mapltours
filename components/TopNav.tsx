@@ -513,11 +513,11 @@ export default function TopNav({ onCartClick }: { onCartClick?: () => void }) {
 
           <Link
             href="/transfers"
-            className="hide-mobile"
             style={{
               padding: '6px 12px', fontSize: 13, fontWeight: 500,
               fontFamily: 'var(--font-dm-sans)', color: linkColor,
               borderRadius: 9999, transition: 'color 0.15s ease',
+              whiteSpace: 'nowrap',
             }}
           >
             {t('Transfers')}

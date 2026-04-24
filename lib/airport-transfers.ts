@@ -1,11 +1,15 @@
 /**
  * Airport transfers — flat-rate zone pricing from Sangster International
  * Airport (MBJ, Montego Bay) to Jamaican hotels and resorts. Prices are per
- * vehicle, covering 1–4 passengers. Sourced from mid-market operator rates
- * (Collins, ExecuTours, Juta Express).
+ * vehicle, covering 1–4 passengers.
+ *
+ * Base rates are benchmarked against published operator sheets (Collins
+ * Adventures, ExecuTours, Juta Express). MAPL runs 15% above the operator
+ * floor — that covers concierge booking, 24/7 dispatch, meet-and-greet,
+ * and the in-house flight-tracking the raw operators don't include.
  *
  * Kingston (KIN) transfers and Port Antonio destinations are handled via
- * custom quote at MVP — the contact form handles those.
+ * custom quote at MVP — the contact form routes those.
  */
 
 export type TransferAirport = 'MBJ'
@@ -22,41 +26,45 @@ export interface ZoneInfo {
   roundTrip: number
 }
 
+// Base operator rates × 1.15, rounded to whole dollars.
+//   $35 → $40   |   $60 → $69    |   $65 → $75
+//   $80 → $92   |   $100 → $115  |   $110 → $127
+//   $120 → $138 |   $140 → $161  |   $180 → $207
 export const ZONES: Record<TransferZone, ZoneInfo> = {
   A: {
     code: 'A',
     label: 'Montego Bay & Rose Hall',
     duration: 'Under 20 min from MBJ',
-    oneWay: 35,
-    roundTrip: 60,
+    oneWay: 40,
+    roundTrip: 69,
   },
   B: {
     code: 'B',
     label: 'Falmouth',
     duration: '35–45 min from MBJ',
-    oneWay: 60,
-    roundTrip: 110,
+    oneWay: 69,
+    roundTrip: 127,
   },
   C: {
     code: 'C',
     label: 'Trelawny, Hanover & Lucea',
     duration: '40–60 min from MBJ',
-    oneWay: 65,
-    roundTrip: 120,
+    oneWay: 75,
+    roundTrip: 138,
   },
   D: {
     code: 'D',
     label: 'Negril & Runaway Bay',
     duration: '75–90 min from MBJ',
-    oneWay: 80,
-    roundTrip: 140,
+    oneWay: 92,
+    roundTrip: 161,
   },
   E: {
     code: 'E',
     label: 'Ocho Rios & South Coast',
     duration: '90–120 min from MBJ',
-    oneWay: 100,
-    roundTrip: 180,
+    oneWay: 115,
+    roundTrip: 207,
   },
 }
 
