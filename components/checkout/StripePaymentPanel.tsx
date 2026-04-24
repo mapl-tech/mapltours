@@ -68,9 +68,11 @@ function PaymentStep({ onPaymentSuccess }: { onPaymentSuccess: () => void | Prom
       return
     }
 
+    // 3DS and other bank-side auth redirect the user to /checkout/confirm,
+    // which reads ?payment_intent=... and renders the success / retry UI.
     const { error: confirmError } = await stripe.confirmPayment({
       elements,
-      confirmParams: { return_url: window.location.origin + '/checkout' },
+      confirmParams: { return_url: window.location.origin + '/checkout/confirm' },
       redirect: 'if_required',
     })
 

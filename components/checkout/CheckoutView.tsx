@@ -873,7 +873,10 @@ export default function CheckoutView() {
     : 0
   const finalTotal = Math.max(0, baseTotal - rewardDiscount)
 
-  // Create PaymentIntent when moving to step 3
+  // Create PaymentIntent when moving to step 3. The server inserts a pending
+  // `bookings` row (plus line items), hashes the cart for idempotency, and
+  // attaches booking_id to the PaymentIntent metadata so the webhook can
+  // flip status to 'paid' and dispatch the confirmation email.
   useEffect(() => {
     if (step === 3 && !clientSecret && items.length > 0) {
       fetch('/api/checkout', {
@@ -882,11 +885,29 @@ export default function CheckoutView() {
         body: JSON.stringify({
           amount: finalTotal,
           items: items.map((i) => ({
+            id: i.id,
             title: i.title,
+            destination: i.destination,
             travelers: i.travelers,
             date: i.date,
             price: i.price,
           })),
+          customer: {
+            email: formData['email'],
+            firstName: formData['firstName'],
+            lastName: formData['lastName'],
+            phone: formData['phone'],
+            country: formData['country'],
+            pickup: formData['pickup'],
+            dropoff: formData['dropoff'],
+            specialRequests: formData['specialRequests'],
+          },
+          breakdown: {
+            subtotal: subtotal(),
+            fee: fee(),
+            transport: transportTotal,
+            rewardDiscount: rewardDiscount,
+          },
         }),
       })
         .then((res) => res.json())
