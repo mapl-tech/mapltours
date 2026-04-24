@@ -511,6 +511,18 @@ export default function TopNav({ onCartClick }: { onCartClick?: () => void }) {
             {t('Explore')}
           </Link>
 
+          <Link
+            href="/transfers"
+            className="hide-mobile"
+            style={{
+              padding: '6px 12px', fontSize: 13, fontWeight: 500,
+              fontFamily: 'var(--font-dm-sans)', color: linkColor,
+              borderRadius: 9999, transition: 'color 0.15s ease',
+            }}
+          >
+            {t('Transfers')}
+          </Link>
+
           <div className="hide-mobile"><LanguageSwitcher dark={dark} /></div>
 
           {items.length > 0 && (

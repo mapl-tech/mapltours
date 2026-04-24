@@ -4,6 +4,8 @@ import { createServiceClient } from '@/lib/supabase/service'
 import { sendEmail } from '@/lib/email/send'
 import BookingConfirmed from '@/emails/BookingConfirmed'
 import OperatorBookingAlert from '@/emails/OperatorBookingAlert'
+import TransferConfirmed from '@/emails/TransferConfirmed'
+import TransferOperatorAlert from '@/emails/TransferOperatorAlert'
 
 /**
  * Stripe webhook — single source of truth for payment status.
@@ -28,17 +30,29 @@ export const dynamic = 'force-dynamic'
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!)
 
 interface BookingItemRow {
-  experience_id: number
+  experience_id: number | null
   title: string
   destination: string
   travelers: number
   date: string
   price_per_person: number
+  // transfer fields (null for experience items)
+  item_type: 'experience' | 'transfer'
+  airport: string | null
+  hotel: string | null
+  zone: string | null
+  trip_type: 'one_way' | 'round_trip' | null
+  arrival_flight: string | null
+  arrival_at: string | null
+  departure_flight: string | null
+  departure_at: string | null
+  passengers: number | null
 }
 
 interface BookingRow {
   id: string
   status: string
+  booking_type: 'tour' | 'transfer'
   first_name: string | null
   last_name: string | null
   email: string | null
@@ -121,7 +135,9 @@ async function loadBooking(paymentIntentId: string) {
 
   const { data: items } = await supabase
     .from('booking_items')
-    .select('experience_id, title, destination, travelers, date, price_per_person')
+    .select(
+      'experience_id, title, destination, travelers, date, price_per_person, item_type, airport, hotel, zone, trip_type, arrival_flight, arrival_at, departure_flight, departure_at, passengers',
+    )
     .eq('booking_id', booking.id)
 
   return { supabase, booking: booking as BookingRow, items: (items ?? []) as BookingItemRow[] }
@@ -189,30 +205,60 @@ async function maybeSendTravelerConfirmation(
     return
   }
 
-  const res = await sendEmail({
-    to: booking.email,
-    subject: `Booking confirmed — your Jamaica trip with MAPL (${humanizeId(booking.id)})`,
-    react: BookingConfirmed({
-      bookingRef: humanizeId(booking.id),
-      firstName: booking.first_name,
-      totalPaid: Number(booking.total_paid),
-      currency: booking.currency.toUpperCase(),
-      pickup: booking.pickup,
-      dropoff: booking.dropoff,
-      phone: booking.phone,
-      items: items.map((i) => ({
-        title: i.title,
-        destination: i.destination,
-        date: i.date,
-        travelers: i.travelers,
-        linePrice: Number(i.price_per_person) * i.travelers,
-      })),
-    }),
-    tags: [
-      { name: 'category', value: 'booking_confirmed' },
-      { name: 'booking_id', value: booking.id },
-    ],
-  })
+  const bookingRef = humanizeId(booking.id)
+  const isTransfer = booking.booking_type === 'transfer'
+
+  const res = isTransfer
+    ? await sendEmail({
+        to: booking.email,
+        subject: `Transfer confirmed — your Jamaica airport ride (${bookingRef})`,
+        react: TransferConfirmed({
+          bookingRef,
+          firstName: booking.first_name,
+          totalPaid: Number(booking.total_paid),
+          currency: booking.currency.toUpperCase(),
+          customerPhone: booking.phone,
+          transfers: items.map((i) => ({
+            destination: i.hotel ?? i.destination,
+            zone: i.zone ?? '',
+            tripType: (i.trip_type ?? 'one_way') as 'one_way' | 'round_trip',
+            passengers: i.passengers ?? i.travelers,
+            priceUsd: Number(i.price_per_person),
+            arrivalFlight: i.arrival_flight,
+            arrivalAt: i.arrival_at,
+            departureFlight: i.departure_flight,
+            departureAt: i.departure_at,
+          })),
+        }),
+        tags: [
+          { name: 'category', value: 'transfer_confirmed' },
+          { name: 'booking_id', value: booking.id },
+        ],
+      })
+    : await sendEmail({
+        to: booking.email,
+        subject: `Booking confirmed — your Jamaica trip with MAPL (${bookingRef})`,
+        react: BookingConfirmed({
+          bookingRef,
+          firstName: booking.first_name,
+          totalPaid: Number(booking.total_paid),
+          currency: booking.currency.toUpperCase(),
+          pickup: booking.pickup,
+          dropoff: booking.dropoff,
+          phone: booking.phone,
+          items: items.map((i) => ({
+            title: i.title,
+            destination: i.destination,
+            date: i.date,
+            travelers: i.travelers,
+            linePrice: Number(i.price_per_person) * i.travelers,
+          })),
+        }),
+        tags: [
+          { name: 'category', value: 'booking_confirmed' },
+          { name: 'booking_id', value: booking.id },
+        ],
+      })
 
   if (res.ok) {
     await supabase
@@ -231,33 +277,68 @@ async function maybeSendOperatorAlert(
   const opsAddress = process.env.OPERATIONS_EMAIL ?? process.env.EMAIL_SUPPORT
   if (!opsAddress) return
 
-  const res = await sendEmail({
-    to: opsAddress,
-    subject: `New booking · ${humanizeId(booking.id)} · ${items.length} experience${items.length !== 1 ? 's' : ''}`,
-    react: OperatorBookingAlert({
-      bookingRef: humanizeId(booking.id),
-      customerName: `${booking.first_name ?? ''} ${booking.last_name ?? ''}`.trim() || 'Guest',
-      customerEmail: booking.email ?? '(no email)',
-      customerPhone: booking.phone,
-      customerCountry: booking.country,
-      pickup: booking.pickup,
-      dropoff: booking.dropoff,
-      specialRequests: booking.special_requests,
-      totalPaid: Number(booking.total_paid),
-      currency: booking.currency.toUpperCase(),
-      items: items.map((i) => ({
-        title: i.title,
-        destination: i.destination,
-        date: i.date,
-        travelers: i.travelers,
-        linePrice: Number(i.price_per_person) * i.travelers,
-      })),
-    }),
-    tags: [
-      { name: 'category', value: 'operator_alert' },
-      { name: 'booking_id', value: booking.id },
-    ],
-  })
+  const bookingRef = humanizeId(booking.id)
+  const customerName =
+    `${booking.first_name ?? ''} ${booking.last_name ?? ''}`.trim() || 'Guest'
+  const isTransfer = booking.booking_type === 'transfer'
+
+  const res = isTransfer
+    ? await sendEmail({
+        to: opsAddress,
+        subject: `Transfer dispatch · ${bookingRef} · ${items.length} ride${items.length !== 1 ? 's' : ''}`,
+        react: TransferOperatorAlert({
+          bookingRef,
+          customerName,
+          customerEmail: booking.email ?? '(no email)',
+          customerPhone: booking.phone,
+          customerCountry: booking.country,
+          specialRequests: booking.special_requests,
+          totalPaid: Number(booking.total_paid),
+          currency: booking.currency.toUpperCase(),
+          transfers: items.map((i) => ({
+            destination: i.hotel ?? i.destination,
+            zone: i.zone ?? '',
+            tripType: (i.trip_type ?? 'one_way') as 'one_way' | 'round_trip',
+            passengers: i.passengers ?? i.travelers,
+            priceUsd: Number(i.price_per_person),
+            arrivalFlight: i.arrival_flight,
+            arrivalAt: i.arrival_at,
+            departureFlight: i.departure_flight,
+            departureAt: i.departure_at,
+          })),
+        }),
+        tags: [
+          { name: 'category', value: 'transfer_operator_alert' },
+          { name: 'booking_id', value: booking.id },
+        ],
+      })
+    : await sendEmail({
+        to: opsAddress,
+        subject: `New booking · ${bookingRef} · ${items.length} experience${items.length !== 1 ? 's' : ''}`,
+        react: OperatorBookingAlert({
+          bookingRef,
+          customerName,
+          customerEmail: booking.email ?? '(no email)',
+          customerPhone: booking.phone,
+          customerCountry: booking.country,
+          pickup: booking.pickup,
+          dropoff: booking.dropoff,
+          specialRequests: booking.special_requests,
+          totalPaid: Number(booking.total_paid),
+          currency: booking.currency.toUpperCase(),
+          items: items.map((i) => ({
+            title: i.title,
+            destination: i.destination,
+            date: i.date,
+            travelers: i.travelers,
+            linePrice: Number(i.price_per_person) * i.travelers,
+          })),
+        }),
+        tags: [
+          { name: 'category', value: 'operator_alert' },
+          { name: 'booking_id', value: booking.id },
+        ],
+      })
 
   if (res.ok) {
     await supabase

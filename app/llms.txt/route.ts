@@ -32,6 +32,7 @@ Tagline: "Discover Jamaica Beyond the Resort."
 
 - [Home](${baseUrl}/): Video-reel discovery feed of Jamaica experiences.
 - [Explore](${baseUrl}/explore): Filterable catalog by category (Adventure, Nature, Music, Food, Culture, Water) and parish (Kingston, St. Andrew, St. Ann, Westmoreland, Portland, St. Elizabeth).
+- [Airport transfers](${baseUrl}/transfers): Flat-rate private transfers from Sangster International Airport (MBJ) to every major resort in Jamaica. Priced by zone, 1–4 passengers per vehicle.
 - [The MAPL Journal](${baseUrl}/blog): Essays and guides from local writers.
 - [About](${baseUrl}/about): Company background.
 - [Contact](${baseUrl}/contact): Customer support.

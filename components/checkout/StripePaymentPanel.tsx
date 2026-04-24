@@ -14,9 +14,13 @@ import { useI18n } from '@/lib/i18n'
 export default function StripePaymentPanel({
   clientSecret,
   onPaymentSuccess,
+  returnUrl = '/checkout/confirm',
 }: {
   clientSecret: string
   onPaymentSuccess: () => void | Promise<void>
+  /** Page to hand users back to after 3DS/bank redirects. Defaults to the
+   *  tour-booking confirm page; transfers pass `/transfers/confirm`. */
+  returnUrl?: string
 }) {
   return (
     <Elements
@@ -44,12 +48,18 @@ export default function StripePaymentPanel({
         },
       }}
     >
-      <PaymentStep onPaymentSuccess={onPaymentSuccess} />
+      <PaymentStep onPaymentSuccess={onPaymentSuccess} returnUrl={returnUrl} />
     </Elements>
   )
 }
 
-function PaymentStep({ onPaymentSuccess }: { onPaymentSuccess: () => void | Promise<void> }) {
+function PaymentStep({
+  onPaymentSuccess,
+  returnUrl,
+}: {
+  onPaymentSuccess: () => void | Promise<void>
+  returnUrl: string
+}) {
   const stripe = useStripe()
   const elements = useElements()
   const { t } = useI18n()
@@ -68,11 +78,12 @@ function PaymentStep({ onPaymentSuccess }: { onPaymentSuccess: () => void | Prom
       return
     }
 
-    // 3DS and other bank-side auth redirect the user to /checkout/confirm,
-    // which reads ?payment_intent=... and renders the success / retry UI.
+    // 3DS and other bank-side auth redirect the user to the caller-supplied
+    // confirm page, which reads ?payment_intent=... and renders the success
+    // / retry UI for the relevant flow (tours vs transfers).
     const { error: confirmError } = await stripe.confirmPayment({
       elements,
-      confirmParams: { return_url: window.location.origin + '/checkout/confirm' },
+      confirmParams: { return_url: window.location.origin + returnUrl },
       redirect: 'if_required',
     })
 
