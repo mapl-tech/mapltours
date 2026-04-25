@@ -1,13 +1,9 @@
 /**
  * Airport transfers — flat-rate zone pricing from Sangster International
  * Airport (MBJ, Montego Bay) to Jamaican hotels and resorts. Prices are per
- * vehicle, covering 1–4 passengers.
+ * vehicle, covering 1–4 passengers, in USD.
  *
- * Base rates are benchmarked against published operator sheets (Collins
- * Adventures, ExecuTours, Juta Express). MAPL runs 15% above the operator
- * floor — that covers concierge booking, 24/7 dispatch, meet-and-greet,
- * and the in-house flight-tracking the raw operators don't include.
- *
+ * Rates match the published private-transfer sheet for the Jamaica market.
  * Kingston (KIN) transfers and Port Antonio destinations are handled via
  * custom quote at MVP — the contact form routes those.
  */
@@ -26,45 +22,47 @@ export interface ZoneInfo {
   roundTrip: number
 }
 
-// Base operator rates × 1.15, rounded to whole dollars.
-//   $35 → $40   |   $60 → $69    |   $65 → $75
-//   $80 → $92   |   $100 → $115  |   $110 → $127
-//   $120 → $138 |   $140 → $161  |   $180 → $207
+// Private airport transfer prices, USD, 1–4 passengers (per vehicle).
+//   Zone A — Iberostar Rose Hall, Secrets, Jewel Grande, Hyatt, Hilton, Sandals MB, RIU MB
+//   Zone B — Royalton Blue Water (Falmouth), Excellence Oyster Bay
+//   Zone C — Grand Palladium (Lucea), Ocean Coral Spring, Round Hill, Tryall
+//   Zone D — Negril hotels, Bahia Principe, Jewel Paradise Cove
+//   Zone E — Ocho Rios hotels, Sandals South Coast, Treasure Beach, GoldenEye
 export const ZONES: Record<TransferZone, ZoneInfo> = {
   A: {
     code: 'A',
     label: 'Montego Bay & Rose Hall',
     duration: 'Under 20 min from MBJ',
-    oneWay: 40,
-    roundTrip: 69,
+    oneWay: 35,
+    roundTrip: 60,
   },
   B: {
     code: 'B',
     label: 'Falmouth',
     duration: '35–45 min from MBJ',
-    oneWay: 69,
-    roundTrip: 127,
+    oneWay: 60,
+    roundTrip: 110,
   },
   C: {
     code: 'C',
     label: 'Trelawny, Hanover & Lucea',
     duration: '40–60 min from MBJ',
-    oneWay: 75,
-    roundTrip: 138,
+    oneWay: 65,
+    roundTrip: 120,
   },
   D: {
     code: 'D',
     label: 'Negril & Runaway Bay',
     duration: '75–90 min from MBJ',
-    oneWay: 92,
-    roundTrip: 161,
+    oneWay: 80,
+    roundTrip: 140,
   },
   E: {
     code: 'E',
     label: 'Ocho Rios & South Coast',
     duration: '90–120 min from MBJ',
-    oneWay: 115,
-    roundTrip: 207,
+    oneWay: 100,
+    roundTrip: 180,
   },
 }
 

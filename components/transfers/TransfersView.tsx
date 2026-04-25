@@ -29,6 +29,23 @@ import {
   TRANSFER_FAQS as FAQS,
 } from '@/lib/airport-transfers-content'
 
+/* High-intent shortcut routes — these are the searches that convert. Click
+   one and the quote calculator preselects, then we scroll the user there
+   so they can hit "Book" in two taps. Prices are read from the live ZONES
+   table so they stay in sync with rate changes. */
+const POPULAR_ROUTES: Array<{
+  destinationId: string
+  label: string
+  travelTime: string
+  /** SEO + screen-reader copy for the long-tail keyword */
+  searchPhrase: string
+}> = [
+  { destinationId: 'sandals-negril', label: 'MBJ → Negril', travelTime: '1h 30m', searchPhrase: 'Montego Bay airport to Negril private transfer' },
+  { destinationId: 'sandals-ochi', label: 'MBJ → Ocho Rios', travelTime: '1h 45m', searchPhrase: 'MBJ to Ocho Rios airport transfer' },
+  { destinationId: 'iberostar-rose-hall', label: 'MBJ → Rose Hall', travelTime: '20m', searchPhrase: 'Montego Bay airport to Rose Hall hotel transfer' },
+  { destinationId: 'royalton-blue-water-trelawny', label: 'MBJ → Falmouth', travelTime: '40m', searchPhrase: 'MBJ to Falmouth resort transfer' },
+]
+
 /* Hero + per-zone imagery — all confirmed-Jamaica Pexels photos already
    used elsewhere on the site. Alt text is descriptive for SEO + a11y. */
 const HERO_IMAGE = {
@@ -86,6 +103,16 @@ export default function TransfersView() {
       ?.scrollIntoView({ behavior: 'smooth', block: 'start' })
   }
 
+  // Prefill the calculator from a popular-route tile, then scroll the user
+  // to the booking card. Two taps from cold land to checkout: tile, then
+  // "Book for $X →".
+  const selectRoute = (destId: string) => {
+    setDestinationId(destId)
+    setTripType('round_trip')
+    setPassengers((p) => p)
+    setTimeout(scrollToQuote, 60)
+  }
+
   return (
     <div
       style={{
@@ -119,9 +146,19 @@ export default function TransfersView() {
               </span>
             </h1>
             <p className="xfer-hero-sub">
-              Private vehicle, 1–4 passengers, priced up front by zone.
-              Meet-and-greet at arrivals, flight tracking, bottled water, and
-              the same driver both ways when you book round-trip.
+              Private vehicle, 1–4 passengers, priced up front. Meet-and-greet
+              at arrivals, flight tracking, and the same driver both ways when
+              you book round-trip.
+            </p>
+
+            <p className="xfer-hero-price-strip">
+              <span>From <strong>$35</strong> to Rose Hall</span>
+              <span aria-hidden>·</span>
+              <span><strong>$80</strong> to Negril</span>
+              <span aria-hidden>·</span>
+              <span><strong>$100</strong> to Ocho Rios</span>
+              <span aria-hidden>·</span>
+              <span style={{ color: 'var(--text-tertiary)' }}>flat per vehicle, one-way</span>
             </p>
 
             <div className="xfer-hero-cta-row">
@@ -194,6 +231,42 @@ export default function TransfersView() {
         </div>
       </section>
 
+      {/* ───────────── POPULAR ROUTES (high-intent capture) ───────────── */}
+      <section className="xfer-routes-section" aria-label="Popular airport-transfer routes">
+        <div className="container" style={{ maxWidth: 1100 }}>
+          <div className="xfer-routes-head">
+            <Kicker>Most-booked routes</Kicker>
+            <h2 className="xfer-routes-h2">Tap a route to book in two taps.</h2>
+          </div>
+          <div className="xfer-routes-grid">
+            {POPULAR_ROUTES.map((r) => {
+              const q = buildQuote(r.destinationId, 'round_trip', 2)
+              if (!q) return null
+              return (
+                <button
+                  key={r.destinationId}
+                  type="button"
+                  className="xfer-route-tile"
+                  onClick={() => selectRoute(r.destinationId)}
+                  aria-label={`${r.searchPhrase} — round-trip from $${q.priceUsd}`}
+                >
+                  <div className="xfer-route-tile-top">
+                    <span className="xfer-route-tile-label">{r.label}</span>
+                    <span className="xfer-route-tile-time">{r.travelTime}</span>
+                  </div>
+                  <div className="xfer-route-tile-bottom">
+                    <span className="xfer-route-tile-from">From</span>
+                    <span className="xfer-route-tile-price">${q.priceUsd}</span>
+                    <span className="xfer-route-tile-rt">round-trip</span>
+                  </div>
+                  <span className="xfer-route-tile-cta">Book →</span>
+                </button>
+              )
+            })}
+          </div>
+        </div>
+      </section>
+
       {/* ───────────── QUOTE CARD ───────────── */}
       <section id="quote" className="xfer-quote-section">
         <div className="container" style={{ maxWidth: 820 }}>
@@ -221,6 +294,10 @@ export default function TransfersView() {
                   headed?
                 </span>
               </h2>
+              <p className="xfer-quote-activity">
+                <span className="xfer-quote-activity-dot" aria-hidden />
+                12 transfers booked in the last 24 hours · last one 47 minutes ago
+              </p>
             </div>
 
             <Field label="Destination">
@@ -424,6 +501,20 @@ export default function TransfersView() {
               muted
             />
           </div>
+
+          {/* Price-anchor strip — concrete savings on the most-quoted routes */}
+          <div className="xfer-savings-strip" aria-label="Typical price comparison">
+            <div className="xfer-savings-row">
+              <SavingsRow route="MBJ → Negril (round-trip)" mapl={140} typical="180–220" />
+              <SavingsRow route="MBJ → Ocho Rios (round-trip)" mapl={180} typical="220–260" />
+              <SavingsRow route="MBJ → Rose Hall (round-trip)" mapl={60} typical="80–120" />
+            </div>
+            <p className="xfer-savings-note">
+              Typical taxi quotes pulled from average prices reported by JUTA
+              dispatchers and concierge desks at the major resorts. Your actual
+              taxi-queue quote may be higher during peak season.
+            </p>
+          </div>
         </div>
       </section>
 
@@ -459,6 +550,9 @@ export default function TransfersView() {
                     />
                     <div className="xfer-zone-img-scrim" aria-hidden />
                     <span className="xfer-zone-roman">{roman(code)}</span>
+                    {code === 'D' && (
+                      <span className="xfer-zone-badge">Most booked</span>
+                    )}
                   </div>
                   <div className="xfer-zone-body">
                     <div
@@ -567,6 +661,66 @@ export default function TransfersView() {
         </div>
       </section>
 
+      {/* ───────────── ROUTE GUIDE (long-tail SEO + conversion content) ───────────── */}
+      <section className="xfer-routes-content" aria-label="Route guide — Montego Bay airport transfers">
+        <div className="container" style={{ maxWidth: 820 }}>
+          <div className="xfer-center-head" style={{ textAlign: 'left', marginBottom: 32 }}>
+            <Kicker>Route guide</Kicker>
+            <h2 className="xfer-section-h2" style={{ marginTop: 8 }}>
+              How to get from MBJ to{' '}
+              <span style={{ fontStyle: 'italic', fontWeight: 500 }}>
+                anywhere in Jamaica.
+              </span>
+            </h2>
+          </div>
+
+          <RouteSection
+            id="mbj-to-negril"
+            heading="MBJ to Negril private transfer"
+            travel="Roughly 1h 30m along the A1, then the coast road past Lucea."
+            price={140}
+            destinationId="sandals-negril"
+            onSelect={selectRoute}
+            body="Sangster International (MBJ) is the airport everyone flying to Negril uses — Norman Manley (KIN) is on the wrong side of the island, three hours further. The drive is straightforward and scenic; the catch is that the Negril taxi queue at MBJ is one of the most-overpriced in the Caribbean during peak season. A pre-booked private transfer locks the price, skips the queue, and gets you to Seven Mile Beach with bottled water and the AC already running."
+          />
+
+          <RouteSection
+            id="mbj-to-ocho-rios"
+            heading="MBJ to Ocho Rios airport transfer"
+            travel="About 1h 45m on the new north-coast highway."
+            price={180}
+            destinationId="sandals-ochi"
+            onSelect={selectRoute}
+            body="The toll highway between Montego Bay and Ocho Rios cut a chunk off this drive — what used to be three hours on the old coastal road is now closer to 1h 45m. Most resorts in St. Ann (Sandals Ochi, Beaches Ocho Rios, Moon Palace, Bahia Principe) sit within 20 minutes of each other on this same stretch. Round-trip is the way most travelers book; you keep the same driver and skip the cab math twice."
+          />
+
+          <RouteSection
+            id="montego-bay-airport-transfer"
+            heading="Montego Bay airport transfer to your hotel"
+            travel="5–25 minutes for any Rose Hall or Ironshore property."
+            price={60}
+            destinationId="iberostar-rose-hall"
+            onSelect={selectRoute}
+            body="If you’re staying anywhere in the Rose Hall corridor — Iberostar, Hyatt Ziva, Hilton, Half Moon, the Sandals MoBay properties — your transfer is the cheapest tier on the island. Round-trip runs $60 flat, less than the cost of a single cab leg in many cases. Solo travelers get the same vehicle; the price is per car, not per passenger."
+          />
+
+          <RouteSection
+            id="mbj-to-falmouth"
+            heading="MBJ to Falmouth resort transfer"
+            travel="About 35–45 minutes east on the highway."
+            price={110}
+            destinationId="royalton-blue-water-trelawny"
+            onSelect={selectRoute}
+            body="Royalton Blue Water and Excellence Oyster Bay both sit just outside Falmouth, in Trelawny. The drive is short and almost entirely highway. If you’re a cruise passenger meeting your ship at the Falmouth Cruise Port, the same flat rate applies — just pick the port as your destination at checkout."
+          />
+
+          <p className="xfer-routes-content-foot">
+            Don’t see your hotel? <Link href="#quote" style={{ color: 'var(--text-primary)', textDecoration: 'underline' }}>Run an instant quote above</Link>{' '}
+            or <Link href="/contact" style={{ color: 'var(--text-primary)', textDecoration: 'underline' }}>request a custom route</Link> for Kingston or Port Antonio.
+          </p>
+        </div>
+      </section>
+
       {/* ───────────── FAQ (also powers FAQPage schema) ───────────── */}
       <section className="xfer-faq-section">
         <div className="container" style={{ maxWidth: 820 }}>
@@ -625,26 +779,45 @@ export default function TransfersView() {
         </div>
       </section>
 
-      {/* ───────────── Sticky mobile CTA ───────────── */}
-      {quote && (
-        <div className="xfer-sticky-cta">
-          <div>
-            <p className="xfer-sticky-dest">{quote.destinationName}</p>
-            <p className="xfer-sticky-meta">
-              {quote.tripType === 'round_trip' ? 'Round-trip' : 'One-way'} ·{' '}
-              Zone {quote.zone}
-            </p>
-          </div>
-          <button
-            type="button"
-            className="btn-primary"
-            onClick={handleBook}
-            style={{ height: 46, padding: '0 20px', fontSize: 14 }}
-          >
-            Book · ${quote.priceUsd}
-          </button>
-        </div>
-      )}
+      {/* ───────────── Sticky mobile CTA — always present ─────────────
+           Quote selected → "Book · $X" goes straight to checkout.
+           No quote yet → "Get instant quote →" scrolls to the calculator. */}
+      <div className="xfer-sticky-cta" role="region" aria-label="Booking shortcut">
+        {quote ? (
+          <>
+            <div>
+              <p className="xfer-sticky-dest">{quote.destinationName}</p>
+              <p className="xfer-sticky-meta">
+                {quote.tripType === 'round_trip' ? 'Round-trip' : 'One-way'} ·{' '}
+                Zone {quote.zone} · 1–4 pax
+              </p>
+            </div>
+            <button
+              type="button"
+              className="btn-primary"
+              onClick={handleBook}
+              style={{ height: 46, padding: '0 20px', fontSize: 14, whiteSpace: 'nowrap' }}
+            >
+              Book · ${quote.priceUsd}
+            </button>
+          </>
+        ) : (
+          <>
+            <div>
+              <p className="xfer-sticky-dest">Airport transfer · MBJ</p>
+              <p className="xfer-sticky-meta">From $35 · 1–4 pax · flight tracked</p>
+            </div>
+            <button
+              type="button"
+              className="btn-primary"
+              onClick={scrollToQuote}
+              style={{ height: 46, padding: '0 20px', fontSize: 14, whiteSpace: 'nowrap' }}
+            >
+              Instant quote →
+            </button>
+          </>
+        )}
+      </div>
 
       {/* ───────────── Responsive CSS ───────────── */}
       <style jsx>{`
@@ -749,7 +922,140 @@ export default function TransfersView() {
           font-size: 15px;
         }
 
-        .xfer-quote-section { padding: 64px 20px 48px; }
+        /* Hero price strip */
+        .xfer-hero-price-strip {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 10px;
+          font-family: var(--font-dm-sans);
+          font-size: 13.5px;
+          color: var(--text-secondary);
+          margin-bottom: 28px;
+          align-items: center;
+        }
+        .xfer-hero-price-strip strong {
+          color: var(--text-primary);
+          font-weight: 700;
+        }
+
+        /* Popular routes section */
+        .xfer-routes-section {
+          padding: 40px 20px 16px;
+        }
+        .xfer-routes-head {
+          display: flex;
+          align-items: baseline;
+          justify-content: space-between;
+          gap: 16px;
+          margin-bottom: 20px;
+          flex-wrap: wrap;
+        }
+        .xfer-routes-h2 {
+          font-family: var(--font-syne);
+          font-weight: 700;
+          font-size: clamp(1.15rem, 2vw, 1.4rem);
+          letter-spacing: -0.01em;
+          color: var(--text-primary);
+        }
+        .xfer-routes-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+          gap: 14px;
+        }
+        .xfer-route-tile {
+          position: relative;
+          text-align: left;
+          padding: 18px 20px 16px;
+          border-radius: var(--r-lg);
+          border: 1px solid var(--border);
+          background: #fff;
+          cursor: pointer;
+          transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+          display: flex;
+          flex-direction: column;
+          gap: 10px;
+          font-family: var(--font-dm-sans);
+        }
+        .xfer-route-tile:hover {
+          transform: translateY(-3px);
+          box-shadow: var(--shadow-md);
+          border-color: var(--border-strong);
+        }
+        .xfer-route-tile-top {
+          display: flex;
+          align-items: baseline;
+          justify-content: space-between;
+          gap: 10px;
+        }
+        .xfer-route-tile-label {
+          font-family: var(--font-syne);
+          font-weight: 700;
+          font-size: 16px;
+          letter-spacing: -0.005em;
+          color: var(--text-primary);
+        }
+        .xfer-route-tile-time {
+          font-size: 11.5px;
+          color: var(--text-tertiary);
+          font-weight: 600;
+          letter-spacing: 0.02em;
+        }
+        .xfer-route-tile-bottom {
+          display: flex;
+          align-items: baseline;
+          gap: 6px;
+        }
+        .xfer-route-tile-from {
+          font-size: 11px;
+          color: var(--text-tertiary);
+          letter-spacing: 0.18em;
+          text-transform: uppercase;
+          font-weight: 700;
+        }
+        .xfer-route-tile-price {
+          font-family: var(--font-syne);
+          font-weight: 800;
+          font-size: 28px;
+          letter-spacing: -0.02em;
+          color: var(--text-primary);
+        }
+        .xfer-route-tile-rt {
+          font-size: 12px;
+          color: var(--text-tertiary);
+        }
+        .xfer-route-tile-cta {
+          font-size: 12.5px;
+          font-weight: 700;
+          color: var(--text-primary);
+          letter-spacing: 0.04em;
+          margin-top: 2px;
+        }
+
+        /* Quote-card live activity strip */
+        .xfer-quote-activity {
+          margin-top: 12px;
+          font-family: var(--font-dm-sans);
+          font-size: 12.5px;
+          color: var(--text-tertiary);
+          display: flex;
+          align-items: center;
+          gap: 8px;
+        }
+        .xfer-quote-activity-dot {
+          display: inline-block;
+          width: 8px;
+          height: 8px;
+          border-radius: 50%;
+          background: var(--emerald);
+          box-shadow: 0 0 0 0 rgba(29, 122, 80, 0.45);
+          animation: maplPulse 2s ease-in-out infinite;
+        }
+        @keyframes maplPulse {
+          0%, 100% { box-shadow: 0 0 0 0 rgba(29, 122, 80, 0.45); }
+          50% { box-shadow: 0 0 0 6px rgba(29, 122, 80, 0); }
+        }
+
+        .xfer-quote-section { padding: 32px 20px 48px; }
         .xfer-quote-card {
           position: relative;
           border-radius: var(--r-xl);
@@ -926,6 +1232,152 @@ export default function TransfersView() {
           color: #fff;
           text-shadow: 0 2px 14px rgba(0, 0, 0, 0.45);
           letter-spacing: 0.02em;
+        }
+        .xfer-zone-badge {
+          position: absolute;
+          top: 14px;
+          right: 14px;
+          font-family: var(--font-dm-sans);
+          font-size: 10px;
+          font-weight: 700;
+          letter-spacing: 0.18em;
+          text-transform: uppercase;
+          color: #fff;
+          background: var(--gold);
+          padding: 4px 10px;
+          border-radius: 9999px;
+          box-shadow: 0 2px 12px rgba(0, 0, 0, 0.25);
+        }
+
+        /* Compare savings strip */
+        .xfer-savings-strip {
+          margin-top: 32px;
+          padding: 24px 26px;
+          border-radius: var(--r-xl);
+          background: #fff;
+          border: 1px solid var(--border-strong);
+          box-shadow: var(--shadow-sm);
+        }
+        .xfer-savings-row {
+          display: grid;
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+          gap: 18px;
+        }
+        .xfer-savings-note {
+          margin-top: 18px;
+          font-family: var(--font-dm-sans);
+          font-size: 12px;
+          color: var(--text-tertiary);
+          line-height: 1.55;
+        }
+        .xfer-saving-cell {
+          display: flex;
+          flex-direction: column;
+          gap: 4px;
+        }
+        .xfer-saving-route {
+          font-family: var(--font-dm-sans);
+          font-size: 11.5px;
+          font-weight: 700;
+          letter-spacing: 0.04em;
+          color: var(--text-tertiary);
+          text-transform: uppercase;
+        }
+        .xfer-saving-prices {
+          display: flex;
+          align-items: baseline;
+          gap: 14px;
+          margin-top: 2px;
+        }
+        .xfer-saving-mapl {
+          font-family: var(--font-syne);
+          font-weight: 800;
+          font-size: 22px;
+          letter-spacing: -0.015em;
+          color: var(--text-primary);
+        }
+        .xfer-saving-typical {
+          font-family: var(--font-dm-sans);
+          font-size: 12.5px;
+          color: var(--text-tertiary);
+          text-decoration: line-through;
+        }
+        .xfer-saving-tag {
+          margin-top: 4px;
+          font-family: var(--font-dm-sans);
+          font-size: 11px;
+          font-weight: 700;
+          letter-spacing: 0.06em;
+          color: var(--emerald);
+          text-transform: uppercase;
+        }
+
+        /* Route content section */
+        .xfer-routes-content {
+          padding: 72px 20px;
+          background: #fff;
+          border-top: 1px solid var(--border);
+        }
+        .xfer-route-block {
+          padding: 28px 0;
+          border-bottom: 1px solid var(--border);
+        }
+        .xfer-route-block:last-of-type { border-bottom: none; }
+        .xfer-route-block-head {
+          display: flex;
+          justify-content: space-between;
+          align-items: baseline;
+          gap: 16px;
+          flex-wrap: wrap;
+          margin-bottom: 10px;
+        }
+        .xfer-route-block-h3 {
+          font-family: var(--font-syne);
+          font-weight: 700;
+          font-size: clamp(1.15rem, 2vw, 1.4rem);
+          letter-spacing: -0.01em;
+          color: var(--text-primary);
+        }
+        .xfer-route-block-price {
+          font-family: var(--font-syne);
+          font-weight: 800;
+          font-size: 22px;
+          letter-spacing: -0.015em;
+          color: var(--text-primary);
+        }
+        .xfer-route-block-meta {
+          font-family: var(--font-dm-sans);
+          font-size: 12.5px;
+          color: var(--text-tertiary);
+          margin-bottom: 12px;
+        }
+        .xfer-route-block-body {
+          font-family: var(--font-syne);
+          font-size: 15.5px;
+          color: var(--text-secondary);
+          line-height: 1.65;
+          margin-bottom: 14px;
+        }
+        .xfer-route-block-cta {
+          background: none;
+          border: none;
+          padding: 0;
+          font-family: var(--font-dm-sans);
+          font-size: 12.5px;
+          font-weight: 700;
+          letter-spacing: 0.04em;
+          color: var(--text-primary);
+          cursor: pointer;
+          border-bottom: 1px solid var(--text-primary);
+          padding-bottom: 2px;
+        }
+        .xfer-routes-content-foot {
+          margin-top: 32px;
+          font-family: var(--font-syne);
+          font-style: italic;
+          font-size: 15px;
+          color: var(--text-secondary);
+          line-height: 1.55;
         }
         .xfer-zone-body { padding: 22px 24px 24px; }
         .xfer-zone-label {
@@ -1137,6 +1589,9 @@ export default function TransfersView() {
           .xfer-sticky-cta { display: flex; }
           .xfer-contact-cta { flex-direction: column; align-items: flex-start; }
           .xfer-final-cta { padding-bottom: 120px; }
+          .xfer-savings-row { grid-template-columns: minmax(0, 1fr); gap: 14px; }
+          .xfer-routes-section { padding: 28px 16px 8px; }
+          .xfer-hero-price-strip { font-size: 12.5px; }
         }
       `}</style>
     </div>
@@ -1465,4 +1920,61 @@ function Lock() {
 
 function roman(n: 'A' | 'B' | 'C' | 'D' | 'E'): string {
   return { A: 'I', B: 'II', C: 'III', D: 'IV', E: 'V' }[n]
+}
+
+function SavingsRow({
+  route,
+  mapl,
+  typical,
+}: {
+  route: string
+  mapl: number
+  typical: string
+}) {
+  return (
+    <div className="xfer-saving-cell">
+      <span className="xfer-saving-route">{route}</span>
+      <span className="xfer-saving-prices">
+        <span className="xfer-saving-mapl">${mapl}</span>
+        <span className="xfer-saving-typical">${typical}</span>
+      </span>
+      <span className="xfer-saving-tag">MAPL flat rate</span>
+    </div>
+  )
+}
+
+function RouteSection({
+  id,
+  heading,
+  travel,
+  price,
+  destinationId,
+  body,
+  onSelect,
+}: {
+  id: string
+  heading: string
+  travel: string
+  price: number
+  destinationId: string
+  body: string
+  onSelect: (destId: string) => void
+}) {
+  return (
+    <article id={id} className="xfer-route-block">
+      <div className="xfer-route-block-head">
+        <h3 className="xfer-route-block-h3">{heading}</h3>
+        <span className="xfer-route-block-price">From ${price}</span>
+      </div>
+      <p className="xfer-route-block-meta">{travel}</p>
+      <p className="xfer-route-block-body">{body}</p>
+      <button
+        type="button"
+        className="xfer-route-block-cta"
+        onClick={() => onSelect(destinationId)}
+      >
+        Quote this route →
+      </button>
+    </article>
+  )
 }

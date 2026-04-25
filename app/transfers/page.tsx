@@ -11,7 +11,7 @@ export const metadata: Metadata = {
   title:
     'Jamaica Airport Transfers | Flat-Rate Private Rides from Montego Bay (MBJ)',
   description:
-    'Book a private airport transfer in Jamaica from Sangster International (MBJ) to Negril, Ocho Rios, Montego Bay, Falmouth, and every major resort. Flat rates from $40, 1–4 passengers, meet-and-greet, flight tracking, free cancellation up to 24 hours. Rated 4.9 from 340+ trips.',
+    'Book a private airport transfer in Jamaica from Sangster International (MBJ) to Negril, Ocho Rios, Montego Bay, Falmouth, and every major resort. Flat rates from $35, 1–4 passengers, meet-and-greet, flight tracking, free cancellation up to 24 hours. Rated 4.9 from 340+ trips.',
   keywords: [
     'Jamaica airport transfer',
     'Montego Bay airport transfer',
