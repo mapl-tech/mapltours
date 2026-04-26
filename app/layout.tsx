@@ -138,12 +138,10 @@ function JsonLd() {
       name: 'Jamaica',
     },
     priceRange: '$55 - $145',
-    aggregateRating: {
-      '@type': 'AggregateRating',
-      ratingValue: '4.9',
-      reviewCount: '3241',
-      bestRating: '5',
-    },
+    // Note: aggregateRating intentionally omitted from the site-wide entity.
+    // Google rejects "self-serving" reviews — ratings/reviews belong on the
+    // specific thing reviewed (Product / Service / TouristTrip), not on the
+    // business itself. Per-experience ratings live on /experience/[slug].
     hasOfferCatalog: {
       '@type': 'OfferCatalog',
       name: 'Jamaica Tours & Experiences',
