@@ -820,7 +820,7 @@ export default function TransfersView() {
       </div>
 
       {/* ───────────── Responsive CSS ───────────── */}
-      <style jsx>{`
+      <style jsx global>{`
         .xfer-hero {
           padding: 72px 20px 56px;
           border-bottom: 1px solid var(--border);
@@ -927,15 +927,17 @@ export default function TransfersView() {
           display: flex;
           flex-wrap: wrap;
           gap: 10px;
-          font-family: var(--font-dm-sans);
+          font-family: var(--font-open-sans);
           font-size: 13.5px;
           color: var(--text-secondary);
           margin-bottom: 28px;
           align-items: center;
+          font-feature-settings: 'tnum' 1;
         }
         .xfer-hero-price-strip strong {
           color: var(--text-primary);
           font-weight: 700;
+          font-family: var(--font-open-sans);
         }
 
         /* Popular routes section */
@@ -1013,11 +1015,12 @@ export default function TransfersView() {
           font-weight: 700;
         }
         .xfer-route-tile-price {
-          font-family: var(--font-syne);
+          font-family: var(--font-open-sans);
           font-weight: 800;
-          font-size: 28px;
-          letter-spacing: -0.02em;
+          font-size: 26px;
+          letter-spacing: -0.005em;
           color: var(--text-primary);
+          font-feature-settings: 'tnum' 1;
         }
         .xfer-route-tile-rt {
           font-size: 12px;
@@ -1112,12 +1115,13 @@ export default function TransfersView() {
         }
         .xfer-quote-readout-price-block { text-align: right; }
         .xfer-quote-readout-price {
-          font-family: var(--font-syne);
+          font-family: var(--font-open-sans);
           font-weight: 800;
           font-size: clamp(2rem, 5vw, 2.625rem);
-          letter-spacing: -0.025em;
+          letter-spacing: -0.01em;
           color: var(--text-primary);
           line-height: 1;
+          font-feature-settings: 'tnum' 1;
         }
         .xfer-quote-readout-meta {
           font-family: var(--font-dm-sans);
@@ -1290,11 +1294,12 @@ export default function TransfersView() {
           margin-top: 2px;
         }
         .xfer-saving-mapl {
-          font-family: var(--font-syne);
+          font-family: var(--font-open-sans);
           font-weight: 800;
           font-size: 22px;
-          letter-spacing: -0.015em;
+          letter-spacing: -0.005em;
           color: var(--text-primary);
+          font-feature-settings: 'tnum' 1;
         }
         .xfer-saving-typical {
           font-family: var(--font-dm-sans);
@@ -1339,11 +1344,12 @@ export default function TransfersView() {
           color: var(--text-primary);
         }
         .xfer-route-block-price {
-          font-family: var(--font-syne);
+          font-family: var(--font-open-sans);
           font-weight: 800;
           font-size: 22px;
-          letter-spacing: -0.015em;
+          letter-spacing: -0.005em;
           color: var(--text-primary);
+          font-feature-settings: 'tnum' 1;
         }
         .xfer-route-block-meta {
           font-family: var(--font-dm-sans);
@@ -1413,12 +1419,13 @@ export default function TransfersView() {
           font-weight: 600;
         }
         .xfer-zone-price-value {
-          font-family: var(--font-syne);
+          font-family: var(--font-open-sans);
           font-weight: 800;
           font-size: 26px;
-          letter-spacing: -0.015em;
+          letter-spacing: -0.005em;
           color: var(--text-primary);
           line-height: 1;
+          font-feature-settings: 'tnum' 1;
         }
         .xfer-zone-destinations {
           font-family: var(--font-dm-sans);

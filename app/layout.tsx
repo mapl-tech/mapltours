@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from 'next'
-import { Playfair_Display, DM_Sans } from 'next/font/google'
+import { Playfair_Display, DM_Sans, Open_Sans } from 'next/font/google'
 import Script from 'next/script'
 import './globals.css'
 import LayoutShell from '@/components/LayoutShell'
@@ -17,6 +17,15 @@ const dmSans = DM_Sans({
   subsets: ['latin'],
   weight: ['300', '400', '500', '600'],
   variable: '--font-dm-sans',
+  display: 'swap',
+})
+
+// Used for price displays on the transfers flow — wider numerals + a more
+// neutral commercial feel than the editorial Playfair/DM Sans pairing.
+const openSans = Open_Sans({
+  subsets: ['latin'],
+  weight: ['400', '600', '700', '800'],
+  variable: '--font-open-sans',
   display: 'swap',
 })
 
@@ -215,7 +224,7 @@ export default function RootLayout({
         <link rel="dns-prefetch" href="https://static.hotjar.com" />
         <link rel="dns-prefetch" href="https://script.hotjar.com" />
       </head>
-      <body className={`${playfair.variable} ${dmSans.variable}`}>
+      <body className={`${playfair.variable} ${dmSans.variable} ${openSans.variable}`}>
         <LayoutShell>{children}</LayoutShell>
         <Script src="https://www.googletagmanager.com/gtag/js?id=G-2JVWPL4GBE" strategy="lazyOnload" />
         <Script id="gtag-init" strategy="lazyOnload">

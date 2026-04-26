@@ -472,7 +472,8 @@ export default function TransfersCheckoutView() {
                     style={{
                       fontSize: 13,
                       fontWeight: 700,
-                      fontFamily: 'var(--font-dm-sans)',
+                      fontFamily: 'var(--font-open-sans)',
+                      fontFeatureSettings: '"tnum" 1',
                       flexShrink: 0,
                     }}
                   >
@@ -505,7 +506,9 @@ export default function TransfersCheckoutView() {
                   }}
                 >
                   <span>{row.label}</span>
-                  <span>${row.value.toFixed(2)}</span>
+                  <span style={{ fontFamily: 'var(--font-open-sans)', fontFeatureSettings: '"tnum" 1' }}>
+                    ${row.value.toFixed(2)}
+                  </span>
                 </div>
               ))}
               <div
@@ -530,11 +533,12 @@ export default function TransfersCheckoutView() {
                 </span>
                 <span
                   style={{
-                    fontFamily: 'var(--font-syne)',
+                    fontFamily: 'var(--font-open-sans)',
                     fontWeight: 800,
                     fontSize: 24,
-                    letterSpacing: '-0.015em',
+                    letterSpacing: '-0.005em',
                     color: 'var(--text-primary)',
+                    fontFeatureSettings: '"tnum" 1',
                   }}
                 >
                   ${grandTotal().toFixed(2)}
@@ -560,7 +564,7 @@ export default function TransfersCheckoutView() {
         </aside>
       </div>
 
-      <style jsx>{`
+      <style jsx global>{`
         .xfer-co-body {
           padding: 40px 16px 72px;
           display: grid;
@@ -774,7 +778,14 @@ function TransferCard({
               <Users size={12} /> {item.passengers} passenger
               {item.passengers !== 1 ? 's' : ''}
             </span>
-            <span style={{ color: 'var(--text-primary)', fontWeight: 600 }}>
+            <span
+              style={{
+                color: 'var(--text-primary)',
+                fontWeight: 700,
+                fontFamily: 'var(--font-open-sans)',
+                fontFeatureSettings: '"tnum" 1',
+              }}
+            >
               ${item.priceUsd.toFixed(2)}
             </span>
           </p>
@@ -1142,12 +1153,13 @@ function ConfirmedInline({
         </p>
         <p
           style={{
-            fontFamily: 'var(--font-syne)',
+            fontFamily: 'var(--font-open-sans)',
             fontWeight: 800,
             fontSize: 24,
             color: 'var(--text-primary)',
             marginBottom: 28,
-            letterSpacing: '-0.01em',
+            letterSpacing: '-0.005em',
+            fontFeatureSettings: '"tnum" 1',
           }}
         >
           ${total.toFixed(2)} paid · {items.length} transfer

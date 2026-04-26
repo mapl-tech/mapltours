@@ -367,11 +367,12 @@ function Success({ data }: { data: ConfirmData }) {
               </span>
               <span
                 style={{
-                  fontFamily: 'var(--font-syne)',
+                  fontFamily: 'var(--font-open-sans)',
                   fontWeight: 800,
                   fontSize: 22,
-                  letterSpacing: '-0.01em',
+                  letterSpacing: '-0.005em',
                   color: 'var(--text-primary)',
+                  fontFeatureSettings: '"tnum" 1',
                 }}
               >
                 {data.currency === 'USD' ? '$' : data.currency + ' '}
