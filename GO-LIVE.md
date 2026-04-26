@@ -51,15 +51,25 @@ stripe listen --forward-to localhost:3000/api/webhooks/stripe
 
 ---
 
-## 3. Supabase migration
+## 3. Supabase migrations
 
-Apply [supabase/migrations/005_bookings_payment_flow.sql](supabase/migrations/005_bookings_payment_flow.sql) to the production database:
+Apply **all three** in order to the production database. The checkout APIs query a schema-health view and will short-circuit with a 503 if any of these aren't present.
 
-- Adds `status`, `cart_hash`, `confirmation_email_sent_at`, `operator_email_sent_at`, `paid_at`, `failed_at`, etc.
-- Makes `user_id` nullable so guest checkouts persist.
-- Creates a unique index on `stripe_payment_id` — the webhook's idempotency guarantee.
+| Migration | What it adds | Required by |
+|---|---|---|
+| [005_bookings_payment_flow.sql](supabase/migrations/005_bookings_payment_flow.sql) | `status`, `cart_hash`, `paid_at`, `failed_at`, `confirmation_email_sent_at`, `operator_email_sent_at`, etc. Makes `user_id` nullable. Unique index on `stripe_payment_id`. | Tour checkout |
+| [006_airport_transfers.sql](supabase/migrations/006_airport_transfers.sql) | `bookings.booking_type`. `booking_items.item_type` plus transfer-specific columns (airport, hotel, zone, trip_type, arrival/departure flight + datetime, passengers). | Transfer checkout |
+| [007_bookings_atomic_idempotency.sql](supabase/migrations/007_bookings_atomic_idempotency.sql) | Cleans up stale duplicate pendings, replaces the non-unique `cart_hash` index with a **unique partial index** on `(cart_hash, booking_type) WHERE status = 'pending'`. Adds the `bookings_schema_health` view used as the runtime guard. | Concurrent checkout safety + schema guard |
 
-Run in the Supabase SQL editor or via `supabase db push`. Safe to re-run (uses `IF NOT EXISTS`).
+Run in the Supabase SQL editor (or via `supabase db push`). All three are idempotent — re-running is safe.
+
+**Verify:** after running them, paste this query into the SQL editor and confirm all four columns return `true`:
+
+```sql
+select * from public.bookings_schema_health;
+```
+
+If any column is `false`, that migration didn't apply cleanly; re-run that file specifically.
 
 ---
 

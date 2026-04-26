@@ -118,63 +118,137 @@ export async function POST(req: Request) {
   return NextResponse.json({ received: true })
 }
 
-async function loadBooking(paymentIntentId: string) {
+/**
+ * Load booking + line items for a PaymentIntent.
+ *
+ * Adversarial-review fix: the previous implementation swallowed Supabase
+ * lookup errors and returned `booking: null`, which the success handler
+ * treated identically to an unknown booking. That meant a transient DB
+ * outage during webhook processing caused us to acknowledge a paid charge
+ * without flipping the booking row — fulfillment dropped on the floor.
+ *
+ * Now: lookup errors throw (so the top-level handler returns 500 and
+ * Stripe retries), and we use `pi.metadata.booking_id` as a recovery path
+ * if the `stripe_payment_id` column was never written (e.g., the PI
+ * attach update failed mid-flight in the checkout API).
+ */
+async function loadBooking(pi: Stripe.PaymentIntent) {
   const supabase = createServiceClient()
-  const { data: booking, error } = await supabase
+
+  // Primary lookup — by stripe_payment_id.
+  const { data: byPi, error: byPiErr } = await supabase
     .from('bookings')
     .select('*')
-    .eq('stripe_payment_id', paymentIntentId)
+    .eq('stripe_payment_id', pi.id)
     .maybeSingle()
 
-  if (error) {
-    console.error('[stripe-webhook] booking lookup failed', error)
-    return { supabase, booking: null as BookingRow | null, items: [] as BookingItemRow[] }
+  if (byPiErr) {
+    // Schema/database failure — fail closed so Stripe retries.
+    console.error('[stripe-webhook] booking lookup by stripe_payment_id failed', byPiErr)
+    throw new Error(`booking lookup failed: ${byPiErr.message}`)
   }
 
-  if (!booking) return { supabase, booking: null as BookingRow | null, items: [] as BookingItemRow[] }
+  let booking = byPi as BookingRow | null
 
-  const { data: items } = await supabase
+  // Fallback: pi.metadata.booking_id. Covers the orphan case where checkout
+  // created the PI but the attach update never persisted.
+  if (!booking) {
+    const metaId =
+      typeof pi.metadata?.booking_id === 'string' && pi.metadata.booking_id.length > 0
+        ? pi.metadata.booking_id
+        : null
+    if (metaId) {
+      const { data: byMeta, error: byMetaErr } = await supabase
+        .from('bookings')
+        .select('*')
+        .eq('id', metaId)
+        .maybeSingle()
+      if (byMetaErr) {
+        console.error('[stripe-webhook] booking lookup by metadata.booking_id failed', byMetaErr)
+        throw new Error(`booking metadata lookup failed: ${byMetaErr.message}`)
+      }
+      if (byMeta) {
+        booking = byMeta as BookingRow
+        // Heal the orphan: stamp the PI id onto the row so future webhook
+        // deliveries take the fast path.
+        if (!booking.stripe_payment_id) {
+          await supabase
+            .from('bookings')
+            .update({ stripe_payment_id: pi.id })
+            .eq('id', booking.id)
+          booking.stripe_payment_id = pi.id
+        }
+      }
+    }
+  }
+
+  if (!booking) {
+    return { supabase, booking: null, items: [] as BookingItemRow[] }
+  }
+
+  const { data: items, error: itemsErr } = await supabase
     .from('booking_items')
     .select(
       'experience_id, title, destination, travelers, date, price_per_person, item_type, airport, hotel, zone, trip_type, arrival_flight, arrival_at, departure_flight, departure_at, passengers',
     )
     .eq('booking_id', booking.id)
 
-  return { supabase, booking: booking as BookingRow, items: (items ?? []) as BookingItemRow[] }
+  if (itemsErr) {
+    console.error('[stripe-webhook] booking_items lookup failed', itemsErr)
+    throw new Error(`booking items lookup failed: ${itemsErr.message}`)
+  }
+
+  return { supabase, booking, items: (items ?? []) as BookingItemRow[] }
 }
 
 async function handlePaymentSucceeded(pi: Stripe.PaymentIntent) {
-  const { supabase, booking, items } = await loadBooking(pi.id)
+  const { supabase, booking, items } = await loadBooking(pi)
   if (!booking) {
+    // Truly unknown — neither stripe_payment_id nor metadata.booking_id
+    // resolved to a row. Acknowledge so Stripe stops retrying; this is
+    // either a webhook for a different system or a permanently lost
+    // booking that needs manual reconciliation in the dashboard.
     console.warn('[stripe-webhook] succeeded for unknown booking', pi.id, pi.metadata)
     return
   }
 
-  // Idempotency — retries are harmless.
-  if (booking.status === 'paid') {
-    return
+  // Mark paid only if we haven't already. We DO NOT short-circuit when
+  // status is already 'paid' — instead we fall through to the email step
+  // which has its own per-channel idempotency. That way a transient
+  // Resend outage during the first delivery is healed by Stripe's retry.
+  if (booking.status !== 'paid') {
+    const { error } = await supabase
+      .from('bookings')
+      .update({ status: 'paid', paid_at: new Date().toISOString() })
+      .eq('id', booking.id)
+    if (error) {
+      console.error('[stripe-webhook] failed to mark booking paid', error)
+      throw new Error(error.message) // → Stripe retries
+    }
+    booking.status = 'paid'
   }
 
-  const { error } = await supabase
-    .from('bookings')
-    .update({ status: 'paid', paid_at: new Date().toISOString() })
-    .eq('id', booking.id)
+  // Emails — gated on per-channel sent-at columns, NOT on booking status.
+  // If a previous delivery sent the traveler email but Resend bounced the
+  // operator email, the next webhook retry will try only the operator side.
+  const traveler = await maybeSendTravelerConfirmation(supabase, booking, items)
+  const operator = await maybeSendOperatorAlert(supabase, booking, items)
 
-  if (error) {
-    console.error('[stripe-webhook] failed to mark booking paid', error)
-    throw new Error(error.message)
+  // Surface a non-fatal warning if any channel failed. We acknowledge the
+  // webhook so Stripe doesn't retry forever, but the operator inbox keeps
+  // a paper trail. The next succeeded delivery (if Stripe schedules one)
+  // will retry whatever still has a NULL sent-at.
+  if (!traveler.ok || !operator.ok) {
+    console.warn('[stripe-webhook] partial email delivery', {
+      booking_id: booking.id,
+      traveler: traveler.ok ? 'sent' : traveler.reason,
+      operator: operator.ok ? 'sent' : operator.reason,
+    })
   }
-
-  // Emails are best-effort — we do not fail the webhook if they bounce, but
-  // we do record sent timestamps so retries can be audited.
-  await Promise.allSettled([
-    maybeSendTravelerConfirmation(supabase, { ...booking, status: 'paid' }, items),
-    maybeSendOperatorAlert(supabase, { ...booking, status: 'paid' }, items),
-  ])
 }
 
 async function handlePaymentFailed(pi: Stripe.PaymentIntent) {
-  const { supabase, booking } = await loadBooking(pi.id)
+  const { supabase, booking } = await loadBooking(pi)
   if (!booking || booking.status === 'paid') return
 
   const errMsg =
@@ -184,25 +258,33 @@ async function handlePaymentFailed(pi: Stripe.PaymentIntent) {
 
   await supabase
     .from('bookings')
-    .update({ status: 'failed', failed_at: new Date().toISOString(), special_requests: booking.special_requests ? `${booking.special_requests}\n[failure: ${errMsg}]` : `[failure: ${errMsg}]` })
+    .update({
+      status: 'failed',
+      failed_at: new Date().toISOString(),
+      special_requests: booking.special_requests
+        ? `${booking.special_requests}\n[failure: ${errMsg}]`
+        : `[failure: ${errMsg}]`,
+    })
     .eq('id', booking.id)
 }
 
 async function handlePaymentCanceled(pi: Stripe.PaymentIntent) {
-  const { supabase, booking } = await loadBooking(pi.id)
+  const { supabase, booking } = await loadBooking(pi)
   if (!booking || booking.status === 'paid') return
   await supabase.from('bookings').update({ status: 'canceled' }).eq('id', booking.id)
 }
+
+type EmailResult = { ok: true } | { ok: false; reason: string }
 
 async function maybeSendTravelerConfirmation(
   supabase: ReturnType<typeof createServiceClient>,
   booking: BookingRow,
   items: BookingItemRow[],
-) {
-  if (booking.confirmation_email_sent_at) return
+): Promise<EmailResult> {
+  if (booking.confirmation_email_sent_at) return { ok: true }
   if (!booking.email) {
     console.warn('[stripe-webhook] no email on booking', booking.id)
-    return
+    return { ok: false, reason: 'no_email_on_record' }
   }
 
   const bookingRef = humanizeId(booking.id)
@@ -265,17 +347,19 @@ async function maybeSendTravelerConfirmation(
       .from('bookings')
       .update({ confirmation_email_sent_at: new Date().toISOString() })
       .eq('id', booking.id)
+    return { ok: true }
   }
+  return { ok: false, reason: res.error ?? 'unknown_send_error' }
 }
 
 async function maybeSendOperatorAlert(
   supabase: ReturnType<typeof createServiceClient>,
   booking: BookingRow,
   items: BookingItemRow[],
-) {
-  if (booking.operator_email_sent_at) return
+): Promise<EmailResult> {
+  if (booking.operator_email_sent_at) return { ok: true }
   const opsAddress = process.env.OPERATIONS_EMAIL ?? process.env.EMAIL_SUPPORT
-  if (!opsAddress) return
+  if (!opsAddress) return { ok: false, reason: 'no_ops_email_configured' }
 
   const bookingRef = humanizeId(booking.id)
   const customerName =
@@ -345,7 +429,9 @@ async function maybeSendOperatorAlert(
       .from('bookings')
       .update({ operator_email_sent_at: new Date().toISOString() })
       .eq('id', booking.id)
+    return { ok: true }
   }
+  return { ok: false, reason: res.error ?? 'unknown_send_error' }
 }
 
 // Short, user-friendly booking reference — first 8 of the uuid, upper-cased.
