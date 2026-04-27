@@ -50,7 +50,7 @@ export default function TransfersCheckoutView() {
   const [formErrors, setFormErrors] = useState<Record<string, boolean>>({})
   const [clientSecret, setClientSecret] = useState<string | null>(null)
   const [stripeError, setStripeError] = useState<string | null>(null)
-  const [confirmed, setConfirmed] = useState(false)
+  const [confirmed] = useState(false)
   const [intentKey, setIntentKey] = useState(0)
 
   const validate = (): boolean => {
@@ -343,7 +343,13 @@ export default function TransfersCheckoutView() {
               <StripePaymentPanel
                 clientSecret={clientSecret}
                 returnUrl="/transfers/confirm"
-                onPaymentSuccess={() => setConfirmed(true)}
+                onPaymentSuccess={() => {
+                  // No-op: StripePaymentPanel navigates the browser to
+                  // /transfers/confirm?payment_intent=… for the full
+                  // server-rendered confirmation. setConfirmed remains
+                  // wired for the rare path where navigation cannot
+                  // happen, but isn't called on the happy path.
+                }}
               />
               <button
                 type="button"

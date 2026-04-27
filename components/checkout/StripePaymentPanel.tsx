@@ -81,17 +81,31 @@ function PaymentStep({
     // 3DS and other bank-side auth redirect the user to the caller-supplied
     // confirm page, which reads ?payment_intent=... and renders the success
     // / retry UI for the relevant flow (tours vs transfers).
-    const { error: confirmError } = await stripe.confirmPayment({
+    //
+    // For non-3DS cards, Stripe resolves the promise locally with the
+    // succeeded PaymentIntent attached. We navigate to the same confirm
+    // URL ourselves so the post-payment page is server-rendered from the
+    // booking row (booking ref, breakdown, pickup/dropoff, etc.) instead
+    // of just the client-side cart state.
+    const result = await stripe.confirmPayment({
       elements,
       confirmParams: { return_url: window.location.origin + returnUrl },
       redirect: 'if_required',
     })
 
-    if (confirmError) {
-      setError(confirmError.message || 'Payment failed')
+    if (result.error) {
+      setError(result.error.message || 'Payment failed')
       setProcessing(false)
-    } else {
-      await onPaymentSuccess()
+      return
+    }
+
+    await onPaymentSuccess()
+    const piId = result.paymentIntent?.id
+    if (piId) {
+      const url = new URL(returnUrl, window.location.origin)
+      url.searchParams.set('payment_intent', piId)
+      url.searchParams.set('redirect_status', result.paymentIntent?.status ?? 'succeeded')
+      window.location.assign(url.toString())
     }
   }
 

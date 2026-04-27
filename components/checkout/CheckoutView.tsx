@@ -834,7 +834,7 @@ function ConfirmedView() {
    ═══════════════════════════════════ */
 export default function CheckoutView() {
   const [step, setStep] = useState(1)
-  const [confirmed, setConfirmed] = useState(false)
+  const [confirmed] = useState(false)
   const [clientSecret, setClientSecret] = useState<string | null>(null)
   const [waiverAccepted, setWaiverAccepted] = useState(false)
   const [waiverError, setWaiverError] = useState(false)
@@ -983,7 +983,13 @@ export default function CheckoutView() {
                   if (activeReward) {
                     await consumeReward(activeReward.id).catch(() => {})
                   }
-                  setConfirmed(true)
+                  // No setConfirmed(true) — StripePaymentPanel navigates the
+                  // browser to /checkout/confirm?payment_intent=… which is
+                  // the comprehensive server-rendered confirmation view.
+                  // setConfirmed used to render an inline view from cart
+                  // state alone (no booking ref, no breakdown, no pickup);
+                  // we keep the state available for the rare fallback path
+                  // where navigation cannot happen.
                 }}
               />
             ) : stripeError ? (
