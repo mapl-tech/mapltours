@@ -498,7 +498,7 @@ export default function TransfersCheckoutView() {
             >
               {[
                 { label: 'Subtotal', value: subtotal() },
-                { label: 'Service fee (5%)', value: fee() },
+                { label: 'Service fee (10%)', value: fee() },
               ].map((row) => (
                 <div
                   key={row.label}

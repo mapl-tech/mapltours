@@ -1,11 +1,20 @@
-import { Heading, Text, Link, Hr } from '@react-email/components'
+import { Heading, Text, Link, Section, Row, Column } from '@react-email/components'
 import { MaplLayout, maplStyles as s, siteUrl } from './_Layout'
 
 export interface TransferConfirmedProps {
   bookingRef: string
   firstName: string | null
+  lastName?: string | null
+  email?: string | null
+  customerPhone: string | null
+  country?: string | null
+  /** Per-leg breakdown — server fills these when we have them. */
+  subtotal?: number | null
+  bookingFee?: number | null
   totalPaid: number
   currency: string
+  paidAt?: string | null
+  specialRequests?: string | null
   transfers: Array<{
     destination: string
     zone: string
@@ -17,10 +26,16 @@ export interface TransferConfirmedProps {
     departureFlight: string | null
     departureAt: string | null
   }>
-  customerPhone: string | null
 }
 
-function formatDateTime(iso: string | null): string | null {
+function fmtMoney(n: number | null | undefined, currency: string): string {
+  if (n == null || !Number.isFinite(n)) return '—'
+  const sign = n < 0 ? '-' : ''
+  const abs = Math.abs(n).toFixed(2)
+  return `${sign}${currency === 'USD' ? '$' : `${currency} `}${abs}`
+}
+
+function fmtDateTime(iso: string | null | undefined): string | null {
   if (!iso) return null
   try {
     const d = new Date(iso)
@@ -33,191 +48,221 @@ function formatDateTime(iso: string | null): string | null {
       minute: '2-digit',
     })
   } catch {
-    return iso
+    return null
   }
 }
 
-function formatMoney(n: number, currency: string): string {
-  return `${currency === 'USD' ? '$' : `${currency} `}${n.toFixed(2)}`
-}
-
-/**
- * Traveler-facing confirmation for airport transfers. Each transfer is
- * rendered as an arrival / departure block so the driver and the customer
- * share the same reference document.
- */
-export default function TransferConfirmed({
-  bookingRef,
-  firstName,
-  totalPaid,
-  currency,
-  transfers,
-  customerPhone,
-}: TransferConfirmedProps) {
+export default function TransferConfirmed(props: TransferConfirmedProps) {
+  const {
+    bookingRef,
+    firstName,
+    email,
+    customerPhone,
+    country,
+    subtotal,
+    bookingFee,
+    totalPaid,
+    currency,
+    paidAt,
+    specialRequests,
+    transfers,
+  } = props
   const name = firstName?.trim() || 'there'
+  const showBreakdown = subtotal != null || bookingFee != null
+  const paidAtPretty = fmtDateTime(paidAt)
+  const customerLines = [
+    [firstName, props.lastName].filter(Boolean).join(' ').trim() || null,
+    email ?? null,
+    customerPhone ?? null,
+    country ?? null,
+  ].filter(Boolean) as string[]
 
   return (
-    <MaplLayout
-      preheader={`Transfer confirmed — ${bookingRef} · your Jamaica airport ride details`}
-    >
-      <Text style={{ ...s.kicker, color: '#00A550' }}>Transfer confirmed</Text>
-      <Heading style={s.heading}>{name}, your ride is booked.</Heading>
-      <Text style={s.body}>
-        Your private transfer{transfers.length > 1 ? 's' : ''} {transfers.length > 1 ? 'are' : 'is'}{' '}
-        confirmed. Booking reference{' '}
-        <strong style={{ color: '#fff' }}>{bookingRef}</strong>. Keep this email
-        handy — your driver will look for it.
+    <MaplLayout preheader={`Transfer confirmed · ${bookingRef} · Jamaica airport ride details`}>
+      <Heading as="h1" style={s.hero} className="mapl-h1">
+        Thank you, {name}.
+      </Heading>
+      <Text style={s.heroLead}>
+        Your transfer{transfers.length > 1 ? 's are' : ' is'} confirmed. Your
+        driver will be holding a MAPL Tours sign with your name in the arrivals
+        area. Booking reference{' '}
+        <strong style={{ color: '#1a1a1a' }}>{bookingRef}</strong>.
       </Text>
 
-      {transfers.map((t, i) => (
-        <div key={i} style={{ ...s.panel, marginTop: i === 0 ? 24 : 16 }}>
-          <Text style={s.panelKicker}>
-            Transfer · Zone {t.zone} · {t.tripType === 'round_trip' ? 'Round-trip' : 'One-way'}
-          </Text>
+      <Section style={{ margin: '20px 0 0' }}>
+        <span style={s.refPill}>{bookingRef}</span>
+      </Section>
+      <Section style={s.ctaWrap}>
+        <Link href={`${siteUrl()}/explore`} style={s.cta}>
+          Add tours to your trip
+        </Link>
+      </Section>
 
-          <Text
+      {/* Itinerary card — per-leg flight info */}
+      <Section style={s.card}>
+        <Section style={s.cardHeader}>
+          <Text style={s.cardHeaderText}>
+            Itinerary · {transfers.length} transfer{transfers.length !== 1 ? 's' : ''}
+          </Text>
+        </Section>
+        {transfers.map((t, i) => (
+          <Section
+            key={i}
             style={{
-              margin: '8px 0 14px',
-              fontSize: 16,
-              fontWeight: 700,
-              color: '#fff',
-              fontFamily: 'Helvetica Neue, Arial, sans-serif',
+              padding: '16px 18px',
+              borderTop: i === 0 ? 'none' : '1px solid #f0f0f0',
             }}
           >
-            {t.destination}
-          </Text>
+            <Row>
+              <Column style={{ verticalAlign: 'top', paddingRight: 12 }} className="mapl-stack-col">
+                <Text style={{ ...s.body, fontWeight: 600, marginBottom: 4 }}>
+                  {t.destination}
+                </Text>
+                <Text style={s.bodyMuted}>
+                  Zone {t.zone} ·{' '}
+                  {t.tripType === 'round_trip' ? 'Round-trip' : 'One-way'} ·{' '}
+                  {t.passengers} pax
+                </Text>
+              </Column>
+              <Column style={{ verticalAlign: 'top', textAlign: 'right', whiteSpace: 'nowrap' }} className="mapl-stack-col">
+                <Text style={{ ...s.rowValue, fontWeight: 600 }}>
+                  {fmtMoney(t.priceUsd, currency)}
+                </Text>
+              </Column>
+            </Row>
 
-          {/* Arrival leg */}
-          {t.arrivalAt && (
-            <div style={{ marginBottom: t.tripType === 'round_trip' && t.departureAt ? 14 : 0 }}>
-              <Text
-                style={{
-                  margin: 0,
-                  fontSize: 11,
-                  fontWeight: 700,
-                  letterSpacing: '0.18em',
-                  textTransform: 'uppercase',
-                  color: 'rgba(255,255,255,0.45)',
-                  fontFamily: 'Helvetica Neue, Arial, sans-serif',
-                }}
-              >
-                Arrival · MBJ → hotel
-              </Text>
-              <Text
-                style={{
-                  margin: '4px 0 0',
-                  fontSize: 13.5,
-                  color: 'rgba(255,255,255,0.85)',
-                  fontFamily: 'Helvetica Neue, Arial, sans-serif',
-                }}
-              >
-                {formatDateTime(t.arrivalAt)}
-                {t.arrivalFlight ? ` · flight ${t.arrivalFlight}` : ''}
-              </Text>
-            </div>
-          )}
+            {t.arrivalAt && (
+              <Section style={{ marginTop: 12, paddingLeft: 12, borderLeft: '2px solid #e7e7e7' }}>
+                <Text style={s.sectionLabel}>Arrival · MBJ → hotel</Text>
+                <Text style={{ ...s.body, marginTop: 2 }}>
+                  {fmtDateTime(t.arrivalAt)}
+                  {t.arrivalFlight ? ` · flight ${t.arrivalFlight}` : ''}
+                </Text>
+              </Section>
+            )}
 
-          {/* Departure leg */}
-          {t.tripType === 'round_trip' && t.departureAt && (
-            <div>
-              <Text
-                style={{
-                  margin: 0,
-                  fontSize: 11,
-                  fontWeight: 700,
-                  letterSpacing: '0.18em',
-                  textTransform: 'uppercase',
-                  color: 'rgba(255,255,255,0.45)',
-                  fontFamily: 'Helvetica Neue, Arial, sans-serif',
-                }}
-              >
-                Departure · hotel → MBJ
-              </Text>
-              <Text
-                style={{
-                  margin: '4px 0 0',
-                  fontSize: 13.5,
-                  color: 'rgba(255,255,255,0.85)',
-                  fontFamily: 'Helvetica Neue, Arial, sans-serif',
-                }}
-              >
-                {formatDateTime(t.departureAt)}
-                {t.departureFlight ? ` · flight ${t.departureFlight}` : ''}
-              </Text>
-            </div>
-          )}
+            {t.tripType === 'round_trip' && t.departureAt && (
+              <Section style={{ marginTop: 8, paddingLeft: 12, borderLeft: '2px solid #e7e7e7' }}>
+                <Text style={s.sectionLabel}>Departure · hotel → MBJ</Text>
+                <Text style={{ ...s.body, marginTop: 2 }}>
+                  {fmtDateTime(t.departureAt)}
+                  {t.departureFlight ? ` · flight ${t.departureFlight}` : ''}
+                </Text>
+              </Section>
+            )}
+          </Section>
+        ))}
+      </Section>
 
-          <Text
-            style={{
-              margin: '14px 0 0',
-              fontSize: 12.5,
-              color: 'rgba(255,255,255,0.55)',
-              fontFamily: 'Helvetica Neue, Arial, sans-serif',
-            }}
-          >
-            {t.passengers} passenger{t.passengers !== 1 ? 's' : ''} ·{' '}
-            <span style={{ color: '#FFB300', fontWeight: 600 }}>
-              {formatMoney(t.priceUsd, currency)}
-            </span>
-          </Text>
-        </div>
-      ))}
-
-      <Hr style={{ borderColor: 'rgba(255,255,255,0.08)', margin: '22px 0' }} />
-      <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0 4px' }}>
-        <Text
-          style={{
-            margin: 0,
-            fontSize: 14,
-            color: 'rgba(255,255,255,0.7)',
-            fontFamily: 'Helvetica Neue, Arial, sans-serif',
-          }}
-        >
-          Total paid
-        </Text>
-        <Text
-          style={{
-            margin: 0,
-            fontFamily: 'Georgia, \'Times New Roman\', serif',
-            fontWeight: 800,
-            fontSize: 20,
-            color: '#FFB300',
-          }}
-        >
-          {formatMoney(totalPaid, currency)}
-        </Text>
-      </div>
-
-      {/* On-the-day instructions */}
-      <div style={s.panel}>
-        <Text style={s.panelKicker}>On arrival at MBJ</Text>
-        <Text style={s.panelBody}>
-          · Clear immigration and collect your bags.
-          <br />· Exit the terminal at arrivals — your driver will be at the
-          MAPL Tours sign with your name.
-          <br />· If you can&rsquo;t see your driver, call{' '}
-          <strong style={{ color: '#fff' }}>+1 (876) 000-0000</strong> (24/7
-          dispatch).
-          {customerPhone && (
+      {/* Order summary */}
+      <Section style={s.card}>
+        <Section style={s.cardHeader}>
+          <Text style={s.cardHeaderText}>Payment summary</Text>
+        </Section>
+        <Section style={s.cardBody}>
+          {showBreakdown && (
             <>
-              <br />· We have your number{' '}
-              <strong style={{ color: '#fff' }}>{customerPhone}</strong> on file
-              for WhatsApp updates.
+              {subtotal != null && (
+                <BreakdownLine label="Subtotal" value={fmtMoney(subtotal, currency)} />
+              )}
+              {bookingFee != null && (
+                <BreakdownLine label="Service fee" value={fmtMoney(bookingFee, currency)} />
+              )}
             </>
           )}
-        </Text>
-      </div>
+          <div style={s.totalRow}>
+            <Text style={s.totalLabel}>
+              Total paid
+              {paidAtPretty && (
+                <span
+                  style={{
+                    display: 'block',
+                    marginTop: 2,
+                    fontFamily: 'inherit',
+                    fontSize: 11.5,
+                    fontWeight: 400,
+                    color: '#9a9a9a',
+                    letterSpacing: 0,
+                  }}
+                >
+                  {paidAtPretty}
+                </span>
+              )}
+            </Text>
+            <Text style={s.totalValue}>{fmtMoney(totalPaid, currency)}</Text>
+          </div>
+        </Section>
+      </Section>
 
-      <div style={s.ctaWrap}>
-        <Link href={`${siteUrl()}/explore`} style={s.cta}>
-          Add tours to your trip →
-        </Link>
-      </div>
+      {/* Customer */}
+      {customerLines.length > 0 && (
+        <Section style={s.card}>
+          <Section style={s.cardHeader}>
+            <Text style={s.cardHeaderText}>Your details</Text>
+          </Section>
+          <Section style={s.cardBody}>
+            {customerLines.map((line, i) => (
+              <Text key={i} style={s.body}>
+                {line}
+              </Text>
+            ))}
+          </Section>
+        </Section>
+      )}
 
-      <Text style={s.footnote}>
-        Free cancellation up to 24 hours before arrival — just reply to this
-        email. Safe travels.
-      </Text>
+      {/* Special requests */}
+      {specialRequests && (
+        <Section style={s.card}>
+          <Section style={s.highlightCardHeader}>
+            <Text style={s.highlightCardHeaderText}>Special requests</Text>
+          </Section>
+          <Section style={s.cardBody}>
+            <Text style={{ ...s.body, whiteSpace: 'pre-wrap' }}>
+              {specialRequests}
+            </Text>
+          </Section>
+        </Section>
+      )}
+
+      {/* On arrival */}
+      <Section style={s.card}>
+        <Section style={s.cardHeader}>
+          <Text style={s.cardHeaderText}>On arrival at MBJ</Text>
+        </Section>
+        <Section style={s.cardBody}>
+          <Text style={s.body}>· Clear immigration and collect your bags.</Text>
+          <Text style={{ ...s.body, marginTop: 6 }}>
+            · Exit the terminal at arrivals — your driver will be at the MAPL
+            Tours sign with your name.
+          </Text>
+          <Text style={{ ...s.body, marginTop: 6 }}>
+            · 24/7 dispatch:{' '}
+            <Link href="mailto:dispatch@mapltours.com" style={{ color: '#1a1a1a', textDecoration: 'underline' }}>
+              dispatch@mapltours.com
+            </Link>
+          </Text>
+          <Text style={s.note}>
+            Free cancellation up to 24 hours before pickup — just reply to this
+            email. Safe travels.
+          </Text>
+        </Section>
+      </Section>
     </MaplLayout>
+  )
+}
+
+function BreakdownLine({ label, value }: { label: string; value: string }) {
+  return (
+    <div
+      style={{
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'baseline',
+        margin: '0 0 8px',
+      }}
+    >
+      <Text style={s.rowLabel}>{label}</Text>
+      <Text style={s.rowValue}>{value}</Text>
+    </div>
   )
 }

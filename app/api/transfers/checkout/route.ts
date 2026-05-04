@@ -11,7 +11,7 @@ import { assertCheckoutSchema, SchemaNotReadyError } from '@/lib/checkout-schema
 
 /**
  * Transfers checkout — sibling of /api/checkout, with the same hardening:
- *   • Server-side pricing (rates from lib/airport-transfers + 5% fee)
+ *   • Server-side pricing (rates from lib/airport-transfers + 10% fee)
  *   • Atomic idempotency via the unique partial index on bookings
  *   • Verified PI attach
  *   • Schema guard
@@ -114,8 +114,8 @@ export async function POST(request: NextRequest) {
       subtotal += price
     }
 
-    // Transfers fee mirrors lib/transfers-cart.ts (5% flat).
-    const fee = Math.round(subtotal * 0.05)
+    // Transfers fee mirrors lib/transfers-cart.ts (10% flat).
+    const fee = Math.round(subtotal * 0.10)
     const total = subtotal + fee
     const amountInCents = Math.round(total * 100)
     if (amountInCents < 50) {

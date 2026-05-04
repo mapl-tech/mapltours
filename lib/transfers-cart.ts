@@ -87,9 +87,10 @@ export const useTransfersCart = create<TransfersCartStore>()(
 
       subtotal: () => get().items.reduce((sum, i) => sum + i.priceUsd, 0),
 
-      // Transfers already include a driver rate, so the platform service fee
-      // is leaner than tours — 5% flat. Keeps flat-rate transparency intact.
-      fee: () => Math.round(get().subtotal() * 0.05),
+      // Platform service fee on transfers — 10% flat. Covers concierge
+      // booking, 24/7 dispatch, meet-and-greet, and flight tracking on top
+      // of the driver rate baked into the zone fares.
+      fee: () => Math.round(get().subtotal() * 0.10),
 
       grandTotal: () => get().subtotal() + get().fee(),
     }),

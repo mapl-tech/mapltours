@@ -1,0 +1,1237 @@
+[
+  {
+    "route": "/",
+    "severity": "console-error",
+    "msg": "Access to fetch at 'https://ipapi.co/json/' from origin 'https://mapltours.com' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource."
+  },
+  {
+    "route": "/",
+    "severity": "request-failed",
+    "msg": "GET https://ipapi.co/json/ :: net::ERR_FAILED"
+  },
+  {
+    "route": "/",
+    "severity": "console-error",
+    "msg": "Failed to load resource: net::ERR_FAILED"
+  },
+  {
+    "route": "/",
+    "severity": "console-error",
+    "msg": "Access to fetch at 'https://ipapi.co/json/' from origin 'https://mapltours.com' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource."
+  },
+  {
+    "route": "/",
+    "severity": "request-failed",
+    "msg": "GET https://ipapi.co/json/ :: net::ERR_FAILED"
+  },
+  {
+    "route": "/",
+    "severity": "console-error",
+    "msg": "Failed to load resource: net::ERR_FAILED"
+  },
+  {
+    "route": "/",
+    "severity": "console-error",
+    "msg": "Access to fetch at 'https://ipapi.co/json/' from origin 'https://mapltours.com' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource."
+  },
+  {
+    "route": "/",
+    "severity": "request-failed",
+    "msg": "GET https://ipapi.co/json/ :: net::ERR_FAILED"
+  },
+  {
+    "route": "/",
+    "severity": "console-error",
+    "msg": "Failed to load resource: net::ERR_FAILED"
+  },
+  {
+    "route": "/",
+    "severity": "console-warn",
+    "msg": "Hotjar not launching due to suspicious userAgent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/147.0.7727.15 Safari/537.36"
+  },
+  {
+    "route": "/",
+    "severity": "request-failed",
+    "msg": "GET https://mapltours.com/hero-video.mp4 :: net::ERR_ABORTED"
+  },
+  {
+    "route": "/",
+    "severity": "request-failed",
+    "msg": "POST https://www.google-analytics.com/g/collect?v=2&tid=G-2JVWPL4GBE&gtm=45je64t1v9249186408za200zd9249186408&_p=1777897483433&gcd=13l3l3l3l1l1&npa=0&dma=0&_eu=AAAAAAAC&are=1&cid=1374919154.1777897486&frm=0&pscdl=noapi&rcb=3&sr=1440x900&uaa=arm&uab=64&uafvl=HeadlessChrome%3B147.0.7727.15%7CNot.A%252FBrand%3B8.0.0.0%7CChromium%3B147.0.7727.15&uam=&uamb=0&uap=macOS&uapv=15.4.1&uaw=0&ul=en-us&_s=1&tag_exp=0~115938466~115938468~118289195&sid=1777897485&sct=1&seg=0&dl=https%3A%2F%2Fmapltours.com%2F&dt=MAPL%20Tours%20Jamaica%20%7C%20Best%20Tours%20%26%20Cultural%20Experiences%20in%20Jamaica&en=page_view&_fv=1&_nsi=1&_ss=1&_ee=1&tfd=6054 :: net::ERR_ABORTED"
+  },
+  {
+    "route": "/",
+    "severity": "console-warn",
+    "msg": "The resource https://images.pexels.com/photos/14788935/pexels-photo-14788935.jpeg?auto=compress&cs=tinysrgb&w=1920&h=1080&fit=crop was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally."
+  },
+  {
+    "route": "/",
+    "severity": "request-failed",
+    "msg": "GET https://mapltours.com/hero-video.mp4 :: net::ERR_ABORTED"
+  },
+  {
+    "route": "/",
+    "severity": "request-failed",
+    "msg": "GET https://mapltours.com/hero-video.mp4 :: net::ERR_ABORTED"
+  },
+  {
+    "route": "/",
+    "severity": "request-failed",
+    "msg": "GET https://mapltours.com/hero-video.mp4 :: net::ERR_ABORTED"
+  },
+  {
+    "route": "/",
+    "severity": "request-failed",
+    "msg": "GET https://mapltours.com/hero-video.mp4 :: net::ERR_ABORTED"
+  },
+  {
+    "route": "/",
+    "severity": "request-failed",
+    "msg": "GET https://mapltours.com/hero-video.mp4 :: net::ERR_ABORTED"
+  },
+  {
+    "route": "/",
+    "severity": "request-failed",
+    "msg": "GET https://mapltours.com/hero-video.mp4 :: net::ERR_ABORTED"
+  },
+  {
+    "route": "/",
+    "severity": "request-failed",
+    "msg": "GET https://mapltours.com/hero-video.mp4 :: net::ERR_ABORTED"
+  },
+  {
+    "route": "/",
+    "severity": "request-failed",
+    "msg": "GET https://mapltours.com/hero-video.mp4 :: net::ERR_ABORTED"
+  },
+  {
+    "route": "/",
+    "severity": "request-failed",
+    "msg": "GET https://mapltours.com/hero-video.mp4 :: net::ERR_ABORTED"
+  },
+  {
+    "route": "/",
+    "severity": "console-warn",
+    "msg": "The resource https://images.pexels.com/photos/14788935/pexels-photo-14788935.jpeg?auto=compress&cs=tinysrgb&w=1920&h=1080&fit=crop was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally."
+  },
+  {
+    "route": "/",
+    "severity": "request-failed",
+    "msg": "GET https://mapltours.com/hero-video.mp4 :: net::ERR_ABORTED"
+  },
+  {
+    "route": "/",
+    "severity": "dead-link",
+    "msg": "<a href=\"#\" style=\"display:block;font-size:14px;color:var(--text-on-dark-2);font-family:var(--font-dm-sans);margin-bottom:12px;cursor:pointer;transition:color 0"
+  },
+  {
+    "route": "/",
+    "severity": "dead-link",
+    "msg": "<a href=\"#\" style=\"display:block;font-size:14px;color:var(--text-on-dark-2);font-family:var(--font-dm-sans);margin-bottom:12px;cursor:pointer;transition:color 0"
+  },
+  {
+    "route": "/",
+    "severity": "dead-link",
+    "msg": "<a href=\"#\" style=\"display:block;font-size:14px;color:var(--text-on-dark-2);font-family:var(--font-dm-sans);margin-bottom:12px;cursor:pointer;transition:color 0"
+  },
+  {
+    "route": "/",
+    "severity": "dead-link",
+    "msg": "<a href=\"#\" style=\"display:block;font-size:14px;color:var(--text-on-dark-2);font-family:var(--font-dm-sans);margin-bottom:12px;cursor:pointer;transition:color 0"
+  },
+  {
+    "route": "/explore",
+    "severity": "request-failed",
+    "msg": "POST https://www.google-analytics.com/g/collect?v=2&tid=G-2JVWPL4GBE&gtm=45je64t1v9249186408za200zd9249186408&_p=1777897483433&gcd=13l3l3l3l1l1&npa=0&dma=0&_eu=AAAAAAQC&are=1&cid=1374919154.1777897486&frm=0&pscdl=noapi&rcb=3&sr=1440x900&uaa=arm&uab=64&uafvl=HeadlessChrome%3B147.0.7727.15%7CNot.A%252FBrand%3B8.0.0.0%7CChromium%3B147.0.7727.15&uam=&uamb=0&uap=macOS&uapv=15.4.1&uaw=0&ul=en-us&_s=2&tag_exp=0~115938466~115938468~118289195&sid=1777897485&sct=1&seg=1&dl=https%3A%2F%2Fmapltours.com%2F&dt=MAPL%20Tours%20Jamaica%20%7C%20Best%20Tours%20%26%20Cultural%20Experiences%20in%20Jamaica&en=user_engagement&_et=18216&tfd=24272 :: net::ERR_ABORTED"
+  },
+  {
+    "route": "/explore",
+    "severity": "console-warn",
+    "msg": "Hotjar not launching due to suspicious userAgent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/147.0.7727.15 Safari/537.36"
+  },
+  {
+    "route": "/explore",
+    "severity": "request-failed",
+    "msg": "GET https://mapltours.com/experience/luminous-lagoon-bioluminescent-night-swim?_rsc=jyl0o :: net::ERR_ABORTED"
+  },
+  {
+    "route": "/explore",
+    "severity": "request-failed",
+    "msg": "POST https://www.google-analytics.com/g/collect?v=2&tid=G-2JVWPL4GBE&gtm=45je64t1v9249186408za200zd9249186408&_p=1777897504212&gcd=13l3l3l3l1l1&npa=0&dma=0&_eu=AAAAAAQC&are=1&cid=1374919154.1777897486&frm=0&pscdl=noapi&rcb=15&sr=1440x900&uaa=arm&uab=64&uafvl=HeadlessChrome%3B147.0.7727.15%7CNot.A%252FBrand%3B8.0.0.0%7CChromium%3B147.0.7727.15&uam=&uamb=0&uap=macOS&uapv=15.4.1&uaw=0&ul=en-us&_s=1&tag_exp=0~115938466~115938469~118289195&sid=1777897485&sct=1&seg=1&dl=https%3A%2F%2Fmapltours.com%2Fexplore&dt=MAPL%20Tours%20Jamaica%20%7C%20Best%20Tours%20%26%20Cultural%20Experiences%20in%20Jamaica&en=page_view&_ee=1&tfd=5322 :: net::ERR_ABORTED"
+  },
+  {
+    "route": "/profile",
+    "severity": "request-failed",
+    "msg": "POST https://www.google-analytics.com/g/collect?v=2&tid=G-2JVWPL4GBE&gtm=45je64t1v9249186408za200zd9249186408&_p=1777897504212&gcd=13l3l3l3l1l1&npa=0&dma=0&_eu=AAAAAAQC&are=1&cid=1374919154.1777897486&frm=0&pscdl=noapi&rcb=15&sr=1440x900&uaa=arm&uab=64&uafvl=HeadlessChrome%3B147.0.7727.15%7CNot.A%252FBrand%3B8.0.0.0%7CChromium%3B147.0.7727.15&uam=&uamb=0&uap=macOS&uapv=15.4.1&uaw=0&ul=en-us&_s=2&tag_exp=0~115938466~115938469~118289195&sid=1777897485&sct=1&seg=1&dl=https%3A%2F%2Fmapltours.com%2Fexplore&dt=MAPL%20Tours%20Jamaica%20%7C%20Best%20Tours%20%26%20Cultural%20Experiences%20in%20Jamaica&en=user_engagement&_et=5352&tfd=5677 :: net::ERR_ABORTED"
+  },
+  {
+    "route": "/profile",
+    "severity": "console-warn",
+    "msg": "Hotjar not launching due to suspicious userAgent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/147.0.7727.15 Safari/537.36"
+  },
+  {
+    "route": "/profile",
+    "severity": "request-failed",
+    "msg": "POST https://www.google-analytics.com/g/collect?v=2&tid=G-2JVWPL4GBE&gtm=45je64t1v9249186408za200zd9249186408&_p=1777897509596&gcd=13l3l3l3l1l1&npa=0&dma=0&_eu=AEAEAAQC&ae=a&are=1&cid=1374919154.1777897486&frm=0&pscdl=noapi&rcb=8&sr=1440x900&uaa=arm&uab=64&uafvl=HeadlessChrome%3B147.0.7727.15%7CNot.A%252FBrand%3B8.0.0.0%7CChromium%3B147.0.7727.15&uam=&uamb=0&uap=macOS&uapv=15.4.1&uaw=0&ul=en-us&_s=1&tag_exp=0~115938466~115938469&sid=1777897485&sct=1&seg=1&dl=https%3A%2F%2Fmapltours.com%2Flogin%3Fredirect%3D%252Fprofile&dt=MAPL%20Tours%20Jamaica%20%7C%20Best%20Tours%20%26%20Cultural%20Experiences%20in%20Jamaica&en=scroll&epn.percent_scrolled=90&tfd=206 :: net::ERR_ABORTED"
+  },
+  {
+    "route": "/checkout",
+    "severity": "request-failed",
+    "msg": "POST https://www.google-analytics.com/g/collect?v=2&tid=G-2JVWPL4GBE&gtm=45je64t1v9249186408za200zd9249186408&_p=1777897509596&gcd=13l3l3l3l1l1&npa=0&dma=0&_eu=AAAAAAQC&are=1&cid=1374919154.1777897486&frm=0&pscdl=noapi&rcb=8&sr=1440x900&uaa=arm&uab=64&uafvl=HeadlessChrome%3B147.0.7727.15%7CNot.A%252FBrand%3B8.0.0.0%7CChromium%3B147.0.7727.15&uam=&uamb=0&uap=macOS&uapv=15.4.1&uaw=0&ul=en-us&tag_exp=0~115938466~115938469&sid=1777897485&sct=1&seg=1&dl=https%3A%2F%2Fmapltours.com%2Flogin%3Fredirect%3D%252Fprofile&dt=MAPL%20Tours%20Jamaica%20%7C%20Best%20Tours%20%26%20Cultural%20Experiences%20in%20Jamaica&_s=2&tfd=2158 :: net::ERR_ABORTED"
+  },
+  {
+    "route": "/checkout",
+    "severity": "console-warn",
+    "msg": "Hotjar not launching due to suspicious userAgent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/147.0.7727.15 Safari/537.36"
+  },
+  {
+    "route": "/checkout",
+    "severity": "request-failed",
+    "msg": "POST https://www.google-analytics.com/g/collect?v=2&tid=G-2JVWPL4GBE&gtm=45je64t1v9249186408za200zd9249186408&_p=1777897511577&gcd=13l3l3l3l1l1&npa=0&dma=0&_eu=AEAEAAQC&ae=a&are=1&cid=1374919154.1777897486&frm=0&pscdl=noapi&rcb=14&sr=1440x900&uaa=arm&uab=64&uafvl=HeadlessChrome%3B147.0.7727.15%7CNot.A%252FBrand%3B8.0.0.0%7CChromium%3B147.0.7727.15&uam=&uamb=0&uap=macOS&uapv=15.4.1&uaw=0&ul=en-us&_s=1&tag_exp=0~115938465~115938468&sid=1777897485&sct=1&seg=1&dl=https%3A%2F%2Fmapltours.com%2Flogin%3Fredirect%3D%252Fcheckout&dt=MAPL%20Tours%20Jamaica%20%7C%20Best%20Tours%20%26%20Cultural%20Experiences%20in%20Jamaica&en=scroll&epn.percent_scrolled=90&tfd=109 :: net::ERR_ABORTED"
+  },
+  {
+    "route": "/transfers",
+    "severity": "request-failed",
+    "msg": "POST https://www.google-analytics.com/g/collect?v=2&tid=G-2JVWPL4GBE&gtm=45je64t1v9249186408za200zd9249186408&_p=1777897511577&gcd=13l3l3l3l1l1&npa=0&dma=0&_eu=AAAAAAQC&are=1&cid=1374919154.1777897486&frm=0&pscdl=noapi&rcb=14&sr=1440x900&uaa=arm&uab=64&uafvl=HeadlessChrome%3B147.0.7727.15%7CNot.A%252FBrand%3B8.0.0.0%7CChromium%3B147.0.7727.15&uam=&uamb=0&uap=macOS&uapv=15.4.1&uaw=0&ul=en-us&tag_exp=0~115938465~115938468&sid=1777897485&sct=1&seg=1&dl=https%3A%2F%2Fmapltours.com%2Flogin%3Fredirect%3D%252Fcheckout&dt=MAPL%20Tours%20Jamaica%20%7C%20Best%20Tours%20%26%20Cultural%20Experiences%20in%20Jamaica&_s=2&tfd=2364 :: net::ERR_ABORTED"
+  },
+  {
+    "route": "/transfers",
+    "severity": "console-warn",
+    "msg": "Hotjar not launching due to suspicious userAgent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/147.0.7727.15 Safari/537.36"
+  },
+  {
+    "route": "/about",
+    "severity": "request-failed",
+    "msg": "POST https://www.google-analytics.com/g/collect?v=2&tid=G-2JVWPL4GBE&gtm=45je64t1v9249186408za200zd9249186408&_p=1777897514770&gcd=13l3l3l3l1l1&npa=0&dma=0&_eu=AAAAAAQC&are=1&cid=1374919154.1777897486&frm=0&pscdl=noapi&rcb=18&sr=1440x900&uaa=arm&uab=64&uafvl=HeadlessChrome%3B147.0.7727.15%7CNot.A%252FBrand%3B8.0.0.0%7CChromium%3B147.0.7727.15&uam=&uamb=0&uap=macOS&uapv=15.4.1&uaw=0&ul=en-us&tag_exp=0~115616985~115938466~115938469~116363097&sid=1777897485&sct=1&seg=1&dl=https%3A%2F%2Fmapltours.com%2Ftransfers&dt=Jamaica%20Airport%20Transfers%20%7C%20Flat-Rate%20Private%20Rides%20from%20Montego%20Bay%20(MBJ)%20%7C%20MAPL%20Tours%20Jamaica&_s=1&tfd=3362 :: net::ERR_ABORTED"
+  },
+  {
+    "route": "/about",
+    "severity": "console-warn",
+    "msg": "Hotjar not launching due to suspicious userAgent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/147.0.7727.15 Safari/537.36"
+  },
+  {
+    "route": "/about",
+    "severity": "dead-link",
+    "msg": "<a href=\"#\" style=\"display:block;font-size:14px;color:var(--text-on-dark-2);font-family:var(--font-dm-sans);margin-bottom:12px;cursor:pointer;transition:color 0"
+  },
+  {
+    "route": "/about",
+    "severity": "dead-link",
+    "msg": "<a href=\"#\" style=\"display:block;font-size:14px;color:var(--text-on-dark-2);font-family:var(--font-dm-sans);margin-bottom:12px;cursor:pointer;transition:color 0"
+  },
+  {
+    "route": "/about",
+    "severity": "dead-link",
+    "msg": "<a href=\"#\" style=\"display:block;font-size:14px;color:var(--text-on-dark-2);font-family:var(--font-dm-sans);margin-bottom:12px;cursor:pointer;transition:color 0"
+  },
+  {
+    "route": "/about",
+    "severity": "dead-link",
+    "msg": "<a href=\"#\" style=\"display:block;font-size:14px;color:var(--text-on-dark-2);font-family:var(--font-dm-sans);margin-bottom:12px;cursor:pointer;transition:color 0"
+  },
+  {
+    "route": "/contact",
+    "severity": "request-failed",
+    "msg": "POST https://www.google-analytics.com/g/collect?v=2&tid=G-2JVWPL4GBE&gtm=45je64t1v9249186408za200zd9249186408&_p=1777897517046&gcd=13l3l3l3l1l1&npa=0&dma=0&_eu=AAAAAAQC&are=1&cid=1374919154.1777897486&frm=0&pscdl=noapi&rcb=13&sr=1440x900&uaa=arm&uab=64&uafvl=HeadlessChrome%3B147.0.7727.15%7CNot.A%252FBrand%3B8.0.0.0%7CChromium%3B147.0.7727.15&uam=&uamb=0&uap=macOS&uapv=15.4.1&uaw=0&ul=en-us&tag_exp=0~115616986~115938465~115938469~116363098&sid=1777897485&sct=1&seg=1&dl=https%3A%2F%2Fmapltours.com%2Fabout&dt=About%20MAPL%20Tours%20%E2%80%94%20Jamaica%2C%20Told%20by%20Its%20People%20%7C%20MAPL%20Tours%20Jamaica&_s=1&tfd=2918 :: net::ERR_ABORTED"
+  },
+  {
+    "route": "/contact",
+    "severity": "console-warn",
+    "msg": "Hotjar not launching due to suspicious userAgent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/147.0.7727.15 Safari/537.36"
+  },
+  {
+    "route": "/help",
+    "severity": "request-failed",
+    "msg": "POST https://www.google-analytics.com/g/collect?v=2&tid=G-2JVWPL4GBE&gtm=45je64t1v9249186408za200zd9249186408&_p=1777897519697&gcd=13l3l3l3l1l1&npa=0&dma=0&_eu=AAAAAAQC&are=1&cid=1374919154.1777897486&frm=0&pscdl=noapi&rcb=10&sr=1440x900&uaa=arm&uab=64&uafvl=HeadlessChrome%3B147.0.7727.15%7CNot.A%252FBrand%3B8.0.0.0%7CChromium%3B147.0.7727.15&uam=&uamb=0&uap=macOS&uapv=15.4.1&uaw=0&ul=en-us&tag_exp=0~115938465~115938468~116363097&sid=1777897485&sct=1&seg=1&dl=https%3A%2F%2Fmapltours.com%2Fcontact&dt=Contact%20Us%20%7C%20MAPL%20Tours%20Jamaica&_s=1&tfd=2797 :: net::ERR_ABORTED"
+  },
+  {
+    "route": "/help",
+    "severity": "console-warn",
+    "msg": "Hotjar not launching due to suspicious userAgent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/147.0.7727.15 Safari/537.36"
+  },
+  {
+    "route": "/help",
+    "severity": "dead-link",
+    "msg": "<a href=\"#\" style=\"display:block;font-size:14px;color:var(--text-on-dark-2);font-family:var(--font-dm-sans);margin-bottom:12px;cursor:pointer;transition:color 0"
+  },
+  {
+    "route": "/help",
+    "severity": "dead-link",
+    "msg": "<a href=\"#\" style=\"display:block;font-size:14px;color:var(--text-on-dark-2);font-family:var(--font-dm-sans);margin-bottom:12px;cursor:pointer;transition:color 0"
+  },
+  {
+    "route": "/help",
+    "severity": "dead-link",
+    "msg": "<a href=\"#\" style=\"display:block;font-size:14px;color:var(--text-on-dark-2);font-family:var(--font-dm-sans);margin-bottom:12px;cursor:pointer;transition:color 0"
+  },
+  {
+    "route": "/help",
+    "severity": "dead-link",
+    "msg": "<a href=\"#\" style=\"display:block;font-size:14px;color:var(--text-on-dark-2);font-family:var(--font-dm-sans);margin-bottom:12px;cursor:pointer;transition:color 0"
+  },
+  {
+    "route": "/safety",
+    "severity": "request-failed",
+    "msg": "POST https://www.google-analytics.com/g/collect?v=2&tid=G-2JVWPL4GBE&gtm=45je64t1v9249186408za200zd9249186408&_p=1777897522369&gcd=13l3l3l3l1l1&npa=0&dma=0&_eu=AAAAAAQC&are=1&cid=1374919154.1777897486&frm=0&pscdl=noapi&rcb=5&sr=1440x900&uaa=arm&uab=64&uafvl=HeadlessChrome%3B147.0.7727.15%7CNot.A%252FBrand%3B8.0.0.0%7CChromium%3B147.0.7727.15&uam=&uamb=0&uap=macOS&uapv=15.4.1&uaw=0&ul=en-us&tag_exp=0~115938465~115938468~118289195&sid=1777897485&sct=1&seg=1&dl=https%3A%2F%2Fmapltours.com%2Fhelp&dt=Help%20Center%20%7C%20MAPL%20Tours%20Jamaica&_s=1&tfd=2652 :: net::ERR_ABORTED"
+  },
+  {
+    "route": "/safety",
+    "severity": "console-warn",
+    "msg": "Hotjar not launching due to suspicious userAgent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/147.0.7727.15 Safari/537.36"
+  },
+  {
+    "route": "/safety",
+    "severity": "dead-link",
+    "msg": "<a href=\"#\" style=\"display:block;font-size:14px;color:var(--text-on-dark-2);font-family:var(--font-dm-sans);margin-bottom:12px;cursor:pointer;transition:color 0"
+  },
+  {
+    "route": "/safety",
+    "severity": "dead-link",
+    "msg": "<a href=\"#\" style=\"display:block;font-size:14px;color:var(--text-on-dark-2);font-family:var(--font-dm-sans);margin-bottom:12px;cursor:pointer;transition:color 0"
+  },
+  {
+    "route": "/safety",
+    "severity": "dead-link",
+    "msg": "<a href=\"#\" style=\"display:block;font-size:14px;color:var(--text-on-dark-2);font-family:var(--font-dm-sans);margin-bottom:12px;cursor:pointer;transition:color 0"
+  },
+  {
+    "route": "/safety",
+    "severity": "dead-link",
+    "msg": "<a href=\"#\" style=\"display:block;font-size:14px;color:var(--text-on-dark-2);font-family:var(--font-dm-sans);margin-bottom:12px;cursor:pointer;transition:color 0"
+  },
+  {
+    "route": "/accessibility",
+    "severity": "request-failed",
+    "msg": "POST https://www.google-analytics.com/g/collect?v=2&tid=G-2JVWPL4GBE&gtm=45je64t1v9249186408za200zd9249186408&_p=1777897524744&gcd=13l3l3l3l1l1&npa=0&dma=0&_eu=AAAAAAQC&are=1&cid=1374919154.1777897486&frm=0&pscdl=noapi&rcb=10&sr=1440x900&uaa=arm&uab=64&uafvl=HeadlessChrome%3B147.0.7727.15%7CNot.A%252FBrand%3B8.0.0.0%7CChromium%3B147.0.7727.15&uam=&uamb=0&uap=macOS&uapv=15.4.1&uaw=0&ul=en-us&tag_exp=0~115616985~115938466~115938469~116363098&sid=1777897485&sct=1&seg=1&dl=https%3A%2F%2Fmapltours.com%2Fsafety&dt=Safety%20%7C%20MAPL%20Tours%20Jamaica&_s=1&tfd=2582 :: net::ERR_ABORTED"
+  },
+  {
+    "route": "/accessibility",
+    "severity": "console-warn",
+    "msg": "Hotjar not launching due to suspicious userAgent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/147.0.7727.15 Safari/537.36"
+  },
+  {
+    "route": "/accessibility",
+    "severity": "dead-link",
+    "msg": "<a href=\"#\" style=\"display:block;font-size:14px;color:var(--text-on-dark-2);font-family:var(--font-dm-sans);margin-bottom:12px;cursor:pointer;transition:color 0"
+  },
+  {
+    "route": "/accessibility",
+    "severity": "dead-link",
+    "msg": "<a href=\"#\" style=\"display:block;font-size:14px;color:var(--text-on-dark-2);font-family:var(--font-dm-sans);margin-bottom:12px;cursor:pointer;transition:color 0"
+  },
+  {
+    "route": "/accessibility",
+    "severity": "dead-link",
+    "msg": "<a href=\"#\" style=\"display:block;font-size:14px;color:var(--text-on-dark-2);font-family:var(--font-dm-sans);margin-bottom:12px;cursor:pointer;transition:color 0"
+  },
+  {
+    "route": "/accessibility",
+    "severity": "dead-link",
+    "msg": "<a href=\"#\" style=\"display:block;font-size:14px;color:var(--text-on-dark-2);font-family:var(--font-dm-sans);margin-bottom:12px;cursor:pointer;transition:color 0"
+  },
+  {
+    "route": "/blog",
+    "severity": "request-failed",
+    "msg": "POST https://www.google-analytics.com/g/collect?v=2&tid=G-2JVWPL4GBE&gtm=45je64t1v9249186408za200zd9249186408&_p=1777897527235&gcd=13l3l3l3l1l1&npa=0&dma=0&_eu=AAAAAAQC&are=1&cid=1374919154.1777897486&frm=0&pscdl=noapi&rcb=4&sr=1440x900&uaa=arm&uab=64&uafvl=HeadlessChrome%3B147.0.7727.15%7CNot.A%252FBrand%3B8.0.0.0%7CChromium%3B147.0.7727.15&uam=&uamb=0&uap=macOS&uapv=15.4.1&uaw=0&ul=en-us&tag_exp=0~115938465~115938469~116363098&sid=1777897485&sct=1&seg=1&dl=https%3A%2F%2Fmapltours.com%2Faccessibility&dt=Accessibility%20%7C%20MAPL%20Tours%20Jamaica&_s=1&tfd=2596 :: net::ERR_ABORTED"
+  },
+  {
+    "route": "/blog",
+    "severity": "page-error",
+    "msg": "Error: Minified React error #425; visit https://react.dev/errors/425 for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+  },
+  {
+    "route": "/blog",
+    "severity": "page-error",
+    "msg": "Error: Minified React error #425; visit https://react.dev/errors/425 for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+  },
+  {
+    "route": "/blog",
+    "severity": "page-error",
+    "msg": "Error: Minified React error #425; visit https://react.dev/errors/425 for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+  },
+  {
+    "route": "/blog",
+    "severity": "page-error",
+    "msg": "Error: Minified React error #425; visit https://react.dev/errors/425 for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+  },
+  {
+    "route": "/blog",
+    "severity": "page-error",
+    "msg": "Error: Minified React error #425; visit https://react.dev/errors/425 for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+  },
+  {
+    "route": "/blog",
+    "severity": "page-error",
+    "msg": "Error: Minified React error #418; visit https://react.dev/errors/418 for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+  },
+  {
+    "route": "/blog",
+    "severity": "page-error",
+    "msg": "Error: Minified React error #423; visit https://react.dev/errors/423 for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+  },
+  {
+    "route": "/blog",
+    "severity": "console-warn",
+    "msg": "Hotjar not launching due to suspicious userAgent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/147.0.7727.15 Safari/537.36"
+  },
+  {
+    "route": "/blog",
+    "severity": "dead-link",
+    "msg": "<a href=\"#\" style=\"display: block; font-size: 14px; color: var(--text-on-dark-2); font-family: var(--font-dm-sans); margin-bottom: 12px; cursor: pointer; transi"
+  },
+  {
+    "route": "/blog",
+    "severity": "dead-link",
+    "msg": "<a href=\"#\" style=\"display: block; font-size: 14px; color: var(--text-on-dark-2); font-family: var(--font-dm-sans); margin-bottom: 12px; cursor: pointer; transi"
+  },
+  {
+    "route": "/blog",
+    "severity": "dead-link",
+    "msg": "<a href=\"#\" style=\"display: block; font-size: 14px; color: var(--text-on-dark-2); font-family: var(--font-dm-sans); margin-bottom: 12px; cursor: pointer; transi"
+  },
+  {
+    "route": "/blog",
+    "severity": "dead-link",
+    "msg": "<a href=\"#\" style=\"display: block; font-size: 14px; color: var(--text-on-dark-2); font-family: var(--font-dm-sans); margin-bottom: 12px; cursor: pointer; transi"
+  },
+  {
+    "route": "/careers",
+    "severity": "request-failed",
+    "msg": "POST https://www.google-analytics.com/g/collect?v=2&tid=G-2JVWPL4GBE&gtm=45je64t1v9249186408za200zd9249186408&_p=1777897529773&gcd=13l3l3l3l1l1&npa=0&dma=0&_eu=AAAAAAQC&are=1&cid=1374919154.1777897486&frm=0&pscdl=noapi&rcb=6&sr=1440x900&uaa=arm&uab=64&uafvl=HeadlessChrome%3B147.0.7727.15%7CNot.A%252FBrand%3B8.0.0.0%7CChromium%3B147.0.7727.15&uam=&uamb=0&uap=macOS&uapv=15.4.1&uaw=0&ul=en-us&tag_exp=0~115938466~115938468~117215713~118289195&sid=1777897485&sct=1&seg=1&dl=https%3A%2F%2Fmapltours.com%2Fblog&dt=The%20MAPL%20Journal%20%E2%80%94%20Jamaica%20Travel%20Stories%20%26%20Guides%20%7C%20MAPL%20Tours%20Jamaica&_s=1&tfd=3035 :: net::ERR_ABORTED"
+  },
+  {
+    "route": "/careers",
+    "severity": "console-warn",
+    "msg": "Hotjar not launching due to suspicious userAgent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/147.0.7727.15 Safari/537.36"
+  },
+  {
+    "route": "/careers",
+    "severity": "dead-link",
+    "msg": "<a href=\"#\" style=\"display:block;font-size:14px;color:var(--text-on-dark-2);font-family:var(--font-dm-sans);margin-bottom:12px;cursor:pointer;transition:color 0"
+  },
+  {
+    "route": "/careers",
+    "severity": "dead-link",
+    "msg": "<a href=\"#\" style=\"display:block;font-size:14px;color:var(--text-on-dark-2);font-family:var(--font-dm-sans);margin-bottom:12px;cursor:pointer;transition:color 0"
+  },
+  {
+    "route": "/careers",
+    "severity": "dead-link",
+    "msg": "<a href=\"#\" style=\"display:block;font-size:14px;color:var(--text-on-dark-2);font-family:var(--font-dm-sans);margin-bottom:12px;cursor:pointer;transition:color 0"
+  },
+  {
+    "route": "/careers",
+    "severity": "dead-link",
+    "msg": "<a href=\"#\" style=\"display:block;font-size:14px;color:var(--text-on-dark-2);font-family:var(--font-dm-sans);margin-bottom:12px;cursor:pointer;transition:color 0"
+  },
+  {
+    "route": "/press",
+    "severity": "request-failed",
+    "msg": "POST https://www.google-analytics.com/g/collect?v=2&tid=G-2JVWPL4GBE&gtm=45je64t1v9249186408za200zd9249186408&_p=1777897532625&gcd=13l3l3l3l1l1&npa=0&dma=0&_eu=AAAAAAQC&are=1&cid=1374919154.1777897486&frm=0&pscdl=noapi&rcb=11&sr=1440x900&uaa=arm&uab=64&uafvl=HeadlessChrome%3B147.0.7727.15%7CNot.A%252FBrand%3B8.0.0.0%7CChromium%3B147.0.7727.15&uam=&uamb=0&uap=macOS&uapv=15.4.1&uaw=0&ul=en-us&tag_exp=0~115938465~115938468~118289195&sid=1777897485&sct=1&seg=1&dl=https%3A%2F%2Fmapltours.com%2Fcareers&dt=Careers%20%7C%20MAPL%20Tours%20Jamaica&_s=1&tfd=2558 :: net::ERR_ABORTED"
+  },
+  {
+    "route": "/press",
+    "severity": "console-warn",
+    "msg": "Hotjar not launching due to suspicious userAgent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/147.0.7727.15 Safari/537.36"
+  },
+  {
+    "route": "/press",
+    "severity": "dead-link",
+    "msg": "<a href=\"#\" style=\"display:block;font-size:14px;color:var(--text-on-dark-2);font-family:var(--font-dm-sans);margin-bottom:12px;cursor:pointer;transition:color 0"
+  },
+  {
+    "route": "/press",
+    "severity": "dead-link",
+    "msg": "<a href=\"#\" style=\"display:block;font-size:14px;color:var(--text-on-dark-2);font-family:var(--font-dm-sans);margin-bottom:12px;cursor:pointer;transition:color 0"
+  },
+  {
+    "route": "/press",
+    "severity": "dead-link",
+    "msg": "<a href=\"#\" style=\"display:block;font-size:14px;color:var(--text-on-dark-2);font-family:var(--font-dm-sans);margin-bottom:12px;cursor:pointer;transition:color 0"
+  },
+  {
+    "route": "/press",
+    "severity": "dead-link",
+    "msg": "<a href=\"#\" style=\"display:block;font-size:14px;color:var(--text-on-dark-2);font-family:var(--font-dm-sans);margin-bottom:12px;cursor:pointer;transition:color 0"
+  },
+  {
+    "route": "/gifts",
+    "severity": "request-failed",
+    "msg": "POST https://www.google-analytics.com/g/collect?v=2&tid=G-2JVWPL4GBE&gtm=45je64t1v9249186408za200zd9249186408&_p=1777897534934&gcd=13l3l3l3l1l1&npa=0&dma=0&_eu=AAAAAAQC&are=1&cid=1374919154.1777897486&frm=0&pscdl=noapi&rcb=4&sr=1440x900&uaa=arm&uab=64&uafvl=HeadlessChrome%3B147.0.7727.15%7CNot.A%252FBrand%3B8.0.0.0%7CChromium%3B147.0.7727.15&uam=&uamb=0&uap=macOS&uapv=15.4.1&uaw=0&ul=en-us&tag_exp=0~115938466~115938469&sid=1777897485&sct=1&seg=1&dl=https%3A%2F%2Fmapltours.com%2Fpress&dt=Press%20%7C%20MAPL%20Tours%20Jamaica&_s=1&tfd=2488 :: net::ERR_ABORTED"
+  },
+  {
+    "route": "/gifts",
+    "severity": "console-warn",
+    "msg": "Hotjar not launching due to suspicious userAgent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/147.0.7727.15 Safari/537.36"
+  },
+  {
+    "route": "/gifts",
+    "severity": "dead-link",
+    "msg": "<a href=\"#\" style=\"display:block;font-size:14px;color:var(--text-on-dark-2);font-family:var(--font-dm-sans);margin-bottom:12px;cursor:pointer;transition:color 0"
+  },
+  {
+    "route": "/gifts",
+    "severity": "dead-link",
+    "msg": "<a href=\"#\" style=\"display:block;font-size:14px;color:var(--text-on-dark-2);font-family:var(--font-dm-sans);margin-bottom:12px;cursor:pointer;transition:color 0"
+  },
+  {
+    "route": "/gifts",
+    "severity": "dead-link",
+    "msg": "<a href=\"#\" style=\"display:block;font-size:14px;color:var(--text-on-dark-2);font-family:var(--font-dm-sans);margin-bottom:12px;cursor:pointer;transition:color 0"
+  },
+  {
+    "route": "/gifts",
+    "severity": "dead-link",
+    "msg": "<a href=\"#\" style=\"display:block;font-size:14px;color:var(--text-on-dark-2);font-family:var(--font-dm-sans);margin-bottom:12px;cursor:pointer;transition:color 0"
+  },
+  {
+    "route": "/login",
+    "severity": "request-failed",
+    "msg": "POST https://www.google-analytics.com/g/collect?v=2&tid=G-2JVWPL4GBE&gtm=45je64t1v9249186408za200zd9249186408&_p=1777897537369&gcd=13l3l3l3l1l1&npa=0&dma=0&_eu=AAAAAAQC&are=1&cid=1374919154.1777897486&frm=0&pscdl=noapi&rcb=7&sr=1440x900&uaa=arm&uab=64&uafvl=HeadlessChrome%3B147.0.7727.15%7CNot.A%252FBrand%3B8.0.0.0%7CChromium%3B147.0.7727.15&uam=&uamb=0&uap=macOS&uapv=15.4.1&uaw=0&ul=en-us&tag_exp=0~115616985~115938465~115938469&sid=1777897485&sct=1&seg=1&dl=https%3A%2F%2Fmapltours.com%2Fgifts&dt=Gift%20Cards%20%7C%20MAPL%20Tours%20Jamaica&_s=1&tfd=2670 :: net::ERR_ABORTED"
+  },
+  {
+    "route": "/login",
+    "severity": "console-warn",
+    "msg": "Hotjar not launching due to suspicious userAgent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/147.0.7727.15 Safari/537.36"
+  },
+  {
+    "route": "/login",
+    "severity": "request-failed",
+    "msg": "POST https://www.google-analytics.com/g/collect?v=2&tid=G-2JVWPL4GBE&gtm=45je64t1v9249186408za200zd9249186408&_p=1777897539646&gcd=13l3l3l3l1l1&npa=0&dma=0&_eu=AEAEAAQC&ae=a&are=1&cid=1374919154.1777897486&frm=0&pscdl=noapi&rcb=11&sr=1440x900&uaa=arm&uab=64&uafvl=HeadlessChrome%3B147.0.7727.15%7CNot.A%252FBrand%3B8.0.0.0%7CChromium%3B147.0.7727.15&uam=&uamb=0&uap=macOS&uapv=15.4.1&uaw=0&ul=en-us&_s=1&tag_exp=0~115938466~115938469~116363097&sid=1777897485&sct=1&seg=1&dl=https%3A%2F%2Fmapltours.com%2Flogin&dt=MAPL%20Tours%20Jamaica%20%7C%20Best%20Tours%20%26%20Cultural%20Experiences%20in%20Jamaica&en=scroll&epn.percent_scrolled=90&tfd=152 :: net::ERR_ABORTED"
+  },
+  {
+    "route": "/(flow:add-to-cart)",
+    "severity": "request-failed",
+    "msg": "POST https://www.google-analytics.com/g/collect?v=2&tid=G-2JVWPL4GBE&gtm=45je64t1v9249186408za200zd9249186408&_p=1777897539646&gcd=13l3l3l3l1l1&npa=0&dma=0&_eu=AAAAAAQC&are=1&cid=1374919154.1777897486&frm=0&pscdl=noapi&rcb=11&sr=1440x900&uaa=arm&uab=64&uafvl=HeadlessChrome%3B147.0.7727.15%7CNot.A%252FBrand%3B8.0.0.0%7CChromium%3B147.0.7727.15&uam=&uamb=0&uap=macOS&uapv=15.4.1&uaw=0&ul=en-us&tag_exp=0~115938466~115938469~116363097&sid=1777897485&sct=1&seg=1&dl=https%3A%2F%2Fmapltours.com%2Flogin&dt=MAPL%20Tours%20Jamaica%20%7C%20Best%20Tours%20%26%20Cultural%20Experiences%20in%20Jamaica&_s=2&tfd=2113 :: net::ERR_ABORTED"
+  },
+  {
+    "route": "/(flow:add-to-cart)",
+    "severity": "console-warn",
+    "msg": "Hotjar not launching due to suspicious userAgent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/147.0.7727.15 Safari/537.36"
+  },
+  {
+    "route": "/(flow:add-to-cart)",
+    "severity": "flow",
+    "msg": "no \"Add to Itinerary\" button found on feed"
+  },
+  {
+    "route": "/(flow:add-to-cart)",
+    "severity": "flow",
+    "msg": "no checkout link in nav after add"
+  },
+  {
+    "route": "/(flow:add-to-cart)",
+    "severity": "request-failed",
+    "msg": "POST https://www.google-analytics.com/g/collect?v=2&tid=G-2JVWPL4GBE&gtm=45je64t1v9249186408za200zd9249186408&_p=1777897541704&gcd=13l3l3l3l1l1&npa=0&dma=0&_eu=AAAAAAQC&are=1&cid=1374919154.1777897486&frm=0&pscdl=noapi&rcb=15&sr=1440x900&uaa=arm&uab=64&uafvl=HeadlessChrome%3B147.0.7727.15%7CNot.A%252FBrand%3B8.0.0.0%7CChromium%3B147.0.7727.15&uam=&uamb=0&uap=macOS&uapv=15.4.1&uaw=0&ul=en-us&tag_exp=0~115938465~115938468~118289195&sid=1777897485&sct=1&seg=1&dl=https%3A%2F%2Fmapltours.com%2F&dt=MAPL%20Tours%20Jamaica%20%7C%20Best%20Tours%20%26%20Cultural%20Experiences%20in%20Jamaica&_s=1&tfd=2496 :: net::ERR_ABORTED"
+  },
+  {
+    "route": "/(flow:add-to-cart)",
+    "severity": "console-warn",
+    "msg": "Hotjar not launching due to suspicious userAgent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/147.0.7727.15 Safari/537.36"
+  },
+  {
+    "route": "/(flow:add-to-cart)",
+    "severity": "request-failed",
+    "msg": "POST https://www.google-analytics.com/g/collect?v=2&tid=G-2JVWPL4GBE&gtm=45je64t1v9249186408za200zd9249186408&_p=1777897543983&gcd=13l3l3l3l1l1&npa=0&dma=0&_eu=AEAEAAQC&ae=a&are=1&cid=1374919154.1777897486&frm=0&pscdl=noapi&rcb=19&sr=1440x900&uaa=arm&uab=64&uafvl=HeadlessChrome%3B147.0.7727.15%7CNot.A%252FBrand%3B8.0.0.0%7CChromium%3B147.0.7727.15&uam=&uamb=0&uap=macOS&uapv=15.4.1&uaw=0&ul=en-us&_s=1&tag_exp=0~115938466~115938469~118289195&sid=1777897485&sct=1&seg=1&dl=https%3A%2F%2Fmapltours.com%2Flogin%3Fredirect%3D%252Fcheckout&dt=MAPL%20Tours%20Jamaica%20%7C%20Best%20Tours%20%26%20Cultural%20Experiences%20in%20Jamaica&en=scroll&epn.percent_scrolled=90&tfd=161 :: net::ERR_ABORTED"
+  },
+  {
+    "route": "/(flow:add-to-cart)",
+    "severity": "flow",
+    "msg": "checkout page missing expected words"
+  },
+  {
+    "route": "/(flow:explore)",
+    "severity": "request-failed",
+    "msg": "POST https://www.google-analytics.com/g/collect?v=2&tid=G-2JVWPL4GBE&gtm=45je64t1v9249186408za200zd9249186408&_p=1777897543983&gcd=13l3l3l3l1l1&npa=0&dma=0&_eu=AAAAAAQC&are=1&cid=1374919154.1777897486&frm=0&pscdl=noapi&rcb=19&sr=1440x900&uaa=arm&uab=64&uafvl=HeadlessChrome%3B147.0.7727.15%7CNot.A%252FBrand%3B8.0.0.0%7CChromium%3B147.0.7727.15&uam=&uamb=0&uap=macOS&uapv=15.4.1&uaw=0&ul=en-us&tag_exp=0~115938466~115938469~118289195&sid=1777897485&sct=1&seg=1&dl=https%3A%2F%2Fmapltours.com%2Flogin%3Fredirect%3D%252Fcheckout&dt=MAPL%20Tours%20Jamaica%20%7C%20Best%20Tours%20%26%20Cultural%20Experiences%20in%20Jamaica&_s=2&tfd=2121 :: net::ERR_ABORTED"
+  },
+  {
+    "route": "/(flow:explore)",
+    "severity": "console-warn",
+    "msg": "Hotjar not launching due to suspicious userAgent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/147.0.7727.15 Safari/537.36"
+  },
+  {
+    "route": "/(flow:explore)",
+    "severity": "request-failed",
+    "msg": "GET https://mapltours.com/experience/bob-marley-heritage-pilgrimage?_rsc=jyl0o :: net::ERR_ABORTED"
+  },
+  {
+    "route": "/(flow:explore)",
+    "severity": "request-failed",
+    "msg": "GET https://mapltours.com/experience/sunrise-fishing-with-local-fishermen?_rsc=jyl0o :: net::ERR_ABORTED"
+  },
+  {
+    "route": "/(flow:experience-detail)",
+    "severity": "request-failed",
+    "msg": "POST https://www.google-analytics.com/g/collect?v=2&tid=G-2JVWPL4GBE&gtm=45je64t1v9249186408za200zd9249186408&_p=1777897546005&gcd=13l3l3l3l1l1&npa=0&dma=0&_eu=AAAAAAQC&are=1&cid=1374919154.1777897486&frm=0&pscdl=noapi&rcb=15&sr=1440x900&uaa=arm&uab=64&uafvl=HeadlessChrome%3B147.0.7727.15%7CNot.A%252FBrand%3B8.0.0.0%7CChromium%3B147.0.7727.15&uam=&uamb=0&uap=macOS&uapv=15.4.1&uaw=0&ul=en-us&tag_exp=0~115616985~115938466~115938469~116363098&sid=1777897485&sct=1&seg=1&dl=https%3A%2F%2Fmapltours.com%2Fexplore&dt=MAPL%20Tours%20Jamaica%20%7C%20Best%20Tours%20%26%20Cultural%20Experiences%20in%20Jamaica&_s=1&tfd=3057 :: net::ERR_ABORTED"
+  },
+  {
+    "route": "/(flow:experience-detail)",
+    "severity": "console-warn",
+    "msg": "Hotjar not launching due to suspicious userAgent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/147.0.7727.15 Safari/537.36"
+  },
+  {
+    "route": "/(flow:experience-detail)",
+    "severity": "request-failed",
+    "msg": "GET https://mapltours.com/experience/sunrise-fishing-with-local-fishermen?_rsc=jyl0o :: net::ERR_ABORTED"
+  },
+  {
+    "route": "/experience/ricks-cafe-cliff-diving-and-sunset",
+    "severity": "request-failed",
+    "msg": "POST https://www.google-analytics.com/g/collect?v=2&tid=G-2JVWPL4GBE&gtm=45je64t1v9249186408za200zd9249186408&_p=1777897548983&gcd=13l3l3l3l1l1&npa=0&dma=0&_eu=AAAAAAQC&are=1&cid=1374919154.1777897486&frm=0&pscdl=noapi&rcb=13&sr=1440x900&uaa=arm&uab=64&uafvl=HeadlessChrome%3B147.0.7727.15%7CNot.A%252FBrand%3B8.0.0.0%7CChromium%3B147.0.7727.15&uam=&uamb=0&uap=macOS&uapv=15.4.1&uaw=0&ul=en-us&tag_exp=0~115938465~115938468&sid=1777897485&sct=1&seg=1&dl=https%3A%2F%2Fmapltours.com%2Fexplore&dt=MAPL%20Tours%20Jamaica%20%7C%20Best%20Tours%20%26%20Cultural%20Experiences%20in%20Jamaica&_s=1&tfd=2320 :: net::ERR_ABORTED"
+  },
+  {
+    "route": "/experience/ricks-cafe-cliff-diving-and-sunset",
+    "severity": "request-failed",
+    "msg": "POST https://www.youtube.com/api/stats/qoe?fmt=788&cpn=az-zb9UBwc3-2nkO&el=embedded&ns=yt&fexp=v1%2C23848212%2C156432%2C27005591%2C53408%2C34656%2C106030%2C18644%2C117689%2C9252%2C3479%2C13030%2C6258%2C16948%2C100702%2C12607%2C2498%2C25059%2C4174%2C30447%2C13517%2C5188%2C21437%2C4571%2C11038%2C1977%2C16088%2C9404%2C23826%2C9500%2C1840%2C22474%2C11771%2C11471%2C13159%2C21520%2C10985%2C5783%2C1455%2C2467%2C14341%2C3305%2C894%2C459%2C953%2C2754%2C12775%2C8140%2C1211%2C2197%2C1625%2C8030%2C3571%2C7020%2C3426%2C1304%2C8445%2C4170%2C6079%2C1102%2C8954%2C2548%2C1492%2C2704%2C1287%2C3223%2C2429%2C3951%2C491%2C4954%2C2314%2C3342%2C3260&cl=908345110&seq=1&docid=9KbrrQstrT4&ei=T5D4afb9LYbHybgP4JOjoAQ&event=streamingstats&plid=AAZQ_QgFMXuHtoVs&cbrand=apple&cbr=HeadlessChrome&cbrver=147.0.7727.15&c=WEB_EMBEDDED_PLAYER&cver=2.20260501.01.00&cplayer=UNIPLAYER&cos=Macintosh&cosver=10_15_7&cplatform=DESKTOP&vps=0.000:N,0.006:B,0.089:B,0.089:B&ctmp=dttg:t.0;dtt.1;gl.0&cat=streaming&cmt=0.006:0.000,0.089:0.000&vfs=0.089:788:788::r:sms.0&view=0.089:480:900&bwe=0.089:642253&bat=0.089:0.38:0&vis=0.089:0&bh=0.089:0.000&qclc=ChBhei16YjlVQndjMy0ybmtPEAE :: net::ERR_ABORTED"
+  },
+  {
+    "route": "/experience/ricks-cafe-cliff-diving-and-sunset",
+    "severity": "request-failed",
+    "msg": "GET https://www.youtube.com/api/stats/playback?ns=yt&el=embedded&cpn=az-zb9UBwc3-2nkO&ver=2&cmt=0.049&fmt=788&fs=0&rt=0.241&euri=https%3A%2F%2Fmapltours.com%2F&lact=251&cl=908345110&mos=1&volume=100&cbrand=apple&cbr=HeadlessChrome&cbrver=147.0.7727.15&c=WEB_EMBEDDED_PLAYER&cver=2.20260501.01.00&cplayer=UNIPLAYER&cos=Macintosh&cosver=10_15_7&cplatform=DESKTOP&autoplay=1&epm=1&delay=4&hl=en_US&cr=CA&len=131.761&fexp=v1%2C23848212%2C156432%2C27005591%2C53408%2C34656%2C106030%2C18644%2C117689%2C9252%2C3479%2C13030%2C6258%2C16948%2C100702%2C12607%2C2498%2C25059%2C4174%2C30447%2C13517%2C5188%2C21437%2C4571%2C11038%2C1977%2C16088%2C9404%2C23826%2C9500%2C1840%2C22474%2C11771%2C11471%2C13159%2C21520%2C10985%2C5783%2C1455%2C2467%2C14341%2C3305%2C894%2C459%2C953%2C2754%2C12775%2C8140%2C1211%2C2197%2C1625%2C8030%2C3571%2C7020%2C3426%2C1304%2C8445%2C4170%2C6079%2C1102%2C8954%2C2548%2C1492%2C2704%2C1287%2C3223%2C2429%2C3951%2C491%2C4954%2C2314%2C3342%2C3260&rtn=8&afmt=251&size=480%3A900&inview=0&muted=1&docid=9KbrrQstrT4&ei=T5D4afb9LYbHybgP4JOjoAQ&plid=AAZQ_QgFMXuHtoVs&referrer=https%3A%2F%2Fwww.youtube.com%2Fembed%2F9KbrrQstrT4%3Fautoplay%3D1%26mute%3D1%26loop%3D1%26controls%3D0%26showinfo%3D0%26modestbranding%3D1%26playlist%3D9KbrrQstrT4%26playsinline%3D1&list=TLGG3ZL90ImJVZ8wNDA1MjAyNg&of=py7o7P4OD80kWkRNFto-NA&vm=CAEQABgEOjJBSHFpSlRLS2czaWNSZnJZRU1wYWxROEx0NGVBbGxnY0RlQldhMkpQTENFemk2S2dNQWJkQUxkcUFQSkVMMk1lSlRGeDZ4NmNuYzV0TjN2UlVBMTMzRklhcTlNUmRfakxqRkw4QTZveGRwMndQVHJVRnRqMmFFdUE2OHRSVnpKRnFvWDJfX3JaSUx0ZlQ0S1Zva0lGYmxYbw :: net::ERR_ABORTED"
+  },
+  {
+    "route": "/experience/ricks-cafe-cliff-diving-and-sunset",
+    "severity": "request-failed",
+    "msg": "GET https://www.youtube.com/ptracking?html5=1&video_id=9KbrrQstrT4&cpn=az-zb9UBwc3-2nkO&ei=T5D4afb9LYbHybgP4JOjoAQ&ptk=youtube_single&oid=nyTz96w3TdQCATIubnWpEw&ptchn=1c6TamEwT02iC4LKv9WGlQ&pltype=content :: net::ERR_ABORTED"
+  },
+  {
+    "route": "/experience/ricks-cafe-cliff-diving-and-sunset",
+    "severity": "request-failed",
+    "msg": "HEAD https://eybeezhvuokziyczkkkl.supabase.co/rest/v1/experience_likes?select=id&experience_id=eq.6 :: net::ERR_ABORTED"
+  },
+  {
+    "route": "/experience/ricks-cafe-cliff-diving-and-sunset",
+    "severity": "request-failed",
+    "msg": "HEAD https://eybeezhvuokziyczkkkl.supabase.co/rest/v1/experience_likes?select=id&experience_id=eq.10 :: net::ERR_ABORTED"
+  },
+  {
+    "route": "/experience/ricks-cafe-cliff-diving-and-sunset",
+    "severity": "request-failed",
+    "msg": "HEAD https://eybeezhvuokziyczkkkl.supabase.co/rest/v1/experience_likes?select=id&experience_id=eq.19 :: net::ERR_ABORTED"
+  },
+  {
+    "route": "/experience/ricks-cafe-cliff-diving-and-sunset",
+    "severity": "request-failed",
+    "msg": "HEAD https://eybeezhvuokziyczkkkl.supabase.co/rest/v1/experience_likes?select=id&experience_id=eq.18 :: net::ERR_ABORTED"
+  },
+  {
+    "route": "/experience/ricks-cafe-cliff-diving-and-sunset",
+    "severity": "request-failed",
+    "msg": "HEAD https://eybeezhvuokziyczkkkl.supabase.co/rest/v1/experience_likes?select=id&experience_id=eq.16 :: net::ERR_ABORTED"
+  },
+  {
+    "route": "/experience/ricks-cafe-cliff-diving-and-sunset",
+    "severity": "request-failed",
+    "msg": "HEAD https://eybeezhvuokziyczkkkl.supabase.co/rest/v1/experience_likes?select=id&experience_id=eq.14 :: net::ERR_ABORTED"
+  },
+  {
+    "route": "/experience/ricks-cafe-cliff-diving-and-sunset",
+    "severity": "request-failed",
+    "msg": "HEAD https://eybeezhvuokziyczkkkl.supabase.co/rest/v1/experience_likes?select=id&experience_id=eq.7 :: net::ERR_ABORTED"
+  },
+  {
+    "route": "/experience/ricks-cafe-cliff-diving-and-sunset",
+    "severity": "request-failed",
+    "msg": "HEAD https://eybeezhvuokziyczkkkl.supabase.co/rest/v1/experience_likes?select=id&experience_id=eq.15 :: net::ERR_ABORTED"
+  },
+  {
+    "route": "/experience/ricks-cafe-cliff-diving-and-sunset",
+    "severity": "request-failed",
+    "msg": "HEAD https://eybeezhvuokziyczkkkl.supabase.co/rest/v1/experience_likes?select=id&experience_id=eq.2 :: net::ERR_ABORTED"
+  },
+  {
+    "route": "/experience/ricks-cafe-cliff-diving-and-sunset",
+    "severity": "request-failed",
+    "msg": "HEAD https://eybeezhvuokziyczkkkl.supabase.co/rest/v1/experience_likes?select=id&experience_id=eq.17 :: net::ERR_ABORTED"
+  },
+  {
+    "route": "/experience/ricks-cafe-cliff-diving-and-sunset",
+    "severity": "request-failed",
+    "msg": "HEAD https://eybeezhvuokziyczkkkl.supabase.co/rest/v1/experience_likes?select=id&experience_id=eq.12 :: net::ERR_ABORTED"
+  },
+  {
+    "route": "/experience/ricks-cafe-cliff-diving-and-sunset",
+    "severity": "request-failed",
+    "msg": "HEAD https://eybeezhvuokziyczkkkl.supabase.co/rest/v1/experience_likes?select=id&experience_id=eq.5 :: net::ERR_ABORTED"
+  },
+  {
+    "route": "/experience/ricks-cafe-cliff-diving-and-sunset",
+    "severity": "request-failed",
+    "msg": "HEAD https://eybeezhvuokziyczkkkl.supabase.co/rest/v1/experience_likes?select=id&experience_id=eq.9 :: net::ERR_ABORTED"
+  },
+  {
+    "route": "/experience/ricks-cafe-cliff-diving-and-sunset",
+    "severity": "request-failed",
+    "msg": "HEAD https://eybeezhvuokziyczkkkl.supabase.co/rest/v1/experience_likes?select=id&experience_id=eq.8 :: net::ERR_ABORTED"
+  },
+  {
+    "route": "/experience/ricks-cafe-cliff-diving-and-sunset",
+    "severity": "request-failed",
+    "msg": "HEAD https://eybeezhvuokziyczkkkl.supabase.co/rest/v1/experience_likes?select=id&experience_id=eq.13 :: net::ERR_ABORTED"
+  },
+  {
+    "route": "/experience/ricks-cafe-cliff-diving-and-sunset",
+    "severity": "request-failed",
+    "msg": "HEAD https://eybeezhvuokziyczkkkl.supabase.co/rest/v1/experience_likes?select=id&experience_id=eq.4 :: net::ERR_ABORTED"
+  },
+  {
+    "route": "/experience/ricks-cafe-cliff-diving-and-sunset",
+    "severity": "request-failed",
+    "msg": "HEAD https://eybeezhvuokziyczkkkl.supabase.co/rest/v1/experience_likes?select=id&experience_id=eq.11 :: net::ERR_ABORTED"
+  },
+  {
+    "route": "/experience/ricks-cafe-cliff-diving-and-sunset",
+    "severity": "http-400",
+    "msg": "GET https://eybeezhvuokziyczkkkl.supabase.co/rest/v1/comments?select=id%2Cexperience_id%2Cuser_id%2Ctext%2Ccreated_at%2Cparent_id&experience_id=eq.1&order=created_at.asc&limit=20"
+  },
+  {
+    "route": "/experience/ricks-cafe-cliff-diving-and-sunset",
+    "severity": "console-error",
+    "msg": "Failed to load resource: the server responded with a status of 400 ()"
+  },
+  {
+    "route": "/experience/ricks-cafe-cliff-diving-and-sunset",
+    "severity": "request-failed",
+    "msg": "HEAD https://eybeezhvuokziyczkkkl.supabase.co/rest/v1/experience_likes?select=id&experience_id=eq.3 :: net::ERR_ABORTED"
+  },
+  {
+    "route": "/experience/ricks-cafe-cliff-diving-and-sunset",
+    "severity": "request-failed",
+    "msg": "HEAD https://eybeezhvuokziyczkkkl.supabase.co/rest/v1/experience_likes?select=id&experience_id=eq.1 :: net::ERR_ABORTED"
+  },
+  {
+    "route": "/experience/ricks-cafe-cliff-diving-and-sunset",
+    "severity": "console-error",
+    "msg": "[comments] select failed {code: 42703, details: null, hint: null, message: column comments.parent_id does not exist}"
+  },
+  {
+    "route": "/experience/ricks-cafe-cliff-diving-and-sunset",
+    "severity": "console-error",
+    "msg": "[swr-cache] fetch failed for \"comments:1\" {code: 42703, details: null, hint: null, message: column comments.parent_id does not exist}"
+  },
+  {
+    "route": "/experience/ricks-cafe-cliff-diving-and-sunset",
+    "severity": "console-warn",
+    "msg": "[.WebGL-0x10c001c6c00]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels"
+  },
+  {
+    "route": "/experience/ricks-cafe-cliff-diving-and-sunset",
+    "severity": "console-warn",
+    "msg": "Hotjar not launching due to suspicious userAgent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/147.0.7727.15 Safari/537.36"
+  },
+  {
+    "route": "/experience/ricks-cafe-cliff-diving-and-sunset",
+    "severity": "request-failed",
+    "msg": "POST https://www.google-analytics.com/g/collect?v=2&tid=G-2JVWPL4GBE&gtm=45je64t1v9249186408za200zd9249186408&_p=1777897553023&gcd=13l3l3l3l1l1&npa=0&dma=0&_eu=AEAEAAQC&ae=a&are=1&cid=1374919154.1777897486&frm=0&pscdl=noapi&rcb=0&sr=1440x900&uaa=arm&uab=64&uafvl=HeadlessChrome%3B147.0.7727.15%7CNot.A%252FBrand%3B8.0.0.0%7CChromium%3B147.0.7727.15&uam=&uamb=0&uap=macOS&uapv=15.4.1&uaw=0&ul=en-us&_s=1&tag_exp=0~115938465~115938469~116363098&sid=1777897485&sct=1&seg=1&dl=https%3A%2F%2Fmapltours.com%2Fexperience%2Fricks-cafe-cliff-diving-and-sunset&dt=MAPL%20Tours%20Jamaica%20%7C%20Best%20Tours%20%26%20Cultural%20Experiences%20in%20Jamaica&en=scroll&epn.percent_scrolled=90&tfd=2339 :: net::ERR_ABORTED"
+  },
+  {
+    "route": "/experience/ricks-cafe-cliff-diving-and-sunset",
+    "severity": "request-failed",
+    "msg": "POST https://www.google-analytics.com/g/collect?v=2&tid=G-2JVWPL4GBE&gtm=45je64t1v9249186408za200zd9249186408&_p=1777897553023&gcd=13l3l3l3l1l1&npa=0&dma=0&_eu=AAAAAAQC&are=1&cid=1374919154.1777897486&frm=0&pscdl=noapi&rcb=0&sr=1440x900&uaa=arm&uab=64&uafvl=HeadlessChrome%3B147.0.7727.15%7CNot.A%252FBrand%3B8.0.0.0%7CChromium%3B147.0.7727.15&uam=&uamb=0&uap=macOS&uapv=15.4.1&uaw=0&ul=en-us&_s=2&tag_exp=0~115938465~115938469~116363098&sid=1777897485&sct=1&seg=1&dl=https%3A%2F%2Fmapltours.com%2Fexperience%2Fricks-cafe-cliff-diving-and-sunset&dt=MAPL%20Tours%20Jamaica%20%7C%20Best%20Tours%20%26%20Cultural%20Experiences%20in%20Jamaica&en=page_view&_ee=1&_et=1&tfd=7341 :: net::ERR_ABORTED"
+  },
+  {
+    "route": "/experience/ricks-cafe-cliff-diving-and-sunset",
+    "severity": "request-failed",
+    "msg": "GET https://www.youtube.com/api/stats/watchtime?ns=yt&el=embedded&cpn=az-zb9UBwc3-2nkO&ver=2&cmt=7.81&fmt=788&fs=0&rt=8.002&euri=https%3A%2F%2Fmapltours.com%2F&lact=8012&cl=908345110&state=playing&volume=100&cbrand=apple&cbr=HeadlessChrome&cbrver=147.0.7727.15&c=WEB_EMBEDDED_PLAYER&cver=2.20260501.01.00&cplayer=UNIPLAYER&cos=Macintosh&cosver=10_15_7&cplatform=DESKTOP&autoplay=1&delay=4&hl=en_US&cr=CA&len=132&rtn=18&afmt=251&idpj=-3&ldpj=-26&dtm=1&rti=8&size=480%3A900&inview=0&st=0&et=7.81&muted=1&docid=9KbrrQstrT4&ei=T5D4afb9LYbHybgP4JOjoAQ&plid=AAZQ_QgFMXuHtoVs&referrer=https%3A%2F%2Fwww.youtube.com%2Fembed%2F9KbrrQstrT4%3Fautoplay%3D1%26mute%3D1%26loop%3D1%26controls%3D0%26showinfo%3D0%26modestbranding%3D1%26playlist%3D9KbrrQstrT4%26playsinline%3D1&list=TLGG3ZL90ImJVZ8wNDA1MjAyNg&of=py7o7P4OD80kWkRNFto-NA&vm=CAEQABgEOjJBSHFpSlRLS2czaWNSZnJZRU1wYWxROEx0NGVBbGxnY0RlQldhMkpQTENFemk2S2dNQWJkQUxkcUFQSkVMMk1lSlRGeDZ4NmNuYzV0TjN2UlVBMTMzRklhcTlNUmRfakxqRkw4QTZveGRwMndQVHJVRnRqMmFFdUE2OHRSVnpKRnFvWDJfX3JaSUx0ZlQ0S1Zva0lGYmxYbw :: net::ERR_ABORTED"
+  },
+  {
+    "route": "/experience/ricks-cafe-cliff-diving-and-sunset",
+    "severity": "request-failed",
+    "msg": "POST https://www.youtube.com/api/stats/qoe?fmt=788&afmt=251&cpn=az-zb9UBwc3-2nkO&el=embedded&ns=yt&fexp=v1%2C23848212%2C156432%2C27005591%2C53408%2C34656%2C106030%2C18644%2C117689%2C9252%2C3479%2C13030%2C6258%2C16948%2C100702%2C12607%2C2498%2C25059%2C4174%2C30447%2C13517%2C5188%2C21437%2C4571%2C11038%2C1977%2C16088%2C9404%2C23826%2C9500%2C1840%2C22474%2C11771%2C11471%2C13159%2C21520%2C10985%2C5783%2C1455%2C2467%2C14341%2C3305%2C894%2C459%2C953%2C2754%2C12775%2C8140%2C1211%2C2197%2C1625%2C8030%2C3571%2C7020%2C3426%2C1304%2C8445%2C4170%2C6079%2C1102%2C8954%2C2548%2C1492%2C2704%2C1287%2C3223%2C2429%2C3951%2C491%2C4954%2C2314%2C3342%2C3260&cl=908345110&seq=2&docid=9KbrrQstrT4&ei=T5D4afb9LYbHybgP4JOjoAQ&event=streamingstats&plid=AAZQ_QgFMXuHtoVs&cbrand=apple&cbr=HeadlessChrome&cbrver=147.0.7727.15&c=WEB_EMBEDDED_PLAYER&cver=2.20260501.01.00&cplayer=UNIPLAYER&cos=Macintosh&cosver=10_15_7&cplatform=DESKTOP&afs=0.091:251;CggKA2RyYxIBMQ::i:fl.-14.09;vg.0;nm.4;sms.0&ctmp=atrkchg:t.91;id.und;m.0&user_intent=0.003&bh=0.241:8.642,10.004:27.395&cmt=0.241:0.049,0.992:0.802,10.004:9.814&vps=0.241:PL,10.004:PL&bwm=10.004:4627299:0.393&bwe=10.004:12476180&bat=10.004:0.38:0&df=10.004:0&qclc=ChBhei16YjlVQndjMy0ybmtPEAI :: net::ERR_ABORTED"
+  },
+  {
+    "route": "/experience/ricks-cafe-cliff-diving-and-sunset",
+    "severity": "request-failed",
+    "msg": "GET https://videos.pexels.com/video-files/854572/854572-hd_1920_1080_25fps.mp4 :: net::ERR_ABORTED"
+  },
+  {
+    "route": "/experience/ricks-cafe-cliff-diving-and-sunset",
+    "severity": "console-warn",
+    "msg": "The resource https://images.pexels.com/photos/14788935/pexels-photo-14788935.jpeg?auto=compress&cs=tinysrgb&w=1920&h=1080&fit=crop was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally."
+  },
+  {
+    "route": "/experience/ricks-cafe-cliff-diving-and-sunset",
+    "severity": "request-failed",
+    "msg": "GET https://www.youtube.com/api/stats/watchtime?ns=yt&el=embedded&cpn=az-zb9UBwc3-2nkO&ver=2&cmt=17.813&fmt=788&fs=0&rt=18.003&euri=https%3A%2F%2Fmapltours.com%2F&lact=18012&cl=908345110&state=playing&volume=100&cbrand=apple&cbr=HeadlessChrome&cbrver=147.0.7727.15&c=WEB_EMBEDDED_PLAYER&cver=2.20260501.01.00&cplayer=UNIPLAYER&cos=Macintosh&cosver=10_15_7&cplatform=DESKTOP&autoplay=1&delay=4&hl=en_US&cr=CA&len=132&rtn=28&afmt=251&idpj=-3&ldpj=-26&rti=18&size=480%3A900&inview=0&st=7.81&et=17.813&muted=1&docid=9KbrrQstrT4&ei=T5D4afb9LYbHybgP4JOjoAQ&plid=AAZQ_QgFMXuHtoVs&referrer=https%3A%2F%2Fwww.youtube.com%2Fembed%2F9KbrrQstrT4%3Fautoplay%3D1%26mute%3D1%26loop%3D1%26controls%3D0%26showinfo%3D0%26modestbranding%3D1%26playlist%3D9KbrrQstrT4%26playsinline%3D1&list=TLGG3ZL90ImJVZ8wNDA1MjAyNg&of=py7o7P4OD80kWkRNFto-NA&vm=CAEQABgEOjJBSHFpSlRLS2czaWNSZnJZRU1wYWxROEx0NGVBbGxnY0RlQldhMkpQTENFemk2S2dNQWJkQUxkcUFQSkVMMk1lSlRGeDZ4NmNuYzV0TjN2UlVBMTMzRklhcTlNUmRfakxqRkw4QTZveGRwMndQVHJVRnRqMmFFdUE2OHRSVnpKRnFvWDJfX3JaSUx0ZlQ0S1Zva0lGYmxYbw :: net::ERR_ABORTED"
+  },
+  {
+    "route": "/experience/ricks-cafe-cliff-diving-and-sunset",
+    "severity": "request-failed",
+    "msg": "POST https://www.youtube.com/api/stats/qoe?fmt=788&afmt=251&cpn=az-zb9UBwc3-2nkO&el=embedded&ns=yt&fexp=v1%2C23848212%2C156432%2C27005591%2C53408%2C34656%2C106030%2C18644%2C117689%2C9252%2C3479%2C13030%2C6258%2C16948%2C100702%2C12607%2C2498%2C25059%2C4174%2C30447%2C13517%2C5188%2C21437%2C4571%2C11038%2C1977%2C16088%2C9404%2C23826%2C9500%2C1840%2C22474%2C11771%2C11471%2C13159%2C21520%2C10985%2C5783%2C1455%2C2467%2C14341%2C3305%2C894%2C459%2C953%2C2754%2C12775%2C8140%2C1211%2C2197%2C1625%2C8030%2C3571%2C7020%2C3426%2C1304%2C8445%2C4170%2C6079%2C1102%2C8954%2C2548%2C1492%2C2704%2C1287%2C3223%2C2429%2C3951%2C491%2C4954%2C2314%2C3342%2C3260&cl=908345110&seq=3&docid=9KbrrQstrT4&ei=T5D4afb9LYbHybgP4JOjoAQ&event=streamingstats&plid=AAZQ_QgFMXuHtoVs&cbrand=apple&cbr=HeadlessChrome&cbrver=147.0.7727.15&c=WEB_EMBEDDED_PLAYER&cver=2.20260501.01.00&cplayer=UNIPLAYER&cos=Macintosh&cosver=10_15_7&cplatform=DESKTOP&vps=19.765:N&bwm=19.765:2423175:0.080&bwe=19.765:16749995&bat=19.765:0.38:0&cmt=19.765:19.573&bh=19.765:40.677&qclc=ChBhei16YjlVQndjMy0ybmtPEAM :: net::ERR_ABORTED"
+  },
+  {
+    "route": "/experience/ricks-cafe-cliff-diving-and-sunset",
+    "severity": "request-failed",
+    "msg": "POST https://www.youtube.com/youtubei/v1/log_event?alt=json :: net::ERR_ABORTED"
+  },
+  {
+    "route": "/experience/ricks-cafe-cliff-diving-and-sunset",
+    "severity": "request-failed",
+    "msg": "GET https://www.youtube.com/api/stats/watchtime?ns=yt&el=embedded&cpn=az-zb9UBwc3-2nkO&ver=2&cmt=19.573&fmt=788&fs=0&rt=19.765&euri=https%3A%2F%2Fmapltours.com%2F&lact=19775&cl=908345110&state=paused&volume=100&cbrand=apple&cbr=HeadlessChrome&cbrver=147.0.7727.15&c=WEB_EMBEDDED_PLAYER&cver=2.20260501.01.00&cplayer=UNIPLAYER&cos=Macintosh&cosver=10_15_7&cplatform=DESKTOP&autoplay=1&final=1&delay=4&hl=en_US&cr=CA&len=132&afmt=251&idpj=-3&ldpj=-26&rti=28&size=480%3A900&inview=0&st=17.813&et=19.573&muted=1&docid=9KbrrQstrT4&ei=T5D4afb9LYbHybgP4JOjoAQ&plid=AAZQ_QgFMXuHtoVs&referrer=https%3A%2F%2Fwww.youtube.com%2Fembed%2F9KbrrQstrT4%3Fautoplay%3D1%26mute%3D1%26loop%3D1%26controls%3D0%26showinfo%3D0%26modestbranding%3D1%26playlist%3D9KbrrQstrT4%26playsinline%3D1&list=TLGG3ZL90ImJVZ8wNDA1MjAyNg&of=py7o7P4OD80kWkRNFto-NA&vm=CAEQABgEOjJBSHFpSlRLS2czaWNSZnJZRU1wYWxROEx0NGVBbGxnY0RlQldhMkpQTENFemk2S2dNQWJkQUxkcUFQSkVMMk1lSlRGeDZ4NmNuYzV0TjN2UlVBMTMzRklhcTlNUmRfakxqRkw4QTZveGRwMndQVHJVRnRqMmFFdUE2OHRSVnpKRnFvWDJfX3JaSUx0ZlQ0S1Zva0lGYmxYbw :: net::ERR_ABORTED"
+  },
+  {
+    "route": "/experience/ricks-cafe-cliff-diving-and-sunset",
+    "severity": "request-failed",
+    "msg": "POST https://www.google-analytics.com/g/collect?v=2&tid=G-2JVWPL4GBE&gtm=45je64t1v9249186408za200zd9249186408&_p=1777897553023&gcd=13l3l3l3l1l1&npa=0&dma=0&_eu=AAAAAAQC&are=1&cid=1374919154.1777897486&frm=0&pscdl=noapi&rcb=0&sr=1440x900&uaa=arm&uab=64&uafvl=HeadlessChrome%3B147.0.7727.15%7CNot.A%252FBrand%3B8.0.0.0%7CChromium%3B147.0.7727.15&uam=&uamb=0&uap=macOS&uapv=15.4.1&uaw=0&ul=en-us&_s=3&tag_exp=0~115938465~115938469~116363098&sid=1777897485&sct=1&seg=1&dl=https%3A%2F%2Fmapltours.com%2Fexperience%2Fricks-cafe-cliff-diving-and-sunset&dt=MAPL%20Tours%20Jamaica%20%7C%20Best%20Tours%20%26%20Cultural%20Experiences%20in%20Jamaica&en=user_engagement&_et=18306&tfd=20649 :: net::ERR_ABORTED"
+  },
+  {
+    "route": "/experience/ricks-cafe-cliff-diving-and-sunset",
+    "severity": "request-failed",
+    "msg": "GET https://www.youtube.com/embed/9KbrrQstrT4?autoplay=1&mute=1&loop=1&controls=0&showinfo=0&modestbranding=1&playlist=9KbrrQstrT4&playsinline=1 :: net::ERR_ABORTED"
+  },
+  {
+    "route": "/experience/ricks-cafe-cliff-diving-and-sunset",
+    "severity": "page-error",
+    "msg": "Error: Minified React error #425; visit https://react.dev/errors/425 for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+  },
+  {
+    "route": "/experience/ricks-cafe-cliff-diving-and-sunset",
+    "severity": "page-error",
+    "msg": "Error: Minified React error #425; visit https://react.dev/errors/425 for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+  },
+  {
+    "route": "/experience/ricks-cafe-cliff-diving-and-sunset",
+    "severity": "page-error",
+    "msg": "Error: Minified React error #425; visit https://react.dev/errors/425 for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+  },
+  {
+    "route": "/experience/ricks-cafe-cliff-diving-and-sunset",
+    "severity": "page-error",
+    "msg": "Error: Minified React error #425; visit https://react.dev/errors/425 for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+  },
+  {
+    "route": "/experience/ricks-cafe-cliff-diving-and-sunset",
+    "severity": "page-error",
+    "msg": "Error: Minified React error #425; visit https://react.dev/errors/425 for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+  },
+  {
+    "route": "/experience/ricks-cafe-cliff-diving-and-sunset",
+    "severity": "page-error",
+    "msg": "Error: Minified React error #425; visit https://react.dev/errors/425 for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+  },
+  {
+    "route": "/experience/ricks-cafe-cliff-diving-and-sunset",
+    "severity": "page-error",
+    "msg": "Error: Minified React error #418; visit https://react.dev/errors/418 for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+  },
+  {
+    "route": "/experience/ricks-cafe-cliff-diving-and-sunset",
+    "severity": "page-error",
+    "msg": "Error: Minified React error #423; visit https://react.dev/errors/423 for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+  },
+  {
+    "route": "/experience/ricks-cafe-cliff-diving-and-sunset",
+    "severity": "request-failed",
+    "msg": "HEAD https://eybeezhvuokziyczkkkl.supabase.co/rest/v1/experience_likes?select=id&experience_id=eq.1 :: net::ERR_ABORTED"
+  },
+  {
+    "route": "/experience/ricks-cafe-cliff-diving-and-sunset",
+    "severity": "request-failed",
+    "msg": "HEAD https://eybeezhvuokziyczkkkl.supabase.co/rest/v1/experience_likes?select=id&experience_id=eq.14 :: net::ERR_ABORTED"
+  },
+  {
+    "route": "/experience/ricks-cafe-cliff-diving-and-sunset",
+    "severity": "request-failed",
+    "msg": "HEAD https://eybeezhvuokziyczkkkl.supabase.co/rest/v1/experience_likes?select=id&experience_id=eq.3 :: net::ERR_ABORTED"
+  },
+  {
+    "route": "/experience/ricks-cafe-cliff-diving-and-sunset",
+    "severity": "request-failed",
+    "msg": "HEAD https://eybeezhvuokziyczkkkl.supabase.co/rest/v1/experience_likes?select=id&experience_id=eq.17 :: net::ERR_ABORTED"
+  },
+  {
+    "route": "/experience/ricks-cafe-cliff-diving-and-sunset",
+    "severity": "request-failed",
+    "msg": "HEAD https://eybeezhvuokziyczkkkl.supabase.co/rest/v1/experience_likes?select=id&experience_id=eq.12 :: net::ERR_ABORTED"
+  },
+  {
+    "route": "/experience/ricks-cafe-cliff-diving-and-sunset",
+    "severity": "request-failed",
+    "msg": "HEAD https://eybeezhvuokziyczkkkl.supabase.co/rest/v1/experience_likes?select=id&experience_id=eq.13 :: net::ERR_ABORTED"
+  },
+  {
+    "route": "/experience/ricks-cafe-cliff-diving-and-sunset",
+    "severity": "request-failed",
+    "msg": "HEAD https://eybeezhvuokziyczkkkl.supabase.co/rest/v1/experience_likes?select=id&experience_id=eq.6 :: net::ERR_ABORTED"
+  },
+  {
+    "route": "/experience/ricks-cafe-cliff-diving-and-sunset",
+    "severity": "request-failed",
+    "msg": "HEAD https://eybeezhvuokziyczkkkl.supabase.co/rest/v1/experience_likes?select=id&experience_id=eq.9 :: net::ERR_ABORTED"
+  },
+  {
+    "route": "/experience/ricks-cafe-cliff-diving-and-sunset",
+    "severity": "request-failed",
+    "msg": "HEAD https://eybeezhvuokziyczkkkl.supabase.co/rest/v1/experience_likes?select=id&experience_id=eq.11 :: net::ERR_ABORTED"
+  },
+  {
+    "route": "/experience/ricks-cafe-cliff-diving-and-sunset",
+    "severity": "request-failed",
+    "msg": "HEAD https://eybeezhvuokziyczkkkl.supabase.co/rest/v1/experience_likes?select=id&experience_id=eq.7 :: net::ERR_ABORTED"
+  },
+  {
+    "route": "/experience/ricks-cafe-cliff-diving-and-sunset",
+    "severity": "request-failed",
+    "msg": "HEAD https://eybeezhvuokziyczkkkl.supabase.co/rest/v1/experience_likes?select=id&experience_id=eq.18 :: net::ERR_ABORTED"
+  },
+  {
+    "route": "/experience/ricks-cafe-cliff-diving-and-sunset",
+    "severity": "request-failed",
+    "msg": "HEAD https://eybeezhvuokziyczkkkl.supabase.co/rest/v1/experience_likes?select=id&experience_id=eq.2 :: net::ERR_ABORTED"
+  },
+  {
+    "route": "/experience/ricks-cafe-cliff-diving-and-sunset",
+    "severity": "request-failed",
+    "msg": "HEAD https://eybeezhvuokziyczkkkl.supabase.co/rest/v1/experience_likes?select=id&experience_id=eq.15 :: net::ERR_ABORTED"
+  },
+  {
+    "route": "/experience/ricks-cafe-cliff-diving-and-sunset",
+    "severity": "request-failed",
+    "msg": "HEAD https://eybeezhvuokziyczkkkl.supabase.co/rest/v1/experience_likes?select=id&experience_id=eq.4 :: net::ERR_ABORTED"
+  },
+  {
+    "route": "/experience/ricks-cafe-cliff-diving-and-sunset",
+    "severity": "request-failed",
+    "msg": "HEAD https://eybeezhvuokziyczkkkl.supabase.co/rest/v1/experience_likes?select=id&experience_id=eq.8 :: net::ERR_ABORTED"
+  },
+  {
+    "route": "/experience/ricks-cafe-cliff-diving-and-sunset",
+    "severity": "request-failed",
+    "msg": "HEAD https://eybeezhvuokziyczkkkl.supabase.co/rest/v1/experience_likes?select=id&experience_id=eq.19 :: net::ERR_ABORTED"
+  },
+  {
+    "route": "/experience/ricks-cafe-cliff-diving-and-sunset",
+    "severity": "request-failed",
+    "msg": "HEAD https://eybeezhvuokziyczkkkl.supabase.co/rest/v1/experience_likes?select=id&experience_id=eq.5 :: net::ERR_ABORTED"
+  },
+  {
+    "route": "/experience/ricks-cafe-cliff-diving-and-sunset",
+    "severity": "request-failed",
+    "msg": "HEAD https://eybeezhvuokziyczkkkl.supabase.co/rest/v1/experience_likes?select=id&experience_id=eq.10 :: net::ERR_ABORTED"
+  },
+  {
+    "route": "/experience/ricks-cafe-cliff-diving-and-sunset",
+    "severity": "http-400",
+    "msg": "GET https://eybeezhvuokziyczkkkl.supabase.co/rest/v1/comments?select=id%2Cexperience_id%2Cuser_id%2Ctext%2Ccreated_at%2Cparent_id&experience_id=eq.1&order=created_at.asc&limit=20"
+  },
+  {
+    "route": "/experience/ricks-cafe-cliff-diving-and-sunset",
+    "severity": "console-error",
+    "msg": "Failed to load resource: the server responded with a status of 400 ()"
+  },
+  {
+    "route": "/experience/ricks-cafe-cliff-diving-and-sunset",
+    "severity": "request-failed",
+    "msg": "HEAD https://eybeezhvuokziyczkkkl.supabase.co/rest/v1/experience_likes?select=id&experience_id=eq.16 :: net::ERR_ABORTED"
+  },
+  {
+    "route": "/experience/ricks-cafe-cliff-diving-and-sunset",
+    "severity": "console-error",
+    "msg": "[comments] select failed {code: 42703, details: null, hint: null, message: column comments.parent_id does not exist}"
+  },
+  {
+    "route": "/experience/ricks-cafe-cliff-diving-and-sunset",
+    "severity": "console-error",
+    "msg": "[swr-cache] fetch failed for \"comments:1\" {code: 42703, details: null, hint: null, message: column comments.parent_id does not exist}"
+  },
+  {
+    "route": "/experience/ricks-cafe-cliff-diving-and-sunset",
+    "severity": "console-warn",
+    "msg": "Hotjar not launching due to suspicious userAgent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/147.0.7727.15 Safari/537.36"
+  },
+  {
+    "route": "/experience/ricks-cafe-cliff-diving-and-sunset",
+    "severity": "request-failed",
+    "msg": "POST https://www.google-analytics.com/g/collect?v=2&tid=G-2JVWPL4GBE&gtm=45je64t1v9249186408za200zd9249186408&_p=1777897571632&gcd=13l3l3l3l1l1&npa=0&dma=0&_eu=AEAEAAQC&ae=a&are=1&cid=1374919154.1777897486&frm=0&pscdl=noapi&rcb=17&sr=1440x900&uaa=arm&uab=64&uafvl=HeadlessChrome%3B147.0.7727.15%7CNot.A%252FBrand%3B8.0.0.0%7CChromium%3B147.0.7727.15&uam=&uamb=0&uap=macOS&uapv=15.4.1&uaw=0&ul=en-us&_s=1&tag_exp=0~115938466~115938469~118289195&sid=1777897485&sct=1&seg=1&dl=https%3A%2F%2Fmapltours.com%2Fexperience%2Fricks-cafe-cliff-diving-and-sunset&dt=MAPL%20Tours%20Jamaica%20%7C%20Best%20Tours%20%26%20Cultural%20Experiences%20in%20Jamaica&en=scroll&epn.percent_scrolled=90&tfd=717 :: net::ERR_ABORTED"
+  },
+  {
+    "route": "/experience/ricks-cafe-cliff-diving-and-sunset",
+    "severity": "request-failed",
+    "msg": "POST https://www.youtube.com/api/stats/qoe?fmt=788&cpn=YX7lTFV4osZN4REh&el=embedded&ns=yt&fexp=v1%2C23848212%2C156432%2C27005591%2C53408%2C34656%2C106030%2C18644%2C117689%2C9252%2C3479%2C13030%2C6257%2C16949%2C100702%2C12607%2C2498%2C25059%2C4174%2C30447%2C13517%2C5188%2C21437%2C4571%2C11038%2C1977%2C16088%2C9404%2C23826%2C9500%2C1840%2C22474%2C11771%2C11471%2C13159%2C21520%2C10985%2C5783%2C1455%2C2467%2C14341%2C3305%2C894%2C459%2C953%2C2754%2C12775%2C8140%2C1211%2C2197%2C1625%2C8030%2C3571%2C7020%2C3426%2C1304%2C8445%2C4170%2C6079%2C1102%2C8954%2C2548%2C1492%2C2704%2C1287%2C3223%2C2429%2C3951%2C491%2C4954%2C2314%2C3342%2C3260&cl=908345110&seq=1&docid=9KbrrQstrT4&ei=Y5D4aefJLqy1ir4Pldm7gQ8&event=streamingstats&plid=AAZQ_Qk2t5bpQzPs&cbrand=apple&cbr=HeadlessChrome&cbrver=147.0.7727.15&c=WEB_EMBEDDED_PLAYER&cver=2.20260501.01.00&cplayer=UNIPLAYER&cos=Macintosh&cosver=10_15_7&cplatform=DESKTOP&vps=0.000:N,0.007:B,0.106:B,0.106:B&ctmp=dttg:t.0;dtt.1;gl.0&cat=streaming&cmt=0.007:0.000,0.106:0.000&vfs=0.106:788:788::r:sms.0&view=0.106:480:900&bwe=0.106:642253&bat=0.106:0.38:0&vis=0.106:0&bh=0.106:0.000&qclc=ChBZWDdsVEZWNG9zWk40UkVoEAE :: net::ERR_ABORTED"
+  },
+  {
+    "route": "/experience/ricks-cafe-cliff-diving-and-sunset",
+    "severity": "request-failed",
+    "msg": "GET https://www.youtube.com/ptracking?html5=1&video_id=9KbrrQstrT4&cpn=YX7lTFV4osZN4REh&ei=Y5D4aefJLqy1ir4Pldm7gQ8&ptk=youtube_single&oid=nyTz96w3TdQCATIubnWpEw&ptchn=1c6TamEwT02iC4LKv9WGlQ&pltype=content :: net::ERR_ABORTED"
+  },
+  {
+    "route": "/experience/ricks-cafe-cliff-diving-and-sunset",
+    "severity": "request-failed",
+    "msg": "GET https://www.youtube.com/api/stats/playback?ns=yt&el=embedded&cpn=YX7lTFV4osZN4REh&ver=2&cmt=0.055&fmt=788&fs=0&rt=0.242&euri=https%3A%2F%2Fmapltours.com%2F&lact=254&cl=908345110&mos=1&volume=100&cbrand=apple&cbr=HeadlessChrome&cbrver=147.0.7727.15&c=WEB_EMBEDDED_PLAYER&cver=2.20260501.01.00&cplayer=UNIPLAYER&cos=Macintosh&cosver=10_15_7&cplatform=DESKTOP&autoplay=1&epm=1&delay=4&hl=en_US&cr=CA&len=131.761&fexp=v1%2C23848212%2C156432%2C27005591%2C53408%2C34656%2C106030%2C18644%2C117689%2C9252%2C3479%2C13030%2C6257%2C16949%2C100702%2C12607%2C2498%2C25059%2C4174%2C30447%2C13517%2C5188%2C21437%2C4571%2C11038%2C1977%2C16088%2C9404%2C23826%2C9500%2C1840%2C22474%2C11771%2C11471%2C13159%2C21520%2C10985%2C5783%2C1455%2C2467%2C14341%2C3305%2C894%2C459%2C953%2C2754%2C12775%2C8140%2C1211%2C2197%2C1625%2C8030%2C3571%2C7020%2C3426%2C1304%2C8445%2C4170%2C6079%2C1102%2C8954%2C2548%2C1492%2C2704%2C1287%2C3223%2C2429%2C3951%2C491%2C4954%2C2314%2C3342%2C3260&rtn=6&afmt=251&size=480%3A900&inview=0&muted=1&docid=9KbrrQstrT4&ei=Y5D4aefJLqy1ir4Pldm7gQ8&plid=AAZQ_Qk2t5bpQzPs&referrer=https%3A%2F%2Fwww.youtube.com%2Fembed%2F9KbrrQstrT4%3Fautoplay%3D1%26mute%3D1%26loop%3D1%26controls%3D0%26showinfo%3D0%26modestbranding%3D1%26playlist%3D9KbrrQstrT4%26playsinline%3D1&list=TLGG3ZL90ImJVZ8wNDA1MjAyNg&of=py7o7P4OD80kWkRNFto-NA&vm=CAEQABgEOjJBSHFpSlRLSFZSNXIzLWQ4ZFVqd2NMMTNBSFE3REs0dzRpbkh0SGR6QnczNTcyVDJzd2JkQUxkcUFQS0o5YWlPNkFjMXV2WmFCdEYySVpnWjJQN0ZmSFJSZ2xJODFSdnFONkF2MWRtUWQ0a0FVNERIMG92ajNxU09KNnlvQW5BdDJvcm5SdGtFNVF5UUxRUk9KMTZwV3k2dQ :: net::ERR_ABORTED"
+  },
+  {
+    "route": "/experience/ricks-cafe-cliff-diving-and-sunset",
+    "severity": "console-warn",
+    "msg": "[.WebGL-0x10c001c6000]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels"
+  },
+  {
+    "route": "/experience/sunrise-coffee-trek-and-farm-tasting",
+    "severity": "request-failed",
+    "msg": "POST https://www.youtube.com/youtubei/v1/log_event?alt=json :: net::ERR_ABORTED"
+  },
+  {
+    "route": "/experience/sunrise-coffee-trek-and-farm-tasting",
+    "severity": "request-failed",
+    "msg": "GET https://www.youtube.com/api/stats/watchtime?ns=yt&el=embedded&cpn=YX7lTFV4osZN4REh&ver=2&cmt=3.897&fmt=788&fs=0&rt=4.084&euri=https%3A%2F%2Fmapltours.com%2F&lact=4095&cl=908345110&state=paused&volume=100&cbrand=apple&cbr=HeadlessChrome&cbrver=147.0.7727.15&c=WEB_EMBEDDED_PLAYER&cver=2.20260501.01.00&cplayer=UNIPLAYER&cos=Macintosh&cosver=10_15_7&cplatform=DESKTOP&autoplay=1&final=1&delay=4&hl=en_US&cr=CA&len=132&afmt=251&idpj=-5&ldpj=-7&rti=6&size=480%3A900&inview=0&st=0&et=3.897&muted=1&docid=9KbrrQstrT4&ei=Y5D4aefJLqy1ir4Pldm7gQ8&plid=AAZQ_Qk2t5bpQzPs&referrer=https%3A%2F%2Fwww.youtube.com%2Fembed%2F9KbrrQstrT4%3Fautoplay%3D1%26mute%3D1%26loop%3D1%26controls%3D0%26showinfo%3D0%26modestbranding%3D1%26playlist%3D9KbrrQstrT4%26playsinline%3D1&list=TLGG3ZL90ImJVZ8wNDA1MjAyNg&of=py7o7P4OD80kWkRNFto-NA&vm=CAEQABgEOjJBSHFpSlRLSFZSNXIzLWQ4ZFVqd2NMMTNBSFE3REs0dzRpbkh0SGR6QnczNTcyVDJzd2JkQUxkcUFQS0o5YWlPNkFjMXV2WmFCdEYySVpnWjJQN0ZmSFJSZ2xJODFSdnFONkF2MWRtUWQ0a0FVNERIMG92ajNxU09KNnlvQW5BdDJvcm5SdGtFNVF5UUxRUk9KMTZwV3k2dQ :: net::ERR_ABORTED"
+  },
+  {
+    "route": "/experience/sunrise-coffee-trek-and-farm-tasting",
+    "severity": "request-failed",
+    "msg": "POST https://www.youtube.com/api/stats/qoe?fmt=788&afmt=251&cpn=YX7lTFV4osZN4REh&el=embedded&ns=yt&fexp=v1%2C23848212%2C156432%2C27005591%2C53408%2C34656%2C106030%2C18644%2C117689%2C9252%2C3479%2C13030%2C6257%2C16949%2C100702%2C12607%2C2498%2C25059%2C4174%2C30447%2C13517%2C5188%2C21437%2C4571%2C11038%2C1977%2C16088%2C9404%2C23826%2C9500%2C1840%2C22474%2C11771%2C11471%2C13159%2C21520%2C10985%2C5783%2C1455%2C2467%2C14341%2C3305%2C894%2C459%2C953%2C2754%2C12775%2C8140%2C1211%2C2197%2C1625%2C8030%2C3571%2C7020%2C3426%2C1304%2C8445%2C4170%2C6079%2C1102%2C8954%2C2548%2C1492%2C2704%2C1287%2C3223%2C2429%2C3951%2C491%2C4954%2C2314%2C3342%2C3260&cl=908345110&seq=2&docid=9KbrrQstrT4&ei=Y5D4aefJLqy1ir4Pldm7gQ8&event=streamingstats&plid=AAZQ_Qk2t5bpQzPs&cbrand=apple&cbr=HeadlessChrome&cbrver=147.0.7727.15&c=WEB_EMBEDDED_PLAYER&cver=2.20260501.01.00&cplayer=UNIPLAYER&cos=Macintosh&cosver=10_15_7&cplatform=DESKTOP&afs=0.108:251;CggKA2RyYxIBMQ::i:fl.-14.09;vg.0;nm.4;sms.0&ctmp=atrkchg:t.108;id.und;m.0&user_intent=0.003&bh=0.242:18.018,4.083:26.933&cmt=0.242:0.055,0.993:0.806,4.083:3.897&vps=0.242:PL,4.083:N&bwm=4.083:2978190:0.189&bwe=4.083:12030284&bat=4.083:0.38:0&df=4.083:0&qclc=ChBZWDdsVEZWNG9zWk40UkVoEAI :: net::ERR_ABORTED"
+  },
+  {
+    "route": "/experience/sunrise-coffee-trek-and-farm-tasting",
+    "severity": "request-failed",
+    "msg": "POST https://www.google-analytics.com/g/collect?v=2&tid=G-2JVWPL4GBE&gtm=45je64t1v9249186408za200zd9249186408&_p=1777897571632&gcd=13l3l3l3l1l1&npa=0&dma=0&_eu=AAAAAAQC&are=1&cid=1374919154.1777897486&frm=0&pscdl=noapi&rcb=17&sr=1440x900&uaa=arm&uab=64&uafvl=HeadlessChrome%3B147.0.7727.15%7CNot.A%252FBrand%3B8.0.0.0%7CChromium%3B147.0.7727.15&uam=&uamb=0&uap=macOS&uapv=15.4.1&uaw=0&ul=en-us&tag_exp=0~115938466~115938469~118289195&sid=1777897485&sct=1&seg=1&dl=https%3A%2F%2Fmapltours.com%2Fexperience%2Fricks-cafe-cliff-diving-and-sunset&dt=MAPL%20Tours%20Jamaica%20%7C%20Best%20Tours%20%26%20Cultural%20Experiences%20in%20Jamaica&_s=2&tfd=4746 :: net::ERR_ABORTED"
+  },
+  {
+    "route": "/experience/sunrise-coffee-trek-and-farm-tasting",
+    "severity": "request-failed",
+    "msg": "GET https://www.youtube.com/embed/9KbrrQstrT4?autoplay=1&mute=1&loop=1&controls=0&showinfo=0&modestbranding=1&playlist=9KbrrQstrT4&playsinline=1 :: net::ERR_ABORTED"
+  },
+  {
+    "route": "/experience/sunrise-coffee-trek-and-farm-tasting",
+    "severity": "page-error",
+    "msg": "Error: Minified React error #425; visit https://react.dev/errors/425 for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+  },
+  {
+    "route": "/experience/sunrise-coffee-trek-and-farm-tasting",
+    "severity": "page-error",
+    "msg": "Error: Minified React error #425; visit https://react.dev/errors/425 for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+  },
+  {
+    "route": "/experience/sunrise-coffee-trek-and-farm-tasting",
+    "severity": "page-error",
+    "msg": "Error: Minified React error #425; visit https://react.dev/errors/425 for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+  },
+  {
+    "route": "/experience/sunrise-coffee-trek-and-farm-tasting",
+    "severity": "page-error",
+    "msg": "Error: Minified React error #425; visit https://react.dev/errors/425 for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+  },
+  {
+    "route": "/experience/sunrise-coffee-trek-and-farm-tasting",
+    "severity": "page-error",
+    "msg": "Error: Minified React error #425; visit https://react.dev/errors/425 for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+  },
+  {
+    "route": "/experience/sunrise-coffee-trek-and-farm-tasting",
+    "severity": "page-error",
+    "msg": "Error: Minified React error #425; visit https://react.dev/errors/425 for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+  },
+  {
+    "route": "/experience/sunrise-coffee-trek-and-farm-tasting",
+    "severity": "page-error",
+    "msg": "Error: Minified React error #418; visit https://react.dev/errors/418 for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+  },
+  {
+    "route": "/experience/sunrise-coffee-trek-and-farm-tasting",
+    "severity": "page-error",
+    "msg": "Error: Minified React error #423; visit https://react.dev/errors/423 for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+  },
+  {
+    "route": "/experience/sunrise-coffee-trek-and-farm-tasting",
+    "severity": "request-failed",
+    "msg": "HEAD https://eybeezhvuokziyczkkkl.supabase.co/rest/v1/experience_likes?select=id&experience_id=eq.2 :: net::ERR_ABORTED"
+  },
+  {
+    "route": "/experience/sunrise-coffee-trek-and-farm-tasting",
+    "severity": "request-failed",
+    "msg": "HEAD https://eybeezhvuokziyczkkkl.supabase.co/rest/v1/experience_likes?select=id&experience_id=eq.3 :: net::ERR_ABORTED"
+  },
+  {
+    "route": "/experience/sunrise-coffee-trek-and-farm-tasting",
+    "severity": "request-failed",
+    "msg": "HEAD https://eybeezhvuokziyczkkkl.supabase.co/rest/v1/experience_likes?select=id&experience_id=eq.9 :: net::ERR_ABORTED"
+  },
+  {
+    "route": "/experience/sunrise-coffee-trek-and-farm-tasting",
+    "severity": "request-failed",
+    "msg": "HEAD https://eybeezhvuokziyczkkkl.supabase.co/rest/v1/experience_likes?select=id&experience_id=eq.4 :: net::ERR_ABORTED"
+  },
+  {
+    "route": "/experience/sunrise-coffee-trek-and-farm-tasting",
+    "severity": "request-failed",
+    "msg": "HEAD https://eybeezhvuokziyczkkkl.supabase.co/rest/v1/experience_likes?select=id&experience_id=eq.7 :: net::ERR_ABORTED"
+  },
+  {
+    "route": "/experience/sunrise-coffee-trek-and-farm-tasting",
+    "severity": "request-failed",
+    "msg": "HEAD https://eybeezhvuokziyczkkkl.supabase.co/rest/v1/experience_likes?select=id&experience_id=eq.5 :: net::ERR_ABORTED"
+  },
+  {
+    "route": "/experience/sunrise-coffee-trek-and-farm-tasting",
+    "severity": "request-failed",
+    "msg": "HEAD https://eybeezhvuokziyczkkkl.supabase.co/rest/v1/experience_likes?select=id&experience_id=eq.1 :: net::ERR_ABORTED"
+  },
+  {
+    "route": "/experience/sunrise-coffee-trek-and-farm-tasting",
+    "severity": "request-failed",
+    "msg": "HEAD https://eybeezhvuokziyczkkkl.supabase.co/rest/v1/experience_likes?select=id&experience_id=eq.10 :: net::ERR_ABORTED"
+  },
+  {
+    "route": "/experience/sunrise-coffee-trek-and-farm-tasting",
+    "severity": "request-failed",
+    "msg": "HEAD https://eybeezhvuokziyczkkkl.supabase.co/rest/v1/experience_likes?select=id&experience_id=eq.14 :: net::ERR_ABORTED"
+  },
+  {
+    "route": "/experience/sunrise-coffee-trek-and-farm-tasting",
+    "severity": "request-failed",
+    "msg": "HEAD https://eybeezhvuokziyczkkkl.supabase.co/rest/v1/experience_likes?select=id&experience_id=eq.6 :: net::ERR_ABORTED"
+  },
+  {
+    "route": "/experience/sunrise-coffee-trek-and-farm-tasting",
+    "severity": "request-failed",
+    "msg": "HEAD https://eybeezhvuokziyczkkkl.supabase.co/rest/v1/experience_likes?select=id&experience_id=eq.12 :: net::ERR_ABORTED"
+  },
+  {
+    "route": "/experience/sunrise-coffee-trek-and-farm-tasting",
+    "severity": "request-failed",
+    "msg": "HEAD https://eybeezhvuokziyczkkkl.supabase.co/rest/v1/experience_likes?select=id&experience_id=eq.15 :: net::ERR_ABORTED"
+  },
+  {
+    "route": "/experience/sunrise-coffee-trek-and-farm-tasting",
+    "severity": "request-failed",
+    "msg": "HEAD https://eybeezhvuokziyczkkkl.supabase.co/rest/v1/experience_likes?select=id&experience_id=eq.13 :: net::ERR_ABORTED"
+  },
+  {
+    "route": "/experience/sunrise-coffee-trek-and-farm-tasting",
+    "severity": "request-failed",
+    "msg": "HEAD https://eybeezhvuokziyczkkkl.supabase.co/rest/v1/experience_likes?select=id&experience_id=eq.18 :: net::ERR_ABORTED"
+  },
+  {
+    "route": "/experience/sunrise-coffee-trek-and-farm-tasting",
+    "severity": "request-failed",
+    "msg": "HEAD https://eybeezhvuokziyczkkkl.supabase.co/rest/v1/experience_likes?select=id&experience_id=eq.19 :: net::ERR_ABORTED"
+  },
+  {
+    "route": "/experience/sunrise-coffee-trek-and-farm-tasting",
+    "severity": "request-failed",
+    "msg": "HEAD https://eybeezhvuokziyczkkkl.supabase.co/rest/v1/experience_likes?select=id&experience_id=eq.16 :: net::ERR_ABORTED"
+  },
+  {
+    "route": "/experience/sunrise-coffee-trek-and-farm-tasting",
+    "severity": "request-failed",
+    "msg": "HEAD https://eybeezhvuokziyczkkkl.supabase.co/rest/v1/experience_likes?select=id&experience_id=eq.8 :: net::ERR_ABORTED"
+  },
+  {
+    "route": "/experience/sunrise-coffee-trek-and-farm-tasting",
+    "severity": "request-failed",
+    "msg": "HEAD https://eybeezhvuokziyczkkkl.supabase.co/rest/v1/experience_likes?select=id&experience_id=eq.17 :: net::ERR_ABORTED"
+  },
+  {
+    "route": "/experience/sunrise-coffee-trek-and-farm-tasting",
+    "severity": "request-failed",
+    "msg": "HEAD https://eybeezhvuokziyczkkkl.supabase.co/rest/v1/experience_likes?select=id&experience_id=eq.11 :: net::ERR_ABORTED"
+  },
+  {
+    "route": "/experience/sunrise-coffee-trek-and-farm-tasting",
+    "severity": "http-400",
+    "msg": "GET https://eybeezhvuokziyczkkkl.supabase.co/rest/v1/comments?select=id%2Cexperience_id%2Cuser_id%2Ctext%2Ccreated_at%2Cparent_id&experience_id=eq.2&order=created_at.asc&limit=20"
+  },
+  {
+    "route": "/experience/sunrise-coffee-trek-and-farm-tasting",
+    "severity": "console-error",
+    "msg": "Failed to load resource: the server responded with a status of 400 ()"
+  },
+  {
+    "route": "/experience/sunrise-coffee-trek-and-farm-tasting",
+    "severity": "console-error",
+    "msg": "[comments] select failed {code: 42703, details: null, hint: null, message: column comments.parent_id does not exist}"
+  },
+  {
+    "route": "/experience/sunrise-coffee-trek-and-farm-tasting",
+    "severity": "console-error",
+    "msg": "[swr-cache] fetch failed for \"comments:2\" {code: 42703, details: null, hint: null, message: column comments.parent_id does not exist}"
+  },
+  {
+    "route": "/experience/sunrise-coffee-trek-and-farm-tasting",
+    "severity": "request-failed",
+    "msg": "POST https://www.youtube.com/api/stats/qoe?fmt=788&cpn=F-VK-H4Sk1IiTwnI&el=embedded&ns=yt&fexp=v1%2C23848212%2C156432%2C27005591%2C53408%2C34656%2C106030%2C18644%2C117689%2C9252%2C3479%2C13030%2C23206%2C100702%2C12607%2C2498%2C25059%2C4174%2C30447%2C13517%2C5188%2C21437%2C4571%2C11038%2C1977%2C16088%2C9404%2C23826%2C9500%2C1840%2C22474%2C11771%2C11471%2C13159%2C21520%2C10984%2C5784%2C1455%2C2467%2C14341%2C3305%2C894%2C459%2C953%2C2754%2C12775%2C8140%2C1211%2C2197%2C1625%2C8030%2C3571%2C3394%2C3626%2C3426%2C1304%2C8445%2C4170%2C6079%2C1102%2C8954%2C2548%2C1492%2C2704%2C1287%2C3223%2C2429%2C3951%2C491%2C4954%2C2314%2C3342%2C3260&cl=908345110&seq=1&docid=9KbrrQstrT4&ei=aJD4aa7LG9yTlu8PoqSI2As&event=streamingstats&plid=AAZQ_Ql-JEsr8acq&cbrand=apple&cbr=HeadlessChrome&cbrver=147.0.7727.15&c=WEB_EMBEDDED_PLAYER&cver=2.20260501.01.00&cplayer=UNIPLAYER&cos=Macintosh&cosver=10_15_7&cplatform=DESKTOP&vps=0.000:N,0.007:B,0.392:B,0.392:B&ctmp=dttg:t.0;dtt.1;gl.0&cat=streaming&cmt=0.007:0.000,0.392:0.000&vfs=0.392:788:788::r:sms.0&view=0.392:480:900&bwe=0.392:642253&bat=0.392:0.38:0&vis=0.392:0&bh=0.392:0.000&qclc=ChBGLVZLLUg0U2sxSWlUd25JEAE :: net::ERR_ABORTED"
+  },
+  {
+    "route": "/experience/sunrise-coffee-trek-and-farm-tasting",
+    "severity": "request-failed",
+    "msg": "GET https://www.youtube.com/ptracking?html5=1&video_id=9KbrrQstrT4&cpn=F-VK-H4Sk1IiTwnI&ei=aJD4aa7LG9yTlu8PoqSI2As&ptk=youtube_single&oid=nyTz96w3TdQCATIubnWpEw&ptchn=1c6TamEwT02iC4LKv9WGlQ&pltype=content :: net::ERR_ABORTED"
+  },
+  {
+    "route": "/experience/sunrise-coffee-trek-and-farm-tasting",
+    "severity": "request-failed",
+    "msg": "GET https://www.youtube.com/api/stats/playback?ns=yt&el=embedded&cpn=F-VK-H4Sk1IiTwnI&ver=2&cmt=0.021&fmt=788&fs=0&rt=0.897&euri=https%3A%2F%2Fmapltours.com%2F&lact=910&cl=908345110&mos=1&volume=100&cbrand=apple&cbr=HeadlessChrome&cbrver=147.0.7727.15&c=WEB_EMBEDDED_PLAYER&cver=2.20260501.01.00&cplayer=UNIPLAYER&cos=Macintosh&cosver=10_15_7&cplatform=DESKTOP&autoplay=1&epm=1&delay=4&hl=en_US&cr=CA&len=131.761&fexp=v1%2C23848212%2C156432%2C27005591%2C53408%2C34656%2C106030%2C18644%2C117689%2C9252%2C3479%2C13030%2C23206%2C100702%2C12607%2C2498%2C25059%2C4174%2C30447%2C13517%2C5188%2C21437%2C4571%2C11038%2C1977%2C16088%2C9404%2C23826%2C9500%2C1840%2C22474%2C11771%2C11471%2C13159%2C21520%2C10984%2C5784%2C1455%2C2467%2C14341%2C3305%2C894%2C459%2C953%2C2754%2C12775%2C8140%2C1211%2C2197%2C1625%2C8030%2C3571%2C3394%2C3626%2C3426%2C1304%2C8445%2C4170%2C6079%2C1102%2C8954%2C2548%2C1492%2C2704%2C1287%2C3223%2C2429%2C3951%2C491%2C4954%2C2314%2C3342%2C3260&rtn=9&afmt=251&size=480%3A900&inview=0&muted=1&docid=9KbrrQstrT4&ei=aJD4aa7LG9yTlu8PoqSI2As&plid=AAZQ_Ql-JEsr8acq&referrer=https%3A%2F%2Fwww.youtube.com%2Fembed%2F9KbrrQstrT4%3Fautoplay%3D1%26mute%3D1%26loop%3D1%26controls%3D0%26showinfo%3D0%26modestbranding%3D1%26playlist%3D9KbrrQstrT4%26playsinline%3D1&list=TLGG3ZL90ImJVZ8wNDA1MjAyNg&of=py7o7P4OD80kWkRNFto-NA&vm=CAEQABgEOjJBSHFpSlRJSDRVMW4xUmkxNFp6OEtpSk5LOUlocUR2TURITTFlU2xhWWpVSEcyR2JLUWJkQUxkcUFQSzhmYXlQb2E1cUhkUllUQzdyVzM4LVhnRHhWNUZZcGJxcW9WQ2pNZVd5UG1jT0JNTjRfNlp1Ui1fUFJDS2g5VVN6dWN6Uk9RcFpkbkVnVlFrWE5OWkFndTByaldqMQ :: net::ERR_ABORTED"
+  },
+  {
+    "route": "/experience/sunrise-coffee-trek-and-farm-tasting",
+    "severity": "console-warn",
+    "msg": "Hotjar not launching due to suspicious userAgent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/147.0.7727.15 Safari/537.36"
+  },
+  {
+    "route": "/experience/sunrise-coffee-trek-and-farm-tasting",
+    "severity": "request-failed",
+    "msg": "POST https://www.google-analytics.com/g/collect?v=2&tid=G-2JVWPL4GBE&gtm=45je64t1v9249186408za200zd9249186408&_p=1777897578961&gcd=13l3l3l3l1l1&npa=0&dma=0&_eu=AEAEAAQC&ae=a&are=1&cid=1374919154.1777897486&frm=0&pscdl=noapi&rcb=8&sr=1440x900&uaa=arm&uab=64&uafvl=HeadlessChrome%3B147.0.7727.15%7CNot.A%252FBrand%3B8.0.0.0%7CChromium%3B147.0.7727.15&uam=&uamb=0&uap=macOS&uapv=15.4.1&uaw=0&ul=en-us&_s=1&tag_exp=0~115616986~115938466~115938469~118289195&sid=1777897485&sct=1&seg=1&dl=https%3A%2F%2Fmapltours.com%2Fexperience%2Fsunrise-coffee-trek-and-farm-tasting&dt=MAPL%20Tours%20Jamaica%20%7C%20Best%20Tours%20%26%20Cultural%20Experiences%20in%20Jamaica&en=scroll&epn.percent_scrolled=90&tfd=3582 :: net::ERR_ABORTED"
+  },
+  {
+    "route": "/experience/sunrise-coffee-trek-and-farm-tasting",
+    "severity": "request-failed",
+    "msg": "GET https://mapltours.com/coffee-trek-video.mp4 :: net::ERR_ABORTED"
+  },
+  {
+    "route": "/experience/sunrise-coffee-trek-and-farm-tasting",
+    "severity": "console-warn",
+    "msg": "The resource https://images.pexels.com/photos/14788935/pexels-photo-14788935.jpeg?auto=compress&cs=tinysrgb&w=1920&h=1080&fit=crop was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally."
+  },
+  {
+    "route": "/experience/sunrise-coffee-trek-and-farm-tasting",
+    "severity": "request-failed",
+    "msg": "POST https://www.google-analytics.com/g/collect?v=2&tid=G-2JVWPL4GBE&gtm=45je64t1v9249186408za200zd9249186408&_p=1777897578961&gcd=13l3l3l3l1l1&npa=0&dma=0&_eu=AAAAAAQC&are=1&cid=1374919154.1777897486&frm=0&pscdl=noapi&rcb=8&sr=1440x900&uaa=arm&uab=64&uafvl=HeadlessChrome%3B147.0.7727.15%7CNot.A%252FBrand%3B8.0.0.0%7CChromium%3B147.0.7727.15&uam=&uamb=0&uap=macOS&uapv=15.4.1&uaw=0&ul=en-us&_s=2&tag_exp=0~115616986~115938466~115938469~118289195&sid=1777897485&sct=1&seg=1&dl=https%3A%2F%2Fmapltours.com%2Fexperience%2Fsunrise-coffee-trek-and-farm-tasting&dt=MAPL%20Tours%20Jamaica%20%7C%20Best%20Tours%20%26%20Cultural%20Experiences%20in%20Jamaica&en=page_view&_ee=1&tfd=8583 :: net::ERR_ABORTED"
+  },
+  {
+    "route": "/experience/sunrise-coffee-trek-and-farm-tasting",
+    "severity": "request-failed",
+    "msg": "GET https://www.youtube.com/api/stats/watchtime?ns=yt&el=embedded&cpn=F-VK-H4Sk1IiTwnI&ver=2&cmt=8.129&fmt=788&fs=0&rt=9.002&euri=https%3A%2F%2Fmapltours.com%2F&lact=9015&cl=908345110&state=playing&volume=100&cbrand=apple&cbr=HeadlessChrome&cbrver=147.0.7727.15&c=WEB_EMBEDDED_PLAYER&cver=2.20260501.01.00&cplayer=UNIPLAYER&cos=Macintosh&cosver=10_15_7&cplatform=DESKTOP&autoplay=1&delay=4&hl=en_US&cr=CA&len=132&rtn=19&afmt=251&idpj=-2&ldpj=-15&dtm=1&rti=9&size=480%3A900&inview=0&st=0&et=8.129&muted=1&docid=9KbrrQstrT4&ei=aJD4aa7LG9yTlu8PoqSI2As&plid=AAZQ_Ql-JEsr8acq&referrer=https%3A%2F%2Fwww.youtube.com%2Fembed%2F9KbrrQstrT4%3Fautoplay%3D1%26mute%3D1%26loop%3D1%26controls%3D0%26showinfo%3D0%26modestbranding%3D1%26playlist%3D9KbrrQstrT4%26playsinline%3D1&list=TLGG3ZL90ImJVZ8wNDA1MjAyNg&of=py7o7P4OD80kWkRNFto-NA&vm=CAEQABgEOjJBSHFpSlRJSDRVMW4xUmkxNFp6OEtpSk5LOUlocUR2TURITTFlU2xhWWpVSEcyR2JLUWJkQUxkcUFQSzhmYXlQb2E1cUhkUllUQzdyVzM4LVhnRHhWNUZZcGJxcW9WQ2pNZVd5UG1jT0JNTjRfNlp1Ui1fUFJDS2g5VVN6dWN6Uk9RcFpkbkVnVlFrWE5OWkFndTByaldqMQ :: net::ERR_ABORTED"
+  },
+  {
+    "route": "/experience/sunrise-coffee-trek-and-farm-tasting",
+    "severity": "request-failed",
+    "msg": "POST https://www.youtube.com/api/stats/qoe?fmt=788&afmt=251&cpn=F-VK-H4Sk1IiTwnI&el=embedded&ns=yt&fexp=v1%2C23848212%2C156432%2C27005591%2C53408%2C34656%2C106030%2C18644%2C117689%2C9252%2C3479%2C13030%2C23206%2C100702%2C12607%2C2498%2C25059%2C4174%2C30447%2C13517%2C5188%2C21437%2C4571%2C11038%2C1977%2C16088%2C9404%2C23826%2C9500%2C1840%2C22474%2C11771%2C11471%2C13159%2C21520%2C10984%2C5784%2C1455%2C2467%2C14341%2C3305%2C894%2C459%2C953%2C2754%2C12775%2C8140%2C1211%2C2197%2C1625%2C8030%2C3571%2C3394%2C3626%2C3426%2C1304%2C8445%2C4170%2C6079%2C1102%2C8954%2C2548%2C1492%2C2704%2C1287%2C3223%2C2429%2C3951%2C491%2C4954%2C2314%2C3342%2C3260&cl=908345110&seq=2&docid=9KbrrQstrT4&ei=aJD4aa7LG9yTlu8PoqSI2As&event=streamingstats&plid=AAZQ_Ql-JEsr8acq&cbrand=apple&cbr=HeadlessChrome&cbrver=147.0.7727.15&c=WEB_EMBEDDED_PLAYER&cver=2.20260501.01.00&cplayer=UNIPLAYER&cos=Macintosh&cosver=10_15_7&cplatform=DESKTOP&afs=0.395:251;CggKA2RyYxIBMQ::i:fl.-14.09;vg.0;nm.4;sms.0&ctmp=atrkchg:t.395;id.und;m.0&user_intent=0.003&bh=0.896:3.337,10.004:28.496&cmt=0.896:0.021,1.647:0.773,10.004:9.132&vps=0.896:PL,10.004:PL&bwm=10.004:4633992:1.191&bwe=10.004:10606556&bat=10.004:0.38:0&df=10.004:0&qclc=ChBGLVZLLUg0U2sxSWlUd25JEAI :: net::ERR_ABORTED"
+  },
+  {
+    "route": "/transfers/checkout",
+    "severity": "request-failed",
+    "msg": "POST https://www.youtube.com/api/stats/qoe?fmt=788&afmt=251&cpn=F-VK-H4Sk1IiTwnI&el=embedded&ns=yt&fexp=v1%2C23848212%2C156432%2C27005591%2C53408%2C34656%2C106030%2C18644%2C117689%2C9252%2C3479%2C13030%2C23206%2C100702%2C12607%2C2498%2C25059%2C4174%2C30447%2C13517%2C5188%2C21437%2C4571%2C11038%2C1977%2C16088%2C9404%2C23826%2C9500%2C1840%2C22474%2C11771%2C11471%2C13159%2C21520%2C10984%2C5784%2C1455%2C2467%2C14341%2C3305%2C894%2C459%2C953%2C2754%2C12775%2C8140%2C1211%2C2197%2C1625%2C8030%2C3571%2C3394%2C3626%2C3426%2C1304%2C8445%2C4170%2C6079%2C1102%2C8954%2C2548%2C1492%2C2704%2C1287%2C3223%2C2429%2C3951%2C491%2C4954%2C2314%2C3342%2C3260&cl=908345110&seq=3&docid=9KbrrQstrT4&ei=aJD4aa7LG9yTlu8PoqSI2As&event=streamingstats&plid=AAZQ_Ql-JEsr8acq&cbrand=apple&cbr=HeadlessChrome&cbrver=147.0.7727.15&c=WEB_EMBEDDED_PLAYER&cver=2.20260501.01.00&cplayer=UNIPLAYER&cos=Macintosh&cosver=10_15_7&cplatform=DESKTOP&vps=11.069:N&bwe=11.069:10606556&bat=11.069:0.38:0&cmt=11.069:10.197&bh=11.069:27.425&qclc=ChBGLVZLLUg0U2sxSWlUd25JEAM :: net::ERR_ABORTED"
+  },
+  {
+    "route": "/transfers/checkout",
+    "severity": "request-failed",
+    "msg": "GET https://www.youtube.com/api/stats/watchtime?ns=yt&el=embedded&cpn=F-VK-H4Sk1IiTwnI&ver=2&cmt=10.197&fmt=788&fs=0&rt=11.07&euri=https%3A%2F%2Fmapltours.com%2F&lact=11084&cl=908345110&state=paused&volume=100&cbrand=apple&cbr=HeadlessChrome&cbrver=147.0.7727.15&c=WEB_EMBEDDED_PLAYER&cver=2.20260501.01.00&cplayer=UNIPLAYER&cos=Macintosh&cosver=10_15_7&cplatform=DESKTOP&autoplay=1&final=1&delay=4&hl=en_US&cr=CA&len=132&afmt=251&idpj=-2&ldpj=-15&rti=19&size=480%3A900&inview=0&st=8.129&et=10.197&muted=1&docid=9KbrrQstrT4&ei=aJD4aa7LG9yTlu8PoqSI2As&plid=AAZQ_Ql-JEsr8acq&referrer=https%3A%2F%2Fwww.youtube.com%2Fembed%2F9KbrrQstrT4%3Fautoplay%3D1%26mute%3D1%26loop%3D1%26controls%3D0%26showinfo%3D0%26modestbranding%3D1%26playlist%3D9KbrrQstrT4%26playsinline%3D1&list=TLGG3ZL90ImJVZ8wNDA1MjAyNg&of=py7o7P4OD80kWkRNFto-NA&vm=CAEQABgEOjJBSHFpSlRJSDRVMW4xUmkxNFp6OEtpSk5LOUlocUR2TURITTFlU2xhWWpVSEcyR2JLUWJkQUxkcUFQSzhmYXlQb2E1cUhkUllUQzdyVzM4LVhnRHhWNUZZcGJxcW9WQ2pNZVd5UG1jT0JNTjRfNlp1Ui1fUFJDS2g5VVN6dWN6Uk9RcFpkbkVnVlFrWE5OWkFndTByaldqMQ :: net::ERR_ABORTED"
+  },
+  {
+    "route": "/transfers/checkout",
+    "severity": "request-failed",
+    "msg": "POST https://www.youtube.com/youtubei/v1/log_event?alt=json :: net::ERR_ABORTED"
+  },
+  {
+    "route": "/transfers/checkout",
+    "severity": "request-failed",
+    "msg": "POST https://www.google-analytics.com/g/collect?v=2&tid=G-2JVWPL4GBE&gtm=45je64t1v9249186408za200zd9249186408&_p=1777897578961&gcd=13l3l3l3l1l1&npa=0&dma=0&_eu=AAAAAAQC&are=1&cid=1374919154.1777897486&frm=0&pscdl=noapi&rcb=8&sr=1440x900&uaa=arm&uab=64&uafvl=HeadlessChrome%3B147.0.7727.15%7CNot.A%252FBrand%3B8.0.0.0%7CChromium%3B147.0.7727.15&uam=&uamb=0&uap=macOS&uapv=15.4.1&uaw=0&ul=en-us&_s=3&tag_exp=0~115616986~115938466~115938469~118289195&sid=1777897485&sct=1&seg=1&dl=https%3A%2F%2Fmapltours.com%2Fexperience%2Fsunrise-coffee-trek-and-farm-tasting&dt=MAPL%20Tours%20Jamaica%20%7C%20Best%20Tours%20%26%20Cultural%20Experiences%20in%20Jamaica&en=user_engagement&_et=8368&tfd=11952 :: net::ERR_ABORTED"
+  },
+  {
+    "route": "/transfers/checkout",
+    "severity": "request-failed",
+    "msg": "POST https://www.google-analytics.com/g/collect?v=2&tid=G-2JVWPL4GBE&gtm=45je64t1v9249186408za200zd9249186408&_p=1777897587529&gcd=13l3l3l3l1l1&npa=0&dma=0&_eu=AEAEAAQC&ae=a&are=1&cid=1374919154.1777897486&frm=0&pscdl=noapi&rcb=2&sr=1440x900&uaa=arm&uab=64&uafvl=HeadlessChrome%3B147.0.7727.15%7CNot.A%252FBrand%3B8.0.0.0%7CChromium%3B147.0.7727.15&uam=&uamb=0&uap=macOS&uapv=15.4.1&uaw=0&ul=en-us&_s=1&tag_exp=0~115938465~115938468~116363098&sid=1777897485&sct=1&seg=1&dl=https%3A%2F%2Fmapltours.com%2Ftransfers%2Fcheckout&dt=Airport%20Transfer%20Checkout%20%7C%20MAPL%20Tours%20Jamaica&en=scroll&epn.percent_scrolled=90&tfd=661 :: net::ERR_ABORTED"
+  },
+  {
+    "route": "/transfers/checkout",
+    "severity": "request-failed",
+    "msg": "POST https://www.google-analytics.com/g/collect?v=2&tid=G-2JVWPL4GBE&gtm=45je64t1v9249186408za200zd9249186408&_p=1777897587529&gcd=13l3l3l3l1l1&npa=0&dma=0&_eu=AgAAAAQC&are=1&cid=1374919154.1777897486&frm=0&pscdl=noapi&rcb=2&sr=1440x900&uaa=arm&uab=64&uafvl=HeadlessChrome%3B147.0.7727.15%7CNot.A%252FBrand%3B8.0.0.0%7CChromium%3B147.0.7727.15&uam=&uamb=0&uap=macOS&uapv=15.4.1&uaw=0&ul=en-us&_s=2&tag_exp=0~115938465~115938468~116363098&sid=1777897485&sct=1&seg=1&dl=https%3A%2F%2Fmapltours.com%2Ftransfers%2Fcheckout&dt=Airport%20Transfer%20Checkout%20%7C%20MAPL%20Tours%20Jamaica&en=page_view&_ee=1&tfd=662 :: net::ERR_ABORTED"
+  },
+  {
+    "route": "/transfers/checkout",
+    "severity": "request-failed",
+    "msg": "POST https://www.google-analytics.com/g/collect?v=2&tid=G-2JVWPL4GBE&gtm=45je64t1v9249186408za200zd9249186408&_p=1777897587529&gcd=13l3l3l3l1l1&npa=0&dma=0&_eu=AAgAAAQC&_prs=gs&are=1&cid=1374919154.1777897486&frm=0&pscdl=noapi&rcb=2&sr=1440x900&uaa=arm&uab=64&uafvl=HeadlessChrome%3B147.0.7727.15%7CNot.A%252FBrand%3B8.0.0.0%7CChromium%3B147.0.7727.15&uam=&uamb=0&uap=macOS&uapv=15.4.1&uaw=0&ul=en-us&_s=3&tag_exp=0~115938465~115938468~116363098&sid=1777897485&sct=1&seg=1&dl=https%3A%2F%2Fmapltours.com%2Ftransfers%2Fcheckout&dt=Airport%20Transfer%20Checkout%20%7C%20MAPL%20Tours%20Jamaica&en=ads_conversion_PURCHASE_1&_c=1&_et=1&tfd=663 :: net::ERR_ABORTED"
+  },
+  {
+    "route": "/transfers/checkout",
+    "severity": "console-warn",
+    "msg": "Hotjar not launching due to suspicious userAgent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/147.0.7727.15 Safari/537.36"
+  }
+]

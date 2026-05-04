@@ -10,9 +10,74 @@ import { render } from '@react-email/render'
  *    that triggered the email (e.g. a Stripe webhook must still ack).
  */
 
+const FROM_FALLBACK = 'MAPL Tours <trips@mapltours.com>'
+const REPLY_TO_FALLBACK = 'support@mapltours.com'
+
 const resend = process.env.RESEND_API_KEY
   ? new Resend(process.env.RESEND_API_KEY)
   : null
+
+/**
+ * Normalize an `EMAIL_FROM` / `EMAIL_SUPPORT` env value into one of the two
+ * formats Resend accepts:
+ *   • `email@example.com`
+ *   • `Display Name <email@example.com>`
+ *
+ * Repairs a handful of common env-config mistakes that otherwise produce a
+ * `validation_error: Invalid \`from\` field` from Resend with no further
+ * useful detail:
+ *   • Wrapping quotes (`"MAPL <…>"`)
+ *   • Smart unicode angle brackets (`MAPL ‹…›`)
+ *   • Missing angle brackets (`MAPL Tours trips@mapltours.com`)
+ *   • Stray internal whitespace (`MAPL Tours <  trips@…  >`)
+ *
+ * Anything we can't repair cleanly falls back to a known-good default so
+ * a misconfigured env never blocks a paid transaction.
+ */
+function normalizeAddress(raw: string | undefined, fallback: string, label: string): string {
+  if (!raw || !raw.trim()) return fallback
+  let s = raw.trim()
+
+  // Strip wrapping quotes.
+  while ((s.startsWith('"') && s.endsWith('"')) || (s.startsWith("'") && s.endsWith("'"))) {
+    s = s.slice(1, -1).trim()
+  }
+
+  // Replace smart / fullwidth angle brackets with ASCII < >.
+  s = s.replace(/[‹⟨〈＜]/g, '<').replace(/[›⟩〉＞]/g, '>')
+
+  const emailRe = /[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i
+  const bareValid = /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i
+  const namedValid = /^[^<>]+<\s*[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\s*>$/i
+
+  if (bareValid.test(s)) return s
+  if (namedValid.test(s)) {
+    // Normalize the spacing inside the angle brackets.
+    return s.replace(
+      /<\s*([A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,})\s*>/i,
+      '<$1>',
+    )
+  }
+
+  // Recovery — pull out the email and rewrap it cleanly.
+  const match = s.match(emailRe)
+  if (match) {
+    const email = match[0]
+    const namePart = s.replace(email, '').replace(/[<>"']/g, '').trim()
+    const repaired = namePart ? `${namePart} <${email}>` : email
+    console.warn(`[email] normalized malformed ${label} env value`, {
+      raw,
+      repaired,
+    })
+    return repaired
+  }
+
+  console.warn(`[email] ${label} env value couldn't be parsed; using fallback`, {
+    raw,
+    fallback,
+  })
+  return fallback
+}
 
 export interface SendEmailInput {
   to: string | string[]
@@ -39,8 +104,15 @@ export async function sendEmail({
     return { ok: false, error: 'RESEND_API_KEY missing' }
   }
 
-  const from = process.env.EMAIL_FROM ?? 'MAPL Tours <trips@mapltours.com>'
-  const fallbackReplyTo = process.env.EMAIL_SUPPORT ?? 'support@mapltours.com'
+  const from = normalizeAddress(process.env.EMAIL_FROM, FROM_FALLBACK, 'EMAIL_FROM')
+  const fallbackReplyTo = normalizeAddress(
+    process.env.EMAIL_SUPPORT,
+    REPLY_TO_FALLBACK,
+    'EMAIL_SUPPORT',
+  )
+  const finalReplyTo = replyTo
+    ? normalizeAddress(replyTo, fallbackReplyTo, 'replyTo')
+    : fallbackReplyTo
 
   try {
     const html = await render(react)
@@ -52,7 +124,7 @@ export async function sendEmail({
       subject,
       html,
       text,
-      replyTo: replyTo ?? fallbackReplyTo,
+      replyTo: finalReplyTo,
       tags,
     })
 

@@ -229,7 +229,8 @@ export default function RootLayout({
           {`window.dataLayer = window.dataLayer || [];
 function gtag(){dataLayer.push(arguments);}
 gtag('js', new Date());
-gtag('config', 'G-2JVWPL4GBE');`}
+gtag('config', 'G-2JVWPL4GBE');
+gtag('config', 'AW-18126709990');`}
         </Script>
         <Script id="hotjar" strategy="lazyOnload">
           {`(function(h,o,t,j,a,r){

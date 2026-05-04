@@ -1,4 +1,4 @@
-import { Heading, Text, Hr } from '@react-email/components'
+import { Heading, Text, Section, Row, Column } from '@react-email/components'
 import { MaplLayout, maplStyles as s } from './_Layout'
 
 export interface TransferOperatorAlertProps {
@@ -10,6 +10,7 @@ export interface TransferOperatorAlertProps {
   specialRequests: string | null
   totalPaid: number
   currency: string
+  paidAt?: string | null
   transfers: Array<{
     destination: string
     zone: string
@@ -23,7 +24,11 @@ export interface TransferOperatorAlertProps {
   }>
 }
 
-function formatDateTime(iso: string | null): string | null {
+function fmtMoney(n: number, currency: string): string {
+  return `${currency === 'USD' ? '$' : `${currency} `}${n.toFixed(2)}`
+}
+
+function fmtDateTime(iso: string | null): string | null {
   if (!iso) return null
   try {
     const d = new Date(iso)
@@ -40,15 +45,6 @@ function formatDateTime(iso: string | null): string | null {
   }
 }
 
-function formatMoney(n: number, currency: string): string {
-  return `${currency === 'USD' ? '$' : `${currency} `}${n.toFixed(2)}`
-}
-
-/**
- * Ops-facing alert for transfers. Highlights the dispatch-relevant info
- * (flight numbers, pickup/drop times) so a driver can be assigned without
- * any back-and-forth.
- */
 export default function TransferOperatorAlert({
   bookingRef,
   customerName,
@@ -64,177 +60,114 @@ export default function TransferOperatorAlert({
     <MaplLayout
       preheader={`Transfer dispatch · ${bookingRef} · ${transfers.length} ride${transfers.length !== 1 ? 's' : ''}`}
     >
-      <Text style={{ ...s.kicker, color: '#FF5A36' }}>
-        Transfer · driver dispatch required
-      </Text>
-      <Heading style={s.heading}>{bookingRef}</Heading>
-      <Text style={s.body}>
+      <Heading as="h1" style={s.hero} className="mapl-h1">
+        Transfer dispatch · action required
+      </Heading>
+      <Text style={s.heroLead}>
         A paid airport transfer just landed. Assign the driver, confirm the
         vehicle, and flight-track arrival. Flight numbers and times are below.
       </Text>
 
+      <Section style={{ margin: '20px 0 0' }}>
+        <span style={s.refPill}>{bookingRef}</span>
+      </Section>
+
       {/* Customer */}
-      <div style={s.panel}>
-        <Text style={s.panelKicker}>Customer</Text>
-        <Text style={s.panelBody}>
-          <strong style={{ color: '#fff' }}>{customerName}</strong>
-          <br />
-          {customerEmail}
-          {customerPhone && (
-            <>
-              <br />
-              {customerPhone}
-            </>
-          )}
-          {customerCountry && (
-            <>
-              <br />
-              {customerCountry}
-            </>
-          )}
-        </Text>
-      </div>
+      <Section style={s.card}>
+        <Section style={s.cardHeader}>
+          <Text style={s.cardHeaderText}>Customer</Text>
+        </Section>
+        <Section style={s.cardBody}>
+          <Text style={{ ...s.body, fontWeight: 600 }}>{customerName}</Text>
+          <Text style={s.body}>{customerEmail}</Text>
+          {customerPhone && <Text style={s.body}>{customerPhone}</Text>}
+          {customerCountry && <Text style={s.body}>{customerCountry}</Text>}
+        </Section>
+      </Section>
 
-      {transfers.map((t, i) => (
-        <div
-          key={i}
-          style={{
-            ...s.panel,
-            marginTop: i === 0 ? 24 : 16,
-            background: 'rgba(255, 179, 0, 0.04)',
-            border: '1px solid rgba(255, 179, 0, 0.20)',
-          }}
-        >
-          <Text style={s.panelKicker}>
-            Zone {t.zone} · {t.tripType === 'round_trip' ? 'Round-trip' : 'One-way'} · {t.passengers} pax
+      {/* Transfers — flight info per leg */}
+      <Section style={s.card}>
+        <Section style={s.cardHeader}>
+          <Text style={s.cardHeaderText}>
+            Transfers · {transfers.length}
           </Text>
-          <Text
+        </Section>
+        {transfers.map((t, i) => (
+          <Section
+            key={i}
             style={{
-              margin: '8px 0 14px',
-              fontSize: 15,
-              fontWeight: 700,
-              color: '#fff',
-              fontFamily: 'Helvetica Neue, Arial, sans-serif',
+              padding: '14px 18px',
+              borderTop: i === 0 ? 'none' : '1px solid #f0f0f0',
             }}
           >
-            {t.destination}
-          </Text>
+            <Row>
+              <Column style={{ verticalAlign: 'top', paddingRight: 12 }} className="mapl-stack-col">
+                <Text style={{ ...s.body, fontWeight: 600, marginBottom: 4 }}>
+                  {t.destination}
+                </Text>
+                <Text style={s.bodyMuted}>
+                  Zone {t.zone} ·{' '}
+                  {t.tripType === 'round_trip' ? 'Round-trip' : 'One-way'} ·{' '}
+                  {t.passengers} pax
+                </Text>
+              </Column>
+              <Column style={{ verticalAlign: 'top', textAlign: 'right', whiteSpace: 'nowrap' }} className="mapl-stack-col">
+                <Text style={{ ...s.rowValue, fontWeight: 600 }}>
+                  {fmtMoney(t.priceUsd, currency)}
+                </Text>
+              </Column>
+            </Row>
 
-          {/* Arrival */}
-          {t.arrivalAt && (
-            <div style={{ marginBottom: 10 }}>
-              <Text
-                style={{
-                  margin: 0,
-                  fontSize: 11,
-                  fontWeight: 700,
-                  letterSpacing: '0.18em',
-                  textTransform: 'uppercase',
-                  color: '#FFB300',
-                  fontFamily: 'Helvetica Neue, Arial, sans-serif',
-                }}
-              >
-                Arrival · MBJ → hotel
-              </Text>
-              <Text
-                style={{
-                  margin: '4px 0 0',
-                  fontSize: 13.5,
-                  color: 'rgba(255,255,255,0.9)',
-                  fontFamily: 'Helvetica Neue, Arial, sans-serif',
-                }}
-              >
-                {formatDateTime(t.arrivalAt)}
-                {t.arrivalFlight ? ` · ${t.arrivalFlight}` : ' · (flight not provided)'}
-              </Text>
-            </div>
-          )}
+            {t.arrivalAt && (
+              <Section style={{ marginTop: 10, paddingLeft: 12, borderLeft: '2px solid #d4f0e0' }}>
+                <Text style={s.sectionLabel}>Arrival · MBJ → hotel</Text>
+                <Text style={{ ...s.body, marginTop: 2 }}>
+                  {fmtDateTime(t.arrivalAt)}
+                  {t.arrivalFlight ? ` · ${t.arrivalFlight}` : ' · (flight not provided)'}
+                </Text>
+              </Section>
+            )}
 
-          {/* Departure */}
-          {t.tripType === 'round_trip' && t.departureAt && (
-            <div>
-              <Text
-                style={{
-                  margin: 0,
-                  fontSize: 11,
-                  fontWeight: 700,
-                  letterSpacing: '0.18em',
-                  textTransform: 'uppercase',
-                  color: '#FFB300',
-                  fontFamily: 'Helvetica Neue, Arial, sans-serif',
-                }}
-              >
-                Departure · hotel → MBJ
-              </Text>
-              <Text
-                style={{
-                  margin: '4px 0 0',
-                  fontSize: 13.5,
-                  color: 'rgba(255,255,255,0.9)',
-                  fontFamily: 'Helvetica Neue, Arial, sans-serif',
-                }}
-              >
-                {formatDateTime(t.departureAt)}
-                {t.departureFlight ? ` · ${t.departureFlight}` : ' · (flight not provided)'}
-              </Text>
-            </div>
-          )}
+            {t.tripType === 'round_trip' && t.departureAt && (
+              <Section style={{ marginTop: 8, paddingLeft: 12, borderLeft: '2px solid #fce9b8' }}>
+                <Text style={s.sectionLabel}>Departure · hotel → MBJ</Text>
+                <Text style={{ ...s.body, marginTop: 2 }}>
+                  {fmtDateTime(t.departureAt)}
+                  {t.departureFlight ? ` · ${t.departureFlight}` : ' · (flight not provided)'}
+                </Text>
+              </Section>
+            )}
+          </Section>
+        ))}
+      </Section>
 
-          <Text
-            style={{
-              margin: '14px 0 0',
-              fontSize: 12.5,
-              color: 'rgba(255,255,255,0.55)',
-              fontFamily: 'Helvetica Neue, Arial, sans-serif',
-            }}
-          >
-            Line total:{' '}
-            <span style={{ color: '#FFB300', fontWeight: 600 }}>
-              {formatMoney(t.priceUsd, currency)}
-            </span>
-          </Text>
-        </div>
-      ))}
-
+      {/* Special requests */}
       {specialRequests && (
-        <div
-          style={{
-            ...s.panel,
-            background: 'rgba(255, 90, 54, 0.06)',
-            border: '1px solid rgba(255, 90, 54, 0.28)',
-          }}
-        >
-          <Text style={s.panelKicker}>Special requests</Text>
-          <Text style={s.panelBody}>{specialRequests}</Text>
-        </div>
+        <Section style={s.card}>
+          <Section style={s.highlightCardHeader}>
+            <Text style={s.highlightCardHeaderText}>Special requests</Text>
+          </Section>
+          <Section style={s.cardBody}>
+            <Text style={{ ...s.body, whiteSpace: 'pre-wrap' }}>
+              {specialRequests}
+            </Text>
+          </Section>
+        </Section>
       )}
 
-      <Hr style={{ borderColor: 'rgba(255,255,255,0.08)', margin: '22px 0' }} />
-      <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0 4px' }}>
-        <Text
-          style={{
-            margin: 0,
-            fontSize: 13,
-            color: 'rgba(255,255,255,0.55)',
-            fontFamily: 'Helvetica Neue, Arial, sans-serif',
-          }}
-        >
-          Payment captured via Stripe
-        </Text>
-        <Text
-          style={{
-            margin: 0,
-            fontFamily: 'Georgia, \'Times New Roman\', serif',
-            fontWeight: 800,
-            fontSize: 18,
-            color: '#FFB300',
-          }}
-        >
-          {formatMoney(totalPaid, currency)}
-        </Text>
-      </div>
+      {/* Total */}
+      <Section style={s.card}>
+        <Section style={s.cardBody}>
+          <div style={s.rowFlex}>
+            <Text style={s.rowLabel}>Payment captured via Stripe</Text>
+            <Text style={{ ...s.totalValue, fontSize: 18 }}>
+              {fmtMoney(totalPaid, currency)}
+            </Text>
+          </div>
+        </Section>
+      </Section>
 
-      <Text style={s.footnote}>
+      <Text style={s.note}>
         Booking reference {bookingRef}. Fires automatically on
         payment_intent.succeeded — no reply needed on this email.
       </Text>
