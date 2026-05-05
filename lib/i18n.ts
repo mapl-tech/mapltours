@@ -557,10 +557,11 @@ export function detectLanguage(): Language {
   return languages.find((l) => l.code === bl) || languages.find((l) => l.code.split('-')[0] === bl.split('-')[0]) || languages[0]
 }
 
-// Detect from IP using free geolocation API
+// Detect from IP using a same-origin proxy. The browser cannot call
+// ipapi.co directly (no CORS headers), so /api/geo forwards server-side.
 export async function detectLanguageByIP(): Promise<Language> {
   try {
-    const res = await fetch('https://ipapi.co/json/', { signal: AbortSignal.timeout(3000) })
+    const res = await fetch('/api/geo', { signal: AbortSignal.timeout(3000) })
     if (!res.ok) return detectLanguage()
     const data = await res.json()
     const countryToLang: Record<string, string> = {

@@ -275,8 +275,15 @@ function Reel({ exp, isActive, totalCount, currentIndex }: { exp: Experience; is
           }}
         >
           <Heart size={26} fill={liked ? '#FF4081' : 'none'} color={liked ? '#FF4081' : 'white'} strokeWidth={1.8} />
-          <span style={{ fontSize: 11, fontWeight: 700, fontFamily: 'var(--font-dm-sans)' }}>
-            {(exp.reviews + likeCount).toLocaleString()}
+          <span
+            // likeCount comes from a localStorage-backed SWR cache that the
+            // server can't see, so the SSR HTML may render a smaller number
+            // than the client's first paint. Suppress the warning — the
+            // client value is the correct one and renders within ms.
+            suppressHydrationWarning
+            style={{ fontSize: 11, fontWeight: 700, fontFamily: 'var(--font-dm-sans)' }}
+          >
+            {(exp.reviews + likeCount).toLocaleString('en-US')}
           </span>
         </button>
 
@@ -549,10 +556,9 @@ function MobileCommentsSheet({ comments, commentText, setCommentText, addComment
   // as they show/hide during scroll, plus the on-screen keyboard. We size
   // and position the sheet against this (not layout viewport / 100vh) so
   // the drag handle and close button never slide behind iOS chrome.
-  const [vv, setVv] = useState(() => ({
-    height: typeof window !== 'undefined' ? window.innerHeight : 800,
-    offsetTop: 0,
-  }))
+  // Initialize deterministically so SSR and the first client render match.
+  // The real viewport is measured in useEffect below.
+  const [vv, setVv] = useState({ height: 800, offsetTop: 0 })
   useEffect(() => {
     const visual = typeof window !== 'undefined' ? window.visualViewport : null
     const update = () => {

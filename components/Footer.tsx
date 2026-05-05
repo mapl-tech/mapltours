@@ -110,10 +110,9 @@ export default function Footer() {
               { label: 'Blue Mountains', href: '/explore' },
             ]},
             { title: 'Connect', links: [
-              { label: 'Instagram', href: '#' },
-              { label: 'Twitter', href: '#' },
-              { label: 'TikTok', href: '#' },
-              { label: 'YouTube', href: '#' },
+              { label: 'Instagram', href: 'https://www.instagram.com/mapltours' },
+              { label: 'TikTok', href: 'https://www.tiktok.com/@mapltours' },
+              { label: 'Twitter', href: 'https://twitter.com/mapltours' },
             ]},
           ].map((col) => (
             <div key={col.title}>
@@ -124,16 +123,25 @@ export default function Footer() {
               }}>
                 {t(col.title)}
               </p>
-              {col.links.map((l) => (
-                <a key={l.label} href={l.href} style={{
-                  display: 'block', fontSize: 14, color: 'var(--text-on-dark-2)',
-                  fontFamily: 'var(--font-dm-sans)', marginBottom: 12,
-                  cursor: 'pointer', transition: 'color 0.15s ease',
-                }}
-                  onMouseEnter={(e) => { e.currentTarget.style.color = 'white' }}
-                  onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--text-on-dark-2)' }}
-                >{t(l.label)}</a>
-              ))}
+              {col.links.map((l) => {
+                const isExternal = l.href.startsWith('http')
+                return (
+                  <a
+                    key={l.label}
+                    href={l.href}
+                    {...(isExternal ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
+                    style={{
+                      display: 'block', fontSize: 14, color: 'var(--text-on-dark-2)',
+                      fontFamily: 'var(--font-dm-sans)', marginBottom: 12,
+                      cursor: 'pointer', transition: 'color 0.15s ease',
+                    }}
+                    onMouseEnter={(e) => { e.currentTarget.style.color = 'white' }}
+                    onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--text-on-dark-2)' }}
+                  >
+                    {t(l.label)}
+                  </a>
+                )
+              })}
             </div>
           ))}
         </div>

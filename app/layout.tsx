@@ -210,8 +210,7 @@ export default function RootLayout({
           rel="preload"
           as="image"
           href={HERO_IMAGE}
-          // @ts-expect-error — fetchpriority is valid HTML, React types lag
-          fetchpriority="high"
+          fetchPriority="high"
           crossOrigin="anonymous"
         />
         <link rel="prefetch" href={HERO_VIDEO} as="video" type="video/mp4" />

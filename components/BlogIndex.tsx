@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { BLOG_CATEGORIES, type BlogPost, formatPostDate } from '@/lib/blog'
@@ -79,15 +79,26 @@ function romanize(n: number): string {
 /* ─── Masthead (nameplate) ─── */
 
 function Masthead() {
-  const now = new Date()
-  const dateline = now.toLocaleDateString('en-US', {
-    weekday: 'long',
-    month: 'long',
-    day: 'numeric',
-    year: 'numeric',
-  })
-  const vol = romanize(now.getFullYear() - 2023)
-  const issue = romanize(now.getMonth() + 1)
+  // Compute date-dependent strings after mount so the SSR HTML and the first
+  // client render match. Without this, the server's clock/timezone would
+  // diverge from the user's and trigger a hydration error.
+  const [dateBits, setDateBits] = useState<{ dateline: string; vol: string; issue: string } | null>(null)
+  useEffect(() => {
+    const now = new Date()
+    setDateBits({
+      dateline: now.toLocaleDateString('en-US', {
+        weekday: 'long',
+        month: 'long',
+        day: 'numeric',
+        year: 'numeric',
+      }),
+      vol: romanize(now.getFullYear() - 2023),
+      issue: romanize(now.getMonth() + 1),
+    })
+  }, [])
+  const dateline = dateBits?.dateline ?? ''
+  const vol = dateBits?.vol ?? ''
+  const issue = dateBits?.issue ?? ''
 
   return (
     <header
