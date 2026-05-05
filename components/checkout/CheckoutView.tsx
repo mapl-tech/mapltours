@@ -118,7 +118,7 @@ function ReviewStep() {
   return (
     <div>
       <div className="hide-mobile" style={{ marginBottom: 28 }}>
-        <h3 style={{ fontFamily: 'var(--font-syne)', fontWeight: 700, fontSize: 22, marginBottom: 6 }}>{t('Review your trip')}</h3>
+        <h3 style={{ fontFamily: 'var(--font-dm-sans)', fontWeight: 700, fontSize: 22, marginBottom: 6 }}>{t('Review your trip')}</h3>
         <p style={{ fontSize: 14, color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-sans)' }}>
           {items.length} experience{items.length !== 1 ? 's' : ''} in your Jamaica itinerary
         </p>
@@ -158,8 +158,8 @@ function ReviewStep() {
                 Day Builder
               </p>
               <h3 style={{
-                fontFamily: 'var(--font-syne)',
-                fontWeight: 800,
+                fontFamily: 'var(--font-dm-sans)',
+                fontWeight: 700,
                 fontSize: 19,
                 letterSpacing: '-0.02em',
                 color: 'var(--text-primary)',
@@ -275,7 +275,7 @@ function ReviewStep() {
               <div style={{ flex: 1, padding: '18px 22px' }}>
                 <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 6 }}>
                   <div>
-                    <h4 style={{ fontFamily: 'var(--font-syne)', fontWeight: 700, fontSize: 16, marginBottom: 4, lineHeight: 1.25 }}>{t(item.title)}</h4>
+                    <h4 style={{ fontFamily: 'var(--font-dm-sans)', fontWeight: 700, fontSize: 16, marginBottom: 4, lineHeight: 1.25 }}>{t(item.title)}</h4>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 12.5, color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-sans)' }}>
                       <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}><MapPin size={12} /> {item.destination}, {item.parish}</span>
                       <span>·</span>
@@ -311,7 +311,7 @@ function ReviewStep() {
                 <span>{new Date(item.date + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
               </div>
               <div style={{ textAlign: 'right' }}>
-                <span style={{ fontFamily: 'var(--font-dm-sans)', fontWeight: 800, fontSize: 18 }}>
+                <span style={{ fontFamily: 'var(--font-dm-sans)', fontWeight: 700, fontSize: 18 }}>
                   {formatPrice(item.price * item.travelers)}
                 </span>
                 <p style={{ fontSize: 11, color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-sans)', marginTop: 1 }}>
@@ -347,7 +347,7 @@ function DetailsStep({ waiverAccepted, setWaiverAccepted, waiverError, formData,
   return (
     <div>
       <div className="hide-mobile" style={{ marginBottom: 28 }}>
-        <h3 style={{ fontFamily: 'var(--font-syne)', fontWeight: 700, fontSize: 22, marginBottom: 6 }}>{t('Your details')}</h3>
+        <h3 style={{ fontFamily: 'var(--font-dm-sans)', fontWeight: 700, fontSize: 22, marginBottom: 6 }}>{t('Your details')}</h3>
         <p style={{ fontSize: 14, color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-sans)' }}>
           We&apos;ll use this to confirm your booking
         </p>
@@ -463,7 +463,7 @@ function DetailsStep({ waiverAccepted, setWaiverAccepted, waiverError, formData,
               <MapPin size={18} color="#fff" />
             </div>
             <div>
-              <p style={{ fontSize: 14, fontWeight: 700, fontFamily: 'var(--font-syne)', color: 'var(--text-primary)' }}>
+              <p style={{ fontSize: 14, fontWeight: 700, fontFamily: 'var(--font-dm-sans)', color: 'var(--text-primary)' }}>
                 {t('Transportation Details')}
               </p>
               <p style={{ fontSize: 12, color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-sans)', marginTop: 1 }}>
@@ -636,7 +636,7 @@ function DetailsStep({ waiverAccepted, setWaiverAccepted, waiverError, formData,
               display: 'flex', alignItems: 'center', justifyContent: 'space-between',
               flexShrink: 0,
             }}>
-              <h3 style={{ fontFamily: 'var(--font-syne)', fontWeight: 700, fontSize: 18 }}>
+              <h3 style={{ fontFamily: 'var(--font-dm-sans)', fontWeight: 700, fontSize: 18 }}>
                 {modalContent === 'waiver' ? 'Activity Waiver & Release of Liability' : 'Terms of Service'}
               </h3>
               <button
@@ -763,7 +763,7 @@ function ConfirmedView() {
         <Check size={32} strokeWidth={2.5} />
       </div>
 
-      <h1 style={{ fontFamily: 'var(--font-syne)', fontWeight: 800, fontSize: 32, marginBottom: 8, letterSpacing: '-0.02em' }}>{t('Booking Confirmed')}</h1>
+      <h1 style={{ fontFamily: 'var(--font-dm-sans)', fontWeight: 700, fontSize: 32, marginBottom: 8, letterSpacing: '-0.02em' }}>{t('Booking Confirmed')}</h1>
       <p style={{ fontSize: 16, color: 'var(--text-secondary)', fontFamily: 'var(--font-dm-sans)', maxWidth: 420, lineHeight: 1.65, marginBottom: 36 }}>
         Your Jamaican adventure is booked. Check your email for confirmation details and everything you need to know.
       </p>
@@ -814,7 +814,7 @@ function ConfirmedView() {
           display: 'flex', justifyContent: 'space-between', alignItems: 'center',
         }}>
           <span style={{ fontSize: 14, fontFamily: 'var(--font-dm-sans)', fontWeight: 600, color: 'var(--text-secondary)' }}>Total Paid</span>
-          <span style={{ fontFamily: 'var(--font-dm-sans)', fontWeight: 800, fontSize: 22 }}>{formatPrice(total)}</span>
+          <span style={{ fontFamily: 'var(--font-dm-sans)', fontWeight: 700, fontSize: 22 }}>{formatPrice(total)}</span>
         </div>
       </div>
 
@@ -931,7 +931,7 @@ export default function CheckoutView() {
         <div style={{ width: 64, height: 64, borderRadius: '50%', background: 'var(--surface)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 20 }}>
           <Leaf size={24} color="var(--text-tertiary)" />
         </div>
-        <p style={{ fontSize: 20, fontFamily: 'var(--font-syne)', fontWeight: 700, marginBottom: 8 }}>{t('Your itinerary is empty')}</p>
+        <p style={{ fontSize: 20, fontFamily: 'var(--font-dm-sans)', fontWeight: 700, marginBottom: 8 }}>{t('Your itinerary is empty')}</p>
         <p style={{ fontSize: 14, color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-sans)', marginBottom: 24, maxWidth: 300 }}>Start exploring Jamaica and add experiences to build your trip</p>
         <Link href="/" className="btn-primary" style={{ height: 46, padding: '0 28px', fontSize: 14 }}>{t('Browse experiences')}</Link>
       </div>
@@ -949,7 +949,7 @@ export default function CheckoutView() {
             <ArrowLeft size={15} /> Back
           </Link>
           <div style={{ textAlign: 'center' }}>
-            <h2 style={{ fontFamily: 'var(--font-syne)', fontWeight: 700, fontSize: 18 }}>{t('Checkout')}</h2>
+            <h2 style={{ fontFamily: 'var(--font-dm-sans)', fontWeight: 700, fontSize: 18 }}>{t('Checkout')}</h2>
           </div>
           <div className="hide-mobile"><StepIndicator step={step} /></div>
         </div>
@@ -960,7 +960,7 @@ export default function CheckoutView() {
         <p style={{ fontSize: 11, fontWeight: 600, fontFamily: 'var(--font-dm-sans)', textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--gold)', marginBottom: 4 }}>
           Step {step} of 3
         </p>
-        <h3 style={{ fontFamily: 'var(--font-syne)', fontWeight: 700, fontSize: 22 }}>
+        <h3 style={{ fontFamily: 'var(--font-dm-sans)', fontWeight: 700, fontSize: 22 }}>
           {step === 1 ? t('Review your trip') : step === 2 ? t('Your details') : 'Payment'}
         </h3>
       </div>
@@ -1023,7 +1023,7 @@ export default function CheckoutView() {
             border: '1px solid var(--border)', background: '#fff',
           }}>
             <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--border)' }}>
-              <h4 style={{ fontFamily: 'var(--font-syne)', fontWeight: 700, fontSize: 16, marginBottom: 2 }}>{t('Order Summary')}</h4>
+              <h4 style={{ fontFamily: 'var(--font-dm-sans)', fontWeight: 700, fontSize: 16, marginBottom: 2 }}>{t('Order Summary')}</h4>
               <p style={{ fontSize: 12, color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-sans)' }}>Jamaica · {items.length} experience{items.length !== 1 ? 's' : ''}</p>
             </div>
 
@@ -1203,7 +1203,7 @@ export default function CheckoutView() {
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <p style={{
-                      fontFamily: 'var(--font-syne)', fontWeight: 800, fontSize: 13.5,
+                      fontFamily: 'var(--font-dm-sans)', fontWeight: 700, fontSize: 13.5,
                       color: 'var(--text-primary)', letterSpacing: '-0.005em',
                     }}>
                       {availableReward.percent}% MAPL reward
@@ -1244,7 +1244,7 @@ export default function CheckoutView() {
                 </div>
               )}
 
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontFamily: 'var(--font-dm-sans)', fontWeight: 800, fontSize: 20, marginTop: 10, paddingTop: 12, borderTop: '1px solid var(--border)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontFamily: 'var(--font-dm-sans)', fontWeight: 700, fontSize: 20, marginTop: 10, paddingTop: 12, borderTop: '1px solid var(--border)' }}>
                 <span>{t('Total')}</span><span>{formatPrice(step === 3 ? finalTotal : grandTotal())}</span>
               </div>
             </div>
@@ -1383,8 +1383,8 @@ function DailyLimitModal({ hoursByDate, onClose }: {
         </div>
 
         <h3 style={{
-          fontFamily: 'var(--font-syne)',
-          fontWeight: 800,
+          fontFamily: 'var(--font-dm-sans)',
+          fontWeight: 700,
           fontSize: 22,
           letterSpacing: '-0.02em',
           color: 'var(--text-primary)',
@@ -1437,7 +1437,7 @@ function DailyLimitModal({ hoursByDate, onClose }: {
                 }}>
                   <span>{pretty}</span>
                   <span style={{
-                    fontFamily: 'var(--font-syne)', fontWeight: 700,
+                    fontFamily: 'var(--font-dm-sans)', fontWeight: 700,
                     color: 'var(--coral, #FF5A36)',
                   }}>
                     {hrs} / {DAILY_HOUR_LIMIT} hrs

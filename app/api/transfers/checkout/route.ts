@@ -295,7 +295,9 @@ export async function POST(request: NextRequest) {
             .join(', ')
             .slice(0, 490),
         },
-        ...(c.email ? { receipt_email: c.email } : {}),
+        // Intentionally no `receipt_email` — TransferConfirmed (sent from
+        // the webhook) is the only customer-facing receipt; Stripe's would
+        // duplicate it.
       },
       { idempotencyKey: cartHash },
     )

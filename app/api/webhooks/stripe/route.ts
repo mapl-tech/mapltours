@@ -369,14 +369,33 @@ async function maybeSendTravelerConfirmation(
   return { ok: false, reason: res.error ?? 'unknown_send_error' }
 }
 
+// Operations distribution list. Both addresses receive every operator
+// alert (tour bookings AND transfer bookings). Override via the
+// OPERATIONS_EMAIL env var with a comma-separated list if the recipient
+// set ever changes — empty / unset falls back to this default.
+const OPS_RECIPIENTS_DEFAULT = [
+  'tech@mapltech.com',
+  'collinsadventuretours@gmail.com',
+]
+
+function resolveOpsRecipients(): string[] {
+  const raw = process.env.OPERATIONS_EMAIL ?? process.env.EMAIL_SUPPORT
+  if (!raw) return OPS_RECIPIENTS_DEFAULT
+  const parsed = raw
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean)
+  return parsed.length > 0 ? parsed : OPS_RECIPIENTS_DEFAULT
+}
+
 async function maybeSendOperatorAlert(
   supabase: ReturnType<typeof createServiceClient>,
   booking: BookingRow,
   items: BookingItemRow[],
 ): Promise<EmailResult> {
   if (booking.operator_email_sent_at) return { ok: true }
-  const opsAddress = process.env.OPERATIONS_EMAIL ?? process.env.EMAIL_SUPPORT
-  if (!opsAddress) return { ok: false, reason: 'no_ops_email_configured' }
+  const opsRecipients = resolveOpsRecipients()
+  if (opsRecipients.length === 0) return { ok: false, reason: 'no_ops_email_configured' }
 
   const bookingRef = humanizeId(booking.id)
   const customerName =
@@ -385,8 +404,8 @@ async function maybeSendOperatorAlert(
 
   const res = isTransfer
     ? await sendEmail({
-        to: opsAddress,
-        subject: `Transfer dispatch · ${bookingRef} · ${items.length} ride${items.length !== 1 ? 's' : ''}`,
+        to: opsRecipients,
+        subject: `MAPL Tours · New transfer · ${bookingRef} · ${items.length} ride${items.length !== 1 ? 's' : ''}`,
         react: TransferOperatorAlert({
           bookingRef,
           customerName,
@@ -414,8 +433,8 @@ async function maybeSendOperatorAlert(
         ],
       })
     : await sendEmail({
-        to: opsAddress,
-        subject: `New booking · ${bookingRef} · ${items.length} experience${items.length !== 1 ? 's' : ''}`,
+        to: opsRecipients,
+        subject: `MAPL Tours · New booking · ${bookingRef} · ${items.length} experience${items.length !== 1 ? 's' : ''}`,
         react: OperatorBookingAlert({
           bookingRef,
           customerName,

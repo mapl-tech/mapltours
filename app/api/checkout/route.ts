@@ -259,7 +259,10 @@ export async function POST(request: NextRequest) {
             .join(', ')
             .slice(0, 490),
         },
-        ...(c.email ? { receipt_email: c.email } : {}),
+        // Intentionally no `receipt_email` — Stripe would otherwise send
+        // its own receipt and customers would receive two emails. Our
+        // BookingConfirmed template (sent from the webhook) is the only
+        // confirmation we want them to get.
       },
       { idempotencyKey: cartHash },
     )
