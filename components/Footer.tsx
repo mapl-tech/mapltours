@@ -92,6 +92,7 @@ export default function Footer() {
           {[
             { title: 'Company', links: [
               { label: 'About', href: '/about' },
+              { label: 'Contact us', href: '/contact' },
               { label: 'Careers', href: '/careers' },
               { label: 'Press', href: '/press' },
               { label: 'Blog', href: '/blog' },

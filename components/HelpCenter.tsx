@@ -107,7 +107,7 @@ const categories = [
       },
       {
         q: 'How do I delete my account?',
-        a: 'Contact support@mapltours.com with your request. We\'ll process it within 48 hours and delete all your personal data in accordance with our privacy policy.',
+        a: 'Contact contact@mapltours.com with your request. We\'ll process it within 48 hours and delete all your personal data in accordance with our privacy policy.',
       },
     ],
   },
@@ -401,7 +401,7 @@ export default function HelpCenter() {
                 display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16,
               }}>
                 {/* Email */}
-                <a href="mailto:support@mapltours.com" style={{
+                <a href="mailto:contact@mapltours.com" style={{
                   display: 'flex', flexDirection: 'column', alignItems: 'center',
                   textAlign: 'center', padding: '36px 24px',
                   borderRadius: 'var(--r-xl)',
@@ -440,7 +440,7 @@ export default function HelpCenter() {
                     fontSize: 15, fontWeight: 600, color: 'var(--text-primary)',
                     fontFamily: 'var(--font-dm-sans)',
                   }}>
-                    support@mapltours.com
+                    contact@mapltours.com
                   </p>
                   <p style={{
                     fontSize: 12, color: 'var(--text-tertiary)',

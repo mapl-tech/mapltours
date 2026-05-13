@@ -466,7 +466,7 @@ export function siteUrl(): string {
 }
 
 export function supportEmail(): string {
-  return process.env.EMAIL_SUPPORT ?? 'support@mapltours.com'
+  return process.env.EMAIL_SUPPORT ?? 'contact@mapltours.com'
 }
 
 function hostname(): string {

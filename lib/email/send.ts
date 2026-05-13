@@ -11,7 +11,7 @@ import { render } from '@react-email/render'
  */
 
 const FROM_FALLBACK = 'MAPL Tours <trips@mapltours.com>'
-const REPLY_TO_FALLBACK = 'support@mapltours.com'
+const REPLY_TO_FALLBACK = 'contact@mapltours.com'
 
 const resend = process.env.RESEND_API_KEY
   ? new Resend(process.env.RESEND_API_KEY)

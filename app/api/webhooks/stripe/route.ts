@@ -379,7 +379,10 @@ const OPS_RECIPIENTS_DEFAULT = [
 ]
 
 function resolveOpsRecipients(): string[] {
-  const raw = process.env.OPERATIONS_EMAIL ?? process.env.EMAIL_SUPPORT
+  // Only OPERATIONS_EMAIL can override — we intentionally do NOT fall back
+  // to EMAIL_SUPPORT here so the public contact inbox can never receive
+  // booking alerts by accident if OPERATIONS_EMAIL is unset on a deploy.
+  const raw = process.env.OPERATIONS_EMAIL
   if (!raw) return OPS_RECIPIENTS_DEFAULT
   const parsed = raw
     .split(',')
