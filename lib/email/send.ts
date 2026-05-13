@@ -83,6 +83,9 @@ export interface SendEmailInput {
   to: string | string[]
   subject: string
   react: React.ReactElement
+  /** Override the default sender (EMAIL_FROM) for category-specific outboxes,
+   *  e.g. the contact form sending from `contact@mapltours.com`. */
+  from?: string
   /** Override the default reply-to (support@…) for category-specific inboxes */
   replyTo?: string
   /** Optional Resend tags for filtering in their dashboard */
@@ -96,7 +99,7 @@ export interface SendEmailResult {
 }
 
 export async function sendEmail({
-  to, subject, react, replyTo, tags,
+  to, subject, react, from, replyTo, tags,
 }: SendEmailInput): Promise<SendEmailResult> {
   if (!resend) {
     // Dev convenience — no Resend key means we only log.
@@ -104,7 +107,10 @@ export async function sendEmail({
     return { ok: false, error: 'RESEND_API_KEY missing' }
   }
 
-  const from = normalizeAddress(process.env.EMAIL_FROM, FROM_FALLBACK, 'EMAIL_FROM')
+  const defaultFrom = normalizeAddress(process.env.EMAIL_FROM, FROM_FALLBACK, 'EMAIL_FROM')
+  const finalFrom = from
+    ? normalizeAddress(from, defaultFrom, 'from')
+    : defaultFrom
   const fallbackReplyTo = normalizeAddress(
     process.env.EMAIL_SUPPORT,
     REPLY_TO_FALLBACK,
@@ -119,7 +125,7 @@ export async function sendEmail({
     const text = await render(react, { plainText: true })
 
     const { data, error } = await resend.emails.send({
-      from,
+      from: finalFrom,
       to,
       subject,
       html,
