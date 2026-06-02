@@ -8,6 +8,7 @@ import {
   type TransferTripType,
 } from '@/lib/airport-transfers'
 import { assertCheckoutSchema, SchemaNotReadyError } from '@/lib/checkout-schema'
+import { rateLimit, getIp } from '@/lib/rate-limit'
 
 /**
  * Transfers checkout — sibling of /api/checkout, with the same hardening:
@@ -80,6 +81,13 @@ export async function POST(request: NextRequest) {
   let reqId = ''
   try {
     reqId = crypto.randomBytes(6).toString('hex')
+
+    if (rateLimit(getIp(request), { windowMs: 60_000, max: 10, bucket: 'transfers-checkout' })) {
+      return NextResponse.json(
+        { error: 'Too many checkout attempts — please wait a moment and try again.' },
+        { status: 429 },
+      )
+    }
 
     const body = (await request.json()) as CheckoutBody
     if (!body.items?.length) {

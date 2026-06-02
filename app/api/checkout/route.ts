@@ -4,6 +4,7 @@ import crypto from 'crypto'
 import { createServiceClient } from '@/lib/supabase/service'
 import { priceTourCart, assertAmountMatches, PricingError } from '@/lib/checkout-pricing'
 import { assertCheckoutSchema, SchemaNotReadyError } from '@/lib/checkout-schema'
+import { rateLimit, getIp } from '@/lib/rate-limit'
 
 /**
  * Tour checkout — creates (or atomically reuses) a pending booking row
@@ -79,6 +80,15 @@ export async function POST(request: NextRequest) {
   let reqId = ''
   try {
     reqId = crypto.randomBytes(6).toString('hex')
+
+    // Light per-IP throttle so scripted checkout-attempts can't spam Stripe
+    // PaymentIntent creation. Real users complete checkout once or twice.
+    if (rateLimit(getIp(request), { windowMs: 60_000, max: 10, bucket: 'checkout' })) {
+      return NextResponse.json(
+        { error: 'Too many checkout attempts — please wait a moment and try again.' },
+        { status: 429 },
+      )
+    }
 
     const body = (await request.json()) as CheckoutBody
     if (!body.items?.length) {

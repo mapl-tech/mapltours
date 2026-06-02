@@ -59,6 +59,7 @@ export default function LeftNav() {
       {/* Logo */}
       <Link
         href="/"
+        aria-label="MAPL Tours — go to the feed"
         style={{
           fontFamily: 'var(--font-syne)',
           fontWeight: 800,
@@ -68,7 +69,7 @@ export default function LeftNav() {
           marginBottom: 32,
         }}
       >
-        🍁
+        <span aria-hidden="true">🍁</span>
       </Link>
 
       {/* Nav items */}
@@ -84,6 +85,8 @@ export default function LeftNav() {
             >
               <Link
                 href={item.href}
+                aria-label={item.label}
+                aria-current={isActive ? 'page' : undefined}
                 style={{
                   width: 44,
                   height: 44,
@@ -101,7 +104,7 @@ export default function LeftNav() {
                   color: isActive ? 'var(--gold)' : 'rgba(255,255,255,0.4)',
                 }}
               >
-                {item.icon}
+                <span aria-hidden="true">{item.icon}</span>
               </Link>
               {hoveredIndex === i && (
                 <div
@@ -134,6 +137,7 @@ export default function LeftNav() {
       {user ? (
         <button
           onClick={handleSignOut}
+          aria-label="Sign out"
           title="Sign out"
           style={{
             width: 44,
@@ -150,11 +154,12 @@ export default function LeftNav() {
             marginBottom: 8,
           }}
         >
-          ↪
+          <span aria-hidden="true">↪</span>
         </button>
       ) : (
         <Link
           href="/login"
+          aria-label="Sign in"
           title="Sign in"
           style={{
             width: 44,
@@ -170,7 +175,7 @@ export default function LeftNav() {
             color: pathname === '/login' ? 'var(--gold)' : 'rgba(255,255,255,0.4)',
           }}
         >
-          ⊕
+          <span aria-hidden="true">⊕</span>
         </Link>
       )}
 
@@ -178,6 +183,7 @@ export default function LeftNav() {
       {items.length > 0 && (
         <Link
           href="/checkout"
+          aria-label={`Open itinerary — ${items.length} item${items.length === 1 ? '' : 's'}`}
           style={{
             width: 44,
             height: 44,
@@ -196,7 +202,7 @@ export default function LeftNav() {
                 : '1px solid transparent',
           }}
         >
-          🛍
+          <span aria-hidden="true">🛍</span>
           <span
             style={{
               position: 'absolute',

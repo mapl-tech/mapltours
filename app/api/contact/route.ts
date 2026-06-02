@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { sendEmail } from '@/lib/email/send'
+import { rateLimit, getIp } from '@/lib/rate-limit'
 import ContactMessage from '@/emails/ContactMessage'
 import ContactAutoReply from '@/emails/ContactAutoReply'
 
@@ -20,26 +21,6 @@ import ContactAutoReply from '@/emails/ContactAutoReply'
 
 export const runtime = 'nodejs'
 
-// In-process rate limit. Single-instance is fine here — contact form
-// abuse is the threat, not coordinated DDOS, and Netlify Functions
-// recycle warm containers often enough that this naturally resets.
-const RATE_WINDOW_MS = 60_000 // 1 minute
-const RATE_MAX = 3 // 3 submissions per IP per minute
-const ipHits = new Map<string, number[]>()
-
-function rateLimited(ip: string): boolean {
-  const now = Date.now()
-  const cutoff = now - RATE_WINDOW_MS
-  const arr = (ipHits.get(ip) ?? []).filter((t) => t > cutoff)
-  if (arr.length >= RATE_MAX) {
-    ipHits.set(ip, arr)
-    return true
-  }
-  arr.push(now)
-  ipHits.set(ip, arr)
-  return false
-}
-
 const EMAIL_RE = /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i
 
 interface ContactBody {
@@ -52,12 +33,8 @@ interface ContactBody {
 }
 
 export async function POST(req: NextRequest) {
-  // 1. Rate limit per IP.
-  const ip =
-    req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
-    req.headers.get('x-real-ip') ||
-    'unknown'
-  if (rateLimited(ip)) {
+  const ip = getIp(req)
+  if (rateLimit(ip, { windowMs: 60_000, max: 3, bucket: 'contact' })) {
     return NextResponse.json(
       { error: 'Too many submissions — please wait a minute and try again.' },
       { status: 429 },

@@ -35,3 +35,10 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 .env.local
+
+# ad-hoc playwright audit scaffolding (not part of the test suite)
+playwright-*.mjs
+playwright-shots/
+audit-findings.json
+image-audit.json
+playwright-findings.json

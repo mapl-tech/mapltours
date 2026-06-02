@@ -216,9 +216,8 @@ export function useComments(experienceId: number) {
   const comments = data ?? []
 
   const addComment = useCallback(async (text: string, parentId?: string) => {
-    console.log('[comments.hook] addComment start', { text, parentId, experienceId, hasUser: !!user })
-    if (!user) { console.warn('[comments.hook] aborted — no user from useAuth()'); return null }
-    if (!text.trim()) { console.warn('[comments.hook] aborted — empty text'); return null }
+    if (!user) return null
+    if (!text.trim()) return null
 
     // Ensure the user has a row in public.users (required by the comments.
     // user_id foreign key). Idempotent upsert — safe to call every time.
@@ -233,7 +232,6 @@ export function useComments(experienceId: number) {
         { onConflict: 'id' }
       )
     if (upsertErr) console.warn('[comments.hook] users upsert warning', upsertErr)
-    else console.log('[comments.hook] users upsert ok')
 
     // ── Optimistic insert ─────────────────────────────────────────────
     // Paint the comment immediately so the UI always feels responsive.
@@ -249,7 +247,6 @@ export function useComments(experienceId: number) {
       user_name: user.user_metadata?.full_name || user.user_metadata?.name || 'You',
       user_avatar: user.user_metadata?.avatar_url || null,
     }
-    console.log('[comments.hook] optimistic add', { tempId, cacheKey: `comments:${experienceId}` })
     mutate((prev) => [...(prev ?? []), optimistic])
     setReplyingTo(null)
 
@@ -283,8 +280,6 @@ export function useComments(experienceId: number) {
       data = retry.data
       error = retry.error
     }
-
-    console.log('[comments.hook] insert result', { hasData: !!data, error })
 
     if (error || !data) {
       // Keep the optimistic row visible so the user isn't left wondering why
