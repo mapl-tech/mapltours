@@ -3,7 +3,6 @@ import { Playfair_Display, DM_Sans, Open_Sans } from 'next/font/google'
 import Script from 'next/script'
 import './globals.css'
 import LayoutShell from '@/components/LayoutShell'
-import { HERO_IMAGE } from '@/lib/experiences'
 import { HERO_VIDEO } from '@/lib/images'
 
 const playfair = Playfair_Display({
@@ -197,18 +196,19 @@ export default function RootLayout({
       <head>
         <JsonLd />
         <meta name="google-site-verification" content="NfZAf4Mh4YPVRIeaJT6pHB57jI10V5fTXOgX2WT4k3U" />
+        {/*
+          Hero image preload was previously a manual `<link rel="preload">`
+          pointing at the raw 1920x1080 Pexels URL. That bypassed Next/Image
+          entirely and double-loaded the hero (one fat unoptimized copy +
+          one Next-optimized copy). The hero <Image> in FeedView already
+          carries `priority` + `fetchPriority="high"`, which auto-emits a
+          preload tag for the OPTIMIZED variant — so we let Next handle it.
+        */}
         <link rel="preconnect" href="https://images.pexels.com" crossOrigin="anonymous" />
-        <link rel="preconnect" href="https://images.unsplash.com" crossOrigin="anonymous" />
         <link rel="preconnect" href="https://videos.pexels.com" crossOrigin="anonymous" />
-        <link
-          rel="preload"
-          as="image"
-          href={HERO_IMAGE}
-          fetchPriority="high"
-          crossOrigin="anonymous"
-        />
         <link rel="prefetch" href={HERO_VIDEO} as="video" type="video/mp4" />
         <link rel="prefetch" href="/explore" />
+        <link rel="dns-prefetch" href="https://images.unsplash.com" />
         <link rel="dns-prefetch" href="https://lh3.googleusercontent.com" />
         <link rel="dns-prefetch" href="https://eybeezhvuokziyczkkkl.supabase.co" />
         <link rel="dns-prefetch" href="https://www.googletagmanager.com" />
