@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import { Leaf, Star } from 'lucide-react'
 import LanguageSwitcher from './LanguageSwitcher'
 import { useI18n } from '@/lib/i18n'
@@ -154,13 +155,16 @@ export default function Footer() {
           fontSize: 12.5, color: 'var(--text-on-dark-3)',
           fontFamily: 'var(--font-dm-sans)', flexWrap: 'wrap', gap: 16,
         }}>
-          <p>© 2025 MAPL Tours. {t('All rights reserved.')} A <a href="https://www.mapltech.com" target="_blank" rel="noopener noreferrer" style={{ color: 'white', fontWeight: 600 }}>MAPL TECH</a> company.</p>
+          <p>© 2026 MAPL Tours. {t('All rights reserved.')} A <a href="https://www.mapltech.com" target="_blank" rel="noopener noreferrer" style={{ color: 'white', fontWeight: 600 }}>MAPL TECH</a> company.</p>
           <div className="footer-legal" style={{ display: 'flex', gap: 20, flexWrap: 'wrap' }}>
-            {['Privacy Policy', 'Terms of Service', 'Cookie Preferences'].map((label) => (
-              <span key={label} style={{ cursor: 'pointer', transition: 'color 0.15s ease' }}
+            {[
+              { label: 'Privacy Policy', href: '/privacy' },
+              { label: 'Terms of Service', href: '/terms' },
+            ].map(({ label, href }) => (
+              <Link key={label} href={href} style={{ color: 'var(--text-on-dark-3)', textDecoration: 'none', cursor: 'pointer', transition: 'color 0.15s ease' }}
                 onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--text-on-dark-2)' }}
                 onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--text-on-dark-3)' }}
-              >{t(label)}</span>
+              >{t(label)}</Link>
             ))}
           </div>
         </div>

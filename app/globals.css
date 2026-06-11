@@ -26,6 +26,7 @@
   --accent:         #171614;
   --gold:           #A68B3C;
   --gold-warm:      #C4A44A;
+  --gold-text:      #6E5A1C;  /* AA-compliant gold for text on white (≈5.4:1) — use this instead of --gold/--gold-warm for any text/label on a light surface */
   --emerald:        #1D7A50;
   --emerald-dim:    rgba(29, 122, 80, 0.07);
 
@@ -597,6 +598,18 @@ video {
   box-shadow: 0 0 0 3px rgba(23,22,20,0.06);
 }
 .field-input::placeholder { color: var(--text-tertiary); }
+
+/* Global keyboard-focus indicator. Several inputs/buttons set
+   `outline: none` inline (which beats a normal stylesheet rule), so this
+   uses !important to guarantee a visible focus ring for keyboard users
+   site-wide — WCAG 2.4.7. :focus-visible keeps it from showing on mouse
+   clicks. The 2px gold ring + offset stays visible on both the light page
+   surfaces and the dark hero. */
+*:focus-visible {
+  outline: 2px solid var(--gold-warm) !important;
+  outline-offset: 2px;
+  border-radius: 3px;
+}
 
 textarea.field-input {
   height: auto;

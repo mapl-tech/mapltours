@@ -197,14 +197,14 @@ export default memo(function MobileShort({ exp }: { exp: Experience }) {
             onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleCart() }}
             style={{
               position: 'absolute', top: 12, right: 12, zIndex: 2,
-              width: 34, height: 34, borderRadius: '50%',
+              width: 40, height: 40, borderRadius: '50%',
               background: inCart ? 'var(--emerald)' : 'rgba(0,0,0,0.4)',
               backdropFilter: 'blur(8px)', border: 'none', cursor: 'pointer',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               color: '#fff',
             }}
           >
-            {inCart ? <Check size={15} strokeWidth={2.5} /> : <Plus size={15} strokeWidth={2} />}
+            {inCart ? <Check size={17} strokeWidth={2.5} /> : <Plus size={17} strokeWidth={2} />}
           </button>
 
           {/* Bottom info */}

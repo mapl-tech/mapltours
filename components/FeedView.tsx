@@ -375,7 +375,7 @@ function DestinationsSection() {
               <button
                 onClick={() => scroll('left')}
                 style={{
-                  width: 36, height: 36, borderRadius: '50%',
+                  width: 40, height: 40, borderRadius: '50%',
                   background: 'transparent', border: '1px solid var(--border-strong)',
                   cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
                   color: 'var(--text-secondary)', transition: 'all 0.15s ease',
@@ -386,7 +386,7 @@ function DestinationsSection() {
               <button
                 onClick={() => scroll('right')}
                 style={{
-                  width: 36, height: 36, borderRadius: '50%',
+                  width: 40, height: 40, borderRadius: '50%',
                   background: 'var(--accent)', border: 'none',
                   cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
                   color: '#fff', transition: 'all 0.15s ease',
@@ -570,7 +570,7 @@ export default function FeedView() {
                 <span style={{
                   position: 'absolute', top: 14, left: 18,
                   fontSize: 11, fontWeight: 700, fontFamily: 'var(--font-dm-sans)',
-                  color: 'rgba(255,255,255,0.2)', letterSpacing: '0.04em',
+                  color: 'rgba(255,255,255,0.6)', letterSpacing: '0.04em',
                 }}>
                   Step {idx + 1}
                 </span>
@@ -589,7 +589,7 @@ export default function FeedView() {
                   {pillar.title}
                 </h4>
                 <p style={{
-                  fontSize: 13.5, color: 'rgba(255,255,255,0.4)',
+                  fontSize: 13.5, color: 'rgba(255,255,255,0.7)',
                   fontFamily: 'var(--font-dm-sans)', lineHeight: 1.6,
                 }}>
                   {pillar.body}

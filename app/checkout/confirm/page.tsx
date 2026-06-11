@@ -149,8 +149,13 @@ async function resolveConfirm(
         .eq('item_type', 'experience')
     : { data: null }
 
+  // PRIVACY: a payment_intent id is not a secret (it appears in return URLs,
+  // browser history, referrers), and bookings carry no user_id to check
+  // ownership against. Expose only the non-sensitive confirmation — first
+  // name + the experiences booked — never contact PII or pickup/dropoff
+  // addresses. Full details reach the real customer by confirmation email.
   const customerName = booking
-    ? `${booking.first_name ?? ''} ${booking.last_name ?? ''}`.trim() || null
+    ? (booking.first_name ?? '').trim() || null
     : null
 
   return {
@@ -158,12 +163,12 @@ async function resolveConfirm(
     bookingRef: booking ? humanizeId(booking.id) : null,
     paidAt: booking?.paid_at ?? null,
     customerName,
-    email: booking?.email ?? pi.receipt_email ?? null,
-    phone: booking?.phone ?? null,
-    country: booking?.country ?? null,
-    pickup: booking?.pickup ?? null,
-    dropoff: booking?.dropoff ?? null,
-    specialRequests: booking?.special_requests ?? null,
+    email: null,
+    phone: null,
+    country: null,
+    pickup: null,
+    dropoff: null,
+    specialRequests: null,
     subtotal: booking?.subtotal != null ? Number(booking.subtotal) : null,
     bookingFee: booking?.booking_fee != null ? Number(booking.booking_fee) : null,
     transportCost: booking?.transport_cost != null ? Number(booking.transport_cost) : null,

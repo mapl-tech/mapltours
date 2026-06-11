@@ -546,7 +546,21 @@ export const useI18n = create<I18nStore>()(
         return `${lang.currencySymbol}${converted.toLocaleString()}`
       },
     }),
-    { name: 'mapl-lang' }
+    {
+      name: 'mapl-lang',
+      // Don't read localStorage during render — SSR and first client render
+      // both use the default (USD/English) so there's no hydration mismatch;
+      // LayoutShell rehydrates after mount.
+      skipHydration: true,
+      // Re-derive the full Language from the persisted code against the
+      // CURRENT table, so a stale persisted FX rate / currency symbol can
+      // never stick — only the user's chosen `code` is authoritative.
+      merge: (persisted, current) => {
+        const code = (persisted as { lang?: { code?: string } } | undefined)?.lang?.code
+        const fresh = code ? languages.find((l) => l.code === code) : undefined
+        return { ...current, ...(persisted as object), lang: fresh ?? current.lang }
+      },
+    }
   )
 )
 

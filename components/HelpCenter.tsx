@@ -293,7 +293,7 @@ export default function HelpCenter() {
                 <div key={i} style={{ borderBottom: '1px solid var(--border)' }}>
                   <div style={{ padding: '20px 0' }}>
                     <span style={{
-                      fontSize: 11, fontWeight: 600, color: 'var(--gold)',
+                      fontSize: 11, fontWeight: 600, color: 'var(--gold-text)',
                       fontFamily: 'var(--font-dm-sans)',
                       textTransform: 'uppercase', letterSpacing: '0.06em',
                     }}>
@@ -398,9 +398,10 @@ export default function HelpCenter() {
               </div>
 
               <div style={{
-                display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16,
+                display: 'grid', gridTemplateColumns: '1fr', gap: 16,
+                maxWidth: 440, margin: '0 auto',
               }}>
-                {/* Email */}
+                {/* Email — the only support channel at launch (no phone line yet) */}
                 <a href="mailto:contact@mapltours.com" style={{
                   display: 'flex', flexDirection: 'column', alignItems: 'center',
                   textAlign: 'center', padding: '36px 24px',
@@ -447,106 +448,6 @@ export default function HelpCenter() {
                     fontFamily: 'var(--font-dm-sans)', marginTop: 6,
                   }}>
                     Response within 2 hours
-                  </p>
-                </a>
-
-                {/* Phone */}
-                <a href="tel:+18765550123" style={{
-                  display: 'flex', flexDirection: 'column', alignItems: 'center',
-                  textAlign: 'center', padding: '36px 24px',
-                  borderRadius: 'var(--r-xl)',
-                  border: '1px solid var(--border)',
-                  background: 'var(--card-bg)',
-                  boxShadow: 'var(--shadow-sm)',
-                  textDecoration: 'none',
-                  transition: 'all 0.2s ease',
-                }}
-                  onMouseEnter={(e) => {
-                    (e.currentTarget as HTMLElement).style.boxShadow = 'var(--shadow-md)';
-                    (e.currentTarget as HTMLElement).style.transform = 'translateY(-2px)'
-                  }}
-                  onMouseLeave={(e) => {
-                    (e.currentTarget as HTMLElement).style.boxShadow = 'var(--shadow-sm)';
-                    (e.currentTarget as HTMLElement).style.transform = ''
-                  }}
-                >
-                  <div style={{
-                    width: 52, height: 52, borderRadius: '50%',
-                    background: 'var(--surface)',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    fontSize: 22, marginBottom: 16,
-                  }}>
-                    📞
-                  </div>
-                  <p style={{
-                    fontSize: 12, fontWeight: 700, color: 'var(--text-tertiary)',
-                    fontFamily: 'var(--font-dm-sans)',
-                    textTransform: 'uppercase', letterSpacing: '0.08em',
-                    marginBottom: 8,
-                  }}>
-                    Call us
-                  </p>
-                  <p style={{
-                    fontSize: 15, fontWeight: 600, color: 'var(--text-primary)',
-                    fontFamily: 'var(--font-dm-sans)',
-                  }}>
-                    +1 (876) 555-0123
-                  </p>
-                  <p style={{
-                    fontSize: 12, color: 'var(--text-tertiary)',
-                    fontFamily: 'var(--font-dm-sans)', marginTop: 6,
-                  }}>
-                    Available 24/7
-                  </p>
-                </a>
-
-                {/* WhatsApp */}
-                <a href="https://wa.me/18765550123" target="_blank" rel="noopener noreferrer" style={{
-                  display: 'flex', flexDirection: 'column', alignItems: 'center',
-                  textAlign: 'center', padding: '36px 24px',
-                  borderRadius: 'var(--r-xl)',
-                  border: '1px solid var(--border)',
-                  background: 'var(--card-bg)',
-                  boxShadow: 'var(--shadow-sm)',
-                  textDecoration: 'none',
-                  transition: 'all 0.2s ease',
-                }}
-                  onMouseEnter={(e) => {
-                    (e.currentTarget as HTMLElement).style.boxShadow = 'var(--shadow-md)';
-                    (e.currentTarget as HTMLElement).style.transform = 'translateY(-2px)'
-                  }}
-                  onMouseLeave={(e) => {
-                    (e.currentTarget as HTMLElement).style.boxShadow = 'var(--shadow-sm)';
-                    (e.currentTarget as HTMLElement).style.transform = ''
-                  }}
-                >
-                  <div style={{
-                    width: 52, height: 52, borderRadius: '50%',
-                    background: 'var(--surface)',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    fontSize: 22, marginBottom: 16,
-                  }}>
-                    💬
-                  </div>
-                  <p style={{
-                    fontSize: 12, fontWeight: 700, color: 'var(--text-tertiary)',
-                    fontFamily: 'var(--font-dm-sans)',
-                    textTransform: 'uppercase', letterSpacing: '0.08em',
-                    marginBottom: 8,
-                  }}>
-                    WhatsApp
-                  </p>
-                  <p style={{
-                    fontSize: 15, fontWeight: 600, color: 'var(--text-primary)',
-                    fontFamily: 'var(--font-dm-sans)',
-                  }}>
-                    Message us
-                  </p>
-                  <p style={{
-                    fontSize: 12, color: 'var(--text-tertiary)',
-                    fontFamily: 'var(--font-dm-sans)', marginTop: 6,
-                  }}>
-                    Fastest response
                   </p>
                 </a>
               </div>

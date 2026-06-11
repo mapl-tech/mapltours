@@ -228,6 +228,24 @@ async function handlePaymentSucceeded(pi: Stripe.PaymentIntent) {
     booking.status = 'paid'
   }
 
+  // Consume the video-upload reward, if one was applied to this checkout.
+  // This is the authoritative consume point: a 3DS/redirect payment never
+  // runs the client-side consumeReward(), so without this a reward could be
+  // re-applied to a later cart. Idempotent — only flips a still-'available'
+  // row, keyed on this booking.
+  const rewardId = typeof pi.metadata?.reward_id === 'string' ? pi.metadata.reward_id : null
+  if (rewardId) {
+    const { error: rewardErr } = await supabase
+      .from('user_rewards')
+      .update({ status: 'used', used_on_booking_id: booking.id, used_at: new Date().toISOString() })
+      .eq('id', rewardId)
+      .eq('status', 'available')
+    if (rewardErr) {
+      // Non-fatal: the charge already succeeded. Log for reconciliation.
+      console.warn('[stripe-webhook] reward consume failed', { reward_id: rewardId, error: rewardErr.message })
+    }
+  }
+
   // Emails — gated on per-channel sent-at columns, NOT on booking status.
   // If a previous delivery sent the traveler email but Resend bounced the
   // operator email, the next webhook retry will try only the operator side.

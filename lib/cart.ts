@@ -126,6 +126,12 @@ export const useCartStore = create<CartStore>()(
         return Math.max(0, DAILY_HOUR_LIMIT - Math.max(...values))
       },
     }),
-    { name: 'mapl-cart' }
+    {
+      name: 'mapl-cart',
+      // Don't read localStorage during render. SSR and the first client
+      // render both start empty (identical HTML → no hydration mismatch);
+      // LayoutShell calls .persist.rehydrate() after mount to load the cart.
+      skipHydration: true,
+    }
   )
 )

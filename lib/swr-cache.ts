@@ -98,21 +98,33 @@ export function useSwrCache<T>(
   const fetcherRef = useRef(fetcher)
   fetcherRef.current = fetcher
 
+  // Track the latest key so an in-flight fetch for a stale key (e.g. the
+  // comments key after the user scrolled to a different reel, or the like
+  // key after login) can't resolve last and clobber the current key's
+  // state. We still write the resolved data to ITS OWN cache entry.
+  const latestKeyRef = useRef(key)
+  latestKeyRef.current = key
+
   const revalidate = useCallback(async () => {
     if (!key) return
+    const requestKey = key
     setRevalidating(true)
     try {
       const fresh = await fetcherRef.current()
-      writeCache(key, fresh)
+      writeCache(requestKey, fresh)
+      if (latestKeyRef.current !== requestKey) return // key changed mid-flight — drop
       setData(fresh)
       setError(null)
     } catch (err) {
+      if (latestKeyRef.current !== requestKey) return
       // Surface fetch failures — "nothing shows up" is the worst possible UX.
-      console.error(`[swr-cache] fetch failed for "${key}"`, err)
+      console.error(`[swr-cache] fetch failed for "${requestKey}"`, err)
       setError(err)
     } finally {
-      setRevalidating(false)
-      setLoading(false)
+      if (latestKeyRef.current === requestKey) {
+        setRevalidating(false)
+        setLoading(false)
+      }
     }
   }, [key])
 

@@ -945,7 +945,7 @@ function UploadSheet({
             padding: '10px 12px', borderRadius: 10,
             background: 'rgba(255, 90, 54, 0.08)',
             border: '1px solid rgba(255, 90, 54, 0.28)',
-            fontSize: 12.5, color: 'var(--coral, #FF5A36)',
+            fontSize: 12.5, color: '#c00',
             fontFamily: 'var(--font-dm-sans)', fontWeight: 500,
           }}>
             {error}

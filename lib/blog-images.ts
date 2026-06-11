@@ -40,7 +40,9 @@ const U_BEACH_SUNSET = 'https://images.unsplash.com/photo-1451411787567-040a8a56
 const E_RICKS_CAFE = 'https://www.rickscafejamaica.com/images/rickspics/r2/rick4.jpg'
 const E_DUNNS = 'https://media-cdn.tripadvisor.com/media/attractions-splice-spp-674x446/0b/23/23/7a.jpg'
 const E_MARLEY_HERITAGE = 'https://media-cdn.tripadvisor.com/media/attractions-splice-spp-720x480/06/88/cb/b9.jpg'
-const E_LUMINOUS = 'https://mobayvacations.com/wp-content/uploads/2024/06/luminous-lagoon-falmouth.jpg'
+// Was a hotlink to mobayvacations.com which now blocks external requests
+// (500s through the image optimizer). Use a working Pexels Falmouth scene.
+const E_LUMINOUS = px(16147280)
 const E_MYSTIC = 'https://media.tacdn.com/media/attractions-splice-spp-674x446/07/9a/88/aa.jpg'
 const E_RASTA_VILLAGE = 'https://media-cdn.tripadvisor.com/media/attractions-splice-spp-720x480/07/84/a6/8e.jpg'
 const E_PATTY = 'https://jamdownfoodie.com/wp-content/uploads/2022/07/IMG_2003-768x1024.jpg'

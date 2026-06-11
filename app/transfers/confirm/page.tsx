@@ -125,8 +125,14 @@ async function resolveConfirm(
         .eq('item_type', 'transfer')
     : { data: null }
 
+  // PRIVACY: this page is reachable by anyone who has a payment_intent id
+  // (it appears in return URLs, history, referrers) and bookings carry no
+  // user_id we could check ownership against. So we expose only the
+  // non-sensitive booking confirmation — first name + logistics — and never
+  // the contact PII (email / phone / country / special requests). The full
+  // details still reach the real customer via the Resend confirmation email.
   const customerName = booking
-    ? `${booking.first_name ?? ''} ${booking.last_name ?? ''}`.trim() || null
+    ? (booking.first_name ?? '').trim() || null
     : null
 
   return {
@@ -134,10 +140,10 @@ async function resolveConfirm(
     bookingRef: booking ? humanizeId(booking.id) : null,
     paidAt: booking?.paid_at ?? null,
     customerName,
-    email: booking?.email ?? pi.receipt_email ?? null,
-    phone: booking?.phone ?? null,
-    country: booking?.country ?? null,
-    specialRequests: booking?.special_requests ?? null,
+    email: null,
+    phone: null,
+    country: null,
+    specialRequests: null,
     subtotal: booking?.subtotal != null ? Number(booking.subtotal) : null,
     bookingFee: booking?.booking_fee != null ? Number(booking.booking_fee) : null,
     totalPaid: booking?.total_paid != null ? Number(booking.total_paid) : pi.amount / 100,

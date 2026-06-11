@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import Stripe from 'stripe'
 import crypto from 'crypto'
 import { createServiceClient } from '@/lib/supabase/service'
+import { createClient as createServerSupabase } from '@/lib/supabase/server'
 import { priceTourCart, assertAmountMatches, PricingError } from '@/lib/checkout-pricing'
 import { assertCheckoutSchema, SchemaNotReadyError } from '@/lib/checkout-schema'
 import { rateLimit, getIp } from '@/lib/rate-limit'
@@ -95,15 +96,61 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Cart is empty' }, { status: 400 })
     }
 
-    // 1. Server-side pricing — single source of truth.
+    // 0. Resolve the authenticated user (checkout requires login) and look
+    //    up their REAL reward server-side. The client-supplied discount is
+    //    never trusted — an anonymous or reward-less request gets 0%.
+    let rewardPercent = 0
+    let rewardId: string | null = null
+    try {
+      const authClient = createServerSupabase()
+      const { data: { user } } = await authClient.auth.getUser()
+      if (user) {
+        const { data: reward } = await authClient
+          .from('user_rewards')
+          .select('id, percent, status')
+          .eq('user_id', user.id)
+          .eq('status', 'available')
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle()
+        if (reward && Number.isFinite(Number(reward.percent))) {
+          rewardPercent = Number(reward.percent)
+          rewardId = reward.id
+        }
+      }
+    } catch (err) {
+      // Reward lookup is best-effort — never block a paid checkout over it.
+      console.warn('[checkout]', reqId, 'reward lookup failed', err)
+    }
+
+    // 1. Server-side pricing — single source of truth. Reward comes from the
+    //    server-verified percent above, NOT from the request body.
     const pricing = priceTourCart(
       body.items.map((i) => ({ id: i.id, travelers: i.travelers, date: i.date })),
       body.breakdown ?? {},
+      { rewardPercent },
     )
     assertAmountMatches(body.amount, pricing)
     const amountInCents = Math.round(pricing.total * 100)
     if (amountInCents < 50) {
       return NextResponse.json({ error: 'Amount must be at least $0.50' }, { status: 400 })
+    }
+
+    // Reject bookings for dates in the past (the date pickers also set
+    // min=today, but never trust the client). One day of grace covers the
+    // traveler/server timezone gap so a same-day booking isn't rejected.
+    const todayUtc = new Date().toISOString().slice(0, 10)
+    const earliestAllowed = new Date(Date.parse(todayUtc) - 24 * 60 * 60 * 1000)
+      .toISOString()
+      .slice(0, 10)
+    const hasPastDate = pricing.lines.some(
+      (l) => l.date && l.date.slice(0, 10) < earliestAllowed,
+    )
+    if (hasPastDate) {
+      return NextResponse.json(
+        { error: 'One or more experiences have a date in the past. Please pick a future date.', requestId: reqId },
+        { status: 400 },
+      )
     }
 
     const supabase = createServiceClient()
@@ -264,6 +311,10 @@ export async function POST(request: NextRequest) {
           booking_id: bookingId!,
           booking_type: 'tour',
           item_count: String(pricing.lines.length),
+          // The webhook flips this reward to 'used' on payment success
+          // (idempotent), so a 3DS/redirect flow that never runs the
+          // client-side consume still can't double-spend the reward.
+          ...(rewardId && pricing.rewardDiscount > 0 ? { reward_id: rewardId } : {}),
           summary: pricing.lines
             .map((l) => `${l.experience.title.slice(0, 30)}|${l.travelers}x$${l.pricePerPerson}`)
             .join(', ')
@@ -320,8 +371,14 @@ export async function POST(request: NextRequest) {
         { status: 503 },
       )
     }
+    // Never leak the raw internal error (Postgres/Stripe column/constraint
+    // names) to the browser — log it, return a generic message + the
+    // requestId the user can quote to support.
     const message = err instanceof Error ? err.message : 'Internal server error'
     console.error('[checkout]', reqId, 'create failed', message)
-    return NextResponse.json({ error: message, requestId: reqId }, { status: 500 })
+    return NextResponse.json(
+      { error: 'Something went wrong creating your booking. Please try again.', requestId: reqId },
+      { status: 500 },
+    )
   }
 }

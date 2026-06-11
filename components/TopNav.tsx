@@ -47,6 +47,7 @@ export default function TopNav({ onCartClick }: { onCartClick?: () => void }) {
   const isExperience = pathname.startsWith('/experience')
   const isCheckout = pathname.startsWith('/checkout')
   const isExplore = pathname.startsWith('/explore')
+  const isTransfers = pathname.startsWith('/transfers')
 
   useEffect(() => {
     const onScroll = () => {
@@ -436,8 +437,11 @@ export default function TopNav({ onCartClick }: { onCartClick?: () => void }) {
             {user ? (
               <button
                 onClick={() => setShowProfileMenu(!showProfileMenu)}
+                aria-label="Account menu"
+                aria-haspopup="menu"
+                aria-expanded={showProfileMenu}
                 style={{
-                  width: 26, height: 26, borderRadius: '50%',
+                  width: 34, height: 34, borderRadius: '50%',
                   overflow: 'hidden', flexShrink: 0,
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   background: user.user_metadata?.avatar_url
@@ -448,17 +452,17 @@ export default function TopNav({ onCartClick }: { onCartClick?: () => void }) {
                 }}
               >
                 {user.user_metadata?.avatar_url ? (
-                  <Image src={user.user_metadata.avatar_url} alt="" width={26} height={26} style={{ objectFit: 'cover' }} />
+                  <Image src={user.user_metadata.avatar_url} alt="" width={34} height={34} style={{ objectFit: 'cover' }} />
                 ) : (
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={dark ? 'rgba(255,255,255,0.7)' : 'var(--text-secondary)'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={dark ? 'rgba(255,255,255,0.7)' : 'var(--text-secondary)'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
                     <circle cx="12" cy="7" r="4" />
                   </svg>
                 )}
               </button>
             ) : (
-              <Link href="/login" style={{
-                width: 26, height: 26, borderRadius: '50%',
+              <Link href="/login" aria-label="Sign in" style={{
+                width: 34, height: 34, borderRadius: '50%',
                 overflow: 'hidden', flexShrink: 0,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 background: dark ? 'rgba(255,255,255,0.12)' : 'var(--surface)',
@@ -520,9 +524,10 @@ export default function TopNav({ onCartClick }: { onCartClick?: () => void }) {
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
           <Link
             href="/explore"
+            aria-current={isExplore ? 'page' : undefined}
             style={{
-              padding: '6px 12px', fontSize: 13, fontWeight: 500,
-              fontFamily: 'var(--font-dm-sans)', color: linkColor,
+              padding: '6px 12px', fontSize: 13, fontWeight: isExplore ? 700 : 500,
+              fontFamily: 'var(--font-dm-sans)', color: isExplore ? (dark ? '#fff' : 'var(--accent)') : linkColor,
               borderRadius: 9999, transition: 'color 0.15s ease',
             }}
           >
@@ -532,9 +537,10 @@ export default function TopNav({ onCartClick }: { onCartClick?: () => void }) {
           <Link
             href="/transfers"
             className="hide-mobile"
+            aria-current={isTransfers ? 'page' : undefined}
             style={{
-              padding: '6px 12px', fontSize: 13, fontWeight: 500,
-              fontFamily: 'var(--font-dm-sans)', color: linkColor,
+              padding: '6px 12px', fontSize: 13, fontWeight: isTransfers ? 700 : 500,
+              fontFamily: 'var(--font-dm-sans)', color: isTransfers ? (dark ? '#fff' : 'var(--accent)') : linkColor,
               borderRadius: 9999, transition: 'color 0.15s ease',
               whiteSpace: 'nowrap',
             }}
@@ -578,6 +584,9 @@ export default function TopNav({ onCartClick }: { onCartClick?: () => void }) {
             {user ? (
               <button
                 onClick={() => setShowProfileMenu(!showProfileMenu)}
+                aria-label="Account menu"
+                aria-haspopup="menu"
+                aria-expanded={showProfileMenu}
                 style={{
                   width: 32, height: 32, borderRadius: '50%',
                   overflow: 'hidden', flexShrink: 0,

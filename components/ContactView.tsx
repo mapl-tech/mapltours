@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import Image from 'next/image'
-import { Leaf, Mail, Phone, MapPin, Clock, Send, Check, MessageCircle } from 'lucide-react'
+import { Leaf, Mail, MapPin, Clock, Send, Check, Camera, Music2 } from 'lucide-react'
 import { DESTINATION_IMAGES } from '@/lib/experiences'
 
 export default function ContactView() {
@@ -104,7 +104,6 @@ export default function ContactView() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: 20, marginBottom: 36 }}>
               {[
                 { icon: <Mail size={16} />, label: 'Email', value: 'contact@mapltours.com' },
-                { icon: <Phone size={16} />, label: 'Phone', value: '+1 (876) 555-0123' },
                 { icon: <MapPin size={16} />, label: 'Location', value: 'Kingston, Jamaica' },
                 { icon: <Clock size={16} />, label: 'Hours', value: 'Mon - Sat, 8am - 8pm EST' },
               ].map((item) => (
@@ -136,18 +135,26 @@ export default function ContactView() {
               </p>
               <div style={{ display: 'flex', gap: 10 }}>
                 {[
-                  { icon: <Mail size={16} />, label: 'Instagram' },
-                  { icon: <MessageCircle size={16} />, label: 'WhatsApp' },
+                  { icon: <Camera size={16} />, label: 'Instagram', href: 'https://www.instagram.com/mapltours' },
+                  { icon: <Music2 size={16} />, label: 'TikTok', href: 'https://www.tiktok.com/@mapltours' },
                 ].map((s) => (
-                  <div key={s.label} style={{
-                    width: 40, height: 40, borderRadius: 'var(--r-md)',
-                    background: 'var(--surface)', display: 'flex',
-                    alignItems: 'center', justifyContent: 'center',
-                    color: 'var(--text-secondary)', cursor: 'pointer',
-                    transition: 'all 0.15s ease',
-                  }}>
+                  <a
+                    key={s.label}
+                    href={s.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label={`MAPL Tours on ${s.label}`}
+                    title={s.label}
+                    style={{
+                      width: 40, height: 40, borderRadius: 'var(--r-md)',
+                      background: 'var(--surface)', display: 'flex',
+                      alignItems: 'center', justifyContent: 'center',
+                      color: 'var(--text-secondary)', cursor: 'pointer',
+                      transition: 'all 0.15s ease', textDecoration: 'none',
+                    }}
+                  >
                     {s.icon}
-                  </div>
+                  </a>
                 ))}
               </div>
             </div>

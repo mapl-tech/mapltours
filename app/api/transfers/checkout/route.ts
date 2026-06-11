@@ -343,8 +343,12 @@ export async function POST(request: NextRequest) {
         { status: 503 },
       )
     }
+    // Don't leak the raw internal error to the client — log + generic message.
     const message = err instanceof Error ? err.message : 'Internal server error'
     console.error('[transfers/checkout]', reqId, 'create failed', message)
-    return NextResponse.json({ error: message, requestId: reqId }, { status: 500 })
+    return NextResponse.json(
+      { error: 'Something went wrong creating your transfer. Please try again.', requestId: reqId },
+      { status: 500 },
+    )
   }
 }

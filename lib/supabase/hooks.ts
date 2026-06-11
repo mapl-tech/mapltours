@@ -67,19 +67,21 @@ export function useExperienceLike(experienceId: number) {
     }))
 
     try {
-      if (wasLiked) {
-        await supabase
-          .from('experience_likes')
-          .delete()
-          .eq('experience_id', experienceId)
-          .eq('user_id', user.id)
-      } else {
-        await supabase
-          .from('experience_likes')
-          .insert({ experience_id: experienceId, user_id: user.id })
-      }
+      // Supabase resolves to { error } rather than throwing, so we must
+      // inspect it explicitly — a bare await would let a failed write slip
+      // past and leave the optimistic state stuck.
+      const { error } = wasLiked
+        ? await supabase
+            .from('experience_likes')
+            .delete()
+            .eq('experience_id', experienceId)
+            .eq('user_id', user.id)
+        : await supabase
+            .from('experience_likes')
+            .insert({ experience_id: experienceId, user_id: user.id })
+      if (error) throw error
     } catch {
-      // Roll back on failure
+      // Roll back the optimistic update on any failure.
       mutate((prev) => ({
         liked: wasLiked,
         count: Math.max(0, (prev?.count ?? 0) + (wasLiked ? 1 : -1)),
@@ -126,20 +128,23 @@ export function useCommentLike(commentId: string) {
       return
     }
 
-    if (liked) {
-      setLiked(false)
-      setLikeCount((c) => Math.max(0, c - 1))
-      await supabase
-        .from('comment_likes')
-        .delete()
-        .eq('comment_id', commentId)
-        .eq('user_id', user.id)
-    } else {
-      setLiked(true)
-      setLikeCount((c) => c + 1)
-      await supabase
-        .from('comment_likes')
-        .insert({ comment_id: commentId, user_id: user.id })
+    const wasLiked = liked
+    // Optimistic flip.
+    setLiked(!wasLiked)
+    setLikeCount((c) => Math.max(0, c + (wasLiked ? -1 : 1)))
+    const { error } = wasLiked
+      ? await supabase
+          .from('comment_likes')
+          .delete()
+          .eq('comment_id', commentId)
+          .eq('user_id', user.id)
+      : await supabase
+          .from('comment_likes')
+          .insert({ comment_id: commentId, user_id: user.id })
+    if (error) {
+      // Roll back on failure (Supabase returns { error }, never throws).
+      setLiked(wasLiked)
+      setLikeCount((c) => Math.max(0, c + (wasLiked ? 1 : -1)))
     }
   }, [user, liked, commentId])
 
@@ -179,12 +184,27 @@ export function useComments(experienceId: number) {
   const { data, loading, mutate, refresh } = useSwrCache<SupabaseComment[]>(
     `comments:${experienceId}`,
     async () => {
-      const { data: rows, error: commentsErr } = await supabase
+      let { data: rows, error: commentsErr } = await supabase
         .from('comments')
         .select('id, experience_id, user_id, text, created_at, parent_id')
         .eq('experience_id', experienceId)
         .order('created_at', { ascending: true })
         .limit(COMMENTS_LIMIT)
+
+      // Graceful degradation: if the reply-support migration (002, which
+      // adds comments.parent_id) hasn't been applied, Postgres returns
+      // 42703 "column does not exist". Rather than failing ALL comments,
+      // retry without parent_id and treat every comment as top-level.
+      if (commentsErr && (commentsErr.code === '42703' || /parent_id/.test(commentsErr.message ?? ''))) {
+        const retry = await supabase
+          .from('comments')
+          .select('id, experience_id, user_id, text, created_at')
+          .eq('experience_id', experienceId)
+          .order('created_at', { ascending: true })
+          .limit(COMMENTS_LIMIT)
+        rows = retry.data ? retry.data.map((r) => ({ ...r, parent_id: null })) : null
+        commentsErr = retry.error
+      }
 
       if (commentsErr) {
         console.error('[comments] select failed', commentsErr)
@@ -282,11 +302,11 @@ export function useComments(experienceId: number) {
     }
 
     if (error || !data) {
-      // Keep the optimistic row visible so the user isn't left wondering why
-      // their comment vanished. It won't persist across reloads until the DB
-      // issue is resolved, but the console error tells us exactly what to
-      // fix server-side.
-      console.error('[comments.hook] insert failed — keeping optimistic row, NOT persisted', error)
+      // Roll the optimistic row back so a failed insert doesn't masquerade
+      // as a posted comment (it would otherwise vanish on reload with no
+      // explanation). The caller keeps the user's text so they can retry.
+      console.error('[comments.hook] insert failed — rolling back optimistic row', error)
+      mutate((prev) => (prev ?? []).filter((c) => c.id !== tempId))
       return null
     }
 

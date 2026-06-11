@@ -1625,7 +1625,7 @@ function Kicker({
         fontWeight: 700,
         letterSpacing: '0.22em',
         textTransform: 'uppercase',
-        color: 'var(--gold)',
+        color: 'var(--gold-text)',
         textAlign: centered ? 'center' : 'left',
       }}
     >

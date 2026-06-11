@@ -108,6 +108,12 @@ function ReviewStep() {
   const { t, formatPrice } = useI18n()
   const [customDates, setCustomDates] = useState(false)
 
+  // Earliest selectable date is today — block bookings for dates in the past
+  // (also validated server-side). Computed after mount to keep SSR/CSR
+  // markup identical.
+  const [minDate, setMinDate] = useState('')
+  useEffect(() => { setMinDate(new Date().toISOString().slice(0, 10)) }, [])
+
   // Get the shared date from the first item
   const sharedDate = items[0]?.date || ''
 
@@ -199,6 +205,7 @@ function ReviewStep() {
             <input
               type="date"
               value={sharedDate}
+              min={minDate}
               onChange={(e) => setAllDates(e.target.value)}
               className="field-input"
               style={{ maxWidth: 160, height: 40, fontSize: 13 }}
@@ -222,6 +229,7 @@ function ReviewStep() {
             <input
               type="date"
               value={item.date}
+              min={minDate}
               onChange={(e) => updateDate(item.id, e.target.value)}
               className="field-input"
               style={{ maxWidth: 155, height: 38, fontSize: 13, flexShrink: 0, marginLeft: 16 }}
@@ -371,11 +379,11 @@ function DetailsStep({ waiverAccepted, setWaiverAccepted, waiverError, formData,
           </div>
         </div>
         <div style={{ display: 'flex', alignItems: 'center' }}>
-          <button className="btn-outline" style={{ width: 38, height: 38, padding: 0, borderRadius: '10px 0 0 10px', fontSize: 16 }} onClick={() => items.forEach((item) => updateTravelers(item.id, item.travelers - 1))}>−</button>
-          <div style={{ width: 52, height: 38, display: 'flex', alignItems: 'center', justifyContent: 'center', borderTop: '1px solid var(--border)', borderBottom: '1px solid var(--border)', fontSize: 16, fontWeight: 700, fontFamily: 'var(--font-dm-sans)' }}>
+          <button className="btn-outline" style={{ width: 44, height: 44, padding: 0, borderRadius: '10px 0 0 10px', fontSize: 16 }} onClick={() => items.forEach((item) => updateTravelers(item.id, item.travelers - 1))}>−</button>
+          <div style={{ width: 52, height: 44, display: 'flex', alignItems: 'center', justifyContent: 'center', borderTop: '1px solid var(--border)', borderBottom: '1px solid var(--border)', fontSize: 16, fontWeight: 700, fontFamily: 'var(--font-dm-sans)' }}>
             {items[0]?.travelers || 2}
           </div>
-          <button className="btn-outline" style={{ width: 38, height: 38, padding: 0, borderRadius: '0 10px 10px 0', fontSize: 16 }} onClick={() => items.forEach((item) => updateTravelers(item.id, item.travelers + 1))}>+</button>
+          <button className="btn-outline" style={{ width: 44, height: 44, padding: 0, borderRadius: '0 10px 10px 0', fontSize: 16 }} onClick={() => items.forEach((item) => updateTravelers(item.id, item.travelers + 1))}>+</button>
         </div>
       </div>
 
@@ -387,10 +395,11 @@ function DetailsStep({ waiverAccepted, setWaiverAccepted, waiverError, formData,
           { key: 'phone', label: 'Phone', placeholder: '+1 (555) 000-0000', span: 1, type: 'tel', auto: 'tel' },
         ].map((f) => (
           <div key={f.key} data-field={f.key} style={{ gridColumn: f.span === 2 ? 'span 2' : undefined }}>
-            <label style={{ fontSize: 12.5, color: formErrors[f.key] ? '#c00' : 'var(--text-secondary)', fontFamily: 'var(--font-dm-sans)', fontWeight: 600, display: 'block', marginBottom: 6 }}>
+            <label htmlFor={`checkout-${f.key}`} style={{ fontSize: 12.5, color: formErrors[f.key] ? '#c00' : 'var(--text-secondary)', fontFamily: 'var(--font-dm-sans)', fontWeight: 600, display: 'block', marginBottom: 6 }}>
               {f.label} {formErrors[f.key] && <span style={{ fontWeight: 400 }}>- {f.key === 'email' && formData[f.key]?.trim() ? 'invalid email' : f.key === 'phone' && formData[f.key]?.trim() ? 'invalid phone' : 'required'}</span>}
             </label>
             <input
+              id={`checkout-${f.key}`}
               className="field-input"
               type={f.type || 'text'}
               name={f.key}
@@ -407,10 +416,11 @@ function DetailsStep({ waiverAccepted, setWaiverAccepted, waiverError, formData,
         ))}
         {/* Country dropdown */}
         <div data-field="country">
-          <label style={{ fontSize: 12.5, color: formErrors['country'] ? '#c00' : 'var(--text-secondary)', fontFamily: 'var(--font-dm-sans)', fontWeight: 600, display: 'block', marginBottom: 6 }}>
+          <label htmlFor="checkout-country" style={{ fontSize: 12.5, color: formErrors['country'] ? '#c00' : 'var(--text-secondary)', fontFamily: 'var(--font-dm-sans)', fontWeight: 600, display: 'block', marginBottom: 6 }}>
             Country {formErrors['country'] && <span style={{ fontWeight: 400 }}>- required</span>}
           </label>
           <select
+            id="checkout-country"
             className="field-input"
             name="country"
             autoComplete="country-name"
@@ -537,8 +547,15 @@ function DetailsStep({ waiverAccepted, setWaiverAccepted, waiverError, formData,
         </datalist>
 
         <div style={{ gridColumn: 'span 2' }}>
-          <label style={{ fontSize: 12.5, color: 'var(--text-secondary)', fontFamily: 'var(--font-dm-sans)', fontWeight: 600, display: 'block', marginBottom: 6 }}>Special Requests</label>
-          <textarea className="field-input" placeholder="Dietary restrictions, accessibility needs, anything we should know..." rows={4} />
+          <label htmlFor="checkout-special-requests" style={{ fontSize: 12.5, color: 'var(--text-secondary)', fontFamily: 'var(--font-dm-sans)', fontWeight: 600, display: 'block', marginBottom: 6 }}>Special Requests</label>
+          <textarea
+            id="checkout-special-requests"
+            className="field-input"
+            placeholder="Dietary restrictions, accessibility needs, anything we should know..."
+            rows={4}
+            value={formData['specialRequests'] || ''}
+            onChange={(e) => updateField('specialRequests', e.target.value)}
+          />
         </div>
       </div>
       <div style={{

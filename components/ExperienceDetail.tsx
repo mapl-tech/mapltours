@@ -269,9 +269,12 @@ function Reel({ exp, isActive, totalCount, currentIndex }: { exp: Experience; is
         {/* Like */}
         <button
           onClick={(e) => { e.stopPropagation(); toggleLike() }}
+          aria-label={liked ? 'Unlike this experience' : 'Like this experience'}
+          aria-pressed={liked}
           style={{
             display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2,
             background: 'none', border: 'none', cursor: 'pointer', color: 'white',
+            minWidth: 44, minHeight: 44, padding: 4,
           }}
         >
           <Heart size={26} fill={liked ? '#FF4081' : 'none'} color={liked ? '#FF4081' : 'white'} strokeWidth={1.8} />
@@ -290,9 +293,11 @@ function Reel({ exp, isActive, totalCount, currentIndex }: { exp: Experience; is
         {/* Comments */}
         <button
           onClick={(e) => e.stopPropagation()}
+          aria-label="View comments"
           style={{
             display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2,
             background: 'none', border: 'none', cursor: 'pointer', color: 'white',
+            minWidth: 44, minHeight: 44, padding: 4,
           }}
         >
           <MessageCircle size={26} strokeWidth={1.8} />
@@ -304,9 +309,11 @@ function Reel({ exp, isActive, totalCount, currentIndex }: { exp: Experience; is
         {/* Share */}
         <button
           onClick={(e) => { e.stopPropagation(); handleShare() }}
+          aria-label="Share this experience"
           style={{
             display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2,
             background: 'none', border: 'none', cursor: 'pointer', color: 'white',
+            minWidth: 44, minHeight: 44, padding: 4,
           }}
         >
           <Send size={24} strokeWidth={1.8} />
@@ -322,6 +329,7 @@ function Reel({ exp, isActive, totalCount, currentIndex }: { exp: Experience; is
           style={{
             display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2,
             background: 'none', border: 'none', cursor: 'pointer', color: 'white',
+            minWidth: 44, minHeight: 44, padding: 4,
           }}
         >
           <Film size={24} strokeWidth={1.8} />
@@ -906,9 +914,13 @@ export default function ExperienceDetail({ slug }: { slug: string }) {
       window.location.href = `/login?redirect=/experience/${slugify(activeExp.title)}`
       return
     }
-    await addSupabaseComment(commentText, replyingTo?.id || undefined)
-    setCommentText('')
-    setReplyingTo(null)
+    const posted = await addSupabaseComment(commentText, replyingTo?.id || undefined)
+    // Only clear the box on a confirmed post. On failure the optimistic row
+    // is rolled back in the hook, so keeping the text lets the user retry.
+    if (posted) {
+      setCommentText('')
+      setReplyingTo(null)
+    }
   }
 
   if (!activeExp) {

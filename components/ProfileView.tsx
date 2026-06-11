@@ -544,7 +544,7 @@ export default function ProfileView() {
               <EditableField
                 label="Phone number"
                 value={phone}
-                placeholder="+1 (876) 555-0123"
+                placeholder="+1 (876) 000-0000"
                 type="tel"
                 onSave={updatePhone}
                 verified={!!phone}

@@ -87,11 +87,12 @@ export default function ExploreView() {
               <Search size={16} color="var(--text-tertiary)" strokeWidth={2} />
               <input
                 type="text" placeholder="Search destinations, activities..."
+                aria-label="Search experiences by destination or activity"
                 value={search} onChange={(e) => setSearch(e.target.value)}
                 style={{ flex: 1, background: 'none', border: 'none', outline: 'none', color: 'var(--text-primary)', fontSize: 14, fontFamily: 'var(--font-dm-sans)', fontWeight: 500 }}
               />
               {search && (
-                <button onClick={() => setSearch('')} style={{ width: 20, height: 20, borderRadius: '50%', background: 'var(--surface)', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, color: 'var(--text-tertiary)' }}>
+                <button onClick={() => setSearch('')} aria-label="Clear search" style={{ width: 20, height: 20, borderRadius: '50%', background: 'var(--surface)', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, color: 'var(--text-tertiary)' }}>
                   ×
                 </button>
               )}

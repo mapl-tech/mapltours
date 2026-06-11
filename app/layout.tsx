@@ -114,7 +114,7 @@ function JsonLd() {
     '@type': 'TravelAgency',
     name: 'MAPL Tours Jamaica',
     url: siteUrl,
-    logo: `${siteUrl}/icon.png`,
+    logo: `${siteUrl}/icon`,
     description: 'Discover the best tours in Jamaica. Authentic cultural experiences crafted by locals who know Jamaica best.',
     address: {
       '@type': 'PostalAddress',

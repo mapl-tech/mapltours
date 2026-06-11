@@ -51,11 +51,14 @@ export function getSlug(exp: Experience): string {
   return slugify(exp.title)
 }
 
+// These double as TEXT colors for the category label on white cards/pills,
+// so each must clear WCAG AA (≥4.5:1 on #FFF). Music/Food were too light
+// (2.7–3.4:1); darkened to ~5:1 while keeping the gold/amber hue.
 export const CATEGORY_COLORS: Record<ExperienceCategory, string> = {
   Adventure: '#1A1A1A',
   Nature:    '#0A6E3A',
-  Music:     '#C8960F',
-  Food:      '#B07D0A',
+  Music:     '#8C6A0D',
+  Food:      '#8A6308',
   Culture:   '#2D7A3E',
   Water:     '#1A1A1A',
 }

@@ -266,10 +266,11 @@ function LoginContent() {
                   color: 'var(--text-secondary)',
                   fontFamily: 'var(--font-dm-sans)',
                   marginBottom: 6,
-                }}>
+                }} htmlFor="login-name">
                   Full name
                 </label>
                 <input
+                  id="login-name"
                   type="text"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
@@ -300,10 +301,11 @@ function LoginContent() {
                 color: 'var(--text-secondary)',
                 fontFamily: 'var(--font-dm-sans)',
                 marginBottom: 6,
-              }}>
+              }} htmlFor="login-email">
                 Email
               </label>
               <input
+                id="login-email"
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -333,10 +335,11 @@ function LoginContent() {
                 color: 'var(--text-secondary)',
                 fontFamily: 'var(--font-dm-sans)',
                 marginBottom: 6,
-              }}>
+              }} htmlFor="login-password">
                 Password
               </label>
               <input
+                id="login-password"
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
@@ -421,7 +424,7 @@ function LoginContent() {
             style={{
               background: 'none',
               border: 'none',
-              color: 'var(--gold)',
+              color: 'var(--gold-text)',
               fontWeight: 600,
               cursor: 'pointer',
               fontFamily: 'var(--font-dm-sans)',
