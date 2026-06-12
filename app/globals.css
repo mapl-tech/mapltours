@@ -17,9 +17,9 @@
   --surface:        #F3F2EF;
   --surface-hover:  #EBEAE6;
 
-  /* Borders */
-  --border:         rgba(0, 0, 0, 0.07);
-  --border-strong:  rgba(0, 0, 0, 0.13);
+  /* Borders — warm-black hairlines so cards read as present, not ghosted */
+  --border:         rgba(23, 22, 20, 0.10);
+  --border-strong:  rgba(23, 22, 20, 0.16);
   --border-on-dark: rgba(255, 255, 255, 0.08);
 
   /* Brand */
@@ -45,13 +45,25 @@
   --r-xl: 20px;
   --r-2xl: 28px;
 
-  /* Shadows */
-  --shadow-xs:  0 1px 2px rgba(0,0,0,0.03);
-  --shadow-sm:  0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.02);
-  --shadow-md:  0 4px 12px rgba(0,0,0,0.06);
-  --shadow-lg:  0 12px 32px rgba(0,0,0,0.08);
-  --shadow-xl:  0 20px 48px rgba(0,0,0,0.10);
-  --shadow-card-hover: 0 16px 40px rgba(0,0,0,0.10);
+  /* Shadows — two-layer warm ramp (ambient + key) so surfaces sit ON the page */
+  --shadow-xs:  0 1px 2px rgba(23,22,20,0.04);
+  --shadow-sm:  0 1px 2px rgba(23,22,20,0.04), 0 4px 10px -4px rgba(23,22,20,0.06);
+  --shadow-md:  0 2px 4px rgba(23,22,20,0.04), 0 8px 16px -4px rgba(23,22,20,0.08);
+  --shadow-lg:  0 4px 8px rgba(23,22,20,0.05), 0 18px 36px -8px rgba(23,22,20,0.12);
+  --shadow-xl:  0 8px 16px rgba(23,22,20,0.06), 0 28px 56px -12px rgba(23,22,20,0.16);
+  --shadow-card-hover: 0 4px 8px rgba(23,22,20,0.06), 0 24px 50px -12px rgba(23,22,20,0.22);
+
+  /* Motion vocabulary */
+  --ease-out:    cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --dur-fast: 0.18s;
+  --dur-base: 0.4s;
+  --dur-slow: 0.7s;
+
+  /* Atmosphere + rhythm */
+  --grain-opacity: 0.03;
+  --space-section: clamp(64px, 9vw, 128px);
 }
 
 *, *::before, *::after {
@@ -67,9 +79,41 @@ html {
 }
 
 body {
-  background: var(--bg);
+  /* Warm radial wash from the top so the page has light + depth instead of
+     a flat clinical white. */
+  background:
+    radial-gradient(125% 80% at 50% -12%, #FFFDF8 0%, var(--bg-warm) 52%, var(--bg) 100%)
+    fixed;
   color: var(--text-primary);
   font-family: var(--font-dm-sans), sans-serif;
+  position: relative;
+}
+
+/* Fine film grain over the whole page — turns flat fills into "crafted"
+   surfaces. Non-interactive, low opacity, sits below modals via z-index. */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+  opacity: var(--grain-opacity);
+  mix-blend-mode: multiply;
+  background-size: 180px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* Hand-finished detail: gold text selection. */
+::selection { background: rgba(166, 139, 60, 0.22); color: var(--text-primary); }
+
+/* Respect users who ask for less motion. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
 }
 
 a { text-decoration: none; color: inherit; }
@@ -104,9 +148,10 @@ video {
 .text-display {
   font-family: var(--font-syne);
   font-weight: 700;
-  font-size: clamp(2.25rem, 4.5vw, 3.5rem);
-  line-height: 1.06;
-  letter-spacing: -0.03em;
+  /* Playfair's drama only reads above ~3.5rem — give it room. */
+  font-size: clamp(2.75rem, 6vw, 5rem);
+  line-height: 1.02;
+  letter-spacing: -0.035em;
 }
 
 .text-headline-lg {
@@ -584,18 +629,20 @@ video {
   width: 100%;
   height: 44px;
   padding: 0 14px;
-  background: white;
+  /* Recessed warm field reads as crafted vs a plain white box. */
+  background: var(--bg-warm);
   border: 1px solid var(--border);
   border-radius: var(--r-md);
   color: var(--text-primary);
   font-family: var(--font-dm-sans);
-  font-size: 14px;
+  font-size: 15px;
   outline: none;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  transition: border-color var(--dur-fast) var(--ease-out), box-shadow var(--dur-fast) var(--ease-out), background var(--dur-fast) var(--ease-out);
 }
 .field-input:focus {
+  background: #fff;
   border-color: var(--accent);
-  box-shadow: 0 0 0 3px rgba(23,22,20,0.06);
+  box-shadow: 0 0 0 3px rgba(166, 139, 60, 0.18);
 }
 .field-input::placeholder { color: var(--text-tertiary); }
 
@@ -625,6 +672,40 @@ textarea.field-input {
   background: var(--card-bg);
   border: 1px solid var(--border);
   border-radius: var(--r-lg);
+  box-shadow: var(--shadow-sm);
+}
+
+/* Reusable editorial eyebrow — unifies the drifting inline kicker styles. */
+.eyebrow {
+  font-family: var(--font-dm-sans);
+  font-weight: 600;
+  font-size: 0.6875rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--gold-text);
+}
+
+/* Tone-change divider — a hairline gold gradient, used sparingly. */
+.section-divider--gold {
+  height: 1px;
+  border: none;
+  background: linear-gradient(90deg, transparent, var(--gold) 50%, transparent);
+  opacity: 0.5;
+}
+
+/* Scroll-reveal: elements lift + fade in as they enter the viewport.
+   Gated behind html.js-reveal (set by the observer) so that if JS is
+   disabled or fails, content stays fully visible — never hidden. Stagger
+   children with --i (transition-delay = i * 60ms). */
+html.js-reveal [data-reveal] {
+  opacity: 0;
+  transform: translateY(22px);
+  transition: opacity var(--dur-slow) var(--ease-out), transform var(--dur-slow) var(--ease-out);
+  transition-delay: calc(var(--i, 0) * 60ms);
+}
+html.js-reveal [data-reveal].is-in {
+  opacity: 1;
+  transform: none;
 }
 
 .tag {
@@ -715,29 +796,56 @@ textarea.field-input {
 }
 @media (min-width: 768px) {
   .hero-section {
-    aspect-ratio: 16 / 4;
+    /* Cinematic full-bleed band instead of a letterbox-thin 16:4 strip. */
+    aspect-ratio: auto;
+    min-height: clamp(560px, 78vh, 760px);
   }
 }
 
-/* Photo card hover */
+/* Photo card hover — image scales SLOWER than the card lifts (parallax). */
 .photo-card {
   position: relative;
   overflow: hidden;
   border-radius: var(--r-xl);
+  box-shadow: var(--shadow-sm);
 }
 .photo-card img {
-  transition: transform 0.55s cubic-bezier(0.22, 1, 0.36, 1);
+  transition: transform var(--dur-slow) var(--ease-out);
 }
 .photo-card:hover img {
-  transform: scale(1.04);
+  transform: scale(1.06);
 }
 
 /* Experience card lift */
 .exp-card {
-  transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.3s ease;
+  transition: transform var(--dur-base) var(--ease-out), box-shadow var(--dur-base) var(--ease-out);
 }
 .exp-card:hover {
-  transform: translateY(-4px);
+  transform: translateY(-6px);
+  box-shadow: var(--shadow-card-hover);
+}
+.exp-card:hover img {
+  transform: scale(1.06);
+}
+
+/* Reel action-rail disc — frosted backing so icons stay legible over bright
+   video footage. Pairs with the count labels' text-shadow. */
+.reel-action-disc {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  background: rgba(20, 18, 16, 0.34);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  transition: transform var(--dur-fast) var(--ease-spring), background var(--dur-fast) ease;
+}
+button:hover > .reel-action-disc {
+  transform: scale(1.08);
+  background: rgba(20, 18, 16, 0.5);
 }
 
 /* Overlay gradient utility */
@@ -751,17 +859,21 @@ textarea.field-input {
   pointer-events: none;
 }
 
-/* Jamaica flag text mask */
+/* "Jamaica" wordmark — crisp vector flag gradient (green + gold, the flag's
+   dominant colors) clipped to text. Replaces the upscaled bitmap mask + muddy
+   grey stroke that rendered pixelated. Vector-sharp at any size; the Playfair
+   italic + drop-shadow make it the signature brand moment. Pure black is
+   intentionally omitted so every letter stays legible over the dark hero. */
 .flag-text {
-  background-image: url('/jamaica-flag.png');
-  background-size: 100% 400%;
-  background-position: center 0%;
+  background-image: linear-gradient(108deg,
+    #00A650 0%, #14B05A 24%, #FED100 48%, #FFDE59 60%, #1AAE57 86%, #00A650 100%);
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
+  color: transparent;
   display: inline;
-  -webkit-text-stroke: 0.5px #cccccc;
-  paint-order: stroke fill;
+  font-style: italic;
+  filter: drop-shadow(0 2px 14px rgba(0, 0, 0, 0.5));
 }
 
 /* Page transitions */

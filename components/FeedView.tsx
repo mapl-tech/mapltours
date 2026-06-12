@@ -492,29 +492,45 @@ export default function FeedView() {
         <HeroVideo src={HERO_VIDEO} poster={HERO_IMAGE} />
         {/* Top scrim for nav readability */}
         <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 140, background: 'linear-gradient(180deg, rgba(0,0,0,0.5) 0%, transparent 100%)', pointerEvents: 'none' }} />
-        {/* Strong bottom black gradient — text must be readable */}
+        {/* Bottom-anchored warm scrim — keeps the footage vivid up top while
+            grounding the headline. Legibility also comes from the flag
+            drop-shadow + the headline text-shadow below. */}
         <div style={{
-          position: 'absolute', bottom: 0, left: 0, right: 0, height: '100%',
-          background: 'linear-gradient(0deg, rgba(0,0,0,0.88) 0%, rgba(0,0,0,0.6) 35%, rgba(0,0,0,0.2) 65%, transparent 100%)',
+          position: 'absolute', bottom: 0, left: 0, right: 0, height: '62%',
+          background: 'linear-gradient(0deg, rgba(8,8,6,0.86) 0%, rgba(8,8,6,0.48) 26%, rgba(8,8,6,0.12) 56%, transparent 100%)',
           pointerEvents: 'none',
         }} />
-        <div className="container" style={{ position: 'relative', zIndex: 1, paddingBottom: 40 }}>
-          <h1 style={{
+        <div className="container" style={{ position: 'relative', zIndex: 1, paddingBottom: 'clamp(40px, 6vw, 72px)' }}>
+          <span className="animate-fade-up" style={{
+            display: 'block',
+            fontFamily: 'var(--font-dm-sans)', fontWeight: 600,
+            fontSize: 11, letterSpacing: '0.2em', textTransform: 'uppercase',
+            color: 'var(--gold-warm)', marginBottom: 18,
+            textShadow: '0 1px 6px rgba(0,0,0,0.5)',
+          }}>
+            Jamaica, beyond the brochure
+          </span>
+          <h1 className="animate-fade-up stagger-1" style={{
             fontFamily: 'var(--font-syne)',
             fontWeight: 700,
-            fontSize: 'clamp(2.25rem, 4.5vw, 3.25rem)',
-            lineHeight: 1.08,
-            letterSpacing: '-0.03em',
+            fontSize: 'clamp(2.75rem, 7vw, 6rem)',
+            lineHeight: 0.98,
+            letterSpacing: '-0.035em',
             color: 'white',
+            textShadow: '0 1px 8px rgba(0,0,0,0.35)',
+            maxWidth: 900,
           }}>
             {t('Discover')} <span className="flag-text">Jamaica</span><br />{t('beyond the resort.')}
           </h1>
-          <p style={{
-            fontSize: 15,
-            color: '#cccccc',
+          <p className="animate-fade-up stagger-2" style={{
+            fontSize: 16.5,
+            color: 'rgba(255,255,255,0.82)',
             fontFamily: 'var(--font-dm-sans)',
             fontWeight: 500,
-            marginTop: 12,
+            marginTop: 18,
+            maxWidth: 480,
+            lineHeight: 1.55,
+            textShadow: '0 1px 6px rgba(0,0,0,0.4)',
           }}>
             {t('Authentic cultural experiences crafted by locals who know the island best.')}
           </p>
@@ -525,7 +541,7 @@ export default function FeedView() {
       <section style={{ background: 'var(--bg-dark)', paddingTop: 72, paddingBottom: 72 }}>
         <div className="container" style={{ maxWidth: 1100, margin: '0 auto' }}>
           {/* Headline */}
-          <div style={{ textAlign: 'center', marginBottom: 52 }}>
+          <div data-reveal style={{ textAlign: 'center', marginBottom: 52 }}>
             <span style={{
               fontSize: 10.5, fontWeight: 600, fontFamily: 'var(--font-dm-sans)',
               textTransform: 'uppercase', letterSpacing: '0.14em',
@@ -552,45 +568,52 @@ export default function FeedView() {
 
           {(() => {
             const steps = [
-              { icon: <Heart size={22} color="var(--gold-warm)" />, title: 'Choose what excites you', body: 'Browse experiences crafted by locals. Add the ones that speak to you.' },
-              { icon: <MapPin size={22} color="var(--gold-warm)" />, title: 'Tell us where you\'re staying', body: 'Your hotel, villa, or airport. We plan the route, the guide, and the transport.' },
-              { icon: <ShieldCheck size={22} color="var(--gold-warm)" />, title: 'Show up and enjoy', body: 'We pick you up, your guide handles the rest, and we bring you back when it\'s done.' },
+              { icon: <Heart size={18} color="var(--gold-warm)" />, title: 'Tap the experiences that move you', body: 'Browse reels crafted by locals. Add the ones that speak to you — no packages, no fillers.' },
+              { icon: <MapPin size={18} color="var(--gold-warm)" />, title: 'Tell us your villa', body: 'Your hotel, villa, or the airport. We plan the route, the guide, and the private transport.' },
+              { icon: <ShieldCheck size={18} color="var(--gold-warm)" />, title: 'Show up — we handle the rest', body: 'We pick you up, your guide takes it from there, and we bring you home when it’s done.' },
             ]
             const stepCard = (pillar: typeof steps[0], idx: number) => (
-              <div key={pillar.title} style={{
-                padding: '32px 28px',
+              <div key={pillar.title} data-reveal style={{
+                padding: '36px 32px',
                 borderRadius: 'var(--r-xl)',
-                background: 'rgba(255,255,255,0.04)',
-                border: '1px solid rgba(255,255,255,0.07)',
-                textAlign: 'center',
+                background: 'linear-gradient(180deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.02) 100%)',
+                border: '1px solid rgba(255,255,255,0.08)',
+                boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.06)',
+                textAlign: 'left',
                 position: 'relative',
                 flex: '0 0 280px',
                 scrollSnapAlign: 'start',
-              }}>
-                <span style={{
-                  position: 'absolute', top: 14, left: 18,
-                  fontSize: 11, fontWeight: 700, fontFamily: 'var(--font-dm-sans)',
-                  color: 'rgba(255,255,255,0.6)', letterSpacing: '0.04em',
+                ['--i' as string]: idx,
+              } as React.CSSProperties}>
+                {/* Oversized editorial step numeral */}
+                <span aria-hidden style={{
+                  display: 'block',
+                  fontFamily: 'var(--font-syne)', fontStyle: 'italic', fontWeight: 500,
+                  fontSize: 64, lineHeight: 1,
+                  color: 'var(--gold-warm)', opacity: 0.28,
+                  marginBottom: 8,
                 }}>
-                  Step {idx + 1}
+                  {idx + 1}
                 </span>
-                <div style={{
-                  width: 52, height: 52, borderRadius: 14,
-                  background: 'rgba(196,164,74,0.08)', border: '1px solid rgba(196,164,74,0.15)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  margin: '0 auto 20px',
-                }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 9, marginBottom: 14 }}>
                   {pillar.icon}
+                  <span style={{
+                    fontSize: 10.5, fontWeight: 600, fontFamily: 'var(--font-dm-sans)',
+                    letterSpacing: '0.16em', textTransform: 'uppercase',
+                    color: 'var(--gold-warm)',
+                  }}>
+                    Step {idx + 1}
+                  </span>
                 </div>
                 <h4 style={{
-                  fontFamily: 'var(--font-syne)', fontWeight: 700, fontSize: 16,
-                  marginBottom: 8, lineHeight: 1.3, color: '#fff',
+                  fontFamily: 'var(--font-syne)', fontWeight: 600, fontSize: 19,
+                  marginBottom: 9, lineHeight: 1.22, letterSpacing: '-0.01em', color: '#fff',
                 }}>
                   {pillar.title}
                 </h4>
                 <p style={{
-                  fontSize: 13.5, color: 'rgba(255,255,255,0.7)',
-                  fontFamily: 'var(--font-dm-sans)', lineHeight: 1.6,
+                  fontSize: 13.5, color: 'rgba(255,255,255,0.72)',
+                  fontFamily: 'var(--font-dm-sans)', lineHeight: 1.62,
                 }}>
                   {pillar.body}
                 </p>
@@ -598,9 +621,15 @@ export default function FeedView() {
             )
             return (
               <>
-                {/* Desktop: grid */}
-                <div className="hide-mobile" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16, marginBottom: 48 }}>
-                  {steps.map((s, i) => stepCard(s, i))}
+                {/* Desktop: grid with a faint gold connecting rule behind it */}
+                <div className="hide-mobile" style={{ position: 'relative', marginBottom: 48 }}>
+                  <div aria-hidden style={{
+                    position: 'absolute', top: '50%', left: '12%', right: '12%', height: 1,
+                    background: 'linear-gradient(90deg, transparent, rgba(196,164,74,0.28) 20%, rgba(196,164,74,0.28) 80%, transparent)',
+                  }} />
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16, position: 'relative' }}>
+                    {steps.map((s, i) => stepCard(s, i))}
+                  </div>
                 </div>
                 {/* Mobile: carousel with arrows */}
                 <div className="hide-desktop" style={{ marginBottom: 0 }}>
@@ -615,13 +644,13 @@ export default function FeedView() {
             display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 24, flexWrap: 'wrap',
           }}>
             {[
-              { icon: <Users size={14} color="#cccccc" />, text: 'Personal local guides' },
-              { icon: <MapPin size={14} color="#cccccc" />, text: 'Private door-to-door transport' },
-              { icon: <ShieldCheck size={14} color="#cccccc" />, text: 'Free cancellation within 48 hrs' },
+              { icon: <Users size={14} color="var(--gold-warm)" />, text: 'Personal local guides' },
+              { icon: <MapPin size={14} color="var(--gold-warm)" />, text: 'Private door-to-door transport' },
+              { icon: <ShieldCheck size={14} color="var(--gold-warm)" />, text: 'Free cancellation within 48 hrs' },
             ].map((t) => (
               <span key={t.text} style={{
-                display: 'inline-flex', alignItems: 'center', gap: 6,
-                fontSize: 12.5, fontFamily: 'var(--font-dm-sans)', color: '#cccccc', fontWeight: 500,
+                display: 'inline-flex', alignItems: 'center', gap: 7,
+                fontSize: 12.5, fontFamily: 'var(--font-dm-sans)', color: 'rgba(255,255,255,0.7)', fontWeight: 500,
               }}>
                 {t.icon} {t.text}
               </span>

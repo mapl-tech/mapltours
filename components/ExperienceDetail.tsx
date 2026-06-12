@@ -277,14 +277,16 @@ function Reel({ exp, isActive, totalCount, currentIndex }: { exp: Experience; is
             minWidth: 44, minHeight: 44, padding: 4,
           }}
         >
-          <Heart size={26} fill={liked ? '#FF4081' : 'none'} color={liked ? '#FF4081' : 'white'} strokeWidth={1.8} />
+          <span className="reel-action-disc">
+            <Heart size={24} fill={liked ? '#FF4081' : 'none'} color={liked ? '#FF4081' : 'white'} strokeWidth={1.8} />
+          </span>
           <span
             // likeCount comes from a localStorage-backed SWR cache that the
             // server can't see, so the SSR HTML may render a smaller number
             // than the client's first paint. Suppress the warning — the
             // client value is the correct one and renders within ms.
             suppressHydrationWarning
-            style={{ fontSize: 11, fontWeight: 700, fontFamily: 'var(--font-dm-sans)' }}
+            style={{ fontSize: 11, fontWeight: 700, fontFamily: 'var(--font-dm-sans)', textShadow: '0 1px 3px rgba(0,0,0,0.6)' }}
           >
             {(exp.reviews + likeCount).toLocaleString('en-US')}
           </span>
@@ -300,8 +302,10 @@ function Reel({ exp, isActive, totalCount, currentIndex }: { exp: Experience; is
             minWidth: 44, minHeight: 44, padding: 4,
           }}
         >
-          <MessageCircle size={26} strokeWidth={1.8} />
-          <span style={{ fontSize: 11, fontWeight: 700, fontFamily: 'var(--font-dm-sans)' }}>
+          <span className="reel-action-disc">
+            <MessageCircle size={24} strokeWidth={1.8} />
+          </span>
+          <span style={{ fontSize: 11, fontWeight: 700, fontFamily: 'var(--font-dm-sans)', textShadow: '0 1px 3px rgba(0,0,0,0.6)' }}>
             {exp.comments.length}
           </span>
         </button>
@@ -316,8 +320,10 @@ function Reel({ exp, isActive, totalCount, currentIndex }: { exp: Experience; is
             minWidth: 44, minHeight: 44, padding: 4,
           }}
         >
-          <Send size={24} strokeWidth={1.8} />
-          <span style={{ fontSize: 11, fontWeight: 700, fontFamily: 'var(--font-dm-sans)' }}>
+          <span className="reel-action-disc">
+            <Send size={22} strokeWidth={1.8} />
+          </span>
+          <span style={{ fontSize: 11, fontWeight: 700, fontFamily: 'var(--font-dm-sans)', textShadow: '0 1px 3px rgba(0,0,0,0.6)' }}>
             Send
           </span>
         </button>
@@ -332,8 +338,10 @@ function Reel({ exp, isActive, totalCount, currentIndex }: { exp: Experience; is
             minWidth: 44, minHeight: 44, padding: 4,
           }}
         >
-          <Film size={24} strokeWidth={1.8} />
-          <span style={{ fontSize: 11, fontWeight: 700, fontFamily: 'var(--font-dm-sans)' }}>
+          <span className="reel-action-disc">
+            <Film size={22} strokeWidth={1.8} />
+          </span>
+          <span style={{ fontSize: 11, fontWeight: 700, fontFamily: 'var(--font-dm-sans)', textShadow: '0 1px 3px rgba(0,0,0,0.6)' }}>
             Clips
           </span>
         </button>
@@ -1052,7 +1060,12 @@ export default function ExperienceDetail({ slug }: { slug: string }) {
 
       {/* ── RIGHT: Comments panel (hidden on mobile) ── */}
       <div className="hide-mobile" style={{
-        flex: 1, background: '#111110', display: 'flex', flexDirection: 'column',
+        flex: 1,
+        // Warm "jewel-box" ground with a top-right light source + a gold seam,
+        // instead of a flat black slab.
+        background: 'radial-gradient(120% 80% at 100% 0%, #1A1917 0%, #141312 52%, #0D0C0B 100%)',
+        borderLeft: '1px solid rgba(166,139,60,0.18)',
+        display: 'flex', flexDirection: 'column',
         overflow: 'hidden',
       }}>
         {/* Header */}

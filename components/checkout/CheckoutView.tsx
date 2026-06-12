@@ -83,10 +83,10 @@ function StepIndicator({ step }: { step: number }) {
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 fontSize: 13, fontWeight: 600, fontFamily: 'var(--font-dm-sans)',
                 transition: 'all 0.3s ease',
-                background: done ? 'var(--accent)' : active ? '#fff' : 'var(--surface)',
-                border: active ? '2px solid var(--accent)' : done ? 'none' : '1px solid var(--border)',
-                color: done ? '#fff' : active ? 'var(--accent)' : 'var(--text-tertiary)',
-                boxShadow: active ? '0 0 0 4px rgba(23,22,20,0.06)' : 'none',
+                background: done ? 'var(--accent)' : active ? 'var(--accent)' : 'var(--surface)',
+                border: active ? 'none' : done ? 'none' : '1px solid var(--border)',
+                color: done ? '#fff' : active ? '#fff' : 'var(--text-tertiary)',
+                boxShadow: active ? '0 0 0 4px rgba(110,90,28,0.18)' : 'none',
               }}>
                 {done ? <Check size={14} strokeWidth={3} /> : n}
               </div>
@@ -124,7 +124,7 @@ function ReviewStep() {
   return (
     <div>
       <div className="hide-mobile" style={{ marginBottom: 28 }}>
-        <h3 style={{ fontFamily: 'var(--font-dm-sans)', fontWeight: 700, fontSize: 22, marginBottom: 6 }}>{t('Review your trip')}</h3>
+        <h3 style={{ fontFamily: 'var(--font-syne)', fontWeight: 700, fontSize: 22, letterSpacing: '-0.025em', marginBottom: 6 }}>{t('Review your trip')}</h3>
         <p style={{ fontSize: 14, color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-sans)' }}>
           {items.length} experience{items.length !== 1 ? 's' : ''} in your Jamaica itinerary
         </p>
@@ -355,7 +355,7 @@ function DetailsStep({ waiverAccepted, setWaiverAccepted, waiverError, formData,
   return (
     <div>
       <div className="hide-mobile" style={{ marginBottom: 28 }}>
-        <h3 style={{ fontFamily: 'var(--font-dm-sans)', fontWeight: 700, fontSize: 22, marginBottom: 6 }}>{t('Your details')}</h3>
+        <h3 style={{ fontFamily: 'var(--font-syne)', fontWeight: 700, fontSize: 22, letterSpacing: '-0.025em', marginBottom: 6 }}>{t('Your details')}</h3>
         <p style={{ fontSize: 14, color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-sans)' }}>
           We&apos;ll use this to confirm your booking
         </p>
@@ -780,7 +780,7 @@ function ConfirmedView() {
         <Check size={32} strokeWidth={2.5} />
       </div>
 
-      <h1 style={{ fontFamily: 'var(--font-dm-sans)', fontWeight: 700, fontSize: 32, marginBottom: 8, letterSpacing: '-0.02em' }}>{t('Booking Confirmed')}</h1>
+      <h1 style={{ fontFamily: 'var(--font-syne)', fontWeight: 700, fontSize: 32, marginBottom: 8, letterSpacing: '-0.025em' }}>{t('Booking Confirmed')}</h1>
       <p style={{ fontSize: 16, color: 'var(--text-secondary)', fontFamily: 'var(--font-dm-sans)', maxWidth: 420, lineHeight: 1.65, marginBottom: 36 }}>
         Your Jamaican adventure is booked. Check your email for confirmation details and everything you need to know.
       </p>
@@ -1040,7 +1040,7 @@ export default function CheckoutView() {
             border: '1px solid var(--border)', background: '#fff',
           }}>
             <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--border)' }}>
-              <h4 style={{ fontFamily: 'var(--font-dm-sans)', fontWeight: 700, fontSize: 16, marginBottom: 2 }}>{t('Order Summary')}</h4>
+              <h4 style={{ fontFamily: 'var(--font-syne)', fontWeight: 700, fontSize: 17, letterSpacing: '-0.025em', marginBottom: 2 }}>{t('Order Summary')}</h4>
               <p style={{ fontSize: 12, color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-sans)' }}>Jamaica · {items.length} experience{items.length !== 1 ? 's' : ''}</p>
             </div>
 

@@ -75,8 +75,8 @@ export default function ExploreView() {
         transform: filterHidden ? 'translateY(-100%)' : 'translateY(0)',
       }}>
         <div className="container" style={{ paddingTop: 18, paddingBottom: 16 }}>
+          <h1 style={{ fontFamily: 'var(--font-syne)', fontWeight: 500, fontSize: 'clamp(1.75rem, 3vw, 2.5rem)', letterSpacing: '-0.02em', marginBottom: 14 }}>{t('Explore')}</h1>
           <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 14, flexWrap: 'wrap' }}>
-            <h1 style={{ fontFamily: 'var(--font-syne)', fontWeight: 700, fontSize: 20, letterSpacing: '-0.02em' }}>{t('Explore')}</h1>
             <div style={{
               display: 'flex', alignItems: 'center', gap: 10,
               background: '#fff', border: '1px solid var(--border)',
@@ -120,10 +120,10 @@ export default function ExploreView() {
           <div className="scroll-x" style={{ gap: 6 }}>
             {categories.map((c) => (
               <button key={c} onClick={() => setActiveCat(c)} style={{
-                height: 30, padding: '0 14px', borderRadius: 9999,
-                fontSize: 12.5, fontWeight: 500, fontFamily: 'var(--font-dm-sans)',
+                height: 34, padding: '0 14px', borderRadius: 9999,
+                fontSize: 13, fontWeight: 500, fontFamily: 'var(--font-dm-sans)',
                 border: '1px solid', cursor: 'pointer', transition: 'all 0.15s ease',
-                background: activeCat === c ? 'var(--accent)' : 'transparent',
+                background: activeCat === c ? 'var(--accent)' : 'var(--surface)',
                 color: activeCat === c ? '#fff' : 'var(--text-secondary)',
                 borderColor: activeCat === c ? 'var(--accent)' : 'var(--border)',
                 whiteSpace: 'nowrap',
@@ -131,15 +131,21 @@ export default function ExploreView() {
                 {c}
               </button>
             ))}
-            <div style={{ width: 1, height: 20, background: 'var(--border)', margin: '0 4px', alignSelf: 'center', flexShrink: 0 }} />
+            <span style={{
+              alignSelf: 'center', flexShrink: 0, margin: '0 4px',
+              fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em',
+              color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-sans)',
+            }}>
+              Parish
+            </span>
             {parishes.map((p) => (
               <button key={p} onClick={() => setActiveParish(p)} style={{
-                height: 28, padding: '0 12px', borderRadius: 9999,
-                fontSize: 11.5, fontWeight: 500, fontFamily: 'var(--font-dm-sans)',
+                height: 34, padding: '0 14px', borderRadius: 9999,
+                fontSize: 13, fontWeight: 500, fontFamily: 'var(--font-dm-sans)',
                 border: '1px solid', cursor: 'pointer', transition: 'all 0.15s ease',
-                background: activeParish === p ? 'var(--emerald-dim)' : 'transparent',
-                color: activeParish === p ? 'var(--emerald)' : 'var(--text-tertiary)',
-                borderColor: activeParish === p ? 'var(--emerald)' : 'var(--border)',
+                background: activeParish === p ? 'var(--accent)' : 'var(--surface)',
+                color: activeParish === p ? '#fff' : 'var(--text-secondary)',
+                borderColor: activeParish === p ? 'var(--accent)' : 'var(--border)',
                 whiteSpace: 'nowrap',
               }}>
                 {p}

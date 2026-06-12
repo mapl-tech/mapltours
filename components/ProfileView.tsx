@@ -9,7 +9,7 @@ import { createClient } from '@/lib/supabase/client'
 import { useAuth } from '@/lib/supabase/auth-context'
 import { useSwrCache } from '@/lib/swr-cache'
 import { useMyVideoProgress, VIDEO_REWARD_MILESTONE } from '@/lib/tour-videos'
-import { Award } from 'lucide-react'
+import { Award, UserRound } from 'lucide-react'
 import type { User } from '@supabase/supabase-js'
 
 // Create the Supabase client once per module load, not per render —
@@ -360,7 +360,7 @@ export default function ProfileView() {
                   /* eslint-disable-next-line @next/next/no-img-element */
                   <img src={avatarUrl} alt={displayName} width={128} height={128} style={{ objectFit: 'cover', width: '100%', height: '100%' }} />
                 ) : (
-                  <span style={{ fontSize: 54 }}>🧳</span>
+                  <UserRound size={48} color="var(--text-secondary)" />
                 )}
               </div>
 

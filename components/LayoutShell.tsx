@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation'
 import TopNav from './TopNav'
 import ItineraryPanel from './ItineraryPanel'
 import PageTransition from './PageTransition'
+import ScrollReveal from './ScrollReveal'
 import { AuthProvider } from '@/lib/supabase/auth-context'
 import { useCartStore } from '@/lib/cart'
 import { useI18n } from '@/lib/i18n'
@@ -24,6 +25,7 @@ export default function LayoutShell({ children }: { children: React.ReactNode })
 
   return (
     <AuthProvider>
+      <ScrollReveal />
       {!hideNav && <TopNav onCartClick={() => setDrawerOpen(true)} />}
       <PageTransition>{children}</PageTransition>
       {!hideNav && <ItineraryPanel open={drawerOpen} onClose={() => setDrawerOpen(false)} />}

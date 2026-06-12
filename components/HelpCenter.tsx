@@ -3,6 +3,7 @@
 import { useState, useMemo } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
+import { CalendarDays, RotateCcw, Sparkles, CreditCard, UserRound, Mail, Search } from 'lucide-react'
 import Footer from './Footer'
 import { DESTINATION_IMAGES } from '@/lib/experiences'
 
@@ -11,7 +12,7 @@ const categories = [
   {
     id: 'booking',
     label: 'Booking',
-    icon: '🗓',
+    icon: <CalendarDays size={15} strokeWidth={1.75} />,
     faqs: [
       {
         q: 'How do I book an experience?',
@@ -34,7 +35,7 @@ const categories = [
   {
     id: 'cancellations',
     label: 'Cancellations & Refunds',
-    icon: '↩',
+    icon: <RotateCcw size={15} strokeWidth={1.75} />,
     faqs: [
       {
         q: 'Can I cancel my booking?',
@@ -53,7 +54,7 @@ const categories = [
   {
     id: 'experience',
     label: 'Your Experience',
-    icon: '🌴',
+    icon: <Sparkles size={15} strokeWidth={1.75} />,
     faqs: [
       {
         q: 'What should I bring?',
@@ -76,7 +77,7 @@ const categories = [
   {
     id: 'payments',
     label: 'Payments & Pricing',
-    icon: '💳',
+    icon: <CreditCard size={15} strokeWidth={1.75} />,
     faqs: [
       {
         q: 'What currencies and payment methods do you accept?',
@@ -95,7 +96,7 @@ const categories = [
   {
     id: 'account',
     label: 'Your Account',
-    icon: '👤',
+    icon: <UserRound size={15} strokeWidth={1.75} />,
     faqs: [
       {
         q: 'How do I create an account?',
@@ -274,7 +275,9 @@ export default function HelpCenter() {
             </p>
             {searchResults.length === 0 ? (
               <div style={{ textAlign: 'center', padding: '48px 0' }}>
-                <p style={{ fontSize: 36, marginBottom: 12 }}>🔍</p>
+                <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 12, color: 'var(--text-tertiary)' }}>
+                  <Search size={32} />
+                </div>
                 <p style={{
                   fontSize: 15, fontWeight: 600, color: 'var(--text-primary)',
                   fontFamily: 'var(--font-syne)', marginBottom: 6,
@@ -357,7 +360,7 @@ export default function HelpCenter() {
                       boxShadow: active ? 'none' : 'var(--shadow-xs)',
                     }}
                   >
-                    <span style={{ fontSize: 15 }}>{cat.icon}</span>
+                    <span style={{ display: 'inline-flex', alignItems: 'center' }}>{cat.icon}</span>
                     {cat.label}
                   </button>
                 )
@@ -425,9 +428,9 @@ export default function HelpCenter() {
                     width: 52, height: 52, borderRadius: '50%',
                     background: 'var(--surface)',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    fontSize: 22, marginBottom: 16,
+                    color: 'var(--text-secondary)', marginBottom: 16,
                   }}>
-                    ✉
+                    <Mail size={22} />
                   </div>
                   <p style={{
                     fontSize: 12, fontWeight: 700, color: 'var(--text-tertiary)',

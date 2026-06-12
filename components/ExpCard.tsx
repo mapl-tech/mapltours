@@ -110,13 +110,19 @@ export default memo(function ExpCard({ exp }: { exp: Experience }) {
           {/* Add button */}
           <button
             onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleCart() }}
+            aria-label={inCart ? `Remove ${exp.title} from your trip` : `Add ${exp.title} to your trip`}
+            onMouseEnter={(e) => { e.currentTarget.style.transform = 'scale(1.08)' }}
+            onMouseLeave={(e) => { e.currentTarget.style.transform = 'scale(1)' }}
             style={{
               position: 'absolute', top: 12, right: 12, zIndex: 3,
-              width: 34, height: 34, borderRadius: '50%',
-              background: inCart ? 'var(--emerald)' : 'rgba(0,0,0,0.38)',
-              backdropFilter: 'blur(8px)', border: 'none', cursor: 'pointer',
+              width: 36, height: 36, borderRadius: '50%',
+              background: inCart ? 'var(--emerald)' : 'rgba(255,255,255,0.92)',
+              backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)',
+              border: 'none', cursor: 'pointer',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              color: '#fff', transition: 'all 0.2s ease',
+              color: inCart ? '#fff' : 'var(--accent)',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.18)',
+              transition: 'all 0.2s ease',
             }}
           >
             {inCart ? <Check size={15} strokeWidth={2.5} /> : <Plus size={15} strokeWidth={2.5} />}
@@ -143,14 +149,12 @@ export default memo(function ExpCard({ exp }: { exp: Experience }) {
         }}>
           {t(exp.category)}
         </span>
-        <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, alignItems: 'flex-start', marginTop: 3 }}>
-          <h3 style={{ fontFamily: 'var(--font-dm-sans)', fontWeight: 600, fontSize: 14, lineHeight: 1.35 }}>
-            {t(exp.title)}
-          </h3>
-          <span style={{ fontSize: 13, fontFamily: 'var(--font-dm-sans)', fontWeight: 500, flexShrink: 0, marginTop: 1, display: 'flex', alignItems: 'center', gap: 3 }}>
-            <Star size={13} fill="currentColor" strokeWidth={0} /> {exp.rating}
-          </span>
-        </div>
+        <h3 style={{ fontFamily: 'var(--font-syne)', fontWeight: 500, fontSize: 17, lineHeight: 1.2, letterSpacing: '-0.01em', marginTop: 3 }}>
+          {t(exp.title)}
+        </h3>
+        <span style={{ fontSize: 13, fontFamily: 'var(--font-dm-sans)', fontWeight: 500, marginTop: 4, display: 'flex', alignItems: 'center', gap: 3 }}>
+          <Star size={13} fill="currentColor" strokeWidth={0} /> {exp.rating}
+        </span>
         <p style={{ fontSize: 12.5, color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-sans)', marginTop: 3 }}>
           {exp.duration} · @{exp.creator}
         </p>

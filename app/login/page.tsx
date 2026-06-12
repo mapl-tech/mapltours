@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { Leaf } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { getSafeRedirect } from '@/lib/safe-redirect'
+import { DESTINATION_IMAGES } from '@/lib/experiences'
 
 // One module-level client — don't recreate on every render.
 const supabase = createClient()
@@ -78,15 +79,7 @@ function LoginContent() {
   }
 
   return (
-    <div style={{
-      minHeight: '100vh',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      background: 'var(--bg-warm)',
-      padding: 24,
-      position: 'relative',
-    }}>
+    <div className="login-shell">
       {/* Back to home — icon-only on mobile so it never covers the logo */}
       <Link
         href="/"
@@ -102,34 +95,88 @@ function LoginContent() {
           border: '1px solid var(--border-strong)',
           boxShadow: 'var(--shadow-sm)',
           transition: 'all 0.15s ease',
-          zIndex: 2,
+          zIndex: 3,
         }}
       >
         <span style={{ fontSize: 18, lineHeight: 1 }}>←</span>
         <span className="login-back-label">Back to Home</span>
       </Link>
+
+      {/* Left atmosphere panel — decorative, desktop only */}
+      <aside className="login-aside" aria-hidden="true">
+        <div className="login-aside-overlay" />
+        <div className="login-aside-text">
+          <span style={{
+            fontFamily: 'var(--font-dm-sans)', fontWeight: 600, fontSize: 11,
+            letterSpacing: '0.22em', textTransform: 'uppercase', color: 'var(--gold-warm)',
+          }}>
+            MAPL Tours · Jamaica
+          </span>
+          <h2 style={{
+            fontFamily: 'var(--font-syne)', fontStyle: 'italic', fontWeight: 500,
+            fontSize: 'clamp(2rem, 2.8vw, 3.1rem)', lineHeight: 1.05, color: '#fff',
+            marginTop: 18, maxWidth: 440, letterSpacing: '-0.01em',
+            textShadow: '0 2px 24px rgba(0,0,0,0.45)',
+          }}>
+            Discover Jamaica<br />beyond the resort.
+          </h2>
+          <p style={{
+            fontFamily: 'var(--font-dm-sans)', fontSize: 14.5, lineHeight: 1.6,
+            color: 'rgba(255,255,255,0.82)', marginTop: 16, maxWidth: 380,
+            textShadow: '0 1px 12px rgba(0,0,0,0.4)',
+          }}>
+            Sign in to build your itinerary, save the experiences you love, and pick up where you left off.
+          </p>
+        </div>
+      </aside>
+
       <style jsx>{`
-        .login-back-btn {
-          /* desktop/tablet: full pill with label */
-          padding: 10px 18px 10px 14px;
+        .login-shell {
+          min-height: 100vh;
+          position: relative;
+          display: grid;
+          grid-template-columns: 1.05fr 0.95fr;
         }
-        .login-back-label {
-          display: inline;
+        .login-aside {
+          position: relative;
+          overflow: hidden;
+          background-image: url('${DESTINATION_IMAGES['Negril']}');
+          background-size: cover;
+          background-position: center;
+          display: flex;
+          align-items: flex-end;
+        }
+        .login-aside-overlay {
+          position: absolute; inset: 0;
+          background: linear-gradient(160deg, rgba(8,8,6,0.35) 0%, rgba(8,8,6,0.55) 55%, rgba(8,8,6,0.82) 100%);
+        }
+        .login-aside-text {
+          position: relative; z-index: 1;
+          padding: clamp(40px, 5vw, 72px);
+        }
+        .login-formcol {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 24px;
+          background: var(--bg-warm);
+          min-height: 100vh;
+        }
+        .login-back-btn { padding: 10px 18px 10px 14px; }
+        .login-back-label { display: inline; }
+        @media (max-width: 900px) {
+          .login-shell { grid-template-columns: 1fr; }
+          .login-aside { display: none; }
         }
         @media (max-width: 480px) {
           .login-back-btn {
-            /* mobile: icon-only circular button so the MAPL logo is never covered */
-            padding: 0;
-            width: 40px;
-            height: 40px;
-            justify-content: center;
+            padding: 0; width: 40px; height: 40px; justify-content: center;
           }
-          .login-back-label {
-            display: none;
-          }
+          .login-back-label { display: none; }
         }
       `}</style>
 
+      <div className="login-formcol">
       <div style={{
         width: '100%',
         maxWidth: 420,
@@ -169,9 +216,11 @@ function LoginContent() {
             </div>
           </Link>
           <p style={{
-            fontSize: 14,
-            color: 'var(--text-tertiary)',
-            fontFamily: 'var(--font-dm-sans)',
+            fontFamily: 'var(--font-syne)',
+            fontSize: 'clamp(1.75rem, 2.4vw, 2.25rem)',
+            fontWeight: 700,
+            color: 'var(--text-primary)',
+            letterSpacing: '-0.02em',
             marginTop: 16,
           }}>
             {mode === 'login' ? 'Welcome back' : 'Create your account'}
@@ -179,7 +228,7 @@ function LoginContent() {
         </div>
 
         {/* Card */}
-        <div className="surface-card" style={{
+        <div className="surface-card animate-fade-up" style={{
           padding: 32,
           borderRadius: 'var(--r-xl)',
           border: '1px solid var(--border)',
@@ -282,10 +331,10 @@ function LoginContent() {
                     borderRadius: 'var(--r-md)',
                     border: '1px solid var(--border-strong)',
                     padding: '0 14px',
-                    fontSize: 14,
+                    fontSize: 15,
                     fontFamily: 'var(--font-dm-sans)',
                     color: 'var(--text-primary)',
-                    background: 'white',
+                    background: 'var(--bg-warm)',
                     outline: 'none',
                     boxSizing: 'border-box',
                   }}
@@ -317,10 +366,10 @@ function LoginContent() {
                   borderRadius: 'var(--r-md)',
                   border: '1px solid var(--border-strong)',
                   padding: '0 14px',
-                  fontSize: 14,
+                  fontSize: 15,
                   fontFamily: 'var(--font-dm-sans)',
                   color: 'var(--text-primary)',
-                  background: 'white',
+                  background: 'var(--bg-warm)',
                   outline: 'none',
                   boxSizing: 'border-box',
                 }}
@@ -352,10 +401,10 @@ function LoginContent() {
                   borderRadius: 'var(--r-md)',
                   border: '1px solid var(--border-strong)',
                   padding: '0 14px',
-                  fontSize: 14,
+                  fontSize: 15,
                   fontFamily: 'var(--font-dm-sans)',
                   color: 'var(--text-primary)',
-                  background: 'white',
+                  background: 'var(--bg-warm)',
                   outline: 'none',
                   boxSizing: 'border-box',
                 }}
@@ -434,6 +483,7 @@ function LoginContent() {
             {mode === 'login' ? 'Sign up' : 'Sign in'}
           </button>
         </p>
+      </div>
       </div>
     </div>
   )

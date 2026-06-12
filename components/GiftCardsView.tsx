@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import Image from 'next/image'
+import { Check } from 'lucide-react'
 import { DESTINATION_IMAGES } from '@/lib/experiences'
 import Footer from './Footer'
 
@@ -390,7 +391,15 @@ export default function GiftCardsView() {
                 border: '1px solid var(--border)',
                 boxShadow: 'var(--shadow-lg)',
               }}>
-                <p style={{ fontSize: 48, marginBottom: 16 }}>🎉</p>
+                <div style={{
+                  width: 56, height: 56, borderRadius: '50%',
+                  background: 'rgba(196,164,74,0.15)',
+                  border: '1px solid var(--gold-warm)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  margin: '0 auto 16px',
+                }}>
+                  <Check size={26} color="var(--gold-text)" />
+                </div>
                 <h2 style={{
                   fontFamily: 'var(--font-syne)', fontWeight: 800,
                   fontSize: 24, color: 'var(--text-primary)',

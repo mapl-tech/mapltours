@@ -42,3 +42,5 @@ playwright-shots/
 audit-findings.json
 image-audit.json
 playwright-findings.json
+design-shots/
+scripts/shots.mjs
