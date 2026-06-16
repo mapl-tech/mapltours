@@ -142,14 +142,14 @@ export default memo(function ExpCard({ exp }: { exp: Experience }) {
       </Link>
 
       {/* Info */}
-      <Link href={`/experience/${slugify(exp.title)}`} style={{ display: 'block' }}>
+      <Link href={`/experience/${slugify(exp.title)}`} style={{ display: 'block', padding: '2px 8px 10px' }}>
         <span style={{
           fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em',
           color: CATEGORY_COLORS[exp.category], fontFamily: 'var(--font-dm-sans)',
         }}>
           {t(exp.category)}
         </span>
-        <h3 style={{ fontFamily: 'var(--font-syne)', fontWeight: 500, fontSize: 17, lineHeight: 1.2, letterSpacing: '-0.01em', marginTop: 3 }}>
+        <h3 style={{ fontFamily: 'var(--font-open-sans)', fontWeight: 600, fontSize: 17, lineHeight: 1.2, letterSpacing: '-0.01em', marginTop: 3 }}>
           {t(exp.title)}
         </h3>
         <span style={{ fontSize: 13, fontFamily: 'var(--font-dm-sans)', fontWeight: 500, marginTop: 4, display: 'flex', alignItems: 'center', gap: 3 }}>
