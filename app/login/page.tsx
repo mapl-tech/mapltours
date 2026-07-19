@@ -127,7 +127,7 @@ function LoginContent() {
             MAPL Tours · Jamaica
           </span>
           <h2 style={{
-            fontFamily: 'var(--font-syne)', fontStyle: 'italic', fontWeight: 500,
+            fontFamily: 'var(--font-dm-sans)', fontStyle: 'italic', fontWeight: 500,
             fontSize: 'clamp(2rem, 2.8vw, 3.1rem)', lineHeight: 1.05, color: '#fff',
             marginTop: 18, maxWidth: 440, letterSpacing: '-0.01em',
             textShadow: '0 2px 24px rgba(0,0,0,0.45)',
@@ -207,7 +207,7 @@ function LoginContent() {
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1, textAlign: 'left' }}>
               <span style={{
-                fontFamily: 'var(--font-syne)',
+                fontFamily: 'var(--font-dm-sans)',
                 fontWeight: 800,
                 fontSize: 17,
                 letterSpacing: '0.06em',
@@ -230,7 +230,7 @@ function LoginContent() {
             </div>
           </Link>
           <p style={{
-            fontFamily: 'var(--font-syne)',
+            fontFamily: 'var(--font-dm-sans)',
             fontSize: 'clamp(1.75rem, 2.4vw, 2.25rem)',
             fontWeight: 700,
             color: 'var(--text-primary)',

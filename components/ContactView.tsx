@@ -64,7 +64,7 @@ export default function ContactView() {
             Get in touch
           </p>
           <h1 style={{
-            fontFamily: 'var(--font-syne)', fontWeight: 700,
+            fontFamily: 'var(--font-dm-sans)', fontWeight: 700,
             fontSize: 'clamp(1.75rem, 3vw, 2.5rem)', color: 'white',
             lineHeight: 1.1, letterSpacing: '-0.02em',
           }}>
@@ -87,7 +87,7 @@ export default function ContactView() {
                   <Leaf size={18} color="var(--accent)" />
                 </div>
                 <div style={{ lineHeight: 1 }}>
-                  <span style={{ fontFamily: 'var(--font-syne)', fontWeight: 800, fontSize: 16, textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block' }}>MAPL</span>
+                  <span style={{ fontFamily: 'var(--font-dm-sans)', fontWeight: 800, fontSize: 16, textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block' }}>MAPL</span>
                   <span style={{ fontFamily: 'var(--font-dm-sans)', fontWeight: 700, fontSize: 11, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--text-tertiary)', display: 'block', marginTop: 1 }}>Tours Jamaica</span>
                 </div>
               </div>
@@ -175,7 +175,7 @@ export default function ContactView() {
                 }}>
                   <Check size={26} strokeWidth={2.5} />
                 </div>
-                <h3 style={{ fontFamily: 'var(--font-syne)', fontWeight: 700, fontSize: 22, marginBottom: 8 }}>
+                <h3 style={{ fontFamily: 'var(--font-dm-sans)', fontWeight: 700, fontSize: 22, marginBottom: 8 }}>
                   Message Sent
                 </h3>
                 <p style={{ fontSize: 14.5, color: 'var(--text-secondary)', fontFamily: 'var(--font-dm-sans)', lineHeight: 1.6 }}>
@@ -187,7 +187,7 @@ export default function ContactView() {
                 borderRadius: 'var(--r-xl)', border: '1px solid var(--border)',
                 background: '#fff', padding: 32,
               }}>
-                <h3 style={{ fontFamily: 'var(--font-syne)', fontWeight: 700, fontSize: 20, marginBottom: 6 }}>
+                <h3 style={{ fontFamily: 'var(--font-dm-sans)', fontWeight: 700, fontSize: 20, marginBottom: 6 }}>
                   Send us a message
                 </h3>
                 <p style={{ fontSize: 13.5, color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-sans)', marginBottom: 24 }}>

@@ -75,7 +75,7 @@ export default function ExploreView() {
         transform: filterHidden ? 'translateY(-100%)' : 'translateY(0)',
       }}>
         <div className="container" style={{ paddingTop: 18, paddingBottom: 16 }}>
-          <h1 style={{ fontFamily: 'var(--font-syne)', fontWeight: 500, fontSize: 'clamp(1.75rem, 3vw, 2.5rem)', letterSpacing: '-0.02em', marginBottom: 14 }}>{t('Explore')}</h1>
+          <h1 style={{ fontFamily: 'var(--font-dm-sans)', fontWeight: 500, fontSize: 'clamp(1.75rem, 3vw, 2.5rem)', letterSpacing: '-0.02em', marginBottom: 14 }}>{t('Explore')}</h1>
           <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 14, flexWrap: 'wrap' }}>
             <div style={{
               display: 'flex', alignItems: 'center', gap: 10,
@@ -165,7 +165,7 @@ export default function ExploreView() {
       <div className="container" style={{ paddingTop: 28, paddingBottom: 80 }}>
         {filtered.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '80px 0' }}>
-            <p style={{ fontSize: 16, fontFamily: 'var(--font-syne)', fontWeight: 700, marginBottom: 6 }}>No experiences found</p>
+            <p style={{ fontSize: 16, fontFamily: 'var(--font-dm-sans)', fontWeight: 700, marginBottom: 6 }}>No experiences found</p>
             <p style={{ fontSize: 13, color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-sans)' }}>Try adjusting your filters</p>
           </div>
         ) : (

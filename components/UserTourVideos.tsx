@@ -70,7 +70,7 @@ export default function UserTourVideos({ experienceId, experienceTitle }: Props)
           The MAPL Feed · Guest Clips
         </p>
         <h2 style={{
-          fontFamily: 'var(--font-syne)',
+          fontFamily: 'var(--font-dm-sans)',
           fontWeight: 800,
           fontSize: 24,
           letterSpacing: '-0.025em',
@@ -309,7 +309,7 @@ function VideoStripe({
             />
             <p style={{
               margin: 0,
-              fontFamily: 'var(--font-syne)',
+              fontFamily: 'var(--font-dm-sans)',
               fontSize: 12.5, fontWeight: 700,
               letterSpacing: '-0.01em',
               color: '#fff',
@@ -375,7 +375,7 @@ function VideoStripe({
         <div style={{ textAlign: 'center', padding: '0 12px' }}>
           <p style={{
             margin: 0,
-            fontFamily: 'var(--font-syne)', fontWeight: 700, fontSize: 14,
+            fontFamily: 'var(--font-dm-sans)', fontWeight: 700, fontSize: 14,
             letterSpacing: '-0.01em',
             color: '#ffffff',
           }}>
@@ -677,7 +677,7 @@ function SwiperSlide({
         />
         <div style={{ flex: 1, minWidth: 0 }}>
           <p style={{
-            fontFamily: 'var(--font-syne)',
+            fontFamily: 'var(--font-dm-sans)',
             fontWeight: 700, fontSize: 15,
             letterSpacing: '-0.01em',
             marginBottom: 2,
@@ -793,7 +793,7 @@ function UploadSheet({
               Share your experience
             </p>
             <h3 style={{
-              fontFamily: 'var(--font-syne)', fontWeight: 800, fontSize: 20,
+              fontFamily: 'var(--font-dm-sans)', fontWeight: 800, fontSize: 20,
               letterSpacing: '-0.02em', color: 'var(--text-primary, #111)',
               marginTop: 2, lineHeight: 1.15,
             }}>
@@ -868,7 +868,7 @@ function UploadSheet({
               <Upload size={22} strokeWidth={2} />
             </div>
             <p style={{
-              fontFamily: 'var(--font-syne)', fontWeight: 700, fontSize: 15,
+              fontFamily: 'var(--font-dm-sans)', fontWeight: 700, fontSize: 15,
               color: 'var(--text-primary)',
             }}>
               Tap to upload a clip
@@ -1012,7 +1012,7 @@ function EmptyState({ onUpload }: { onUpload: () => void }) {
         margin: '0 auto 18px',
       }} />
       <p style={{
-        fontFamily: 'var(--font-syne)', fontWeight: 800, fontSize: 20,
+        fontFamily: 'var(--font-dm-sans)', fontWeight: 800, fontSize: 20,
         color: '#ffffff', marginBottom: 8, letterSpacing: '-0.015em',
         lineHeight: 1.2,
       }}>

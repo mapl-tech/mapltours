@@ -288,7 +288,7 @@ function Success({ data }: { data: ConfirmData }) {
       </p>
       <h1
         style={{
-          fontFamily: 'var(--font-syne)',
+          fontFamily: 'var(--font-dm-sans)',
           fontWeight: 700,
           fontSize: 'clamp(2.25rem, 5vw, 3.5rem)',
           lineHeight: 1.05,
@@ -301,7 +301,7 @@ function Success({ data }: { data: ConfirmData }) {
       </h1>
       <p
         style={{
-          fontFamily: 'var(--font-syne)',
+          fontFamily: 'var(--font-dm-sans)',
           fontStyle: 'italic',
           fontSize: 17,
           lineHeight: 1.5,
@@ -353,7 +353,7 @@ function Success({ data }: { data: ConfirmData }) {
             >
               <p
                 style={{
-                  fontFamily: 'var(--font-syne)',
+                  fontFamily: 'var(--font-dm-sans)',
                   fontWeight: 700,
                   fontSize: 16,
                   letterSpacing: '-0.005em',
@@ -418,7 +418,7 @@ function Success({ data }: { data: ConfirmData }) {
           <div style={{ padding: '16px 24px', textAlign: 'left' }}>
             <p
               style={{
-                fontFamily: 'var(--font-syne)',
+                fontFamily: 'var(--font-dm-sans)',
                 fontStyle: 'italic',
                 fontSize: 14.5,
                 color: 'var(--text-primary)',
@@ -470,7 +470,7 @@ function Success({ data }: { data: ConfirmData }) {
           >
             <span
               style={{
-                fontFamily: 'var(--font-syne)',
+                fontFamily: 'var(--font-dm-sans)',
                 fontWeight: 700,
                 fontSize: 14,
                 color: 'var(--text-primary)',
@@ -518,7 +518,7 @@ function Success({ data }: { data: ConfirmData }) {
               listStyle: 'none',
               margin: 0,
               padding: 0,
-              fontFamily: 'var(--font-syne)',
+              fontFamily: 'var(--font-dm-sans)',
               fontSize: 14.5,
               color: 'var(--text-secondary)',
               lineHeight: 1.7,
@@ -648,7 +648,7 @@ function DetailRows({
           </span>
           <span
             style={{
-              fontFamily: 'var(--font-syne)',
+              fontFamily: 'var(--font-dm-sans)',
               fontWeight: 700,
               fontSize: 14.5,
               color: 'var(--text-primary)',
@@ -719,7 +719,7 @@ function Processing() {
       </p>
       <h1
         style={{
-          fontFamily: 'var(--font-syne)',
+          fontFamily: 'var(--font-dm-sans)',
           fontWeight: 700,
           fontSize: 'clamp(2rem, 4.5vw, 3rem)',
           letterSpacing: '-0.02em',
@@ -731,7 +731,7 @@ function Processing() {
       </h1>
       <p
         style={{
-          fontFamily: 'var(--font-syne)',
+          fontFamily: 'var(--font-dm-sans)',
           fontStyle: 'italic',
           fontSize: 17,
           color: 'var(--text-secondary)',
@@ -764,7 +764,7 @@ function Failed() {
       </p>
       <h1
         style={{
-          fontFamily: 'var(--font-syne)',
+          fontFamily: 'var(--font-dm-sans)',
           fontWeight: 700,
           fontSize: 'clamp(2rem, 4.5vw, 3rem)',
           letterSpacing: '-0.02em',
@@ -776,7 +776,7 @@ function Failed() {
       </h1>
       <p
         style={{
-          fontFamily: 'var(--font-syne)',
+          fontFamily: 'var(--font-dm-sans)',
           fontStyle: 'italic',
           fontSize: 17,
           color: 'var(--text-secondary)',
@@ -799,7 +799,7 @@ function Unknown() {
     <div style={{ textAlign: 'center' }}>
       <h1
         style={{
-          fontFamily: 'var(--font-syne)',
+          fontFamily: 'var(--font-dm-sans)',
           fontWeight: 700,
           fontSize: 'clamp(2rem, 4.5vw, 3rem)',
           letterSpacing: '-0.02em',
@@ -811,7 +811,7 @@ function Unknown() {
       </h1>
       <p
         style={{
-          fontFamily: 'var(--font-syne)',
+          fontFamily: 'var(--font-dm-sans)',
           fontStyle: 'italic',
           fontSize: 17,
           color: 'var(--text-secondary)',

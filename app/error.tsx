@@ -51,7 +51,7 @@ export default function ErrorBoundary({
         </p>
         <h1
           style={{
-            fontFamily: 'var(--font-syne)',
+            fontFamily: 'var(--font-dm-sans)',
             fontWeight: 700,
             fontSize: 32,
             lineHeight: 1.18,

@@ -365,7 +365,7 @@ export default function ProfileView() {
               </div>
 
               <h1 style={{
-                fontFamily: 'var(--font-syne)', fontWeight: 800, fontSize: 28,
+                fontFamily: 'var(--font-dm-sans)', fontWeight: 800, fontSize: 28,
                 color: 'var(--text-primary)', marginBottom: 4, letterSpacing: '-0.025em',
               }}>
                 {displayName}
@@ -429,7 +429,7 @@ export default function ProfileView() {
               boxShadow: '0 2px 8px rgba(0,0,0,0.02)',
             }}>
               <h3 style={{
-                fontFamily: 'var(--font-syne)', fontWeight: 700, fontSize: 17,
+                fontFamily: 'var(--font-dm-sans)', fontWeight: 700, fontSize: 17,
                 marginBottom: 8, color: 'var(--text-primary)',
               }}>
                 Verified information
@@ -479,7 +479,7 @@ export default function ProfileView() {
                 boxShadow: '0 2px 8px rgba(0,0,0,0.02)',
               }}>
                 <h3 style={{
-                  fontFamily: 'var(--font-syne)', fontWeight: 700, fontSize: 17,
+                  fontFamily: 'var(--font-dm-sans)', fontWeight: 700, fontSize: 17,
                   marginBottom: 16, color: 'var(--text-primary)',
                 }}>
                   Badges
@@ -513,7 +513,7 @@ export default function ProfileView() {
             {/* ── Personal Information ── */}
             <section style={{ marginBottom: 48 }}>
               <h2 style={{
-                fontFamily: 'var(--font-syne)', fontWeight: 800, fontSize: 28,
+                fontFamily: 'var(--font-dm-sans)', fontWeight: 800, fontSize: 28,
                 color: 'var(--text-primary)', letterSpacing: '-0.025em',
                 marginBottom: 8,
               }}>
@@ -569,7 +569,7 @@ export default function ProfileView() {
               <>
                 <section style={{ marginBottom: 48 }}>
                   <h2 style={{
-                    fontFamily: 'var(--font-syne)', fontWeight: 800, fontSize: 22,
+                    fontFamily: 'var(--font-dm-sans)', fontWeight: 800, fontSize: 22,
                     color: 'var(--text-primary)', letterSpacing: '-0.02em',
                     marginBottom: 20,
                   }}>
@@ -649,7 +649,7 @@ export default function ProfileView() {
             {/* ── Past Trips ── */}
             <section style={{ marginBottom: 48 }}>
               <h2 style={{
-                fontFamily: 'var(--font-syne)', fontWeight: 800, fontSize: 22,
+                fontFamily: 'var(--font-dm-sans)', fontWeight: 800, fontSize: 22,
                 marginBottom: 20, color: 'var(--text-primary)',
                 letterSpacing: '-0.02em',
               }}>
@@ -742,7 +742,7 @@ export default function ProfileView() {
             {/* ── MAPL Rewards (tour-video uploads) ── */}
             <section style={{ marginBottom: 48 }}>
               <h2 style={{
-                fontFamily: 'var(--font-syne)', fontWeight: 800, fontSize: 22,
+                fontFamily: 'var(--font-dm-sans)', fontWeight: 800, fontSize: 22,
                 marginBottom: 20, color: 'var(--text-primary)',
                 letterSpacing: '-0.02em',
               }}>
@@ -756,7 +756,7 @@ export default function ProfileView() {
             {/* ── Saved Creators ── */}
             <section style={{ marginBottom: 48 }}>
               <h2 style={{
-                fontFamily: 'var(--font-syne)', fontWeight: 800, fontSize: 22,
+                fontFamily: 'var(--font-dm-sans)', fontWeight: 800, fontSize: 22,
                 marginBottom: 20, color: 'var(--text-primary)',
                 letterSpacing: '-0.02em',
               }}>
@@ -894,7 +894,7 @@ function MaplRewardsCard() {
             {hasActive ? 'Reward unlocked' : 'Video reward'}
           </p>
           <h3 style={{
-            fontFamily: 'var(--font-syne)', fontWeight: 800, fontSize: 18,
+            fontFamily: 'var(--font-dm-sans)', fontWeight: 800, fontSize: 18,
             letterSpacing: '-0.01em', color: 'var(--text-primary)',
             marginBottom: 4, lineHeight: 1.2,
           }}>

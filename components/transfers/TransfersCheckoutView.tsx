@@ -194,7 +194,7 @@ export default function TransfersCheckoutView() {
           <div style={{ textAlign: 'center' }}>
             <h2
               style={{
-                fontFamily: 'var(--font-syne)',
+                fontFamily: 'var(--font-dm-sans)',
                 fontWeight: 700,
                 fontSize: 18,
                 letterSpacing: '-0.005em',
@@ -216,7 +216,7 @@ export default function TransfersCheckoutView() {
           <div className="hide-mobile" style={{ marginBottom: 28 }}>
             <h3
               style={{
-                fontFamily: 'var(--font-syne)',
+                fontFamily: 'var(--font-dm-sans)',
                 fontWeight: 700,
                 fontSize: 22,
                 marginBottom: 6,
@@ -418,7 +418,7 @@ export default function TransfersCheckoutView() {
             >
               <h4
                 style={{
-                  fontFamily: 'var(--font-syne)',
+                  fontFamily: 'var(--font-dm-sans)',
                   fontWeight: 700,
                   fontSize: 16,
                   letterSpacing: '-0.005em',
@@ -649,7 +649,7 @@ function SectionHeader({
     <div style={{ marginBottom: 16 }}>
       <h4
         style={{
-          fontFamily: 'var(--font-syne)',
+          fontFamily: 'var(--font-dm-sans)',
           fontWeight: 700,
           fontSize: 18,
           letterSpacing: '-0.01em',
@@ -780,7 +780,7 @@ function TransferCard({
           </p>
           <p
             style={{
-              fontFamily: 'var(--font-syne)',
+              fontFamily: 'var(--font-dm-sans)',
               fontWeight: 700,
               fontSize: 19,
               letterSpacing: '-0.01em',
@@ -861,7 +861,7 @@ function TransferCard({
           <div>
             <p
               style={{
-                fontFamily: 'var(--font-syne)',
+                fontFamily: 'var(--font-dm-sans)',
                 fontWeight: 700,
                 fontSize: 14,
                 color: 'var(--text-primary)',
@@ -1094,7 +1094,7 @@ function EmptyState() {
         </div>
         <h1
           style={{
-            fontFamily: 'var(--font-syne)',
+            fontFamily: 'var(--font-dm-sans)',
             fontWeight: 700,
             fontSize: 28,
             letterSpacing: '-0.01em',
@@ -1105,7 +1105,7 @@ function EmptyState() {
         </h1>
         <p
           style={{
-            fontFamily: 'var(--font-syne)',
+            fontFamily: 'var(--font-dm-sans)',
             fontStyle: 'italic',
             fontSize: 16,
             color: 'var(--text-secondary)',
@@ -1165,7 +1165,7 @@ function ConfirmedInline({
         </p>
         <h1
           style={{
-            fontFamily: 'var(--font-syne)',
+            fontFamily: 'var(--font-dm-sans)',
             fontWeight: 700,
             fontSize: 'clamp(2rem, 5vw, 3.25rem)',
             letterSpacing: '-0.02em',
@@ -1179,7 +1179,7 @@ function ConfirmedInline({
         </h1>
         <p
           style={{
-            fontFamily: 'var(--font-syne)',
+            fontFamily: 'var(--font-dm-sans)',
             fontStyle: 'italic',
             fontSize: 17,
             color: 'var(--text-secondary)',

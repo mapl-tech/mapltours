@@ -44,7 +44,7 @@ export default function AdminVideosPage() {
   if (!isAdmin) {
     return (
       <Shell>
-        <p style={{ fontFamily: 'var(--font-syne)', fontWeight: 700, fontSize: 20, marginBottom: 8 }}>
+        <p style={{ fontFamily: 'var(--font-dm-sans)', fontWeight: 700, fontSize: 20, marginBottom: 8 }}>
           Not authorised
         </p>
         <p style={{ fontFamily: 'var(--font-dm-sans)', color: 'var(--text-tertiary)' }}>
@@ -68,7 +68,7 @@ export default function AdminVideosPage() {
             Admin · Moderation
           </p>
           <h1 style={{
-            fontFamily: 'var(--font-syne)', fontWeight: 800, fontSize: 28,
+            fontFamily: 'var(--font-dm-sans)', fontWeight: 800, fontSize: 28,
             letterSpacing: '-0.02em', color: 'var(--text-primary)',
           }}>
             Guest tour videos
@@ -169,7 +169,7 @@ function ModerationCard({ video, onChanged }: { video: AdminVideo; onChanged: ()
       <div style={{ padding: 14, display: 'flex', flexDirection: 'column', gap: 8 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
           <p style={{
-            fontFamily: 'var(--font-syne)', fontWeight: 700, fontSize: 14,
+            fontFamily: 'var(--font-dm-sans)', fontWeight: 700, fontSize: 14,
             color: 'var(--text-primary)', letterSpacing: '-0.01em',
           }}>
             @{video.uploader_name || 'guest'}

@@ -92,6 +92,10 @@ html {
 }
 
 body {
+  /* Legacy alias — the site is a single-family (DM Sans) system now. Declared
+     here, not on :root, because --font-dm-sans is injected by next/font onto
+     <body>; a :root alias would resolve against an undefined value. */
+  --font-syne: var(--font-dm-sans);
   /* Warm radial wash from the top so the page has light + depth instead of
      a flat clinical white. */
   background:
@@ -158,30 +162,44 @@ video {
    TYPOGRAPHY SCALE
    ═══════════════════════════════════ */
 
+/* One family, so hierarchy is carried by weight + tracking instead of by a
+   serif/sans contrast. A geometric sans only reads as "display" when it is
+   set heavy and tight — tracking tightens as size grows, never the reverse. */
+
 .text-display {
-  font-family: var(--font-syne);
-  font-weight: 700;
-  /* Playfair's drama only reads above ~3.5rem — give it room. */
+  font-family: var(--font-dm-sans);
+  font-weight: 800;
   font-size: clamp(2.75rem, 6vw, 5rem);
-  line-height: 1.02;
-  letter-spacing: -0.035em;
+  line-height: 1;
+  letter-spacing: -0.042em;
 }
 
 .text-headline-lg {
-  font-family: var(--font-syne);
+  font-family: var(--font-dm-sans);
   font-weight: 700;
   font-size: 1.75rem;
-  line-height: 1.15;
-  letter-spacing: -0.02em;
+  line-height: 1.14;
+  letter-spacing: -0.028em;
 }
 
 .text-headline {
-  font-family: var(--font-syne);
+  font-family: var(--font-dm-sans);
   font-weight: 700;
   font-size: 1.25rem;
   line-height: 1.2;
-  letter-spacing: -0.01em;
+  letter-spacing: -0.018em;
 }
+
+/* Base optical tracking for headings that set their own size inline. Inline
+   letter-spacing still wins where a specific value was chosen deliberately.
+   `balance` kills orphaned last words in multi-line headings. */
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-dm-sans), sans-serif;
+  text-wrap: balance;
+}
+h1, h2 { letter-spacing: -0.03em; }
+h3, h4 { letter-spacing: -0.02em; }
+h5, h6 { letter-spacing: -0.01em; }
 
 .text-label {
   font-family: var(--font-dm-sans);
@@ -815,12 +833,15 @@ html.js-reveal [data-reveal].is-in {
   }
 }
 
-/* Photo card hover — image scales SLOWER than the card lifts (parallax). */
+/* Photo card hover — image scales SLOWER than the card lifts (parallax), and
+   the corners bloom 20px → 28px so the tile visibly softens as it rises. */
 .photo-card {
   position: relative;
   overflow: hidden;
   border-radius: var(--r-xl);
   box-shadow: var(--shadow-sm);
+  transition: border-radius var(--dur-base) var(--ease-out),
+              box-shadow var(--dur-base) var(--ease-out);
 }
 .photo-card img {
   transition: transform var(--dur-slow) var(--ease-out);
@@ -828,17 +849,31 @@ html.js-reveal [data-reveal].is-in {
 .photo-card:hover img {
   transform: scale(1.06);
 }
+.photo-card:hover {
+  border-radius: var(--r-2xl);
+}
 
-/* Experience card lift */
+/* Experience card lift. The elevation shadow rides the ROUNDED media tile,
+   not the <article> — the article is a transparent square box, so a shadow
+   there cast a hard-edged rectangle behind the caption text. */
 .exp-card {
-  transition: transform var(--dur-base) var(--ease-out), box-shadow var(--dur-base) var(--ease-out);
+  transition: transform var(--dur-base) var(--ease-out);
 }
 .exp-card:hover {
   transform: translateY(-6px);
+}
+.exp-card:hover .photo-card,
+.exp-card:focus-within .photo-card {
+  border-radius: var(--r-2xl);
   box-shadow: var(--shadow-card-hover);
 }
-.exp-card:hover img {
+.exp-card:hover img,
+.exp-card:focus-within img {
   transform: scale(1.06);
+}
+/* Keyboard parity: focusing the card link lifts it exactly like hover. */
+.exp-card:focus-within {
+  transform: translateY(-6px);
 }
 
 /* Reel action-rail disc — frosted backing so icons stay legible over bright

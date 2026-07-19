@@ -1,23 +1,25 @@
 import type { Metadata, Viewport } from 'next'
-import { Playfair_Display, DM_Sans } from 'next/font/google'
+import { DM_Sans } from 'next/font/google'
 import Script from 'next/script'
 import './globals.css'
 import LayoutShell from '@/components/LayoutShell'
 import StyledJsxRegistry from '@/components/StyledJsxRegistry'
 
-const playfair = Playfair_Display({
-  subsets: ['latin'],
-  weight: ['500', '600', '700', '800'],
-  variable: '--font-syne',
-  display: 'swap',
-})
-
-// DM Sans carries ALL numerals site-wide (prices, totals, stats, counts) —
-// weight 800 is required for the emphasized price/total treatments that
-// previously rendered in Open Sans/Playfair 800.
+// DM Sans is the ENTIRE typographic system — display headings, body, UI, and
+// every numeral. There is deliberately no second family: hierarchy is carried
+// by weight (300→800), size, and tracking rather than by a serif/sans pairing.
+// `--font-syne` is kept as an alias so any stray reference still resolves to
+// DM Sans instead of silently falling back to a system font.
+// The real italic is loaded (not just upright): ~57 places set
+// `font-style: italic` — the hero's "Jamaica", the about-page pull quotes,
+// the confirmation lines. Without an italic face the browser synthesises a
+// mechanical slant, which reads as sloppy at display size. Declaring the
+// style costs nothing until used: browsers fetch a @font-face only when
+// text actually renders in it.
 const dmSans = DM_Sans({
   subsets: ['latin'],
   weight: ['300', '400', '500', '600', '700', '800'],
+  style: ['normal', 'italic'],
   variable: '--font-dm-sans',
   display: 'swap',
 })
@@ -204,7 +206,7 @@ export default function RootLayout({
         <link rel="dns-prefetch" href="https://static.hotjar.com" />
         <link rel="dns-prefetch" href="https://script.hotjar.com" />
       </head>
-      <body className={`${playfair.variable} ${dmSans.variable}`}>
+      <body className={dmSans.variable}>
         <StyledJsxRegistry>
           <LayoutShell>{children}</LayoutShell>
         </StyledJsxRegistry>

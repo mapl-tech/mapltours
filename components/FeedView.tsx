@@ -183,7 +183,7 @@ function FoodSection() {
               </span>
             </div>
             <h2 style={{
-              fontFamily: 'var(--font-syne)', fontWeight: 700,
+              fontFamily: 'var(--font-dm-sans)', fontWeight: 700,
               fontSize: 'clamp(1.5rem, 2.5vw, 2rem)',
               color: 'white', lineHeight: 1.15, letterSpacing: '-0.02em',
             }}>
@@ -426,7 +426,7 @@ function DestinationsSection() {
               <Image src={DESTINATION_IMAGES[d.name]} alt={d.name} fill sizes="200px" style={{ objectFit: 'cover' }} />
               <div className="overlay-bottom" style={{ height: '65%' }} />
               <div style={{ position: 'relative', zIndex: 1 }}>
-                <span style={{ color: '#fff', fontFamily: 'var(--font-syne)', fontWeight: 700, fontSize: 18, display: 'block', letterSpacing: '-0.01em' }}>
+                <span style={{ color: '#fff', fontFamily: 'var(--font-dm-sans)', fontWeight: 700, fontSize: 18, display: 'block', letterSpacing: '-0.01em' }}>
                   {d.name}
                 </span>
                 <span style={{ color: 'rgba(255,255,255,0.7)', fontFamily: 'var(--font-dm-sans)', fontWeight: 500, fontSize: 13, marginTop: 3, display: 'block' }}>
@@ -521,7 +521,7 @@ export default function FeedView() {
             Jamaica, beyond the brochure
           </span>
           <h1 className="animate-fade-up stagger-1" style={{
-            fontFamily: 'var(--font-syne)',
+            fontFamily: 'var(--font-dm-sans)',
             fontWeight: 700,
             fontSize: 'clamp(2.75rem, 7vw, 6rem)',
             lineHeight: 0.98,
@@ -560,7 +560,7 @@ export default function FeedView() {
               The MAPL Experience
             </span>
             <h2 style={{
-              fontFamily: 'var(--font-syne)', fontWeight: 800,
+              fontFamily: 'var(--font-dm-sans)', fontWeight: 800,
               fontSize: 'clamp(1.65rem, 3.5vw, 2.4rem)',
               letterSpacing: '-0.025em', lineHeight: 1.1,
               marginBottom: 14, color: '#fff',
@@ -616,7 +616,7 @@ export default function FeedView() {
                   </span>
                 </div>
                 <h4 style={{
-                  fontFamily: 'var(--font-syne)', fontWeight: 600, fontSize: 19,
+                  fontFamily: 'var(--font-dm-sans)', fontWeight: 600, fontSize: 19,
                   marginBottom: 9, lineHeight: 1.22, letterSpacing: '-0.01em', color: '#fff',
                 }}>
                   {pillar.title}
@@ -707,7 +707,7 @@ export default function FeedView() {
             </span>
           </div>
           <p style={{
-            fontFamily: 'var(--font-syne)', fontWeight: 700,
+            fontFamily: 'var(--font-dm-sans)', fontWeight: 700,
             fontSize: 'clamp(1.5rem, 2.5vw, 2rem)', color: 'white',
             lineHeight: 1.15, letterSpacing: '-0.02em', marginBottom: 36,
           }}>
@@ -842,7 +842,7 @@ export default function FeedView() {
           {/* Right: Content */}
           <div className="mapl-diff-content" style={{ flex: 1, padding: '80px 64px 80px 32px' }}>
             <h2 style={{
-              fontFamily: 'var(--font-syne)', fontWeight: 700,
+              fontFamily: 'var(--font-dm-sans)', fontWeight: 700,
               fontSize: 'clamp(1.75rem, 3vw, 2.5rem)',
               color: 'white', lineHeight: 1.12, letterSpacing: '-0.02em',
               marginBottom: 4,
@@ -850,7 +850,7 @@ export default function FeedView() {
               {t('The authenticity of local culture.')}
             </h2>
             <p style={{
-              fontFamily: 'var(--font-syne)', fontWeight: 700,
+              fontFamily: 'var(--font-dm-sans)', fontWeight: 700,
               fontSize: 'clamp(1.75rem, 3vw, 2.5rem)',
               color: 'var(--text-on-dark-3)', lineHeight: 1.12, letterSpacing: '-0.02em',
               marginBottom: 48,

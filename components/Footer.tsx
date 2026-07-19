@@ -24,7 +24,7 @@ export default function Footer() {
             </div>
             <div style={{ lineHeight: 1 }}>
               <span style={{
-                fontFamily: 'var(--font-syne)', fontWeight: 800,
+                fontFamily: 'var(--font-dm-sans)', fontWeight: 800,
                 fontSize: 18, letterSpacing: '0.06em',
                 textTransform: 'uppercase', color: 'white',
                 display: 'block',

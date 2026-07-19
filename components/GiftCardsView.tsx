@@ -58,7 +58,7 @@ export default function GiftCardsView() {
             Give Jamaica
           </p>
           <h1 style={{
-            fontFamily: 'var(--font-syne)', fontWeight: 800,
+            fontFamily: 'var(--font-dm-sans)', fontWeight: 800,
             fontSize: 'clamp(2.25rem, 5vw, 3.5rem)', color: 'white',
             lineHeight: 1.05, letterSpacing: '-0.035em',
             marginBottom: 16,
@@ -113,7 +113,7 @@ export default function GiftCardsView() {
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                   <div>
                     <p style={{
-                      fontFamily: 'var(--font-syne)', fontWeight: 800,
+                      fontFamily: 'var(--font-dm-sans)', fontWeight: 800,
                       fontSize: 18, color: 'white', letterSpacing: '0.04em',
                     }}>
                       MAPL
@@ -205,7 +205,7 @@ export default function GiftCardsView() {
                   marginBottom: 20,
                 }}>
                   <h2 style={{
-                    fontFamily: 'var(--font-syne)', fontWeight: 800,
+                    fontFamily: 'var(--font-dm-sans)', fontWeight: 800,
                     fontSize: 20, color: 'var(--text-primary)',
                     letterSpacing: '-0.02em', marginBottom: 20,
                   }}>
@@ -274,7 +274,7 @@ export default function GiftCardsView() {
                         </div>
                       ) : (
                         <p style={{
-                          fontFamily: 'var(--font-syne)', fontWeight: 800,
+                          fontFamily: 'var(--font-dm-sans)', fontWeight: 800,
                           fontSize: 22, color: 'var(--text-primary)', marginBottom: 2,
                         }}>
                           Custom
@@ -299,7 +299,7 @@ export default function GiftCardsView() {
                   boxShadow: 'var(--shadow-sm)',
                 }}>
                   <h3 style={{
-                    fontFamily: 'var(--font-syne)', fontWeight: 700,
+                    fontFamily: 'var(--font-dm-sans)', fontWeight: 700,
                     fontSize: 17, color: 'var(--text-primary)',
                     marginBottom: 20,
                   }}>
@@ -401,7 +401,7 @@ export default function GiftCardsView() {
                   <Check size={26} color="var(--gold-text)" />
                 </div>
                 <h2 style={{
-                  fontFamily: 'var(--font-syne)', fontWeight: 800,
+                  fontFamily: 'var(--font-dm-sans)', fontWeight: 800,
                   fontSize: 24, color: 'var(--text-primary)',
                   marginBottom: 8,
                 }}>
@@ -439,7 +439,7 @@ export default function GiftCardsView() {
         {/* ── How It Works ── */}
         <div style={{ marginTop: 80 }}>
           <h2 style={{
-            fontFamily: 'var(--font-syne)', fontWeight: 800,
+            fontFamily: 'var(--font-dm-sans)', fontWeight: 800,
             fontSize: 24, color: 'var(--text-primary)',
             letterSpacing: '-0.02em', textAlign: 'center',
             marginBottom: 40,
@@ -462,7 +462,7 @@ export default function GiftCardsView() {
                   {item.step}
                 </p>
                 <h3 style={{
-                  fontFamily: 'var(--font-syne)', fontWeight: 700,
+                  fontFamily: 'var(--font-dm-sans)', fontWeight: 700,
                   fontSize: 17, color: 'var(--text-primary)',
                   marginBottom: 8,
                 }}>
@@ -486,7 +486,7 @@ export default function GiftCardsView() {
           background: 'var(--accent)', textAlign: 'center',
         }}>
           <h2 style={{
-            fontFamily: 'var(--font-syne)', fontWeight: 800,
+            fontFamily: 'var(--font-dm-sans)', fontWeight: 800,
             fontSize: 24, color: 'white',
             letterSpacing: '-0.02em', marginBottom: 8,
           }}>

@@ -140,7 +140,7 @@ export default function TopNav({ onCartClick }: { onCartClick?: () => void }) {
           {/* Wordmark */}
           <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1 }}>
             <span style={{
-              fontFamily: 'var(--font-syne)',
+              fontFamily: 'var(--font-dm-sans)',
               fontWeight: 800,
               fontSize: 15,
               letterSpacing: '0.06em',

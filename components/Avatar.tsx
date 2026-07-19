@@ -51,7 +51,7 @@ export default function Avatar({
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        fontFamily: 'var(--font-syne)',
+        fontFamily: 'var(--font-dm-sans)',
         fontWeight: 800,
         fontSize: Math.round(size * 0.42),
         letterSpacing: '-0.01em',

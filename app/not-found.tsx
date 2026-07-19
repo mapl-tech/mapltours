@@ -35,7 +35,7 @@ export default function NotFound() {
         </p>
         <h1
           style={{
-            fontFamily: 'var(--font-syne)',
+            fontFamily: 'var(--font-dm-sans)',
             fontWeight: 700,
             fontSize: 36,
             lineHeight: 1.15,

@@ -104,7 +104,7 @@ export default function AboutPage() {
           maxWidth: 1040,
         }}>
           <h1 style={{
-            fontFamily: 'var(--font-syne)', fontWeight: 700,
+            fontFamily: 'var(--font-dm-sans)', fontWeight: 700,
             fontSize: 'clamp(2.75rem, 8.2vw, 6.75rem)',
             lineHeight: 0.96,
             letterSpacing: '-0.035em',
@@ -145,7 +145,7 @@ export default function AboutPage() {
           Manifesto
         </p>
         <p style={{
-          fontFamily: 'var(--font-syne)', fontWeight: 700,
+          fontFamily: 'var(--font-dm-sans)', fontWeight: 700,
           fontSize: 'clamp(1.75rem, 3.8vw, 3.1rem)',
           lineHeight: 1.12,
           letterSpacing: '-0.022em',
@@ -199,7 +199,7 @@ export default function AboutPage() {
               Who We Are
             </p>
             <h2 style={{
-              fontFamily: 'var(--font-syne)', fontWeight: 700,
+              fontFamily: 'var(--font-dm-sans)', fontWeight: 700,
               fontSize: 'clamp(1.5rem, 2.6vw, 2.25rem)',
               lineHeight: 1.12, letterSpacing: '-0.018em',
               color: INK, marginBottom: 24, textWrap: 'balance',
@@ -241,7 +241,7 @@ export default function AboutPage() {
                 Our Values
               </p>
               <h2 style={{
-                fontFamily: 'var(--font-syne)', fontWeight: 700,
+                fontFamily: 'var(--font-dm-sans)', fontWeight: 700,
                 fontSize: 'clamp(1.8rem, 3.2vw, 2.75rem)',
                 lineHeight: 1.08, letterSpacing: '-0.02em',
                 color: INK, textWrap: 'balance', maxWidth: 720,
@@ -269,7 +269,7 @@ export default function AboutPage() {
                 alignItems: 'baseline',
               }}>
                 <span style={{
-                  fontFamily: 'var(--font-syne)', fontWeight: 700,
+                  fontFamily: 'var(--font-dm-sans)', fontWeight: 700,
                   fontSize: 'clamp(1.1rem, 1.5vw, 1.35rem)',
                   letterSpacing: '0.08em',
                   color: GOLD,
@@ -278,7 +278,7 @@ export default function AboutPage() {
                 </span>
                 <div style={{ display: 'grid', gap: 12, gridTemplateColumns: '1fr', maxWidth: 880 }}>
                   <h3 style={{
-                    fontFamily: 'var(--font-syne)', fontWeight: 700,
+                    fontFamily: 'var(--font-dm-sans)', fontWeight: 700,
                     fontSize: 'clamp(1.2rem, 2vw, 1.6rem)',
                     lineHeight: 1.2, letterSpacing: '-0.014em',
                     color: INK, textWrap: 'balance',
@@ -316,7 +316,7 @@ export default function AboutPage() {
           By the Numbers
         </p>
         <h2 style={{
-          fontFamily: 'var(--font-syne)', fontWeight: 700,
+          fontFamily: 'var(--font-dm-sans)', fontWeight: 700,
           fontSize: 'clamp(1.5rem, 2.4vw, 2rem)',
           lineHeight: 1.12, letterSpacing: '-0.015em',
           color: INK, marginBottom: 'clamp(40px, 6vh, 72px)',
@@ -369,7 +369,7 @@ export default function AboutPage() {
             <span style={{ display: 'inline-block', width: 24, height: 1, background: GOLD_WARM, verticalAlign: 'middle', marginLeft: 12 }} />
           </p>
           <p style={{
-            fontFamily: 'var(--font-syne)', fontWeight: 700,
+            fontFamily: 'var(--font-dm-sans)', fontWeight: 700,
             fontStyle: 'italic',
             fontSize: 'clamp(1.4rem, 2.6vw, 2rem)',
             lineHeight: 1.32,
@@ -384,7 +384,7 @@ export default function AboutPage() {
             display: 'inline-flex', flexDirection: 'column', alignItems: 'center', gap: 6,
           }}>
             <span style={{
-              fontFamily: 'var(--font-syne)', fontWeight: 700, fontSize: 15,
+              fontFamily: 'var(--font-dm-sans)', fontWeight: 700, fontSize: 15,
               color: '#fff', letterSpacing: '-0.005em',
             }}>
               The MAPL Tours Team

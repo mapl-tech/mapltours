@@ -61,7 +61,7 @@ export default function LeftNav() {
         href="/"
         aria-label="MAPL Tours — go to the feed"
         style={{
-          fontFamily: 'var(--font-syne)',
+          fontFamily: 'var(--font-dm-sans)',
           fontWeight: 800,
           fontSize: 20,
           color: 'var(--gold)',

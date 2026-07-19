@@ -52,7 +52,7 @@ export default function EditorialPage({
             {label}
           </p>
           <h1 style={{
-            fontFamily: 'var(--font-syne)', fontWeight: 700,
+            fontFamily: 'var(--font-dm-sans)', fontWeight: 700,
             fontSize: 'clamp(1.75rem, 3vw, 2.5rem)', color: 'white',
             lineHeight: 1.1, letterSpacing: '-0.02em',
           }}>
@@ -82,7 +82,7 @@ export function Section({ title, children }: { title: string; children: React.Re
   return (
     <div style={{ marginBottom: 48 }}>
       <h2 style={{
-        fontFamily: 'var(--font-syne)', fontWeight: 700,
+        fontFamily: 'var(--font-dm-sans)', fontWeight: 700,
         fontSize: 22, color: 'var(--text-primary)',
         marginBottom: 16, letterSpacing: '-0.01em',
       }}>
@@ -101,7 +101,7 @@ export function ValueCard({ title, desc }: { title: string; desc: string }) {
       marginBottom: 12,
     }}>
       <h3 style={{
-        fontFamily: 'var(--font-syne)', fontWeight: 700,
+        fontFamily: 'var(--font-dm-sans)', fontWeight: 700,
         fontSize: 17, color: 'var(--text-primary)', marginBottom: 8,
       }}>
         {title}

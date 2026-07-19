@@ -22,7 +22,7 @@ function Ornament() {
         justifyContent: 'center',
         gap: 14,
         color: 'var(--gold)',
-        fontFamily: 'var(--font-syne)',
+        fontFamily: 'var(--font-dm-sans)',
         fontSize: 14,
         letterSpacing: '0.2em',
       }}
@@ -131,7 +131,7 @@ function Masthead() {
         <div style={{ textAlign: 'center', padding: '32px 8px 24px' }}>
           <div
             style={{
-              fontFamily: 'var(--font-syne)',
+              fontFamily: 'var(--font-dm-sans)',
               fontWeight: 700,
               fontSize: 'clamp(2.75rem, 7vw, 5rem)',
               letterSpacing: '-0.03em',
@@ -155,7 +155,7 @@ function Masthead() {
         <p
           style={{
             textAlign: 'center',
-            fontFamily: 'var(--font-syne)',
+            fontFamily: 'var(--font-dm-sans)',
             fontStyle: 'italic',
             fontWeight: 400,
             fontSize: 'clamp(1.05rem, 1.6vw, 1.3rem)',
@@ -281,7 +281,7 @@ function FeaturedLead({ post }: { post: BlogPost }) {
         <Link href={`/blog/${post.slug}`}>
           <h2
             style={{
-              fontFamily: 'var(--font-syne)',
+              fontFamily: 'var(--font-dm-sans)',
               fontWeight: 700,
               fontSize: 'clamp(1.85rem, 3.6vw, 3rem)',
               lineHeight: 1.08,
@@ -295,7 +295,7 @@ function FeaturedLead({ post }: { post: BlogPost }) {
         </Link>
         <p
           style={{
-            fontFamily: 'var(--font-syne)',
+            fontFamily: 'var(--font-dm-sans)',
             fontStyle: 'italic',
             fontWeight: 400,
             fontSize: 17,
@@ -394,7 +394,7 @@ function PostCard({ post, size = 'md' }: { post: BlogPost; size?: 'md' | 'lg' })
         </div>
         <h3
           style={{
-            fontFamily: 'var(--font-syne)',
+            fontFamily: 'var(--font-dm-sans)',
             fontWeight: 700,
             fontSize: isLg ? 'clamp(1.45rem, 2vw, 1.85rem)' : 20,
             lineHeight: 1.18,
@@ -407,7 +407,7 @@ function PostCard({ post, size = 'md' }: { post: BlogPost; size?: 'md' | 'lg' })
         </h3>
         <p
           style={{
-            fontFamily: 'var(--font-syne)',
+            fontFamily: 'var(--font-dm-sans)',
             fontStyle: 'italic',
             fontWeight: 400,
             fontSize: isLg ? 16 : 14.5,
@@ -461,7 +461,7 @@ function Colophon() {
         </Kicker>
         <h2
           style={{
-            fontFamily: 'var(--font-syne)',
+            fontFamily: 'var(--font-dm-sans)',
             fontWeight: 700,
             fontSize: 'clamp(1.65rem, 3.2vw, 2.4rem)',
             lineHeight: 1.15,
@@ -474,7 +474,7 @@ function Colophon() {
         </h2>
         <p
           style={{
-            fontFamily: 'var(--font-syne)',
+            fontFamily: 'var(--font-dm-sans)',
             fontStyle: 'italic',
             fontSize: 16.5,
             color: 'var(--text-secondary)',
@@ -506,7 +506,7 @@ function Colophon() {
               background: 'transparent',
               border: 'none',
               outline: 'none',
-              fontFamily: 'var(--font-syne)',
+              fontFamily: 'var(--font-dm-sans)',
               fontStyle: 'italic',
               fontSize: 15,
               color: 'var(--text-primary)',
@@ -584,7 +584,7 @@ export default function BlogIndex({ posts }: { posts: BlogPost[] }) {
               textAlign: 'center',
               padding: '80px 20px',
               color: 'var(--text-tertiary)',
-              fontFamily: 'var(--font-syne)',
+              fontFamily: 'var(--font-dm-sans)',
               fontStyle: 'italic',
               fontSize: 18,
             }}
@@ -606,7 +606,7 @@ export default function BlogIndex({ posts }: { posts: BlogPost[] }) {
             >
               <h3
                 style={{
-                  fontFamily: 'var(--font-syne)',
+                  fontFamily: 'var(--font-dm-sans)',
                   fontWeight: 700,
                   fontSize: 'clamp(1.4rem, 2.4vw, 1.85rem)',
                   letterSpacing: '-0.01em',

@@ -45,7 +45,7 @@ export default function DayBuilder({ compact = false, hideHeading, style }: DayB
         }}>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, minWidth: 0 }}>
             <span style={{
-              fontFamily: 'var(--font-syne)',
+              fontFamily: 'var(--font-dm-sans)',
               fontWeight: 800,
               fontSize: compact ? 13 : 15,
               color: 'var(--text-primary, white)',

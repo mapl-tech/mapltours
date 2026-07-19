@@ -149,7 +149,7 @@ function Ornament({ label }: { label?: string }) {
         gap: 16,
         margin: '48px auto',
         color: 'var(--gold)',
-        fontFamily: 'var(--font-syne)',
+        fontFamily: 'var(--font-dm-sans)',
         fontSize: label ? 11 : 14,
         letterSpacing: '0.2em',
         textTransform: 'uppercase',
@@ -171,7 +171,7 @@ function AuthorMonogram({ initials, size = 44 }: { initials: string; size?: numb
         display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
         border: '1px solid var(--gold)',
         color: 'var(--gold)',
-        fontFamily: 'var(--font-syne)',
+        fontFamily: 'var(--font-dm-sans)',
         fontWeight: 700,
         fontSize: size * 0.38,
         letterSpacing: '0.02em',
@@ -205,7 +205,7 @@ function Block({ block, isFirst }: { block: BlogBlock; isFirst: boolean }) {
           </div>
           <h2
             style={{
-              fontFamily: 'var(--font-syne)',
+              fontFamily: 'var(--font-dm-sans)',
               fontWeight: 700,
               fontSize: 'clamp(1.4rem, 2.4vw, 1.85rem)',
               color: 'var(--text-primary)',
@@ -227,7 +227,7 @@ function Block({ block, isFirst }: { block: BlogBlock; isFirst: boolean }) {
           <p
             className="blog-lead-para"
             style={{
-              fontFamily: 'var(--font-syne)',
+              fontFamily: 'var(--font-dm-sans)',
               fontSize: 19,
               color: 'var(--text-primary)',
               lineHeight: 1.72,
@@ -237,7 +237,7 @@ function Block({ block, isFirst }: { block: BlogBlock; isFirst: boolean }) {
             <span
               style={{
                 float: 'left',
-                fontFamily: 'var(--font-syne)',
+                fontFamily: 'var(--font-dm-sans)',
                 fontWeight: 700,
                 fontSize: 82,
                 lineHeight: 0.88,
@@ -256,7 +256,7 @@ function Block({ block, isFirst }: { block: BlogBlock; isFirst: boolean }) {
       return (
         <p
           style={{
-            fontFamily: 'var(--font-syne)',
+            fontFamily: 'var(--font-dm-sans)',
             fontWeight: 400,
             fontSize: 18,
             color: 'var(--text-primary)',
@@ -281,7 +281,7 @@ function Block({ block, isFirst }: { block: BlogBlock; isFirst: boolean }) {
             aria-hidden
             style={{
               display: 'block',
-              fontFamily: 'var(--font-syne)',
+              fontFamily: 'var(--font-dm-sans)',
               fontSize: 64,
               color: 'var(--gold)',
               lineHeight: 0.5,
@@ -293,7 +293,7 @@ function Block({ block, isFirst }: { block: BlogBlock; isFirst: boolean }) {
           </span>
           <p
             style={{
-              fontFamily: 'var(--font-syne)',
+              fontFamily: 'var(--font-dm-sans)',
               fontStyle: 'italic',
               fontWeight: 500,
               fontSize: 'clamp(1.25rem, 2.2vw, 1.6rem)',
@@ -344,7 +344,7 @@ function Block({ block, isFirst }: { block: BlogBlock; isFirst: boolean }) {
           {block.caption && (
             <figcaption
               style={{
-                fontFamily: 'var(--font-syne)',
+                fontFamily: 'var(--font-dm-sans)',
                 fontStyle: 'italic',
                 fontSize: 13,
                 color: 'var(--text-tertiary)',
@@ -374,7 +374,7 @@ function Block({ block, isFirst }: { block: BlogBlock; isFirst: boolean }) {
                 position: 'relative',
                 paddingLeft: 40,
                 marginBottom: 18,
-                fontFamily: 'var(--font-syne)',
+                fontFamily: 'var(--font-dm-sans)',
                 fontSize: 17,
                 color: 'var(--text-primary)',
                 lineHeight: 1.65,
@@ -386,7 +386,7 @@ function Block({ block, isFirst }: { block: BlogBlock; isFirst: boolean }) {
                   left: 0,
                   top: 0,
                   width: 24,
-                  fontFamily: 'var(--font-syne)',
+                  fontFamily: 'var(--font-dm-sans)',
                   fontWeight: 700,
                   fontStyle: 'italic',
                   color: 'var(--gold)',
@@ -432,7 +432,7 @@ function RelatedCard({ post }: { post: BlogPost }) {
       </div>
       <h3
         style={{
-          fontFamily: 'var(--font-syne)',
+          fontFamily: 'var(--font-dm-sans)',
           fontWeight: 700,
           fontSize: 19,
           lineHeight: 1.22,
@@ -523,7 +523,7 @@ export default function BlogPostPage({
         </div>
         <h1
           style={{
-            fontFamily: 'var(--font-syne)',
+            fontFamily: 'var(--font-dm-sans)',
             fontWeight: 700,
             fontSize: 'clamp(2rem, 5vw, 3.5rem)',
             lineHeight: 1.08,
@@ -536,7 +536,7 @@ export default function BlogPostPage({
         </h1>
         <p
           style={{
-            fontFamily: 'var(--font-syne)',
+            fontFamily: 'var(--font-dm-sans)',
             fontStyle: 'italic',
             fontWeight: 400,
             fontSize: 'clamp(1.1rem, 1.9vw, 1.35rem)',
@@ -577,7 +577,7 @@ export default function BlogPostPage({
             </div>
             <div
               style={{
-                fontFamily: 'var(--font-syne)',
+                fontFamily: 'var(--font-dm-sans)',
                 fontWeight: 700,
                 fontSize: 15,
                 color: 'var(--text-primary)',
@@ -620,7 +620,7 @@ export default function BlogPostPage({
         </div>
         <p
           style={{
-            fontFamily: 'var(--font-syne)',
+            fontFamily: 'var(--font-dm-sans)',
             fontStyle: 'italic',
             fontSize: 13,
             color: 'var(--text-tertiary)',
@@ -663,7 +663,7 @@ export default function BlogPostPage({
             <Kicker size={10.5}>About the author</Kicker>
             <div
               style={{
-                fontFamily: 'var(--font-syne)',
+                fontFamily: 'var(--font-dm-sans)',
                 fontWeight: 700,
                 fontSize: 18,
                 color: 'var(--text-primary)',
@@ -674,7 +674,7 @@ export default function BlogPostPage({
             </div>
             <div
               style={{
-                fontFamily: 'var(--font-syne)',
+                fontFamily: 'var(--font-dm-sans)',
                 fontStyle: 'italic',
                 fontSize: 14.5,
                 color: 'var(--text-secondary)',
@@ -727,7 +727,7 @@ export default function BlogPostPage({
               <Kicker color="var(--gold)" size={11}>Further reading</Kicker>
               <h3
                 style={{
-                  fontFamily: 'var(--font-syne)',
+                  fontFamily: 'var(--font-dm-sans)',
                   fontWeight: 700,
                   fontSize: 'clamp(1.6rem, 3vw, 2.25rem)',
                   color: 'var(--text-primary)',

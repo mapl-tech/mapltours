@@ -252,7 +252,7 @@ function Reel({ exp, isActive, totalCount, currentIndex }: { exp: Experience; is
                 background: '#FFB300',
                 border: '2px solid white',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontFamily: 'var(--font-syne)',
+                fontFamily: 'var(--font-dm-sans)',
                 fontWeight: 800, fontSize: 20,
                 color: '#08080A',
                 letterSpacing: '-0.02em',
@@ -450,7 +450,7 @@ function Reel({ exp, isActive, totalCount, currentIndex }: { exp: Experience; is
           </span>
           <span
             style={{
-              fontFamily: 'var(--font-syne)',
+              fontFamily: 'var(--font-dm-sans)',
               fontWeight: 700,
               fontSize: 13,
               letterSpacing: '-0.01em',
@@ -688,7 +688,7 @@ function MobileCommentsSheet({ comments, commentText, setCommentText, addComment
         {/* Header */}
         <div style={{ padding: '0 20px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid rgba(255,255,255,0.06)', flexShrink: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <h3 style={{ fontFamily: 'var(--font-syne)', fontWeight: 700, fontSize: 17, color: 'white' }}>Comments</h3>
+            <h3 style={{ fontFamily: 'var(--font-dm-sans)', fontWeight: 700, fontSize: 17, color: 'white' }}>Comments</h3>
             <span style={{ padding: '2px 8px', borderRadius: 9999, background: 'rgba(255,255,255,0.08)', fontSize: 12, fontWeight: 600, color: '#cccccc', fontFamily: 'var(--font-dm-sans)' }}>{comments.length}</span>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -1086,7 +1086,7 @@ export default function ExperienceDetail({ slug }: { slug: string }) {
         }}>
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 3 }}>
-              <h3 style={{ fontFamily: 'var(--font-syne)', fontWeight: 700, fontSize: 17, color: 'white' }}>
+              <h3 style={{ fontFamily: 'var(--font-dm-sans)', fontWeight: 700, fontSize: 17, color: 'white' }}>
                 Comments
               </h3>
               <span style={{

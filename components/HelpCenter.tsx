@@ -216,7 +216,7 @@ export default function HelpCenter() {
             Support
           </p>
           <h1 style={{
-            fontFamily: 'var(--font-syne)', fontWeight: 800,
+            fontFamily: 'var(--font-dm-sans)', fontWeight: 800,
             fontSize: 'clamp(2rem, 4vw, 3rem)', color: 'white',
             lineHeight: 1.1, letterSpacing: '-0.03em',
             marginBottom: 20,
@@ -280,7 +280,7 @@ export default function HelpCenter() {
                 </div>
                 <p style={{
                   fontSize: 15, fontWeight: 600, color: 'var(--text-primary)',
-                  fontFamily: 'var(--font-syne)', marginBottom: 6,
+                  fontFamily: 'var(--font-dm-sans)', marginBottom: 6,
                 }}>
                   No results found
                 </p>
@@ -386,7 +386,7 @@ export default function HelpCenter() {
             <div style={{ marginTop: 64 }}>
               <div style={{ textAlign: 'center', marginBottom: 32 }}>
                 <h2 style={{
-                  fontFamily: 'var(--font-syne)', fontWeight: 800,
+                  fontFamily: 'var(--font-dm-sans)', fontWeight: 800,
                   fontSize: 24, color: 'var(--text-primary)',
                   letterSpacing: '-0.02em', marginBottom: 8,
                 }}>
@@ -464,7 +464,7 @@ export default function HelpCenter() {
               border: '1px solid var(--border)',
             }}>
               <h3 style={{
-                fontFamily: 'var(--font-syne)', fontWeight: 700,
+                fontFamily: 'var(--font-dm-sans)', fontWeight: 700,
                 fontSize: 18, color: 'var(--text-primary)',
                 marginBottom: 20,
               }}>
