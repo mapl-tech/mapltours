@@ -151,7 +151,7 @@ function RewardProgressBand({ onStart }: { onStart: () => void }) {
   const kicker: React.CSSProperties = {
     margin: 0,
     fontFamily: 'var(--font-dm-sans)',
-    fontSize: 10.5, fontWeight: 600,
+    fontSize: 11, fontWeight: 600,
     letterSpacing: '0.14em', textTransform: 'uppercase',
     color: '#FFB300',
   }
@@ -383,7 +383,7 @@ function VideoStripe({
           </p>
           <p style={{
             margin: '4px 0 0',
-            fontFamily: 'var(--font-dm-sans)', fontSize: 11, fontWeight: 500,
+            fontFamily: 'var(--font-dm-sans)', fontSize: 12, fontWeight: 500,
             color: 'rgba(255, 255, 255, 0.55)',
             lineHeight: 1.4,
           }}>
@@ -785,7 +785,7 @@ function UploadSheet({
           <div style={{ minWidth: 0 }}>
             <p style={{
               fontFamily: 'var(--font-dm-sans)',
-              fontSize: 10.5, fontWeight: 600,
+              fontSize: 11, fontWeight: 600,
               letterSpacing: '0.14em', textTransform: 'uppercase',
               color: '#FFB300',
               margin: 0,
@@ -912,7 +912,7 @@ function UploadSheet({
                 position: 'absolute', left: 10, bottom: 10,
                 padding: '4px 10px', borderRadius: 9999,
                 background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(8px)',
-                color: '#fff', fontSize: 11, fontWeight: 600,
+                color: '#fff', fontSize: 12, fontWeight: 600,
                 fontFamily: 'var(--font-dm-sans)',
               }}>
                 {duration ? `${duration}s` : ''} · {formatBytes(file.size)}

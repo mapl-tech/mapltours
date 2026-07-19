@@ -446,7 +446,7 @@ function RelatedCard({ post }: { post: BlogPost }) {
       <div
         style={{
           fontFamily: 'var(--font-dm-sans)',
-          fontSize: 10.5,
+          fontSize: 11,
           fontWeight: 600,
           textTransform: 'uppercase',
           letterSpacing: '0.18em',
@@ -498,7 +498,7 @@ export default function BlogPostPage({
               href="/blog"
               style={{
                 fontFamily: 'var(--font-dm-sans)',
-                fontSize: 10.5,
+                fontSize: 11,
                 fontWeight: 600,
                 textTransform: 'uppercase',
                 letterSpacing: '0.22em',
@@ -565,7 +565,7 @@ export default function BlogPostPage({
             <div
               style={{
                 fontFamily: 'var(--font-dm-sans)',
-                fontSize: 10.5,
+                fontSize: 11,
                 fontWeight: 600,
                 textTransform: 'uppercase',
                 letterSpacing: '0.22em',

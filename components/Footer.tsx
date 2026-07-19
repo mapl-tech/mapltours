@@ -60,7 +60,7 @@ export default function Footer() {
           borderBottom: '1px solid var(--border-on-dark)',
           display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap',
         }}>
-          <span style={{ fontSize: 10.5, color: 'var(--text-on-dark-3)', fontFamily: 'var(--font-dm-sans)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+          <span style={{ fontSize: 12, color: 'var(--text-on-dark-3)', fontFamily: 'var(--font-dm-sans)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
             {t('Recommended on')}
           </span>
           <a href="https://www.tripadvisor.com" target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', gap: 8, opacity: 0.8 }}>
@@ -78,7 +78,7 @@ export default function Footer() {
             padding: '5px 12px', borderRadius: 9999,
             background: 'rgba(52,224,161,0.12)',
             border: '1px solid rgba(52,224,161,0.2)',
-            fontSize: 11.5, fontWeight: 600, color: '#34E0A1',
+            fontSize: 12, fontWeight: 600, color: '#34E0A1',
             fontFamily: 'var(--font-dm-sans)',
             display: 'flex', alignItems: 'center', gap: 4,
           }}>

@@ -445,7 +445,9 @@ const footerLink: React.CSSProperties = {
 /* ───────────────── Helpers ───────────────── */
 
 function SYSTEM_SANS(): string {
-  return "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif"
+  // 'DM Sans' first so clients that have it (or support web-font loading)
+  // match the site's numeral face; everything else falls back gracefully.
+  return "'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif"
 }
 
 function SYSTEM_SERIF(): string {

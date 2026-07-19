@@ -119,7 +119,7 @@ export default function GiftCardsView() {
                       MAPL
                     </p>
                     <p style={{
-                      fontSize: 9, fontWeight: 700, color: 'rgba(255,255,255,0.5)',
+                      fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.5)',
                       fontFamily: 'var(--font-dm-sans)', letterSpacing: '0.12em',
                       textTransform: 'uppercase',
                     }}>
@@ -127,7 +127,7 @@ export default function GiftCardsView() {
                     </p>
                   </div>
                   <p style={{
-                    fontSize: 10, fontWeight: 600, color: 'rgba(255,255,255,0.45)',
+                    fontSize: 11, fontWeight: 600, color: 'rgba(255,255,255,0.45)',
                     fontFamily: 'var(--font-dm-sans)', letterSpacing: '0.08em',
                     textTransform: 'uppercase',
                   }}>
@@ -145,7 +145,7 @@ export default function GiftCardsView() {
                     </p>
                   )}
                   <p style={{
-                    fontFamily: 'var(--font-syne)', fontWeight: 800,
+                    fontFamily: 'var(--font-dm-sans)', fontWeight: 800,
                     fontSize: finalAmount > 0 ? 48 : 36, color: 'white',
                     letterSpacing: '-0.03em', lineHeight: 1,
                   }}>
@@ -228,14 +228,14 @@ export default function GiftCardsView() {
                           }}
                         >
                           <p style={{
-                            fontFamily: 'var(--font-syne)', fontWeight: 800,
+                            fontFamily: 'var(--font-dm-sans)', fontWeight: 800,
                             fontSize: 22, color: 'var(--text-primary)',
                             marginBottom: 2,
                           }}>
                             {p.label}
                           </p>
                           <p style={{
-                            fontSize: 11, color: 'var(--text-tertiary)',
+                            fontSize: 12, color: 'var(--text-tertiary)',
                             fontFamily: 'var(--font-dm-sans)',
                           }}>
                             {p.tagline}
@@ -257,7 +257,7 @@ export default function GiftCardsView() {
                     >
                       {isCustom ? (
                         <div style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                          <span style={{ fontFamily: 'var(--font-syne)', fontWeight: 800, fontSize: 22, color: 'var(--text-primary)' }}>$</span>
+                          <span style={{ fontFamily: 'var(--font-dm-sans)', fontWeight: 800, fontSize: 22, color: 'var(--text-primary)' }}>$</span>
                           <input
                             type="number"
                             value={customAmount}
@@ -267,7 +267,7 @@ export default function GiftCardsView() {
                             min={10}
                             style={{
                               width: '100%', border: 'none', background: 'transparent',
-                              fontFamily: 'var(--font-syne)', fontWeight: 800, fontSize: 22,
+                              fontFamily: 'var(--font-dm-sans)', fontWeight: 800, fontSize: 22,
                               color: 'var(--text-primary)', outline: 'none',
                             }}
                           />
@@ -281,7 +281,7 @@ export default function GiftCardsView() {
                         </p>
                       )}
                       <p style={{
-                        fontSize: 11, color: 'var(--text-tertiary)',
+                        fontSize: 12, color: 'var(--text-tertiary)',
                         fontFamily: 'var(--font-dm-sans)',
                       }}>
                         Any amount
@@ -374,7 +374,7 @@ export default function GiftCardsView() {
                   </button>
 
                   <p style={{
-                    fontSize: 11, color: 'var(--text-tertiary)',
+                    fontSize: 12, color: 'var(--text-tertiary)',
                     fontFamily: 'var(--font-dm-sans)', textAlign: 'center',
                     marginTop: 12, lineHeight: 1.5,
                   }}>
@@ -455,7 +455,7 @@ export default function GiftCardsView() {
             ].map((item) => (
               <div key={item.step} style={{ textAlign: 'center' }}>
                 <p style={{
-                  fontFamily: 'var(--font-syne)', fontWeight: 800,
+                  fontFamily: 'var(--font-dm-sans)', fontWeight: 800,
                   fontSize: 40, color: 'var(--border-strong)',
                   marginBottom: 12, letterSpacing: '-0.03em',
                 }}>

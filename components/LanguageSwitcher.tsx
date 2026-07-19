@@ -59,7 +59,7 @@ export default function LanguageSwitcher({ variant = 'header', dark = false }: {
         }}>
           <p style={{
             padding: '8px 16px 6px',
-            fontSize: 10.5, fontWeight: 600, textTransform: 'uppercase',
+            fontSize: 12, fontWeight: 600, textTransform: 'uppercase',
             letterSpacing: '0.08em',
             color: isFooter ? 'rgba(255,255,255,0.3)' : 'var(--text-tertiary)',
             fontFamily: 'var(--font-dm-sans)',
@@ -90,7 +90,7 @@ export default function LanguageSwitcher({ variant = 'header', dark = false }: {
                   {l.name}
                 </p>
                 <p style={{
-                  fontSize: 11, marginTop: 1,
+                  fontSize: 12, marginTop: 1,
                   color: isFooter ? 'rgba(255,255,255,0.4)' : 'var(--text-tertiary)',
                 }}>
                   {l.currencySymbol} {l.currency}

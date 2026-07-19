@@ -37,7 +37,7 @@ function Ornament() {
 function Kicker({
   children,
   color = 'var(--text-tertiary)',
-  size = 10.5,
+  size = 11,
 }: {
   children: React.ReactNode
   color?: string
@@ -120,9 +120,9 @@ function Masthead() {
             gap: 8,
           }}
         >
-          <Kicker size={10}>Vol. {vol} · No. {issue}</Kicker>
-          <Kicker size={10}>{dateline}</Kicker>
-          <Kicker size={10}>Kingston · Negril · Portland</Kicker>
+          <Kicker size={11}>Vol. {vol} · No. {issue}</Kicker>
+          <Kicker size={11}>{dateline}</Kicker>
+          <Kicker size={11}>Kingston · Negril · Portland</Kicker>
         </div>
 
         <Rule weight={2} />
@@ -217,7 +217,7 @@ function CategoryNav({
                 cursor: 'pointer',
                 fontFamily: 'var(--font-dm-sans)',
                 fontWeight: isActive ? 700 : 500,
-                fontSize: 11.5,
+                fontSize: 12,
                 color: isActive ? 'var(--text-primary)' : 'var(--text-tertiary)',
                 textTransform: 'uppercase',
                 letterSpacing: '0.18em',
@@ -320,7 +320,7 @@ function FeaturedLead({ post }: { post: BlogPost }) {
             <div
               style={{
                 fontFamily: 'var(--font-dm-sans)',
-                fontSize: 10.5,
+                fontSize: 11,
                 fontWeight: 600,
                 textTransform: 'uppercase',
                 letterSpacing: '0.18em',
@@ -388,7 +388,7 @@ function PostCard({ post, size = 'md' }: { post: BlogPost; size?: 'md' | 'lg' })
           />
         </div>
         <div style={{ marginBottom: 10 }}>
-          <Kicker color="var(--gold-text)" size={10.5}>
+          <Kicker color="var(--gold-text)" size={11}>
             {post.category}
           </Kicker>
         </div>
@@ -425,7 +425,7 @@ function PostCard({ post, size = 'md' }: { post: BlogPost; size?: 'md' | 'lg' })
         <div
           style={{
             fontFamily: 'var(--font-dm-sans)',
-            fontSize: 10.5,
+            fontSize: 11,
             fontWeight: 600,
             textTransform: 'uppercase',
             letterSpacing: '0.18em',
@@ -615,7 +615,7 @@ export default function BlogIndex({ posts }: { posts: BlogPost[] }) {
               >
                 {active === 'All' ? 'The Edition' : active}
               </h3>
-              <Kicker size={10.5}>
+              <Kicker size={11}>
                 {filtered.length} {filtered.length === 1 ? 'dispatch' : 'dispatches'}
               </Kicker>
             </div>

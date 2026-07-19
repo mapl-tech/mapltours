@@ -205,7 +205,7 @@ function LoginContent() {
               <span style={{
                 fontFamily: 'var(--font-dm-sans)',
                 fontWeight: 700,
-                fontSize: 10,
+                fontSize: 11,
                 letterSpacing: '0.12em',
                 textTransform: 'uppercase',
                 color: 'var(--text-secondary)',

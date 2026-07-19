@@ -63,7 +63,7 @@ export default function ItineraryPanel({ open, onClose }: { open: boolean; onClo
         }}>
           <p style={{
             fontFamily: 'var(--font-dm-sans)',
-            fontSize: 10.5, fontWeight: 600,
+            fontSize: 11, fontWeight: 600,
             letterSpacing: '0.1em', textTransform: 'uppercase',
             color: 'var(--text-tertiary)',
             marginBottom: 8,

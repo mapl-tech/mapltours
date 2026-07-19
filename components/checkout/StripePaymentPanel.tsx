@@ -27,6 +27,14 @@ export default function StripePaymentPanel({
       stripe={getStripe()}
       options={{
         clientSecret,
+        // Register DM Sans inside Stripe's iframe — without this the
+        // `fontFamily` below silently falls back to a system sans, so the
+        // card number / expiry / CVC digits wouldn't actually be DM Sans.
+        fonts: [
+          {
+            cssSrc: 'https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&display=swap',
+          },
+        ],
         appearance: {
           theme: 'stripe',
           variables: {
@@ -129,7 +137,7 @@ function PaymentStep({
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
             {['SSL Encrypted', 'PCI Compliant', 'Stripe'].map((b) => (
               <span key={b} style={{
-                fontSize: 10, fontWeight: 500, fontFamily: 'var(--font-dm-sans)',
+                fontSize: 12, fontWeight: 500, fontFamily: 'var(--font-dm-sans)',
                 color: 'rgba(255,255,255,0.5)', background: 'rgba(255,255,255,0.08)',
                 padding: '3px 10px', borderRadius: 9999,
               }}>
@@ -187,7 +195,7 @@ function PaymentStep({
 
       <p style={{
         marginTop: 12, textAlign: 'center',
-        fontSize: 11.5, color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-sans)',
+        fontSize: 12, color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-sans)',
       }}>
         <ShieldCheck size={11} color="var(--emerald)" style={{ display: 'inline', verticalAlign: '-2px', marginRight: 4 }} />
         {t('Encrypted & secure')} · {t('Free cancellation within 48 hrs')}

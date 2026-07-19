@@ -282,7 +282,7 @@ function FoodSection() {
                 display: 'flex', alignItems: 'center', gap: 3,
                 padding: '3px 8px', borderRadius: 9999,
                 background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(8px)',
-                fontSize: 11.5, fontWeight: 600, color: '#fff',
+                fontSize: 12, fontWeight: 600, color: '#fff',
                 fontFamily: 'var(--font-dm-sans)',
               }}>
                 <Star size={10} fill="var(--gold-warm)" strokeWidth={0} /> {exp.rating}
@@ -290,7 +290,7 @@ function FoodSection() {
               {/* Location */}
               <span style={{
                 position: 'absolute', bottom: 12, left: 12,
-                fontSize: 11.5, fontWeight: 500, color: 'rgba(255,255,255,0.85)',
+                fontSize: 12, fontWeight: 500, color: 'rgba(255,255,255,0.85)',
                 fontFamily: 'var(--font-dm-sans)',
               }}>
                 {exp.destination}, {exp.parish}
@@ -543,7 +543,7 @@ export default function FeedView() {
           {/* Headline */}
           <div data-reveal style={{ textAlign: 'center', marginBottom: 52 }}>
             <span style={{
-              fontSize: 10.5, fontWeight: 600, fontFamily: 'var(--font-dm-sans)',
+              fontSize: 11, fontWeight: 600, fontFamily: 'var(--font-dm-sans)',
               textTransform: 'uppercase', letterSpacing: '0.14em',
               color: 'var(--gold-warm)', marginBottom: 16, display: 'block',
             }}>
@@ -588,7 +588,7 @@ export default function FeedView() {
                 {/* Oversized editorial step numeral */}
                 <span aria-hidden style={{
                   display: 'block',
-                  fontFamily: 'var(--font-syne)', fontStyle: 'italic', fontWeight: 500,
+                  fontFamily: 'var(--font-dm-sans)', fontWeight: 300,
                   fontSize: 64, lineHeight: 1,
                   color: 'var(--gold-warm)', opacity: 0.28,
                   marginBottom: 8,
@@ -598,7 +598,7 @@ export default function FeedView() {
                 <div style={{ display: 'flex', alignItems: 'center', gap: 9, marginBottom: 14 }}>
                   {pillar.icon}
                   <span style={{
-                    fontSize: 10.5, fontWeight: 600, fontFamily: 'var(--font-dm-sans)',
+                    fontSize: 11, fontWeight: 600, fontFamily: 'var(--font-dm-sans)',
                     letterSpacing: '0.16em', textTransform: 'uppercase',
                     color: 'var(--gold-warm)',
                   }}>
@@ -726,7 +726,7 @@ export default function FeedView() {
                     display: 'inline-flex', alignItems: 'center', gap: 4,
                     padding: '4px 10px', borderRadius: 9999,
                     background: 'rgba(255,255,255,0.12)', backdropFilter: 'blur(8px)',
-                    fontSize: 11, fontWeight: 600, color: 'white',
+                    fontSize: 12, fontWeight: 600, color: 'white',
                     fontFamily: 'var(--font-dm-sans)', marginBottom: 10,
                   }}>
                     <TrendingUp size={11} /> {viralExperiences[0].reviews.toLocaleString()} reviews
@@ -785,12 +785,12 @@ export default function FeedView() {
                     <span style={{ fontSize: 14, fontWeight: 700, color: 'white', fontFamily: 'var(--font-dm-sans)' }}>
                       {formatPrice(exp.price)}
                     </span>
-                    <span style={{ fontSize: 11, color: '#cccccc', fontFamily: 'var(--font-dm-sans)' }}>
+                    <span style={{ fontSize: 12, color: '#cccccc', fontFamily: 'var(--font-dm-sans)' }}>
                       · {exp.duration}
                     </span>
                     <span style={{
                       display: 'inline-flex', alignItems: 'center', gap: 2,
-                      fontSize: 11, fontWeight: 600, color: 'var(--gold-warm)',
+                      fontSize: 12, fontWeight: 600, color: 'var(--gold-warm)',
                       fontFamily: 'var(--font-dm-sans)',
                     }}>
                       <Star size={10} fill="currentColor" strokeWidth={0} /> {exp.rating}

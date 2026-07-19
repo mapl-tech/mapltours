@@ -99,7 +99,7 @@ export default memo(function ExpCard({ exp }: { exp: Experience }) {
               display: 'flex', alignItems: 'center', gap: 5,
               padding: '4px 10px', borderRadius: 9999,
               background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(6px)',
-              fontSize: 11, fontWeight: 600, color: '#fff',
+              fontSize: 12, fontWeight: 600, color: '#fff',
               fontFamily: 'var(--font-dm-sans)',
             }}>
               <Play size={10} fill="#fff" strokeWidth={0} />
@@ -131,7 +131,7 @@ export default memo(function ExpCard({ exp }: { exp: Experience }) {
           {/* Location */}
           <span style={{
             position: 'absolute', bottom: 12, left: 12, zIndex: 2,
-            fontSize: 11.5, fontWeight: 500, color: 'rgba(255,255,255,0.92)',
+            fontSize: 12, fontWeight: 500, color: 'rgba(255,255,255,0.92)',
             fontFamily: 'var(--font-dm-sans)',
             display: 'flex', alignItems: 'center', gap: 4,
           }}>
@@ -149,7 +149,7 @@ export default memo(function ExpCard({ exp }: { exp: Experience }) {
         }}>
           {t(exp.category)}
         </span>
-        <h3 style={{ fontFamily: 'var(--font-open-sans)', fontWeight: 600, fontSize: 17, lineHeight: 1.2, letterSpacing: '-0.01em', marginTop: 3 }}>
+        <h3 style={{ fontFamily: 'var(--font-syne)', fontWeight: 500, fontSize: 17, lineHeight: 1.2, letterSpacing: '-0.01em', marginTop: 3 }}>
           {t(exp.title)}
         </h3>
         <span style={{ fontSize: 13, fontFamily: 'var(--font-dm-sans)', fontWeight: 500, marginTop: 4, display: 'flex', alignItems: 'center', gap: 3 }}>

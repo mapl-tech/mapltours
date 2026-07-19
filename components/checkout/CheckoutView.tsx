@@ -90,7 +90,7 @@ function StepIndicator({ step }: { step: number }) {
               }}>
                 {done ? <Check size={14} strokeWidth={3} /> : n}
               </div>
-              <span style={{ fontSize: 11, fontFamily: 'var(--font-dm-sans)', color: active ? 'var(--text-primary)' : 'var(--text-tertiary)', fontWeight: active ? 600 : 400 }}>
+              <span style={{ fontSize: 12, fontFamily: 'var(--font-dm-sans)', color: active ? 'var(--text-primary)' : 'var(--text-tertiary)', fontWeight: active ? 600 : 400 }}>
                 {label}
               </span>
             </div>
@@ -322,7 +322,7 @@ function ReviewStep() {
                 <span style={{ fontFamily: 'var(--font-dm-sans)', fontWeight: 700, fontSize: 18 }}>
                   {formatPrice(item.price * item.travelers)}
                 </span>
-                <p style={{ fontSize: 11, color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-sans)', marginTop: 1 }}>
+                <p style={{ fontSize: 12, color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-sans)', marginTop: 1 }}>
                   {formatPrice(item.price)} × {item.travelers}
                 </p>
               </div>
@@ -1052,7 +1052,7 @@ export default function CheckoutView() {
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <p style={{ fontSize: 13, fontFamily: 'var(--font-dm-sans)', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t(item.title)}</p>
-                    <p style={{ fontSize: 11.5, color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-sans)' }}>{item.travelers} × {formatPrice(item.price)}</p>
+                    <p style={{ fontSize: 12, color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-sans)' }}>{item.travelers} × {formatPrice(item.price)}</p>
                   </div>
                   <span style={{ fontSize: 13, fontWeight: 700, fontFamily: 'var(--font-dm-sans)', flexShrink: 0 }}>
                     {formatPrice(item.price * item.travelers)}
@@ -1087,7 +1087,7 @@ export default function CheckoutView() {
                       </div>
                     </div>
                     <span style={{
-                      fontSize: 11, fontWeight: 600, fontFamily: 'var(--font-dm-sans)',
+                      fontSize: 12, fontWeight: 600, fontFamily: 'var(--font-dm-sans)',
                       color: 'var(--emerald)', background: 'var(--emerald-dim)',
                       padding: '4px 12px', borderRadius: 9999,
                     }}>
@@ -1187,7 +1187,7 @@ export default function CheckoutView() {
                       </span>
                       <span style={{ fontWeight: 600 }}>{formatPrice(transportCost.fuelCostUsd)}</span>
                     </div>
-                    <p style={{ fontSize: 11.5, color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-sans)', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 5 }}>
+                    <p style={{ fontSize: 12, color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-sans)', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 5 }}>
                       <span style={{ width: 5, height: 5, borderRadius: '50%', background: 'var(--emerald)', flexShrink: 0 }} />
                       J${gasRate.jmd}/L (${gasRate.usd}/L USD) · Petrojam live pricing
                     </p>
@@ -1226,7 +1226,7 @@ export default function CheckoutView() {
                       {availableReward.percent}% MAPL reward
                     </p>
                     <p style={{
-                      fontFamily: 'var(--font-dm-sans)', fontSize: 11.5,
+                      fontFamily: 'var(--font-dm-sans)', fontSize: 12,
                       color: 'var(--text-tertiary)', marginTop: 1,
                       whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
                     }}>
@@ -1326,7 +1326,7 @@ export default function CheckoutView() {
                 }} style={{ width: '100%', height: 48, fontSize: 14 }}>
                   {ctas[step - 1]}
                 </button>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: 12, fontSize: 11.5, color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-sans)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: 12, fontSize: 12, color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-sans)' }}>
                   <Lock size={11} />
                   <span>Secure checkout · Free cancellation 48hrs</span>
                 </div>

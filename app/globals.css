@@ -64,6 +64,19 @@
   /* Atmosphere + rhythm */
   --grain-opacity: 0.03;
   --space-section: clamp(64px, 9vw, 128px);
+
+  /* Type scale — canonical sizes. Readability floor: no READABLE text below
+     12px; 11px is reserved for decorative uppercase eyebrows/labels only.
+     New code should use these instead of ad-hoc pixel values. */
+  --fs-micro:   11px;                        /* uppercase eyebrows ONLY */
+  --fs-caption: 12px;                        /* captions, meta, badges */
+  --fs-body-sm: 13px;                        /* secondary UI text */
+  --fs-body:    14px;                        /* default body/UI */
+  --fs-body-lg: 15px;                        /* inputs, prominent body */
+  --fs-h3:      17px;
+  --fs-h2:      clamp(1.5rem, 2.5vw, 2rem);
+  --fs-h1:      clamp(1.75rem, 3vw, 2.5rem);
+  --fs-display: clamp(2.75rem, 6vw, 5rem);
 }
 
 *, *::before, *::after {

@@ -286,7 +286,7 @@ function Reel({ exp, isActive, totalCount, currentIndex }: { exp: Experience; is
             // than the client's first paint. Suppress the warning — the
             // client value is the correct one and renders within ms.
             suppressHydrationWarning
-            style={{ fontSize: 11, fontWeight: 700, fontFamily: 'var(--font-dm-sans)', textShadow: '0 1px 3px rgba(0,0,0,0.6)' }}
+            style={{ fontSize: 12, fontWeight: 700, fontFamily: 'var(--font-dm-sans)', textShadow: '0 1px 3px rgba(0,0,0,0.6)' }}
           >
             {(exp.reviews + likeCount).toLocaleString('en-US')}
           </span>
@@ -305,7 +305,7 @@ function Reel({ exp, isActive, totalCount, currentIndex }: { exp: Experience; is
           <span className="reel-action-disc">
             <MessageCircle size={24} strokeWidth={1.8} />
           </span>
-          <span style={{ fontSize: 11, fontWeight: 700, fontFamily: 'var(--font-dm-sans)', textShadow: '0 1px 3px rgba(0,0,0,0.6)' }}>
+          <span style={{ fontSize: 12, fontWeight: 700, fontFamily: 'var(--font-dm-sans)', textShadow: '0 1px 3px rgba(0,0,0,0.6)' }}>
             {exp.comments.length}
           </span>
         </button>
@@ -323,7 +323,7 @@ function Reel({ exp, isActive, totalCount, currentIndex }: { exp: Experience; is
           <span className="reel-action-disc">
             <Send size={22} strokeWidth={1.8} />
           </span>
-          <span style={{ fontSize: 11, fontWeight: 700, fontFamily: 'var(--font-dm-sans)', textShadow: '0 1px 3px rgba(0,0,0,0.6)' }}>
+          <span style={{ fontSize: 12, fontWeight: 700, fontFamily: 'var(--font-dm-sans)', textShadow: '0 1px 3px rgba(0,0,0,0.6)' }}>
             Send
           </span>
         </button>
@@ -341,7 +341,7 @@ function Reel({ exp, isActive, totalCount, currentIndex }: { exp: Experience; is
           <span className="reel-action-disc">
             <Film size={22} strokeWidth={1.8} />
           </span>
-          <span style={{ fontSize: 11, fontWeight: 700, fontFamily: 'var(--font-dm-sans)', textShadow: '0 1px 3px rgba(0,0,0,0.6)' }}>
+          <span style={{ fontSize: 12, fontWeight: 700, fontFamily: 'var(--font-dm-sans)', textShadow: '0 1px 3px rgba(0,0,0,0.6)' }}>
             Clips
           </span>
         </button>
@@ -494,7 +494,7 @@ function Reel({ exp, isActive, totalCount, currentIndex }: { exp: Experience; is
             display: 'inline-flex', alignItems: 'center', gap: 4,
             padding: '4px 10px', borderRadius: 9999,
             background: 'rgba(255,255,255,0.12)',
-            fontSize: 11.5, fontWeight: 600, color: 'white',
+            fontSize: 12, fontWeight: 600, color: 'white',
             fontFamily: 'var(--font-dm-sans)',
           }}>
             <MapPin size={11} /> {exp.destination}
@@ -503,7 +503,7 @@ function Reel({ exp, isActive, totalCount, currentIndex }: { exp: Experience; is
             display: 'inline-flex', alignItems: 'center', gap: 4,
             padding: '4px 10px', borderRadius: 9999,
             background: 'rgba(255,255,255,0.12)',
-            fontSize: 11.5, fontWeight: 600, color: 'white',
+            fontSize: 12, fontWeight: 600, color: 'white',
             fontFamily: 'var(--font-dm-sans)',
           }}>
             <Clock size={11} /> {exp.duration}
@@ -512,7 +512,7 @@ function Reel({ exp, isActive, totalCount, currentIndex }: { exp: Experience; is
             display: 'inline-flex', alignItems: 'center', gap: 4,
             padding: '4px 10px', borderRadius: 9999,
             background: 'rgba(255,255,255,0.12)',
-            fontSize: 11.5, fontWeight: 600, color: 'white',
+            fontSize: 12, fontWeight: 600, color: 'white',
             fontFamily: 'var(--font-dm-sans)',
           }}>
             <Star size={11} fill="white" strokeWidth={0} /> {exp.rating}
@@ -524,9 +524,9 @@ function Reel({ exp, isActive, totalCount, currentIndex }: { exp: Experience; is
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         }}>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: 4 }}>
-            <span style={{ fontSize: 11, fontWeight: 500, color: '#cccccc', fontFamily: 'var(--font-dm-sans)' }}>{t('From')}</span>
+            <span style={{ fontSize: 12, fontWeight: 500, color: '#cccccc', fontFamily: 'var(--font-dm-sans)' }}>{t('From')}</span>
             <span style={{ fontFamily: 'var(--font-dm-sans)', fontWeight: 800, fontSize: 22, color: 'white', letterSpacing: '-0.02em' }}>{formatPrice(exp.price)}</span>
-            <span style={{ fontSize: 11, color: '#cccccc', fontFamily: 'var(--font-dm-sans)' }}>{t('/person')}</span>
+            <span style={{ fontSize: 12, color: '#cccccc', fontFamily: 'var(--font-dm-sans)' }}>{t('/person')}</span>
           </div>
           <button
             onClick={(e) => { e.stopPropagation(); toggleCart() }}
@@ -712,7 +712,7 @@ function MobileCommentsSheet({ comments, commentText, setCommentText, addComment
                   <div style={{ flex: 1 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 3 }}>
                       <span style={{ fontSize: 13, fontWeight: 600, fontFamily: 'var(--font-dm-sans)', color: 'white' }}>@{comment.user}</span>
-                      <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', fontFamily: 'var(--font-dm-sans)' }}>{comment.time}</span>
+                      <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.3)', fontFamily: 'var(--font-dm-sans)' }}>{comment.time}</span>
                     </div>
                     <p style={{ fontSize: 14, color: '#cccccc', fontFamily: 'var(--font-dm-sans)', lineHeight: 1.5, marginBottom: 8 }}>{comment.text}</p>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
@@ -747,7 +747,7 @@ function MobileCommentsSheet({ comments, commentText, setCommentText, addComment
                         <div style={{ flex: 1 }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 }}>
                             <span style={{ fontSize: 12, fontWeight: 600, fontFamily: 'var(--font-dm-sans)', color: 'white' }}>@{reply.user}</span>
-                            <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.25)', fontFamily: 'var(--font-dm-sans)' }}>{reply.time}</span>
+                            <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.25)', fontFamily: 'var(--font-dm-sans)' }}>{reply.time}</span>
                           </div>
                           <p style={{ fontSize: 12.5, color: 'rgba(255,255,255,0.6)', fontFamily: 'var(--font-dm-sans)', lineHeight: 1.5 }}>{reply.text}</p>
                         </div>
@@ -1143,7 +1143,7 @@ export default function ExperienceDetail({ slug }: { slug: string }) {
             <span style={{ fontSize: 13.5, fontWeight: 600, fontFamily: 'var(--font-dm-sans)', color: 'white' }}>
               @{activeExp.creator}
             </span>
-            <span style={{ fontSize: 11.5, color: '#cccccc', fontFamily: 'var(--font-dm-sans)', marginLeft: 6 }}>
+            <span style={{ fontSize: 12, color: '#cccccc', fontFamily: 'var(--font-dm-sans)', marginLeft: 6 }}>
               {activeExp.followers}
             </span>
           </div>
@@ -1172,7 +1172,7 @@ export default function ExperienceDetail({ slug }: { slug: string }) {
                       <span style={{ fontSize: 13, fontWeight: 600, fontFamily: 'var(--font-dm-sans)', color: 'white' }}>
                         @{comment.user}
                       </span>
-                      <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', fontFamily: 'var(--font-dm-sans)' }}>
+                      <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.3)', fontFamily: 'var(--font-dm-sans)' }}>
                         {comment.time}
                       </span>
                     </div>
@@ -1222,7 +1222,7 @@ export default function ExperienceDetail({ slug }: { slug: string }) {
                             <span style={{ fontSize: 12, fontWeight: 600, fontFamily: 'var(--font-dm-sans)', color: 'white' }}>
                               @{reply.user}
                             </span>
-                            <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.25)', fontFamily: 'var(--font-dm-sans)' }}>
+                            <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.25)', fontFamily: 'var(--font-dm-sans)' }}>
                               {reply.time}
                             </span>
                           </div>

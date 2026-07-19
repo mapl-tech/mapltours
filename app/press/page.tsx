@@ -34,7 +34,7 @@ export default function PressPage() {
               border: '1px solid var(--border)',
             }}>
               <p style={{ fontSize: 12, color: 'var(--text-tertiary)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4 }}>{item.label}</p>
-              <p style={{ fontSize: 16, fontWeight: 700, fontFamily: 'var(--font-syne)', color: 'var(--text-primary)' }}>{item.value}</p>
+              <p style={{ fontSize: 16, fontWeight: 700, fontFamily: 'var(--font-dm-sans)', color: 'var(--text-primary)' }}>{item.value}</p>
             </div>
           ))}
         </div>

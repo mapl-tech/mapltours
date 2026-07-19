@@ -153,7 +153,7 @@ export default function TopNav({ onCartClick }: { onCartClick?: () => void }) {
             <span style={{
               fontFamily: 'var(--font-dm-sans)',
               fontWeight: 700,
-              fontSize: 10,
+              fontSize: 11,
               letterSpacing: '0.12em',
               textTransform: 'uppercase',
               color: dark ? 'rgba(255,255,255,0.7)' : 'var(--text-secondary)',
@@ -189,7 +189,7 @@ export default function TopNav({ onCartClick }: { onCartClick?: () => void }) {
             position: 'relative',
           }}>
             <span style={{
-              fontSize: 10, fontWeight: 600, textTransform: 'uppercase',
+              fontSize: 11, fontWeight: 600, textTransform: 'uppercase',
               letterSpacing: '0.08em', color: 'var(--text-tertiary)',
               fontFamily: 'var(--font-dm-sans)', lineHeight: 1, marginBottom: 1,
             }}>
@@ -261,7 +261,7 @@ export default function TopNav({ onCartClick }: { onCartClick?: () => void }) {
                       </div>
                       <div>
                         <p style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--text-primary)' }}>{d.name}</p>
-                        <p style={{ fontSize: 11.5, color: 'var(--text-tertiary)', marginTop: 1 }}>{d.parish}, Jamaica</p>
+                        <p style={{ fontSize: 12, color: 'var(--text-tertiary)', marginTop: 1 }}>{d.parish}, Jamaica</p>
                       </div>
                     </button>
                   ))}
@@ -285,7 +285,7 @@ export default function TopNav({ onCartClick }: { onCartClick?: () => void }) {
             }}
           >
             <span style={{
-              fontSize: 10, fontWeight: 600, textTransform: 'uppercase',
+              fontSize: 11, fontWeight: 600, textTransform: 'uppercase',
               letterSpacing: '0.08em', color: 'var(--text-tertiary)',
               fontFamily: 'var(--font-dm-sans)', lineHeight: 1, marginBottom: 1,
             }}>
@@ -323,7 +323,7 @@ export default function TopNav({ onCartClick }: { onCartClick?: () => void }) {
             }}
           >
             <span style={{
-              fontSize: 10, fontWeight: 600, textTransform: 'uppercase',
+              fontSize: 11, fontWeight: 600, textTransform: 'uppercase',
               letterSpacing: '0.08em', color: 'var(--text-tertiary)',
               fontFamily: 'var(--font-dm-sans)', lineHeight: 1, marginBottom: 1,
             }}>
@@ -572,7 +572,7 @@ export default function TopNav({ onCartClick }: { onCartClick?: () => void }) {
                 minWidth: 17, height: 17, padding: '0 5px',
                 borderRadius: 9999, background: 'rgba(255,255,255,0.18)',
                 display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: 10, fontWeight: 700,
+                fontSize: 12, fontWeight: 700,
               }}>
                 {items.length}
               </span>

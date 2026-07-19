@@ -88,7 +88,7 @@ export default function ContactView() {
                 </div>
                 <div style={{ lineHeight: 1 }}>
                   <span style={{ fontFamily: 'var(--font-syne)', fontWeight: 800, fontSize: 16, textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block' }}>MAPL</span>
-                  <span style={{ fontFamily: 'var(--font-dm-sans)', fontWeight: 700, fontSize: 9.5, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--text-tertiary)', display: 'block', marginTop: 1 }}>Tours Jamaica</span>
+                  <span style={{ fontFamily: 'var(--font-dm-sans)', fontWeight: 700, fontSize: 11, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--text-tertiary)', display: 'block', marginTop: 1 }}>Tours Jamaica</span>
                 </div>
               </div>
               <p style={{
@@ -117,7 +117,7 @@ export default function ContactView() {
                     {item.icon}
                   </div>
                   <div>
-                    <p style={{ fontSize: 11.5, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-sans)', marginBottom: 3 }}>
+                    <p style={{ fontSize: 12, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-sans)', marginBottom: 3 }}>
                       {item.label}
                     </p>
                     <p style={{ fontSize: 14.5, fontWeight: 500, color: 'var(--text-primary)', fontFamily: 'var(--font-dm-sans)' }}>
@@ -130,7 +130,7 @@ export default function ContactView() {
 
             {/* Social */}
             <div>
-              <p style={{ fontSize: 11.5, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-sans)', marginBottom: 12 }}>
+              <p style={{ fontSize: 12, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-sans)', marginBottom: 12 }}>
                 Follow us
               </p>
               <div style={{ display: 'flex', gap: 10 }}>

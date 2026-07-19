@@ -54,7 +54,7 @@ function ActionButton({
       </div>
       <span
         style={{
-          fontSize: 10,
+          fontSize: 12,
           color: 'rgba(255,255,255,0.6)',
           fontFamily: 'var(--font-dm-sans)',
           fontWeight: 500,
@@ -192,7 +192,7 @@ export default function ReelCard({
           </span>
           <span
             style={{
-              fontSize: 11,
+              fontSize: 12,
               color: 'rgba(255,255,255,0.5)',
               fontFamily: 'var(--font-dm-sans)',
               marginLeft: 8,
@@ -205,7 +205,7 @@ export default function ReelCard({
           className="btn-ghost"
           style={{
             padding: '4px 14px',
-            fontSize: 11,
+            fontSize: 12,
             fontFamily: 'var(--font-dm-sans)',
             fontWeight: 600,
           }}
@@ -286,7 +286,7 @@ export default function ReelCard({
               background: `${catColor}22`,
               border: `1px solid ${catColor}44`,
               color: catColor,
-              fontSize: 11,
+              fontSize: 12,
               fontWeight: 600,
               fontFamily: 'var(--font-dm-sans)',
             }}
@@ -353,7 +353,7 @@ export default function ReelCard({
           <div style={{ display: 'flex', alignItems: 'baseline', gap: 4, alignSelf: 'center' }}>
             <span
               style={{
-                fontSize: 9,
+                fontSize: 11,
                 textTransform: 'uppercase',
                 letterSpacing: 1,
                 color: 'rgba(255,255,255,0.4)',
@@ -365,7 +365,7 @@ export default function ReelCard({
             </span>
             <span
               style={{
-                fontFamily: 'var(--font-syne)',
+                fontFamily: 'var(--font-dm-sans)',
                 fontWeight: 800,
                 fontSize: 24,
                 color: 'white',

@@ -232,7 +232,7 @@ export default memo(function MobileShort({ exp }: { exp: Experience }) {
 
             <div style={{
               display: 'flex', alignItems: 'center', gap: 10,
-              fontSize: 11.5, color: '#cccccc', fontFamily: 'var(--font-dm-sans)',
+              fontSize: 12, color: '#cccccc', fontFamily: 'var(--font-dm-sans)',
               fontWeight: 500,
               marginBottom: 14,
             }}>

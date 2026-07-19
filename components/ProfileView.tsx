@@ -146,7 +146,7 @@ function EditableField({ label, value, placeholder, type, onSave, verified }: {
               </p>
               {verified && value && (
                 <span style={{
-                  fontSize: 11, fontWeight: 600, color: 'var(--emerald)',
+                  fontSize: 12, fontWeight: 600, color: 'var(--emerald)',
                   fontFamily: 'var(--font-dm-sans)',
                   padding: '2px 8px', borderRadius: 9999,
                   background: 'var(--emerald-dim)',
@@ -403,13 +403,13 @@ export default function ProfileView() {
                     borderRight: i < 2 ? '1px solid var(--border)' : 'none',
                   }}>
                     <p style={{
-                      fontFamily: 'var(--font-syne)', fontWeight: 800, fontSize: 24,
+                      fontFamily: 'var(--font-dm-sans)', fontWeight: 800, fontSize: 24,
                       color: 'var(--text-primary)', lineHeight: 1, marginBottom: 4,
                     }}>
                       {s.value}
                     </p>
                     <p style={{
-                      fontSize: 11, color: 'var(--text-tertiary)',
+                      fontSize: 12, color: 'var(--text-tertiary)',
                       fontFamily: 'var(--font-dm-sans)', fontWeight: 500,
                     }}>
                       {s.label}
@@ -457,7 +457,7 @@ export default function ProfileView() {
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
                       background: item.done ? 'var(--emerald)' : 'var(--surface)',
                       color: item.done ? '#fff' : 'var(--text-tertiary)',
-                      fontSize: 11, fontWeight: 700,
+                      fontSize: 12, fontWeight: 700,
                       flexShrink: 0,
                     }}>
                       {item.done ? '✓' : '—'}
@@ -625,14 +625,14 @@ export default function ProfileView() {
                           alignItems: 'center', background: 'var(--bg-warm)',
                         }}>
                           <span style={{
-                            fontSize: 11, color: 'var(--text-tertiary)',
+                            fontSize: 12, color: 'var(--text-tertiary)',
                             fontFamily: 'var(--font-dm-sans)', fontWeight: 500,
                           }}>
                             Booked {new Date(booking.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                           </span>
                           <span style={{
                             fontSize: 14, fontWeight: 800, color: 'var(--text-primary)',
-                            fontFamily: 'var(--font-syne)',
+                            fontFamily: 'var(--font-dm-sans)',
                           }}>
                             ${Number(booking.total_paid).toFixed(0)}
                           </span>
@@ -703,7 +703,7 @@ export default function ProfileView() {
                             position: 'absolute', bottom: 10, left: 10,
                             padding: '4px 10px', borderRadius: 9999,
                             background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(8px)',
-                            fontSize: 11, fontWeight: 600, color: '#fff',
+                            fontSize: 12, fontWeight: 600, color: '#fff',
                             fontFamily: 'var(--font-dm-sans)',
                           }}>
                             ${Number(booking.total_paid).toFixed(0)} total
@@ -964,7 +964,7 @@ function RewardRow({ code, status, percent }: { code: string; status: 'available
           {code}
         </p>
         <p style={{
-          fontFamily: 'var(--font-dm-sans)', fontSize: 11,
+          fontFamily: 'var(--font-dm-sans)', fontSize: 12,
           color: 'var(--text-tertiary)', marginTop: 1,
         }}>
           {percent}% off · {used ? 'Used' : 'Available on your next booking'}
@@ -972,7 +972,7 @@ function RewardRow({ code, status, percent }: { code: string; status: 'available
       </div>
       <span style={{
         padding: '3px 10px', borderRadius: 9999,
-        fontSize: 10.5, fontWeight: 700,
+        fontSize: 11, fontWeight: 700,
         fontFamily: 'var(--font-dm-sans)',
         letterSpacing: '0.06em', textTransform: 'uppercase',
         background: used ? 'rgba(0,0,0,0.08)' : 'rgba(0,165,80,0.12)',

@@ -461,7 +461,7 @@ export default function TransfersCheckoutView() {
                     </p>
                     <p
                       style={{
-                        fontSize: 11.5,
+                        fontSize: 12,
                         color: 'var(--text-tertiary)',
                         fontFamily: 'var(--font-dm-sans)',
                         marginTop: 2,
@@ -478,7 +478,7 @@ export default function TransfersCheckoutView() {
                     style={{
                       fontSize: 13,
                       fontWeight: 700,
-                      fontFamily: 'var(--font-open-sans)',
+                      fontFamily: 'var(--font-dm-sans)',
                       fontFeatureSettings: '"tnum" 1',
                       flexShrink: 0,
                     }}
@@ -512,7 +512,7 @@ export default function TransfersCheckoutView() {
                   }}
                 >
                   <span>{row.label}</span>
-                  <span style={{ fontFamily: 'var(--font-open-sans)', fontFeatureSettings: '"tnum" 1' }}>
+                  <span style={{ fontFamily: 'var(--font-dm-sans)', fontFeatureSettings: '"tnum" 1' }}>
                     ${row.value.toFixed(2)}
                   </span>
                 </div>
@@ -539,7 +539,7 @@ export default function TransfersCheckoutView() {
                 </span>
                 <span
                   style={{
-                    fontFamily: 'var(--font-open-sans)',
+                    fontFamily: 'var(--font-dm-sans)',
                     fontWeight: 800,
                     fontSize: 24,
                     letterSpacing: '-0.005em',
@@ -670,7 +670,7 @@ function MiniStepIndicator({ step }: { step: 1 | 2 }) {
                 background: done || active ? 'var(--accent)' : 'var(--surface)',
                 color: done || active ? '#fff' : 'var(--text-tertiary)',
                 fontFamily: 'var(--font-dm-sans)',
-                fontSize: 11,
+                fontSize: 12,
                 fontWeight: 700,
                 display: 'flex',
                 alignItems: 'center',
@@ -747,7 +747,7 @@ function TransferCard({
           <p
             style={{
               fontFamily: 'var(--font-dm-sans)',
-              fontSize: 10.5,
+              fontSize: 11,
               fontWeight: 700,
               letterSpacing: '0.22em',
               textTransform: 'uppercase',
@@ -788,7 +788,7 @@ function TransferCard({
               style={{
                 color: 'var(--text-primary)',
                 fontWeight: 700,
-                fontFamily: 'var(--font-open-sans)',
+                fontFamily: 'var(--font-dm-sans)',
                 fontFeatureSettings: '"tnum" 1',
               }}
             >
@@ -852,7 +852,7 @@ function TransferCard({
             <p
               style={{
                 fontFamily: 'var(--font-dm-sans)',
-                fontSize: 11.5,
+                fontSize: 12,
                 color: 'var(--text-tertiary)',
                 marginTop: 1,
               }}
@@ -1119,7 +1119,7 @@ function ConfirmedInline({
         <p
           style={{
             fontFamily: 'var(--font-dm-sans)',
-            fontSize: 10.5,
+            fontSize: 11,
             fontWeight: 700,
             letterSpacing: '0.22em',
             textTransform: 'uppercase',
@@ -1159,7 +1159,7 @@ function ConfirmedInline({
         </p>
         <p
           style={{
-            fontFamily: 'var(--font-open-sans)',
+            fontFamily: 'var(--font-dm-sans)',
             fontWeight: 800,
             fontSize: 24,
             color: 'var(--text-primary)',

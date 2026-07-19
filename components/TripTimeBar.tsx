@@ -61,7 +61,7 @@ export default function DayBuilder({ compact = false, hideHeading, style }: DayB
                 borderRadius: 9999,
                 background: 'rgba(255, 179, 0, 0.14)',
                 border: '1px solid rgba(255, 179, 0, 0.35)',
-                fontSize: 10.5, fontWeight: 700,
+                fontSize: 12, fontWeight: 700,
                 fontFamily: 'var(--font-dm-sans)',
                 letterSpacing: '0.06em', textTransform: 'uppercase',
                 color: 'var(--gold, #FFB300)',
@@ -72,7 +72,7 @@ export default function DayBuilder({ compact = false, hideHeading, style }: DayB
             )}
           </div>
           <span style={{
-            fontFamily: 'var(--font-syne)',
+            fontFamily: 'var(--font-dm-sans)',
             fontWeight: 800,
             fontSize: compact ? 13 : 15,
             color: isOver ? 'var(--coral, #FF5A36)' : 'var(--text-primary, white)',
@@ -86,7 +86,7 @@ export default function DayBuilder({ compact = false, hideHeading, style }: DayB
                   <span style={{
                     fontFamily: 'var(--font-dm-sans)',
                     fontWeight: 500,
-                    fontSize: compact ? 11 : 12,
+                    fontSize: 12,
                     color: 'var(--text-tertiary, rgba(255,255,255,0.5))',
                     marginLeft: 4,
                   }}>
@@ -164,7 +164,7 @@ export default function DayBuilder({ compact = false, hideHeading, style }: DayB
             <div style={{
               display: 'flex', justifyContent: 'space-between',
               marginTop: 8,
-              fontSize: 10.5, fontWeight: 600,
+              fontSize: 12, fontWeight: 600,
               fontFamily: 'var(--font-dm-sans)',
               color: 'var(--text-tertiary, rgba(255,255,255,0.4))',
               letterSpacing: '0.04em', textTransform: 'uppercase',
@@ -216,7 +216,7 @@ export default function DayBuilder({ compact = false, hideHeading, style }: DayB
           }}>
             <span style={{
               fontFamily: 'var(--font-dm-sans)',
-              fontSize: 11,
+              fontSize: 12,
               fontWeight: 600,
               textTransform: 'uppercase',
               letterSpacing: '0.08em',
@@ -225,7 +225,7 @@ export default function DayBuilder({ compact = false, hideHeading, style }: DayB
               Perfect Day Score
             </span>
             <span style={{
-              fontFamily: 'var(--font-syne)',
+              fontFamily: 'var(--font-dm-sans)',
               fontWeight: 800,
               fontSize: 26,
               letterSpacing: '-0.02em',
@@ -277,7 +277,7 @@ function Dimension({
       }}>
         <span style={{
           fontFamily: 'var(--font-dm-sans)',
-          fontSize: 10.5,
+          fontSize: 12,
           fontWeight: 600,
           letterSpacing: '0.06em',
           textTransform: 'uppercase',
@@ -287,7 +287,7 @@ function Dimension({
           {label}
         </span>
         <span style={{
-          fontFamily: 'var(--font-syne)',
+          fontFamily: 'var(--font-dm-sans)',
           fontWeight: 700,
           fontSize: 12,
           color: hot ? 'var(--gold, #FFB300)' : 'var(--text-secondary, rgba(255,255,255,0.7))',
@@ -396,7 +396,7 @@ function DayRow({ label, hours, compact }: { label: string; hours: number; compa
       }}>
         <span style={{
           fontFamily: 'var(--font-dm-sans)',
-          fontSize: compact ? 11 : 12, fontWeight: 600,
+          fontSize: 12, fontWeight: 600,
           letterSpacing: '0.04em', textTransform: 'uppercase',
           color: 'var(--text-secondary, rgba(255,255,255,0.65))',
           whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
@@ -404,7 +404,7 @@ function DayRow({ label, hours, compact }: { label: string; hours: number; compa
           {label}
         </span>
         <span style={{
-          fontFamily: 'var(--font-syne)', fontWeight: 700,
+          fontFamily: 'var(--font-dm-sans)', fontWeight: 700,
           fontSize: compact ? 12 : 13,
           color: isOver ? 'var(--coral, #FF5A36)' : 'var(--text-primary, white)',
           whiteSpace: 'nowrap',
@@ -413,7 +413,7 @@ function DayRow({ label, hours, compact }: { label: string; hours: number; compa
           <span style={{
             fontFamily: 'var(--font-dm-sans)',
             fontWeight: 500,
-            fontSize: compact ? 10.5 : 11.5,
+            fontSize: 12,
             color: 'var(--text-tertiary, rgba(255,255,255,0.45))',
             marginLeft: 3,
           }}>

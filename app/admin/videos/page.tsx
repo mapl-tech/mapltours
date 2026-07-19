@@ -258,7 +258,7 @@ function StatusPill({ status }: { status: VideoStatus }) {
   return (
     <span style={{
       padding: '3px 9px', borderRadius: 9999,
-      fontSize: 10.5, fontWeight: 700,
+      fontSize: 11, fontWeight: 700,
       fontFamily: 'var(--font-dm-sans)',
       letterSpacing: '0.06em', textTransform: 'uppercase',
       background: tone.bg, color: tone.fg,

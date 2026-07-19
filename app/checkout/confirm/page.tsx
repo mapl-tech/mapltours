@@ -377,7 +377,7 @@ function Success({ data }: { data: ConfirmData }) {
                   {item.destination} · {formatDate(item.date)} · {item.travelers} traveler
                   {item.travelers !== 1 ? 's' : ''}
                 </span>
-                <span style={{ fontFamily: 'var(--font-open-sans)', fontWeight: 700, color: 'var(--text-primary)', fontFeatureSettings: '"tnum" 1' }}>
+                <span style={{ fontFamily: 'var(--font-dm-sans)', fontWeight: 700, color: 'var(--text-primary)', fontFeatureSettings: '"tnum" 1' }}>
                   {formatMoney(item.lineTotal, data.currency)}
                 </span>
               </div>
@@ -485,7 +485,7 @@ function Success({ data }: { data: ConfirmData }) {
                     fontFamily: 'var(--font-dm-sans)',
                     fontStyle: 'normal',
                     fontWeight: 500,
-                    fontSize: 11.5,
+                    fontSize: 12,
                     color: 'var(--text-tertiary)',
                     letterSpacing: '0.02em',
                   }}
@@ -496,7 +496,7 @@ function Success({ data }: { data: ConfirmData }) {
             </span>
             <span
               style={{
-                fontFamily: 'var(--font-open-sans)',
+                fontFamily: 'var(--font-dm-sans)',
                 fontWeight: 800,
                 fontSize: 24,
                 letterSpacing: '-0.01em',
@@ -687,7 +687,7 @@ function BreakdownRow({
       <span>{label}</span>
       <span
         style={{
-          fontFamily: 'var(--font-open-sans)',
+          fontFamily: 'var(--font-dm-sans)',
           fontFeatureSettings: '"tnum" 1',
           color: emphasis === 'emerald' ? 'var(--emerald)' : 'var(--text-primary)',
           fontWeight: emphasis === 'emerald' ? 700 : 600,

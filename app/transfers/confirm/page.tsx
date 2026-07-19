@@ -334,7 +334,7 @@ function Success({ data }: { data: ConfirmData }) {
                 >
                   {t.destination}
                 </p>
-                <span style={{ fontFamily: 'var(--font-open-sans)', fontWeight: 700, color: 'var(--text-primary)', fontFeatureSettings: '"tnum" 1' }}>
+                <span style={{ fontFamily: 'var(--font-dm-sans)', fontWeight: 700, color: 'var(--text-primary)', fontFeatureSettings: '"tnum" 1' }}>
                   {formatMoney(t.priceUsd, data.currency)}
                 </span>
               </div>
@@ -445,7 +445,7 @@ function Success({ data }: { data: ConfirmData }) {
                     fontFamily: 'var(--font-dm-sans)',
                     fontStyle: 'normal',
                     fontWeight: 500,
-                    fontSize: 11.5,
+                    fontSize: 12,
                     color: 'var(--text-tertiary)',
                     letterSpacing: '0.02em',
                   }}
@@ -456,7 +456,7 @@ function Success({ data }: { data: ConfirmData }) {
             </span>
             <span
               style={{
-                fontFamily: 'var(--font-open-sans)',
+                fontFamily: 'var(--font-dm-sans)',
                 fontWeight: 800,
                 fontSize: 24,
                 letterSpacing: '-0.01em',
@@ -694,7 +694,7 @@ function BreakdownRow({ label, value }: { label: string; value: string }) {
       }}
     >
       <span>{label}</span>
-      <span style={{ fontFamily: 'var(--font-open-sans)', fontFeatureSettings: '"tnum" 1', color: 'var(--text-primary)', fontWeight: 600 }}>
+      <span style={{ fontFamily: 'var(--font-dm-sans)', fontFeatureSettings: '"tnum" 1', color: 'var(--text-primary)', fontWeight: 600 }}>
         {value}
       </span>
     </div>
