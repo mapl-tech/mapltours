@@ -224,7 +224,7 @@ export default memo(function MobileShort({ exp, priority = false }: { exp: Exper
             </p>
 
             <h3 style={{
-              fontFamily: 'var(--font-syne)', fontWeight: 700,
+              fontFamily: 'var(--font-dm-sans)', fontWeight: 700,
               fontSize: 17, color: 'white', lineHeight: 1.2,
               letterSpacing: '-0.01em',
               marginBottom: 10,

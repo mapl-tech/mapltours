@@ -86,37 +86,11 @@ export default function ErrorBoundary({
           </p>
         ) : null}
         <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
-          <button
-            onClick={reset}
-            style={{
-              padding: '12px 24px',
-              background: '#1a1a1a',
-              color: '#fff',
-              borderRadius: 8,
-              border: 'none',
-              cursor: 'pointer',
-              fontWeight: 600,
-              fontFamily: 'var(--font-dm-sans)',
-              fontSize: 14,
-            }}
-          >
+          <button onClick={reset} type="button" className="btn-primary">
             Try again
           </button>
-          <Link
-            href="/"
-            style={{
-              display: 'inline-block',
-              padding: '12px 24px',
-              background: 'transparent',
-              color: '#1a1a1a',
-              border: '1px solid var(--border, #e0e0e0)',
-              borderRadius: 8,
-              textDecoration: 'none',
-              fontWeight: 600,
-              fontFamily: 'var(--font-dm-sans)',
-              fontSize: 14,
-            }}
-          >
+          <Link href="/" className="btn-outline" style={{ textDecoration: 'none' }}>
+            <span aria-hidden="true" style={{ fontSize: 16, lineHeight: 1 }}>&larr;</span>
             Back to feed
           </Link>
         </div>

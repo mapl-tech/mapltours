@@ -307,7 +307,7 @@ export default function ReelCard({
         {/* Title */}
         <h2
           style={{
-            fontFamily: 'var(--font-syne)',
+            fontFamily: 'var(--font-dm-sans)',
             fontWeight: 700,
             fontSize: 20,
             lineHeight: 1.2,

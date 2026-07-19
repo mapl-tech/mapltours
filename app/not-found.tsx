@@ -58,37 +58,11 @@ export default function NotFound() {
           loving in Jamaica today.
         </p>
         <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
-          <Link
-            href="/"
-            style={{
-              display: 'inline-block',
-              padding: '12px 24px',
-              background: '#1a1a1a',
-              color: '#fff',
-              borderRadius: 8,
-              textDecoration: 'none',
-              fontWeight: 600,
-              fontFamily: 'var(--font-dm-sans)',
-              fontSize: 14,
-            }}
-          >
+          <Link href="/" className="btn-primary" style={{ textDecoration: 'none' }}>
+            <span aria-hidden="true" style={{ fontSize: 16, lineHeight: 1 }}>&larr;</span>
             Back to feed
           </Link>
-          <Link
-            href="/explore"
-            style={{
-              display: 'inline-block',
-              padding: '12px 24px',
-              background: 'transparent',
-              color: '#1a1a1a',
-              border: '1px solid var(--border, #e0e0e0)',
-              borderRadius: 8,
-              textDecoration: 'none',
-              fontWeight: 600,
-              fontFamily: 'var(--font-dm-sans)',
-              fontSize: 14,
-            }}
-          >
+          <Link href="/explore" className="btn-outline" style={{ textDecoration: 'none' }}>
             Browse experiences
           </Link>
         </div>

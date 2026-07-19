@@ -62,19 +62,31 @@ export default function GlobalError({
           ) : null}
           <button
             onClick={reset}
+            className="ge-reload"
             style={{
-              padding: '12px 26px',
-              background: '#1a1a1a',
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: '13px 30px',
+              background: '#171614',
               color: '#fff',
-              borderRadius: 8,
+              borderRadius: 9999,
               border: 'none',
               cursor: 'pointer',
               fontWeight: 600,
               fontSize: 14,
+              boxShadow: '0 4px 16px rgba(23,22,20,0.18)',
+              transition: 'transform 0.15s ease, box-shadow 0.2s ease, background 0.15s ease',
             }}
           >
             Reload
           </button>
+          <style
+            dangerouslySetInnerHTML={{
+              __html:
+                '.ge-reload:hover{background:#2A2926;box-shadow:0 6px 22px rgba(23,22,20,0.26);transform:translateY(-1px)}.ge-reload:active{transform:scale(0.98)}',
+            }}
+          />
         </div>
       </body>
     </html>

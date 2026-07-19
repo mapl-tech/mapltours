@@ -477,7 +477,7 @@ function Reel({ exp, isActive, totalCount, currentIndex }: { exp: Experience; is
 
         {/* Title */}
         <TitleTag style={{
-          fontFamily: 'var(--font-syne)', fontWeight: 700, fontSize: 18,
+          fontFamily: 'var(--font-dm-sans)', fontWeight: 700, fontSize: 18,
           color: 'white', lineHeight: 1.2, marginBottom: 6,
         }}>
           {t(exp.title)}

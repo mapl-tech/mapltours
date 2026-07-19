@@ -742,7 +742,7 @@ export default function FeedView() {
                     <TrendingUp size={11} /> {viralExperiences[0].reviews.toLocaleString()} reviews
                   </span>
                   <h3 style={{
-                    fontFamily: 'var(--font-syne)', fontWeight: 700, fontSize: 22,
+                    fontFamily: 'var(--font-dm-sans)', fontWeight: 700, fontSize: 22,
                     color: 'white', lineHeight: 1.2, marginBottom: 6,
                   }}>
                     {t(viralExperiences[0].title)}
