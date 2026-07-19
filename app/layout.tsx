@@ -3,7 +3,7 @@ import { Playfair_Display, DM_Sans } from 'next/font/google'
 import Script from 'next/script'
 import './globals.css'
 import LayoutShell from '@/components/LayoutShell'
-import { HERO_VIDEO } from '@/lib/images'
+import StyledJsxRegistry from '@/components/StyledJsxRegistry'
 
 const playfair = Playfair_Display({
   subsets: ['latin'],
@@ -64,7 +64,6 @@ export const metadata: Metadata = {
   openGraph: {
     type: 'website',
     locale: 'en_US',
-    url: siteUrl,
     siteName: 'MAPL Tours Jamaica',
     title: 'MAPL Tours Jamaica | Best Tours & Cultural Experiences in Jamaica',
     description: 'Discover the best tours in Jamaica. Authentic cultural experiences crafted by locals. Cliff diving, coffee treks, reggae sessions, jerk cooking, and more.',
@@ -87,9 +86,6 @@ export const metadata: Metadata = {
       'max-image-preview': 'large',
       'max-snippet': -1,
     },
-  },
-  alternates: {
-    canonical: siteUrl,
   },
   category: 'travel',
 }
@@ -200,7 +196,6 @@ export default function RootLayout({
         */}
         <link rel="preconnect" href="https://images.pexels.com" crossOrigin="anonymous" />
         <link rel="preconnect" href="https://videos.pexels.com" crossOrigin="anonymous" />
-        <link rel="prefetch" href={HERO_VIDEO} as="video" type="video/mp4" />
         <link rel="prefetch" href="/explore" />
         <link rel="dns-prefetch" href="https://images.unsplash.com" />
         <link rel="dns-prefetch" href="https://lh3.googleusercontent.com" />
@@ -210,7 +205,9 @@ export default function RootLayout({
         <link rel="dns-prefetch" href="https://script.hotjar.com" />
       </head>
       <body className={`${playfair.variable} ${dmSans.variable}`}>
-        <LayoutShell>{children}</LayoutShell>
+        <StyledJsxRegistry>
+          <LayoutShell>{children}</LayoutShell>
+        </StyledJsxRegistry>
         <Script src="https://www.googletagmanager.com/gtag/js?id=G-2JVWPL4GBE" strategy="lazyOnload" />
         <Script id="gtag-init" strategy="lazyOnload">
           {`window.dataLayer = window.dataLayer || [];

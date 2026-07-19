@@ -94,6 +94,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'No transfers selected' }, { status: 400 })
     }
 
+    // Reject bookings for arrivals in the past. One day of grace covers the
+    // traveler/server timezone gap (same policy as /api/checkout). The client
+    // date pickers also set min=now, but the server never trusts them.
+    const todayUtc = new Date().toISOString().slice(0, 10)
+    const earliestAllowed = new Date(Date.parse(todayUtc) - 24 * 60 * 60 * 1000)
+      .toISOString()
+      .slice(0, 10)
+
     // 1. Server-side pricing: validate every line and rebuild the total.
     let subtotal = 0
     interface PricedRow {
@@ -115,6 +123,25 @@ export async function POST(request: NextRequest) {
       if (!Number.isFinite(pax) || pax < 1 || pax > 4) {
         return NextResponse.json(
           { error: 'Passengers must be between 1 and 4.' },
+          { status: 400 },
+        )
+      }
+      // Arrival can't be in the past.
+      if (item.arrivalAt && item.arrivalAt.slice(0, 10) < earliestAllowed) {
+        return NextResponse.json(
+          { error: 'Arrival date is in the past. Please pick a future date.', requestId: reqId },
+          { status: 400 },
+        )
+      }
+      // Round-trip departure must be strictly after arrival.
+      if (
+        item.tripType === 'round_trip' &&
+        item.arrivalAt &&
+        item.departureAt &&
+        new Date(item.departureAt).getTime() <= new Date(item.arrivalAt).getTime()
+      ) {
+        return NextResponse.json(
+          { error: 'Departure must be after arrival.', requestId: reqId },
           { status: 400 },
         )
       }

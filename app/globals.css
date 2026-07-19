@@ -954,3 +954,41 @@ img[alt="Devon House Patty & Ice Cream Tour"] {
     border-top: 1px solid rgba(23, 22, 20, 0.10);
   }
 }
+
+/* ═══════════════════════════════════
+   TRANSFERS HERO IMAGE — LAYOUT-CRITICAL (CLS guard)
+   These space-reserving rules live in the global stylesheet (loaded in
+   <head>) rather than the component's styled-jsx so the hero box reserves
+   its final height in the server-rendered HTML — no shift when JS loads.
+   Purely-cosmetic rules (radius/shadow/border) stay in the component.
+   ═══════════════════════════════════ */
+.xfer-hero {
+  padding: 72px 20px 56px;
+  border-bottom: 1px solid var(--border);
+  background: #fff;
+}
+/* The GRID + order must be global too, or `order: -1` has no grid to act on
+   in SSR: the image would stack below the copy in the server HTML and then
+   jump above it once the client styled-jsx loads (the ~0.8 CLS the audit
+   caught). With the grid server-rendered, the hero is positioned correctly
+   from first paint. */
+.xfer-hero-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+  gap: 56px;
+  align-items: center;
+}
+.xfer-hero-image {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 4 / 5;
+  min-height: 360px;
+}
+@media (max-width: 900px) {
+  .xfer-hero { padding: 48px 20px 40px; }
+  .xfer-hero-grid { grid-template-columns: minmax(0, 1fr); gap: 32px; }
+  .xfer-hero-image {
+    aspect-ratio: 16 / 10;
+    order: -1;
+  }
+}

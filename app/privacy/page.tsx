@@ -5,6 +5,9 @@ export const metadata: Metadata = {
   title: 'Privacy Policy',
   description:
     'How MAPL Tours Jamaica collects, uses, stores, and protects your personal information when you book an experience or browse the site.',
+  alternates: {
+    canonical: 'https://mapltours.com/privacy',
+  },
 }
 
 export default function PrivacyPage() {

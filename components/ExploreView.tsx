@@ -106,7 +106,7 @@ export default function ExploreView() {
             }}>
               <Calendar size={15} color="var(--text-tertiary)" strokeWidth={2} />
               <input
-                type="date" value={dateFilter} onChange={(e) => setDateFilter(e.target.value)}
+                type="date" aria-label="Filter experiences by date" value={dateFilter} onChange={(e) => setDateFilter(e.target.value)}
                 style={{ background: 'none', border: 'none', outline: 'none', color: dateFilter ? 'var(--text-primary)' : 'var(--text-tertiary)', fontSize: 13.5, fontFamily: 'var(--font-dm-sans)', fontWeight: 500, cursor: 'pointer' }}
               />
               {dateFilter && (
@@ -119,7 +119,10 @@ export default function ExploreView() {
 
           <div className="scroll-x" style={{ gap: 6 }}>
             {categories.map((c) => (
-              <button key={c} onClick={() => setActiveCat(c)} style={{
+              <button key={c} onClick={() => setActiveCat(c)}
+                onMouseEnter={(e) => { if (activeCat !== c) e.currentTarget.style.background = 'var(--surface-hover)' }}
+                onMouseLeave={(e) => { if (activeCat !== c) e.currentTarget.style.background = 'var(--surface)' }}
+                style={{
                 height: 34, padding: '0 14px', borderRadius: 9999,
                 fontSize: 13, fontWeight: 500, fontFamily: 'var(--font-dm-sans)',
                 border: '1px solid', cursor: 'pointer', transition: 'all 0.15s ease',
@@ -139,7 +142,10 @@ export default function ExploreView() {
               Parish
             </span>
             {parishes.map((p) => (
-              <button key={p} onClick={() => setActiveParish(p)} style={{
+              <button key={p} onClick={() => setActiveParish(p)}
+                onMouseEnter={(e) => { if (activeParish !== p) e.currentTarget.style.background = 'var(--surface-hover)' }}
+                onMouseLeave={(e) => { if (activeParish !== p) e.currentTarget.style.background = 'var(--surface)' }}
+                style={{
                 height: 34, padding: '0 14px', borderRadius: 9999,
                 fontSize: 13, fontWeight: 500, fontFamily: 'var(--font-dm-sans)',
                 border: '1px solid', cursor: 'pointer', transition: 'all 0.15s ease',
@@ -168,7 +174,7 @@ export default function ExploreView() {
               {filtered.map((exp) => <ExpCard key={exp.id} exp={exp} />)}
             </div>
             <div className="hide-desktop mobile-shorts-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 10 }}>
-              {filtered.map((exp) => <MobileShort key={exp.id} exp={exp} />)}
+              {filtered.map((exp, i) => <MobileShort key={exp.id} exp={exp} priority={i === 0} />)}
             </div>
           </>
         )}

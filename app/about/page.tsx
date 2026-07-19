@@ -7,6 +7,7 @@ import Footer from '@/components/Footer'
 export const metadata: Metadata = {
   title: 'About MAPL Tours — Jamaica, Told by Its People',
   description: 'The story behind MAPL Tours Jamaica: a cultural travel platform connecting travelers with authentic experiences crafted by local creators.',
+  alternates: { canonical: 'https://mapltours.com/about' },
 }
 
 const VALUES = [
@@ -137,7 +138,7 @@ export default function AboutPage() {
         <p style={{
           fontFamily: 'var(--font-dm-sans)', fontSize: 11,
           fontWeight: 600, textTransform: 'uppercase',
-          letterSpacing: '0.24em', color: GOLD,
+          letterSpacing: '0.24em', color: 'var(--gold-text)',
           marginBottom: 28,
         }}>
           <span style={{ display: 'inline-block', width: 32, height: 1, background: GOLD, verticalAlign: 'middle', marginRight: 14 }} />
@@ -193,7 +194,7 @@ export default function AboutPage() {
             <p style={{
               fontFamily: 'var(--font-dm-sans)', fontSize: 11,
               fontWeight: 600, textTransform: 'uppercase',
-              letterSpacing: '0.24em', color: GOLD, marginBottom: 18,
+              letterSpacing: '0.24em', color: 'var(--gold-text)', marginBottom: 18,
             }}>
               Who We Are
             </p>
@@ -235,7 +236,7 @@ export default function AboutPage() {
               <p style={{
                 fontFamily: 'var(--font-dm-sans)', fontSize: 11,
                 fontWeight: 600, textTransform: 'uppercase',
-                letterSpacing: '0.24em', color: GOLD, marginBottom: 14,
+                letterSpacing: '0.24em', color: 'var(--gold-text)', marginBottom: 14,
               }}>
                 Our Values
               </p>
@@ -309,7 +310,7 @@ export default function AboutPage() {
         <p style={{
           fontFamily: 'var(--font-dm-sans)', fontSize: 11,
           fontWeight: 600, textTransform: 'uppercase',
-          letterSpacing: '0.24em', color: GOLD, marginBottom: 14,
+          letterSpacing: '0.24em', color: 'var(--gold-text)', marginBottom: 14,
           textAlign: 'center',
         }}>
           By the Numbers
@@ -330,7 +331,7 @@ export default function AboutPage() {
               textAlign: 'center', position: 'relative',
             }}>
               <p style={{
-                fontFamily: 'var(--font-syne)', fontWeight: 700,
+                fontFamily: 'var(--font-dm-sans)', fontWeight: 700,
                 fontSize: 'clamp(3rem, 7vw, 5.5rem)',
                 lineHeight: 1,
                 letterSpacing: '-0.04em',

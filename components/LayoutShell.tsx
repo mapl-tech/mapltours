@@ -25,10 +25,34 @@ export default function LayoutShell({ children }: { children: React.ReactNode })
 
   return (
     <AuthProvider>
+      <a href="#main-content" className="skip-link">Skip to main content</a>
       <ScrollReveal />
       {!hideNav && <TopNav onCartClick={() => setDrawerOpen(true)} />}
-      <PageTransition>{children}</PageTransition>
+      <main id="main-content">
+        <PageTransition>{children}</PageTransition>
+      </main>
       {!hideNav && <ItineraryPanel open={drawerOpen} onClose={() => setDrawerOpen(false)} />}
+      <style jsx>{`
+        .skip-link {
+          position: absolute;
+          left: -9999px;
+          top: 0;
+          z-index: 1000;
+          padding: 12px 20px;
+          background: #fff;
+          color: #000;
+          font-family: var(--font-dm-sans);
+          font-weight: 600;
+          font-size: 14px;
+          border-radius: 0 0 8px 0;
+          text-decoration: none;
+        }
+        .skip-link:focus {
+          left: 0;
+          outline: 2px solid var(--accent, #FFB300);
+          outline-offset: 2px;
+        }
+      `}</style>
     </AuthProvider>
   )
 }

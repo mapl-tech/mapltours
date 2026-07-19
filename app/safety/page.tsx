@@ -4,6 +4,9 @@ import EditorialPage, { Section, ValueCard } from '@/components/EditorialPage'
 export const metadata: Metadata = {
   title: 'Safety',
   description: 'Your safety is our priority. Learn about MAPL Tours Jamaica safety standards, creator vetting, and traveler protection.',
+  alternates: {
+    canonical: 'https://mapltours.com/safety',
+  },
 }
 
 export default function SafetyPage() {

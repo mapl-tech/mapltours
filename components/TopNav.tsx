@@ -197,6 +197,7 @@ export default function TopNav({ onCartClick }: { onCartClick?: () => void }) {
             </span>
             <input
               type="text"
+              aria-label="Where to?"
               value={where}
               onChange={(e) => { setWhere(e.target.value); setShowWhere(true) }}
               onFocus={() => setShowWhere(true)}
@@ -302,6 +303,7 @@ export default function TopNav({ onCartClick }: { onCartClick?: () => void }) {
             <input
               ref={dateRef}
               type="date"
+              aria-label="When"
               value={when}
               onChange={(e) => setWhen(e.target.value)}
               style={{
@@ -611,6 +613,7 @@ export default function TopNav({ onCartClick }: { onCartClick?: () => void }) {
             ) : (
               <Link
                 href="/login"
+                aria-label="Sign in"
                 style={{
                   width: 32, height: 32, borderRadius: '50%',
                   overflow: 'hidden', flexShrink: 0,

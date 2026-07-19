@@ -60,6 +60,9 @@ function Reel({ exp, isActive, totalCount, currentIndex }: { exp: Experience; is
   const { liked, likeCount, toggleLike } = useExperienceLike(exp.id)
   const inCart = isInCart(exp.id)
   const toggleCart = () => { if (inCart) { removeItem(exp.id) } else { addItem(exp) } }
+  // Give the page exactly one <h1>: the active reel's title carries the primary
+  // heading; off-screen reels keep <h2> so we never render multiple h1s.
+  const TitleTag = isActive ? 'h1' : 'h2'
   const [shareToast, setShareToast] = useState<string | null>(null)
   const [clipsOpen, setClipsOpen] = useState(false)
 
@@ -176,6 +179,7 @@ function Reel({ exp, isActive, totalCount, currentIndex }: { exp: Experience; is
         <iframe
           src={`https://www.youtube.com/embed/${exp.youtubeId}?autoplay=1&mute=1&loop=1&controls=0&showinfo=0&modestbranding=1&playlist=${exp.youtubeId}&playsinline=1`}
           allow="autoplay; encrypted-media"
+          title={`${exp.title} — video`}
           style={{ width: '100%', height: '100%', border: 'none' }}
         />
       ) : (
@@ -472,12 +476,12 @@ function Reel({ exp, isActive, totalCount, currentIndex }: { exp: Experience; is
         </p>
 
         {/* Title */}
-        <h2 style={{
+        <TitleTag style={{
           fontFamily: 'var(--font-syne)', fontWeight: 700, fontSize: 18,
           color: 'white', lineHeight: 1.2, marginBottom: 6,
         }}>
           {t(exp.title)}
-        </h2>
+        </TitleTag>
 
         {/* Description — 2 line clamp */}
         <p style={{
@@ -694,7 +698,7 @@ function MobileCommentsSheet({ comments, commentText, setCommentText, addComment
             {sheetHeight >= 100 && (
               <button onClick={() => setSheetHeight(60)} style={{ width: 32, height: 32, borderRadius: '50%', background: 'rgba(255,255,255,0.06)', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#cccccc', fontSize: 14 }}>↓</button>
             )}
-            <button onClick={onClose} style={{ width: 32, height: 32, borderRadius: '50%', background: 'rgba(255,255,255,0.06)', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#cccccc' }}>
+            <button onClick={onClose} aria-label="Close comments" style={{ width: 32, height: 32, borderRadius: '50%', background: 'rgba(255,255,255,0.06)', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#cccccc' }}>
               <X size={16} />
             </button>
           </div>
@@ -712,11 +716,11 @@ function MobileCommentsSheet({ comments, commentText, setCommentText, addComment
                   <div style={{ flex: 1 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 3 }}>
                       <span style={{ fontSize: 13, fontWeight: 600, fontFamily: 'var(--font-dm-sans)', color: 'white' }}>@{comment.user}</span>
-                      <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.3)', fontFamily: 'var(--font-dm-sans)' }}>{comment.time}</span>
+                      <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.66)', fontFamily: 'var(--font-dm-sans)' }}>{comment.time}</span>
                     </div>
                     <p style={{ fontSize: 14, color: '#cccccc', fontFamily: 'var(--font-dm-sans)', lineHeight: 1.5, marginBottom: 8 }}>{comment.text}</p>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-                      <button style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, color: 'rgba(255,255,255,0.35)', fontFamily: 'var(--font-dm-sans)' }}><ThumbsUp size={13} /> {comment.likes}</button>
+                      <button style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, color: 'rgba(255,255,255,0.66)', fontFamily: 'var(--font-dm-sans)' }}><ThumbsUp size={13} /> {comment.likes}</button>
                       <button
                         onClick={() => {
                           if (!isLoggedIn) {
@@ -732,7 +736,7 @@ function MobileCommentsSheet({ comments, commentText, setCommentText, addComment
                           }
                           setCommentText(`@${comment.user} `)
                         }}
-                        style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 12, color: 'rgba(255,255,255,0.35)', fontFamily: 'var(--font-dm-sans)' }}
+                        style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 12, color: 'rgba(255,255,255,0.66)', fontFamily: 'var(--font-dm-sans)' }}
                       >{t('Reply')}</button>
                     </div>
                   </div>
@@ -768,7 +772,7 @@ function MobileCommentsSheet({ comments, commentText, setCommentText, addComment
               fontSize: 12, color: 'rgba(255,255,255,0.4)', fontFamily: 'var(--font-dm-sans)',
             }}>
               <span>Replying to <span style={{ color: 'white', fontWeight: 600 }}>@{replyingTo.user}</span></span>
-              <button onClick={() => { setReplyingTo(null); setCommentText('') }} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 12, color: 'rgba(255,255,255,0.35)', fontFamily: 'var(--font-dm-sans)' }}>Cancel</button>
+              <button onClick={() => { setReplyingTo(null); setCommentText('') }} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 12, color: 'rgba(255,255,255,0.6)', fontFamily: 'var(--font-dm-sans)' }}>Cancel</button>
             </div>
           )}
           <div style={{ padding: '10px 20px', paddingBottom: 'max(12px, env(safe-area-inset-bottom))', display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -790,7 +794,7 @@ function MobileCommentsSheet({ comments, commentText, setCommentText, addComment
               }}
             />
             {commentText.trim() && (
-              <button onClick={submitAndBlur} style={{ width: 34, height: 34, borderRadius: '50%', background: '#FFFC00', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <button onClick={submitAndBlur} aria-label="Post comment" style={{ width: 34, height: 34, borderRadius: '50%', background: '#FFFC00', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <Send size={15} color="#000" />
               </button>
             )}
@@ -832,6 +836,11 @@ export default function ExperienceDetail({ slug }: { slug: string }) {
   const activeExp = feedExperiences[activeIndex]
   const { addComment: addSupabaseComment, toDisplayComments, isLoggedIn, user: currentUser, replyingTo, setReplyingTo } = useComments(activeExp?.id || 0)
   const activeComments = activeExp ? toDisplayComments(activeExp.comments) : []
+
+  // Checkout requires an account. Rather than a silent 307 → /login after the
+  // user commits, surface it on the CTA and route logged-out users straight to
+  // /login with a return path back to checkout (mirrors ItineraryPanel).
+  const checkoutHref = isLoggedIn ? '/checkout' : '/login?redirect=%2Fcheckout'
 
   // Measure the mobile bottom bar live so the reel's right rail and
   // "Add to Trip" pill can sit exactly 12px above it regardless of safe-area,
@@ -980,6 +989,7 @@ export default function ExperienceDetail({ slug }: { slug: string }) {
           {activeIndex > 0 ? (
             <button
               onClick={() => scrollToReel('prev')}
+              aria-label="Previous experience"
               style={{
                 width: 44, height: 44, borderRadius: '50%',
                 background: 'rgba(255,255,255,0.92)',
@@ -1011,12 +1021,13 @@ export default function ExperienceDetail({ slug }: { slug: string }) {
             fontFamily: 'var(--font-dm-sans)', pointerEvents: 'auto',
           }}>
             {activeIndex + 1}
-            <span style={{ color: 'rgba(255,255,255,0.35)', fontWeight: 500 }}> / {feedExperiences.length}</span>
+            <span style={{ color: 'rgba(255,255,255,0.6)', fontWeight: 500 }}> / {feedExperiences.length}</span>
           </span>
 
           {activeIndex < feedExperiences.length - 1 ? (
             <button
               onClick={() => scrollToReel('next')}
+              aria-label="Next experience"
               style={{
                 width: 44, height: 44, borderRadius: '50%',
                 background: 'rgba(255,255,255,0.92)',
@@ -1094,7 +1105,7 @@ export default function ExperienceDetail({ slug }: { slug: string }) {
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             {items.length > 0 && (
               <Link
-                href="/checkout"
+                href={checkoutHref}
                 style={{
                   display: 'flex', alignItems: 'center', gap: 6,
                   height: 34, padding: '0 16px',
@@ -1108,11 +1119,12 @@ export default function ExperienceDetail({ slug }: { slug: string }) {
                 }}
               >
                 <ShoppingBag size={13} />
-                Checkout ({items.length})
+                {isLoggedIn ? `Checkout (${items.length})` : t('Sign in to check out')}
               </Link>
             )}
             <button
               onClick={() => router.back()}
+              aria-label="Close"
               style={{
                 width: 34, height: 34, borderRadius: '50%',
                 border: '1px solid rgba(255,255,255,0.08)', background: 'rgba(255,255,255,0.05)',
@@ -1172,7 +1184,7 @@ export default function ExperienceDetail({ slug }: { slug: string }) {
                       <span style={{ fontSize: 13, fontWeight: 600, fontFamily: 'var(--font-dm-sans)', color: 'white' }}>
                         @{comment.user}
                       </span>
-                      <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.3)', fontFamily: 'var(--font-dm-sans)' }}>
+                      <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.66)', fontFamily: 'var(--font-dm-sans)' }}>
                         {comment.time}
                       </span>
                     </div>
@@ -1184,7 +1196,7 @@ export default function ExperienceDetail({ slug }: { slug: string }) {
                       <button style={{
                         background: 'none', border: 'none', cursor: 'pointer',
                         display: 'flex', alignItems: 'center', gap: 4,
-                        fontSize: 12, color: 'rgba(255,255,255,0.35)', fontFamily: 'var(--font-dm-sans)',
+                        fontSize: 12, color: 'rgba(255,255,255,0.66)', fontFamily: 'var(--font-dm-sans)',
                       }}><ThumbsUp size={12} /> {comment.likes}</button>
                       <button
                         onClick={() => {
@@ -1204,7 +1216,7 @@ export default function ExperienceDetail({ slug }: { slug: string }) {
                         }}
                         style={{
                           background: 'none', border: 'none', cursor: 'pointer',
-                          fontSize: 12, color: 'rgba(255,255,255,0.35)', fontFamily: 'var(--font-dm-sans)',
+                          fontSize: 12, color: 'rgba(255,255,255,0.66)', fontFamily: 'var(--font-dm-sans)',
                         }}
                       >{t('Reply')}</button>
                     </div>
@@ -1256,7 +1268,7 @@ export default function ExperienceDetail({ slug }: { slug: string }) {
                 onClick={() => { setReplyingTo(null); setCommentText('') }}
                 style={{
                   background: 'none', border: 'none', cursor: 'pointer',
-                  fontSize: 12, color: 'rgba(255,255,255,0.35)', fontFamily: 'var(--font-dm-sans)',
+                  fontSize: 12, color: 'rgba(255,255,255,0.6)', fontFamily: 'var(--font-dm-sans)',
                 }}
               >
                 Cancel
@@ -1292,6 +1304,7 @@ export default function ExperienceDetail({ slug }: { slug: string }) {
             {commentText.trim() && (
               <button
                 onClick={addComment}
+                aria-label="Post comment"
                 style={{
                   width: 34, height: 34, borderRadius: '50%',
                   background: '#FFFC00', border: 'none', cursor: 'pointer',
@@ -1324,7 +1337,7 @@ export default function ExperienceDetail({ slug }: { slug: string }) {
             flex: 1, display: 'flex', alignItems: 'center', gap: 8,
             background: 'rgba(255,255,255,0.08)', border: 'none',
             borderRadius: 9999, padding: '10px 16px',
-            cursor: 'pointer', color: 'rgba(255,255,255,0.4)',
+            cursor: 'pointer', color: 'rgba(255,255,255,0.66)',
             fontSize: 13, fontFamily: 'var(--font-dm-sans)',
             textAlign: 'left',
           }}
@@ -1333,7 +1346,7 @@ export default function ExperienceDetail({ slug }: { slug: string }) {
         </button>
         {items.length > 0 && (
           <Link
-            href="/checkout"
+            href={checkoutHref}
             style={{
               display: 'flex', alignItems: 'center', gap: 5,
               padding: '8px 14px', borderRadius: 9999,
@@ -1343,7 +1356,7 @@ export default function ExperienceDetail({ slug }: { slug: string }) {
             }}
           >
             <ShoppingBag size={14} />
-            Checkout ({items.length})
+            {isLoggedIn ? `Checkout (${items.length})` : t('Sign in to check out')}
           </Link>
         )}
       </div>

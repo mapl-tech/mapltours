@@ -262,6 +262,14 @@ async function handlePaymentSucceeded(pi: Stripe.PaymentIntent) {
       traveler: traveler.ok ? 'sent' : traveler.reason,
       operator: operator.ok ? 'sent' : operator.reason,
     })
+    // A TRANSIENT send failure (Resend blip) must NOT be silently dropped —
+    // a paid booking with no confirmation / no operator dispatch is a real
+    // fulfillment gap. Throw so Stripe re-delivers; the released claim means
+    // only the still-unsent channel retries (the other short-circuits).
+    const retryable = (!traveler.ok && traveler.retryable) || (!operator.ok && operator.retryable)
+    if (retryable) {
+      throw new Error(`transient email failure — retrying via Stripe re-delivery (booking ${booking.id})`)
+    }
   }
 }
 
@@ -292,7 +300,44 @@ async function handlePaymentCanceled(pi: Stripe.PaymentIntent) {
   await supabase.from('bookings').update({ status: 'canceled' }).eq('id', booking.id)
 }
 
-type EmailResult = { ok: true } | { ok: false; reason: string }
+// `retryable` distinguishes a transient send failure (worth having Stripe
+// re-deliver the webhook) from a permanent one (no email on record, no ops
+// address configured) where retrying can never succeed.
+type EmailResult = { ok: true } | { ok: false; reason: string; retryable: boolean }
+
+/**
+ * Atomically CLAIM one email channel before sending, so two concurrent /
+ * duplicate webhook deliveries can't both pass a check-then-act gate and
+ * double-send. The conditional UPDATE ... WHERE <col> IS NULL RETURNING is
+ * the lock: exactly one delivery flips NULL->now() and proceeds; the loser
+ * gets 0 rows and skips. On a send failure we release the claim so a Stripe
+ * retry can try again (see `retryable`).
+ */
+async function claimEmailChannel(
+  supabase: ReturnType<typeof createServiceClient>,
+  bookingId: string,
+  column: 'confirmation_email_sent_at' | 'operator_email_sent_at',
+): Promise<boolean> {
+  const { data, error } = await supabase
+    .from('bookings')
+    .update({ [column]: new Date().toISOString() })
+    .eq('id', bookingId)
+    .is(column, null)
+    .select('id')
+  if (error) {
+    console.error('[stripe-webhook] email claim failed', { bookingId, column, error: error.message })
+    return false
+  }
+  return (data?.length ?? 0) > 0
+}
+
+async function releaseEmailChannel(
+  supabase: ReturnType<typeof createServiceClient>,
+  bookingId: string,
+  column: 'confirmation_email_sent_at' | 'operator_email_sent_at',
+): Promise<void> {
+  await supabase.from('bookings').update({ [column]: null }).eq('id', bookingId)
+}
 
 async function maybeSendTravelerConfirmation(
   supabase: ReturnType<typeof createServiceClient>,
@@ -302,7 +347,11 @@ async function maybeSendTravelerConfirmation(
   if (booking.confirmation_email_sent_at) return { ok: true }
   if (!booking.email) {
     console.warn('[stripe-webhook] no email on booking', booking.id)
-    return { ok: false, reason: 'no_email_on_record' }
+    return { ok: false, reason: 'no_email_on_record', retryable: false }
+  }
+
+  if (!(await claimEmailChannel(supabase, booking.id, 'confirmation_email_sent_at'))) {
+    return { ok: true }
   }
 
   const bookingRef = humanizeId(booking.id)
@@ -378,13 +427,10 @@ async function maybeSendTravelerConfirmation(
       })
 
   if (res.ok) {
-    await supabase
-      .from('bookings')
-      .update({ confirmation_email_sent_at: new Date().toISOString() })
-      .eq('id', booking.id)
-    return { ok: true }
+    return { ok: true } // channel already stamped by claimEmailChannel
   }
-  return { ok: false, reason: res.error ?? 'unknown_send_error' }
+  await releaseEmailChannel(supabase, booking.id, 'confirmation_email_sent_at')
+  return { ok: false, reason: res.error ?? 'unknown_send_error', retryable: true }
 }
 
 // Operations distribution list. Both addresses receive every operator
@@ -416,7 +462,11 @@ async function maybeSendOperatorAlert(
 ): Promise<EmailResult> {
   if (booking.operator_email_sent_at) return { ok: true }
   const opsRecipients = resolveOpsRecipients()
-  if (opsRecipients.length === 0) return { ok: false, reason: 'no_ops_email_configured' }
+  if (opsRecipients.length === 0) return { ok: false, reason: 'no_ops_email_configured', retryable: false }
+
+  if (!(await claimEmailChannel(supabase, booking.id, 'operator_email_sent_at'))) {
+    return { ok: true }
+  }
 
   const bookingRef = humanizeId(booking.id)
   const customerName =
@@ -482,13 +532,10 @@ async function maybeSendOperatorAlert(
       })
 
   if (res.ok) {
-    await supabase
-      .from('bookings')
-      .update({ operator_email_sent_at: new Date().toISOString() })
-      .eq('id', booking.id)
     return { ok: true }
   }
-  return { ok: false, reason: res.error ?? 'unknown_send_error' }
+  await releaseEmailChannel(supabase, booking.id, 'operator_email_sent_at')
+  return { ok: false, reason: res.error ?? 'unknown_send_error', retryable: true }
 }
 
 // Short, user-friendly booking reference — first 8 of the uuid, upper-cased.

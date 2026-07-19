@@ -60,12 +60,16 @@ interface CheckoutBody {
   }
 }
 
-function hashCart(body: CheckoutBody): string {
+// Hash from the SERVER-priced total (not the client's body.amount) so the
+// idempotency/dedup key is deterministic and can't drift within the $1
+// client-tolerance — otherwise two near-identical retries would miss the
+// unique pending index and leave orphan pending bookings + extra PIs.
+function hashCart(body: CheckoutBody, serverTotalCents: number): string {
   const payload = JSON.stringify({
     items: body.items
       .map((i) => `${i.id}:${i.travelers}:${i.date}`)
       .sort(),
-    cents: Math.round(body.amount * 100),
+    cents: serverTotalCents,
     email: (body.customer?.email ?? '').toLowerCase().trim(),
   })
   return crypto.createHash('sha256').update(payload).digest('hex').slice(0, 32)
@@ -158,7 +162,7 @@ export async function POST(request: NextRequest) {
     // 2. Schema guard — fail fast if migrations are missing.
     await assertCheckoutSchema(supabase)
 
-    const cartHash = hashCart(body)
+    const cartHash = hashCart(body, amountInCents)
     const c = body.customer ?? {}
     const customerFields = {
       first_name: (c.firstName ?? '').slice(0, 80),

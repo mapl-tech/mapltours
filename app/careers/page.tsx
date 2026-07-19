@@ -4,6 +4,9 @@ import EditorialPage, { Section, ValueCard } from '@/components/EditorialPage'
 export const metadata: Metadata = {
   title: 'Careers',
   description: 'Join MAPL Tours Jamaica. We are building the future of cultural travel. See open positions.',
+  alternates: {
+    canonical: 'https://mapltours.com/careers',
+  },
 }
 
 export default function CareersPage() {

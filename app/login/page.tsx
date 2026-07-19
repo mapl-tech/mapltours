@@ -78,6 +78,20 @@ function LoginContent() {
     if (error) setError(error.message)
   }
 
+  async function handleForgotPassword() {
+    if (!email) return
+    setError('')
+    setMessage('')
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/login`,
+    })
+    if (error) {
+      setError(error.message)
+    } else {
+      setMessage('Check your email for a reset link.')
+    }
+  }
+
   return (
     <div className="login-shell">
       {/* Back to home — icon-only on mobile so it never covers the logo */}
@@ -238,6 +252,8 @@ function LoginContent() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 24 }}>
             <button
               onClick={() => handleOAuth('google')}
+              onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'var(--accent)'; e.currentTarget.style.background = 'var(--bg-warm)' }}
+              onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'var(--border-strong)'; e.currentTarget.style.background = 'white' }}
               style={{
                 width: '100%',
                 height: 46,
@@ -267,6 +283,8 @@ function LoginContent() {
 
             <button
               onClick={() => handleOAuth('apple')}
+              onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'var(--accent)'; e.currentTarget.style.background = 'var(--bg-warm)' }}
+              onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'var(--border-strong)'; e.currentTarget.style.background = 'white' }}
               style={{
                 width: '100%',
                 height: 46,
@@ -410,6 +428,28 @@ function LoginContent() {
                 }}
               />
             </div>
+
+            {mode === 'login' && (
+              <button
+                type="button"
+                onClick={handleForgotPassword}
+                disabled={!email}
+                style={{
+                  alignSelf: 'flex-end',
+                  marginTop: -6,
+                  background: 'none',
+                  border: 'none',
+                  padding: 0,
+                  fontSize: 13,
+                  fontWeight: 600,
+                  fontFamily: 'var(--font-dm-sans)',
+                  color: email ? 'var(--gold-text)' : 'var(--text-tertiary)',
+                  cursor: email ? 'pointer' : 'not-allowed',
+                }}
+              >
+                Forgot password?
+              </button>
+            )}
 
             {error && (
               <p style={{

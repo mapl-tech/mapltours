@@ -41,6 +41,38 @@ export function generateMetadata({ params }: { params: { slug: string } }): Meta
 export default function ExperiencePage({ params }: { params: { slug: string } }) {
   // 404 unknown slugs so they don't render an empty shell and so Google
   // doesn't index junk URLs.
-  if (!getExperienceBySlug(params.slug)) notFound()
-  return <ExperienceDetail slug={params.slug} />
+  const exp = getExperienceBySlug(params.slug)
+  if (!exp) notFound()
+
+  // Per-experience structured data so each landing page is eligible for rich
+  // results (price, rating). Modelled as a schema.org TouristTrip with an
+  // Offer and AggregateRating built only from fields on the Experience type.
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'TouristTrip',
+    name: exp.title,
+    description: exp.description,
+    image: exp.image,
+    offers: {
+      '@type': 'Offer',
+      price: exp.price,
+      priceCurrency: 'USD',
+      availability: 'https://schema.org/InStock',
+    },
+    aggregateRating: {
+      '@type': 'AggregateRating',
+      ratingValue: exp.rating,
+      reviewCount: exp.reviews,
+    },
+  }
+
+  return (
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+      <ExperienceDetail slug={params.slug} />
+    </>
+  )
 }

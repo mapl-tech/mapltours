@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import Image from 'next/image'
+import { useEffect, useRef } from 'react'
 import { useCartStore } from '@/lib/cart'
 import { X } from 'lucide-react'
 import { useI18n } from '@/lib/i18n'
@@ -12,6 +13,54 @@ export default function ItineraryPanel({ open, onClose }: { open: boolean; onClo
   const { items, removeItem, subtotal, fee, grandTotal } = useCartStore()
   const { t, formatPrice } = useI18n()
   const { user, loading: authLoading } = useAuth()
+
+  const asideRef = useRef<HTMLElement>(null)
+  const previousFocusRef = useRef<HTMLElement | null>(null)
+
+  // Move keyboard focus into the drawer when it opens; restore it to whatever
+  // element was focused before (the trigger) when it closes.
+  useEffect(() => {
+    if (!open) return
+    previousFocusRef.current = document.activeElement as HTMLElement | null
+    asideRef.current?.focus()
+    return () => {
+      previousFocusRef.current?.focus?.()
+    }
+  }, [open])
+
+  // Escape closes the drawer; Tab / Shift+Tab are trapped inside it.
+  useEffect(() => {
+    if (!open) return
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose()
+        return
+      }
+      if (e.key !== 'Tab') return
+      const container = asideRef.current
+      if (!container) return
+      const focusable = Array.from(
+        container.querySelectorAll<HTMLElement>(
+          'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+        )
+      )
+      if (focusable.length === 0) return
+      const first = focusable[0]
+      const last = focusable[focusable.length - 1]
+      if (e.shiftKey) {
+        if (document.activeElement === first || document.activeElement === container) {
+          e.preventDefault()
+          last.focus()
+        }
+      } else if (document.activeElement === last) {
+        e.preventDefault()
+        first.focus()
+      }
+    }
+    document.addEventListener('keydown', onKeyDown)
+    return () => document.removeEventListener('keydown', onKeyDown)
+  }, [open, onClose])
+
   if (!open || items.length === 0) return null
 
   // Checkout requires an account. Surface that on the CTA instead of a
@@ -26,7 +75,13 @@ export default function ItineraryPanel({ open, onClose }: { open: boolean; onClo
       <div onClick={onClose} className="animate-fade-in" style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.25)', zIndex: 200 }} />
 
       {/* Drawer */}
-      <aside className="animate-slide-right" style={{
+      <aside
+        ref={asideRef}
+        tabIndex={-1}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Your itinerary"
+        className="animate-slide-right" style={{
         position: 'fixed', top: 0, right: 0, bottom: 0,
         width: 400, maxWidth: '92vw',
         background: '#fff', zIndex: 201,
@@ -45,7 +100,7 @@ export default function ItineraryPanel({ open, onClose }: { open: boolean; onClo
               {items.length} experience{items.length !== 1 ? 's' : ''} · Jamaica
             </p>
           </div>
-          <button onClick={onClose} style={{
+          <button onClick={onClose} aria-label="Close itinerary" style={{
             width: 40, height: 40, borderRadius: '50%',
             border: '1px solid var(--border)', background: '#fff',
             cursor: 'pointer', fontSize: 16, display: 'flex',

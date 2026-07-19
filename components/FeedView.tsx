@@ -78,7 +78,7 @@ function HeroVideo({ src, poster }: { src: string; poster: string }) {
 }
 
 /* Responsive grid: cards on desktop, shorts on mobile */
-function ResponsiveGrid({ items, cols = 3 }: { items: typeof experiences; cols?: number }) {
+function ResponsiveGrid({ items, cols = 3, priorityFirst = false }: { items: typeof experiences; cols?: number; priorityFirst?: boolean }) {
   return (
     <>
       {/* Desktop: card grid */}
@@ -87,7 +87,7 @@ function ResponsiveGrid({ items, cols = 3 }: { items: typeof experiences; cols?:
       </div>
       {/* Mobile: 2-col shorts */}
       <div className="hide-desktop mobile-shorts-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 10 }}>
-        {items.map((e) => <MobileShort key={e.id} exp={e} />)}
+        {items.map((e, i) => <MobileShort key={e.id} exp={e} priority={priorityFirst && i === 0} />)}
       </div>
     </>
   )
@@ -128,7 +128,7 @@ function StepCarousel({ steps, renderCard }: { steps: any[]; renderCard: (s: any
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginBottom: 14, paddingRight: 4 }}>
-        <button onClick={() => scroll('left')} style={{
+        <button onClick={() => scroll('left')} aria-label="Previous step" style={{
           width: 36, height: 36, borderRadius: '50%', background: 'transparent',
           border: '1px solid rgba(255,255,255,0.15)', cursor: 'pointer',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -136,7 +136,7 @@ function StepCarousel({ steps, renderCard }: { steps: any[]; renderCard: (s: any
         }}>
           <ChevronLeft size={18} />
         </button>
-        <button onClick={() => scroll('right')} style={{
+        <button onClick={() => scroll('right')} aria-label="Next step" style={{
           width: 36, height: 36, borderRadius: '50%', background: 'var(--gold)',
           border: 'none', cursor: 'pointer',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -145,7 +145,7 @@ function StepCarousel({ steps, renderCard }: { steps: any[]; renderCard: (s: any
           <ChevronRight size={18} />
         </button>
       </div>
-      <div ref={scrollRef} className="no-scrollbar" style={{
+      <div ref={scrollRef} className="no-scrollbar" tabIndex={0} role="region" aria-label="How it works — scroll steps" style={{
         display: 'flex', gap: 12, overflowX: 'auto',
         scrollSnapType: 'x mandatory', WebkitOverflowScrolling: 'touch',
         paddingLeft: 16, paddingRight: 16,
@@ -202,6 +202,7 @@ function FoodSection() {
           <div style={{ display: 'flex', gap: 8, flexShrink: 0, marginBottom: 4 }}>
             <button
               onClick={() => scroll('left')}
+              aria-label="Previous"
               style={{
                 width: 42, height: 42, borderRadius: '50%',
                 background: 'transparent',
@@ -218,6 +219,7 @@ function FoodSection() {
             </button>
             <button
               onClick={() => scroll('right')}
+              aria-label="Next"
               style={{
                 width: 42, height: 42, borderRadius: '50%',
                 background: 'var(--gold)',
@@ -240,6 +242,9 @@ function FoodSection() {
       <div
         ref={scrollRef}
         className="no-scrollbar"
+        tabIndex={0}
+        role="region"
+        aria-label="Featured experiences — scroll"
         style={{
           display: 'flex', gap: 16,
           overflowX: 'auto',
@@ -374,6 +379,7 @@ function DestinationsSection() {
             <div style={{ display: 'flex', gap: 8 }}>
               <button
                 onClick={() => scroll('left')}
+                aria-label="Previous"
                 style={{
                   width: 40, height: 40, borderRadius: '50%',
                   background: 'transparent', border: '1px solid var(--border-strong)',
@@ -385,6 +391,7 @@ function DestinationsSection() {
               </button>
               <button
                 onClick={() => scroll('right')}
+                aria-label="Next"
                 style={{
                   width: 40, height: 40, borderRadius: '50%',
                   background: 'var(--accent)', border: 'none',
@@ -400,6 +407,9 @@ function DestinationsSection() {
         <div
           ref={scrollRef}
           className="no-scrollbar mobile-dest-scroll"
+          tabIndex={0}
+          role="region"
+          aria-label="Destinations — scroll"
           style={{
             display: 'flex', gap: 12,
             overflowX: 'auto',
@@ -506,7 +516,7 @@ export default function FeedView() {
             fontFamily: 'var(--font-dm-sans)', fontWeight: 600,
             fontSize: 11, letterSpacing: '0.2em', textTransform: 'uppercase',
             color: 'var(--gold-warm)', marginBottom: 18,
-            textShadow: '0 1px 6px rgba(0,0,0,0.5)',
+            textShadow: '0 1px 10px rgba(0,0,0,0.75)',
           }}>
             Jamaica, beyond the brochure
           </span>
@@ -517,7 +527,7 @@ export default function FeedView() {
             lineHeight: 0.98,
             letterSpacing: '-0.035em',
             color: 'white',
-            textShadow: '0 1px 8px rgba(0,0,0,0.35)',
+            textShadow: '0 2px 16px rgba(0,0,0,0.55)',
             maxWidth: 900,
           }}>
             {t('Discover')} <span className="flag-text">Jamaica</span><br />{t('beyond the resort.')}
@@ -665,7 +675,7 @@ export default function FeedView() {
       {/* ═══ FEATURED — 3 col, wide ═══ */}
       <section className="container" style={{ paddingTop: 48, paddingBottom: 0 }}>
         <SectionHeader label="Featured experiences" action={{ text: 'View all', href: '/explore' }} />
-        <ResponsiveGrid items={experiences.slice(0, 3)} cols={3} />
+        <ResponsiveGrid items={experiences.slice(0, 3)} cols={3} priorityFirst />
       </section>
 
       {/* ═══ TASTE OF JAMAICA — dark scrollable food section ═══ */}

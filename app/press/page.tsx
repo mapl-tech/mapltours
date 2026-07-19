@@ -4,6 +4,9 @@ import EditorialPage, { Section, ValueCard } from '@/components/EditorialPage'
 export const metadata: Metadata = {
   title: 'Press',
   description: 'MAPL Tours Jamaica press kit, media coverage, and brand assets.',
+  alternates: {
+    canonical: 'https://mapltours.com/press',
+  },
 }
 
 export default function PressPage() {

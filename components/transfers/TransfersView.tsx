@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useMemo, useState, useId, isValidElement, cloneElement } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
@@ -23,6 +23,7 @@ import {
   type TransferZone,
 } from '@/lib/airport-transfers'
 import { useTransfersCart } from '@/lib/transfers-cart'
+import { useI18n } from '@/lib/i18n'
 import { HERO, DESTINATIONS as DESTINATION_IMAGES } from '@/lib/images'
 import {
   TRANSFER_REVIEWS as REVIEWS,
@@ -79,6 +80,7 @@ const ZONE_IMAGES: Record<TransferZone, { src: string; alt: string }> = {
 export default function TransfersView() {
   const router = useRouter()
   const addQuote = useTransfersCart((s) => s.addQuote)
+  const { formatPrice } = useI18n()
 
   const [destinationId, setDestinationId] = useState<string>('')
   const [tripType, setTripType] = useState<TransferTripType>('round_trip')
@@ -152,11 +154,11 @@ export default function TransfersView() {
             </p>
 
             <p className="xfer-hero-price-strip">
-              <span>From <strong>$35</strong> to Rose Hall</span>
+              <span>From <strong>{formatPrice(35)}</strong> to Rose Hall</span>
               <span aria-hidden>·</span>
-              <span><strong>$80</strong> to Negril</span>
+              <span><strong>{formatPrice(80)}</strong> to Negril</span>
               <span aria-hidden>·</span>
-              <span><strong>$100</strong> to Ocho Rios</span>
+              <span><strong>{formatPrice(100)}</strong> to Ocho Rios</span>
               <span aria-hidden>·</span>
               <span style={{ color: 'var(--text-tertiary)' }}>flat per vehicle, one-way</span>
             </p>
@@ -248,7 +250,7 @@ export default function TransfersView() {
                   type="button"
                   className="xfer-route-tile"
                   onClick={() => selectRoute(r.destinationId)}
-                  aria-label={`${r.searchPhrase} — round-trip from $${q.priceUsd}`}
+                  aria-label={`${r.searchPhrase} — round-trip from ${formatPrice(q.priceUsd)}`}
                 >
                   <div className="xfer-route-tile-top">
                     <span className="xfer-route-tile-label">{r.label}</span>
@@ -256,7 +258,7 @@ export default function TransfersView() {
                   </div>
                   <div className="xfer-route-tile-bottom">
                     <span className="xfer-route-tile-from">From</span>
-                    <span className="xfer-route-tile-price">${q.priceUsd}</span>
+                    <span className="xfer-route-tile-price">{formatPrice(q.priceUsd)}</span>
                     <span className="xfer-route-tile-rt">round-trip</span>
                   </div>
                   <span className="xfer-route-tile-cta">Book →</span>
@@ -420,7 +422,7 @@ export default function TransfersView() {
               </div>
               <div className="xfer-quote-readout-price-block">
                 <p className="xfer-quote-readout-price">
-                  {quote ? `$${quote.priceUsd}` : '—'}
+                  {quote ? formatPrice(quote.priceUsd) : '—'}
                 </p>
                 <p className="xfer-quote-readout-meta">
                   {tripType === 'round_trip' ? 'Round-trip' : 'One-way'} · per vehicle
@@ -444,7 +446,7 @@ export default function TransfersView() {
                 cursor: quote ? 'pointer' : 'not-allowed',
               }}
             >
-              {quote ? `Book for $${quote.priceUsd} →` : 'Select a destination to continue'}
+              {quote ? `Book for ${formatPrice(quote.priceUsd)} →` : 'Select a destination to continue'}
             </button>
 
             <p
@@ -498,7 +500,6 @@ export default function TransfersView() {
                 'No cancellation window',
                 'New driver every leg, unfamiliar with your hotel',
               ]}
-              muted
             />
           </div>
 
@@ -569,11 +570,11 @@ export default function TransfersView() {
                     <div className="xfer-zone-prices">
                       <div>
                         <p className="xfer-zone-price-label">One-way</p>
-                        <p className="xfer-zone-price-value">${z.oneWay}</p>
+                        <p className="xfer-zone-price-value">{formatPrice(z.oneWay)}</p>
                       </div>
                       <div>
                         <p className="xfer-zone-price-label">Round-trip</p>
-                        <p className="xfer-zone-price-value">${z.roundTrip}</p>
+                        <p className="xfer-zone-price-value">{formatPrice(z.roundTrip)}</p>
                       </div>
                     </div>
                     <p className="xfer-zone-destinations">
@@ -798,14 +799,14 @@ export default function TransfersView() {
               onClick={handleBook}
               style={{ height: 46, padding: '0 20px', fontSize: 14, whiteSpace: 'nowrap' }}
             >
-              Book · ${quote.priceUsd}
+              Book · {formatPrice(quote.priceUsd)}
             </button>
           </>
         ) : (
           <>
             <div>
               <p className="xfer-sticky-dest">Airport transfer · MBJ</p>
-              <p className="xfer-sticky-meta">From $35 · 1–4 pax · flight tracked</p>
+              <p className="xfer-sticky-meta">From {formatPrice(35)} · 1–4 pax · flight tracked</p>
             </div>
             <button
               type="button"
@@ -882,11 +883,10 @@ export default function TransfersView() {
           padding-top: 28px;
           border-top: 1px solid var(--border);
         }
+        /* Layout-critical rules (position/width/aspect-ratio/min-height and
+           the mobile order) live in globals.css .xfer-hero-image so the hero
+           box reserves its height in SSR HTML — no CLS. Cosmetic only here. */
         .xfer-hero-image {
-          position: relative;
-          width: 100%;
-          aspect-ratio: 4 / 5;
-          min-height: 360px;
           border-radius: var(--r-xl);
           overflow: hidden;
           box-shadow: var(--shadow-lg);
@@ -1247,7 +1247,7 @@ export default function TransfersView() {
           letter-spacing: 0.18em;
           text-transform: uppercase;
           color: #fff;
-          background: var(--gold);
+          background: var(--gold-text);
           padding: 4px 10px;
           border-radius: 9999px;
           box-shadow: 0 2px 12px rgba(0, 0, 0, 0.25);
@@ -1570,10 +1570,7 @@ export default function TransfersView() {
         @media (max-width: 900px) {
           .xfer-hero { padding: 48px 20px 40px; }
           .xfer-hero-grid { grid-template-columns: minmax(0, 1fr); gap: 32px; }
-          .xfer-hero-image {
-            aspect-ratio: 16 / 10;
-            order: -1;
-          }
+          /* .xfer-hero-image mobile aspect-ratio + order:-1 are in globals.css */
           .xfer-trust-strip { gap: 16px; }
           .xfer-quote-section { padding: 40px 16px 32px; }
           .xfer-quote-card { padding: 28px 22px 24px; }
@@ -1635,9 +1632,17 @@ function Kicker({
 }
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  // Stable, unique id so the <label> is programmatically tied to its control
+  // (WCAG 4.1.2 / axe select-name). We clone the child to inject the id —
+  // for the Destination <select> this gives it an accessible name.
+  const id = useId()
+  const control = isValidElement(children)
+    ? cloneElement(children as React.ReactElement, { id })
+    : children
   return (
     <div style={{ marginBottom: 18 }}>
       <label
+        htmlFor={id}
         style={{
           display: 'block',
           fontFamily: 'var(--font-dm-sans)',
@@ -1649,7 +1654,7 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
       >
         {label}
       </label>
-      {children}
+      {control}
     </div>
   )
 }
@@ -1695,7 +1700,7 @@ function TripToggle({
             fontWeight: 700,
             letterSpacing: '0.1em',
             textTransform: 'uppercase',
-            background: 'var(--gold)',
+            background: 'var(--gold-text)',
             color: '#fff',
             padding: '3px 8px',
             borderRadius: 999,
@@ -1787,12 +1792,10 @@ function CompareItem({
   title,
   items,
   bold,
-  muted,
 }: {
   title: string
   items: string[]
   bold?: boolean
-  muted?: boolean
 }) {
   return (
     <div
@@ -1802,7 +1805,9 @@ function CompareItem({
         background: bold ? '#fff' : 'var(--surface)',
         border: bold ? '1px solid var(--border-strong)' : '1px solid var(--border)',
         boxShadow: bold ? 'var(--shadow-sm)' : 'none',
-        opacity: muted ? 0.85 : 1,
+        // No container opacity on the muted (taxi) card — it dimmed the body
+        // text below WCAG AA (4.22:1). The de-emphasis is already carried by
+        // the surface background + no shadow.
       }}
     >
       <p
@@ -1938,11 +1943,12 @@ function SavingsRow({
   mapl: number
   typical: string
 }) {
+  const { formatPrice } = useI18n()
   return (
     <div className="xfer-saving-cell">
       <span className="xfer-saving-route">{route}</span>
       <span className="xfer-saving-prices">
-        <span className="xfer-saving-mapl">${mapl}</span>
+        <span className="xfer-saving-mapl">{formatPrice(mapl)}</span>
         <span className="xfer-saving-typical">${typical}</span>
       </span>
       <span className="xfer-saving-tag">MAPL flat rate</span>
@@ -1967,11 +1973,12 @@ function RouteSection({
   body: string
   onSelect: (destId: string) => void
 }) {
+  const { formatPrice } = useI18n()
   return (
     <article id={id} className="xfer-route-block">
       <div className="xfer-route-block-head">
         <h3 className="xfer-route-block-h3">{heading}</h3>
-        <span className="xfer-route-block-price">From ${price}</span>
+        <span className="xfer-route-block-price">From {formatPrice(price)}</span>
       </div>
       <p className="xfer-route-block-meta">{travel}</p>
       <p className="xfer-route-block-body">{body}</p>

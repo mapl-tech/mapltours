@@ -15,6 +15,12 @@ export const metadata: Metadata = {
     description: 'Stories, guides, and dispatches from the real Jamaica.',
     type: 'website',
     url: BLOG_URL,
+    images: [{ url: `${SITE_URL}/opengraph-image`, width: 1200, height: 630 }],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'The MAPL Journal — Jamaica Travel Stories & Guides',
+    description: 'Stories, guides, and dispatches from the real Jamaica.',
   },
 }
 

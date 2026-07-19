@@ -80,12 +80,12 @@ export default function GiftCardsView() {
 
         {/* ── Gift Card Preview + Amount Selection ── */}
         <div style={{
-          display: 'flex', gap: 48, alignItems: 'flex-start',
+          display: 'flex', gap: 48, alignItems: 'flex-start', flexWrap: 'wrap',
           marginTop: -60, position: 'relative', zIndex: 2,
         }}>
 
           {/* Left: Card preview */}
-          <div style={{ flex: 1 }}>
+          <div style={{ flex: '1 1 340px', minWidth: 300 }}>
             <div style={{
               aspectRatio: '1.6',
               borderRadius: 'var(--r-xl)',
@@ -191,7 +191,7 @@ export default function GiftCardsView() {
           </div>
 
           {/* Right: Amount + Form */}
-          <div style={{ width: 380, flexShrink: 0 }}>
+          <div style={{ flex: '1 1 340px' }}>
 
             {!submitted ? (
               <>
@@ -456,7 +456,7 @@ export default function GiftCardsView() {
               <div key={item.step} style={{ textAlign: 'center' }}>
                 <p style={{
                   fontFamily: 'var(--font-dm-sans)', fontWeight: 800,
-                  fontSize: 40, color: 'var(--border-strong)',
+                  fontSize: 40, color: 'var(--gold-text)',
                   marginBottom: 12, letterSpacing: '-0.03em',
                 }}>
                   {item.step}

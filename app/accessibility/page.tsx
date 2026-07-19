@@ -4,6 +4,9 @@ import EditorialPage, { Section, ValueCard } from '@/components/EditorialPage'
 export const metadata: Metadata = {
   title: 'Accessibility',
   description: 'MAPL Tours Jamaica is committed to making travel accessible to everyone. Learn about our accessibility features and accommodations.',
+  alternates: {
+    canonical: 'https://mapltours.com/accessibility',
+  },
 }
 
 export default function AccessibilityPage() {

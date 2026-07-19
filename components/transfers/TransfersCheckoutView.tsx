@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useId, useState } from 'react'
 import Link from 'next/link'
 import dynamic from 'next/dynamic'
 import {
@@ -52,6 +52,17 @@ export default function TransfersCheckoutView() {
   const [stripeError, setStripeError] = useState<string | null>(null)
   const [confirmed] = useState(false)
   const [intentKey, setIntentKey] = useState(0)
+  // Local-time "now" as a datetime-local value (YYYY-MM-DDTHH:mm). Computed
+  // AFTER mount so SSR and the first client render both emit min="" (no
+  // hydration mismatch); the browser then constrains the pickers to future.
+  const [minDateTime, setMinDateTime] = useState('')
+  useEffect(() => {
+    const now = new Date()
+    const pad = (n: number) => String(n).padStart(2, '0')
+    setMinDateTime(
+      `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`,
+    )
+  }, [])
 
   const validate = (): boolean => {
     const errs: Record<string, boolean> = {}
@@ -61,9 +72,16 @@ export default function TransfersCheckoutView() {
       errs['email'] = true
     if (!form['phone']?.trim()) errs['phone'] = true
     for (const item of items) {
+      // Arrival must be present and not in the past (fixed-width datetime-local
+      // strings compare lexicographically against the local "now").
       if (!item.arrivalAt) errs[`arrival-${item.id}`] = true
-      if (item.tripType === 'round_trip' && !item.departureAt) {
-        errs[`departure-${item.id}`] = true
+      else if (minDateTime && item.arrivalAt < minDateTime)
+        errs[`arrival-${item.id}`] = true
+      if (item.tripType === 'round_trip') {
+        // Departure is required and must be strictly after arrival.
+        if (!item.departureAt) errs[`departure-${item.id}`] = true
+        else if (item.arrivalAt && item.departureAt <= item.arrivalAt)
+          errs[`departure-${item.id}`] = true
       }
     }
     setFormErrors(errs)
@@ -229,6 +247,7 @@ export default function TransfersCheckoutView() {
                     key={item.id}
                     item={item}
                     formErrors={formErrors}
+                    minDateTime={minDateTime}
                     onChange={(patch) => updateItem(item.id, patch)}
                     onRemove={() => removeItem(item.id)}
                   />
@@ -712,11 +731,13 @@ function MiniStepIndicator({ step }: { step: 1 | 2 }) {
 function TransferCard({
   item,
   formErrors,
+  minDateTime,
   onChange,
   onRemove,
 }: {
   item: TransferCartItem
   formErrors: Record<string, boolean>
+  minDateTime: string
   onChange: (patch: Partial<TransferCartItem>) => void
   onRemove: () => void
 }) {
@@ -751,7 +772,7 @@ function TransferCard({
               fontWeight: 700,
               letterSpacing: '0.22em',
               textTransform: 'uppercase',
-              color: 'var(--gold)',
+              color: 'var(--gold-text)',
               marginBottom: 6,
             }}
           >
@@ -866,6 +887,7 @@ function TransferCard({
           <Input
             label={rt ? 'Arrival date & time' : 'Pickup date & time'}
             type="datetime-local"
+            min={minDateTime}
             value={item.arrivalAt ?? ''}
             onChange={(v) => onChange({ arrivalAt: v })}
             error={formErrors[`arrival-${item.id}`]}
@@ -882,6 +904,7 @@ function TransferCard({
               <Input
                 label="Departure date & time"
                 type="datetime-local"
+                min={item.arrivalAt || minDateTime}
                 value={item.departureAt ?? ''}
                 onChange={(v) => onChange({ departureAt: v })}
                 error={formErrors[`departure-${item.id}`]}
@@ -913,6 +936,7 @@ function Input({
   span,
   autoComplete,
   indicator,
+  min,
 }: {
   label: string
   value: string
@@ -923,7 +947,11 @@ function Input({
   span?: 1 | 2
   autoComplete?: string
   indicator?: 'emerald' | 'gold'
+  min?: string
 }) {
+  // Tie the visible <label> to the control (WCAG 4.1.2) so the date/time and
+  // text inputs all have a programmatic accessible name.
+  const id = useId()
   const dotColor = error
     ? '#c00'
     : indicator === 'emerald'
@@ -937,6 +965,7 @@ function Input({
       style={{ gridColumn: span === 2 ? '1 / -1' : undefined }}
     >
       <label
+        htmlFor={id}
         style={{
           fontSize: 12.5,
           color: error ? '#c00' : 'var(--text-secondary)',
@@ -967,8 +996,10 @@ function Input({
         )}
       </label>
       <input
+        id={id}
         className="field-input"
         type={type}
+        min={min}
         autoComplete={autoComplete}
         placeholder={placeholder}
         value={value}
@@ -995,9 +1026,11 @@ function Textarea({
   span?: 1 | 2
   placeholder?: string
 }) {
+  const id = useId()
   return (
     <div style={{ gridColumn: span === 2 ? '1 / -1' : undefined }}>
       <label
+        htmlFor={id}
         style={{
           fontSize: 12.5,
           color: 'var(--text-secondary)',
@@ -1010,6 +1043,7 @@ function Textarea({
         {label}
       </label>
       <textarea
+        id={id}
         className="field-input"
         placeholder={placeholder}
         value={value}

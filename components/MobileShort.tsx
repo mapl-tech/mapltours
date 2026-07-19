@@ -8,7 +8,7 @@ import { useI18n } from '@/lib/i18n'
 import { useCartStore } from '@/lib/cart'
 import { Plus, Check, Star, MapPin, Clock, Play } from 'lucide-react'
 
-export default memo(function MobileShort({ exp }: { exp: Experience }) {
+export default memo(function MobileShort({ exp, priority = false }: { exp: Experience; priority?: boolean }) {
   const { addItem, removeItem, isInCart } = useCartStore()
   const { t, formatPrice } = useI18n()
   const inCart = isInCart(exp.id)
@@ -124,7 +124,9 @@ export default memo(function MobileShort({ exp }: { exp: Experience }) {
             fill
             sizes="100vw"
             quality={75}
-            loading="lazy"
+            {...(priority
+              ? { priority: true, fetchPriority: 'high' as const }
+              : { loading: 'lazy' as const })}
             style={{
               objectFit: 'cover',
               opacity: isPlaying ? 0 : 1,
@@ -195,6 +197,7 @@ export default memo(function MobileShort({ exp }: { exp: Experience }) {
           {/* Add button top-right */}
           <button
             onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleCart() }}
+            aria-label={inCart ? 'Remove from your trip' : `Add ${exp.title} to your trip`}
             style={{
               position: 'absolute', top: 12, right: 12, zIndex: 2,
               width: 40, height: 40, borderRadius: '50%',
