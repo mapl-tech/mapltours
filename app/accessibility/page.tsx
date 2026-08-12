@@ -29,7 +29,7 @@ export default function AccessibilityPage() {
       </Section>
 
       <Section title="Feedback">
-        <p>We are always working to improve accessibility. If you encounter any barriers or have suggestions, please contact us at <span style={{ color: 'var(--accent)', fontWeight: 600 }}>accessibility@mapltours.com</span>.</p>
+        <p>We are always working to improve accessibility. If you encounter any barriers or have suggestions, please contact us at <span style={{ color: 'var(--accent)', fontWeight: 600 }}>contact@mapltours.com</span>.</p>
       </Section>
     </EditorialPage>
   )

@@ -491,8 +491,8 @@ function Success({ data }: { data: ConfirmData }) {
             </li>
             <li>
               · 24/7 dispatch:{' '}
-              <Link href="mailto:dispatch@mapltours.com" style={{ color: 'var(--text-primary)', textDecoration: 'underline' }}>
-                dispatch@mapltours.com
+              <Link href="mailto:contact@mapltours.com" style={{ color: 'var(--text-primary)', textDecoration: 'underline' }}>
+                contact@mapltours.com
               </Link>
             </li>
             <li>· Free cancellation up to 24 hours before pickup.</li>

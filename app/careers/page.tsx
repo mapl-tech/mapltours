@@ -45,7 +45,7 @@ export default function CareersPage() {
       </Section>
 
       <Section title="How to Apply">
-        <p>Send your resume and a note about why you are excited about MAPL Tours to <span style={{ color: 'var(--accent)', fontWeight: 600 }}>careers@mapltours.com</span>. We read every application and respond within 5 business days.</p>
+        <p>Send your resume and a note about why you are excited about MAPL Tours to <span style={{ color: 'var(--accent)', fontWeight: 600 }}>contact@mapltours.com</span>. We read every application and respond within 5 business days.</p>
       </Section>
     </EditorialPage>
   )

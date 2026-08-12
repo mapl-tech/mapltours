@@ -44,7 +44,7 @@ export default function PressPage() {
       </Section>
 
       <Section title="Media Inquiries">
-        <p>For press inquiries, interviews, or brand assets, contact us at <span style={{ color: 'var(--accent)', fontWeight: 600 }}>press@mapltours.com</span>.</p>
+        <p>For press inquiries, interviews, or brand assets, contact us at <span style={{ color: 'var(--accent)', fontWeight: 600 }}>contact@mapltours.com</span>.</p>
       </Section>
     </EditorialPage>
   )

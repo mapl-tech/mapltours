@@ -10,7 +10,7 @@ import { render } from '@react-email/render'
  *    that triggered the email (e.g. a Stripe webhook must still ack).
  */
 
-const FROM_FALLBACK = 'MAPL Tours <trips@mapltours.com>'
+const FROM_FALLBACK = 'MAPL Tours <contact@mapltours.com>'
 const REPLY_TO_FALLBACK = 'contact@mapltours.com'
 
 const resend = process.env.RESEND_API_KEY
@@ -28,7 +28,7 @@ const resend = process.env.RESEND_API_KEY
  * useful detail:
  *   • Wrapping quotes (`"MAPL <…>"`)
  *   • Smart unicode angle brackets (`MAPL ‹…›`)
- *   • Missing angle brackets (`MAPL Tours trips@mapltours.com`)
+ *   • Missing angle brackets (`MAPL Tours contact@mapltours.com`)
  *   • Stray internal whitespace (`MAPL Tours <  trips@…  >`)
  *
  * Anything we can't repair cleanly falls back to a known-good default so

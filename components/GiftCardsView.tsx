@@ -498,14 +498,14 @@ export default function GiftCardsView() {
           }}>
             Our team is happy to help with bulk orders, corporate gifts, or custom amounts.
           </p>
-          <a href="mailto:gifts@mapltours.com" style={{
+          <a href="mailto:contact@mapltours.com" style={{
             display: 'inline-flex', alignItems: 'center',
             height: 44, padding: '0 28px',
             borderRadius: 9999, background: 'white', color: 'var(--accent)',
             fontSize: 14, fontWeight: 700, fontFamily: 'var(--font-dm-sans)',
             textDecoration: 'none',
           }}>
-            Contact gifts@mapltours.com
+            Contact contact@mapltours.com
           </a>
         </div>
       </div>

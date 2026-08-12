@@ -237,8 +237,8 @@ export default function TransferConfirmed(props: TransferConfirmedProps) {
           </Text>
           <Text style={{ ...s.body, marginTop: 6 }}>
             · 24/7 dispatch:{' '}
-            <Link href="mailto:dispatch@mapltours.com" style={{ color: '#1a1a1a', textDecoration: 'underline' }}>
-              dispatch@mapltours.com
+            <Link href="mailto:contact@mapltours.com" style={{ color: '#1a1a1a', textDecoration: 'underline' }}>
+              contact@mapltours.com
             </Link>
           </Text>
           <Text style={s.note}>

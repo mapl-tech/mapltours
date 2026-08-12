@@ -529,8 +529,8 @@ function Success({ data }: { data: ConfirmData }) {
             <li>· Free cancellation up to 48 hours before the experience — just reply to your confirmation email.</li>
             <li>
               · Questions? Email{' '}
-              <Link href="mailto:trips@mapltours.com" style={{ color: 'var(--text-primary)', textDecoration: 'underline' }}>
-                trips@mapltours.com
+              <Link href="mailto:contact@mapltours.com" style={{ color: 'var(--text-primary)', textDecoration: 'underline' }}>
+                contact@mapltours.com
               </Link>{' '}
               with your booking ref.
             </li>
