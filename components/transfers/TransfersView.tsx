@@ -790,7 +790,7 @@ export default function TransfersView() {
               <p className="xfer-sticky-dest">{quote.destinationName}</p>
               <p className="xfer-sticky-meta">
                 {quote.tripType === 'round_trip' ? 'Round-trip' : 'One-way'} ·{' '}
-                Zone {quote.zone} · 1–4 pax
+                Zone {quote.zone} · 1–4 passengers
               </p>
             </div>
             <button
@@ -806,7 +806,7 @@ export default function TransfersView() {
           <>
             <div>
               <p className="xfer-sticky-dest">Airport transfer · MBJ</p>
-              <p className="xfer-sticky-meta">From {formatPrice(35)} · 1–4 pax · flight tracked</p>
+              <p className="xfer-sticky-meta">From {formatPrice(35)} · 1–4 passengers · flight tracked</p>
             </div>
             <button
               type="button"

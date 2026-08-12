@@ -37,6 +37,10 @@ function humanizeId(id: string): string {
   return 'MAPL-' + id.slice(0, 8).toUpperCase()
 }
 
+function plural(n: number, word: string): string {
+  return `${n} ${word}${n === 1 ? '' : 's'}`
+}
+
 function fmtDate(iso: string | null | undefined): string {
   if (!iso) return ''
   try {
@@ -146,7 +150,7 @@ async function handle(request: NextRequest) {
         const trip = i.trip_type === 'round_trip' ? 'Round-trip' : 'One-way'
         return {
           title: `Airport transfer to ${i.hotel ?? i.destination}`,
-          sub: `Zone ${i.zone ?? ''} · ${trip} · ${i.passengers ?? i.travelers} pax`.replace(' ·  · ', ' · '),
+          sub: `Zone ${i.zone ?? ''} · ${trip} · ${plural(i.passengers ?? i.travelers ?? 1, 'passenger')}`.replace(' ·  · ', ' · '),
           price: Number(i.price_per_person),
         }
       }

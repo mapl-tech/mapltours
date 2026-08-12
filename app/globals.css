@@ -1027,3 +1027,9 @@ img[alt="Devon House Patty & Ice Cream Tour"] {
     order: -1;
   }
 }
+
+/* Admin bookings dashboard: two-column booking cards collapse on mobile. */
+@media (max-width: 720px) {
+  .admin-card-grid { grid-template-columns: 1fr !important; }
+  .admin-card-grid > div { border-right: none !important; }
+}

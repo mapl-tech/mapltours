@@ -122,7 +122,7 @@ export default function TransferConfirmed(props: TransferConfirmedProps) {
                 <Text style={s.bodyMuted}>
                   Zone {t.zone} ·{' '}
                   {t.tripType === 'round_trip' ? 'Round-trip' : 'One-way'} ·{' '}
-                  {t.passengers} pax
+                  {t.passengers} passenger{t.passengers !== 1 ? 's' : ''}
                 </Text>
               </Column>
               <Column style={{ verticalAlign: 'top', textAlign: 'right', whiteSpace: 'nowrap' }} className="mapl-stack-col">

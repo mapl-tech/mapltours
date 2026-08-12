@@ -347,7 +347,7 @@ function Success({ data }: { data: ConfirmData }) {
                 }}
               >
                 Zone {t.zone} ·{' '}
-                {t.tripType === 'round_trip' ? 'Round-trip' : 'One-way'} · {t.passengers} pax
+                {t.tripType === 'round_trip' ? 'Round-trip' : 'One-way'} · {t.passengers} passenger{t.passengers !== 1 ? 's' : ''}
               </p>
 
               {t.arrivalAt && (

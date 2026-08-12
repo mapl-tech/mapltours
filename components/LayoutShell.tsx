@@ -13,7 +13,9 @@ import { useI18n } from '@/lib/i18n'
 export default function LayoutShell({ children }: { children: React.ReactNode }) {
   const [drawerOpen, setDrawerOpen] = useState(false)
   const pathname = usePathname()
-  const hideNav = pathname === '/login'
+  // Hide the consumer nav + cart on the login screen and the whole admin
+  // area. Admin pages are internal tools, not shopping surfaces.
+  const hideNav = pathname === '/login' || pathname.startsWith('/admin')
 
   // Both stores use skipHydration so SSR and the first client paint render
   // identical (empty cart / USD) HTML, no React hydration mismatch. Load

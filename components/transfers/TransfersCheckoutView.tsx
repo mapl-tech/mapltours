@@ -490,7 +490,7 @@ export default function TransfersCheckoutView() {
                       {item.tripType === 'round_trip'
                         ? 'Round-trip'
                         : 'One-way'}{' '}
-                      · {item.passengers} pax
+                      · {item.passengers} passenger{item.passengers !== 1 ? 's' : ''}
                     </p>
                   </div>
                   <span
