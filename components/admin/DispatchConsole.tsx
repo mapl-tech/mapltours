@@ -20,6 +20,7 @@ const accent = 'var(--accent, #171614)'
 const border = '1px solid var(--border, #E7E1D6)'
 const borderSoft = '1px solid var(--border-subtle, #F1ECE3)'
 const tnum = { fontVariantNumeric: 'tabular-nums' as const }
+const subLabel: React.CSSProperties = { fontSize: 11, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: faint, margin: '0 0 6px' }
 const AIRPORT = 'Sangster International Airport (MBJ)'
 
 function Card({ title, children }: { title?: string; children: React.ReactNode }) {
@@ -137,13 +138,17 @@ export default function DispatchConsole({ booking, stripeFee }: { booking: Bk; s
       <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) minmax(0,1fr)', gap: 14, marginTop: 20 }} className="admin-card-grid">
         {/* Money */}
         <Card title="Money">
-          <MRow k="Customer paid" v={`${money(m.customerPaid)} USD`} />
+          <div style={subLabel}>What the customer paid</div>
+          <MRow k="Driver base rate" v={money(m.driverBase)} />
+          <MRow k="MAPL markup (20%)" v={`+ ${money(m.markup)}`} />
           <MRow k="Fare" v={money(m.fare)} />
-          <MRow k="Transfer fee (10%)" v={money(m.transferFee)} />
-          <MRow k="Stripe fee" v={m.stripeFee != null ? `- ${money(m.stripeFee)}` : 'n/a'} />
-          <MRow k="Net to MAPL" v={m.netToMapl != null ? money(m.netToMapl) : 'n/a'} />
-          <MRow k="Driver owed" v={money(m.driverTotal)} big />
-          {m.isRoundTrip && <MRow k="Per leg (pay half each way)" v={money(m.driverPerLeg)} />}
+          <MRow k="Transfer fee (10%)" v={`+ ${money(m.transferFee)}`} />
+          <MRow k="Customer paid" v={`${money(m.customerPaid)} USD`} big />
+
+          <div style={{ ...subLabel, marginTop: 16 }}>Where it goes</div>
+          <MRow k="Stripe processing fee" v={m.stripeFee != null ? `- ${money(m.stripeFee)}` : 'pending'} />
+          <MRow k={m.isRoundTrip ? `Driver payout (${money(m.driverPerLeg)} x2)` : 'Driver payout'} v={`- ${money(m.driverTotal)}`} />
+          <MRow k="MAPL keeps" v={m.maplKeeps != null ? money(m.maplKeeps) : 'n/a'} em big />
         </Card>
 
         {/* Trip */}

@@ -65,13 +65,19 @@ export function money(n: number | null | undefined): string {
 
 export interface MoneyBlock {
   customerPaid: number
+  /** what MAPL pays the driver = the base rate the fare was marked up from. */
+  driverBase: number
+  /** the 20% markup MAPL adds to the driver rate to get the fare. */
+  markup: number
   fare: number
   transferFee: number
-  markupKept: number
   stripeFee: number | null
+  /** what Stripe deposits (customer paid minus Stripe fee), BEFORE the driver. */
   netToMapl: number | null
   driverTotal: number
   driverPerLeg: number
+  /** MAPL's actual profit: customer paid minus Stripe fee minus driver payout. */
+  maplKeeps: number | null
   isRoundTrip: boolean
 }
 
@@ -80,17 +86,20 @@ export function moneyBlock(b: Bk, stripeFee: number | null): MoneyBlock {
   const transferFee = Number(b.booking_fee ?? 0)
   const customerPaid = Number(b.total_paid ?? 0)
   const driverTotal = driverOwed(fare)
+  const netToMapl = stripeFee != null ? round2(customerPaid - stripeFee) : null
   const leg = firstLeg(b)
   const isRoundTrip = leg?.tripType === 'round_trip'
   return {
     customerPaid,
+    driverBase: driverTotal,
+    markup: round2(fare - driverTotal),
     fare,
     transferFee,
-    markupKept: round2(fare - driverTotal),
     stripeFee,
-    netToMapl: stripeFee != null ? round2(customerPaid - stripeFee) : null,
+    netToMapl,
     driverTotal,
     driverPerLeg: isRoundTrip ? round2(driverTotal / 2) : driverTotal,
+    maplKeeps: netToMapl != null ? round2(netToMapl - driverTotal) : null,
     isRoundTrip,
   }
 }
