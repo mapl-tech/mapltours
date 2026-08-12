@@ -44,7 +44,7 @@ export default function TermsPage() {
 
       <Section title="Cancellations and changes">
         <ul style={{ marginTop: 12, paddingLeft: 20, display: 'flex', flexDirection: 'column', gap: 8 }}>
-          <li>You may cancel free of charge up to 48 hours before the experience start time for a full refund.</li>
+          <li>You may cancel free of charge up to 48 hours before the experience start time for a refund of the amount you paid, less the payment processing fee, which is non-refundable.</li>
           <li>Cancellations made within 48 hours of the start time are non-refundable, except where the creator agrees otherwise.</li>
           <li>If a creator cancels your experience, you will receive a full refund and we will help you find an alternative.</li>
           <li>If weather or other safety conditions force a cancellation, you will receive a full refund or a free reschedule.</li>
