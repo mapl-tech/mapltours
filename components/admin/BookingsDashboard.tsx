@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
+import { visibleSteps } from '@/lib/dispatch'
 
 /**
  * Client dashboard for the admin bookings page. The parent server component
@@ -195,6 +196,16 @@ function BookingCard({ b, variant }: { b: Row; variant: 'abandoned' | 'paid' }) 
           </div>
         </div>
       </div>
+      {variant === 'paid' && isTransfer && (
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, padding: '12px 18px', borderTop: borderSoft, background: '#FCFBF8', flexWrap: 'wrap' }}>
+          <span style={{ fontSize: 12.5, color: faint, ...tnum }}>
+            Dispatch {Object.keys(b.dispatch || {}).length} / {visibleSteps(items[0]?.trip_type === 'round_trip').length} steps
+          </span>
+          <Link href={`/admin/dispatch/${b.id}`} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, height: 34, padding: '0 14px', borderRadius: 9999, border: '1px solid var(--accent, #171614)', background: 'var(--accent, #171614)', color: '#fff', fontSize: 12.5, fontWeight: 600, textDecoration: 'none' }}>
+            Manage dispatch →
+          </Link>
+        </div>
+      )}
     </div>
   )
 }
@@ -203,7 +214,7 @@ type Tab = 'abandoned' | 'paid'
 type Filter = 'all' | 'tour' | 'transfer'
 
 export default function BookingsDashboard({ bookings }: { bookings: Row[] }) {
-  const [tab, setTab] = useState<Tab>('abandoned')
+  const [tab, setTab] = useState<Tab>('paid')
   const [filter, setFilter] = useState<Filter>('all')
 
   const abandoned = bookings.filter((b) => b.status === 'pending')
@@ -224,8 +235,8 @@ export default function BookingsDashboard({ bookings }: { bookings: Row[] }) {
   const shown = tab === 'paid' ? list.slice(0, 60) : list
 
   const tabs: { key: Tab; label: string; count: number }[] = [
-    { key: 'abandoned', label: 'Abandoned carts', count: abandoned.length },
     { key: 'paid', label: 'Recent paid bookings', count: paid.length },
+    { key: 'abandoned', label: 'Abandoned carts', count: abandoned.length },
   ]
   const filters: { key: Filter; label: string }[] = [
     { key: 'all', label: 'All' },
