@@ -28,6 +28,15 @@ export const metadata: Metadata = {
     'MBJ to Ocho Rios',
     'Sandals airport transfer',
     'flat rate Jamaica taxi',
+    // Resort routes with proven booking demand (from live reservations).
+    'Montego Bay to Negril transfer',
+    'MBJ to Lucea transfer',
+    'MBJ to Rose Hall transfer',
+    'Royalton Negril airport transfer',
+    'Grand Palladium Lucea transfer',
+    'Hilton Rose Hall transfer',
+    'airport transfer Falmouth',
+    'airport transfer Runaway Bay',
   ],
   alternates: { canonical: PAGE_URL },
   openGraph: {
@@ -88,9 +97,27 @@ function buildStructuredData() {
       url: SITE_URL,
       logo: `${SITE_URL}/icon.png`,
     },
-    areaServed: {
-      '@type': 'Country',
-      name: 'Jamaica',
+    // Geographic coverage: the towns MAPL actually drives to, so search
+    // engines associate the transfer service with each destination, not just
+    // "Jamaica" as a whole. Mirrors the live zone/destination table.
+    areaServed: [
+      { '@type': 'Country', name: 'Jamaica' },
+      { '@type': 'City', name: 'Montego Bay' },
+      { '@type': 'City', name: 'Rose Hall' },
+      { '@type': 'City', name: 'Falmouth' },
+      { '@type': 'City', name: 'Lucea' },
+      { '@type': 'City', name: 'Runaway Bay' },
+      { '@type': 'City', name: 'Ocho Rios' },
+      { '@type': 'City', name: 'Negril' },
+    ],
+    // Departure point: Sangster International (MBJ), with coordinates, so the
+    // service is geo-anchored to the airport every transfer starts from.
+    location: {
+      '@type': 'Airport',
+      name: 'Sangster International Airport',
+      iataCode: 'MBJ',
+      address: { '@type': 'PostalAddress', addressLocality: 'Montego Bay', addressRegion: 'Saint James', addressCountry: 'JM' },
+      geo: { '@type': 'GeoCoordinates', latitude: 18.5037, longitude: -77.9134 },
     },
     availableChannel: {
       '@type': 'ServiceChannel',

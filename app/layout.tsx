@@ -131,10 +131,14 @@ function JsonLd() {
       latitude: 18.1096,
       longitude: -77.2975,
     },
-    areaServed: {
-      '@type': 'Country',
-      name: 'Jamaica',
-    },
+    areaServed: [
+      { '@type': 'Country', name: 'Jamaica' },
+      { '@type': 'City', name: 'Montego Bay' },
+      { '@type': 'City', name: 'Negril' },
+      { '@type': 'City', name: 'Ocho Rios' },
+      { '@type': 'City', name: 'Kingston' },
+      { '@type': 'City', name: 'Port Antonio' },
+    ],
     priceRange: '$55 - $145',
     // Note: aggregateRating intentionally omitted from the site-wide entity.
     // Google rejects "self-serving" reviews, ratings/reviews belong on the
@@ -201,6 +205,12 @@ export default function RootLayout({
       <head>
         <JsonLd />
         <meta name="google-site-verification" content="NfZAf4Mh4YPVRIeaJT6pHB57jI10V5fTXOgX2WT4k3U" />
+        {/* Geo targeting: MAPL operates in Jamaica, anchored on Montego Bay /
+            Sangster (MBJ), where every airport transfer begins. */}
+        <meta name="geo.region" content="JM" />
+        <meta name="geo.placename" content="Montego Bay, Jamaica" />
+        <meta name="geo.position" content="18.5037;-77.9134" />
+        <meta name="ICBM" content="18.5037, -77.9134" />
         {/*
           Hero image preload was previously a manual `<link rel="preload">`
           pointing at the raw 1920x1080 Pexels URL. That bypassed Next/Image
