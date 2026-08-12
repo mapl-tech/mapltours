@@ -317,7 +317,7 @@ function Block({ block, isFirst }: { block: BlogBlock; isFirst: boolean }) {
                 letterSpacing: '0.22em',
               }}
             >
-              — {block.attribution}
+             , {block.attribution}
             </cite>
           )}
         </blockquote>
@@ -514,7 +514,7 @@ export default function BlogPostPage({
         </div>
       </header>
 
-      {/* Title block — centered, typographic */}
+      {/* Title block, centered, typographic */}
       <div className="container" style={{ maxWidth: 820, textAlign: 'center', padding: '72px 16px 48px' }}>
         <div style={{ marginBottom: 20 }}>
           <Kicker color="var(--gold)" size={11}>
@@ -600,7 +600,7 @@ export default function BlogPostPage({
         </div>
       </div>
 
-      {/* Hero image — framed, not full-bleed */}
+      {/* Hero image, framed, not full-bleed */}
       <div className="container" style={{ maxWidth: 1000, paddingBottom: 64 }}>
         <div
           style={{

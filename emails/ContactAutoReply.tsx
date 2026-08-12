@@ -22,9 +22,9 @@ export default function ContactAutoReply({
   const name = firstName?.trim() || 'there'
 
   return (
-    <MaplLayout preheader="We received your message — we'll be in touch within one business day.">
+    <MaplLayout preheader="We received your message, we'll be in touch within one business day.">
       <Text style={s.kicker}>Message received</Text>
-      <Heading style={s.heading}>Thanks, {name} — we got it.</Heading>
+      <Heading style={s.heading}>Thanks, {name}, we got it.</Heading>
       <Text style={s.heroLead}>
         Your message just landed in our inbox. A real person on the MAPL
         Tours team reads every contact form submission, and we&rsquo;ll get
@@ -54,7 +54,7 @@ export default function ContactAutoReply({
 
       <Text style={{ ...s.body, marginTop: 24 }}>
         If your trip is coming up fast and you need an answer the same day,
-        reply to this email and put <strong>URGENT</strong> in the subject line —
+        reply to this email and put <strong>URGENT</strong> in the subject line,
         it&rsquo;ll bump straight to the top of the queue.
       </Text>
 

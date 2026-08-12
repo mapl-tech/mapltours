@@ -59,7 +59,7 @@ function normalizeAddress(raw: string | undefined, fallback: string, label: stri
     )
   }
 
-  // Recovery — pull out the email and rewrap it cleanly.
+  // Recovery, pull out the email and rewrap it cleanly.
   const match = s.match(emailRe)
   if (match) {
     const email = match[0]
@@ -102,8 +102,8 @@ export async function sendEmail({
   to, subject, react, from, replyTo, tags,
 }: SendEmailInput): Promise<SendEmailResult> {
   if (!resend) {
-    // Dev convenience — no Resend key means we only log.
-    console.warn('[email] RESEND_API_KEY not set — would have sent:', subject, 'to', to)
+    // Dev convenience, no Resend key means we only log.
+    console.warn('[email] RESEND_API_KEY not set, would have sent:', subject, 'to', to)
     return { ok: false, error: 'RESEND_API_KEY missing' }
   }
 

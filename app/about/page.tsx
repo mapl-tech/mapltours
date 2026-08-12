@@ -5,7 +5,7 @@ import { DESTINATION_IMAGES } from '@/lib/experiences'
 import Footer from '@/components/Footer'
 
 export const metadata: Metadata = {
-  title: 'About MAPL Tours — Jamaica, Told by Its People',
+  title: 'About MAPL Tours, Jamaica, Told by Its People',
   description: 'The story behind MAPL Tours Jamaica: a cultural travel platform connecting travelers with authentic experiences crafted by local creators.',
   alternates: { canonical: 'https://mapltours.com/about' },
 }
@@ -17,7 +17,7 @@ const VALUES = [
   },
   {
     title: 'Tourism that uplifts',
-    body: 'The money you spend here flows back to the creators, the parishes, the families. We measure ourselves by what our communities gain — not by what we extract.',
+    body: 'The money you spend here flows back to the creators, the parishes, the families. We measure ourselves by what our communities gain, not by what we extract.',
   },
   {
     title: 'Cultural stewardship',
@@ -44,7 +44,7 @@ export default function AboutPage() {
   return (
     <div style={{ minHeight: '100vh', paddingTop: 56, background: 'var(--bg)', color: INK }}>
       {/* ═══════════════════════════════════
-         HERO — cinematic full-bleed
+         HERO, cinematic full-bleed
          ═══════════════════════════════════ */}
       <section style={{
         position: 'relative',
@@ -60,12 +60,12 @@ export default function AboutPage() {
           fill priority sizes="100vw"
           style={{ objectFit: 'cover', objectPosition: 'center 55%' }}
         />
-        {/* Ink wash — readable without washing out the image */}
+        {/* Ink wash, readable without washing out the image */}
         <div style={{
           position: 'absolute', inset: 0,
           background: 'linear-gradient(180deg, rgba(23,22,20,0.35) 0%, rgba(23,22,20,0.18) 42%, rgba(23,22,20,0.78) 100%)',
         }} />
-        {/* Fine hairline at top — editorial chrome */}
+        {/* Fine hairline at top, editorial chrome */}
         <div style={{
           position: 'absolute', top: 28,
           left: '6vw', right: '6vw',
@@ -96,7 +96,7 @@ export default function AboutPage() {
           </span>
         </div>
 
-        {/* Title block — anchored bottom-left, editorial hang */}
+        {/* Title block, anchored bottom-left, editorial hang */}
         <div style={{
           position: 'absolute',
           bottom: 'clamp(40px, 7vh, 88px)',
@@ -123,13 +123,13 @@ export default function AboutPage() {
             color: 'rgba(255,255,255,0.82)',
             fontWeight: 400,
           }}>
-            A cultural travel platform built for the Jamaica beyond the resort — one story, one parish, one local creator at a time.
+            A cultural travel platform built for the Jamaica beyond the resort, one story, one parish, one local creator at a time.
           </p>
         </div>
       </section>
 
       {/* ═══════════════════════════════════
-         MANIFESTO — oversized pull quote
+         MANIFESTO, oversized pull quote
          ═══════════════════════════════════ */}
       <section style={{
         maxWidth: 1100, margin: '0 auto',
@@ -157,7 +157,7 @@ export default function AboutPage() {
           {' '}
           <span style={{ fontStyle: 'italic', color: GOLD }}>tell its own story</span>
           {' '}
-          — in its own voice, on its own terms, to travelers who actually want to listen.
+         , in its own voice, on its own terms, to travelers who actually want to listen.
         </p>
       </section>
 
@@ -210,17 +210,17 @@ export default function AboutPage() {
               The best way to experience Jamaica has never been through a lobby key card. It&rsquo;s through Devon&rsquo;s jerk pit in Boston Bay, a sound system in Trench Town, the first cup of coffee poured at 5,000 feet as the Blue Mountains are still waking up.
             </p>
             <p style={{ fontSize: 16, lineHeight: 1.8, color: 'var(--text-secondary)', fontFamily: 'var(--font-dm-sans)', marginBottom: 20 }}>
-              MAPL Tours is a cultural travel platform that connects travelers with the people who make Jamaica, Jamaica — creators, chefs, fishermen, musicians, farmers, historians — and pays them properly for the privilege.
+              MAPL Tours is a cultural travel platform that connects travelers with the people who make Jamaica, Jamaica, creators, chefs, fishermen, musicians, farmers, historians, and pays them properly for the privilege.
             </p>
             <p style={{ fontSize: 16, lineHeight: 1.8, color: 'var(--text-secondary)', fontFamily: 'var(--font-dm-sans)' }}>
-              We are proudly built by <Link href="https://www.mapltech.com" target="_blank" rel="noopener noreferrer" style={{ color: INK, fontWeight: 600, textDecoration: 'underline', textUnderlineOffset: 3, textDecorationThickness: '1px' }}>MAPL Tech</Link> — a technology company dedicated to products that connect people with authentic cultural experiences around the world.
+              We are proudly built by <Link href="https://www.mapltech.com" target="_blank" rel="noopener noreferrer" style={{ color: INK, fontWeight: 600, textDecoration: 'underline', textUnderlineOffset: 3, textDecorationThickness: '1px' }}>MAPL Tech</Link>, a technology company dedicated to products that connect people with authentic cultural experiences around the world.
             </p>
           </div>
         </div>
       </section>
 
       {/* ═══════════════════════════════════
-         VALUES — numbered editorial list (no cards)
+         VALUES, numbered editorial list (no cards)
          ═══════════════════════════════════ */}
       <section style={{ background: '#FAF9F7' }}>
         <div style={{
@@ -254,7 +254,7 @@ export default function AboutPage() {
               fontWeight: 500, letterSpacing: '0.22em', textTransform: 'uppercase',
               color: 'var(--text-tertiary)',
             }}>
-              I — IV
+              I, IV
             </p>
           </div>
 
@@ -301,7 +301,7 @@ export default function AboutPage() {
       </section>
 
       {/* ═══════════════════════════════════
-         BY THE NUMBERS — hairline-ruled row
+         BY THE NUMBERS, hairline-ruled row
          ═══════════════════════════════════ */}
       <section style={{
         maxWidth: 1260, margin: '0 auto',
@@ -352,7 +352,7 @@ export default function AboutPage() {
       </section>
 
       {/* ═══════════════════════════════════
-         SIGNED CLOSING — ink band
+         SIGNED CLOSING, ink band
          ═══════════════════════════════════ */}
       <section style={{
         background: INK_WARM, color: '#fff',

@@ -10,7 +10,7 @@ export interface VideoRejectedProps {
 }
 
 /**
- * Sent when an admin rejects a clip. Tone: warm, specific, encouraging —
+ * Sent when an admin rejects a clip. Tone: warm, specific, encouraging,
  * we want the user to submit again, not feel shamed. Admin notes are surfaced
  * in their own panel so the reason is unmissable.
  */
@@ -26,14 +26,14 @@ export default function VideoRejected({
     : siteUrl()
 
   return (
-    <MaplLayout preheader="We couldn't publish this clip — but we'd love another take.">
+    <MaplLayout preheader="We couldn't publish this clip, but we'd love another take.">
       <Text style={s.kicker}>Couldn&rsquo;t publish</Text>
       <Heading style={s.heading}>
         We couldn&rsquo;t put this one live, {name}.
       </Heading>
       <Text style={s.body}>
         Thanks for sending a clip
-        {experienceTitle ? <> from <strong style={{ color: '#fff' }}>{experienceTitle}</strong></> : null}. It didn&rsquo;t quite fit our publishing standards — but we&rsquo;d genuinely love another take from you.
+        {experienceTitle ? <> from <strong style={{ color: '#fff' }}>{experienceTitle}</strong></> : null}. It didn&rsquo;t quite fit our publishing standards, but we&rsquo;d genuinely love another take from you.
       </Text>
 
       {/* Admin notes (if provided) */}
@@ -49,7 +49,7 @@ export default function VideoRejected({
         <Text style={s.panelKicker}>What we&rsquo;re looking for</Text>
         <Text style={s.panelBody}>
           · Shot vertically (9:16), under 60 seconds<br />
-          · The experience itself — faces, food, views, sound<br />
+          · The experience itself, faces, food, views, sound<br />
           · Original footage filmed on the tour<br />
           · Clean audio, steady framing
         </Text>

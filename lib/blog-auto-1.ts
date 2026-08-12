@@ -11,7 +11,7 @@ export const POSTS_1: BlogPost[] = [
     slug: 'dunns-river-falls-tour-guide',
     title: "Dunn's River Falls Tour: The Honest Guide",
     excerpt:
-      "A local's honest Dunn's River Falls tour guide — what the climb actually feels like, what it costs, and when to go to skip the cruise-ship rush.",
+      "A local's honest Dunn's River Falls tour guide, what the climb actually feels like, what it costs, and when to go to skip the cruise-ship rush.",
     category: 'Guides',
     image: BLOG_IMAGES['dunns-river-falls-tour-guide'],
     readTime: 5,
@@ -20,20 +20,20 @@ export const POSTS_1: BlogPost[] = [
     body: [
       {
         type: 'p',
-        text: "By 9:40am the parking lot at Dunn's River is already half cruise-ship coaches, half rented Toyotas, and the smell of wet limestone drifts up from the beach. A Dunn's River Falls tour is the most-booked excursion on the island for a reason — 600 feet of terraced waterfall that flows directly into the Caribbean, and you get to climb it. The question isn't whether it's worth doing. It's whether you do it right.",
+        text: "By 9:40am the parking lot at Dunn's River is already half cruise-ship coaches, half rented Toyotas, and the smell of wet limestone drifts up from the beach. A Dunn's River Falls tour is the most-booked excursion on the island for a reason, 600 feet of terraced waterfall that flows directly into the Caribbean, and you get to climb it. The question isn't whether it's worth doing. It's whether you do it right.",
       },
       {
         type: 'p',
-        text: "The falls sit about four miles west of downtown Ocho Rios in St. Ann. It's been a park since the 1970s, run by the UDC, and on a peak-season Tuesday you might share the climb with 2,000 other people. That's the version most travelers write reviews about. There's a better version — and it's mostly a matter of showing up at the right hour.",
+        text: "The falls sit about four miles west of downtown Ocho Rios in St. Ann. It's been a park since the 1970s, run by the UDC, and on a peak-season Tuesday you might share the climb with 2,000 other people. That's the version most travelers write reviews about. There's a better version, and it's mostly a matter of showing up at the right hour.",
       },
       { type: 'h2', text: "The climb itself" },
       {
         type: 'p',
-        text: "The water is cold, about 70°F year-round, and it comes off the mountain clear enough to see your toes. The climb takes roughly 45 minutes if you stop for photos, 25 if you don't. Guides link groups together in a human chain — hands on shoulders — and lead you up a zig-zag line that threads through the fastest current to the calmest pools.",
+        text: "The water is cold, about 70°F year-round, and it comes off the mountain clear enough to see your toes. The climb takes roughly 45 minutes if you stop for photos, 25 if you don't. Guides link groups together in a human chain, hands on shoulders, and lead you up a zig-zag line that threads through the fastest current to the calmest pools.",
       },
       {
         type: 'p',
-        text: "You'll want water shoes. The rock has a bit of algae and the stone is uneven — not dangerous, just not barefoot-friendly. Rent a pair at the park for about $8 if you forgot yours. Waterproof phone pouches run $10 at the gift shop and they're worth it; guides happily take photos at the good spots.",
+        text: "You'll want water shoes. The rock has a bit of algae and the stone is uneven, not dangerous, just not barefoot-friendly. Rent a pair at the park for about $8 if you forgot yours. Waterproof phone pouches run $10 at the gift shop and they're worth it; guides happily take photos at the good spots.",
       },
       {
         type: 'p',
@@ -48,11 +48,11 @@ export const POSTS_1: BlogPost[] = [
       {
         type: 'list',
         items: [
-          'Park opens at 8:30am — be in the lot at 8:20',
+          'Park opens at 8:30am, be in the lot at 8:20',
           'Cruise buses start arriving around 10am and leave by 2pm',
           'Sunday is the quietest day because fewer ships dock',
           'Late afternoon (3pm onward) is second-best, plus warmer air',
-          'Avoid Wednesdays and Saturdays — peak ship days in high season',
+          'Avoid Wednesdays and Saturdays, peak ship days in high season',
         ],
       },
       {
@@ -66,7 +66,7 @@ export const POSTS_1: BlogPost[] = [
       { type: 'h2', text: "What it costs" },
       {
         type: 'p',
-        text: "Direct park admission is $25. Add $8 for water shoes, $10 for a locker, and maybe $15 for lunch at the on-site grill. A private guide is tipped separately — $5–10 per person is standard and welcomed. A full round-trip taxi from an Ocho Rios hotel runs $20–30; from Montego Bay expect $140 for a private driver for the whole day.",
+        text: "Direct park admission is $25. Add $8 for water shoes, $10 for a locker, and maybe $15 for lunch at the on-site grill. A private guide is tipped separately, $5–10 per person is standard and welcomed. A full round-trip taxi from an Ocho Rios hotel runs $20–30; from Montego Bay expect $140 for a private driver for the whole day.",
       },
       {
         type: 'p',
@@ -79,7 +79,7 @@ export const POSTS_1: BlogPost[] = [
     slug: 'jamaica-excursions-worth-booking',
     title: 'Jamaica Excursions Worth Leaving the Resort For',
     excerpt:
-      'Not every tour is worth your money. Here are the Jamaica excursions worth booking — tested, priced, and ranked by a guide who grew up here.',
+      'Not every tour is worth your money. Here are the Jamaica excursions worth booking, tested, priced, and ranked by a guide who grew up here.',
     category: 'Guides',
     image: BLOG_IMAGES['jamaica-excursions-worth-booking'],
     readTime: 5,
@@ -101,7 +101,7 @@ export const POSTS_1: BlogPost[] = [
       },
       {
         type: 'p',
-        text: "Rick's Cafe cliff diving is corny on paper and unbeatable in person — but only if you go with a small-group tour that includes the surrounding cliffs. The 35-foot jump gets the attention; the afternoon of snorkeling around Negril's West End earns the price. Figure $75–95 per person.",
+        text: "Rick's Cafe cliff diving is corny on paper and unbeatable in person, but only if you go with a small-group tour that includes the surrounding cliffs. The 35-foot jump gets the attention; the afternoon of snorkeling around Negril's West End earns the price. Figure $75–95 per person.",
       },
       {
         type: 'p',
@@ -117,9 +117,9 @@ export const POSTS_1: BlogPost[] = [
         type: 'list',
         items: [
           'Large-bus city tours that spend 40 minutes at a craft market you did not ask for',
-          'Generic catamaran party cruises — fine, but interchangeable with any Caribbean island',
+          'Generic catamaran party cruises, fine, but interchangeable with any Caribbean island',
           'Dolphin-encounter packages sold as nature experiences',
-          'Any excursion advertised as "visit three parishes in a day" — you will see highway, nothing else',
+          'Any excursion advertised as "visit three parishes in a day", you will see highway, nothing else',
         ],
       },
       {
@@ -133,7 +133,7 @@ export const POSTS_1: BlogPost[] = [
       { type: 'h2', text: "Before you book" },
       {
         type: 'p',
-        text: "Always ask the group size. Always ask if lunch is included and where it comes from. Always ask whether pickup is private or shared — a shared shuttle through three resorts adds 90 minutes to your day. And always book direct when you can. Concierge markup is 30–50% on most excursions.",
+        text: "Always ask the group size. Always ask if lunch is included and where it comes from. Always ask whether pickup is private or shared, a shared shuttle through three resorts adds 90 minutes to your day. And always book direct when you can. Concierge markup is 30–50% on most excursions.",
       },
       {
         type: 'p',
@@ -146,7 +146,7 @@ export const POSTS_1: BlogPost[] = [
     slug: 'montego-bay-tours-ranked',
     title: 'Montego Bay Tours, Ranked by an Actual Local',
     excerpt:
-      'An honest ranking of Montego Bay tours — what the strip hides, what the concierge oversells, and which day trips are actually worth booking.',
+      'An honest ranking of Montego Bay tours, what the strip hides, what the concierge oversells, and which day trips are actually worth booking.',
     category: 'Guides',
     image: BLOG_IMAGES['montego-bay-tours-ranked'],
     readTime: 5,
@@ -155,7 +155,7 @@ export const POSTS_1: BlogPost[] = [
     body: [
       {
         type: 'p',
-        text: "MoBay gets treated like a one-street town — that strip from Sangster airport down the Hip Strip and out to the Rose Hall resorts. The travelers who leave thinking Montego Bay is fine-but-nothing-special never made it past that road. The real ranking of Montego Bay tours reshuffles every assumption you arrived with.",
+        text: "MoBay gets treated like a one-street town, that strip from Sangster airport down the Hip Strip and out to the Rose Hall resorts. The travelers who leave thinking Montego Bay is fine-but-nothing-special never made it past that road. The real ranking of Montego Bay tours reshuffles every assumption you arrived with.",
       },
       {
         type: 'p',
@@ -168,7 +168,7 @@ export const POSTS_1: BlogPost[] = [
       },
       {
         type: 'p',
-        text: "Second: the Rose Hall Great House night tour. Yes, it leans theatrical — there's a ghost story — but the 1770s architecture and the sugar-era history are real, and the evening version is genuinely atmospheric. About $30 and worth an hour.",
+        text: "Second: the Rose Hall Great House night tour. Yes, it leans theatrical, there's a ghost story, but the 1770s architecture and the sugar-era history are real, and the evening version is genuinely atmospheric. About $30 and worth an hour.",
       },
       {
         type: 'p',
@@ -183,9 +183,9 @@ export const POSTS_1: BlogPost[] = [
       {
         type: 'list',
         items: [
-          'Large catamaran "booze cruises" leaving from Doctor\'s Cave — overbooked and impersonal',
-          'Shopping tours to the craft market — just take a $7 taxi if you want to shop',
-          'Any "3 parishes in a day" van tour — you will spend 6 hours in traffic',
+          'Large catamaran "booze cruises" leaving from Doctor\'s Cave, overbooked and impersonal',
+          'Shopping tours to the craft market, just take a $7 taxi if you want to shop',
+          'Any "3 parishes in a day" van tour, you will spend 6 hours in traffic',
           'Horseback-riding resort packages that never leave resort property',
           'Private island beach day excursions that are basically a different pool',
         ],
@@ -201,11 +201,11 @@ export const POSTS_1: BlogPost[] = [
       { type: 'h2', text: "Before you book" },
       {
         type: 'p',
-        text: "Montego Bay tour pricing runs hot because concierge desks take 30–50% commission. Book direct with the operator, confirm the group size, and confirm lunch logistics — a lot of day tours still stop at a roadside spot the driver has a kickback with.",
+        text: "Montego Bay tour pricing runs hot because concierge desks take 30–50% commission. Book direct with the operator, confirm the group size, and confirm lunch logistics, a lot of day tours still stop at a roadside spot the driver has a kickback with.",
       },
       {
         type: 'p',
-        text: "MAPL runs small-group versions of the top picks — the raft, the rum tour, the great-house night. See dates on /explore.",
+        text: "MAPL runs small-group versions of the top picks, the raft, the rum tour, the great-house night. See dates on /explore.",
       },
     ],
     relatedSlugs: ['montego-bay-beyond-the-strip', 'montego-bay-airport-guide'],
@@ -214,7 +214,7 @@ export const POSTS_1: BlogPost[] = [
     slug: 'ocho-rios-airport-transfer',
     title: 'Airport Transfer to Ocho Rios: Your Options Ranked',
     excerpt:
-      "Planning an airport transfer to Ocho Rios? Here's every option — shuttles, private drivers, rideshare, rental cars — ranked by cost, time, and hassle.",
+      "Planning an airport transfer to Ocho Rios? Here's every option, shuttles, private drivers, rideshare, rental cars, ranked by cost, time, and hassle.",
     category: 'Guides',
     image: BLOG_IMAGES['ocho-rios-airport-transfer'],
     readTime: 4,
@@ -229,7 +229,7 @@ export const POSTS_1: BlogPost[] = [
         type: 'p',
         text: "There's no train, no public bus that picks up at the terminal, and no Uber at MBJ. So your options are narrower than they feel. Here they are, ranked.",
       },
-      { type: 'h2', text: "Private driver — the pick" },
+      { type: 'h2', text: "Private driver, the pick" },
       {
         type: 'p',
         text: "For one to four people, a pre-booked private transfer is the clear winner. Cost is $120–160 one-way, it takes 90–110 minutes, and the driver meets you inside arrivals with a name board. No haggling, no shared shuttle loop, and the car is yours. Book 24 hours ahead minimum.",
@@ -238,7 +238,7 @@ export const POSTS_1: BlogPost[] = [
         type: 'p',
         text: "Any reputable Jamaica ground-transport operator will send a JTB-licensed driver with insured seating. Confirm the quoted price includes tolls (the Mahoe Bypass toll is $3) and that the vehicle has AC. Tip 10–15% at the drop-off.",
       },
-      { type: 'h2', text: "Shared shuttle — the budget option" },
+      { type: 'h2', text: "Shared shuttle, the budget option" },
       {
         type: 'p',
         text: "Companies like Knutsford Express and a handful of resort-specific shuttles run shared vans from MBJ to Ocho Rios. Price is $25–40 per person, duration is 2.5–3.5 hours because of multi-resort drop-offs, and you're on their schedule. Fine for solo travelers, painful for families with kids.",
@@ -248,13 +248,13 @@ export const POSTS_1: BlogPost[] = [
         text: "A shared shuttle saves you forty dollars and costs you ninety minutes. Do that math with a toddler and tell me how it goes.",
         attribution: 'Howard, airport driver based in St. Ann',
       },
-      { type: 'h2', text: "Rental car — only if you're brave" },
+      { type: 'h2', text: "Rental car, only if you're brave" },
       {
         type: 'list',
         items: [
           'Driving is left-side, roads are narrow, and mountain turns have no shoulders',
           'Economy cars run $55–80 per day plus CDW, gas is about $6 per gallon',
-          'The A1 coastal highway is the simplest drive on the island — still demanding at night',
+          'The A1 coastal highway is the simplest drive on the island, still demanding at night',
           "Parking in Ocho Rios town is tight; most hotels charge extra",
           'Only rent if you plan to explore daily beyond your resort',
         ],
@@ -275,7 +275,7 @@ export const POSTS_1: BlogPost[] = [
       },
       {
         type: 'p',
-        text: "MAPL can arrange the airport transfer to Ocho Rios as part of any experience booking — ask when you check out on /explore.",
+        text: "MAPL can arrange the airport transfer to Ocho Rios as part of any experience booking, ask when you check out on /explore.",
       },
     ],
     relatedSlugs: ['ocho-rios-complete-guide', 'getting-around-jamaica-guide'],
@@ -284,7 +284,7 @@ export const POSTS_1: BlogPost[] = [
     slug: 'cannabis-wellness-retreat-jamaica',
     title: 'Cannabis Wellness Retreats in Jamaica: What to Actually Expect',
     excerpt:
-      "What a cannabis wellness retreat in Jamaica actually looks like — legalities, daily schedule, prices, and honest notes from inside a Blue Mountains stay.",
+      "What a cannabis wellness retreat in Jamaica actually looks like, legalities, daily schedule, prices, and honest notes from inside a Blue Mountains stay.",
     category: 'Stories',
     image: BLOG_IMAGES['cannabis-wellness-retreat-jamaica'],
     readTime: 5,
@@ -293,7 +293,7 @@ export const POSTS_1: BlogPost[] = [
     body: [
       {
         type: 'p',
-        text: "The driveway winds up a thousand feet above Irish Town through bamboo and mist, and the retreat house smells like eucalyptus and coffee smoke. I spent four days at a cannabis wellness retreat in Jamaica this spring — a small, licensed operation in the Blue Mountains of St. Andrew — to see what the growing category actually delivers.",
+        text: "The driveway winds up a thousand feet above Irish Town through bamboo and mist, and the retreat house smells like eucalyptus and coffee smoke. I spent four days at a cannabis wellness retreat in Jamaica this spring, a small, licensed operation in the Blue Mountains of St. Andrew, to see what the growing category actually delivers.",
       },
       {
         type: 'p',
@@ -302,7 +302,7 @@ export const POSTS_1: BlogPost[] = [
       { type: 'h2', text: "The legal landscape" },
       {
         type: 'p',
-        text: "Jamaica decriminalized personal amounts of ganja in 2015. Licensed retailers — called herb houses — began opening the following year. As of 2025 there are roughly 75 licensed dispensaries on the island, and a small cluster of properties are licensed to offer on-site cannabis hospitality. Those are the ones you want.",
+        text: "Jamaica decriminalized personal amounts of ganja in 2015. Licensed retailers, called herb houses, began opening the following year. As of 2025 there are roughly 75 licensed dispensaries on the island, and a small cluster of properties are licensed to offer on-site cannabis hospitality. Those are the ones you want.",
       },
       {
         type: 'p',
@@ -311,11 +311,11 @@ export const POSTS_1: BlogPost[] = [
       { type: 'h2', text: "A day in it" },
       {
         type: 'p',
-        text: "Mornings start with a guided stretch at 7 on an open-air deck. Breakfast is vegetarian — callaloo, ackee, roasted plantain, Blue Mountain coffee. Around 9 there's a guided session with a cannabis educator; most retreats now structure these like a wine pairing, matching different strains to different intentions (sleep, creative, active, social).",
+        text: "Mornings start with a guided stretch at 7 on an open-air deck. Breakfast is vegetarian, callaloo, ackee, roasted plantain, Blue Mountain coffee. Around 9 there's a guided session with a cannabis educator; most retreats now structure these like a wine pairing, matching different strains to different intentions (sleep, creative, active, social).",
       },
       {
         type: 'p',
-        text: "Midday tends to be unstructured. Nap, swim, hike a short trail, get a massage. Late afternoon has either a breath-work class, a sound bath, or a guided hike. Dinner is family-style. Nights are quiet — most guests are asleep by 10.",
+        text: "Midday tends to be unstructured. Nap, swim, hike a short trail, get a massage. Late afternoon has either a breath-work class, a sound bath, or a guided hike. Dinner is family-style. Nights are quiet, most guests are asleep by 10.",
       },
       {
         type: 'quote',
@@ -352,7 +352,7 @@ export const POSTS_1: BlogPost[] = [
     slug: 'kingston-gastronomy-tour',
     title: 'A Gastronomy Tour of Kingston, Jamaica',
     excerpt:
-      'A gastronomy tour of Kingston, Jamaica — patties, pepperpot, Devon House, Port Royal seafood, and the chefs redefining Caribbean fine dining.',
+      'A gastronomy tour of Kingston, Jamaica, patties, pepperpot, Devon House, Port Royal seafood, and the chefs redefining Caribbean fine dining.',
     category: 'Food',
     image: BLOG_IMAGES['kingston-gastronomy-tour'],
     readTime: 5,
@@ -370,16 +370,16 @@ export const POSTS_1: BlogPost[] = [
       { type: 'h2', text: "The rooted side" },
       {
         type: 'p',
-        text: "Start with breakfast at Moby Dick or Island Grill. Ackee and saltfish — the national dish — plus fried dumplings and mint tea. About $8. Then mid-morning, a patty at Tastee in New Kingston. The flaky crust and the slow-cook beef filling are objectively superior to the chain competitor two blocks away, and you can't convince me otherwise.",
+        text: "Start with breakfast at Moby Dick or Island Grill. Ackee and saltfish, the national dish, plus fried dumplings and mint tea. About $8. Then mid-morning, a patty at Tastee in New Kingston. The flaky crust and the slow-cook beef filling are objectively superior to the chain competitor two blocks away, and you can't convince me otherwise.",
       },
       {
         type: 'p',
-        text: "Lunch should be jerk — Scotchies on Constant Spring Road is the accessible answer. The pork gets the headlines; order the chicken with a festival (sweet fried dumpling) and a Ting grapefruit soda. You'll spend $15 and be annoyed at every other jerk place for a week.",
+        text: "Lunch should be jerk, Scotchies on Constant Spring Road is the accessible answer. The pork gets the headlines; order the chicken with a festival (sweet fried dumpling) and a Ting grapefruit soda. You'll spend $15 and be annoyed at every other jerk place for a week.",
       },
       { type: 'h2', text: "The new wave" },
       {
         type: 'p',
-        text: "Dinner is where Kingston has shifted most dramatically. Chef Brian Lumley at 689 by Brian Lumley runs a tasting menu of reimagined Jamaican classics — a smoked-marlin dumpling, a scotch-bonnet beurre blanc, a rum-cured duck. About $95 per person without wine.",
+        text: "Dinner is where Kingston has shifted most dramatically. Chef Brian Lumley at 689 by Brian Lumley runs a tasting menu of reimagined Jamaican classics, a smoked-marlin dumpling, a scotch-bonnet beurre blanc, a rum-cured duck. About $95 per person without wine.",
       },
       {
         type: 'p',
@@ -394,21 +394,21 @@ export const POSTS_1: BlogPost[] = [
       {
         type: 'list',
         items: [
-          "Gloria's — fried fish, bammy, festival, eaten at a plastic table by the water",
-          'Y-Knot — the rival across the street, with a slightly sweeter escovitch',
-          'Fisherman stands on the road in — grilled lobster in season, $18–25',
-          'Sunset is the move — be seated by 6:15pm',
+          "Gloria's, fried fish, bammy, festival, eaten at a plastic table by the water",
+          'Y-Knot, the rival across the street, with a slightly sweeter escovitch',
+          'Fisherman stands on the road in, grilled lobster in season, $18–25',
+          'Sunset is the move, be seated by 6:15pm',
           'Cash only at most of the good spots',
         ],
       },
       {
         type: 'p',
-        text: "The 20-minute drive from New Kingston to Port Royal crosses the Palisadoes — that narrow spit of land between the harbor and the open sea. The city recedes, the old British fort appears, and dinner is on a seawall. It is, honestly, the most romantic meal in Jamaica and nobody talks about it.",
+        text: "The 20-minute drive from New Kingston to Port Royal crosses the Palisadoes, that narrow spit of land between the harbor and the open sea. The city recedes, the old British fort appears, and dinner is on a seawall. It is, honestly, the most romantic meal in Jamaica and nobody talks about it.",
       },
       { type: 'h2', text: "What it costs" },
       {
         type: 'p',
-        text: "A full day gastronomy tour of Kingston, Jamaica — breakfast through late dinner — runs $70–100 per person if you self-drive and order moderately. A guided version with a driver and tastings runs $180–240. The tasting menus at the top restaurants are $80–110 before drinks. Patty budget: $3 per patty, and you will want more than one.",
+        text: "A full day gastronomy tour of Kingston, Jamaica, breakfast through late dinner, runs $70–100 per person if you self-drive and order moderately. A guided version with a driver and tastings runs $180–240. The tasting menus at the top restaurants are $80–110 before drinks. Patty budget: $3 per patty, and you will want more than one.",
       },
       {
         type: 'p',
@@ -421,7 +421,7 @@ export const POSTS_1: BlogPost[] = [
     slug: 'westmoreland-eco-cottage-guide',
     title: 'Westmoreland Eco-Cottages: Off-Grid Jamaica, Properly',
     excerpt:
-      'A Westmoreland eco-cottage Jamaica guide — where they are, what they cost, what solar-and-cistern living actually feels like in the hills above Negril.',
+      'A Westmoreland eco-cottage Jamaica guide, where they are, what they cost, what solar-and-cistern living actually feels like in the hills above Negril.',
     category: 'Guides',
     image: BLOG_IMAGES['westmoreland-eco-cottage-guide'],
     readTime: 5,
@@ -430,7 +430,7 @@ export const POSTS_1: BlogPost[] = [
     body: [
       {
         type: 'p',
-        text: "About twelve miles inland from Seven Mile Beach, the Westmoreland hills rise into a quiet green plateau of pimento trees and small farms. This is where the Westmoreland eco-cottage Jamaica scene lives — a loose network of about forty off-grid cottages built by local landowners and expat architects, rented by the week to travelers who want Negril's proximity without Negril's strip.",
+        text: "About twelve miles inland from Seven Mile Beach, the Westmoreland hills rise into a quiet green plateau of pimento trees and small farms. This is where the Westmoreland eco-cottage Jamaica scene lives, a loose network of about forty off-grid cottages built by local landowners and expat architects, rented by the week to travelers who want Negril's proximity without Negril's strip.",
       },
       {
         type: 'p',
@@ -439,11 +439,11 @@ export const POSTS_1: BlogPost[] = [
       { type: 'h2', text: "What off-grid actually means" },
       {
         type: 'p',
-        text: "Most cottages run on rooftop solar with a battery bank sized for 48–72 hours of cloud cover. Water comes from a cistern that collects rain off the metal roof — it gets filtered at the kitchen tap and you drink it straight. Refrigeration is propane or DC compressor. AC is usually absent; fans and cross-breeze do the work.",
+        text: "Most cottages run on rooftop solar with a battery bank sized for 48–72 hours of cloud cover. Water comes from a cistern that collects rain off the metal roof, it gets filtered at the kitchen tap and you drink it straight. Refrigeration is propane or DC compressor. AC is usually absent; fans and cross-breeze do the work.",
       },
       {
         type: 'p',
-        text: "In practice, that means you can run everything you need — lights, fridge, ceiling fans, a laptop, a Bluetooth speaker — without thinking about it. You can't run a full-bore electric kettle plus a hair dryer plus an AC unit at the same time. Adjust once, then forget.",
+        text: "In practice, that means you can run everything you need, lights, fridge, ceiling fans, a laptop, a Bluetooth speaker, without thinking about it. You can't run a full-bore electric kettle plus a hair dryer plus an AC unit at the same time. Adjust once, then forget.",
       },
       {
         type: 'p',
@@ -459,7 +459,7 @@ export const POSTS_1: BlogPost[] = [
         type: 'list',
         items: [
           '180-degree ridgeline views with maybe two neighbors in sight',
-          'A kitchen stocked from the Savanna-la-Mar market — $60 feeds two for a week',
+          'A kitchen stocked from the Savanna-la-Mar market, $60 feeds two for a week',
           'Frogs and crickets louder than any speaker',
           'A private plunge pool or outdoor shower at most properties',
           'A 25-minute drive to Seven Mile Beach whenever you want the sea',
@@ -467,7 +467,7 @@ export const POSTS_1: BlogPost[] = [
       },
       {
         type: 'p',
-        text: "The cottages tend to come with a property manager who lives nearby — a caretaker who'll fetch groceries, arrange a private chef, or set up a guide for a hike. Not staff in the resort sense; more like the neighbor who fixes a leaking tap.",
+        text: "The cottages tend to come with a property manager who lives nearby, a caretaker who'll fetch groceries, arrange a private chef, or set up a guide for a hike. Not staff in the resort sense; more like the neighbor who fixes a leaking tap.",
       },
       {
         type: 'p',
@@ -476,11 +476,11 @@ export const POSTS_1: BlogPost[] = [
       { type: 'h2', text: "What it costs" },
       {
         type: 'p',
-        text: "A one-bedroom Westmoreland eco-cottage runs $175–260 per night in high season, $110–180 in shoulder. Two-bedrooms start around $290. Most owners require a three- or four-night minimum. Add $120–180 each way for a private transfer from Sangster airport in Montego Bay — about 90 minutes.",
+        text: "A one-bedroom Westmoreland eco-cottage runs $175–260 per night in high season, $110–180 in shoulder. Two-bedrooms start around $290. Most owners require a three- or four-night minimum. Add $120–180 each way for a private transfer from Sangster airport in Montego Bay, about 90 minutes.",
       },
       {
         type: 'p',
-        text: "MAPL pairs cottage stays with day experiences — cliff-diving at Rick's, snorkeling off Seven Mile, or a food crawl in Savanna-la-Mar. Browse Negril and Westmoreland experiences on /explore.",
+        text: "MAPL pairs cottage stays with day experiences, cliff-diving at Rick's, snorkeling off Seven Mile, or a food crawl in Savanna-la-Mar. Browse Negril and Westmoreland experiences on /explore.",
       },
     ],
     relatedSlugs: ['negril-guide', 'negril-seven-mile-truth'],
@@ -489,7 +489,7 @@ export const POSTS_1: BlogPost[] = [
     slug: 'jamaica-cannabis-culinary-tour',
     title: 'The Jamaica Cannabis Culinary Tour, Explained',
     excerpt:
-      "A plain-language explainer of the Jamaica cannabis culinary tour — what's on the menu, how dosing works, and where the best licensed experiences happen.",
+      "A plain-language explainer of the Jamaica cannabis culinary tour, what's on the menu, how dosing works, and where the best licensed experiences happen.",
     category: 'Food',
     image: BLOG_IMAGES['jamaica-cannabis-culinary-tour'],
     readTime: 5,
@@ -498,7 +498,7 @@ export const POSTS_1: BlogPost[] = [
     body: [
       {
         type: 'p',
-        text: "A Jamaica cannabis culinary tour looks, on paper, like a novelty. Eight courses, a chef who used to run a Kingston tasting counter, and every dish paired with a licensed strain. In practice, it's one of the most carefully produced food experiences on the island — and the newer chefs treating cannabis as an ingredient (not a mascot) are doing some of the most interesting cooking in the Caribbean.",
+        text: "A Jamaica cannabis culinary tour looks, on paper, like a novelty. Eight courses, a chef who used to run a Kingston tasting counter, and every dish paired with a licensed strain. In practice, it's one of the most carefully produced food experiences on the island, and the newer chefs treating cannabis as an ingredient (not a mascot) are doing some of the most interesting cooking in the Caribbean.",
       },
       {
         type: 'p',
@@ -507,16 +507,16 @@ export const POSTS_1: BlogPost[] = [
       { type: 'h2', text: "Inside a tasting" },
       {
         type: 'p',
-        text: "A Jamaica cannabis culinary tour at a licensed venue is structured like a wine dinner. You arrive at around 6pm. There's a welcome course — typically a consommé or small vegetable bite — that is unmedicated. While you eat, the chef and the in-house cannabis educator walk through the evening: which courses contain THC, which courses contain CBD, which are unmedicated, and what the total evening dose will be.",
+        text: "A Jamaica cannabis culinary tour at a licensed venue is structured like a wine dinner. You arrive at around 6pm. There's a welcome course, typically a consommé or small vegetable bite, that is unmedicated. While you eat, the chef and the in-house cannabis educator walk through the evening: which courses contain THC, which courses contain CBD, which are unmedicated, and what the total evening dose will be.",
       },
       {
         type: 'p',
-        text: "A responsible tour caps the full evening at 10–15mg of THC total across 8 courses. That's low by home-dispensary standards — intentionally. The goal is a warm, sociable buzz, not a couch-lock. Strains used in cooking are usually low-THC, high-terpene Jamaican landrace varieties that contribute flavor more than psychoactivity.",
+        text: "A responsible tour caps the full evening at 10–15mg of THC total across 8 courses. That's low by home-dispensary standards, intentionally. The goal is a warm, sociable buzz, not a couch-lock. Strains used in cooking are usually low-THC, high-terpene Jamaican landrace varieties that contribute flavor more than psychoactivity.",
       },
       { type: 'h2', text: "What ends up on the plate" },
       {
         type: 'p',
-        text: "Menus lean Jamaican. A pepperpot course. Escovitch fish with a scotch-bonnet oil. Jerk pork shoulder with a cannabis-infused pimento butter on the side that you add yourself, drop by drop. A rundown. A Blue Mountain coffee crème that might or might not be infused. Dessert — almost always a rum-and-spice cake or a sorrel granita — is often the dosed finale.",
+        text: "Menus lean Jamaican. A pepperpot course. Escovitch fish with a scotch-bonnet oil. Jerk pork shoulder with a cannabis-infused pimento butter on the side that you add yourself, drop by drop. A rundown. A Blue Mountain coffee crème that might or might not be infused. Dessert, almost always a rum-and-spice cake or a sorrel granita, is often the dosed finale.",
       },
       {
         type: 'quote',
@@ -528,9 +528,9 @@ export const POSTS_1: BlogPost[] = [
         type: 'list',
         items: [
           'Confirm the venue is licensed under the Cannabis Licensing Authority',
-          'Ask the total evening THC dose — a good operator will tell you in mg',
+          'Ask the total evening THC dose, a good operator will tell you in mg',
           'Check that there is an on-site educator, not just a chef',
-          'Ask about transportation — you should not drive yourself home',
+          'Ask about transportation, you should not drive yourself home',
           'Avoid any tour that serves alcohol heavily alongside dosed courses',
         ],
       },
@@ -558,7 +558,7 @@ export const POSTS_1: BlogPost[] = [
     slug: 'cbd-spa-jamaica',
     title: 'CBD Spas in Jamaica: A Field Report',
     excerpt:
-      'A field report on CBD spa Jamaica experiences — which treatments are worth the money, what to expect from a licensed menu, and how much it costs.',
+      'A field report on CBD spa Jamaica experiences, which treatments are worth the money, what to expect from a licensed menu, and how much it costs.',
     category: 'Stories',
     image: BLOG_IMAGES['cbd-spa-jamaica'],
     readTime: 4,
@@ -567,7 +567,7 @@ export const POSTS_1: BlogPost[] = [
     body: [
       {
         type: 'p',
-        text: "The phrase CBD spa Jamaica has been on resort menus for about three years now, and the honesty of those menus ranges enormously. I spent four weeks over two trips trying treatments at eight properties — from a licensed boutique spa in Negril to an oceanfront resort in Ocho Rios to a small wellness studio in Treasure Beach — to figure out which are real and which are decorative.",
+        text: "The phrase CBD spa Jamaica has been on resort menus for about three years now, and the honesty of those menus ranges enormously. I spent four weeks over two trips trying treatments at eight properties, from a licensed boutique spa in Negril to an oceanfront resort in Ocho Rios to a small wellness studio in Treasure Beach, to figure out which are real and which are decorative.",
       },
       {
         type: 'p',
@@ -576,7 +576,7 @@ export const POSTS_1: BlogPost[] = [
       { type: 'h2', text: "What's actually on the menu" },
       {
         type: 'p',
-        text: "Licensed CBD spas in Jamaica generally offer four categories: a CBD massage (topical oil, 50–100mg per treatment), a CBD facial (serums and sheet masks), a CBD body scrub (sugar or salt with infused oil), and — at a smaller set of properties — a CBD bath soak in a private tub. A minority of spas also run a CBD-plus-sound-bath combination.",
+        text: "Licensed CBD spas in Jamaica generally offer four categories: a CBD massage (topical oil, 50–100mg per treatment), a CBD facial (serums and sheet masks), a CBD body scrub (sugar or salt with infused oil), and, at a smaller set of properties, a CBD bath soak in a private tub. A minority of spas also run a CBD-plus-sound-bath combination.",
       },
       {
         type: 'p',
@@ -589,7 +589,7 @@ export const POSTS_1: BlogPost[] = [
       },
       {
         type: 'p',
-        text: "The worst: a 60-minute 'CBD facial' at a large resort spa where I'm fairly confident the serum was standard aromatherapy oil with a rebrand. The charge was $180. The giveaway was the menu description — lots of marketing adjectives, no milligrams.",
+        text: "The worst: a 60-minute 'CBD facial' at a large resort spa where I'm fairly confident the serum was standard aromatherapy oil with a rebrand. The charge was $180. The giveaway was the menu description, lots of marketing adjectives, no milligrams.",
       },
       {
         type: 'quote',
@@ -600,8 +600,8 @@ export const POSTS_1: BlogPost[] = [
       {
         type: 'list',
         items: [
-          'Ask the milligram dose — a real CBD massage uses 50–100mg of topical CBD',
-          'Ask who makes the oil — a specific Jamaican producer is a good sign',
+          'Ask the milligram dose, a real CBD massage uses 50–100mg of topical CBD',
+          'Ask who makes the oil, a specific Jamaican producer is a good sign',
           'Look for therapists with at least 5 years of massage experience',
           'Avoid any menu where every treatment is described as "infused" without detail',
           'Book at boutique spas over resort chains when possible',
@@ -627,7 +627,7 @@ export const POSTS_1: BlogPost[] = [
     slug: 'ganja-farm-tour-ocho-rios',
     title: 'Ganja Farm Tours Near Ocho Rios: What Happens on One',
     excerpt:
-      'A ganja farm tour Ocho Rios report from the hills of St. Ann — the plants, the history, the harvest, and what a licensed tour actually includes.',
+      'A ganja farm tour Ocho Rios report from the hills of St. Ann, the plants, the history, the harvest, and what a licensed tour actually includes.',
     category: 'Culture',
     image: BLOG_IMAGES['ganja-farm-tour-ocho-rios'],
     readTime: 5,
@@ -636,7 +636,7 @@ export const POSTS_1: BlogPost[] = [
     body: [
       {
         type: 'p',
-        text: "About forty minutes inland from Ocho Rios, past Fern Gully and up into the hills of St. Ann, there's a dirt road that cuts through sugar-cane fields and ends at a licensed cannabis farm. A ganja farm tour Ocho Rios, properly run, has been legal here since the 2015 decriminalization and the 2016 licensing framework — and it's a quietly fascinating three hours that most visitors still don't know they can book.",
+        text: "About forty minutes inland from Ocho Rios, past Fern Gully and up into the hills of St. Ann, there's a dirt road that cuts through sugar-cane fields and ends at a licensed cannabis farm. A ganja farm tour Ocho Rios, properly run, has been legal here since the 2015 decriminalization and the 2016 licensing framework, and it's a quietly fascinating three hours that most visitors still don't know they can book.",
       },
       {
         type: 'p',
@@ -645,7 +645,7 @@ export const POSTS_1: BlogPost[] = [
       { type: 'h2', text: "The farm" },
       {
         type: 'p',
-        text: "Lloyd's is a four-acre farm on a south-facing slope at about 1,800 feet. The micro-climate — warm days, cool nights, consistent trade winds — is specifically why St. Ann produces some of the most sought-after landrace varieties on the island. He grows about twelve cultivars, all heirloom, all cultivated outdoors under sun with no lights and no hydroponic setup.",
+        text: "Lloyd's is a four-acre farm on a south-facing slope at about 1,800 feet. The micro-climate, warm days, cool nights, consistent trade winds, is specifically why St. Ann produces some of the most sought-after landrace varieties on the island. He grows about twelve cultivars, all heirloom, all cultivated outdoors under sun with no lights and no hydroponic setup.",
       },
       {
         type: 'p',
@@ -654,7 +654,7 @@ export const POSTS_1: BlogPost[] = [
       { type: 'h2', text: "The history" },
       {
         type: 'p',
-        text: "A good tour spends as much time on cultural history as on agronomy. Cannabis arrived in Jamaica with Indian indentured laborers in the 1840s. The word 'ganja' is Hindi. It was criminalized during the colonial era, reshaped by Rastafari sacramental use in the 20th century, and slowly decriminalized between 2015 and 2018. A farm tour tells that story through the people who lived through the criminalized years — which is almost always the family that owns the farm.",
+        text: "A good tour spends as much time on cultural history as on agronomy. Cannabis arrived in Jamaica with Indian indentured laborers in the 1840s. The word 'ganja' is Hindi. It was criminalized during the colonial era, reshaped by Rastafari sacramental use in the 20th century, and slowly decriminalized between 2015 and 2018. A farm tour tells that story through the people who lived through the criminalized years, which is almost always the family that owns the farm.",
       },
       {
         type: 'quote',
@@ -669,7 +669,7 @@ export const POSTS_1: BlogPost[] = [
           'Guided farm walk of 90 minutes with the grower',
           'Drying-shed and curing-room visit',
           'A tasting session at the on-site licensed dispensary (for guests 21+)',
-          'A Jamaican lunch — usually ital, cooked on-site',
+          'A Jamaican lunch, usually ital, cooked on-site',
         ],
       },
       {
@@ -678,12 +678,12 @@ export const POSTS_1: BlogPost[] = [
       },
       {
         type: 'p',
-        text: "As with every licensed experience, product stays on-property. You cannot leave with any amount — not legally, not safely. Lloyd will tell you this more than once.",
+        text: "As with every licensed experience, product stays on-property. You cannot leave with any amount, not legally, not safely. Lloyd will tell you this more than once.",
       },
       { type: 'h2', text: "What it costs" },
       {
         type: 'p',
-        text: "A ganja farm tour Ocho Rios runs $95–140 per person, typically 5 hours door-to-door including transport and lunch. Private tours for 2–4 guests run $220–320 per person. Most farms have a minimum age of 18 for the walk and 21 for the tasting. Book 48 hours ahead — most licensed farms only host three or four groups per week.",
+        text: "A ganja farm tour Ocho Rios runs $95–140 per person, typically 5 hours door-to-door including transport and lunch. Private tours for 2–4 guests run $220–320 per person. Most farms have a minimum age of 18 for the walk and 21 for the tasting. Book 48 hours ahead, most licensed farms only host three or four groups per week.",
       },
       {
         type: 'p',

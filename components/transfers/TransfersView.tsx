@@ -30,7 +30,7 @@ import {
   TRANSFER_FAQS as FAQS,
 } from '@/lib/airport-transfers-content'
 
-/* High-intent shortcut routes — these are the searches that convert. Click
+/* High-intent shortcut routes, these are the searches that convert. Click
    one and the quote calculator preselects, then we scroll the user there
    so they can hit "Book" in two taps. Prices are read from the live ZONES
    table so they stay in sync with rate changes. */
@@ -47,33 +47,33 @@ const POPULAR_ROUTES: Array<{
   { destinationId: 'royalton-blue-water-trelawny', label: 'MBJ → Falmouth', travelTime: '40m', searchPhrase: 'MBJ to Falmouth resort transfer' },
 ]
 
-/* Hero + per-zone imagery — all confirmed-Jamaica Pexels photos already
+/* Hero + per-zone imagery, all confirmed-Jamaica Pexels photos already
    used elsewhere on the site. Alt text is descriptive for SEO + a11y. */
 const HERO_IMAGE = {
   src: HERO, // aerial Buff Bay coastal road
-  alt: 'Aerial view of Jamaica’s north-coast road between Montego Bay and Ocho Rios — the route MAPL drivers use for airport transfers.',
+  alt: 'Aerial view of Jamaica’s north-coast road between Montego Bay and Ocho Rios, the route MAPL drivers use for airport transfers.',
 }
 
 const ZONE_IMAGES: Record<TransferZone, { src: string; alt: string }> = {
   A: {
     src: DESTINATION_IMAGES['Montego Bay'],
-    alt: 'Aerial view of Montego Bay, Jamaica — Zone I airport-transfer destination.',
+    alt: 'Aerial view of Montego Bay, Jamaica, Zone I airport-transfer destination.',
   },
   B: {
     src: DESTINATION_IMAGES['Falmouth'],
-    alt: 'Traditional red boat flying the Jamaican flag in Falmouth — Zone II airport-transfer area.',
+    alt: 'Traditional red boat flying the Jamaican flag in Falmouth, Zone II airport-transfer area.',
   },
   C: {
     src: DESTINATION_IMAGES['Treasure Beach'],
-    alt: 'Colorful fishing boats along the Jamaican coast — Zone III (Trelawny, Hanover, Lucea) airport transfers.',
+    alt: 'Colorful fishing boats along the Jamaican coast, Zone III (Trelawny, Hanover, Lucea) airport transfers.',
   },
   D: {
     src: DESTINATION_IMAGES['Negril'],
-    alt: 'Rockhouse cliffs at sunset in Negril, Jamaica — Zone IV airport-transfer destination.',
+    alt: 'Rockhouse cliffs at sunset in Negril, Jamaica, Zone IV airport-transfer destination.',
   },
   E: {
     src: DESTINATION_IMAGES['Ocho Rios'],
-    alt: 'Turquoise water and wooden pier in Ocho Rios, Jamaica — Zone V airport transfers.',
+    alt: 'Turquoise water and wooden pier in Ocho Rios, Jamaica, Zone V airport transfers.',
   },
 }
 
@@ -208,7 +208,7 @@ export default function TransfersView() {
               />
               <TrustItem
                 icon={<Phone size={17} />}
-                title="24/7 dispatch"
+                title="24/7 support"
                 body="A real voice, not a call-centre script."
               />
             </div>
@@ -250,7 +250,7 @@ export default function TransfersView() {
                   type="button"
                   className="xfer-route-tile"
                   onClick={() => selectRoute(r.destinationId)}
-                  aria-label={`${r.searchPhrase} — round-trip from ${formatPrice(q.priceUsd)}`}
+                  aria-label={`${r.searchPhrase}, round-trip from ${formatPrice(q.priceUsd)}`}
                 >
                   <div className="xfer-route-tile-top">
                     <span className="xfer-route-tile-label">{r.label}</span>
@@ -273,7 +273,7 @@ export default function TransfersView() {
       <section id="quote" className="xfer-quote-section">
         <div className="container" style={{ maxWidth: 820 }}>
           <div className="xfer-quote-card">
-            {/* Gold hairline — prestige cue matching the email templates */}
+            {/* Gold hairline, prestige cue matching the email templates */}
             <div
               aria-hidden
               style={{
@@ -322,7 +322,7 @@ export default function TransfersView() {
               >
                 <option value="">Pick a hotel or landmark…</option>
                 {zones.map(({ zone, items }) => (
-                  <optgroup key={zone.code} label={`Zone ${zone.code} — ${zone.label}`}>
+                  <optgroup key={zone.code} label={`Zone ${zone.code}, ${zone.label}`}>
                     {items.map((d) => (
                       <option key={d.id} value={d.id}>
                         {d.name}
@@ -422,7 +422,7 @@ export default function TransfersView() {
               </div>
               <div className="xfer-quote-readout-price-block">
                 <p className="xfer-quote-readout-price">
-                  {quote ? formatPrice(quote.priceUsd) : '—'}
+                  {quote ? formatPrice(quote.priceUsd) : '-'}
                 </p>
                 <p className="xfer-quote-readout-meta">
                   {tripType === 'round_trip' ? 'Round-trip' : 'One-way'} · per vehicle
@@ -484,7 +484,7 @@ export default function TransfersView() {
               items={[
                 'Fixed zone price, paid up front',
                 'Driver waits with your name at arrivals',
-                'Flight tracking — no surcharge if you land late',
+                'Flight tracking, no surcharge if you land late',
                 'Chilled bottled water, AC, English-speaking driver',
                 'Free cancellation up to 24 hours before pickup',
                 'Same driver for the return leg when you book round-trip',
@@ -493,9 +493,9 @@ export default function TransfersView() {
             <CompareItem
               title="Airport taxi queue"
               items={[
-                'Metered or "airport fixed rate" — often higher than you quoted',
+                'Metered or "airport fixed rate", often higher than you quoted',
                 'Wait in the queue after a long flight',
-                'No flight tracking — if you’re late, the spot is gone',
+                'No flight tracking, if you’re late, the spot is gone',
                 'Vehicle condition varies; AC not guaranteed',
                 'No cancellation window',
                 'New driver every leg, unfamiliar with your hotel',
@@ -503,7 +503,7 @@ export default function TransfersView() {
             />
           </div>
 
-          {/* Price-anchor strip — concrete savings on the most-quoted routes */}
+          {/* Price-anchor strip, concrete savings on the most-quoted routes */}
           <div className="xfer-savings-strip" aria-label="Typical price comparison">
             <div className="xfer-savings-row">
               <SavingsRow route="MBJ → Negril (round-trip)" mapl={140} typical="180–220" />
@@ -512,7 +512,7 @@ export default function TransfersView() {
             </div>
             <p className="xfer-savings-note">
               Typical taxi quotes pulled from average prices reported by JUTA
-              dispatchers and concierge desks at the major resorts. Your actual
+              operators and concierge desks at the major resorts. Your actual
               taxi-queue quote may be higher during peak season.
             </p>
           </div>
@@ -594,7 +594,7 @@ export default function TransfersView() {
             <div>
               <p className="xfer-contact-cta-title">Not on the list?</p>
               <p className="xfer-contact-cta-body">
-                Kingston (KIN), Port Antonio, or groups of five or more — we&rsquo;ll
+                Kingston (KIN), Port Antonio, or groups of five or more, we&rsquo;ll
                 quote you directly within the hour.
               </p>
             </div>
@@ -663,7 +663,7 @@ export default function TransfersView() {
       </section>
 
       {/* ───────────── ROUTE GUIDE (long-tail SEO + conversion content) ───────────── */}
-      <section className="xfer-routes-content" aria-label="Route guide — Montego Bay airport transfers">
+      <section className="xfer-routes-content" aria-label="Route guide, Montego Bay airport transfers">
         <div className="container" style={{ maxWidth: 820 }}>
           <div className="xfer-center-head" style={{ textAlign: 'left', marginBottom: 32 }}>
             <Kicker>Route guide</Kicker>
@@ -682,7 +682,7 @@ export default function TransfersView() {
             price={140}
             destinationId="sandals-negril"
             onSelect={selectRoute}
-            body="Sangster International (MBJ) is the airport everyone flying to Negril uses — Norman Manley (KIN) is on the wrong side of the island, three hours further. The drive is straightforward and scenic; the catch is that the Negril taxi queue at MBJ is one of the most-overpriced in the Caribbean during peak season. A pre-booked private transfer locks the price, skips the queue, and gets you to Seven Mile Beach with bottled water and the AC already running."
+            body="Sangster International (MBJ) is the airport everyone flying to Negril uses, Norman Manley (KIN) is on the wrong side of the island, three hours further. The drive is straightforward and scenic; the catch is that the Negril taxi queue at MBJ is one of the most-overpriced in the Caribbean during peak season. A pre-booked private transfer locks the price, skips the queue, and gets you to Seven Mile Beach with bottled water and the AC already running."
           />
 
           <RouteSection
@@ -692,7 +692,7 @@ export default function TransfersView() {
             price={180}
             destinationId="sandals-ochi"
             onSelect={selectRoute}
-            body="The toll highway between Montego Bay and Ocho Rios cut a chunk off this drive — what used to be three hours on the old coastal road is now closer to 1h 45m. Most resorts in St. Ann (Sandals Ochi, Beaches Ocho Rios, Moon Palace, Bahia Principe) sit within 20 minutes of each other on this same stretch. Round-trip is the way most travelers book; you keep the same driver and skip the cab math twice."
+            body="The toll highway between Montego Bay and Ocho Rios cut a chunk off this drive, what used to be three hours on the old coastal road is now closer to 1h 45m. Most resorts in St. Ann (Sandals Ochi, Beaches Ocho Rios, Moon Palace, Bahia Principe) sit within 20 minutes of each other on this same stretch. Round-trip is the way most travelers book; you keep the same driver and skip the cab math twice."
           />
 
           <RouteSection
@@ -702,7 +702,7 @@ export default function TransfersView() {
             price={60}
             destinationId="iberostar-rose-hall"
             onSelect={selectRoute}
-            body="If you’re staying anywhere in the Rose Hall corridor — Iberostar, Hyatt Ziva, Hilton, Half Moon, the Sandals MoBay properties — your transfer is the cheapest tier on the island. Round-trip runs $60 flat, less than the cost of a single cab leg in many cases. Solo travelers get the same vehicle; the price is per car, not per passenger."
+            body="If you’re staying anywhere in the Rose Hall corridor, Iberostar, Hyatt Ziva, Hilton, Half Moon, the Sandals MoBay properties, your transfer is the cheapest tier on the island. Round-trip runs $60 flat, less than the cost of a single cab leg in many cases. Solo travelers get the same vehicle; the price is per car, not per passenger."
           />
 
           <RouteSection
@@ -712,7 +712,7 @@ export default function TransfersView() {
             price={110}
             destinationId="royalton-blue-water-trelawny"
             onSelect={selectRoute}
-            body="Royalton Blue Water and Excellence Oyster Bay both sit just outside Falmouth, in Trelawny. The drive is short and almost entirely highway. If you’re a cruise passenger meeting your ship at the Falmouth Cruise Port, the same flat rate applies — just pick the port as your destination at checkout."
+            body="Royalton Blue Water and Excellence Oyster Bay both sit just outside Falmouth, in Trelawny. The drive is short and almost entirely highway. If you’re a cruise passenger meeting your ship at the Falmouth Cruise Port, the same flat rate applies, just pick the port as your destination at checkout."
           />
 
           <p className="xfer-routes-content-foot">
@@ -780,7 +780,7 @@ export default function TransfersView() {
         </div>
       </section>
 
-      {/* ───────────── Sticky mobile CTA — always present ─────────────
+      {/* ───────────── Sticky mobile CTA, always present ─────────────
            Quote selected → "Book · $X" goes straight to checkout.
            No quote yet → "Get instant quote →" scrolls to the calculator. */}
       <div className="xfer-sticky-cta" role="region" aria-label="Booking shortcut">
@@ -885,7 +885,7 @@ export default function TransfersView() {
         }
         /* Layout-critical rules (position/width/aspect-ratio/min-height and
            the mobile order) live in globals.css .xfer-hero-image so the hero
-           box reserves its height in SSR HTML — no CLS. Cosmetic only here. */
+           box reserves its height in SSR HTML, no CLS. Cosmetic only here. */
         .xfer-hero-image {
           border-radius: var(--r-xl);
           overflow: hidden;
@@ -1633,7 +1633,7 @@ function Kicker({
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   // Stable, unique id so the <label> is programmatically tied to its control
-  // (WCAG 4.1.2 / axe select-name). We clone the child to inject the id —
+  // (WCAG 4.1.2 / axe select-name). We clone the child to inject the id,
   // for the Destination <select> this gives it an accessible name.
   const id = useId()
   const control = isValidElement(children)
@@ -1805,7 +1805,7 @@ function CompareItem({
         background: bold ? '#fff' : 'var(--surface)',
         border: bold ? '1px solid var(--border-strong)' : '1px solid var(--border)',
         boxShadow: bold ? 'var(--shadow-sm)' : 'none',
-        // No container opacity on the muted (taxi) card — it dimmed the body
+        // No container opacity on the muted (taxi) card, it dimmed the body
         // text below WCAG AA (4.22:1). The de-emphasis is already carried by
         // the surface background + no shadow.
       }}

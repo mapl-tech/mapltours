@@ -11,7 +11,7 @@ export interface BookingConfirmedProps {
   pickup: string | null
   dropoff: string | null
   specialRequests?: string | null
-  /** Itemized line totals + breakdown — server fills in whatever it has. */
+  /** Itemized line totals + breakdown, server fills in whatever it has. */
   subtotal?: number | null
   bookingFee?: number | null
   transportCost?: number | null
@@ -30,7 +30,7 @@ export interface BookingConfirmedProps {
 }
 
 function fmtMoney(n: number | null | undefined, currency: string): string {
-  if (n == null || !Number.isFinite(n)) return '—'
+  if (n == null || !Number.isFinite(n)) return '-'
   const sign = n < 0 ? '-' : ''
   const abs = Math.abs(n).toFixed(2)
   return `${sign}${currency === 'USD' ? '$' : `${currency} `}${abs}`
@@ -68,7 +68,7 @@ function fmtDateTime(iso: string | null | undefined): string | null {
 
 /**
  * Shopify-style traveler confirmation. Single-column, white card,
- * tabular receipt — same shape Shopify uses for order confirmation.
+ * tabular receipt, same shape Shopify uses for order confirmation.
  */
 export default function BookingConfirmed(props: BookingConfirmedProps) {
   const {
@@ -105,11 +105,12 @@ export default function BookingConfirmed(props: BookingConfirmedProps) {
 
   return (
     <MaplLayout preheader={`Booking confirmed · ${bookingRef} · Jamaica trip details inside`}>
+      <Text style={s.eyebrow}>✓ Booking confirmed</Text>
       <Heading as="h1" style={s.hero} className="mapl-h1">
         Thank you, {name}.
       </Heading>
       <Text style={s.heroLead}>
-        Your booking is confirmed. Save this email — your guide will reference{' '}
+        Your booking is confirmed. Save this email. Your guide will reference{' '}
         <strong style={{ color: '#1a1a1a' }}>{bookingRef}</strong> when they
         reach out.
       </Text>
@@ -251,7 +252,7 @@ export default function BookingConfirmed(props: BookingConfirmedProps) {
         </Section>
       )}
 
-      {/* Special requests — highlighted card */}
+      {/* Special requests, highlighted card */}
       {specialRequests && (
         <Section style={s.card}>
           <Section style={s.highlightCardHeader}>
@@ -279,11 +280,11 @@ export default function BookingConfirmed(props: BookingConfirmedProps) {
             · Bring a valid ID, reef-safe sunscreen, and water.
           </Text>
           <Text style={{ ...s.body, marginTop: 6 }}>
-            · Free cancellation up to 48 hours before each experience — just
+            · Free cancellation up to 48 hours before each experience. Just
             reply to this email.
           </Text>
           <Text style={s.note}>
-            Questions? Reply to this email any time — our team on the ground
+            Questions? Reply to this email any time. Our team on the ground
             answers in hours, not days.
           </Text>
         </Section>

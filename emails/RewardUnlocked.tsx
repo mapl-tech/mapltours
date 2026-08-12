@@ -7,7 +7,7 @@ export interface RewardUnlockedProps {
   code: string
   /** Percent discount (almost always 5 today, but future-proofed) */
   percent: number
-  /** ISO timestamp — shown as a friendly date in the footer */
+  /** ISO timestamp, shown as a friendly date in the footer */
   expiresAt?: string | null
   /** Which milestone this reward corresponds to (5, 10, 15…) */
   milestone?: number
@@ -15,7 +15,7 @@ export interface RewardUnlockedProps {
 
 /**
  * Celebratory email fired when a user crosses a reward milestone (every 5
- * approved videos). The code pill is the visual centrepiece — copy-paste
+ * approved videos). The code pill is the visual centrepiece, copy-paste
  * friendly, gold, and unmistakable.
  */
 export default function RewardUnlocked({
@@ -31,13 +31,13 @@ export default function RewardUnlocked({
     : null
 
   return (
-    <MaplLayout preheader={`🎉 ${percent}% off your next MAPL trip — code ${code}`}>
+    <MaplLayout preheader={`🎉 ${percent}% off your next MAPL trip, code ${code}`}>
       <Text style={{ ...s.kicker, color: '#00A550' }}>Reward unlocked</Text>
       <Heading style={s.heading}>
-        {name}, that&rsquo;s {percent}% off — on us.
+        {name}, that&rsquo;s {percent}% off, on us.
       </Heading>
       <Text style={s.body}>
-        You&rsquo;ve shared {milestone} approved clips with the MAPL community{milestone === 5 ? ' — the biggest milestone.' : '.'} We saved you <strong style={{ color: '#fff' }}>{percent}% off your next trip</strong> as a thank-you. It&rsquo;s already on your account and will apply automatically at checkout.
+        You&rsquo;ve shared {milestone} approved clips with the MAPL community{milestone === 5 ? ', the biggest milestone.' : '.'} We saved you <strong style={{ color: '#fff' }}>{percent}% off your next trip</strong> as a thank-you. It&rsquo;s already on your account and will apply automatically at checkout.
       </Text>
 
       {/* Code pill */}
@@ -64,14 +64,14 @@ export default function RewardUnlocked({
         <Text style={s.panelKicker}>How to use it</Text>
         <Text style={s.panelBody}>
           · Works on any future MAPL booking<br />
-          · Auto-applies at checkout — no code needed<br />
+          · Auto-applies at checkout, no code needed<br />
           · One-time use · not stackable with other offers
           {expiresPretty && <><br />· Valid through <strong style={{ color: '#fff' }}>{expiresPretty}</strong></>}
         </Text>
       </div>
 
       <Text style={s.footnote}>
-        Every five approved clips unlocks another 5%. Keep going — Jamaica looks good on you.
+        Every five approved clips unlocks another 5%. Keep going, Jamaica looks good on you.
       </Text>
     </MaplLayout>
   )

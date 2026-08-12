@@ -31,7 +31,7 @@ export const metadata: Metadata = {
   ],
   alternates: { canonical: PAGE_URL },
   openGraph: {
-    title: 'Jamaica Airport Transfers — Flat Rates from Montego Bay (MBJ)',
+    title: 'Jamaica Airport Transfers, Flat Rates from Montego Bay (MBJ)',
     description:
       'Private flat-rate airport transfers from Sangster International Airport (MBJ) to every major resort in Jamaica. Meet-and-greet, flight tracking, free cancellation.',
     type: 'website',
@@ -43,13 +43,13 @@ export const metadata: Metadata = {
         url: HERO,
         width: 1920,
         height: 1080,
-        alt: 'Aerial view of Jamaica’s north-coast road — MAPL Tours airport-transfer route.',
+        alt: 'Aerial view of Jamaica’s north-coast road, MAPL Tours airport-transfer route.',
       },
     ],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Jamaica Airport Transfers — Flat Rates from MBJ',
+    title: 'Jamaica Airport Transfers, Flat Rates from MBJ',
     description:
       'Flat-rate private transfers to every major Jamaican resort. Meet-and-greet, flight tracking, free cancellation.',
     images: [HERO],
@@ -61,11 +61,11 @@ export const metadata: Metadata = {
  * Build the structured-data payload the /transfers page emits. Google and
  * LLM crawlers ingest these as separate entities:
  *
- *  • Service — the offering, with an AggregateOffer and price range that
+ *  • Service, the offering, with an AggregateOffer and price range that
  *    renders as a rich price snippet in some search UIs.
- *  • AggregateRating — review count + rating stars.
- *  • FAQPage — the full FAQ, which Google can surface as "People also ask".
- *  • BreadcrumbList — home > transfers crumb trail.
+ *  • AggregateRating, review count + rating stars.
+ *  • FAQPage, the full FAQ, which Google can surface as "People also ask".
+ *  • BreadcrumbList, home > transfers crumb trail.
  */
 function buildStructuredData() {
   const minPrice = Math.min(...Object.values(ZONES).map((z) => z.oneWay))
@@ -76,7 +76,7 @@ function buildStructuredData() {
     '@type': 'Service',
     '@id': `${PAGE_URL}#service`,
     serviceType: 'Airport transfer',
-    name: 'MAPL Tours Jamaica — Private Airport Transfers',
+    name: 'MAPL Tours Jamaica, Private Airport Transfers',
     description:
       'Private flat-rate airport transfers from Sangster International Airport (MBJ) to every major resort destination in Jamaica. Licensed drivers, flight tracking, meet-and-greet at arrivals, free cancellation up to 24 hours.',
     image: HERO,
@@ -107,7 +107,7 @@ function buildStructuredData() {
       offers: Object.values(ZONES).flatMap((z) => [
         {
           '@type': 'Offer',
-          name: `One-way transfer — ${z.label}`,
+          name: `One-way transfer, ${z.label}`,
           price: String(z.oneWay),
           priceCurrency: 'USD',
           availability: 'https://schema.org/InStock',
@@ -116,7 +116,7 @@ function buildStructuredData() {
         },
         {
           '@type': 'Offer',
-          name: `Round-trip transfer — ${z.label}`,
+          name: `Round-trip transfer, ${z.label}`,
           price: String(z.roundTrip),
           priceCurrency: 'USD',
           availability: 'https://schema.org/InStock',

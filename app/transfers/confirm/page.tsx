@@ -128,7 +128,7 @@ async function resolveConfirm(
   // PRIVACY: this page is reachable by anyone who has a payment_intent id
   // (it appears in return URLs, history, referrers) and bookings carry no
   // user_id we could check ownership against. So we expose only the
-  // non-sensitive booking confirmation — first name + logistics — and never
+  // non-sensitive booking confirmation, first name + logistics, and never
   // the contact PII (email / phone / country / special requests). The full
   // details still reach the real customer via the Resend confirmation email.
   const customerName = booking
@@ -167,7 +167,7 @@ function humanizeId(id: string): string {
 }
 
 function formatMoney(n: number | null, currency: string): string {
-  if (n === null || !Number.isFinite(n)) return '—'
+  if (n === null || !Number.isFinite(n)) return '-'
   const sign = n < 0 ? '-' : ''
   const abs = Math.abs(n).toFixed(2)
   return `${sign}${currency === 'USD' ? '$' : currency + ' '}${abs}`
@@ -285,7 +285,7 @@ function Success({ data }: { data: ConfirmData }) {
         {data.email
           ? `Confirmation on its way to ${data.email}.`
           : 'A confirmation email is on the way.'}{' '}
-        MAPL dispatch will reach out 24 hours before pickup.
+        MAPL will reach out 24 hours before pickup.
       </p>
 
       {data.bookingRef && (
@@ -311,7 +311,7 @@ function Success({ data }: { data: ConfirmData }) {
         </div>
       )}
 
-      {/* Itinerary card — flight info per leg */}
+      {/* Itinerary card, flight info per leg */}
       {data.transfers.length > 0 && (
         <Card title={`Itinerary · ${data.transfers.length} transfer${data.transfers.length !== 1 ? 's' : ''}`}>
           {data.transfers.map((t, i) => (
@@ -486,11 +486,11 @@ function Success({ data }: { data: ConfirmData }) {
           >
             <li>· Clear immigration and collect your bags.</li>
             <li>
-              · Exit the terminal at arrivals — your driver will be holding a
+              · Exit the terminal at arrivals, your driver will be holding a
               MAPL Tours sign with your name.
             </li>
             <li>
-              · 24/7 dispatch:{' '}
+              · Reach us any time:{' '}
               <Link href="mailto:contact@mapltours.com" style={{ color: 'var(--text-primary)', textDecoration: 'underline' }}>
                 contact@mapltours.com
               </Link>
@@ -742,7 +742,7 @@ function Processing() {
           lineHeight: 1.5,
         }}
       >
-        We&rsquo;ll email you the moment it clears — usually under a minute.
+        We&rsquo;ll email you the moment it clears, usually under a minute.
       </p>
     </div>
   )

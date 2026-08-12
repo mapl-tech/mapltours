@@ -13,7 +13,7 @@ export let GAS_PRICE_USD_PER_LITER = 1.45 // fallback, updated at runtime
 export let GAS_PRICE_JMD_PER_LITER = 228  // fallback, updated at runtime
 // Average rental vehicle: ~10 km/liter (compact SUV / sedan)
 export const KM_PER_LITER = 10
-// Daily vehicle rental: $65 USD (economy) — typical Jamaica rate
+// Daily vehicle rental: $65 USD (economy), typical Jamaica rate
 export const VEHICLE_RENTAL_PER_DAY = 65
 
 /**
@@ -56,7 +56,7 @@ const LOCATIONS: Record<string, { lat: number; lng: number }> = {
   'Manchioneal':    { lat: 18.1300, lng: -76.2700 },
   'Port Royal':     { lat: 17.9361, lng: -76.8417 },
 
-  // Hotels & resorts — mapped to nearest major location
+  // Hotels & resorts, mapped to nearest major location
   'Sandals Negril Beach Resort':        { lat: 18.2850, lng: -78.3550 },
   'Sandals Royal Caribbean, Montego Bay': { lat: 18.4900, lng: -77.9250 },
   'Sandals Ochi Beach Resort, Ocho Rios': { lat: 18.4100, lng: -77.1100 },

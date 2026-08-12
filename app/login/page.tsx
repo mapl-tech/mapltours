@@ -8,7 +8,7 @@ import { createClient } from '@/lib/supabase/client'
 import { getSafeRedirect } from '@/lib/safe-redirect'
 import { DESTINATION_IMAGES } from '@/lib/experiences'
 
-// One module-level client — don't recreate on every render.
+// One module-level client, don't recreate on every render.
 const supabase = createClient()
 
 export default function LoginPage() {
@@ -94,7 +94,7 @@ function LoginContent() {
 
   return (
     <div className="login-shell">
-      {/* Back to home — icon-only on mobile so it never covers the logo */}
+      {/* Back to home, icon-only on mobile so it never covers the logo */}
       <Link
         href="/"
         aria-label="Back to home"
@@ -116,7 +116,7 @@ function LoginContent() {
         <span className="login-back-label">Back to Home</span>
       </Link>
 
-      {/* Left atmosphere panel — decorative, desktop only */}
+      {/* Left atmosphere panel, decorative, desktop only */}
       <aside className="login-aside" aria-hidden="true">
         <div className="login-aside-overlay" />
         <div className="login-aside-text">

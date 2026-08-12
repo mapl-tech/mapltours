@@ -23,7 +23,7 @@ interface SchemaHealth {
 export class SchemaNotReadyError extends Error {
   readonly missing: string[]
   constructor(missing: string[]) {
-    super(`Booking schema not ready — missing: ${missing.join(', ')}`)
+    super(`Booking schema not ready, missing: ${missing.join(', ')}`)
     this.name = 'SchemaNotReadyError'
     this.missing = missing
   }

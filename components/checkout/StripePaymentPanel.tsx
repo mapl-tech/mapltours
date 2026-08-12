@@ -7,7 +7,7 @@ import { getStripe } from '@/lib/stripe'
 import { useI18n } from '@/lib/i18n'
 
 /**
- * Stripe payment UI — extracted into its own chunk so the ~80 KB gz
+ * Stripe payment UI, extracted into its own chunk so the ~80 KB gz
  * Stripe SDK only downloads when the user actually reaches step 3.
  * Imported via next/dynamic from CheckoutView.
  */
@@ -27,7 +27,7 @@ export default function StripePaymentPanel({
       stripe={getStripe()}
       options={{
         clientSecret,
-        // Register DM Sans inside Stripe's iframe — without this the
+        // Register DM Sans inside Stripe's iframe, without this the
         // `fontFamily` below silently falls back to a system sans, so the
         // card number / expiry / CVC digits wouldn't actually be DM Sans.
         fonts: [

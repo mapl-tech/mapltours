@@ -166,7 +166,7 @@ function Masthead() {
           }}
         >
           Essays, guides, and dispatches from the pit masters, selectors, and guides
-          who know the island — because they live here.
+          who know the island, because they live here.
         </p>
       </div>
     </header>

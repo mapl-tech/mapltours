@@ -1,11 +1,11 @@
 /**
- * Airport transfers — flat-rate zone pricing from Sangster International
+ * Airport transfers, flat-rate zone pricing from Sangster International
  * Airport (MBJ, Montego Bay) to Jamaican hotels and resorts. Prices are per
  * vehicle, covering 1–4 passengers, in USD.
  *
  * Rates match the published private-transfer sheet for the Jamaica market.
  * Kingston (KIN) transfers and Port Antonio destinations are handled via
- * custom quote at MVP — the contact form routes those.
+ * custom quote at MVP, the contact form routes those.
  */
 
 export type TransferAirport = 'MBJ'
@@ -23,11 +23,11 @@ export interface ZoneInfo {
 }
 
 // Private airport transfer prices, USD, 1–4 passengers (per vehicle).
-//   Zone A — Iberostar Rose Hall, Secrets, Jewel Grande, Hyatt, Hilton, Sandals MB, RIU MB
-//   Zone B — Royalton Blue Water (Falmouth), Excellence Oyster Bay
-//   Zone C — Grand Palladium (Lucea), Ocean Coral Spring, Round Hill, Tryall
-//   Zone D — Negril hotels, Bahia Principe, Jewel Paradise Cove
-//   Zone E — Ocho Rios hotels, Sandals South Coast, Treasure Beach, GoldenEye
+//   Zone A, Iberostar Rose Hall, Secrets, Jewel Grande, Hyatt, Hilton, Sandals MB, RIU MB
+//   Zone B, Royalton Blue Water (Falmouth), Excellence Oyster Bay
+//   Zone C, Grand Palladium (Lucea), Ocean Coral Spring, Round Hill, Tryall
+//   Zone D, Negril hotels, Bahia Principe, Jewel Paradise Cove
+//   Zone E, Ocho Rios hotels, Sandals South Coast, Treasure Beach, GoldenEye
 export const ZONES: Record<TransferZone, ZoneInfo> = {
   A: {
     code: 'A',
@@ -75,12 +75,12 @@ export interface TransferDestination {
 
 /**
  * Hotel and landmark destinations served by flat-rate MBJ transfers.
- * The list is deliberately conservative — anything requiring a custom
+ * The list is deliberately conservative, anything requiring a custom
  * quote (Port Antonio, Kingston parish, Mandeville) is absent here and
  * must route through /contact.
  */
 export const DESTINATIONS: TransferDestination[] = [
-  // Zone A — Montego Bay & Rose Hall
+  // Zone A, Montego Bay & Rose Hall
   { id: 'iberostar-rose-hall', name: 'Iberostar Rose Hall', parish: 'St. James', zone: 'A' },
   { id: 'secrets-st-james', name: 'Secrets St. James, Montego Bay', parish: 'St. James', zone: 'A' },
   { id: 'secrets-wild-orchid', name: 'Secrets Wild Orchid, Montego Bay', parish: 'St. James', zone: 'A' },
@@ -97,18 +97,18 @@ export const DESTINATIONS: TransferDestination[] = [
   { id: 'iberostar-grand-rose-hall', name: 'Iberostar Grand Rose Hall', parish: 'St. James', zone: 'A' },
   { id: 'half-moon-resort', name: 'Half Moon, A RockResort', parish: 'St. James', zone: 'A' },
 
-  // Zone B — Falmouth
+  // Zone B, Falmouth
   { id: 'royalton-blue-water-trelawny', name: 'Royalton Blue Water (Falmouth)', parish: 'Trelawny', zone: 'B' },
   { id: 'excellence-oyster-bay', name: 'Excellence Oyster Bay', parish: 'Trelawny', zone: 'B' },
   { id: 'falmouth-cruise-port', name: 'Falmouth Cruise Port', parish: 'Trelawny', zone: 'B' },
 
-  // Zone C — Trelawny / Hanover / Lucea
+  // Zone C, Trelawny / Hanover / Lucea
   { id: 'grand-palladium-lucea', name: 'Grand Palladium Jamaica, Lucea', parish: 'Hanover', zone: 'C' },
   { id: 'ocean-coral-spring', name: 'Ocean Coral Spring', parish: 'Trelawny', zone: 'C' },
   { id: 'round-hill-hotel', name: 'Round Hill Hotel & Villas, Hanover', parish: 'Hanover', zone: 'C' },
   { id: 'tryall-club', name: 'The Tryall Club, Hanover', parish: 'Hanover', zone: 'C' },
 
-  // Zone D — Negril & Runaway Bay
+  // Zone D, Negril & Runaway Bay
   { id: 'sandals-negril', name: 'Sandals Negril Beach Resort', parish: 'Westmoreland', zone: 'D' },
   { id: 'riu-negril', name: 'Riu Negril', parish: 'Westmoreland', zone: 'D' },
   { id: 'riu-palace-tropical-bay', name: 'Riu Palace Tropical Bay, Negril', parish: 'Westmoreland', zone: 'D' },
@@ -121,7 +121,7 @@ export const DESTINATIONS: TransferDestination[] = [
   { id: 'bahia-principe-runaway-bay', name: 'Bahia Principe Grand, Runaway Bay', parish: 'St. Ann', zone: 'D' },
   { id: 'jewel-paradise-cove', name: 'Jewel Paradise Cove, Runaway Bay', parish: 'St. Ann', zone: 'D' },
 
-  // Zone E — Ocho Rios & South Coast
+  // Zone E, Ocho Rios & South Coast
   { id: 'sandals-ochi', name: 'Sandals Ochi Beach Resort', parish: 'St. Ann', zone: 'E' },
   { id: 'sandals-dunns-river', name: "Sandals Dunn's River", parish: 'St. Ann', zone: 'E' },
   { id: 'moon-palace-ocho-rios', name: 'Moon Palace Jamaica, Ocho Rios', parish: 'St. Ann', zone: 'E' },

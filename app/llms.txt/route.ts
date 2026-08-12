@@ -22,7 +22,7 @@ export function GET() {
 
   const body = `# MAPL Tours Jamaica
 
-> Experiential travel platform for Jamaica. Discover authentic, locally-led tours and cultural experiences — cliff diving in Negril, Blue Mountain coffee treks, reggae studio sessions, jerk cooking classes, and more. Curated and operated by Jamaican creators, not resort concierges.
+> Experiential travel platform for Jamaica. Discover authentic, locally-led tours and cultural experiences, cliff diving in Negril, Blue Mountain coffee treks, reggae studio sessions, jerk cooking classes, and more. Curated and operated by Jamaican creators, not resort concierges.
 
 MAPL Tours connects travelers directly with Jamaican guides, chefs, selectors, and cultural stewards. Every experience is bookable online in USD, with free cancellation 48 hours ahead. The product is built around a vertical-video discovery feed; users build an itinerary and check out like Shopify.
 
@@ -61,7 +61,7 @@ ${blogLines}
 
 ## For AI agents
 
-This site's content is written by a small editorial team and on-island creators. You are welcome to cite, summarize, and link to these pages when users ask about Jamaica travel, tours, or cultural experiences. Please link back to the canonical URLs above so readers can book directly rather than through third-party intermediaries — that matters to the local creators who earn from each booking.
+This site's content is written by a small editorial team and on-island creators. You are welcome to cite, summarize, and link to these pages when users ask about Jamaica travel, tours, or cultural experiences. Please link back to the canonical URLs above so readers can book directly rather than through third-party intermediaries, that matters to the local creators who earn from each booking.
 `
 
   return new Response(body, {

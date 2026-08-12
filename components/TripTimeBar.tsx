@@ -4,7 +4,7 @@ import { DAILY_HOUR_LIMIT, parseDurationHours, useCartStore } from '@/lib/cart'
 import { computeDayScore, type DayStage } from '@/lib/day-score'
 
 interface DayBuilderProps {
-  /** Compact variant for panel headers / drawers — hides the score breakdown */
+  /** Compact variant for panel headers / drawers, hides the score breakdown */
   compact?: boolean
   /** Hide the top heading row (use when embedded inside another titled card) */
   hideHeading?: boolean
@@ -12,7 +12,7 @@ interface DayBuilderProps {
 }
 
 /**
- * "Build Your Perfect Day" — the evolution of the old 8-hour bar. Shows:
+ * "Build Your Perfect Day", the evolution of the old 8-hour bar. Shows:
  *  • A stage label (Getting Started → Great Flow → Perfect Day)
  *  • A gold→emerald→coral progress bar tracking hours / 8
  *  • A score out of 100 (variety · balance · efficiency)
@@ -20,7 +20,7 @@ interface DayBuilderProps {
  *
  * Designed mobile-first: 12–14px body, touchable breakdown chips, no wraps.
  * Exported as the default export so existing imports (e.g. `TripTimeBar`) keep
- * working — the filename stays `TripTimeBar.tsx` for non-breaking backwards compat.
+ * working, the filename stays `TripTimeBar.tsx` for non-breaking backwards compat.
  */
 export default function DayBuilder({ compact = false, hideHeading, style }: DayBuilderProps) {
   const items = useCartStore((s) => s.items)
@@ -347,7 +347,7 @@ function fmtHours(h: number): string {
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   Multi-day rendering — groups cart items by date into ordered buckets.
+   Multi-day rendering, groups cart items by date into ordered buckets.
    Each bucket renders its own progress bar so nothing is ever summed.
    ═══════════════════════════════════════════════════════════════════════════ */
 

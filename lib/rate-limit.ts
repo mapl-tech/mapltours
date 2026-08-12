@@ -1,8 +1,8 @@
 /**
  * In-process per-IP rate limiter.
  *
- * Single-instance is fine for what we need this to defend against — bot
- * scraping, brute spam, accidental fetch-loops in client code — not a
+ * Single-instance is fine for what we need this to defend against, bot
+ * scraping, brute spam, accidental fetch-loops in client code, not a
  * coordinated DDOS (that's CDN/edge territory). Netlify Functions recycle
  * warm containers often enough that the in-memory counter naturally
  * resets, which is exactly the leak-towards-permissive behaviour we want

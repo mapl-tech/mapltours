@@ -1,7 +1,7 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 
 /**
- * Service-role Supabase client. Bypasses RLS — **server-only**.
+ * Service-role Supabase client. Bypasses RLS, **server-only**.
  * Used by webhook handlers and cron routes that must read/write on behalf
  * of other users (e.g. looking up the uploader's email to send them mail).
  *
@@ -14,7 +14,7 @@ export function createServiceClient(): SupabaseClient {
 
   if (!url || !key) {
     throw new Error(
-      'Missing NEXT_PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY — required for service-role Supabase access.'
+      'Missing NEXT_PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY, required for service-role Supabase access.'
     )
   }
 

@@ -8,7 +8,7 @@ import VideoApproved from '@/emails/VideoApproved'
 import VideoRejected from '@/emails/VideoRejected'
 
 /**
- * Supabase DB webhook target — fires on INSERT and UPDATE to
+ * Supabase DB webhook target, fires on INSERT and UPDATE to
  * `public.user_tour_videos`. Dispatches the matching transactional email.
  *
  * ── How Supabase DB webhooks call this endpoint ───────────────────────────
@@ -45,7 +45,7 @@ interface WebhookPayload {
 }
 
 export async function POST(req: Request) {
-  // 1. Secret check — reject anything not originating from Supabase
+  // 1. Secret check, reject anything not originating from Supabase
   const secret = req.headers.get('x-supabase-secret')
   if (!secret || secret !== process.env.SUPABASE_WEBHOOK_SECRET) {
     return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
@@ -116,7 +116,7 @@ export async function POST(req: Request) {
         await sendEmail({
           to: email,
           subject: rewardJustUnlocked
-            ? '🎬 Your clip is live — and you just unlocked 5% off'
+            ? '🎬 Your clip is live, and you just unlocked 5% off'
             : 'Your MAPL clip is live',
           react: VideoApproved({
             firstName,
@@ -152,7 +152,7 @@ export async function POST(req: Request) {
         return NextResponse.json({ ok: true, sent: 'video_rejected' })
       }
 
-      // `flagged` is an internal triage state — no user-facing email by design.
+      // `flagged` is an internal triage state, no user-facing email by design.
       if (record.status === 'flagged') {
         return NextResponse.json({ ok: true, skipped: 'flagged_is_internal' })
       }
@@ -162,7 +162,7 @@ export async function POST(req: Request) {
   } catch (err) {
     const msg = err instanceof Error ? err.message : 'unknown'
     console.error('[hook:video-status] dispatch failed', msg)
-    // We still return 200 so Supabase doesn't retry indefinitely — email
+    // We still return 200 so Supabase doesn't retry indefinitely, email
     // failures are logged, not silently dropped, but we don't block the DB.
     return NextResponse.json({ ok: false, error: msg })
   }

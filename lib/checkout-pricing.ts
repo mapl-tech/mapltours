@@ -12,7 +12,7 @@
  *
  * Transport is client-supplied (it depends on a live gas price the client
  * already fetched) but is clamped to a per-travel-day ceiling so a tampered
- * payload can't inflate it absurdly — and, critically, the ceiling now
+ * payload can't inflate it absurdly, and, critically, the ceiling now
  * scales with the number of distinct travel days so legitimate multi-day
  * itineraries are never falsely rejected.
  *
@@ -49,7 +49,7 @@ export interface ClientCartLine {
 
 export interface ClientBreakdown {
   transport?: number
-  /** @deprecated client value is ignored — see PriceOptions.rewardPercent */
+  /** @deprecated client value is ignored, see PriceOptions.rewardPercent */
   rewardDiscount?: number
 }
 
@@ -122,7 +122,7 @@ export function priceTourCart(
     subtotal += lineTotal
   }
 
-  // 20% platform/service fee — matches lib/cart.ts.
+  // 20% platform/service fee, matches lib/cart.ts.
   const fee = Math.round(subtotal * 0.20)
 
   // Transport: client-supplied (depends on the live gas price the client

@@ -6,7 +6,7 @@ import { useEffect } from 'react'
  * Lightweight scroll-reveal. Adds `html.js-reveal` (which arms the CSS in
  * globals.css) then observes every `[data-reveal]` element and toggles
  * `.is-in` when it scrolls into view. If JS never runs, the CSS stays
- * inert and all content is visible — so this can only ADD motion, never
+ * inert and all content is visible, so this can only ADD motion, never
  * hide content. Honors prefers-reduced-motion (the global guard collapses
  * the transitions, so elements simply appear).
  */

@@ -51,11 +51,11 @@ const HAND_POSTS: BlogPost[] = [
     body: [
       {
         type: 'p',
-        text: "The smoke hits you before you see the pit. Pimento wood, scotch bonnet, allspice — a perfume so specific to this stretch of Portland coast that locals say you can smell a Boston Bay jerk pit from a mile down the A4.",
+        text: "The smoke hits you before you see the pit. Pimento wood, scotch bonnet, allspice, a perfume so specific to this stretch of Portland coast that locals say you can smell a Boston Bay jerk pit from a mile down the A4.",
       },
       {
         type: 'p',
-        text: "Devon has been tending his grandfather's pit since he was thirteen. The recipe hasn't changed in sixty years. Neither has the wood — pimento, hand-cut from the hills above the bay, never seasoned, always green. 'Dry wood gives you smoke,' he tells us. 'Green wood gives you soul.'",
+        text: "Devon has been tending his grandfather's pit since he was thirteen. The recipe hasn't changed in sixty years. Neither has the wood, pimento, hand-cut from the hills above the bay, never seasoned, always green. 'Dry wood gives you smoke,' he tells us. 'Green wood gives you soul.'",
       },
       {
         type: 'quote',
@@ -72,13 +72,13 @@ const HAND_POSTS: BlogPost[] = [
         items: [
           'The pimento wood imparts a sweetness no charcoal can replicate',
           'Banana leaves hold moisture without steaming away the smoke',
-          'The spice paste is always hand-pounded — never blended',
+          'The spice paste is always hand-pounded, never blended',
           'Scotch bonnets come from a single farm in the hills above the bay',
         ],
       },
       {
         type: 'p',
-        text: "By the time Devon pulls the first pan, there's a line down the road. Tourists, locals, Portland uncles who've been eating here for decades. Nobody skips the bread. Nobody leaves hungry. And nobody — not once, in three generations — has asked for ketchup.",
+        text: "By the time Devon pulls the first pan, there's a line down the road. Tourists, locals, Portland uncles who've been eating here for decades. Nobody skips the bread. Nobody leaves hungry. And nobody, not once, in three generations, has asked for ketchup.",
       },
     ],
     relatedSlugs: ['kingston-street-food', 'beyond-the-resort'],
@@ -87,7 +87,7 @@ const HAND_POSTS: BlogPost[] = [
     slug: 'blue-mountain-sunrise-hike',
     title: 'Sunrise at 5,000 Feet: Hiking the Blue Mountains',
     excerpt:
-      "Waking at 3am to climb Jamaica's highest peak — the coffee, the mist, the view, and why every minute of exhaustion is worth it.",
+      "Waking at 3am to climb Jamaica's highest peak, the coffee, the mist, the view, and why every minute of exhaustion is worth it.",
     category: 'Adventure',
     image: DESTINATION_IMAGES['Blue Mountains'],
     readTime: 9,
@@ -101,7 +101,7 @@ const HAND_POSTS: BlogPost[] = [
       },
       {
         type: 'p',
-        text: "We're headed to Blue Mountain Peak — 7,402 feet, the highest point on the island. The hike takes about four hours up if you're fit, five if you're human. And you start it in the middle of the night so you hit the summit just as the sun comes up over the Caribbean.",
+        text: "We're headed to Blue Mountain Peak, 7,402 feet, the highest point on the island. The hike takes about four hours up if you're fit, five if you're human. And you start it in the middle of the night so you hit the summit just as the sun comes up over the Caribbean.",
       },
       { type: 'h2', text: 'The trail' },
       {
@@ -142,12 +142,12 @@ const HAND_POSTS: BlogPost[] = [
       },
       {
         type: 'p',
-        text: "The scene started in the 1950s when promoters began hauling massive rigs into empty lots to play American R&B for people who couldn't afford the clubs downtown. By the sixties those same systems were playing ska, then rocksteady, then reggae — all invented, in part, because selectors needed music with enough space in the mix for the bass to hit.",
+        text: "The scene started in the 1950s when promoters began hauling massive rigs into empty lots to play American R&B for people who couldn't afford the clubs downtown. By the sixties those same systems were playing ska, then rocksteady, then reggae, all invented, in part, because selectors needed music with enough space in the mix for the bass to hit.",
       },
       { type: 'h2', text: 'Where to find it now' },
       {
         type: 'p',
-        text: "The old spots still exist. King Jammy's. Stone Love. Kilimanjaro. Most weekends you'll find a dance somewhere between downtown and Half Way Tree — sometimes in a parking lot, sometimes in a warehouse, sometimes just a patch of grass with the system backed up to a cinder-block wall.",
+        text: "The old spots still exist. King Jammy's. Stone Love. Kilimanjaro. Most weekends you'll find a dance somewhere between downtown and Half Way Tree, sometimes in a parking lot, sometimes in a warehouse, sometimes just a patch of grass with the system backed up to a cinder-block wall.",
       },
       {
         type: 'quote',
@@ -156,7 +156,7 @@ const HAND_POSTS: BlogPost[] = [
       },
       {
         type: 'p',
-        text: "Go once and you understand why so much of modern music — hip-hop, UK garage, jungle, grime, reggaeton — traces a line straight back to these parking lots. The bass gets into your chest and stays there.",
+        text: "Go once and you understand why so much of modern music, hip-hop, UK garage, jungle, grime, reggaeton, traces a line straight back to these parking lots. The bass gets into your chest and stays there.",
       },
     ],
     relatedSlugs: ['kingston-culture-guide', 'beyond-the-resort'],
@@ -174,16 +174,16 @@ const HAND_POSTS: BlogPost[] = [
     body: [
       {
         type: 'p',
-        text: "At night the lagoon looks like regular black water. Then the boat's engine cuts, someone trails a hand through the surface, and the water lights up — a trail of electric blue that follows the shape of every finger.",
+        text: "At night the lagoon looks like regular black water. Then the boat's engine cuts, someone trails a hand through the surface, and the water lights up, a trail of electric blue that follows the shape of every finger.",
       },
       {
         type: 'p',
-        text: "The glow comes from dinoflagellates — single-cell organisms that emit light when disturbed. There are only four places in the world where they concentrate this densely. Falmouth is one of them, and it's the brightest of all four.",
+        text: "The glow comes from dinoflagellates, single-cell organisms that emit light when disturbed. There are only four places in the world where they concentrate this densely. Falmouth is one of them, and it's the brightest of all four.",
       },
       { type: 'h2', text: 'What the tour is actually like' },
       {
         type: 'p',
-        text: "Boats leave the marina around 7pm. It's a short ride out to the middle of the lagoon — maybe fifteen minutes. Once you're there, you jump in. The water is warm. It lights up wherever you move, so swimming feels like you're dragging a comet behind you.",
+        text: "Boats leave the marina around 7pm. It's a short ride out to the middle of the lagoon, maybe fifteen minutes. Once you're there, you jump in. The water is warm. It lights up wherever you move, so swimming feels like you're dragging a comet behind you.",
       },
       {
         type: 'p',
@@ -205,18 +205,18 @@ const HAND_POSTS: BlogPost[] = [
     body: [
       {
         type: 'p',
-        text: "For thirty years, the Jamaican tourism economy was built on a simple bargain: fly in, stay behind a wall, eat buffet food, book an excursion through the concierge. It worked — for the resorts. The people who actually lived on the island saw very little of it.",
+        text: "For thirty years, the Jamaican tourism economy was built on a simple bargain: fly in, stay behind a wall, eat buffet food, book an excursion through the concierge. It worked, for the resorts. The people who actually lived on the island saw very little of it.",
       },
       {
         type: 'p',
-        text: "That's starting to change. A new generation of travelers — younger, more skeptical, trained by social media to want the real thing — is bypassing the wall entirely.",
+        text: "That's starting to change. A new generation of travelers, younger, more skeptical, trained by social media to want the real thing, is bypassing the wall entirely.",
       },
       { type: 'h2', text: 'Why now' },
       {
         type: 'list',
         items: [
-          'Social-first discovery — TikTok surfaces local creators the resort desk never would',
-          'Price transparency — direct booking cuts 30-50% of the markup',
+          'Social-first discovery, TikTok surfaces local creators the resort desk never would',
+          'Price transparency, direct booking cuts 30-50% of the markup',
           'Post-pandemic travel preferences favor small groups over large tours',
           'A generation of Jamaican creators building careers from their craft',
         ],
@@ -237,7 +237,7 @@ const HAND_POSTS: BlogPost[] = [
     slug: 'first-time-jamaica',
     title: 'First Time in Jamaica: What You Need to Know',
     excerpt:
-      'Currency, safety, weather, getting around, cultural etiquette. Everything you need for your first trip — from a local perspective.',
+      'Currency, safety, weather, getting around, cultural etiquette. Everything you need for your first trip, from a local perspective.',
     category: 'Guides',
     image: DESTINATION_IMAGES['Negril'],
     readTime: 10,
@@ -251,7 +251,7 @@ const HAND_POSTS: BlogPost[] = [
       { type: 'h2', text: 'Money' },
       {
         type: 'p',
-        text: "USD is accepted everywhere tourists go. You'll get a better rate at cambios than at the airport. Most places give change in JMD even if you pay in USD — factor it in. Tipping is 10-15% and it matters; most service staff depend on it.",
+        text: "USD is accepted everywhere tourists go. You'll get a better rate at cambios than at the airport. Most places give change in JMD even if you pay in USD, factor it in. Tipping is 10-15% and it matters; most service staff depend on it.",
       },
       { type: 'h2', text: 'Getting around' },
       {
@@ -261,7 +261,7 @@ const HAND_POSTS: BlogPost[] = [
       { type: 'h2', text: 'Weather' },
       {
         type: 'p',
-        text: "November to April is high season for a reason — dry, breezy, 80°F. May through October is hot and humid, with afternoon showers you can almost set a watch by. Hurricane season peaks August-October. Book with free cancellation.",
+        text: "November to April is high season for a reason, dry, breezy, 80°F. May through October is hot and humid, with afternoon showers you can almost set a watch by. Hurricane season peaks August-October. Book with free cancellation.",
       },
       { type: 'h2', text: 'Cultural notes' },
       {
@@ -270,7 +270,7 @@ const HAND_POSTS: BlogPost[] = [
           "Greet before you ask. 'Good morning' before 'where can I find...'",
           'Jamaicans are direct. Asking twice is not rude; it signals interest.',
           'Patwa is its own language. English works fine, but ask about a word and people light up.',
-          "Don't haggle in restaurants. Do haggle in markets — politely.",
+          "Don't haggle in restaurants. Do haggle in markets, politely.",
         ],
       },
     ],
@@ -294,12 +294,12 @@ const HAND_POSTS: BlogPost[] = [
       { type: 'h2', text: 'The beach' },
       {
         type: 'p',
-        text: "Seven Mile Beach actually is about six and a half miles. Public access points run all the way down — you don't need to be a hotel guest. The water is calmest in the morning. By afternoon the breeze picks up; by sunset there's usually a little wave action.",
+        text: "Seven Mile Beach actually is about six and a half miles. Public access points run all the way down, you don't need to be a hotel guest. The water is calmest in the morning. By afternoon the breeze picks up; by sunset there's usually a little wave action.",
       },
       { type: 'h2', text: 'The cliffs' },
       {
         type: 'p',
-        text: "West End is a different Negril — limestone cliffs, small hotels built into the rock, tide pools, and sunsets that Rick's Cafe gets all the credit for but the smaller bars do just as well. If you want the famous cliff jump without the crowd, try Pirate's Cave or 3 Dives.",
+        text: "West End is a different Negril, limestone cliffs, small hotels built into the rock, tide pools, and sunsets that Rick's Cafe gets all the credit for but the smaller bars do just as well. If you want the famous cliff jump without the crowd, try Pirate's Cave or 3 Dives.",
       },
       { type: 'h2', text: 'Food' },
       {
@@ -308,7 +308,7 @@ const HAND_POSTS: BlogPost[] = [
           'Best jerk: the red roof stand next to the Catcha Falling Star cliff walk',
           'Best breakfast: Sweet Spice, local-Jamaican, no-frills',
           'Best seafood: Ivan\'s, on the cliffs, grilled lobster at sunset',
-          'Best rum punch: every third bar on the strip — seriously',
+          'Best rum punch: every third bar on the strip, seriously',
         ],
       },
     ],
@@ -327,22 +327,22 @@ const HAND_POSTS: BlogPost[] = [
     body: [
       {
         type: 'p',
-        text: "Most first-time visitors skip Kingston. Most return visitors make it their main stop. The city is loud, fast, unfiltered — and it is where Jamaica actually happens.",
+        text: "Most first-time visitors skip Kingston. Most return visitors make it their main stop. The city is loud, fast, unfiltered, and it is where Jamaica actually happens.",
       },
       { type: 'h2', text: 'Music' },
       {
         type: 'p',
-        text: "The Bob Marley Museum is the obvious one. Don't skip it. But also visit Trench Town Culture Yard — smaller, rawer, more honest. For a live scene, Usain Bolt's Tracks & Records has big-name artists; for underground, check Kingston Dub Club on Sunday evenings.",
+        text: "The Bob Marley Museum is the obvious one. Don't skip it. But also visit Trench Town Culture Yard, smaller, rawer, more honest. For a live scene, Usain Bolt's Tracks & Records has big-name artists; for underground, check Kingston Dub Club on Sunday evenings.",
       },
       { type: 'h2', text: 'Food' },
       {
         type: 'p',
-        text: "Devon House for ice cream (yes, really). Gloria's in Port Royal for seafood on the water. Scotchies for jerk if you can't make it to Portland. And the patty scene is world-class — Juici Patties gets the attention but Tastee has a better flaky crust.",
+        text: "Devon House for ice cream (yes, really). Gloria's in Port Royal for seafood on the water. Scotchies for jerk if you can't make it to Portland. And the patty scene is world-class, Juici Patties gets the attention but Tastee has a better flaky crust.",
       },
       { type: 'h2', text: 'Nightlife' },
       {
         type: 'p',
-        text: "Kingston nightlife runs late — most dances don't start until midnight. Mojito Mondays in the hills, weekend parties around Half Way Tree, and the sound-system dances we wrote about are the thing to seek out. Dress up. Kingston notices.",
+        text: "Kingston nightlife runs late, most dances don't start until midnight. Mojito Mondays in the hills, weekend parties around Half Way Tree, and the sound-system dances we wrote about are the thing to seek out. Dress up. Kingston notices.",
       },
     ],
     relatedSlugs: ['kingston-sound-system-culture', 'beyond-the-resort'],

@@ -11,7 +11,7 @@ export const runtime = 'edge'
 export async function GET(request: Request) {
   // Forward the visitor's IP if a proxy/CDN exposed one. ipapi resolves
   // by request IP when no path param is supplied, but Edge runtimes can
-  // route through a server IP — pass the explicit address when known.
+  // route through a server IP, pass the explicit address when known.
   const ip =
     request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
     request.headers.get('x-real-ip') ||
@@ -31,7 +31,7 @@ export async function GET(request: Request) {
     return NextResponse.json(
       { country_code: data.country_code ?? null },
       {
-        // Cache at the edge for 10 minutes per IP — language detection
+        // Cache at the edge for 10 minutes per IP, language detection
         // doesn't change often and we don't want to hammer the upstream.
         headers: { 'Cache-Control': 'public, max-age=0, s-maxage=600' },
       },

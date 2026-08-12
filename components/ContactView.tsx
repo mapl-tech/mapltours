@@ -10,7 +10,7 @@ export default function ContactView() {
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [form, setForm] = useState({ name: '', email: '', subject: '', message: '' })
-  // Honeypot — hidden from real users via CSS. Bots will fill it; the
+  // Honeypot, hidden from real users via CSS. Bots will fill it; the
   // server silently discards any submission where this isn't empty.
   const [website, setWebsite] = useState('')
 
@@ -32,7 +32,7 @@ export default function ContactView() {
       }
       setSent(true)
     } catch {
-      setError('Network error — please check your connection and try again.')
+      setError('Network error, please check your connection and try again.')
     } finally {
       setSubmitting(false)
     }
@@ -213,7 +213,7 @@ export default function ContactView() {
                     <label htmlFor="contact-message" style={{ fontSize: 12.5, fontWeight: 600, color: 'var(--text-secondary)', fontFamily: 'var(--font-dm-sans)', display: 'block', marginBottom: 6 }}>Message</label>
                     <textarea id="contact-message" className="field-input" placeholder="Tell us about your trip plans, questions, or feedback..." rows={5} value={form.message} onChange={(e) => setForm({ ...form, message: e.target.value })} required />
                   </div>
-                  {/* Honeypot — kept off-screen so real users never see it. */}
+                  {/* Honeypot, kept off-screen so real users never see it. */}
                   <input
                     type="text"
                     name="website"

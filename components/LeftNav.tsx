@@ -7,7 +7,7 @@ import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import type { User } from '@supabase/supabase-js'
 
-// One module-level client — don't recreate on every render.
+// One module-level client, don't recreate on every render.
 const supabase = createClient()
 
 const navItems = [
@@ -59,7 +59,7 @@ export default function LeftNav() {
       {/* Logo */}
       <Link
         href="/"
-        aria-label="MAPL Tours — go to the feed"
+        aria-label="MAPL Tours, go to the feed"
         style={{
           fontFamily: 'var(--font-dm-sans)',
           fontWeight: 800,
@@ -183,7 +183,7 @@ export default function LeftNav() {
       {items.length > 0 && (
         <Link
           href="/checkout"
-          aria-label={`Open itinerary — ${items.length} item${items.length === 1 ? '' : 's'}`}
+          aria-label={`Open itinerary, ${items.length} item${items.length === 1 ? '' : 's'}`}
           style={{
             width: 44,
             height: 44,

@@ -15,7 +15,7 @@ export interface VideoApprovedProps {
 
 /**
  * Sent when an admin flips a clip to `approved`. The message leans into
- * the reward milestone so the user feels progress — classic engagement loop.
+ * the reward milestone so the user feels progress, classic engagement loop.
  */
 export default function VideoApproved({
   firstName,
@@ -57,7 +57,7 @@ export default function VideoApproved({
           <strong style={{ color: '#fff' }}>{approvedCount} approved video{approvedCount === 1 ? '' : 's'}</strong> · {statusLine}
         </Text>
 
-        {/* Visual progress — cap at 5, but keep showing beyond for users on the 10/15/… ladder */}
+        {/* Visual progress, cap at 5, but keep showing beyond for users on the 10/15/… ladder */}
         <div style={{ marginTop: 14, height: 6, borderRadius: 9999, background: 'rgba(255,255,255,0.08)', overflow: 'hidden' }}>
           <div style={{
             height: 6,
@@ -75,7 +75,7 @@ export default function VideoApproved({
       </div>
 
       <Text style={s.footnote}>
-        Keep sharing — the best MAPL moments always come from travellers in the thick of it.
+        Keep sharing, the best MAPL moments always come from travellers in the thick of it.
       </Text>
     </MaplLayout>
   )

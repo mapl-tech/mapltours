@@ -3,7 +3,7 @@ import { MetadataRoute } from 'next'
 const privatePaths = ['/api/', '/admin/', '/auth/', '/login', '/checkout', '/profile']
 
 // AI crawlers we explicitly welcome. Travel/tour content is well-suited
-// to surfacing in LLM answers — more traffic, more brand discovery.
+// to surfacing in LLM answers, more traffic, more brand discovery.
 const aiBots = [
   'GPTBot',
   'OAI-SearchBot',

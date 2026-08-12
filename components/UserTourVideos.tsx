@@ -2,7 +2,7 @@
 
 /**
  * ============================================================================
- *  MAPL — User Tour Videos (Gallery + Upload + Reward)
+ *  MAPL, User Tour Videos (Gallery + Upload + Reward)
  * ============================================================================
  *  Mobile-first, premium swipe gallery of approved user-submitted clips for a
  *  single experience. Includes the upload sheet and the reward-progress card.
@@ -51,14 +51,14 @@ export default function UserTourVideos({ experienceId, experienceTitle }: Props)
       overflow: 'hidden',
       color: '#fff',
     }}>
-      {/* Top gold hairline — prestige cue, same as checkout Day Builder */}
+      {/* Top gold hairline, prestige cue, same as checkout Day Builder */}
       <div style={{
         position: 'absolute', top: 0, left: 0, right: 0, height: 2,
         background: 'linear-gradient(90deg, transparent, #FFB300 50%, transparent)',
         opacity: 0.7, pointerEvents: 'none',
       }} />
 
-      {/* Editorial header — no CTA, just setting the stage */}
+      {/* Editorial header, no CTA, just setting the stage */}
       <div style={{ marginBottom: 26 }}>
         <p style={{
           fontFamily: 'var(--font-dm-sans)',
@@ -91,7 +91,7 @@ export default function UserTourVideos({ experienceId, experienceTitle }: Props)
         </p>
       </div>
 
-      {/* Reward progress band — sole entry point to upload; no duplicate CTAs */}
+      {/* Reward progress band, sole entry point to upload; no duplicate CTAs */}
       <RewardProgressBand onStart={() => setUploadOpen(true)} />
 
       {/* Gallery */}
@@ -135,7 +135,7 @@ export default function UserTourVideos({ experienceId, experienceTitle }: Props)
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   Reward progress band — single prestige CTA that doubles as the upload entry
+   Reward progress band, single prestige CTA that doubles as the upload entry
    ═══════════════════════════════════════════════════════════════════════════ */
 function RewardProgressBand({ onStart }: { onStart: () => void }) {
   const { user } = useAuth()
@@ -203,7 +203,7 @@ function RewardProgressBand({ onStart }: { onStart: () => void }) {
             ? `5% off ready · ${availableRewards[0].code}`
             : approved === 0
               ? 'Share 5 clips, earn 5% off'
-              : `${towardNext} of ${VIDEO_REWARD_MILESTONE} — ${remaining} to go`}
+              : `${towardNext} of ${VIDEO_REWARD_MILESTONE}, ${remaining} to go`}
         </p>
         <div style={{
           position: 'relative', marginTop: 10,
@@ -222,7 +222,7 @@ function RewardProgressBand({ onStart }: { onStart: () => void }) {
           }} />
         </div>
       </div>
-      {/* No CTA here by design — the sole upload entry point is the
+      {/* No CTA here by design, the sole upload entry point is the
           "Share yours" card at the end of the stripe (or the empty-state
           button when no videos exist yet). */}
     </div>
@@ -230,7 +230,7 @@ function RewardProgressBand({ onStart }: { onStart: () => void }) {
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   Video stripe — prestige reel cards with a trailing "Share yours" affordance
+   Video stripe, prestige reel cards with a trailing "Share yours" affordance
    ═══════════════════════════════════════════════════════════════════════════ */
 function VideoStripe({
   videos, onOpen, onAdd,
@@ -287,14 +287,14 @@ function VideoStripe({
             />
           )}
 
-          {/* Prestige scrim — deeper gradient, more cinematic */}
+          {/* Prestige scrim, deeper gradient, more cinematic */}
           <div style={{
             position: 'absolute', inset: 0,
             background: 'linear-gradient(180deg, rgba(0,0,0,0.25) 0%, rgba(0,0,0,0) 45%, rgba(0,0,0,0.78) 100%)',
             pointerEvents: 'none',
           }} />
 
-          {/* Uploader overlay — avatar + handle, Syne for editorial prestige */}
+          {/* Uploader overlay, avatar + handle, Syne for editorial prestige */}
           <div style={{
             position: 'absolute', left: 0, right: 0, bottom: 0,
             padding: '24px 10px 10px',
@@ -335,7 +335,7 @@ function VideoStripe({
         </button>
       ))}
 
-      {/* Trailing "Share yours" card — native to social/premium apps, eliminates redundancy */}
+      {/* Trailing "Share yours" card, native to social/premium apps, eliminates redundancy */}
       <button
         onClick={onAdd}
         aria-label="Share your own clip"
@@ -396,7 +396,7 @@ function VideoStripe({
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   Swipeable viewer — full-screen, horizontal snap, mute/play controls
+   Swipeable viewer, full-screen, horizontal snap, mute/play controls
    ═══════════════════════════════════════════════════════════════════════════ */
 function VideoSwiper({
   videos, startIndex, onClose,
@@ -606,7 +606,7 @@ function SwiperSlide({
   const videoRef = useRef<HTMLVideoElement>(null)
   const [loaded, setLoaded] = useState(false)
 
-  // Only play the active slide — matches native story/reel behaviour
+  // Only play the active slide, matches native story/reel behaviour
   useEffect(() => {
     const el = videoRef.current
     if (!el) return
@@ -659,7 +659,7 @@ function SwiperSlide({
         </div>
       )}
 
-      {/* Uploader byline — avatar + handle + caption */}
+      {/* Uploader byline, avatar + handle + caption */}
       <div style={{
         position: 'absolute',
         left: 16, right: 16,
@@ -700,7 +700,7 @@ function SwiperSlide({
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   Upload sheet — mobile-first bottom sheet
+   Upload sheet, mobile-first bottom sheet
    ═══════════════════════════════════════════════════════════════════════════ */
 function UploadSheet({
   experienceId, experienceTitle, onClose, onUploaded,
@@ -729,7 +729,7 @@ function UploadSheet({
     if (!v.ok) { setError(v.error ?? 'Invalid file'); return }
     const dur = await readVideoDuration(f)
     if (dur && dur > VIDEO_MAX_DURATION_SEC) {
-      setError(`Clip is ${dur}s — maximum is ${VIDEO_MAX_DURATION_SEC}s`)
+      setError(`Clip is ${dur}s, maximum is ${VIDEO_MAX_DURATION_SEC}s`)
       return
     }
     setFile(f)
@@ -1023,7 +1023,7 @@ function EmptyState({ onUpload }: { onUpload: () => void }) {
         color: 'rgba(255, 255, 255, 0.55)', lineHeight: 1.55,
         maxWidth: 340, margin: '0 auto 22px',
       }}>
-        A handful of approved clips unlocks <strong style={{ color: '#FFB300' }}>5% off your next trip</strong> — and puts you on the feed for future travellers.
+        A handful of approved clips unlocks <strong style={{ color: '#FFB300' }}>5% off your next trip</strong>, and puts you on the feed for future travellers.
       </p>
       <button
         onClick={onUpload}
@@ -1063,7 +1063,7 @@ function GallerySkeleton() {
 /* ═══════════════════════════════════════════════════════════════════════════
    Shared styles (inline so the component is self-contained)
    ═══════════════════════════════════════════════════════════════════════════ */
-/* Primary prestige CTA — gold pill, ink text, used as the *only* upload
+/* Primary prestige CTA, gold pill, ink text, used as the *only* upload
    entry point so CTAs don't duplicate. */
 const goldCtaStyle: React.CSSProperties = {
   flexShrink: 0,
@@ -1080,7 +1080,7 @@ const goldCtaStyle: React.CSSProperties = {
   transition: 'transform 0.15s ease, box-shadow 0.2s ease',
 }
 
-/* Secondary CTA — used only by the logged-out state of the reward band */
+/* Secondary CTA, used only by the logged-out state of the reward band */
 const ghostCtaStyle: React.CSSProperties = {
   flexShrink: 0,
   padding: '9px 16px', borderRadius: 9999,

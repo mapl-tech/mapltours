@@ -1,7 +1,7 @@
 'use client'
 
 // Root-level error boundary. Catches errors that escape the root layout
-// itself — when this fires, RootLayout has crashed, so we render a full
+// itself, when this fires, RootLayout has crashed, so we render a full
 // HTML document with inline styles only (no shared CSS / font variables
 // are guaranteed to be available).
 

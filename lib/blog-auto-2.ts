@@ -19,7 +19,7 @@ export const POSTS_2: BlogPost[] = [
     body: [
       {
         type: 'p',
-        text: "By 9am the cruise ships have docked and Main Street in Ocho Rios Jamaica is already noisy — tour buses idling outside Margaritaville, craft vendors opening their stalls, the smell of salt fish and ackee drifting out of a patty shop. This is the version most visitors see. It is not the only one.",
+        text: "By 9am the cruise ships have docked and Main Street in Ocho Rios Jamaica is already noisy, tour buses idling outside Margaritaville, craft vendors opening their stalls, the smell of salt fish and ackee drifting out of a patty shop. This is the version most visitors see. It is not the only one.",
       },
       {
         type: 'p',
@@ -31,16 +31,16 @@ export const POSTS_2: BlogPost[] = [
       },
       {
         type: 'p',
-        text: "Dunn's River gets the headline, and fairly — the limestone terraces climb 180 feet from the sea to the road above, and the human-chain climb is the rare tourist activity that earns its reputation. Go before 10am or after 2pm to dodge ship crowds. Entry runs around 25 USD for adults.",
+        text: "Dunn's River gets the headline, and fairly, the limestone terraces climb 180 feet from the sea to the road above, and the human-chain climb is the rare tourist activity that earns its reputation. Go before 10am or after 2pm to dodge ship crowds. Entry runs around 25 USD for adults.",
       },
       {
         type: 'p',
-        text: "Blue Hole, 20 minutes inland, is the antidote. Smaller, quieter, ringed by jungle, with rope swings and jumps up to 25 feet. Entry is about 20 USD and you will share it with maybe thirty people instead of three hundred. Reach Falls in Portland is further but richer — skip it only if your trip is short.",
+        text: "Blue Hole, 20 minutes inland, is the antidote. Smaller, quieter, ringed by jungle, with rope swings and jumps up to 25 feet. Entry is about 20 USD and you will share it with maybe thirty people instead of three hundred. Reach Falls in Portland is further but richer, skip it only if your trip is short.",
       },
       {
         type: 'quote',
         text: "Visitors always ask me which falls is best. The honest answer is whichever one is least crowded the day you go. Call ahead.",
-        attribution: '— Kemar, licensed Ocho Rios guide',
+        attribution: 'Kemar, licensed Ocho Rios guide',
       },
       {
         type: 'h2',
@@ -49,9 +49,9 @@ export const POSTS_2: BlogPost[] = [
       {
         type: 'list',
         items: [
-          "Miss T's Kitchen on Main Street — proper brown stew chicken and curry goat, lunch plates around 15 USD",
-          "Scotchies on the highway toward Drax Hall — best jerk in St. Ann, quarter chicken plus festival for 10 USD",
-          "Ocho Rios Jerk Centre behind the craft market — slower pace, locals at lunch, skip the weekend dinner rush",
+          "Miss T's Kitchen on Main Street, proper brown stew chicken and curry goat, lunch plates around 15 USD",
+          "Scotchies on the highway toward Drax Hall, best jerk in St. Ann, quarter chicken plus festival for 10 USD",
+          "Ocho Rios Jerk Centre behind the craft market, slower pace, locals at lunch, skip the weekend dinner rush",
           "The Ruins at the Falls for a sit-down dinner with the waterfall lit up after dark",
         ],
       },
@@ -69,7 +69,7 @@ export const POSTS_2: BlogPost[] = [
       },
       {
         type: 'p',
-        text: "A reasonable Ocho Rios day budget runs 120 to 180 USD per person — one paid attraction, two meals, a taxi, and a drink. Double that if you add a catamaran or ATV tour. Airport transfers from Montego Bay run 80 to 120 USD per car, and from Kingston 100 to 140 USD. The new north-coast toll highway cut Kingston travel time almost in half.",
+        text: "A reasonable Ocho Rios day budget runs 120 to 180 USD per person, one paid attraction, two meals, a taxi, and a drink. Double that if you add a catamaran or ATV tour. Airport transfers from Montego Bay run 80 to 120 USD per car, and from Kingston 100 to 140 USD. The new north-coast toll highway cut Kingston travel time almost in half.",
       },
       {
         type: 'p',
@@ -91,7 +91,7 @@ export const POSTS_2: BlogPost[] = [
     body: [
       {
         type: 'p',
-        text: "The search for hotels in Ocho Rios returns 300 results and most of them lie about location. The town is small — four miles of coast, really — but the difference between staying at Mammee Bay, at the harbor, or east toward Tower Isle changes your entire trip.",
+        text: "The search for hotels in Ocho Rios returns 300 results and most of them lie about location. The town is small, four miles of coast, really, but the difference between staying at Mammee Bay, at the harbor, or east toward Tower Isle changes your entire trip.",
       },
       {
         type: 'p',
@@ -103,7 +103,7 @@ export const POSTS_2: BlogPost[] = [
       },
       {
         type: 'p',
-        text: "All-inclusives dominate the coast west of town — Moon Palace, Hilton Rose Hall sister properties, Beaches, Sandals Ochi, Bahia Principe down the road at Runaway Bay. These run 400 to 900 USD per night for two, meals and drinks included, and they are built for guests who want a closed loop. You eat, swim, sleep, repeat. You can leave. Most do not.",
+        text: "All-inclusives dominate the coast west of town, Moon Palace, Hilton Rose Hall sister properties, Beaches, Sandals Ochi, Bahia Principe down the road at Runaway Bay. These run 400 to 900 USD per night for two, meals and drinks included, and they are built for guests who want a closed loop. You eat, swim, sleep, repeat. You can leave. Most do not.",
       },
       {
         type: 'p',
@@ -115,8 +115,8 @@ export const POSTS_2: BlogPost[] = [
       },
       {
         type: 'quote',
-        text: "Guests who book an all-inclusive then complain they never saw Jamaica — they picked the wrong product. Guests who book a small guesthouse and expect a swim-up bar — same thing. Match the hotel to the trip.",
-        attribution: '— Andrea, concierge manager in Ocho Rios',
+        text: "Guests who book an all-inclusive then complain they never saw Jamaica, they picked the wrong product. Guests who book a small guesthouse and expect a swim-up bar, same thing. Match the hotel to the trip.",
+        attribution: 'Andrea, concierge manager in Ocho Rios',
       },
       {
         type: 'h2',
@@ -149,7 +149,7 @@ export const POSTS_2: BlogPost[] = [
       },
       {
         type: 'p',
-        text: "Hotels in Ocho Rios are the start of the trip, not the trip. Whichever you pick, build at least two days outside the gates — head to /explore for a starter list of what is actually worth leaving the pool for.",
+        text: "Hotels in Ocho Rios are the start of the trip, not the trip. Whichever you pick, build at least two days outside the gates, head to /explore for a starter list of what is actually worth leaving the pool for.",
       },
     ],
     relatedSlugs: ['villas-in-ocho-rios', 'ocho-rios-complete-guide'],
@@ -167,7 +167,7 @@ export const POSTS_2: BlogPost[] = [
     body: [
       {
         type: 'p',
-        text: "Villas in Ocho Rios are a different product from the ones you book in Tuscany or Tulum. Most are fully staffed — butler, cook, housekeeper, gardener, sometimes a driver — and the rate on the listing usually already includes them. The sticker can look high until you do the math per head.",
+        text: "Villas in Ocho Rios are a different product from the ones you book in Tuscany or Tulum. Most are fully staffed, butler, cook, housekeeper, gardener, sometimes a driver, and the rate on the listing usually already includes them. The sticker can look high until you do the math per head.",
       },
       {
         type: 'p',
@@ -179,16 +179,16 @@ export const POSTS_2: BlogPost[] = [
       },
       {
         type: 'p',
-        text: "The standard package covers the bedrooms, the pool, a dedicated cook who shops daily and serves three meals, a housekeeper who handles rooms and laundry, a butler who runs the front of house, and a gardener. You pay for groceries and alcohol at cost — usually about 55 to 85 USD per person per day added on top. Staff gratuity is customary at 10 to 15 percent of the rental, split across the team.",
+        text: "The standard package covers the bedrooms, the pool, a dedicated cook who shops daily and serves three meals, a housekeeper who handles rooms and laundry, a butler who runs the front of house, and a gardener. You pay for groceries and alcohol at cost, usually about 55 to 85 USD per person per day added on top. Staff gratuity is customary at 10 to 15 percent of the rental, split across the team.",
       },
       {
         type: 'p',
-        text: "High-end villas add a private chef (rather than a cook) and sometimes a driver. Goldeneye next door to Oracabessa — Ian Fleming's old estate — sits at the very top of this market at 2,000 to 6,000 USD per night. Mid-market staffed villas in Ocho Rios land between 900 and 2,000 USD per night for four to six bedrooms.",
+        text: "High-end villas add a private chef (rather than a cook) and sometimes a driver. Goldeneye next door to Oracabessa, Ian Fleming's old estate, sits at the very top of this market at 2,000 to 6,000 USD per night. Mid-market staffed villas in Ocho Rios land between 900 and 2,000 USD per night for four to six bedrooms.",
       },
       {
         type: 'quote',
         text: "A family of eight at our six-bedroom works out to about 170 dollars per adult per night including food. The same family at an all-inclusive would pay triple and eat from a buffet.",
-        attribution: '— Patricia, villa manager, Tower Isle',
+        attribution: 'Patricia, villa manager, Tower Isle',
       },
       {
         type: 'h2',
@@ -197,11 +197,11 @@ export const POSTS_2: BlogPost[] = [
       {
         type: 'list',
         items: [
-          "Ask for at least five recent guest reviews with dates — not just star ratings",
+          "Ask for at least five recent guest reviews with dates, not just star ratings",
           "Confirm the exact beach situation: private sand, rocky shore, or a 10-minute walk",
-          "Verify generator backup — outages happen, and generators are standard at good properties",
+          "Verify generator backup, outages happen, and generators are standard at good properties",
           "Check staff tenure; teams that have been together for years run a smoother house",
-          "Ask what the cook's menu range is — some do strictly Jamaican, others cover Italian, Thai, vegan",
+          "Ask what the cook's menu range is, some do strictly Jamaican, others cover Italian, Thai, vegan",
         ],
       },
       {
@@ -210,7 +210,7 @@ export const POSTS_2: BlogPost[] = [
       },
       {
         type: 'p',
-        text: "A useful rule: villas in Ocho Rios start paying for themselves at six adults. Below that, a boutique hotel is usually better value and less logistical. Above that, the math is clear, and the experience — your own cook learning your kids' names, your own pool at 10pm — is in a different league.",
+        text: "A useful rule: villas in Ocho Rios start paying for themselves at six adults. Below that, a boutique hotel is usually better value and less logistical. Above that, the math is clear, and the experience, your own cook learning your kids' names, your own pool at 10pm, is in a different league.",
       },
       {
         type: 'h2',
@@ -231,7 +231,7 @@ export const POSTS_2: BlogPost[] = [
     slug: 'montego-bay-beyond-the-strip',
     title: 'Montego Bay, Jamaica: Beyond the Hip Strip',
     excerpt:
-      "Montego Bay Jamaica is more than the Hip Strip and the all-inclusives. The real city lives in the hills and the markets — here is what to see.",
+      "Montego Bay Jamaica is more than the Hip Strip and the all-inclusives. The real city lives in the hills and the markets, here is what to see.",
     category: 'Stories',
     image: BLOG_IMAGES['montego-bay-beyond-the-strip'],
     readTime: 5,
@@ -240,7 +240,7 @@ export const POSTS_2: BlogPost[] = [
     body: [
       {
         type: 'p',
-        text: "On a Tuesday afternoon the Hip Strip in Montego Bay Jamaica is doing exactly what the Hip Strip does — souvenir hustlers, daiquiri bars, cruise passengers in matching T-shirts. Two miles inland, a woman is making cornmeal porridge in a cast-iron pot and arguing with her neighbor about the price of yam. That second city is the one most visitors never meet.",
+        text: "On a Tuesday afternoon the Hip Strip in Montego Bay Jamaica is doing exactly what the Hip Strip does, souvenir hustlers, daiquiri bars, cruise passengers in matching T-shirts. Two miles inland, a woman is making cornmeal porridge in a cast-iron pot and arguing with her neighbor about the price of yam. That second city is the one most visitors never meet.",
       },
       {
         type: 'p',
@@ -252,7 +252,7 @@ export const POSTS_2: BlogPost[] = [
       },
       {
         type: 'p',
-        text: "Downtown Mo Bay — Sam Sharpe Square, the courthouse, the cage where enslaved Africans were once held — is a 15-minute drive from the Hip Strip and feels like a different country. The square is named for the enslaved preacher whose 1831 rebellion helped end Jamaican slavery. The bronze statue at its center is worth ten minutes even if you do nothing else downtown.",
+        text: "Downtown Mo Bay, Sam Sharpe Square, the courthouse, the cage where enslaved Africans were once held, is a 15-minute drive from the Hip Strip and feels like a different country. The square is named for the enslaved preacher whose 1831 rebellion helped end Jamaican slavery. The bronze statue at its center is worth ten minutes even if you do nothing else downtown.",
       },
       {
         type: 'p',
@@ -261,7 +261,7 @@ export const POSTS_2: BlogPost[] = [
       {
         type: 'quote',
         text: "Tourists think Mo Bay ends where the Hip Strip ends. The city goes five miles back into the hills. That is where we live.",
-        attribution: '— Leroy, taxi driver, Montego Bay',
+        attribution: 'Leroy, taxi driver, Montego Bay',
       },
       {
         type: 'h2',
@@ -270,20 +270,20 @@ export const POSTS_2: BlogPost[] = [
       {
         type: 'list',
         items: [
-          "Pork Pit on Gloucester Avenue — jerk pork and chicken since 1981, about 10 USD per plate",
-          "Scotchies on the highway near the airport — the original franchise, consistent, fast",
-          "The Pelican on the Hip Strip — old-school sit-down Jamaican for 20 USD, locals eat here",
+          "Pork Pit on Gloucester Avenue, jerk pork and chicken since 1981, about 10 USD per plate",
+          "Scotchies on the highway near the airport, the original franchise, consistent, fast",
+          "The Pelican on the Hip Strip, old-school sit-down Jamaican for 20 USD, locals eat here",
           "Bellefield Great House for a guided plantation-lunch experience, 45 USD with tour",
           "Sugar Mill at Half Moon if you want fine dining; plan 120 USD per person with wine",
         ],
       },
       {
         type: 'p',
-        text: "For the hills, take a morning drive up to Croydon Plantation for a working-farm tour — Blue Mountain-adjacent coffee, pimento, fruit tastings for about 75 USD. Or book a river experience on the Martha Brae in nearby Trelawny, a 30-minute river bamboo-raft float that locals rate above the better-known Rio Grande.",
+        text: "For the hills, take a morning drive up to Croydon Plantation for a working-farm tour, Blue Mountain-adjacent coffee, pimento, fruit tastings for about 75 USD. Or book a river experience on the Martha Brae in nearby Trelawny, a 30-minute river bamboo-raft float that locals rate above the better-known Rio Grande.",
       },
       {
         type: 'p',
-        text: "The beach situation in the city is mixed. Doctor's Cave Beach is the classic, well-maintained, around 8 USD entry. Dead End Beach at the north end of the strip is free, narrower, loved by locals. Walter Fletcher at Aquasol is family-oriented with small water-park features. None is as good as Seven Mile in Negril, which is fine — Montego Bay is not primarily a beach town.",
+        text: "The beach situation in the city is mixed. Doctor's Cave Beach is the classic, well-maintained, around 8 USD entry. Dead End Beach at the north end of the strip is free, narrower, loved by locals. Walter Fletcher at Aquasol is family-oriented with small water-park features. None is as good as Seven Mile in Negril, which is fine, Montego Bay is not primarily a beach town.",
       },
       {
         type: 'h2',
@@ -295,7 +295,7 @@ export const POSTS_2: BlogPost[] = [
       },
       {
         type: 'p',
-        text: "The city is easier to like once you stop asking it to be Negril. Montego Bay Jamaica has its own rhythm — a little harder-edged, a little more urban, more alive at street level. Start on /explore to pick a day out of the resort and into the town itself.",
+        text: "The city is easier to like once you stop asking it to be Negril. Montego Bay Jamaica has its own rhythm, a little harder-edged, a little more urban, more alive at street level. Start on /explore to pick a day out of the resort and into the town itself.",
       },
     ],
     relatedSlugs: ['montego-bay-airport-guide', 'breathless-montego-bay-review'],
@@ -313,7 +313,7 @@ export const POSTS_2: BlogPost[] = [
     body: [
       {
         type: 'p',
-        text: "Sangster International, the Montego Bay airport, handles roughly 4.5 million passengers a year — more than every other Caribbean airport except Punta Cana and San Juan. On a peak Saturday in February the arrivals hall can stack up 90 minutes deep. On a quiet Tuesday in June you clear in 20.",
+        text: "Sangster International, the Montego Bay airport, handles roughly 4.5 million passengers a year, more than every other Caribbean airport except Punta Cana and San Juan. On a peak Saturday in February the arrivals hall can stack up 90 minutes deep. On a quiet Tuesday in June you clear in 20.",
       },
       {
         type: 'p',
@@ -325,7 +325,7 @@ export const POSTS_2: BlogPost[] = [
       },
       {
         type: 'p',
-        text: "Fill out the Jamaica Immigration and Customs C5 form online before you fly — the paper version in the seat-back pocket still works but the digital one saves you a line. You will need an address; if you are still deciding, a hotel you are at least considering is fine. They do not call it to verify.",
+        text: "Fill out the Jamaica Immigration and Customs C5 form online before you fly, the paper version in the seat-back pocket still works but the digital one saves you a line. You will need an address; if you are still deciding, a hotel you are at least considering is fine. They do not call it to verify.",
       },
       {
         type: 'p',
@@ -334,7 +334,7 @@ export const POSTS_2: BlogPost[] = [
       {
         type: 'quote',
         text: "The single biggest arrival mistake is booking a transfer after clearing customs. If you have not pre-arranged your ride, you will wait on the curb with a hundred other people doing the same thing.",
-        attribution: '— Nadine, airport ground operations',
+        attribution: 'Nadine, airport ground operations',
       },
       {
         type: 'h2',
@@ -343,11 +343,11 @@ export const POSTS_2: BlogPost[] = [
       {
         type: 'list',
         items: [
-          "Private pre-booked transfer — 80 to 140 USD to Negril or Ocho Rios, door to door, zero friction",
-          "Resort shuttle — free at most all-inclusives but can wait 60 minutes to fill, leaves on their schedule",
-          "Knutsford Express coach to Kingston or Negril — 25 to 40 USD, clean, reliable, not door to door",
-          "Route taxi — 4 to 8 USD, shared, only sensible for local short hops",
-          "Car rental — fine for experienced drivers, around 75 USD per day plus insurance",
+          "Private pre-booked transfer, 80 to 140 USD to Negril or Ocho Rios, door to door, zero friction",
+          "Resort shuttle, free at most all-inclusives but can wait 60 minutes to fill, leaves on their schedule",
+          "Knutsford Express coach to Kingston or Negril, 25 to 40 USD, clean, reliable, not door to door",
+          "Route taxi, 4 to 8 USD, shared, only sensible for local short hops",
+          "Car rental, fine for experienced drivers, around 75 USD per day plus insurance",
         ],
       },
       {
@@ -360,7 +360,7 @@ export const POSTS_2: BlogPost[] = [
       },
       {
         type: 'p',
-        text: "Beyond transfers, Montego Bay airport fees sit quietly in your ticket — departure tax is already included. A bottle of water costs 4 USD. SIM cards at the Digicel kiosk near baggage run 15 to 30 USD with a week of data. Currency exchange at the airport is the worst rate on the island; change only what you need for the first day and use a cambio in town.",
+        text: "Beyond transfers, Montego Bay airport fees sit quietly in your ticket, departure tax is already included. A bottle of water costs 4 USD. SIM cards at the Digicel kiosk near baggage run 15 to 30 USD with a week of data. Currency exchange at the airport is the worst rate on the island; change only what you need for the first day and use a cambio in town.",
       },
       {
         type: 'p',
@@ -376,7 +376,7 @@ export const POSTS_2: BlogPost[] = [
       },
       {
         type: 'p',
-        text: "The airport is the first 30 minutes of the trip, not the trip itself. Clear it cleanly and the rest of Jamaica opens up — head straight to /explore once you have unpacked and let the island begin.",
+        text: "The airport is the first 30 minutes of the trip, not the trip itself. Clear it cleanly and the rest of Jamaica opens up, head straight to /explore once you have unpacked and let the island begin.",
       },
     ],
     relatedSlugs: ['montego-bay-beyond-the-strip', 'first-time-jamaica'],
@@ -394,7 +394,7 @@ export const POSTS_2: BlogPost[] = [
     body: [
       {
         type: 'p',
-        text: "Negril Jamaica sits at the westernmost tip of the island, where the coastline bends from the Caribbean toward the Gulf and the sun sets, depending on the season, anywhere between 5:45 and 7:05pm. The town is small — a beach strip, a cliff road, a roundabout, and a few thousand permanent residents.",
+        text: "Negril Jamaica sits at the westernmost tip of the island, where the coastline bends from the Caribbean toward the Gulf and the sun sets, depending on the season, anywhere between 5:45 and 7:05pm. The town is small, a beach strip, a cliff road, a roundabout, and a few thousand permanent residents.",
       },
       {
         type: 'p',
@@ -406,7 +406,7 @@ export const POSTS_2: BlogPost[] = [
       },
       {
         type: 'p',
-        text: "The beach is actually closer to six and a half miles of continuous sand. The water is famously calm because a reef about a mile out takes the wave energy. It ranks in most Caribbean top-five lists for good reason — the sand is fine and pale, the slope is gentle, and public access runs the full length.",
+        text: "The beach is actually closer to six and a half miles of continuous sand. The water is famously calm because a reef about a mile out takes the wave energy. It ranks in most Caribbean top-five lists for good reason, the sand is fine and pale, the slope is gentle, and public access runs the full length.",
       },
       {
         type: 'p',
@@ -415,7 +415,7 @@ export const POSTS_2: BlogPost[] = [
       {
         type: 'quote',
         text: "The beach still delivers. You just have to know which mile you are on. The north end near Bloody Bay is wider now. The middle is the tightest. The south end is mixed.",
-        attribution: '— Marcus, dive-shop owner, Negril',
+        attribution: 'Marcus, dive-shop owner, Negril',
       },
       {
         type: 'h2',
@@ -424,16 +424,16 @@ export const POSTS_2: BlogPost[] = [
       {
         type: 'list',
         items: [
-          "Rick's Cafe — famous, crowded, worth one sunset, skip the dinner menu",
-          "Pirate's Cave — quieter jump spot, 15 USD entry with swim access",
-          "Xtabi — mid-range hotel with cliff access and a good snorkel entry",
-          "3 Dives — the local jerk place with cliff access, cheapest way to watch sunset",
-          "Negril Escape — terraced yoga and cliff swimming for a quieter day",
+          "Rick's Cafe, famous, crowded, worth one sunset, skip the dinner menu",
+          "Pirate's Cave, quieter jump spot, 15 USD entry with swim access",
+          "Xtabi, mid-range hotel with cliff access and a good snorkel entry",
+          "3 Dives, the local jerk place with cliff access, cheapest way to watch sunset",
+          "Negril Escape, terraced yoga and cliff swimming for a quieter day",
         ],
       },
       {
         type: 'p',
-        text: "The West End — the cliff road — is where regulars end up staying. Limestone cliffs 20 to 40 feet high, small boutique hotels carved into the rock, snorkel access straight off ladders, sunset views that turn the whole ocean copper. If you have been to Negril before and felt the beach was too busy, the cliffs are the answer.",
+        text: "The West End, the cliff road, is where regulars end up staying. Limestone cliffs 20 to 40 feet high, small boutique hotels carved into the rock, snorkel access straight off ladders, sunset views that turn the whole ocean copper. If you have been to Negril before and felt the beach was too busy, the cliffs are the answer.",
       },
       {
         type: 'p',
@@ -445,11 +445,11 @@ export const POSTS_2: BlogPost[] = [
       },
       {
         type: 'p',
-        text: "Negril has kept more of its small-operator character than Montego Bay. Most cliffside hotels still have under 60 rooms. The beach has some big all-inclusives — Couples, Beaches, Royalton, Azul — but they sit between plenty of family-run places where the owner knows your name by day two.",
+        text: "Negril has kept more of its small-operator character than Montego Bay. Most cliffside hotels still have under 60 rooms. The beach has some big all-inclusives, Couples, Beaches, Royalton, Azul, but they sit between plenty of family-run places where the owner knows your name by day two.",
       },
       {
         type: 'p',
-        text: "Negril Jamaica rewards slow days. Walk the beach at 7am before the vendors set up. Spend an afternoon on the cliffs with nothing but a book. Watch one sunset from the water instead of the bar. When you are ready to build a day trip, head to /explore — and save the cliffs for the last evening.",
+        text: "Negril Jamaica rewards slow days. Walk the beach at 7am before the vendors set up. Spend an afternoon on the cliffs with nothing but a book. Watch one sunset from the water instead of the bar. When you are ready to build a day trip, head to /explore, and save the cliffs for the last evening.",
       },
     ],
     relatedSlugs: ['negril-beach-walkthrough', 'negril-guide'],
@@ -458,7 +458,7 @@ export const POSTS_2: BlogPost[] = [
     slug: 'negril-beach-walkthrough',
     title: 'Negril Beach: A Mile-by-Mile Walkthrough',
     excerpt:
-      "Negril Beach is not one beach — it is four distinct stretches with very different vibes. Here is a mile-by-mile guide to picking the right one.",
+      "Negril Beach is not one beach, it is four distinct stretches with very different vibes. Here is a mile-by-mile guide to picking the right one.",
     category: 'Guides',
     image: BLOG_IMAGES['negril-beach-walkthrough'],
     readTime: 5,
@@ -479,7 +479,7 @@ export const POSTS_2: BlogPost[] = [
       },
       {
         type: 'p',
-        text: "From the roundabout north to about the Tree House hotel, the beach is busiest. Vendors every 50 meters, jet skis, braiding stalls, beach bars with speakers. The sand here has narrowed most from erosion — some stretches are 30 feet wide, some are 10. The upside is convenience: you can order a jerk plate and a rum punch without walking more than two minutes from a chair.",
+        text: "From the roundabout north to about the Tree House hotel, the beach is busiest. Vendors every 50 meters, jet skis, braiding stalls, beach bars with speakers. The sand here has narrowed most from erosion, some stretches are 30 feet wide, some are 10. The upside is convenience: you can order a jerk plate and a rum punch without walking more than two minutes from a chair.",
       },
       {
         type: 'p',
@@ -491,12 +491,12 @@ export const POSTS_2: BlogPost[] = [
       },
       {
         type: 'p',
-        text: "The beach broadens around Sunset at the Palms and stays generous up to Sandy Haven. This is the photo-shoot stretch — wide white sand, calm water, fewer vendors. The hotels are smaller, the crowd is more 35-and-up, and the pace drops about 30 percent versus the south.",
+        text: "The beach broadens around Sunset at the Palms and stays generous up to Sandy Haven. This is the photo-shoot stretch, wide white sand, calm water, fewer vendors. The hotels are smaller, the crowd is more 35-and-up, and the pace drops about 30 percent versus the south.",
       },
       {
         type: 'quote',
         text: "Ask any local where to bring their own family on a Sunday and they will point to the middle. The south is for a night out. The middle is for a day off.",
-        attribution: '— Tanya, longtime Negril Beach vendor',
+        attribution: 'Tanya, longtime Negril Beach vendor',
       },
       {
         type: 'h2',
@@ -505,10 +505,10 @@ export const POSTS_2: BlogPost[] = [
       {
         type: 'list',
         items: [
-          "Bloody Bay itself is the widest and cleanest stretch — ringed by Royalton, Riu, and Grand Bahia",
-          "Public access at Bloody Bay Park — 10 USD entry, showers, picnic tables",
-          "Cosmos on the Beach — longstanding local seafood spot, lobster thermidor around 35 USD",
-          "Snorkeling is better here than the south — the reef sits closer in",
+          "Bloody Bay itself is the widest and cleanest stretch, ringed by Royalton, Riu, and Grand Bahia",
+          "Public access at Bloody Bay Park, 10 USD entry, showers, picnic tables",
+          "Cosmos on the Beach, longstanding local seafood spot, lobster thermidor around 35 USD",
+          "Snorkeling is better here than the south, the reef sits closer in",
           "Sunsets here beat the south strip because the view is unobstructed by hotel buildings",
         ],
       },
@@ -526,11 +526,11 @@ export const POSTS_2: BlogPost[] = [
       },
       {
         type: 'p',
-        text: "Public beach access is free everywhere along Negril Beach by law, though some hotels make it awkward. A beach chair rental runs 5 to 15 USD for the day. A jerk plate from a shack is 8 to 12 USD; lunch at a hotel beach restaurant runs 20 to 30. Vendors will try 10 to 20 USD higher on the first quote — polite negotiation is expected.",
+        text: "Public beach access is free everywhere along Negril Beach by law, though some hotels make it awkward. A beach chair rental runs 5 to 15 USD for the day. A jerk plate from a shack is 8 to 12 USD; lunch at a hotel beach restaurant runs 20 to 30. Vendors will try 10 to 20 USD higher on the first quote, polite negotiation is expected.",
       },
       {
         type: 'p',
-        text: "Negril Beach changes every mile. Pick the one that matches the day you actually want, and spend the rest of the time exploring — /explore has the rest of the island whenever you are ready to leave the sand.",
+        text: "Negril Beach changes every mile. Pick the one that matches the day you actually want, and spend the rest of the time exploring, /explore has the rest of the island whenever you are ready to leave the sand.",
       },
     ],
     relatedSlugs: ['negril-seven-mile-truth', 'negril-guide'],
@@ -552,7 +552,7 @@ export const POSTS_2: BlogPost[] = [
       },
       {
         type: 'p',
-        text: "Rate ranges run roughly 450 to 750 USD per night for a couple in low and mid-season, climbing to 850 to 1,100 during peak winter weeks. All meals, drinks, tips, wi-fi, and most activities are included. No kids — the minimum age is 18 — which is the property's defining feature.",
+        text: "Rate ranges run roughly 450 to 750 USD per night for a couple in low and mid-season, climbing to 850 to 1,100 during peak winter weeks. All meals, drinks, tips, wi-fi, and most activities are included. No kids, the minimum age is 18, which is the property's defining feature.",
       },
       {
         type: 'h2',
@@ -564,12 +564,12 @@ export const POSTS_2: BlogPost[] = [
       },
       {
         type: 'p',
-        text: "Food range is above the Caribbean all-inclusive average. Seven restaurants including a teppanyaki room, a French bistro called Bordeaux, a Mexican spot, and an Italian trattoria. Guests consistently rate the teppanyaki and the French restaurant the highest. Reservations are tight in peak weeks — book them on arrival.",
+        text: "Food range is above the Caribbean all-inclusive average. Seven restaurants including a teppanyaki room, a French bistro called Bordeaux, a Mexican spot, and an Italian trattoria. Guests consistently rate the teppanyaki and the French restaurant the highest. Reservations are tight in peak weeks, book them on arrival.",
       },
       {
         type: 'quote',
-        text: "We went for our tenth anniversary. The food was better than we expected, the view was the reason we went, and we barely left the property — which for an adults-only is the point.",
-        attribution: '— reported traveler review, October 2024',
+        text: "We went for our tenth anniversary. The food was better than we expected, the view was the reason we went, and we barely left the property, which for an adults-only is the point.",
+        attribution: 'reported traveler review, October 2024',
       },
       {
         type: 'h2',
@@ -578,11 +578,11 @@ export const POSTS_2: BlogPost[] = [
       {
         type: 'list',
         items: [
-          "No real beach on the peninsula — the resort has a small sandy area and a pier, not Seven Mile",
+          "No real beach on the peninsula, the resort has a small sandy area and a pier, not Seven Mile",
           "Shuttle to a partner beach takes about 20 minutes; some guests find this a dealbreaker",
-          "Restaurant reservations fill fast in peak season — plan on day one",
+          "Restaurant reservations fill fast in peak season, plan on day one",
           "Spa service upsells can be aggressive; be clear about the included versus paid menu",
-          "Room categories vary a lot — preferred club level is a meaningful upgrade over entry rooms",
+          "Room categories vary a lot, preferred club level is a meaningful upgrade over entry rooms",
         ],
       },
       {
@@ -591,7 +591,7 @@ export const POSTS_2: BlogPost[] = [
       },
       {
         type: 'p',
-        text: "Service scores are typically strong — Hyatt's service standards translate, and turnover at the property is lower than many Caribbean all-inclusives, which shows in the consistency. Housekeeping and butler service on the preferred club floors get frequent mentions.",
+        text: "Service scores are typically strong, Hyatt's service standards translate, and turnover at the property is lower than many Caribbean all-inclusives, which shows in the consistency. Housekeeping and butler service on the preferred club floors get frequent mentions.",
       },
       {
         type: 'h2',
@@ -611,7 +611,7 @@ export const POSTS_2: BlogPost[] = [
       },
       {
         type: 'p',
-        text: "The consistent pattern is a 4.3 to 4.5 out of 5 across major travel platforms, with repeat guests a reliable share of reviews. Breathless Montego Bay works best when the trip is about the property itself, not Jamaica at large. Pair it with a day or two of off-resort exploring — head to /explore to plan those — and you have a balanced trip.",
+        text: "The consistent pattern is a 4.3 to 4.5 out of 5 across major travel platforms, with repeat guests a reliable share of reviews. Breathless Montego Bay works best when the trip is about the property itself, not Jamaica at large. Pair it with a day or two of off-resort exploring, head to /explore to plan those, and you have a balanced trip.",
       },
     ],
     relatedSlugs: ['montego-bay-beyond-the-strip', 'secrets-wild-orchid-montego-bay-review'],
@@ -645,12 +645,12 @@ export const POSTS_2: BlogPost[] = [
       },
       {
         type: 'p',
-        text: "The actual beach is modest — a crescent of sand on either side of the peninsula, protected, good for swimming, less good for long walks. Guests looking for a Seven Mile Beach experience will be disappointed here, the same as at most Mo Bay resorts. The trade-off is the water is consistently calm, which families with weaker swimmers (in the sister family resort) appreciate.",
+        text: "The actual beach is modest, a crescent of sand on either side of the peninsula, protected, good for swimming, less good for long walks. Guests looking for a Seven Mile Beach experience will be disappointed here, the same as at most Mo Bay resorts. The trade-off is the water is consistently calm, which families with weaker swimmers (in the sister family resort) appreciate.",
       },
       {
         type: 'quote',
-        text: "The food range is what made the week — we ate at a different restaurant every night and only repeated one. Rooms are dated in places but the bones are solid.",
-        attribution: '— reported traveler review, November 2024',
+        text: "The food range is what made the week, we ate at a different restaurant every night and only repeated one. Rooms are dated in places but the bones are solid.",
+        attribution: 'reported traveler review, November 2024',
       },
       {
         type: 'h2',
@@ -659,10 +659,10 @@ export const POSTS_2: BlogPost[] = [
       {
         type: 'list',
         items: [
-          "Some room categories are overdue for refurbishment — check photos from the past six months",
+          "Some room categories are overdue for refurbishment, check photos from the past six months",
           "Property is large; if you book a far building, expect a 10-minute walk to the main lobby",
-          "Entertainment leans Caribbean-resort standard — fire dancers, theme nights, not reinvented",
-          "Preferred club value is real — skip it only if you are price-sensitive and rarely use lounges",
+          "Entertainment leans Caribbean-resort standard, fire dancers, theme nights, not reinvented",
+          "Preferred club value is real, skip it only if you are price-sensitive and rarely use lounges",
           "Wi-fi is free but patchy in some rooms; bring a backup if you work remotely",
         ],
       },
@@ -672,7 +672,7 @@ export const POSTS_2: BlogPost[] = [
       },
       {
         type: 'p',
-        text: "Service varies by section — the preferred club staff get near-universal praise and the main-resort bar staff get mixed reports. Tipping is technically included but guests who tip extra at their favorite bar often report better service through the week. Typical here, and true to the category.",
+        text: "Service varies by section, the preferred club staff get near-universal praise and the main-resort bar staff get mixed reports. Tipping is technically included but guests who tip extra at their favorite bar often report better service through the week. Typical here, and true to the category.",
       },
       {
         type: 'h2',
@@ -680,11 +680,11 @@ export const POSTS_2: BlogPost[] = [
       },
       {
         type: 'p',
-        text: "Groups of adult friends on a price-conscious budget who want variety. Couples doing a longer five-to-seven-night trip where the two-resort access pays off. Return visitors to Jamaica who want a reliable all-inclusive base rather than a destination property. Weddings and small celebrations — the venue options are strong.",
+        text: "Groups of adult friends on a price-conscious budget who want variety. Couples doing a longer five-to-seven-night trip where the two-resort access pays off. Return visitors to Jamaica who want a reliable all-inclusive base rather than a destination property. Weddings and small celebrations, the venue options are strong.",
       },
       {
         type: 'p',
-        text: "Who should skip it: travelers looking for a more intimate property — Secrets Wild Orchid Montego Bay is deliberately large. Families, obviously. And anyone whose deal-breaker is the wide, long beach of Negril. For those, the Hip Strip area is closer to the airport but the beach is still narrow; the real answer is to drive 90 minutes to Negril.",
+        text: "Who should skip it: travelers looking for a more intimate property, Secrets Wild Orchid Montego Bay is deliberately large. Families, obviously. And anyone whose deal-breaker is the wide, long beach of Negril. For those, the Hip Strip area is closer to the airport but the beach is still narrow; the real answer is to drive 90 minutes to Negril.",
       },
       {
         type: 'h2',
@@ -692,7 +692,7 @@ export const POSTS_2: BlogPost[] = [
       },
       {
         type: 'p',
-        text: "Ratings cluster around 4.1 to 4.4 across major platforms, with the sister-property swap and the food variety the most consistent positives, and dated rooms and a compact beach the most consistent negatives. It is a strong mid-to-upper-mid all-inclusive that rewards a little planning. Pair your stay with an off-property day or two — head to /explore to pick them — and it holds up well.",
+        text: "Ratings cluster around 4.1 to 4.4 across major platforms, with the sister-property swap and the food variety the most consistent positives, and dated rooms and a compact beach the most consistent negatives. It is a strong mid-to-upper-mid all-inclusive that rewards a little planning. Pair your stay with an off-property day or two, head to /explore to pick them, and it holds up well.",
       },
     ],
     relatedSlugs: ['breathless-montego-bay-review', 'jewel-grande-montego-bay-review'],
@@ -710,7 +710,7 @@ export const POSTS_2: BlogPost[] = [
     body: [
       {
         type: 'p',
-        text: "Jewel Grande Montego Bay is unusual among Mo Bay all-inclusives — it is primarily a suite-and-villa property, with roughly 400 units, most of them one-bedroom and larger. It sits on the Rose Hall coast about 20 minutes east of Sangster International, sharing a beach and infrastructure with the nearby Iberostar and Hyatt Ziva properties.",
+        text: "Jewel Grande Montego Bay is unusual among Mo Bay all-inclusives, it is primarily a suite-and-villa property, with roughly 400 units, most of them one-bedroom and larger. It sits on the Rose Hall coast about 20 minutes east of Sangster International, sharing a beach and infrastructure with the nearby Iberostar and Hyatt Ziva properties.",
       },
       {
         type: 'p',
@@ -726,12 +726,12 @@ export const POSTS_2: BlogPost[] = [
       },
       {
         type: 'p',
-        text: "The villa tier is a genuinely distinct product — private pools, dedicated butler, beachfront placement, and the feel of a rental villa with all-inclusive meals. Starting at around 1,500 USD per night for a two-bedroom villa, they work for multi-generational groups. Smaller villa resorts exist at a lower per-unit price, but few bundle food and service this completely.",
+        text: "The villa tier is a genuinely distinct product, private pools, dedicated butler, beachfront placement, and the feel of a rental villa with all-inclusive meals. Starting at around 1,500 USD per night for a two-bedroom villa, they work for multi-generational groups. Smaller villa resorts exist at a lower per-unit price, but few bundle food and service this completely.",
       },
       {
         type: 'quote',
         text: "We booked the three-bedroom for eight of us. It was roomier than our house. The family came together on that trip in a way that would not have happened in three separate hotel rooms.",
-        attribution: '— reported traveler review, January 2025',
+        attribution: 'reported traveler review, January 2025',
       },
       {
         type: 'h2',
@@ -740,7 +740,7 @@ export const POSTS_2: BlogPost[] = [
       {
         type: 'list',
         items: [
-          "Beach is shared with neighbors and has been narrower in recent years — reef-break protected but not wide",
+          "Beach is shared with neighbors and has been narrower in recent years, reef-break protected but not wide",
           "Main buffet gets mixed reviews; specialty restaurants are the better bet",
           "Kid-pool layout is good, but teen amenities are thinner than at family-specialist resorts",
           "Some units feel date-worn; the refurbished blocks are noticeably stronger",
@@ -749,7 +749,7 @@ export const POSTS_2: BlogPost[] = [
       },
       {
         type: 'p',
-        text: "Food is the most variable part of the review pattern. When guests eat primarily at the specialty restaurants and room service (both included in the kitchen-equipped suites, effectively) the scores run high. When they default to the main buffet for most meals, scores drop. For a suite product this is forgivable — you can cook, and the supermarket at Rose Hall shopping center is a short drive.",
+        text: "Food is the most variable part of the review pattern. When guests eat primarily at the specialty restaurants and room service (both included in the kitchen-equipped suites, effectively) the scores run high. When they default to the main buffet for most meals, scores drop. For a suite product this is forgivable, you can cook, and the supermarket at Rose Hall shopping center is a short drive.",
       },
       {
         type: 'p',
@@ -765,7 +765,7 @@ export const POSTS_2: BlogPost[] = [
       },
       {
         type: 'p',
-        text: "Who should skip it: couples on a short trip who do not need the space, singles who will not use the extra room, and beach purists — the beach here is fine, not flagship. For the latter group, Negril or a private-beach boutique makes more sense. Jewel Grande Montego Bay is a space-first, family-first product and works best when those are your priorities.",
+        text: "Who should skip it: couples on a short trip who do not need the space, singles who will not use the extra room, and beach purists, the beach here is fine, not flagship. For the latter group, Negril or a private-beach boutique makes more sense. Jewel Grande Montego Bay is a space-first, family-first product and works best when those are your priorities.",
       },
       {
         type: 'h2',
@@ -773,7 +773,7 @@ export const POSTS_2: BlogPost[] = [
       },
       {
         type: 'p',
-        text: "Ratings typically land around 4.2 to 4.4 out of 5, with the suite size and villa tier the defining strengths, and food and beach the common reservations. Booked as what it is — a family-and-group suite resort — it punches above its weight. Line up one or two off-property days to break up the rhythm; head to /explore to build them into your week.",
+        text: "Ratings typically land around 4.2 to 4.4 out of 5, with the suite size and villa tier the defining strengths, and food and beach the common reservations. Booked as what it is, a family-and-group suite resort, it punches above its weight. Line up one or two off-property days to break up the rhythm; head to /explore to build them into your week.",
       },
     ],
     relatedSlugs: ['breathless-montego-bay-review', 'secrets-wild-orchid-montego-bay-review'],

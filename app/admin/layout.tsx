@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 
-// Admin section — make sure search engines never index it. RLS on the
+// Admin section, make sure search engines never index it. RLS on the
 // underlying Supabase tables already prevents non-admins from reading
 // any data even if they discover the URL, but we don't want this surface
 // showing up in Google.

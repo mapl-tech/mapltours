@@ -11,7 +11,7 @@ import { useI18n } from '@/lib/i18n'
 import { useAuth } from '@/lib/supabase/auth-context'
 import { createClient } from '@/lib/supabase/client'
 
-// One module-level client — don't recreate on every render.
+// One module-level client, don't recreate on every render.
 const supabase = createClient()
 
 const destinations = [
@@ -106,7 +106,7 @@ export default function TopNav({ onCartClick }: { onCartClick?: () => void }) {
         borderBottom: dark ? 'none' : '1px solid var(--border)',
       }}
     >
-      {/* Inner container — same max-width as body content */}
+      {/* Inner container, same max-width as body content */}
       <div
         className="container"
         style={{
@@ -581,7 +581,7 @@ export default function TopNav({ onCartClick }: { onCartClick?: () => void }) {
             </button>
           )}
 
-          {/* Profile icon — always visible on desktop */}
+          {/* Profile icon, always visible on desktop */}
           <div data-dropdown className="hide-mobile" style={{ position: 'relative' }}>
             {user ? (
               <button

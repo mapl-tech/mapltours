@@ -4,7 +4,7 @@ import { sendEmail } from '@/lib/email/send'
 import RewardUnlocked from '@/emails/RewardUnlocked'
 
 /**
- * Supabase DB webhook target — fires on INSERT to `public.user_rewards`.
+ * Supabase DB webhook target, fires on INSERT to `public.user_rewards`.
  * That table is only written by the `maybe_grant_video_reward` trigger, so
  * receiving a row here means the user just crossed a milestone (5 / 10 / 15
  * approved videos). We send the celebratory "reward unlocked" email.
@@ -71,7 +71,7 @@ export async function POST(req: Request) {
   try {
     await sendEmail({
       to: userRes.user.email,
-      subject: `🎉 ${record.percent}% off your next MAPL trip — ${record.code}`,
+      subject: `🎉 ${record.percent}% off your next MAPL trip, ${record.code}`,
       react: RewardUnlocked({
         firstName,
         code: record.code,

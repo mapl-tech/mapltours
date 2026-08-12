@@ -9,7 +9,7 @@ import { StyleRegistry, createStyleRegistry } from 'styled-jsx'
  *
  * Without this, `<style jsx>` blocks in client components (e.g. the whole
  * transfers hero in TransfersView) are injected only on the client, so the
- * page paints unstyled and then reflows when the JS chunk lands — a large
+ * page paints unstyled and then reflows when the JS chunk lands, a large
  * Cumulative Layout Shift. With the registry, the collected styles are
  * flushed into the server HTML `<head>`, so the markup is correct on first
  * paint and there is no shift.

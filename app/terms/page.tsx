@@ -4,7 +4,7 @@ import EditorialPage, { Section } from '@/components/EditorialPage'
 export const metadata: Metadata = {
   title: 'Terms of Service',
   description:
-    'The terms that govern your use of MAPL Tours Jamaica — bookings, cancellations, liability, and your responsibilities as a traveler.',
+    'The terms that govern your use of MAPL Tours Jamaica, bookings, cancellations, liability, and your responsibilities as a traveler.',
   alternates: {
     canonical: 'https://mapltours.com/terms',
   },
@@ -27,7 +27,7 @@ export default function TermsPage() {
 
       <Section title="Who we are">
         <p>
-          MAPL Tours is a marketplace that connects travelers with Jamaican experience creators — local hosts, guides,
+          MAPL Tours is a marketplace that connects travelers with Jamaican experience creators, local hosts, guides,
           and operators. We facilitate bookings and payments; the experiences themselves are delivered by the
           independent creator listed on each experience page.
         </p>
@@ -80,8 +80,8 @@ export default function TermsPage() {
 
       <Section title="Intellectual property">
         <p>
-          All content on mapltours.com — including text, imagery, video, the MAPL Tours name and logo, and the
-          underlying software — is owned by MAPL Tours or licensed to us. You may not copy, reproduce, or commercially
+          All content on mapltours.com, including text, imagery, video, the MAPL Tours name and logo, and the
+          underlying software, is owned by MAPL Tours or licensed to us. You may not copy, reproduce, or commercially
           exploit any part of the platform without our written permission.
         </p>
       </Section>

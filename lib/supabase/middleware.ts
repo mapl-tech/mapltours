@@ -29,12 +29,12 @@ export async function updateSession(request: NextRequest) {
     }
   )
 
-  // Refresh the session — important for Server Components
+  // Refresh the session, important for Server Components
   const {
     data: { user },
   } = await supabase.auth.getUser()
 
-  // Protected routes — redirect to /login if not authenticated
+  // Protected routes, redirect to /login if not authenticated
   const protectedPaths = ['/profile', '/checkout']
   const isProtected = protectedPaths.some((path) =>
     request.nextUrl.pathname.startsWith(path)

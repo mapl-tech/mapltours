@@ -12,7 +12,7 @@ import { Award, Users, Headphones, ShieldCheck, Star, Heart, UtensilsCrossed, Tr
 
 const foodExperiences = experiences.filter((e) => e.category === 'Food')
 
-/* Hero video — lazy loads on fast connections, shows poster on slow/mobile data */
+/* Hero video, lazy loads on fast connections, shows poster on slow/mobile data */
 function HeroVideo({ src, poster }: { src: string; poster: string }) {
   const videoRef = useRef<HTMLVideoElement>(null)
   const [shouldLoad, setShouldLoad] = useState(false)
@@ -42,7 +42,7 @@ function HeroVideo({ src, poster }: { src: string; poster: string }) {
 
   return (
     <>
-      {/* Poster — visible until video is actually playing */}
+      {/* Poster, visible until video is actually playing */}
       <Image
         src={poster}
         alt=""
@@ -145,7 +145,7 @@ function StepCarousel({ steps, renderCard }: { steps: any[]; renderCard: (s: any
           <ChevronRight size={18} />
         </button>
       </div>
-      <div ref={scrollRef} className="no-scrollbar" tabIndex={0} role="region" aria-label="How it works — scroll steps" style={{
+      <div ref={scrollRef} className="no-scrollbar" tabIndex={0} role="region" aria-label="How it works, scroll steps" style={{
         display: 'flex', gap: 12, overflowX: 'auto',
         scrollSnapType: 'x mandatory', WebkitOverflowScrolling: 'touch',
         paddingLeft: 16, paddingRight: 16,
@@ -244,7 +244,7 @@ function FoodSection() {
         className="no-scrollbar"
         tabIndex={0}
         role="region"
-        aria-label="Featured experiences — scroll"
+        aria-label="Featured experiences, scroll"
         style={{
           display: 'flex', gap: 16,
           overflowX: 'auto',
@@ -409,7 +409,7 @@ function DestinationsSection() {
           className="no-scrollbar mobile-dest-scroll"
           tabIndex={0}
           role="region"
-          aria-label="Destinations — scroll"
+          aria-label="Destinations, scroll"
           style={{
             display: 'flex', gap: 12,
             overflowX: 'auto',
@@ -496,13 +496,13 @@ export default function FeedView() {
   const { t, formatPrice } = useI18n()
   return (
     <div>
-      {/* ═══ HERO — 16/4 desktop, 1/1 mobile ═══ */}
+      {/* ═══ HERO, 16/4 desktop, 1/1 mobile ═══ */}
       <section className="hero-section">
         {/* Video background */}
         <HeroVideo src={HERO_VIDEO} poster={HERO_IMAGE} />
         {/* Top scrim for nav readability */}
         <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 140, background: 'linear-gradient(180deg, rgba(0,0,0,0.5) 0%, transparent 100%)', pointerEvents: 'none' }} />
-        {/* Bottom-anchored warm scrim — keeps the footage vivid up top while
+        {/* Bottom-anchored warm scrim, keeps the footage vivid up top while
             grounding the headline. Legibility also comes from the flag
             drop-shadow + the headline text-shadow below. */}
         <div style={{
@@ -578,9 +578,9 @@ export default function FeedView() {
 
           {(() => {
             const steps = [
-              { icon: <Heart size={18} color="var(--gold-warm)" />, title: 'Tap the experiences that move you', body: 'Browse reels crafted by locals. Add the ones that speak to you — no packages, no fillers.' },
+              { icon: <Heart size={18} color="var(--gold-warm)" />, title: 'Tap the experiences that move you', body: 'Browse reels crafted by locals. Add the ones that speak to you, no packages, no fillers.' },
               { icon: <MapPin size={18} color="var(--gold-warm)" />, title: 'Tell us your villa', body: 'Your hotel, villa, or the airport. We plan the route, the guide, and the private transport.' },
-              { icon: <ShieldCheck size={18} color="var(--gold-warm)" />, title: 'Show up — we handle the rest', body: 'We pick you up, your guide takes it from there, and we bring you home when it’s done.' },
+              { icon: <ShieldCheck size={18} color="var(--gold-warm)" />, title: 'Show up, we handle the rest', body: 'We pick you up, your guide takes it from there, and we bring you home when it’s done.' },
             ]
             const stepCard = (pillar: typeof steps[0], idx: number) => (
               <div key={pillar.title} data-reveal style={{
@@ -672,13 +672,13 @@ export default function FeedView() {
       {/* ═══ DESTINATIONS ═══ */}
       <DestinationsSection />
 
-      {/* ═══ FEATURED — 3 col, wide ═══ */}
+      {/* ═══ FEATURED, 3 col, wide ═══ */}
       <section className="container" style={{ paddingTop: 48, paddingBottom: 0 }}>
         <SectionHeader label="Featured experiences" action={{ text: 'View all', href: '/explore' }} />
         <ResponsiveGrid items={experiences.slice(0, 3)} cols={3} priorityFirst />
       </section>
 
-      {/* ═══ TASTE OF JAMAICA — dark scrollable food section ═══ */}
+      {/* ═══ TASTE OF JAMAICA, dark scrollable food section ═══ */}
       <FoodSection />
 
       {/* ═══ CURATED FOR YOU ═══ */}
@@ -693,7 +693,7 @@ export default function FeedView() {
         <ResponsiveGrid items={experiences.slice(4)} cols={5} />
       </section>
 
-      {/* ═══ TRENDING NOW — viral experiences ═══ */}
+      {/* ═══ TRENDING NOW, viral experiences ═══ */}
       <section style={{ marginTop: 56, background: 'var(--bg-dark)', padding: '64px 0 72px' }}>
         <div className="container">
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
@@ -718,7 +718,7 @@ export default function FeedView() {
 
           {/* Large featured viral card + grid */}
           <div className="grid-trending">
-            {/* Hero viral card — large */}
+            {/* Hero viral card, large */}
             {viralExperiences[0] && (
               <a href={`/experience/${slugify(viralExperiences[0].title)}`} className="photo-card" style={{
                 gridRow: 'span 2', aspectRatio: 'auto',
@@ -772,7 +772,7 @@ export default function FeedView() {
               </a>
             )}
 
-            {/* Remaining viral cards — smaller grid */}
+            {/* Remaining viral cards, smaller grid */}
             {viralExperiences.slice(1).map((exp) => (
               <a key={exp.id} href={`/experience/${slugify(exp.title)}`} className="photo-card" style={{
                 display: 'flex', alignItems: 'flex-end', padding: 16,
@@ -813,7 +813,7 @@ export default function FeedView() {
         </div>
       </section>
 
-      {/* ═══ ALL EXPERIENCES — 5 col, load more ═══ */}
+      {/* ═══ ALL EXPERIENCES, 5 col, load more ═══ */}
       <AllExperiencesSection />
 
       {/* ═══ THE MAPL DIFFERENCE ═══ */}
@@ -861,7 +861,7 @@ export default function FeedView() {
             <div className="grid-features">
               {[
                 { icon: <Award size={18} />, title: 'Only the best experiences', desc: 'Every adventure is vetted. We reject 80% of submissions to keep quality uncompromising.' },
-                { icon: <Users size={18} />, title: 'Real local creators', desc: 'Not tour guides — your Jamaican cousin who knows everywhere worth going.' },
+                { icon: <Users size={18} />, title: 'Real local creators', desc: 'Not tour guides, your Jamaican cousin who knows everywhere worth going.' },
                 { icon: <Headphones size={18} />, title: '24/7 trip support', desc: 'Text us anytime. We handle logistics so you just show up and enjoy.' },
                 { icon: <ShieldCheck size={18} />, title: 'Free cancellation', desc: 'Change of plans? Cancel within 48 hours for a full refund. No questions.' },
                 { icon: <Star size={18} />, title: '90%+ satisfaction', desc: 'Our guests consistently rate their experiences 4.8 stars or higher.' },

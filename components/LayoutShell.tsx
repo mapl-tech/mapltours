@@ -16,7 +16,7 @@ export default function LayoutShell({ children }: { children: React.ReactNode })
   const hideNav = pathname === '/login'
 
   // Both stores use skipHydration so SSR and the first client paint render
-  // identical (empty cart / USD) HTML — no React hydration mismatch. Load
+  // identical (empty cart / USD) HTML, no React hydration mismatch. Load
   // the persisted state once, after mount.
   useEffect(() => {
     useCartStore.persist.rehydrate()

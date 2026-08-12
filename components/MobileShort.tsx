@@ -22,7 +22,7 @@ export default memo(function MobileShort({ exp, priority = false }: { exp: Exper
   const playAttempted = useRef(false)
   const retryTimer = useRef<ReturnType<typeof setTimeout>>()
 
-  // Intersection Observer — generous rootMargin for early video loading
+  // Intersection Observer, generous rootMargin for early video loading
   useEffect(() => {
     const el = containerRef.current
     if (!el) return
@@ -117,7 +117,7 @@ export default memo(function MobileShort({ exp, priority = false }: { exp: Exper
           willChange: 'transform',
           transform: 'translateZ(0)',
         }}>
-          {/* Static image — shows until video plays */}
+          {/* Static image, shows until video plays */}
           <Image
             src={exp.image}
             alt={exp.title}
@@ -134,7 +134,7 @@ export default memo(function MobileShort({ exp, priority = false }: { exp: Exper
             }}
           />
 
-          {/* Video — mounts when near viewport, plays when visible */}
+          {/* Video, mounts when near viewport, plays when visible */}
           {videoMounted && (
             <video
               ref={videoRef}
@@ -169,7 +169,7 @@ export default memo(function MobileShort({ exp, priority = false }: { exp: Exper
             pointerEvents: 'none',
           }} />
 
-          {/* Play icon — only shows when video is NOT playing */}
+          {/* Play icon, only shows when video is NOT playing */}
           {!isPlaying && (
             <div style={{
               position: 'absolute', top: '40%', left: '50%', transform: 'translate(-50%, -50%)',

@@ -8,7 +8,7 @@ import TransferConfirmed from '@/emails/TransferConfirmed'
 import TransferOperatorAlert from '@/emails/TransferOperatorAlert'
 
 /**
- * Stripe webhook — single source of truth for payment status.
+ * Stripe webhook, single source of truth for payment status.
  *
  * The client-side `onPaymentSuccess` is only an optimistic UI cue. The flip
  * from 'pending' → 'paid', the confirmation email, and the ops notification
@@ -125,7 +125,7 @@ export async function POST(req: Request) {
  * lookup errors and returned `booking: null`, which the success handler
  * treated identically to an unknown booking. That meant a transient DB
  * outage during webhook processing caused us to acknowledge a paid charge
- * without flipping the booking row — fulfillment dropped on the floor.
+ * without flipping the booking row, fulfillment dropped on the floor.
  *
  * Now: lookup errors throw (so the top-level handler returns 500 and
  * Stripe retries), and we use `pi.metadata.booking_id` as a recovery path
@@ -135,7 +135,7 @@ export async function POST(req: Request) {
 async function loadBooking(pi: Stripe.PaymentIntent) {
   const supabase = createServiceClient()
 
-  // Primary lookup — by stripe_payment_id.
+  // Primary lookup, by stripe_payment_id.
   const { data: byPi, error: byPiErr } = await supabase
     .from('bookings')
     .select('*')
@@ -143,7 +143,7 @@ async function loadBooking(pi: Stripe.PaymentIntent) {
     .maybeSingle()
 
   if (byPiErr) {
-    // Schema/database failure — fail closed so Stripe retries.
+    // Schema/database failure, fail closed so Stripe retries.
     console.error('[stripe-webhook] booking lookup by stripe_payment_id failed', byPiErr)
     throw new Error(`booking lookup failed: ${byPiErr.message}`)
   }
@@ -204,7 +204,7 @@ async function loadBooking(pi: Stripe.PaymentIntent) {
 async function handlePaymentSucceeded(pi: Stripe.PaymentIntent) {
   const { supabase, booking, items } = await loadBooking(pi)
   if (!booking) {
-    // Truly unknown — neither stripe_payment_id nor metadata.booking_id
+    // Truly unknown, neither stripe_payment_id nor metadata.booking_id
     // resolved to a row. Acknowledge so Stripe stops retrying; this is
     // either a webhook for a different system or a permanently lost
     // booking that needs manual reconciliation in the dashboard.
@@ -213,7 +213,7 @@ async function handlePaymentSucceeded(pi: Stripe.PaymentIntent) {
   }
 
   // Mark paid only if we haven't already. We DO NOT short-circuit when
-  // status is already 'paid' — instead we fall through to the email step
+  // status is already 'paid', instead we fall through to the email step
   // which has its own per-channel idempotency. That way a transient
   // Resend outage during the first delivery is healed by Stripe's retry.
   if (booking.status !== 'paid') {
@@ -231,7 +231,7 @@ async function handlePaymentSucceeded(pi: Stripe.PaymentIntent) {
   // Consume the video-upload reward, if one was applied to this checkout.
   // This is the authoritative consume point: a 3DS/redirect payment never
   // runs the client-side consumeReward(), so without this a reward could be
-  // re-applied to a later cart. Idempotent — only flips a still-'available'
+  // re-applied to a later cart. Idempotent, only flips a still-'available'
   // row, keyed on this booking.
   const rewardId = typeof pi.metadata?.reward_id === 'string' ? pi.metadata.reward_id : null
   if (rewardId) {
@@ -246,7 +246,7 @@ async function handlePaymentSucceeded(pi: Stripe.PaymentIntent) {
     }
   }
 
-  // Emails — gated on per-channel sent-at columns, NOT on booking status.
+  // Emails, gated on per-channel sent-at columns, NOT on booking status.
   // If a previous delivery sent the traveler email but Resend bounced the
   // operator email, the next webhook retry will try only the operator side.
   const traveler = await maybeSendTravelerConfirmation(supabase, booking, items)
@@ -262,13 +262,13 @@ async function handlePaymentSucceeded(pi: Stripe.PaymentIntent) {
       traveler: traveler.ok ? 'sent' : traveler.reason,
       operator: operator.ok ? 'sent' : operator.reason,
     })
-    // A TRANSIENT send failure (Resend blip) must NOT be silently dropped —
+    // A TRANSIENT send failure (Resend blip) must NOT be silently dropped,
     // a paid booking with no confirmation / no operator dispatch is a real
     // fulfillment gap. Throw so Stripe re-delivers; the released claim means
     // only the still-unsent channel retries (the other short-circuits).
     const retryable = (!traveler.ok && traveler.retryable) || (!operator.ok && operator.retryable)
     if (retryable) {
-      throw new Error(`transient email failure — retrying via Stripe re-delivery (booking ${booking.id})`)
+      throw new Error(`transient email failure, retrying via Stripe re-delivery (booking ${booking.id})`)
     }
   }
 }
@@ -360,7 +360,7 @@ async function maybeSendTravelerConfirmation(
   const res = isTransfer
     ? await sendEmail({
         to: booking.email,
-        subject: `Transfer confirmed — your Jamaica airport ride (${bookingRef})`,
+        subject: `Transfer confirmed, your Jamaica airport ride (${bookingRef})`,
         react: TransferConfirmed({
           bookingRef,
           firstName: booking.first_name,
@@ -393,7 +393,7 @@ async function maybeSendTravelerConfirmation(
       })
     : await sendEmail({
         to: booking.email,
-        subject: `Booking confirmed — your Jamaica trip with MAPL (${bookingRef})`,
+        subject: `Booking confirmed, your Jamaica trip with MAPL (${bookingRef})`,
         react: BookingConfirmed({
           bookingRef,
           firstName: booking.first_name,
@@ -436,14 +436,14 @@ async function maybeSendTravelerConfirmation(
 // Operations distribution list. Both addresses receive every operator
 // alert (tour bookings AND transfer bookings). Override via the
 // OPERATIONS_EMAIL env var with a comma-separated list if the recipient
-// set ever changes — empty / unset falls back to this default.
+// set ever changes, empty / unset falls back to this default.
 const OPS_RECIPIENTS_DEFAULT = [
   'tech@mapltech.com',
   'collinsadventuretours@gmail.com',
 ]
 
 function resolveOpsRecipients(): string[] {
-  // Only OPERATIONS_EMAIL can override — we intentionally do NOT fall back
+  // Only OPERATIONS_EMAIL can override, we intentionally do NOT fall back
   // to EMAIL_SUPPORT here so the public contact inbox can never receive
   // booking alerts by accident if OPERATIONS_EMAIL is unset on a deploy.
   const raw = process.env.OPERATIONS_EMAIL
@@ -538,7 +538,7 @@ async function maybeSendOperatorAlert(
   return { ok: false, reason: res.error ?? 'unknown_send_error', retryable: true }
 }
 
-// Short, user-friendly booking reference — first 8 of the uuid, upper-cased.
+// Short, user-friendly booking reference, first 8 of the uuid, upper-cased.
 function humanizeId(id: string): string {
   return 'MAPL-' + id.slice(0, 8).toUpperCase()
 }

@@ -37,7 +37,7 @@ const StripePaymentPanel = dynamic(
 )
 
 /**
- * Transfers checkout — mirrors the tours CheckoutView aesthetic: light
+ * Transfers checkout, mirrors the tours CheckoutView aesthetic: light
  * bg-warm background, white cards, Syne serif headings, tight DM Sans UI.
  * Single page flow because transfers don't need date-picking or a day
  * builder. Validation runs before we call /api/transfers/checkout.
@@ -233,7 +233,7 @@ export default function TransfersCheckoutView() {
               }}
             >
               {clientSecret
-                ? 'Card or Apple Pay — encrypted end-to-end via Stripe.'
+                ? 'Card or Apple Pay, encrypted end-to-end via Stripe.'
                 : 'Flight times, meeting point, and your contact details.'}
             </p>
           </div>
@@ -254,7 +254,7 @@ export default function TransfersCheckoutView() {
                 ))}
               </div>
 
-              {/* Contact details — visually matches DetailsStep in the tours checkout */}
+              {/* Contact details, visually matches DetailsStep in the tours checkout */}
               <SectionHeader
                 title="Contact details"
                 subtitle="We'll use this to confirm your transfer and reach you on arrival."
@@ -385,7 +385,7 @@ export default function TransfersCheckoutView() {
           )}
         </div>
 
-        {/* Right — order summary */}
+        {/* Right, order summary */}
         <aside className="xfer-co-aside">
           <div
             style={{
@@ -726,7 +726,7 @@ function MiniStepIndicator({ step }: { step: 1 | 2 }) {
   )
 }
 
-/* ── Transfer card — mirrors the tours ReviewStep experience card ── */
+/* ── Transfer card, mirrors the tours ReviewStep experience card ── */
 
 function TransferCard({
   item,
@@ -878,7 +878,7 @@ function TransferCard({
                 marginTop: 1,
               }}
             >
-              We track your flight in real time — no need to rush.
+              We track your flight in real time, no need to rush.
             </p>
           </div>
         </div>
@@ -1189,7 +1189,7 @@ function ConfirmedInline({
           }}
         >
           A confirmation email with meeting instructions is on its way. MAPL
-          dispatch will reach out 24 hours before pickup.
+          will reach out 24 hours before pickup.
         </p>
         <p
           style={{

@@ -60,7 +60,7 @@ export function useExperienceLike(experienceId: number) {
     setLoading(true)
     const wasLiked = liked
 
-    // Optimistic update — paints instantly and persists to cache
+    // Optimistic update, paints instantly and persists to cache
     mutate((prev) => ({
       liked: !wasLiked,
       count: Math.max(0, (prev?.count ?? 0) + (wasLiked ? -1 : 1)),
@@ -68,7 +68,7 @@ export function useExperienceLike(experienceId: number) {
 
     try {
       // Supabase resolves to { error } rather than throwing, so we must
-      // inspect it explicitly — a bare await would let a failed write slip
+      // inspect it explicitly, a bare await would let a failed write slip
       // past and leave the optimistic state stuck.
       const { error } = wasLiked
         ? await supabase
@@ -214,7 +214,7 @@ export function useComments(experienceId: number) {
 
       // Look up display info. The users table currently has RLS that only
       // allows reading your own row, so for other users this returns nothing
-      // — we degrade gracefully to 'Anonymous' rather than crashing.
+      //, we degrade gracefully to 'Anonymous' rather than crashing.
       const userIds = Array.from(new Set(rows.map((c) => c.user_id)))
       const { data: users, error: usersErr } = await supabase
         .from('users')
@@ -240,7 +240,7 @@ export function useComments(experienceId: number) {
     if (!text.trim()) return null
 
     // Ensure the user has a row in public.users (required by the comments.
-    // user_id foreign key). Idempotent upsert — safe to call every time.
+    // user_id foreign key). Idempotent upsert, safe to call every time.
     const { error: upsertErr } = await supabase
       .from('users')
       .upsert(
@@ -290,7 +290,7 @@ export function useComments(experienceId: number) {
     // Self-heal the most common failure: FK violation because the user's
     // public.users row doesn't exist yet. Force-create it and retry once.
     if (error && /foreign key|user_id/i.test(error.message ?? '')) {
-      console.warn('[comments.hook] FK hit — force-creating users row and retrying')
+      console.warn('[comments.hook] FK hit, force-creating users row and retrying')
       await supabase.from('users').insert({
         id: user.id,
         name: user.user_metadata?.full_name ?? user.user_metadata?.name ?? null,
@@ -305,7 +305,7 @@ export function useComments(experienceId: number) {
       // Roll the optimistic row back so a failed insert doesn't masquerade
       // as a posted comment (it would otherwise vanish on reload with no
       // explanation). The caller keeps the user's text so they can retry.
-      console.error('[comments.hook] insert failed — rolling back optimistic row', error)
+      console.error('[comments.hook] insert failed, rolling back optimistic row', error)
       mutate((prev) => (prev ?? []).filter((c) => c.id !== tempId))
       return null
     }

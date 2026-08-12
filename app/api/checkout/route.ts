@@ -8,20 +8,20 @@ import { assertCheckoutSchema, SchemaNotReadyError } from '@/lib/checkout-schema
 import { rateLimit, getIp } from '@/lib/rate-limit'
 
 /**
- * Tour checkout — creates (or atomically reuses) a pending booking row
+ * Tour checkout, creates (or atomically reuses) a pending booking row
  * and a matching Stripe PaymentIntent.
  *
  * Hardening against the adversarial review:
- *  • Server-side pricing — we never trust the client's amount. The
+ *  • Server-side pricing, we never trust the client's amount. The
  *    canonical price comes from lib/experiences.ts via priceTourCart().
- *  • Atomic idempotency — we rely on the unique partial index added in
+ *  • Atomic idempotency, we rely on the unique partial index added in
  *    migration 007. Concurrent retries with the same cart_hash collide
  *    on the index; the loser falls into the conflict branch and reuses
  *    the winner's row instead of creating an orphan.
- *  • Verified PI attach — if the PaymentIntent id can't be persisted to
+ *  • Verified PI attach, if the PaymentIntent id can't be persisted to
  *    the booking row, we fail the request so the webhook never sees a
  *    succeeded charge it can't correlate.
- *  • Schema guard — assertCheckoutSchema() short-circuits with a clear
+ *  • Schema guard, assertCheckoutSchema() short-circuits with a clear
  *    error if migrations 005/006/007 haven't been applied yet, instead
  *    of a generic Postgres failure.
  */
@@ -36,7 +36,7 @@ interface CartItemIn {
   destination: string
   travelers: number
   date: string
-  price: number // ignored — server uses canonical experience.price
+  price: number // ignored, server uses canonical experience.price
 }
 
 interface CheckoutBody {
@@ -62,7 +62,7 @@ interface CheckoutBody {
 
 // Hash from the SERVER-priced total (not the client's body.amount) so the
 // idempotency/dedup key is deterministic and can't drift within the $1
-// client-tolerance — otherwise two near-identical retries would miss the
+// client-tolerance, otherwise two near-identical retries would miss the
 // unique pending index and leave orphan pending bookings + extra PIs.
 function hashCart(body: CheckoutBody, serverTotalCents: number): string {
   const payload = JSON.stringify({
@@ -90,7 +90,7 @@ export async function POST(request: NextRequest) {
     // PaymentIntent creation. Real users complete checkout once or twice.
     if (rateLimit(getIp(request), { windowMs: 60_000, max: 10, bucket: 'checkout' })) {
       return NextResponse.json(
-        { error: 'Too many checkout attempts — please wait a moment and try again.' },
+        { error: 'Too many checkout attempts, please wait a moment and try again.' },
         { status: 429 },
       )
     }
@@ -102,7 +102,7 @@ export async function POST(request: NextRequest) {
 
     // 0. Resolve the authenticated user (checkout requires login) and look
     //    up their REAL reward server-side. The client-supplied discount is
-    //    never trusted — an anonymous or reward-less request gets 0%.
+    //    never trusted, an anonymous or reward-less request gets 0%.
     let rewardPercent = 0
     let rewardId: string | null = null
     try {
@@ -123,11 +123,11 @@ export async function POST(request: NextRequest) {
         }
       }
     } catch (err) {
-      // Reward lookup is best-effort — never block a paid checkout over it.
+      // Reward lookup is best-effort, never block a paid checkout over it.
       console.warn('[checkout]', reqId, 'reward lookup failed', err)
     }
 
-    // 1. Server-side pricing — single source of truth. Reward comes from the
+    // 1. Server-side pricing, single source of truth. Reward comes from the
     //    server-verified percent above, NOT from the request body.
     const pricing = priceTourCart(
       body.items.map((i) => ({ id: i.id, travelers: i.travelers, date: i.date })),
@@ -159,7 +159,7 @@ export async function POST(request: NextRequest) {
 
     const supabase = createServiceClient()
 
-    // 2. Schema guard — fail fast if migrations are missing.
+    // 2. Schema guard, fail fast if migrations are missing.
     await assertCheckoutSchema(supabase)
 
     const cartHash = hashCart(body, amountInCents)
@@ -205,7 +205,7 @@ export async function POST(request: NextRequest) {
     if (!insertErr && inserted) {
       bookingId = inserted.id
     } else if (insertErr?.code === '23505') {
-      // Unique-violation on the pending-session index — another concurrent
+      // Unique-violation on the pending-session index, another concurrent
       // request already created the row. Fetch it, refresh mutable fields,
       // replace its line items so we charge the latest itinerary.
       isReusedRow = true
@@ -324,7 +324,7 @@ export async function POST(request: NextRequest) {
             .join(', ')
             .slice(0, 490),
         },
-        // Intentionally no `receipt_email` — Stripe would otherwise send
+        // Intentionally no `receipt_email`, Stripe would otherwise send
         // its own receipt and customers would receive two emails. Our
         // BookingConfirmed template (sent from the webhook) is the only
         // confirmation we want them to get.
@@ -347,7 +347,7 @@ export async function POST(request: NextRequest) {
       try {
         await stripe.paymentIntents.cancel(paymentIntent.id, { cancellation_reason: 'abandoned' })
       } catch {
-        /* swallow — best-effort cleanup */
+        /* swallow, best-effort cleanup */
       }
       return NextResponse.json(
         { error: 'Could not attach payment intent', requestId: reqId },
@@ -364,7 +364,7 @@ export async function POST(request: NextRequest) {
     if (err instanceof PricingError) {
       console.warn('[checkout]', reqId, err.code, err.detail)
       return NextResponse.json(
-        { error: err.code === 'amount_mismatch' ? 'Cart total mismatch — please reload and try again' : err.detail, requestId: reqId },
+        { error: err.code === 'amount_mismatch' ? 'Cart total mismatch, please reload and try again' : err.detail, requestId: reqId },
         { status: 400 },
       )
     }
@@ -376,7 +376,7 @@ export async function POST(request: NextRequest) {
       )
     }
     // Never leak the raw internal error (Postgres/Stripe column/constraint
-    // names) to the browser — log it, return a generic message + the
+    // names) to the browser, log it, return a generic message + the
     // requestId the user can quote to support.
     const message = err instanceof Error ? err.message : 'Internal server error'
     console.error('[checkout]', reqId, 'create failed', message)

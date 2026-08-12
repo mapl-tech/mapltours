@@ -8,7 +8,7 @@ export interface TransferConfirmedProps {
   email?: string | null
   customerPhone: string | null
   country?: string | null
-  /** Per-leg breakdown — server fills these when we have them. */
+  /** Per-leg breakdown, server fills these when we have them. */
   subtotal?: number | null
   bookingFee?: number | null
   totalPaid: number
@@ -29,7 +29,7 @@ export interface TransferConfirmedProps {
 }
 
 function fmtMoney(n: number | null | undefined, currency: string): string {
-  if (n == null || !Number.isFinite(n)) return '—'
+  if (n == null || !Number.isFinite(n)) return '-'
   const sign = n < 0 ? '-' : ''
   const abs = Math.abs(n).toFixed(2)
   return `${sign}${currency === 'USD' ? '$' : `${currency} `}${abs}`
@@ -79,13 +79,14 @@ export default function TransferConfirmed(props: TransferConfirmedProps) {
 
   return (
     <MaplLayout preheader={`Transfer confirmed · ${bookingRef} · Jamaica airport ride details`}>
+      <Text style={s.eyebrow}>✓ Transfer confirmed</Text>
       <Heading as="h1" style={s.hero} className="mapl-h1">
         Thank you, {name}.
       </Heading>
       <Text style={s.heroLead}>
         Your transfer{transfers.length > 1 ? 's are' : ' is'} confirmed. Your
-        driver will be holding a MAPL Tours sign with your name in the arrivals
-        area. Booking reference{' '}
+        driver will be waiting in the arrivals area with a MAPL Tours sign.
+        Booking reference{' '}
         <strong style={{ color: '#1a1a1a' }}>{bookingRef}</strong>.
       </Text>
 
@@ -98,7 +99,7 @@ export default function TransferConfirmed(props: TransferConfirmedProps) {
         </Link>
       </Section>
 
-      {/* Itinerary card — per-leg flight info */}
+      {/* Itinerary card, per-leg flight info */}
       <Section style={s.card}>
         <Section style={s.cardHeader}>
           <Text style={s.cardHeaderText}>
@@ -232,17 +233,17 @@ export default function TransferConfirmed(props: TransferConfirmedProps) {
         <Section style={s.cardBody}>
           <Text style={s.body}>· Clear immigration and collect your bags.</Text>
           <Text style={{ ...s.body, marginTop: 6 }}>
-            · Exit the terminal at arrivals — your driver will be at the MAPL
-            Tours sign with your name.
+            · Exit the terminal at arrivals. Your driver will be waiting at the
+            MAPL Tours sign.
           </Text>
           <Text style={{ ...s.body, marginTop: 6 }}>
-            · 24/7 dispatch:{' '}
+            · Reach us any time at{' '}
             <Link href="mailto:contact@mapltours.com" style={{ color: '#1a1a1a', textDecoration: 'underline' }}>
               contact@mapltours.com
             </Link>
           </Text>
           <Text style={s.note}>
-            Free cancellation up to 24 hours before pickup — just reply to this
+            Free cancellation up to 24 hours before pickup. Just reply to this
             email. Safe travels.
           </Text>
         </Section>

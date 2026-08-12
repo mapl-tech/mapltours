@@ -20,7 +20,7 @@ const categories = [
       },
       {
         q: 'Can I book for a group?',
-        a: 'Absolutely. Most experiences accommodate 1-12 guests — just select your group size at checkout. For groups larger than 12, reach out to us directly and we\'ll arrange a bespoke private experience.',
+        a: 'Absolutely. Most experiences accommodate 1-12 guests, just select your group size at checkout. For groups larger than 12, reach out to us directly and we\'ll arrange a bespoke private experience.',
       },
       {
         q: 'How far in advance should I book?',
@@ -39,7 +39,7 @@ const categories = [
     faqs: [
       {
         q: 'Can I cancel my booking?',
-        a: 'Yes. Cancel within 48 hours of booking for a full refund — no questions asked. Cancellations made at least 7 days before the experience date receive a 50% refund. Less than 7 days out, bookings are non-refundable.',
+        a: 'Yes. Cancel within 48 hours of booking for a full refund, no questions asked. Cancellations made at least 7 days before the experience date receive a 50% refund. Less than 7 days out, bookings are non-refundable.',
       },
       {
         q: 'What if the creator cancels my experience?',
@@ -62,15 +62,15 @@ const categories = [
       },
       {
         q: 'Is transportation included?',
-        a: 'Some experiences include hotel pickup — check the experience details for specifics. When transportation isn\'t included, your creator will provide clear meeting point instructions with GPS coordinates and directions.',
+        a: 'Some experiences include hotel pickup, check the experience details for specifics. When transportation isn\'t included, your creator will provide clear meeting point instructions with GPS coordinates and directions.',
       },
       {
         q: 'What happens if it rains?',
-        a: 'Jamaica gets brief tropical showers — most experiences run rain or shine (it\'s part of the adventure). If severe weather forces a cancellation, we\'ll reschedule at no cost or issue a full refund.',
+        a: 'Jamaica gets brief tropical showers, most experiences run rain or shine (it\'s part of the adventure). If severe weather forces a cancellation, we\'ll reschedule at no cost or issue a full refund.',
       },
       {
         q: 'Are experiences suitable for children?',
-        a: 'Many are family-friendly — look for the age recommendations in each experience\'s details. Adventures like cliff diving have minimum age requirements. When in doubt, message the creator through the experience page.',
+        a: 'Many are family-friendly, look for the age recommendations in each experience\'s details. Adventures like cliff diving have minimum age requirements. When in doubt, message the creator through the experience page.',
       },
     ],
   },
@@ -89,7 +89,7 @@ const categories = [
       },
       {
         q: 'Is my payment information secure?',
-        a: 'Completely. All payments are processed through Stripe, a PCI Level 1 certified payment processor — the highest security standard in the industry. We never store your card details.',
+        a: 'Completely. All payments are processed through Stripe, a PCI Level 1 certified payment processor, the highest security standard in the industry. We never store your card details.',
       },
     ],
   },
@@ -404,7 +404,7 @@ export default function HelpCenter() {
                 display: 'grid', gridTemplateColumns: '1fr', gap: 16,
                 maxWidth: 440, margin: '0 auto',
               }}>
-                {/* Email — the only support channel at launch (no phone line yet) */}
+                {/* Email, the only support channel at launch (no phone line yet) */}
                 <a href="mailto:contact@mapltours.com" style={{
                   display: 'flex', flexDirection: 'column', alignItems: 'center',
                   textAlign: 'center', padding: '36px 24px',

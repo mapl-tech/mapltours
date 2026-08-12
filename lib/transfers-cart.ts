@@ -3,13 +3,13 @@ import { persist } from 'zustand/middleware'
 import type { TransferQuote, TransferTripType } from './airport-transfers'
 
 /**
- * Transfers cart — separate from the tour cart (`mapl-cart`) so the two
+ * Transfers cart, separate from the tour cart (`mapl-cart`) so the two
  * flows never step on each other's state. The checkout screens and the
  * pay-button wiring at `/transfers/checkout` only read from this store.
  */
 
 export interface TransferCartItem {
-  /** Stable id built from destination + trip type — makes addItem idempotent. */
+  /** Stable id built from destination + trip type, makes addItem idempotent. */
   id: string
   destinationId: string
   destinationName: string
@@ -50,7 +50,7 @@ export const useTransfersCart = create<TransfersCartStore>()(
       addQuote: (quote) => {
         const id = makeId(quote.destinationId, quote.tripType)
         const { items } = get()
-        // Idempotent — if the same destination + trip type already exists,
+        // Idempotent, if the same destination + trip type already exists,
         // update the passenger count instead of adding a duplicate.
         if (items.some((i) => i.id === id)) {
           set({
@@ -87,8 +87,8 @@ export const useTransfersCart = create<TransfersCartStore>()(
 
       subtotal: () => get().items.reduce((sum, i) => sum + i.priceUsd, 0),
 
-      // Platform service fee on transfers — 10% flat. Covers concierge
-      // booking, 24/7 dispatch, meet-and-greet, and flight tracking on top
+      // Platform service fee on transfers, 10% flat. Covers concierge
+      // booking, 24/7 support, meet-and-greet, and flight tracking on top
       // of the driver rate baked into the zone fares.
       fee: () => Math.round(get().subtotal() * 0.10),
 

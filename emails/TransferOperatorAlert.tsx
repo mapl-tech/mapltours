@@ -85,7 +85,7 @@ export default function TransferOperatorAlert({
         </Section>
       </Section>
 
-      {/* Transfers — flight info per leg */}
+      {/* Transfers, flight info per leg */}
       <Section style={s.card}>
         <Section style={s.cardHeader}>
           <Text style={s.cardHeaderText}>
@@ -169,7 +169,7 @@ export default function TransferOperatorAlert({
 
       <Text style={s.note}>
         Booking reference {bookingRef}. Fires automatically on
-        payment_intent.succeeded — no reply needed on this email.
+        payment_intent.succeeded, no reply needed on this email.
       </Text>
     </MaplLayout>
   )

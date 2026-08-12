@@ -8,7 +8,7 @@ export interface DayScoreBreakdown {
   total: number
   stage: DayStage
   stageLabel: string
-  /** Busiest day's hours — the one we evaluate. */
+  /** Busiest day's hours, the one we evaluate. */
   hours: number
   /** ISO date of the day being evaluated, or null if cart is empty. */
   date: string | null
@@ -29,7 +29,7 @@ const EFFICIENCY_MAX = 25
 
 /**
  * Returns the "Day Builder" score for the busiest day in the cart plus a
- * human-readable stage label and upsell nudge. Pure function — no hooks —
+ * human-readable stage label and upsell nudge. Pure function, no hooks,
  * so it can be called from selectors, components, and tests.
  */
 export function computeDayScore(items: CartItem[]): DayScoreBreakdown {
@@ -49,7 +49,7 @@ export function computeDayScore(items: CartItem[]): DayScoreBreakdown {
     }
   }
 
-  // Group hours by date, find the busiest day — that's the one we score.
+  // Group hours by date, find the busiest day, that's the one we score.
   const byDate: Record<string, CartItem[]> = {}
   for (const it of items) {
     const key = it.date || 'unset'
@@ -156,7 +156,7 @@ function buildNudge({
     if (distinctCategories < 3) return 'Mix in a different category for more variety'
     return `One more tour and you’ve got a perfect day`
   }
-  // 6–6.99 hrs — almost there
+  // 6–6.99 hrs, almost there
   if (distinctCategories < 3) return 'One more tour in a fresh category completes your day'
   if (distinctDestinations >= 4) return 'Consolidating nearby tours will boost your score'
   return 'Add a short tour to complete your perfect day'

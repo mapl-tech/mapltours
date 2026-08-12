@@ -8,7 +8,7 @@ import ConfirmClient from './ConfirmClient'
  * Post-checkout confirmation page. Lands here from:
  *   • A 3DS / bank-auth redirect (Stripe attaches `payment_intent` to the
  *     return_url query string).
- *   • A non-3DS local success — StripePaymentPanel navigates here with the
+ *   • A non-3DS local success, StripePaymentPanel navigates here with the
  *     same query string so both paths share one comprehensive view.
  *
  * Reads the full booking row + line items from Supabase so customers see
@@ -151,8 +151,8 @@ async function resolveConfirm(
 
   // PRIVACY: a payment_intent id is not a secret (it appears in return URLs,
   // browser history, referrers), and bookings carry no user_id to check
-  // ownership against. Expose only the non-sensitive confirmation — first
-  // name + the experiences booked — never contact PII or pickup/dropoff
+  // ownership against. Expose only the non-sensitive confirmation, first
+  // name + the experiences booked, never contact PII or pickup/dropoff
   // addresses. Full details reach the real customer by confirmation email.
   const customerName = booking
     ? (booking.first_name ?? '').trim() || null
@@ -194,7 +194,7 @@ function humanizeId(id: string): string {
 }
 
 function formatMoney(n: number | null, currency: string): string {
-  if (n === null || !Number.isFinite(n)) return '—'
+  if (n === null || !Number.isFinite(n)) return '-'
   const sign = n < 0 ? '-' : ''
   const abs = Math.abs(n).toFixed(2)
   return `${sign}${currency === 'USD' ? '$' : currency + ' '}${abs}`
@@ -262,7 +262,7 @@ export default async function ConfirmPage({
   )
 }
 
-/* ─── Success — comprehensive details ─── */
+/* ─── Success, comprehensive details ─── */
 
 function Success({ data }: { data: ConfirmData }) {
   const showBreakdown =
@@ -526,7 +526,7 @@ function Success({ data }: { data: ConfirmData }) {
           >
             <li>· Your guide will reach out 24–48 hours before each experience with the meeting point.</li>
             <li>· Bring a valid ID, reef-safe sunscreen, and water.</li>
-            <li>· Free cancellation up to 48 hours before the experience — just reply to your confirmation email.</li>
+            <li>· Free cancellation up to 48 hours before the experience, just reply to your confirmation email.</li>
             <li>
               · Questions? Email{' '}
               <Link href="mailto:contact@mapltours.com" style={{ color: 'var(--text-primary)', textDecoration: 'underline' }}>
@@ -740,7 +740,7 @@ function Processing() {
           lineHeight: 1.5,
         }}
       >
-        We&rsquo;ll email you the moment it clears — usually under a minute.
+        We&rsquo;ll email you the moment it clears, usually under a minute.
       </p>
     </div>
   )

@@ -14,7 +14,7 @@ import { useI18n } from '@/lib/i18n'
 import { calculateTransportation, GAS_PRICE_USD_PER_LITER, GAS_PRICE_JMD_PER_LITER, fetchGasPrice } from '@/lib/transportation'
 import { Fuel, Car, Route } from 'lucide-react'
 
-// Stripe SDK is ~80 KB gz — only load it when the user actually reaches
+// Stripe SDK is ~80 KB gz, only load it when the user actually reaches
 // step 3 by dynamic-importing the panel (which in turn pulls Stripe in).
 const StripePaymentPanel = dynamic(
   () => import('./StripePaymentPanel'),
@@ -108,7 +108,7 @@ function ReviewStep() {
   const { t, formatPrice } = useI18n()
   const [customDates, setCustomDates] = useState(false)
 
-  // Earliest selectable date is today — block bookings for dates in the past
+  // Earliest selectable date is today, block bookings for dates in the past
   // (also validated server-side). Computed after mount to keep SSR/CSR
   // markup identical.
   const [minDate, setMinDate] = useState('')
@@ -142,7 +142,7 @@ function ReviewStep() {
           position: 'relative',
           overflow: 'hidden',
         }}>
-          {/* Subtle gold hairline top — prestige cue */}
+          {/* Subtle gold hairline top, prestige cue */}
           <div style={{
             position: 'absolute', top: 0, left: 0, right: 0, height: 2,
             background: 'linear-gradient(90deg, transparent, var(--gold, #FFB300) 50%, transparent)',
@@ -307,7 +307,7 @@ function ReviewStep() {
               </div>
             </div>
 
-            {/* Footer — date + price */}
+            {/* Footer, date + price */}
             <div style={{
               display: 'flex', alignItems: 'center', justifyContent: 'space-between',
               padding: '12px 22px',
@@ -453,7 +453,7 @@ function DetailsStep({ waiverAccepted, setWaiverAccepted, waiverError, formData,
             ))}
           </select>
         </div>
-        {/* ── Pickup & Drop-off — Prominent Section ── */}
+        {/* ── Pickup & Drop-off, Prominent Section ── */}
         <div style={{
           gridColumn: 'span 2',
           marginTop: 8,
@@ -984,7 +984,7 @@ export default function CheckoutView() {
 
       {/* Body */}
       <div className={`checkout-body${step === 3 ? ' checkout-step-3' : ''}`}>
-        {/* Left — form */}
+        {/* Left, form */}
         <div className={step === 3 ? 'checkout-payment-form' : ''} style={{ flex: 1, maxWidth: 640 }}>
           {step === 1 && <ReviewStep />}
           {step === 2 && <DetailsStep waiverAccepted={waiverAccepted} setWaiverAccepted={setWaiverAccepted} waiverError={waiverError} formData={formData} setFormData={setFormData} formErrors={formErrors} />}
@@ -1000,7 +1000,7 @@ export default function CheckoutView() {
                   if (activeReward) {
                     await consumeReward(activeReward.id).catch(() => {})
                   }
-                  // No setConfirmed(true) — StripePaymentPanel navigates the
+                  // No setConfirmed(true), StripePaymentPanel navigates the
                   // browser to /checkout/confirm?payment_intent=… which is
                   // the comprehensive server-rendered confirmation view.
                   // setConfirmed used to render an inline view from cart
@@ -1033,7 +1033,7 @@ export default function CheckoutView() {
           )}
         </div>
 
-        {/* Right — summary */}
+        {/* Right, summary */}
         <div className="checkout-summary" style={{ width: '100%', maxWidth: 340, flexShrink: 0, position: 'sticky', top: 120, alignSelf: 'flex-start' }}>
           <div style={{
             borderRadius: 'var(--r-xl)', overflow: 'hidden',
@@ -1095,7 +1095,7 @@ export default function CheckoutView() {
                     </span>
                   </div>
 
-                  {/* Route itinerary — per-day cards */}
+                  {/* Route itinerary, per-day cards */}
                   {transportCost.dayBreakdowns.map((day, idx) => (
                     <div key={day.date} style={{
                       marginBottom: 10, padding: '14px 16px',
@@ -1290,7 +1290,7 @@ export default function CheckoutView() {
                       errors['email'] = true
                       hasError = true
                     }
-                    // Phone validation — at least 7 digits
+                    // Phone validation, at least 7 digits
                     if (formData['phone']?.trim() && formData['phone'].replace(/\D/g, '').length < 7) {
                       errors['phone'] = true
                       hasError = true
@@ -1349,7 +1349,7 @@ export default function CheckoutView() {
 }
 
 /* ═══════════════════════════════════
-   Daily limit modal — high-end, brand, mobile-first
+   Daily limit modal, high-end, brand, mobile-first
    ═══════════════════════════════════ */
 function DailyLimitModal({ hoursByDate, onClose }: {
   hoursByDate: Record<string, number>

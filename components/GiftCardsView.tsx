@@ -149,7 +149,7 @@ export default function GiftCardsView() {
                     fontSize: finalAmount > 0 ? 48 : 36, color: 'white',
                     letterSpacing: '-0.03em', lineHeight: 1,
                   }}>
-                    {finalAmount > 0 ? `$${finalAmount}` : '$—'}
+                    {finalAmount > 0 ? `$${finalAmount}` : '$0'}
                   </p>
                   {senderName && (
                     <p style={{
@@ -451,7 +451,7 @@ export default function GiftCardsView() {
             {[
               { step: '01', title: 'Choose & personalize', desc: 'Select an amount, add a personal message, and enter the recipient\'s email.' },
               { step: '02', title: 'They receive it instantly', desc: 'A beautifully designed digital gift card arrives in their inbox with a unique redemption code.' },
-              { step: '03', title: 'They choose their adventure', desc: 'From cliff diving in Negril to a reggae studio session in Kingston — they pick what excites them.' },
+              { step: '03', title: 'They choose their adventure', desc: 'From cliff diving in Negril to a reggae studio session in Kingston, they pick what excites them.' },
             ].map((item) => (
               <div key={item.step} style={{ textAlign: 'center' }}>
                 <p style={{

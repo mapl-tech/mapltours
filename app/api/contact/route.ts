@@ -28,7 +28,7 @@ interface ContactBody {
   email?: string
   subject?: string
   message?: string
-  /** Honeypot — real users never fill this. Bots fill every visible input. */
+  /** Honeypot, real users never fill this. Bots fill every visible input. */
   website?: string
 }
 
@@ -36,7 +36,7 @@ export async function POST(req: NextRequest) {
   const ip = getIp(req)
   if (rateLimit(ip, { windowMs: 60_000, max: 3, bucket: 'contact' })) {
     return NextResponse.json(
-      { error: 'Too many submissions — please wait a minute and try again.' },
+      { error: 'Too many submissions, please wait a minute and try again.' },
       { status: 429 },
     )
   }
@@ -49,7 +49,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Invalid request body' }, { status: 400 })
   }
 
-  // Honeypot trip — silently accept so the bot thinks it worked, but do
+  // Honeypot trip, silently accept so the bot thinks it worked, but do
   // nothing. Real submissions never have `website` populated.
   if (body.website && body.website.trim().length > 0) {
     return NextResponse.json({ ok: true })
@@ -75,7 +75,7 @@ export async function POST(req: NextRequest) {
   // it can be handled.
   const CONTACT_FROM = 'MAPL Tours <contact@mapltours.com>'
 
-  // 3. Ops alert — load-bearing. Failure = 500 so the user can retry.
+  // 3. Ops alert, load-bearing. Failure = 500 so the user can retry.
   const opsRes = await sendEmail({
     to: 'contact@mapltours.com',
     from: CONTACT_FROM,
@@ -102,12 +102,12 @@ export async function POST(req: NextRequest) {
     )
   }
 
-  // 4. Auto-reply — best effort. Log on failure but still return success
+  // 4. Auto-reply, best effort. Log on failure but still return success
   //    because the message DID reach the team.
   const replyRes = await sendEmail({
     to: email,
     from: CONTACT_FROM,
-    subject: 'We got your message — MAPL Tours',
+    subject: 'We got your message, MAPL Tours',
     react: ContactAutoReply({
       firstName,
       subject: subject || null,

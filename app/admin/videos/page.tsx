@@ -1,7 +1,7 @@
 'use client'
 
 /**
- * /admin/videos — Moderation queue for user-submitted tour videos.
+ * /admin/videos, Moderation queue for user-submitted tour videos.
  *
  * Access is gated by the `admins` allowlist (see migration 003). The RLS
  * policies let admins read every row; non-admins hit a "Not authorised" wall.

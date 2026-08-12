@@ -3,7 +3,7 @@
 @tailwind utilities;
 
 /* ═══════════════════════════════════════════
-   MAPL TOURS — "Caribbean Editorial" System
+   MAPL TOURS, "Caribbean Editorial" System
    Inspired by Wander.com, Condé Nast Traveler
    ═══════════════════════════════════════════ */
 
@@ -17,7 +17,7 @@
   --surface:        #F3F2EF;
   --surface-hover:  #EBEAE6;
 
-  /* Borders — warm-black hairlines so cards read as present, not ghosted */
+  /* Borders, warm-black hairlines so cards read as present, not ghosted */
   --border:         rgba(23, 22, 20, 0.10);
   --border-strong:  rgba(23, 22, 20, 0.16);
   --border-on-dark: rgba(255, 255, 255, 0.08);
@@ -26,7 +26,7 @@
   --accent:         #171614;
   --gold:           #A68B3C;
   --gold-warm:      #C4A44A;
-  --gold-text:      #6E5A1C;  /* AA-compliant gold for text on white (≈5.4:1) — use this instead of --gold/--gold-warm for any text/label on a light surface */
+  --gold-text:      #6E5A1C;  /* AA-compliant gold for text on white (≈5.4:1), use this instead of --gold/--gold-warm for any text/label on a light surface */
   --emerald:        #1D7A50;
   --emerald-dim:    rgba(29, 122, 80, 0.07);
 
@@ -45,7 +45,7 @@
   --r-xl: 20px;
   --r-2xl: 28px;
 
-  /* Shadows — two-layer warm ramp (ambient + key) so surfaces sit ON the page */
+  /* Shadows, two-layer warm ramp (ambient + key) so surfaces sit ON the page */
   --shadow-xs:  0 1px 2px rgba(23,22,20,0.04);
   --shadow-sm:  0 1px 2px rgba(23,22,20,0.04), 0 4px 10px -4px rgba(23,22,20,0.06);
   --shadow-md:  0 2px 4px rgba(23,22,20,0.04), 0 8px 16px -4px rgba(23,22,20,0.08);
@@ -65,7 +65,7 @@
   --grain-opacity: 0.03;
   --space-section: clamp(64px, 9vw, 128px);
 
-  /* Type scale — canonical sizes. Readability floor: no READABLE text below
+  /* Type scale, canonical sizes. Readability floor: no READABLE text below
      12px; 11px is reserved for decorative uppercase eyebrows/labels only.
      New code should use these instead of ad-hoc pixel values. */
   --fs-micro:   11px;                        /* uppercase eyebrows ONLY */
@@ -92,7 +92,7 @@ html {
 }
 
 body {
-  /* Legacy alias — the site is a single-family (DM Sans) system now. Declared
+  /* Legacy alias, the site is a single-family (DM Sans) system now. Declared
      here, not on :root, because --font-dm-sans is injected by next/font onto
      <body>; a :root alias would resolve against an undefined value. */
   --font-syne: var(--font-dm-sans);
@@ -106,7 +106,7 @@ body {
   position: relative;
 }
 
-/* Fine film grain over the whole page — turns flat fills into "crafted"
+/* Fine film grain over the whole page, turns flat fills into "crafted"
    surfaces. Non-interactive, low opacity, sits below modals via z-index. */
 body::after {
   content: '';
@@ -164,7 +164,7 @@ video {
 
 /* One family, so hierarchy is carried by weight + tracking instead of by a
    serif/sans contrast. A geometric sans only reads as "display" when it is
-   set heavy and tight — tracking tightens as size grows, never the reverse. */
+   set heavy and tight, tracking tightens as size grows, never the reverse. */
 
 .text-display {
   font-family: var(--font-dm-sans);
@@ -345,7 +345,7 @@ h5, h6 { letter-spacing: -0.01em; }
 }
 
 /* ═══════════════════════════════════════════
-   MOBILE LUXURY — "Caribbean Prestige"
+   MOBILE LUXURY, "Caribbean Prestige"
    Every pixel intentional. Every space generous.
    ═══════════════════════════════════════════ */
 
@@ -353,13 +353,13 @@ h5, h6 { letter-spacing: -0.01em; }
   .hide-mobile { display: none !important; }
   .concierge-body { color: #e0e0e0 !important; }
 
-  /* ── Container — 16px from screen edge ── */
+  /* ── Container, 16px from screen edge ── */
   .container {
     padding-left: 16px !important;
     padding-right: 16px !important;
   }
 
-  /* ── Nav — two rows on mobile ── */
+  /* ── Nav, two rows on mobile ── */
   .nav-header {
     height: 90px !important;
     flex-wrap: wrap !important;
@@ -378,7 +378,7 @@ h5, h6 { letter-spacing: -0.01em; }
     aspect-ratio: 1 / 1 !important;
   }
 
-  /* ── Typography — bolder, more editorial ── */
+  /* ── Typography, bolder, more editorial ── */
   .text-display {
     font-size: 2rem !important;
     line-height: 1.08 !important;
@@ -396,19 +396,19 @@ h5, h6 { letter-spacing: -0.01em; }
     margin-bottom: 14px !important;
   }
 
-  /* ── Shorts grid — single column, generous spacing ── */
+  /* ── Shorts grid, single column, generous spacing ── */
   .mobile-shorts-grid {
     grid-template-columns: 1fr !important;
     gap: 20px !important;
   }
 
-  /* ── Photo cards — cinematic portrait ── */
+  /* ── Photo cards, cinematic portrait ── */
   .photo-card {
     aspect-ratio: 9 / 16 !important;
     border-radius: var(--r-2xl) !important;
   }
 
-  /* ── Destination cards — 2-col editorial thumbnails ── */
+  /* ── Destination cards, 2-col editorial thumbnails ── */
   .grid-destinations {
     grid-template-columns: 1fr 1fr !important;
     gap: 12px !important;
@@ -425,7 +425,7 @@ h5, h6 { letter-spacing: -0.01em; }
     margin-left: 16px !important;
   }
 
-  /* ── Trending — full-bleed stacked ── */
+  /* ── Trending, full-bleed stacked ── */
   .grid-trending {
     grid-template-columns: 1fr !important;
     gap: 16px !important;
@@ -435,13 +435,13 @@ h5, h6 { letter-spacing: -0.01em; }
     border-radius: var(--r-2xl) !important;
   }
 
-  /* ── Features — stacked with breathing room ── */
+  /* ── Features, stacked with breathing room ── */
   .grid-features {
     grid-template-columns: 1fr !important;
     gap: 32px !important;
   }
 
-  /* ── Footer — elegant single column, centered ── */
+  /* ── Footer, elegant single column, centered ── */
   .grid-footer {
     grid-template-columns: 1fr 1fr !important;
     gap: 32px 20px !important;
@@ -470,7 +470,7 @@ h5, h6 { letter-spacing: -0.01em; }
     justify-content: center !important;
   }
   /* .reel-bottom-mobile-pad and .reel-right-rail use --reel-bottom-offset
-     defined at the top level — it's driven live by JS so it tracks any
+     defined at the top level, it's driven live by JS so it tracks any
      change in the comment-bar's rendered height. The mobile-specific
      override that used a static fallback has been removed so the dynamic
      var always wins. */
@@ -483,7 +483,7 @@ h5, h6 { letter-spacing: -0.01em; }
     top: 30px !important;
   }
 
-  /* ── MAPL Difference — magazine spread ── */
+  /* ── MAPL Difference, magazine spread ── */
   .mapl-diff-image {
     min-height: 320px !important;
     border-radius: 0 !important;
@@ -494,7 +494,7 @@ h5, h6 { letter-spacing: -0.01em; }
     padding: 32px 16px 40px !important;
   }
 
-  /* ── Buttons — bigger touch targets ── */
+  /* ── Buttons, bigger touch targets ── */
   .btn-primary {
     height: 48px !important;
     font-size: 14.5px !important;
@@ -505,26 +505,26 @@ h5, h6 { letter-spacing: -0.01em; }
     font-size: 14px !important;
   }
 
-  /* ── Inputs — taller for fat fingers ── */
+  /* ── Inputs, taller for fat fingers ── */
   .field-input {
     height: 50px !important;
     font-size: 16px !important;
     border-radius: var(--r-lg) !important;
   }
 
-  /* ── Tags — slightly bigger ── */
+  /* ── Tags, slightly bigger ── */
   .tag {
     height: 28px !important;
     font-size: 11.5px !important;
     padding: 0 12px !important;
   }
 
-  /* ── Cards — softer corners, more shadow ── */
+  /* ── Cards, softer corners, more shadow ── */
   .surface-card {
     border-radius: var(--r-xl) !important;
   }
 
-  /* ── Experience cards — no lift on mobile (tap instead) ── */
+  /* ── Experience cards, no lift on mobile (tap instead) ── */
   .exp-card:hover {
     transform: none !important;
   }
@@ -538,7 +538,7 @@ h5, h6 { letter-spacing: -0.01em; }
     padding-top: 12px !important;
   }
 
-  /* ── Checkout — stack gracefully ── */
+  /* ── Checkout, stack gracefully ── */
   .checkout-body {
     padding: 12px 16px 24px !important;
     gap: 10px !important;
@@ -566,7 +566,7 @@ h5, h6 { letter-spacing: -0.01em; }
     transition: none !important;
   }
 
-  /* ── Scroll containers — snap for premium feel ── */
+  /* ── Scroll containers, snap for premium feel ── */
   .scroll-x {
     scroll-snap-type: x mandatory;
     -webkit-overflow-scrolling: touch;
@@ -680,7 +680,7 @@ h5, h6 { letter-spacing: -0.01em; }
 /* Global keyboard-focus indicator. Several inputs/buttons set
    `outline: none` inline (which beats a normal stylesheet rule), so this
    uses !important to guarantee a visible focus ring for keyboard users
-   site-wide — WCAG 2.4.7. :focus-visible keeps it from showing on mouse
+   site-wide, WCAG 2.4.7. :focus-visible keeps it from showing on mouse
    clicks. The 2px gold ring + offset stays visible on both the light page
    surfaces and the dark hero. */
 *:focus-visible {
@@ -706,7 +706,7 @@ textarea.field-input {
   box-shadow: var(--shadow-sm);
 }
 
-/* Reusable editorial eyebrow — unifies the drifting inline kicker styles. */
+/* Reusable editorial eyebrow, unifies the drifting inline kicker styles. */
 .eyebrow {
   font-family: var(--font-dm-sans);
   font-weight: 600;
@@ -716,7 +716,7 @@ textarea.field-input {
   color: var(--gold-text);
 }
 
-/* Tone-change divider — a hairline gold gradient, used sparingly. */
+/* Tone-change divider, a hairline gold gradient, used sparingly. */
 .section-divider--gold {
   height: 1px;
   border: none;
@@ -726,7 +726,7 @@ textarea.field-input {
 
 /* Scroll-reveal: elements lift + fade in as they enter the viewport.
    Gated behind html.js-reveal (set by the observer) so that if JS is
-   disabled or fails, content stays fully visible — never hidden. Stagger
+   disabled or fails, content stays fully visible, never hidden. Stagger
    children with --i (transition-delay = i * 60ms). */
 html.js-reveal [data-reveal] {
   opacity: 0;
@@ -833,7 +833,7 @@ html.js-reveal [data-reveal].is-in {
   }
 }
 
-/* Photo card hover — image scales SLOWER than the card lifts (parallax), and
+/* Photo card hover, image scales SLOWER than the card lifts (parallax), and
    the corners bloom 20px → 28px so the tile visibly softens as it rises. */
 .photo-card {
   position: relative;
@@ -854,7 +854,7 @@ html.js-reveal [data-reveal].is-in {
 }
 
 /* Experience card lift. The elevation shadow rides the ROUNDED media tile,
-   not the <article> — the article is a transparent square box, so a shadow
+   not the <article>, the article is a transparent square box, so a shadow
    there cast a hard-edged rectangle behind the caption text. */
 .exp-card {
   transition: transform var(--dur-base) var(--ease-out);
@@ -876,7 +876,7 @@ html.js-reveal [data-reveal].is-in {
   transform: translateY(-6px);
 }
 
-/* Reel action-rail disc — frosted backing so icons stay legible over bright
+/* Reel action-rail disc, frosted backing so icons stay legible over bright
    video footage. Pairs with the count labels' text-shadow. */
 .reel-action-disc {
   display: flex;
@@ -907,7 +907,7 @@ button:hover > .reel-action-disc {
   pointer-events: none;
 }
 
-/* "Jamaica" wordmark — crisp vector flag gradient (green + gold, the flag's
+/* "Jamaica" wordmark, crisp vector flag gradient (green + gold, the flag's
    dominant colors) clipped to text. Replaces the upscaled bitmap mask + muddy
    grey stroke that rendered pixelated. Vector-sharp at any size; the Playfair
    italic + drop-shadow make it the signature brand moment. Pure black is
@@ -946,7 +946,7 @@ img[alt="Devon House Patty & Ice Cream Tour"] {
 }
 
 /* ═══════════════════════════════════
-   ABOUT PAGE — editorial grid pieces
+   ABOUT PAGE, editorial grid pieces
    ═══════════════════════════════════ */
 
 .about-split {
@@ -991,10 +991,10 @@ img[alt="Devon House Patty & Ice Cream Tour"] {
 }
 
 /* ═══════════════════════════════════
-   TRANSFERS HERO IMAGE — LAYOUT-CRITICAL (CLS guard)
+   TRANSFERS HERO IMAGE, LAYOUT-CRITICAL (CLS guard)
    These space-reserving rules live in the global stylesheet (loaded in
    <head>) rather than the component's styled-jsx so the hero box reserves
-   its final height in the server-rendered HTML — no shift when JS loads.
+   its final height in the server-rendered HTML, no shift when JS loads.
    Purely-cosmetic rules (radius/shadow/border) stay in the component.
    ═══════════════════════════════════ */
 .xfer-hero {

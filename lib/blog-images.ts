@@ -1,5 +1,5 @@
 // Featured images for auto-generated blog posts.
-// Sources: Pexels (free, no attribution required — Jamaica & tropical/Caribbean
+// Sources: Pexels (free, no attribution required, Jamaica & tropical/Caribbean
 // stock), Unsplash, and public Jamaica tourism photo URLs already used by the
 // Experiences pages. Each slug maps to its own post image; some images repeat
 // at most 2–3 times across the 50 posts.
@@ -7,7 +7,7 @@
 const px = (id: number) =>
   `https://images.pexels.com/photos/${id}/pexels-photo-${id}.jpeg?auto=compress&cs=tinysrgb&w=1600&h=1000&fit=crop`
 
-// Pexels — confirmed Jamaica scenes
+// Pexels, confirmed Jamaica scenes
 const P_BUFF_BAY = px(14788935)      // aerial Buff Bay coastal road
 const P_NEGRIL_CLIFFS = px(19565413)  // Rockhouse Hotel cliffs, Negril
 const P_BLUE_MTNS = px(9158428)       // Blue Mountains in cloud
@@ -22,7 +22,7 @@ const P_BLUE_HOLE = px(10907379)      // Blue Hole turquoise river
 const P_STANN_PALMS = px(30649781)    // palm trees, St. Ann, Jamaica
 const P_SEVEN_MILE = px(30793026)     // Seven Mile Beach, Negril
 
-// Pexels — generic tropical / Caribbean stand-ins
+// Pexels, generic tropical / Caribbean stand-ins
 const G_BEACH_PALMS = px(17065699)    // tropical beach with palm trees
 const G_PALM_SHORE = px(3894868)      // palm trees on beach shore
 const G_SINGLE_PALM = px(26551139)    // view of a palm tree on the beach
@@ -50,7 +50,7 @@ const E_SCOTCHIES = 'https://paradiseinjatours.com/wp-content/uploads/2024/05/Sc
 const E_MARKET = 'https://oaccessjamaica.com/wp-content/uploads/2015/07/nesta-michael-asafa-coronation-market.jpg'
 
 export const BLOG_IMAGES: Record<string, string> = {
-  // Batch 1 — tours & excursions
+  // Batch 1, tours & excursions
   'dunns-river-falls-tour-guide': E_DUNNS,
   'jamaica-excursions-worth-booking': P_BUFF_BAY,
   'montego-bay-tours-ranked': P_MOBAY_AERIAL,
@@ -62,7 +62,7 @@ export const BLOG_IMAGES: Record<string, string> = {
   'cbd-spa-jamaica': G_POOL_PALMS,
   'ganja-farm-tour-ocho-rios': E_RASTA_VILLAGE,
 
-  // Batch 2 — location-specific
+  // Batch 2, location-specific
   'ocho-rios-complete-guide': E_MYSTIC,
   'hotels-in-ocho-rios': G_RESORT_AERIAL,
   'villas-in-ocho-rios': G_BEACH_PALMS,
@@ -74,7 +74,7 @@ export const BLOG_IMAGES: Record<string, string> = {
   'secrets-wild-orchid-montego-bay-review': G_POOL_TROPICAL,
   'jewel-grande-montego-bay-review': U_BEACH_SUNSET,
 
-  // Batch 3 — accommodation
+  // Batch 3, accommodation
   'jamaica-all-inclusive-tier-list': P_SNORKEL,
   'sandals-jamaica-property-guide': E_RICKS_CAFE,
   'sandals-montego-bay-review': P_MOBAY_AERIAL,
@@ -86,7 +86,7 @@ export const BLOG_IMAGES: Record<string, string> = {
   'riu-ocho-rios-review': P_BLUE_HOLE,
   'riu-negril-review': P_SEVEN_MILE,
 
-  // Batch 4 — remaining accommodation + general
+  // Batch 4, remaining accommodation + general
   'royalton-negril-review': G_PALM_SHORE,
   'azul-beach-resort-negril-review': G_SINGLE_PALM,
   'beaches-ocho-rios-review': G_POOL_TROPICAL,
@@ -98,7 +98,7 @@ export const BLOG_IMAGES: Record<string, string> = {
   'best-time-to-visit-jamaica': G_BEACH_PALMS,
   'jamaica-currency-and-money': E_MARKET,
 
-  // Batch 5 — Jamaica topical
+  // Batch 5, Jamaica topical
   'blue-mountain-coffee-story': P_BLUE_MTNS,
   'jamaican-jerk-explained': E_PATTY,
   'reach-falls-vs-dunns-river': P_PORTLAND_RAFT,

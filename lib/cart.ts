@@ -37,7 +37,7 @@ interface CartStore {
   grandTotal: () => number
   /** Total tour hours per booking date, e.g. { '2026-05-01': 7, '2026-05-02': 4 }. */
   hoursByDate: () => Record<string, number>
-  /** The largest single day's tour-hours — the one that would hit the 8-hr cap. */
+  /** The largest single day's tour-hours, the one that would hit the 8-hr cap. */
   maxDailyHours: () => number
   /** True if any date exceeds DAILY_HOUR_LIMIT. */
   isDayOverLimit: () => boolean
@@ -91,7 +91,7 @@ export const useCartStore = create<CartStore>()(
 
       subtotal: () => get().items.reduce((sum, i) => sum + i.price * i.travelers, 0),
 
-      // Flat 20% service fee on subtotal — covers platform costs, support,
+      // Flat 20% service fee on subtotal, covers platform costs, support,
       // and the tour-guide rate bundled into the per-experience price.
       fee: () => Math.round(get().subtotal() * 0.20),
 
@@ -121,7 +121,7 @@ export const useCartStore = create<CartStore>()(
         const by = get().hoursByDate()
         const values = Object.values(by)
         if (values.length === 0) return DAILY_HOUR_LIMIT
-        // Use the busiest day as the reference — that's the one that will
+        // Use the busiest day as the reference, that's the one that will
         // overflow next. Clamp at 0 when the cap is already met/exceeded.
         return Math.max(0, DAILY_HOUR_LIMIT - Math.max(...values))
       },

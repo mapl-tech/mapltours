@@ -1,7 +1,7 @@
 'use client'
 
 import Image from 'next/image'
-// Cart store no longer used on profile — upcoming trips come from confirmed bookings
+// Cart store no longer used on profile, upcoming trips come from confirmed bookings
 import { experiences } from '@/lib/experiences'
 import { useI18n } from '@/lib/i18n'
 import { useState, useEffect } from 'react'
@@ -12,7 +12,7 @@ import { useMyVideoProgress, VIDEO_REWARD_MILESTONE } from '@/lib/tour-videos'
 import { Award, UserRound } from 'lucide-react'
 import type { User } from '@supabase/supabase-js'
 
-// Create the Supabase client once per module load, not per render —
+// Create the Supabase client once per module load, not per render,
 // keeps referential equality stable across renders.
 const supabase = createClient()
 
@@ -227,7 +227,7 @@ export default function ProfileView() {
           likedCount: likesRes.count ?? 0,
         }
       } catch {
-        // Tables may not exist yet — return empty so UI still renders
+        // Tables may not exist yet, return empty so UI still renders
         return EMPTY_BUNDLE
       }
     },
@@ -277,7 +277,7 @@ export default function ProfileView() {
 
   function getCreatorInfo(handle: string) {
     const exp = experiences.find(e => e.creator === handle)
-    return { image: exp?.image || experiences[0].image, followers: exp?.followers || '—' }
+    return { image: exp?.image || experiences[0].image, followers: exp?.followers || '-' }
   }
 
   async function updateEmail(newEmail: string) {
@@ -460,7 +460,7 @@ export default function ProfileView() {
                       fontSize: 12, fontWeight: 700,
                       flexShrink: 0,
                     }}>
-                      {item.done ? '✓' : '—'}
+                      {item.done ? '✓' : '-'}
                     </div>
                     <span style={{ fontWeight: item.done ? 500 : 400 }}>{item.text}</span>
                   </div>
@@ -836,7 +836,7 @@ export default function ProfileView() {
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   MAPL Rewards card — mirrors the band shown on the experience page but in
+   MAPL Rewards card, mirrors the band shown on the experience page but in
    a richer profile-context variant (shows history of unlocked / used codes).
    ═══════════════════════════════════════════════════════════════════════════ */
 function MaplRewardsCard() {

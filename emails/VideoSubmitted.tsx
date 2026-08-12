@@ -19,14 +19,14 @@ export default function VideoSubmitted({ firstName, experienceTitle }: VideoSubm
       <Text style={s.body}>
         Our curation team is reviewing your video
         {experienceTitle ? <> from <strong style={{ color: '#fff' }}>{experienceTitle}</strong></> : null}.
-        You&rsquo;ll get another note the moment it goes live — usually within a day.
+        You&rsquo;ll get another note the moment it goes live, usually within a day.
       </Text>
 
       {/* Reward progress nudge */}
       <div style={s.panel}>
         <Text style={s.panelKicker}>MAPL Reward</Text>
         <Text style={s.panelBody}>
-          Every approved clip moves you closer to <strong style={{ color: '#FFB300' }}>5% off your next trip</strong>. Keep sharing — five approved videos unlocks the discount.
+          Every approved clip moves you closer to <strong style={{ color: '#FFB300' }}>5% off your next trip</strong>. Keep sharing, five approved videos unlocks the discount.
         </Text>
       </div>
 
@@ -35,7 +35,7 @@ export default function VideoSubmitted({ firstName, experienceTitle }: VideoSubm
       </div>
 
       <Text style={s.footnote}>
-        Questions? Just reply to this email — we read every note.
+        Questions? Just reply to this email, we read every note.
       </Text>
     </MaplLayout>
   )

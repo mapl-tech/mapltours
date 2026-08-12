@@ -1,7 +1,7 @@
 'use client'
 
 /**
- * Avatar — shared profile image component used by comments, tour-video reels,
+ * Avatar, shared profile image component used by comments, tour-video reels,
  * and reply rows. Falls back gracefully:
  *   1. Real profile image (when `src` is a valid URL and loads)
  *   2. Coloured disk with the user's first initial (deterministic by name)
@@ -9,14 +9,14 @@
  *
  * We deliberately use a plain <img> instead of next/image because OAuth
  * providers (Google, Apple, generic SSO) return avatar URLs on domains that
- * can't be pre-declared in next.config.mjs — next/image would throw at
+ * can't be pre-declared in next.config.mjs, next/image would throw at
  * render time for a subset of users.
  */
 
 import { useState } from 'react'
 
 interface AvatarProps {
-  /** Remote image URL — null/undefined falls through to initials */
+  /** Remote image URL, null/undefined falls through to initials */
   src?: string | null
   /** Display name, used for initials + colour hashing */
   name?: string | null

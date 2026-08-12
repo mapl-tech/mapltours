@@ -12,7 +12,7 @@ import { useExperienceLike, useComments, DisplayComment } from '@/lib/supabase/h
 import { useAuth } from '@/lib/supabase/auth-context'
 import Avatar from '@/components/Avatar'
 
-// Heavy, only-used-on-demand surfaces — code-split so they never ship with
+// Heavy, only-used-on-demand surfaces, code-split so they never ship with
 // the main reel bundle. `ssr: false` because they are all client-interaction
 // driven (overlays opened via tap) and never rendered on first paint.
 const UserTourVideos = dynamic(() => import('@/components/UserTourVideos'), {
@@ -20,7 +20,7 @@ const UserTourVideos = dynamic(() => import('@/components/UserTourVideos'), {
   loading: () => null,
 })
 
-/** True when an experience's creator handle is owned by MAPL itself — we
+/** True when an experience's creator handle is owned by MAPL itself, we
  *  render the MAPL favicon instead of a coloured initial disk. Centralised
  *  so new MAPL-owned handles can be added in one place. */
 const MAPL_CREATOR_HANDLES = new Set([
@@ -34,7 +34,7 @@ function isMaplCreator(handle: string | null | undefined): boolean {
   return MAPL_CREATOR_HANDLES.has(handle.toLowerCase().trim())
 }
 
-/** Deterministic Fisher-Yates shuffle seeded by a string — same seed gives
+/** Deterministic Fisher-Yates shuffle seeded by a string, same seed gives
  *  the same order, so the feed doesn't rearrange itself mid-scroll. */
 function shuffle<T>(arr: T[], seed: string): T[] {
   let s = 0
@@ -98,7 +98,7 @@ function Reel({ exp, isActive, totalCount, currentIndex }: { exp: Experience; is
     const url = `${window.location.origin}/experience/${slugify(exp.title)}`
     const shareData: ShareData = {
       title: exp.title,
-      text: `${exp.title} — ${exp.destination}, Jamaica`,
+      text: `${exp.title}, ${exp.destination}, Jamaica`,
       url,
     }
     const showToast = (msg: string) => {
@@ -107,7 +107,7 @@ function Reel({ exp, isActive, totalCount, currentIndex }: { exp: Experience; is
     }
 
     // Prefer the native share sheet (mobile). canShare is not available on
-    // older iOS — fall through if it's missing but share exists.
+    // older iOS, fall through if it's missing but share exists.
     if (typeof navigator !== 'undefined' && typeof navigator.share === 'function') {
       try {
         if (!navigator.canShare || navigator.canShare(shareData)) {
@@ -116,12 +116,12 @@ function Reel({ exp, isActive, totalCount, currentIndex }: { exp: Experience; is
         }
       } catch (err) {
         if ((err as DOMException)?.name === 'AbortError') return
-        // Share failed for another reason — fall through to clipboard
+        // Share failed for another reason, fall through to clipboard
       }
     }
 
     const copied = await copyToClipboard(url)
-    showToast(copied ? 'Link copied — share the vibes' : 'Couldn’t copy — long-press the link')
+    showToast(copied ? 'Link copied, share the vibes' : 'Couldn’t copy, long-press the link')
   }
 
   useEffect(() => {
@@ -179,7 +179,7 @@ function Reel({ exp, isActive, totalCount, currentIndex }: { exp: Experience; is
         <iframe
           src={`https://www.youtube.com/embed/${exp.youtubeId}?autoplay=1&mute=1&loop=1&controls=0&showinfo=0&modestbranding=1&playlist=${exp.youtubeId}&playsinline=1`}
           allow="autoplay; encrypted-media"
-          title={`${exp.title} — video`}
+          title={`${exp.title}, video`}
           style={{ width: '100%', height: '100%', border: 'none' }}
         />
       ) : (
@@ -229,19 +229,19 @@ function Reel({ exp, isActive, totalCount, currentIndex }: { exp: Experience; is
         pointerEvents: 'none',
       }} />
 
-      {/* Bottom gradient — stronger for Snapchat readability */}
+      {/* Bottom gradient, stronger for Snapchat readability */}
       <div style={{
         position: 'absolute', bottom: 0, left: 0, right: 0, height: '65%',
         background: 'linear-gradient(0deg, rgba(0,0,0,0.88) 0%, rgba(0,0,0,0.4) 45%, transparent 100%)',
         pointerEvents: 'none',
       }} />
 
-      {/* ── Right action column (Snapchat style — tight, no labels) ── */}
+      {/* ── Right action column (Snapchat style, tight, no labels) ── */}
       <div className="reel-right-rail" style={{
         position: 'absolute', right: 12, zIndex: 10,
         display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16,
       }}>
-        {/* Creator avatar — MAPL logo when posted by us, otherwise the
+        {/* Creator avatar, MAPL logo when posted by us, otherwise the
             creator's initial disk (coloured by handle). No follow badge. */}
         <div style={{ marginBottom: 4 }}>
           {isMaplCreator(exp.creator) ? (
@@ -287,7 +287,7 @@ function Reel({ exp, isActive, totalCount, currentIndex }: { exp: Experience; is
           <span
             // likeCount comes from a localStorage-backed SWR cache that the
             // server can't see, so the SSR HTML may render a smaller number
-            // than the client's first paint. Suppress the warning — the
+            // than the client's first paint. Suppress the warning, the
             // client value is the correct one and renders within ms.
             suppressHydrationWarning
             style={{ fontSize: 12, fontWeight: 700, fontFamily: 'var(--font-dm-sans)', textShadow: '0 1px 3px rgba(0,0,0,0.6)' }}
@@ -332,7 +332,7 @@ function Reel({ exp, isActive, totalCount, currentIndex }: { exp: Experience; is
           </span>
         </button>
 
-        {/* Guest clips — opens UserTourVideos overlay */}
+        {/* Guest clips, opens UserTourVideos overlay */}
         <button
           onClick={(e) => { e.stopPropagation(); setClipsOpen(true) }}
           aria-label="Guest tour videos"
@@ -406,7 +406,7 @@ function Reel({ exp, isActive, totalCount, currentIndex }: { exp: Experience; is
         </div>
       )}
 
-      {/* Share toast — MAPL brand: gold accent on ink-black, Syne label */}
+      {/* Share toast, MAPL brand: gold accent on ink-black, Syne label */}
       {shareToast && (
         <div
           style={{
@@ -462,7 +462,7 @@ function Reel({ exp, isActive, totalCount, currentIndex }: { exp: Experience; is
         </div>
       )}
 
-      {/* ── Bottom info (Snapchat style — bold, stacked, left-aligned) ── */}
+      {/* ── Bottom info (Snapchat style, bold, stacked, left-aligned) ── */}
       <div className="reel-bottom-info reel-bottom-mobile-pad" style={{
         position: 'absolute', bottom: 0, left: 0, right: 72,
         padding: '0 16px 20px', zIndex: 10,
@@ -483,7 +483,7 @@ function Reel({ exp, isActive, totalCount, currentIndex }: { exp: Experience; is
           {t(exp.title)}
         </TitleTag>
 
-        {/* Description — 2 line clamp */}
+        {/* Description, 2 line clamp */}
         <p style={{
           fontSize: 13, color: 'rgba(255,255,255,0.8)',
           fontFamily: 'var(--font-dm-sans)', lineHeight: 1.4, marginBottom: 10,
@@ -572,7 +572,7 @@ function MobileCommentsSheet({ comments, commentText, setCommentText, addComment
   const inputRef = useRef<HTMLInputElement>(null)
   const [sheetHeight, setSheetHeight] = useState(60)
 
-  // Live visual viewport — tracks Safari's top URL bar and bottom chrome
+  // Live visual viewport, tracks Safari's top URL bar and bottom chrome
   // as they show/hide during scroll, plus the on-screen keyboard. We size
   // and position the sheet against this (not layout viewport / 100vh) so
   // the drag handle and close button never slide behind iOS chrome.
@@ -727,7 +727,7 @@ function MobileCommentsSheet({ comments, commentText, setCommentText, addComment
                             window.location.href = `/login?redirect=/experience/${slug}`
                             return
                           }
-                          // Seed comments have no supabaseId — fall back to a
+                          // Seed comments have no supabaseId, fall back to a
                           // top-level @-mention so the Reply button always works.
                           if (comment.supabaseId) {
                             setReplyingTo({ id: comment.supabaseId, user: comment.user })
@@ -817,7 +817,7 @@ export default function ExperienceDetail({ slug }: { slug: string }) {
   // When the busiest day in the cart hits the 8-hour cap, surface tours
   // already in the cart first (randomised, deduped) so the feed pivots to
   // helping the user review their day instead of adding more. The stable
-  // dependency list keeps the order fixed across scrolls — it only
+  // dependency list keeps the order fixed across scrolls, it only
   // reshuffles when the cart contents actually change.
   const dayIsFull = maxDailyHours >= DAILY_HOUR_LIMIT
   const cartIdsKey = items.map((i) => i.id).sort((a, b) => a - b).join(',')
@@ -856,7 +856,7 @@ export default function ExperienceDetail({ slug }: { slug: string }) {
     const update = () => {
       const rect = el.getBoundingClientRect()
       // If the bar is display:none (desktop via .hide-desktop), rect.height
-      // is 0 — clear the var so the desktop fallback in CSS applies.
+      // is 0, clear the var so the desktop fallback in CSS applies.
       if (rect.height === 0) {
         root.style.removeProperty('--reel-bottom-offset')
       } else {
@@ -866,7 +866,7 @@ export default function ExperienceDetail({ slug }: { slug: string }) {
     update()
     const ro = new ResizeObserver(update)
     ro.observe(el)
-    // Also observe the viewport — `hide-desktop` flips on resize/rotation,
+    // Also observe the viewport, `hide-desktop` flips on resize/rotation,
     // and the keyboard changes visualViewport height.
     const mql = window.matchMedia('(min-width: 768px)')
     const onMql = () => update()
@@ -958,7 +958,7 @@ export default function ExperienceDetail({ slug }: { slug: string }) {
         flex: '1 1 auto', width: '100%', maxWidth: 480,
         height: '100%', position: 'relative',
       }}>
-        {/* Top bar: close — large touch target for mobile */}
+        {/* Top bar: close, large touch target for mobile */}
         <div
           onClick={(e) => { e.stopPropagation(); router.back() }}
           onTouchEnd={(e) => { e.stopPropagation(); e.preventDefault(); router.back() }}
@@ -980,7 +980,7 @@ export default function ExperienceDetail({ slug }: { slug: string }) {
           </div>
         </div>
 
-        {/* ── Prev / Next arrows — top, beside close button ── */}
+        {/* ── Prev / Next arrows, top, beside close button ── */}
         <div style={{
           position: 'absolute', top: 18, left: 14, right: 58,
           zIndex: 20, display: 'flex', alignItems: 'center', gap: 8,
@@ -1205,7 +1205,7 @@ export default function ExperienceDetail({ slug }: { slug: string }) {
                             return
                           }
                           // Seed comments (from the experience JSON) have no
-                          // supabaseId — fall back to a plain @-mention so the
+                          // supabaseId, fall back to a plain @-mention so the
                           // Reply button still works.
                           if (comment.supabaseId) {
                             setReplyingTo({ id: comment.supabaseId, user: comment.user })
@@ -1361,7 +1361,7 @@ export default function ExperienceDetail({ slug }: { slug: string }) {
         )}
       </div>
 
-      {/* ── Mobile comments sheet — draggable, half → full → close ── */}
+      {/* ── Mobile comments sheet, draggable, half → full → close ── */}
       {mobileComments && (
         <MobileCommentsSheet
           comments={activeComments}

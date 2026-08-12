@@ -7,14 +7,14 @@ import { useSwrCache } from './swr-cache'
 
 /**
  * ============================================================================
- *  MAPL — User Tour Videos + Rewards (client library)
+ *  MAPL, User Tour Videos + Rewards (client library)
  * ============================================================================
- *  • `validateVideoFile`  — client-side guardrails before touching the network
- *  • `uploadTourVideo`    — hash → storage upload → DB row insert (pending)
- *  • `useExperienceVideos(expId)`  — public approved-only gallery feed
- *  • `useMyVideoProgress()`        — my approved count + active rewards
- *  • `useAvailableReward()`        — the reward to auto-apply at checkout
- *  • `consumeReward(id, bookingId)`— marks a reward as used on a booking
+ *  • `validateVideoFile` , client-side guardrails before touching the network
+ *  • `uploadTourVideo`   , hash → storage upload → DB row insert (pending)
+ *  • `useExperienceVideos(expId)` , public approved-only gallery feed
+ *  • `useMyVideoProgress()`       , my approved count + active rewards
+ *  • `useAvailableReward()`       , the reward to auto-apply at checkout
+ *  • `consumeReward(id, bookingId)`, marks a reward as used on a booking
  *
  *  Everything here is client-only. The actual approval + reward grant happen
  *  server-side via RLS + the SQL trigger in migration 003.
@@ -102,7 +102,7 @@ export function validateVideoFile(file: File): ValidationResult {
   }
   if (file.size > VIDEO_MAX_BYTES) {
     const mb = Math.round(file.size / (1024 * 1024))
-    return { ok: false, error: `File is ${mb} MB — maximum is 100 MB` }
+    return { ok: false, error: `File is ${mb} MB, maximum is 100 MB` }
   }
   if (file.size < 50_000) {
     return { ok: false, error: 'Video is too short or empty' }
@@ -146,7 +146,7 @@ export async function uploadTourVideo({
   try {
     hash = await sha256Hex(file)
   } catch {
-    // Some older browsers may not expose SubtleCrypto — still allow upload,
+    // Some older browsers may not expose SubtleCrypto, still allow upload,
     // but duplicate detection will just be relaxed.
   }
 
@@ -212,7 +212,7 @@ export function videoPublicUrl(path: string | null): string | null {
 // ────────────────────────────────────────────────────────────────────────────
 
 /**
- * Approved videos for a given experience — public, swipe-through feed.
+ * Approved videos for a given experience, public, swipe-through feed.
  * Cached by experience id so revisiting a tour paints instantly.
  */
 export function useExperienceVideos(experienceId: number | null) {
@@ -304,7 +304,7 @@ export function useMyVideoProgress(): VideoProgress & { loading: boolean; refres
 
 /**
  * The newest unused reward, if any. Used to auto-suggest the discount at
- * checkout. Does not mutate state — apply via `consumeReward`.
+ * checkout. Does not mutate state, apply via `consumeReward`.
  */
 export function useAvailableReward(): UserRewardRow | null {
   const { availableRewards } = useMyVideoProgress()
@@ -313,7 +313,7 @@ export function useAvailableReward(): UserRewardRow | null {
 
 /**
  * Mark a reward as used on a specific booking (or standalone if the booking
- * row hasn't been created yet — the client-side checkout flow in this repo
+ * row hasn't been created yet, the client-side checkout flow in this repo
  * doesn't currently persist bookings server-side). Idempotent.
  */
 export async function consumeReward(rewardId: string, bookingId?: string | null): Promise<boolean> {

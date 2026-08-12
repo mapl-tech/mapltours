@@ -11,7 +11,7 @@ import { assertCheckoutSchema, SchemaNotReadyError } from '@/lib/checkout-schema
 import { rateLimit, getIp } from '@/lib/rate-limit'
 
 /**
- * Transfers checkout — sibling of /api/checkout, with the same hardening:
+ * Transfers checkout, sibling of /api/checkout, with the same hardening:
  *   • Server-side pricing (rates from lib/airport-transfers + 10% fee)
  *   • Atomic idempotency via the unique partial index on bookings
  *   • Verified PI attach
@@ -22,7 +22,7 @@ import { rateLimit, getIp } from '@/lib/rate-limit'
  *     from the rate table and use that for the PaymentIntent.
  *   • The select-then-insert race is replaced with a try-insert /
  *     catch-23505 / refresh path against the unique partial index.
- *   • PI attach is verified — if it can't be persisted, the request
+ *   • PI attach is verified, if it can't be persisted, the request
  *     fails closed.
  */
 
@@ -84,7 +84,7 @@ export async function POST(request: NextRequest) {
 
     if (rateLimit(getIp(request), { windowMs: 60_000, max: 10, bucket: 'transfers-checkout' })) {
       return NextResponse.json(
-        { error: 'Too many checkout attempts — please wait a moment and try again.' },
+        { error: 'Too many checkout attempts, please wait a moment and try again.' },
         { status: 429 },
       )
     }
@@ -162,7 +162,7 @@ export async function POST(request: NextRequest) {
     if (Number.isFinite(claimed) && Math.abs(claimed - total) > 1) {
       console.warn('[transfers/checkout]', reqId, 'amount mismatch', { claimed, total })
       return NextResponse.json(
-        { error: 'Cart total mismatch — please reload and try again', requestId: reqId },
+        { error: 'Cart total mismatch, please reload and try again', requestId: reqId },
         { status: 400 },
       )
     }
@@ -183,7 +183,7 @@ export async function POST(request: NextRequest) {
     } as const
 
     // Surface the transfer route on the booking ROW itself (pickup/dropoff),
-    // not only inside booking_items — so the ops/bookings table reads
+    // not only inside booking_items, so the ops/bookings table reads
     // airport↔hotel at a glance instead of showing blank pickup/dropoff.
     // Round-trip and arrival legs read airport→hotel; a departure-only
     // one-way reverses to hotel→airport. All MAPL transfers use MBJ.
@@ -277,8 +277,8 @@ export async function POST(request: NextRequest) {
       experience_id: null,
       title:
         p.input.tripType === 'round_trip'
-          ? `Airport transfer — ${p.destination!.name} (round-trip)`
-          : `Airport transfer — ${p.destination!.name} (one-way)`,
+          ? `Airport transfer, ${p.destination!.name} (round-trip)`
+          : `Airport transfer, ${p.destination!.name} (one-way)`,
       destination: p.destination!.name,
       travelers: 1,
       date:
@@ -353,7 +353,7 @@ export async function POST(request: NextRequest) {
             .join(', ')
             .slice(0, 490),
         },
-        // Intentionally no `receipt_email` — TransferConfirmed (sent from
+        // Intentionally no `receipt_email`, TransferConfirmed (sent from
         // the webhook) is the only customer-facing receipt; Stripe's would
         // duplicate it.
       },
@@ -393,7 +393,7 @@ export async function POST(request: NextRequest) {
         { status: 503 },
       )
     }
-    // Don't leak the raw internal error to the client — log + generic message.
+    // Don't leak the raw internal error to the client, log + generic message.
     const message = err instanceof Error ? err.message : 'Internal server error'
     console.error('[transfers/checkout]', reqId, 'create failed', message)
     return NextResponse.json(

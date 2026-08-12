@@ -14,7 +14,7 @@ export function generateMetadata({ params }: { params: { slug: string } }): Meta
   if (!exp) {
     return { title: 'Experience not found', robots: { index: false, follow: false } }
   }
-  const title = `${exp.title} — ${exp.destination}, Jamaica`
+  const title = `${exp.title}, ${exp.destination}, Jamaica`
   const description = exp.description
   const url = `${SITE_URL}/experience/${params.slug}`
   return {

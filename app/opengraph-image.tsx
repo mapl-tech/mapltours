@@ -7,7 +7,7 @@ import { ImageResponse } from 'next/og'
 // keeps it in code review and avoids committing a binary.
 
 export const runtime = 'edge'
-export const alt = 'MAPL Tours Jamaica — Discover Jamaica Beyond the Resort'
+export const alt = 'MAPL Tours Jamaica, Discover Jamaica Beyond the Resort'
 export const size = { width: 1200, height: 630 }
 export const contentType = 'image/png'
 

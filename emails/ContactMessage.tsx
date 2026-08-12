@@ -8,14 +8,14 @@ export interface ContactMessageProps {
   message: string
   /** ISO timestamp of when the visitor hit submit */
   submittedAt: string
-  /** Coarse origin for spam triage — IP / country if available */
+  /** Coarse origin for spam triage, IP / country if available */
   origin?: string | null
 }
 
 /**
  * Internal "new contact" alert. The submitter's email is set as the
  * Resend `replyTo` so hitting Reply in the inbox goes straight back to
- * them — no copy/paste needed.
+ * them, no copy/paste needed.
  */
 export default function ContactMessage({
   name,
@@ -40,7 +40,7 @@ export default function ContactMessage({
       <Heading style={s.heading}>{subject || 'Contact form submission'}</Heading>
       <Text style={s.heroLead}>
         {name} just sent a message through the mapltours.com contact form. Hit
-        Reply to write back — their address is set as this email&rsquo;s
+        Reply to write back, their address is set as this email&rsquo;s
         reply-to.
       </Text>
 
@@ -80,7 +80,7 @@ export default function ContactMessage({
       </Section>
 
       <Text style={s.note}>
-        This is an internal alert — the visitor has already been sent an
+        This is an internal alert, the visitor has already been sent an
         automated confirmation that we received their message.
       </Text>
     </MaplLayout>

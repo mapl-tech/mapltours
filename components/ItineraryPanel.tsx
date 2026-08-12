@@ -64,7 +64,7 @@ export default function ItineraryPanel({ open, onClose }: { open: boolean; onClo
   if (!open || items.length === 0) return null
 
   // Checkout requires an account. Surface that on the CTA instead of a
-  // silent redirect after the user commits — send them to /login with a
+  // silent redirect after the user commits, send them to /login with a
   // return path straight back to checkout.
   const needsSignIn = !authLoading && !user
   const checkoutHref = needsSignIn ? '/login?redirect=%2Fcheckout' : '/checkout'

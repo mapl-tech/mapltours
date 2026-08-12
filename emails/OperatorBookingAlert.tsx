@@ -137,7 +137,7 @@ export default function OperatorBookingAlert({
         </Section>
       )}
 
-      {/* Special requests — highlighted */}
+      {/* Special requests, highlighted */}
       {specialRequests && (
         <Section style={s.card}>
           <Section style={s.highlightCardHeader}>
@@ -165,7 +165,7 @@ export default function OperatorBookingAlert({
 
       <Text style={s.note}>
         Booking reference {bookingRef}. This notification fires automatically
-        on payment_intent.succeeded — no action needed on this email beyond
+        on payment_intent.succeeded, no action needed on this email beyond
         operational follow-up.
       </Text>
     </MaplLayout>

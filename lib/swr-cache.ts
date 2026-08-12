@@ -40,7 +40,7 @@ function writeCache<T>(key: string, data: T): void {
     const entry: CacheEntry<T> = { data, ts: Date.now() }
     window.localStorage.setItem(CACHE_PREFIX + key, JSON.stringify(entry))
   } catch {
-    // Quota exceeded or storage disabled — degrade silently
+    // Quota exceeded or storage disabled, degrade silently
   }
 }
 
@@ -112,12 +112,12 @@ export function useSwrCache<T>(
     try {
       const fresh = await fetcherRef.current()
       writeCache(requestKey, fresh)
-      if (latestKeyRef.current !== requestKey) return // key changed mid-flight — drop
+      if (latestKeyRef.current !== requestKey) return // key changed mid-flight, drop
       setData(fresh)
       setError(null)
     } catch (err) {
       if (latestKeyRef.current !== requestKey) return
-      // Surface fetch failures — "nothing shows up" is the worst possible UX.
+      // Surface fetch failures, "nothing shows up" is the worst possible UX.
       console.error(`[swr-cache] fetch failed for "${requestKey}"`, err)
       setError(err)
     } finally {
@@ -133,7 +133,7 @@ export function useSwrCache<T>(
     const cached = readCache<T>(key)
     setData(cached?.data ?? null)
     // If cache is empty or older than maxAge, revalidate. Otherwise still
-    // revalidate in the background — that's the whole SWR contract.
+    // revalidate in the background, that's the whole SWR contract.
     const _needsRefresh = !cached || Date.now() - cached.ts > maxAge
     void _needsRefresh // kept for readability; we always revalidate below
     setLoading(cached === null)
