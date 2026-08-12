@@ -146,7 +146,7 @@ export default function DispatchConsole({ booking, stripeFee }: { booking: Bk; s
           <MRow k="Customer paid" v={`${money(m.customerPaid)} USD`} big />
 
           <div style={{ ...subLabel, marginTop: 16 }}>Where it goes</div>
-          <MRow k="Stripe processing fee" v={m.stripeFee != null ? `- ${money(m.stripeFee)}` : 'pending'} />
+          <MRow k="Stripe fee (USD)" v={m.stripeFee != null ? `- ${money(m.stripeFee)}` : 'pending'} />
           <MRow k={m.isRoundTrip ? `Driver payout (${money(m.driverPerLeg)} x2)` : 'Driver payout'} v={`- ${money(m.driverTotal)}`} />
           <MRow k="MAPL Tours keeps" v={m.maplKeeps != null ? money(m.maplKeeps) : 'n/a'} em big />
         </Card>
@@ -231,7 +231,7 @@ export default function DispatchConsole({ booking, stripeFee }: { booking: Bk; s
       </div>
 
       <p style={{ fontSize: 12, color: faint, marginTop: 16, lineHeight: 1.5, maxWidth: 720 }}>
-        Times are shown in Jamaica time exactly as the customer entered them. Calendar events are created in the America/Jamaica timezone. The suggested departure pickup is the flight time minus 4 hours; adjust for zone and traffic.
+        All amounts are in USD, the currency the customer was charged. Your Stripe account settles in CAD, so the Stripe fee (processing plus currency conversion) is converted back to USD here at the transaction rate. Times are shown in Jamaica time exactly as the customer entered them; calendar events use the America/Jamaica timezone. The suggested departure pickup is the flight time minus 4 hours; adjust for zone and traffic.
       </p>
     </div>
   )

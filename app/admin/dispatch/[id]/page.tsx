@@ -38,7 +38,12 @@ async function stripeFeeFor(paymentId: string | null): Promise<number | null> {
     const ch = await g(`charges/${pi.latest_charge}`)
     if (!ch.balance_transaction) return null
     const bt = await g(`balance_transactions/${ch.balance_transaction}`)
-    return typeof bt.fee === 'number' ? bt.fee / 100 : null
+    if (typeof bt.fee !== 'number') return null
+    // The account settles in CAD but charges are USD, so the balance-transaction
+    // fee is in CAD. Convert it back to the charge (USD) currency with the
+    // transaction's exchange rate so the all-USD money card stays consistent.
+    const rate = typeof bt.exchange_rate === 'number' && bt.exchange_rate > 0 ? bt.exchange_rate : 1
+    return Math.round((bt.fee / 100 / rate) * 100) / 100
   } catch { return null }
 }
 
