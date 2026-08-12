@@ -148,7 +148,7 @@ export default function DispatchConsole({ booking, stripeFee }: { booking: Bk; s
           <div style={{ ...subLabel, marginTop: 16 }}>Where it goes</div>
           <MRow k="Stripe processing fee" v={m.stripeFee != null ? `- ${money(m.stripeFee)}` : 'pending'} />
           <MRow k={m.isRoundTrip ? `Driver payout (${money(m.driverPerLeg)} x2)` : 'Driver payout'} v={`- ${money(m.driverTotal)}`} />
-          <MRow k="MAPL keeps" v={m.maplKeeps != null ? money(m.maplKeeps) : 'n/a'} em big />
+          <MRow k="MAPL Tours keeps" v={m.maplKeeps != null ? money(m.maplKeeps) : 'n/a'} em big />
         </Card>
 
         {/* Trip */}
