@@ -249,6 +249,7 @@ export default function BookingsDashboard({ bookings }: { bookings: Row[] }) {
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 14, flexWrap: 'wrap' }}>
         <div style={{ display: 'flex', alignItems: 'baseline', gap: 16, flexWrap: 'wrap' }}>
           <h1 style={{ fontFamily: dm, fontWeight: 800, fontSize: 26, letterSpacing: '-0.025em', margin: 0 }}>Bookings</h1>
+          <Link href="/admin/cashflow" style={{ fontSize: 13, fontWeight: 600, color: soft, textDecoration: 'none' }}>Cash flow →</Link>
           <Link href="/admin/videos" style={{ fontSize: 13, fontWeight: 600, color: soft, textDecoration: 'none' }}>Video moderation →</Link>
         </div>
         <Link
