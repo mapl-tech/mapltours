@@ -182,6 +182,28 @@ export async function POST(request: NextRequest) {
       special_requests: c.specialRequests ? c.specialRequests.slice(0, 2000) : null,
     } as const
 
+    // Surface the transfer route on the booking ROW itself (pickup/dropoff),
+    // not only inside booking_items — so the ops/bookings table reads
+    // airport↔hotel at a glance instead of showing blank pickup/dropoff.
+    // Round-trip and arrival legs read airport→hotel; a departure-only
+    // one-way reverses to hotel→airport. All MAPL transfers use MBJ.
+    const AIRPORT_LABEL = 'Montego Bay Airport (MBJ)'
+    const transferRoute = (() => {
+      if (priced.length !== 1) {
+        return {
+          pickup: AIRPORT_LABEL,
+          dropoff: priced.map((p) => p.destination!.name).join(' + ').slice(0, 200),
+        }
+      }
+      const p = priced[0]
+      const hotel = p.destination!.name
+      const departureOnly =
+        p.input.tripType === 'one_way' && !p.input.arrivalAt && !p.input.arrivalFlight
+      return departureOnly
+        ? { pickup: hotel, dropoff: AIRPORT_LABEL }
+        : { pickup: AIRPORT_LABEL, dropoff: hotel }
+    })()
+
     const monetaryFields = {
       total_paid: total,
       subtotal,
@@ -198,6 +220,7 @@ export async function POST(request: NextRequest) {
       .insert({
         booking_type: 'transfer',
         ...customerFields,
+        ...transferRoute,
         ...monetaryFields,
         cart_hash: cartHash,
         status: 'pending',
@@ -229,7 +252,7 @@ export async function POST(request: NextRequest) {
       // Refresh contact + flight context so dispatch sees the latest values.
       const { error: updErr } = await supabase
         .from('bookings')
-        .update({ ...customerFields, ...monetaryFields })
+        .update({ ...customerFields, ...transferRoute, ...monetaryFields })
         .eq('id', bookingId)
       if (updErr) {
         console.error('[transfers/checkout]', reqId, 'reuse update failed', updErr)
