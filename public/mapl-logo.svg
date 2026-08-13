@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 140" width="384" height="140" role="img" aria-label="MAPL Tours Jamaica">
+  <rect x="20" y="20" width="100" height="100" rx="24" fill="#171614"/>
+  <g transform="translate(70,70) scale(2.15)">
+    <g transform="translate(-12,-12)" fill="none" stroke="#ffffff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"/>
+      <path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"/>
+    </g>
+  </g>
+  <text x="142" y="74" font-family="'DM Sans','Helvetica Neue',Arial,sans-serif" font-weight="800" font-size="46" letter-spacing="2.4" fill="#171614">MAPL</text>
+  <text x="143" y="103" font-family="'DM Sans','Helvetica Neue',Arial,sans-serif" font-weight="700" font-size="18.5" letter-spacing="3.4" fill="#57534C">TOURS JAMAICA</text>
+</svg>
