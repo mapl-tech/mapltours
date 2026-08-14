@@ -82,7 +82,10 @@ function buildStructuredData() {
 
   const serviceSchema = {
     '@context': 'https://schema.org',
-    '@type': 'Service',
+    // TaxiService is the schema.org subtype for ground transport; it inherits
+    // everything Service has but classifies the page precisely for
+    // airport-transfer intent in search engines and AI crawlers.
+    '@type': 'TaxiService',
     '@id': `${PAGE_URL}#service`,
     serviceType: 'Airport transfer',
     name: 'MAPL Tours Jamaica, Private Airport Transfers',
