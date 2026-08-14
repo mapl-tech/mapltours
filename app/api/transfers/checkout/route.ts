@@ -9,6 +9,7 @@ import {
 } from '@/lib/airport-transfers'
 import { assertCheckoutSchema, SchemaNotReadyError } from '@/lib/checkout-schema'
 import { rateLimit, getIp } from '@/lib/rate-limit'
+import { sanitizeAttribution } from '@/lib/attribution'
 
 /**
  * Transfers checkout, sibling of /api/checkout, with the same hardening:
@@ -43,6 +44,7 @@ interface TransferItemIn {
 interface CheckoutBody {
   amount: number
   items: TransferItemIn[]
+  attribution?: unknown
   customer?: {
     email?: string
     firstName?: string
@@ -168,7 +170,7 @@ export async function POST(request: NextRequest) {
     }
 
     const supabase = createServiceClient()
-    await assertCheckoutSchema(supabase)
+    const schemaFeatures = await assertCheckoutSchema(supabase)
 
     const c = body.customer ?? {}
     const cartHash = hashCart(body.items, amountInCents, c.email ?? '')
@@ -215,6 +217,12 @@ export async function POST(request: NextRequest) {
     let bookingId: string | null = null
     let isReusedRow = false
 
+    // Attribution is best-effort garnish: sanitized, size-capped, and GATED on
+    // the live schema actually having the column (adversarial-review fix), so
+    // a code-before-migration deploy skips it instead of 500ing the checkout.
+    const attr = schemaFeatures.hasAttribution ? sanitizeAttribution(body.attribution) : null
+    const attributionField = attr ? { attribution: attr } : {}
+
     const { data: inserted, error: insertErr } = await supabase
       .from('bookings')
       .insert({
@@ -222,6 +230,7 @@ export async function POST(request: NextRequest) {
         ...customerFields,
         ...transferRoute,
         ...monetaryFields,
+        ...attributionField,
         cart_hash: cartHash,
         status: 'pending',
       })
@@ -252,7 +261,7 @@ export async function POST(request: NextRequest) {
       // Refresh contact + flight context so dispatch sees the latest values.
       const { error: updErr } = await supabase
         .from('bookings')
-        .update({ ...customerFields, ...transferRoute, ...monetaryFields })
+        .update({ ...customerFields, ...transferRoute, ...monetaryFields, ...attributionField })
         .eq('id', bookingId)
       if (updErr) {
         console.error('[transfers/checkout]', reqId, 'reuse update failed', updErr)

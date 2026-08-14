@@ -7,6 +7,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { ArrowLeft, Check, MapPin, Users, Calendar, Leaf, Lock, ShieldCheck } from 'lucide-react'
 import { useCartStore, DAILY_HOUR_LIMIT } from '@/lib/cart'
+import { getStoredAttribution } from '@/lib/attribution'
 import TripTimeBar from '@/components/TripTimeBar'
 import { useAvailableReward, consumeReward } from '@/lib/tour-videos'
 import { Award } from 'lucide-react'
@@ -925,6 +926,7 @@ export default function CheckoutView() {
             transport: transportTotal,
             rewardDiscount: rewardDiscount,
           },
+          attribution: getStoredAttribution(),
         }),
       })
         .then((res) => res.json())

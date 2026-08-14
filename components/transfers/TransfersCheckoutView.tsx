@@ -12,6 +12,7 @@ import {
   Users,
 } from 'lucide-react'
 import { useTransfersCart, type TransferCartItem } from '@/lib/transfers-cart'
+import { getStoredAttribution } from '@/lib/attribution'
 
 const StripePaymentPanel = dynamic(
   () => import('@/components/checkout/StripePaymentPanel'),
@@ -125,6 +126,7 @@ export default function TransfersCheckoutView() {
           specialRequests: form['specialRequests'],
         },
         breakdown: { subtotal: subtotal(), fee: fee() },
+        attribution: getStoredAttribution(),
       }),
     })
       .then((r) => r.json())

@@ -44,3 +44,4 @@ image-audit.json
 playwright-findings.json
 design-shots/
 scripts/shots.mjs
+.ga-service-account.json

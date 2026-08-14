@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { visibleSteps } from '@/lib/dispatch'
+import { attributionLabel } from '@/lib/attribution'
 
 /**
  * Client dashboard for the admin bookings page. The parent server component
@@ -246,6 +247,9 @@ function BookingCard({ b, variant, open, onToggle }: { b: Row; variant: 'abandon
                 </>
               )}
               {b.stripe_payment_id ? <Field k="Stripe" v={<span style={tnum}>{b.stripe_payment_id.slice(0, 20)}…</span>} /> : null}
+              <Field k="Found via" v={b.attribution
+                ? <span style={{ fontWeight: 600 }}>{attributionLabel(b.attribution)}{b.attribution.landing ? <span style={{ color: faint, fontWeight: 400 }}> · landed on {String(b.attribution.landing).slice(0, 40)}</span> : null}</span>
+                : <span style={{ color: faint }}>not captured</span>} />
             </div>
           </div>
         </div>

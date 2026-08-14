@@ -18,6 +18,14 @@ interface SchemaHealth {
   has_cart_hash: boolean
   has_item_type: boolean
   has_unique_pending_index: boolean
+  /** Migration 010/011. OPTIONAL feature flag, absence must never throw:
+   *  attribution is garnish, so routes skip the write instead of failing. */
+  has_attribution?: boolean
+}
+
+export interface SchemaFeatures {
+  /** True only when bookings.attribution exists, so inserts may include it. */
+  hasAttribution: boolean
 }
 
 export class SchemaNotReadyError extends Error {
@@ -29,13 +37,15 @@ export class SchemaNotReadyError extends Error {
   }
 }
 
-let cached: { ok: true } | null = null
+let cached: SchemaFeatures | null = null
 
-/** Throws SchemaNotReadyError if any required migration column/index is absent. */
+/** Throws SchemaNotReadyError if any required migration column/index is absent.
+ *  Returns the OPTIONAL feature flags (currently hasAttribution) so routes can
+ *  gate best-effort writes on what the live schema actually supports. */
 export async function assertCheckoutSchema(
   supabase: SupabaseClient,
-): Promise<void> {
-  if (cached) return
+): Promise<SchemaFeatures> {
+  if (cached) return cached
 
   const { data, error } = await supabase
     .from('bookings_schema_health')
@@ -61,5 +71,6 @@ export async function assertCheckoutSchema(
 
   if (missing.length > 0) throw new SchemaNotReadyError(missing)
 
-  cached = { ok: true }
+  cached = { hasAttribution: data.has_attribution === true }
+  return cached
 }

@@ -9,6 +9,7 @@ import ScrollReveal from './ScrollReveal'
 import { AuthProvider } from '@/lib/supabase/auth-context'
 import { useCartStore } from '@/lib/cart'
 import { useI18n } from '@/lib/i18n'
+import { captureAttribution } from '@/lib/attribution'
 
 export default function LayoutShell({ children }: { children: React.ReactNode }) {
   const [drawerOpen, setDrawerOpen] = useState(false)
@@ -23,6 +24,8 @@ export default function LayoutShell({ children }: { children: React.ReactNode })
   useEffect(() => {
     useCartStore.persist.rehydrate()
     useI18n.persist.rehydrate()
+    // Record where this visit came from (referrer/UTM); never throws.
+    captureAttribution()
   }, [])
 
   return (
