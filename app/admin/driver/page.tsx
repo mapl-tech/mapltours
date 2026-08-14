@@ -70,11 +70,15 @@ export default async function AdminDriverPreviewPage() {
   return (
     <Shell>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', marginBottom: 18 }}>
-        <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, flexWrap: 'wrap' }}>
-          <h1 style={{ fontWeight: 800, fontSize: 22, letterSpacing: '-0.02em', margin: 0 }}>Driver portal preview</h1>
-          <span style={{ fontSize: 13, color: soft }}>
-            {allow.length ? `Approved: ${allow.join(', ')}` : 'No driver emails approved yet (set DRIVER_ALLOWED_EMAILS)'}
-          </span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/mapl-logo.svg" alt="MAPL Tours Jamaica" style={{ height: 52, width: 'auto', display: 'block', margin: '-10px 0' }} />
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, flexWrap: 'wrap' }}>
+            <h1 style={{ fontWeight: 800, fontSize: 22, letterSpacing: '-0.02em', margin: 0 }}>Driver portal preview</h1>
+            <span style={{ fontSize: 13, color: soft }}>
+              {allow.length ? `Approved: ${allow.join(', ')}` : 'No driver emails approved yet (set DRIVER_ALLOWED_EMAILS)'}
+            </span>
+          </div>
         </div>
         <Link href="/admin/bookings" style={{ display: 'inline-flex', alignItems: 'center', gap: 7, height: 44, padding: '0 18px', borderRadius: 9999, border: '1px solid #E7E1D6', background: '#fff', color: ink, fontSize: 13, fontWeight: 600, textDecoration: 'none' }}>
           <span aria-hidden="true">←</span> Bookings

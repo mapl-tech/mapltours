@@ -277,10 +277,23 @@ function TripCard({ t, open, onToggle }: { t: DriverTrip; open: boolean; onToggl
               <span style={{ fontSize: 14.5, fontWeight: 700, color: ink }}>{t.guestName}</span>
               <span aria-hidden="true" style={{ color: faint }}>·</span>
               <span style={{ fontSize: 13.5, color: soft }}>{t.airport} <span aria-hidden="true">→</span> {t.hotel}</span>
+              {t.specialRequests && (
+                <span style={{
+                  fontSize: 11.5, fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase',
+                  padding: '2px 9px', borderRadius: 9999, background: '#FCF6E4', border: '1px solid #E8D9A8', color: amber,
+                }}>
+                  Note
+                </span>
+              )}
             </span>
             <span style={{ fontSize: 13.5, color: soft, ...tnum }}>
               Lands <strong style={{ color: ink, fontWeight: 600 }}>{jaShort(t.arrivalAt)} · {jaTime(t.arrivalAt)}</strong> Jamaica time
             </span>
+            {t.tripType === 'round_trip' && t.departureAt && (
+              <span style={{ fontSize: 13.5, color: soft, ...tnum }}>
+                Return pickup <strong style={{ color: ink, fontWeight: 600 }}>{jaShort(t.departureAt)} · {jaTime(t.departureAt)}</strong> Jamaica time
+              </span>
+            )}
           </span>
           <span style={{ whiteSpace: 'nowrap' }}>
             <span style={{ fontSize: 12.5, fontWeight: 600, color: faint }}>You get </span>
