@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { visibleSteps } from '@/lib/dispatch'
 
@@ -81,7 +81,14 @@ function MoneyRow({ k, v, em }: { k: string; v: string | null; em?: boolean }) {
   )
 }
 
-function BookingCard({ b, variant }: { b: Row; variant: 'abandoned' | 'paid' }) {
+function BookingCard({ b, variant, open, onToggle }: { b: Row; variant: 'abandoned' | 'paid'; open: boolean; onToggle: () => void }) {
+  // Smooth-scroll the card into view when it opens (honors reduced motion).
+  const cardRef = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    if (!open || !cardRef.current) return
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    requestAnimationFrame(() => cardRef.current?.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' }))
+  }, [open])
   const isTransfer = b.booking_type === 'transfer'
   const currency = (b.currency ?? 'usd').toUpperCase()
   const items = (b.booking_items ?? []) as Row[]
@@ -91,7 +98,6 @@ function BookingCard({ b, variant }: { b: Row; variant: 'abandoned' | 'paid' }) 
   const statusText = variant === 'paid' ? 'Paid' : 'Abandoned'
   const money2 = (n: number | null | undefined) => (n == null ? null : `${money(n)} ${currency}`)
 
-  const [open, setOpen] = useState(false)
   const item0 = items[0]
   const customerName = [b.first_name, b.last_name].filter(Boolean).join(' ') || '(no name)'
   const routeSummary = isTransfer
@@ -102,43 +108,56 @@ function BookingCard({ b, variant }: { b: Row; variant: 'abandoned' | 'paid' }) 
   const dispatchTotal = visibleSteps(item0?.trip_type === 'round_trip').length
 
   return (
-    <div style={{ background: '#fff', border, borderRadius: 14, overflow: 'hidden' }}>
+    <div ref={cardRef} style={{ background: '#fff', border, borderRadius: 14, overflow: 'hidden', scrollMarginTop: 20 }}>
       {/* Clickable header + at-a-glance summary (collapsed view) */}
-      <div
-        role="button"
-        tabIndex={0}
-        aria-expanded={open}
-        onClick={() => setOpen((o) => !o)}
-        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setOpen((o) => !o) } }}
-        style={{ cursor: 'pointer', padding: '14px 18px', background: '#FCFBF8', borderBottom: open ? borderSoft : undefined }}
-      >
-        <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, flexWrap: 'wrap' }}>
-            <span style={{ fontWeight: 700, fontSize: 15, ...tnum }}>{ref(b.id)}</span>
-            <span style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', color: faint }}>{b.booking_type ?? 'tour'}</span>
-            <span style={{ fontSize: 11.5, fontWeight: 700, color: statusColor }}>{statusText}</span>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <div style={{ textAlign: 'right' }}>
-              <div style={{ fontWeight: 800, fontSize: 20, ...tnum }}>{money(b.total_paid)} <span style={{ fontSize: 12, fontWeight: 600, color: faint }}>{currency}</span></div>
-              <div style={{ fontSize: 11.5, color: faint }}>
-                {variant === 'paid' ? `Paid ${dateTime(b.paid_at ?? b.created_at)}` : `Started ${ageLabel(b.created_at)}`}
-              </div>
+      {/* Header block: the clickable toggle holds only text (no focusable
+          descendants - axe nested-interactive); the dispatch link sits on its
+          own row below it. */}
+      <div style={{ background: '#FCFBF8', borderBottom: open ? borderSoft : undefined }}>
+        <div
+          role="button"
+          tabIndex={0}
+          aria-expanded={open}
+          onClick={onToggle}
+          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onToggle() } }}
+          style={{ cursor: 'pointer', padding: '14px 18px' }}
+        >
+          <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, flexWrap: 'wrap' }}>
+              <span style={{ fontWeight: 700, fontSize: 15, ...tnum }}>{ref(b.id)}</span>
+              <span style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', color: faint }}>{b.booking_type ?? 'tour'}</span>
+              <span style={{ fontSize: 11.5, fontWeight: 700, color: statusColor }}>{statusText}</span>
             </div>
-            <span aria-hidden="true" style={{ display: 'inline-block', transform: open ? 'rotate(90deg)' : 'none', transition: 'transform 0.15s ease', color: faint, fontSize: 20, lineHeight: 1 }}>›</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <div style={{ textAlign: 'right' }}>
+                <div style={{ fontWeight: 800, fontSize: 20, ...tnum }}>{money(b.total_paid)} <span style={{ fontSize: 12, fontWeight: 600, color: faint }}>{currency}</span></div>
+                <div style={{ fontSize: 11.5, color: faint }}>
+                  {variant === 'paid' ? `Paid ${dateTime(b.paid_at ?? b.created_at)}` : `Started ${ageLabel(b.created_at)}`}
+                </div>
+              </div>
+              <span aria-hidden="true" style={{ display: 'inline-block', transform: open ? 'rotate(90deg)' : 'none', transition: 'transform 0.15s ease', color: faint, fontSize: 20, lineHeight: 1 }}>›</span>
+            </div>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginTop: 7, flexWrap: 'wrap' }}>
+            <span style={{ fontSize: 14, fontWeight: 700, color: ink }}>{customerName}</span>
+            <span aria-hidden="true" style={{ color: faint }}>·</span>
+            <span style={{ fontSize: 13.5, color: soft }}>{routeSummary}</span>
+            {paxSummary && (
+              <>
+                <span aria-hidden="true" style={{ color: faint }}>·</span>
+                <span style={{ fontSize: 13.5, color: soft }}>{paxSummary}</span>
+              </>
+            )}
           </div>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginTop: 6, flexWrap: 'wrap' }}>
-          <span style={{ fontSize: 13, color: soft }}>{[customerName, routeSummary, paxSummary].filter(Boolean).join(' · ')}</span>
-          {variant === 'paid' && isTransfer && (
-            <span onClick={(e) => e.stopPropagation()} style={{ display: 'inline-flex', alignItems: 'center', gap: 10 }}>
-              <span style={{ fontSize: 12, color: faint, ...tnum }}>Dispatch {dispatchDone}/{dispatchTotal}</span>
-              <Link href={`/admin/dispatch/${b.id}`} onClick={(e) => e.stopPropagation()} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, height: 30, padding: '0 12px', borderRadius: 9999, border: '1px solid var(--accent, #171614)', background: 'var(--accent, #171614)', color: '#fff', fontSize: 12, fontWeight: 600, textDecoration: 'none' }}>
-                Manage dispatch →
-              </Link>
-            </span>
-          )}
-        </div>
+        {variant === 'paid' && isTransfer && (
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 10, padding: '0 18px 12px', flexWrap: 'wrap' }}>
+            <span style={{ fontSize: 12, color: faint, ...tnum }}>Dispatch {dispatchDone}/{dispatchTotal}</span>
+            <Link href={`/admin/dispatch/${b.id}`} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, height: 32, padding: '0 13px', borderRadius: 9999, border: '1px solid var(--accent, #171614)', background: 'var(--accent, #171614)', color: '#fff', fontSize: 12, fontWeight: 600, textDecoration: 'none' }}>
+              Manage dispatch →
+            </Link>
+          </div>
+        )}
       </div>
 
       {open && (
@@ -241,6 +260,8 @@ type Filter = 'all' | 'tour' | 'transfer'
 
 export default function BookingsDashboard({ bookings }: { bookings: Row[] }) {
   const [tab, setTab] = useState<Tab>('paid')
+  // Accordion: exactly one booking card open at a time.
+  const [openId, setOpenId] = useState<string | null>(null)
   const [filter, setFilter] = useState<Filter>('all')
 
   const abandoned = bookings.filter((b) => b.status === 'pending')
@@ -362,7 +383,7 @@ export default function BookingsDashboard({ bookings }: { bookings: Row[] }) {
               {tab === 'abandoned' ? 'No abandoned carts here. 🇯🇲' : 'No paid bookings here.'}
             </div>
           )}
-          {shown.map((b) => <BookingCard key={b.id} b={b} variant={tab} />)}
+          {shown.map((b) => <BookingCard key={b.id} b={b} variant={tab} open={openId === b.id} onToggle={() => setOpenId((o) => (o === b.id ? null : b.id))} />)}
         </div>
       </div>
     </div>

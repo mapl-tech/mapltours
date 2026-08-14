@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { PlaneLanding, PlaneTakeoff, MapPin, CalendarPlus, Phone, MessageCircle, Radar } from 'lucide-react'
 import type { DriverTrip, DriverTour } from '@/lib/driver'
 import { jaDate, jaTime, gcalLink, waLink, MIN_PICKUP_LEAD_MIN } from '@/lib/dispatch'
@@ -26,7 +26,26 @@ const borderSoft = '1px solid #F1ECE3'
 const tnum = { fontVariantNumeric: 'tabular-nums' as const }
 const eyebrow: React.CSSProperties = { fontSize: 12, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: faint, margin: 0 }
 
+/** Smooth-scroll a just-opened card under the sticky header (honors reduced motion). */
+function useScrollOnOpen(open: boolean) {
+  const ref = useRef<HTMLElement>(null)
+  useEffect(() => {
+    if (!open || !ref.current) return
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    // next frame, so the expanded content has laid out before we measure
+    requestAnimationFrame(() => ref.current?.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' }))
+  }, [open])
+  return ref
+}
+
 function money(n: number): string { return '$' + n.toFixed(2) }
+/** Compact Jamaica date for summary rows: "Wed, Nov 18, 2026". */
+function jaShort(iso: string | null): string {
+  if (!iso) return 'Date TBD'
+  try {
+    return new Date(iso).toLocaleDateString('en-US', { timeZone: 'UTC', weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })
+  } catch { return String(iso) }
+}
 function paidStamp(iso: string | null): string {
   if (!iso) return ''
   try {
@@ -210,8 +229,8 @@ function Leg({ role, from, to, dateIso, flightRaw, extra, actions }: {
 
 /* ── One trip card ── */
 
-function TripCard({ t }: { t: DriverTrip }) {
-  const [open, setOpen] = useState(false)
+function TripCard({ t, open, onToggle }: { t: DriverTrip; open: boolean; onToggle: () => void }) {
+  const ref = useScrollOnOpen(open)
   const isRT = t.tripType === 'round_trip'
   const arrCal = t.arrivalAt ? gcalLink({
     title: `MAPL pickup: ${t.guestName} (${t.ref})`,
@@ -228,19 +247,18 @@ function TripCard({ t }: { t: DriverTrip }) {
   const mapsHotel = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(t.hotel + ', Jamaica')}`
 
   return (
-    <article aria-label={`Trip ${t.ref}`} style={{ background: '#fff', border, borderRadius: 16, overflow: 'hidden', boxShadow: '0 1px 2px rgba(23,22,20,0.04), 0 6px 22px rgba(23,22,20,0.05)' }}>
+    <article ref={ref} aria-label={`Trip ${t.ref}`} style={{ background: '#fff', border, borderLeft: `4px solid ${t.fullyPaid ? green : goldWarm}`, borderRadius: 16, overflow: 'hidden', boxShadow: '0 1px 2px rgba(23,22,20,0.04), 0 6px 22px rgba(23,22,20,0.05)', scrollMarginTop: 74 }}>
       {/* Clickable summary header (collapsed view), admin-bookings style */}
       <div
         role="button"
         tabIndex={0}
         aria-expanded={open}
         className="drv-act"
-        onClick={() => setOpen((o) => !o)}
-        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setOpen((o) => !o) } }}
+        onClick={onToggle}
+        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onToggle() } }}
         style={{
           cursor: 'pointer', padding: '15px 20px', background: '#FCFBF8',
           borderBottom: open ? borderSoft : undefined,
-          borderTop: `3px solid ${t.fullyPaid ? green : goldWarm}`,
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap' }}>
@@ -253,13 +271,20 @@ function TripCard({ t }: { t: DriverTrip }) {
             <span aria-hidden="true" style={{ display: 'inline-block', transform: open ? 'rotate(90deg)' : 'none', transition: 'transform 0.15s ease', color: faint, fontSize: 20, lineHeight: 1 }}>›</span>
           </span>
         </div>
-        <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 10, marginTop: 7, flexWrap: 'wrap' }}>
-          <span style={{ fontSize: 13.5, color: soft, minWidth: 0 }}>
-            {t.guestName} · {t.airport} <span aria-hidden="true">→</span> {t.hotel} · {jaDate(t.arrivalAt)}, {jaTime(t.arrivalAt)}
+        <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 12, marginTop: 9, flexWrap: 'wrap' }}>
+          <span style={{ display: 'flex', flexDirection: 'column', gap: 4, minWidth: 0 }}>
+            <span style={{ display: 'flex', alignItems: 'baseline', gap: 8, flexWrap: 'wrap' }}>
+              <span style={{ fontSize: 14.5, fontWeight: 700, color: ink }}>{t.guestName}</span>
+              <span aria-hidden="true" style={{ color: faint }}>·</span>
+              <span style={{ fontSize: 13.5, color: soft }}>{t.airport} <span aria-hidden="true">→</span> {t.hotel}</span>
+            </span>
+            <span style={{ fontSize: 13.5, color: soft, ...tnum }}>
+              Lands <strong style={{ color: ink, fontWeight: 600 }}>{jaShort(t.arrivalAt)} · {jaTime(t.arrivalAt)}</strong> Jamaica time
+            </span>
           </span>
           <span style={{ whiteSpace: 'nowrap' }}>
-            <span style={{ fontSize: 12, fontWeight: 600, color: faint }}>You get </span>
-            <span style={{ fontSize: 14.5, fontWeight: 800, color: green, ...tnum }}>{money(t.payoutTotal)}</span>
+            <span style={{ fontSize: 12.5, fontWeight: 600, color: faint }}>You get </span>
+            <span style={{ fontSize: 15, fontWeight: 800, color: green, ...tnum }}>{money(t.payoutTotal)}</span>
           </span>
         </div>
       </div>
@@ -346,18 +371,18 @@ function tourDate(d: string | null): string {
   } catch { return d }
 }
 
-function TourCard({ t }: { t: DriverTour }) {
-  const [open, setOpen] = useState(false)
+function TourCard({ t, open, onToggle }: { t: DriverTour; open: boolean; onToggle: () => void }) {
+  const ref = useScrollOnOpen(open)
   return (
-    <article aria-label={`Tour booking ${t.ref}`} style={{ background: '#fff', border, borderRadius: 16, overflow: 'hidden', boxShadow: '0 1px 2px rgba(23,22,20,0.04), 0 6px 22px rgba(23,22,20,0.05)' }}>
+    <article ref={ref} aria-label={`Tour booking ${t.ref}`} style={{ background: '#fff', border, borderLeft: `4px solid ${goldWarm}`, borderRadius: 16, overflow: 'hidden', boxShadow: '0 1px 2px rgba(23,22,20,0.04), 0 6px 22px rgba(23,22,20,0.05)', scrollMarginTop: 74 }}>
       <div
         role="button"
         tabIndex={0}
         aria-expanded={open}
         className="drv-act"
-        onClick={() => setOpen((o) => !o)}
-        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setOpen((o) => !o) } }}
-        style={{ cursor: 'pointer', padding: '15px 20px', background: '#FCFBF8', borderBottom: open ? borderSoft : undefined, borderTop: `3px solid ${goldWarm}` }}
+        onClick={onToggle}
+        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onToggle() } }}
+        style={{ cursor: 'pointer', padding: '15px 20px', background: '#FCFBF8', borderBottom: open ? borderSoft : undefined }}
       >
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap' }}>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, flexWrap: 'wrap' }}>
@@ -366,8 +391,12 @@ function TourCard({ t }: { t: DriverTour }) {
           </div>
           <span aria-hidden="true" style={{ display: 'inline-block', transform: open ? 'rotate(90deg)' : 'none', transition: 'transform 0.15s ease', color: faint, fontSize: 20, lineHeight: 1 }}>›</span>
         </div>
-        <div style={{ fontSize: 13.5, color: soft, marginTop: 7 }}>
-          {t.guestName} · {t.items[0].title}{t.items.length > 1 ? ` +${t.items.length - 1} more` : ''} · {tourDate(t.firstDate)}
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginTop: 9, flexWrap: 'wrap' }}>
+          <span style={{ fontSize: 14.5, fontWeight: 700, color: ink }}>{t.guestName}</span>
+          <span aria-hidden="true" style={{ color: faint }}>·</span>
+          <span style={{ fontSize: 13.5, color: soft }}>{t.items[0].title}{t.items.length > 1 ? ` +${t.items.length - 1} more` : ''}</span>
+          <span aria-hidden="true" style={{ color: faint }}>·</span>
+          <span style={{ fontSize: 13.5, color: soft, ...tnum }}>{tourDate(t.firstDate)}</span>
         </div>
       </div>
       {open && (
@@ -438,6 +467,9 @@ export default function DriverDashboard({ trips, tours = [], driverLabel, adminP
   const pendingTotal = Math.round((owedTotal - paidTotal) * 100) / 100
   const next = nextPickup(trips)
   const [tab, setTab] = useState<'transfers' | 'tours'>('transfers')
+  // Accordion: exactly one reservation card open at a time.
+  const [openId, setOpenId] = useState<string | null>(null)
+  const toggle = (id: string) => setOpenId((o) => (o === id ? null : id))
 
   return (
     <div style={{ fontFamily: dm, color: ink }}>
@@ -543,7 +575,7 @@ export default function DriverDashboard({ trips, tours = [], driverLabel, adminP
               <p style={{ fontSize: 14, color: soft, margin: '6px 0 0' }}>New bookings from MAPL Tours will appear here.</p>
             </div>
           )}
-          {trips.map((t) => <TripCard key={t.id} t={t} />)}
+          {trips.map((t) => <TripCard key={t.id} t={t} open={openId === t.id} onToggle={() => toggle(t.id)} />)}
         </section>
       ) : (
         <section id="panel-tours" role="tabpanel" aria-labelledby="tab-tours" style={{ display: 'flex', flexDirection: 'column', gap: 14, marginTop: 16 }}>
@@ -553,7 +585,7 @@ export default function DriverDashboard({ trips, tours = [], driverLabel, adminP
               <p style={{ fontSize: 14, color: soft, margin: '6px 0 0' }}>Paid tour bookings will appear here so you can plan ahead.</p>
             </div>
           )}
-          {tours.map((t) => <TourCard key={t.id} t={t} />)}
+          {tours.map((t) => <TourCard key={t.id} t={t} open={openId === t.id} onToggle={() => toggle(t.id)} />)}
         </section>
       )}
 
