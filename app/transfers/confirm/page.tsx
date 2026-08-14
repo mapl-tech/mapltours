@@ -177,6 +177,9 @@ function formatDateTime(iso: string | null): string | null {
   if (!iso) return null
   try {
     const d = new Date(iso)
+    // Flight times are stored as the customer's typed wall-clock (Jamaica).
+    // Read them back in UTC so they show verbatim in every timezone, never
+    // shifted to the viewer's local zone.
     return d.toLocaleString('en-US', {
       weekday: 'short',
       month: 'short',
@@ -184,6 +187,7 @@ function formatDateTime(iso: string | null): string | null {
       year: 'numeric',
       hour: 'numeric',
       minute: '2-digit',
+      timeZone: 'UTC',
     })
   } catch {
     return iso
@@ -353,7 +357,7 @@ function Success({ data }: { data: ConfirmData }) {
               {t.arrivalAt && (
                 <Leg
                   label="Arrival · MBJ → hotel"
-                  whenLabel={formatDateTime(t.arrivalAt)}
+                  whenLabel={`${formatDateTime(t.arrivalAt)} Jamaica time`}
                   flight={t.arrivalFlight}
                   dot="var(--emerald)"
                 />
@@ -361,7 +365,7 @@ function Success({ data }: { data: ConfirmData }) {
               {t.tripType === 'round_trip' && t.departureAt && (
                 <Leg
                   label="Departure · hotel → MBJ"
-                  whenLabel={formatDateTime(t.departureAt)}
+                  whenLabel={`${formatDateTime(t.departureAt)} Jamaica time`}
                   flight={t.departureFlight}
                   dot="var(--gold)"
                 />

@@ -39,6 +39,8 @@ function fmtDateTime(iso: string | null | undefined): string | null {
   if (!iso) return null
   try {
     const d = new Date(iso)
+    // Flight times are the customer's Jamaica wall-clock; read in UTC so they
+    // never shift to the mail client's or server's local timezone.
     return d.toLocaleString('en-US', {
       weekday: 'short',
       month: 'short',
@@ -46,6 +48,7 @@ function fmtDateTime(iso: string | null | undefined): string | null {
       year: 'numeric',
       hour: 'numeric',
       minute: '2-digit',
+      timeZone: 'UTC',
     })
   } catch {
     return null
@@ -136,7 +139,7 @@ export default function TransferConfirmed(props: TransferConfirmedProps) {
               <Section style={{ marginTop: 12, paddingLeft: 12, borderLeft: '2px solid #e7e7e7' }}>
                 <Text style={s.sectionLabel}>Arrival · MBJ → hotel</Text>
                 <Text style={{ ...s.body, marginTop: 2 }}>
-                  {fmtDateTime(t.arrivalAt)}
+                  {fmtDateTime(t.arrivalAt)} Jamaica time
                   {t.arrivalFlight ? ` · flight ${t.arrivalFlight}` : ''}
                 </Text>
               </Section>
@@ -146,7 +149,7 @@ export default function TransferConfirmed(props: TransferConfirmedProps) {
               <Section style={{ marginTop: 8, paddingLeft: 12, borderLeft: '2px solid #e7e7e7' }}>
                 <Text style={s.sectionLabel}>Departure · hotel → MBJ</Text>
                 <Text style={{ ...s.body, marginTop: 2 }}>
-                  {fmtDateTime(t.departureAt)}
+                  {fmtDateTime(t.departureAt)} Jamaica time
                   {t.departureFlight ? ` · flight ${t.departureFlight}` : ''}
                 </Text>
               </Section>

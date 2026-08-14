@@ -32,6 +32,8 @@ function fmtDateTime(iso: string | null): string | null {
   if (!iso) return null
   try {
     const d = new Date(iso)
+    // Flight times are the customer's Jamaica wall-clock; read in UTC so the
+    // driver alert never shows a timezone-shifted pickup time.
     return d.toLocaleString('en-US', {
       weekday: 'short',
       month: 'short',
@@ -39,6 +41,7 @@ function fmtDateTime(iso: string | null): string | null {
       year: 'numeric',
       hour: 'numeric',
       minute: '2-digit',
+      timeZone: 'UTC',
     })
   } catch {
     return iso
@@ -122,7 +125,7 @@ export default function TransferOperatorAlert({
               <Section style={{ marginTop: 10, paddingLeft: 12, borderLeft: '2px solid #d4f0e0' }}>
                 <Text style={s.sectionLabel}>Arrival · MBJ → hotel</Text>
                 <Text style={{ ...s.body, marginTop: 2 }}>
-                  {fmtDateTime(t.arrivalAt)}
+                  {fmtDateTime(t.arrivalAt)} Jamaica time
                   {t.arrivalFlight ? ` · ${t.arrivalFlight}` : ' · (flight not provided)'}
                 </Text>
               </Section>
@@ -132,7 +135,7 @@ export default function TransferOperatorAlert({
               <Section style={{ marginTop: 8, paddingLeft: 12, borderLeft: '2px solid #fce9b8' }}>
                 <Text style={s.sectionLabel}>Departure · hotel → MBJ</Text>
                 <Text style={{ ...s.body, marginTop: 2 }}>
-                  {fmtDateTime(t.departureAt)}
+                  {fmtDateTime(t.departureAt)} Jamaica time
                   {t.departureFlight ? ` · ${t.departureFlight}` : ' · (flight not provided)'}
                 </Text>
               </Section>
