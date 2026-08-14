@@ -50,7 +50,7 @@ export default function DriverShell({ signedInAs, children }: { signedInAs: stri
           </span>
         </div>
       </header>
-      <main style={{ maxWidth: 720, margin: '0 auto', padding: '24px 16px 72px' }}>
+      <main style={{ width: '100%', padding: '24px clamp(16px, 2.5vw, 32px) 72px' }}>
         {children}
       </main>
       <style jsx>{`

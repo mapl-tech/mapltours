@@ -390,8 +390,8 @@ export default function DriverDashboard({ trips, driverLabel, adminPreview }: {
         ))}
       </section>
 
-      {/* Trips, soonest action first */}
-      <section aria-label="Trips" style={{ display: 'flex', flexDirection: 'column', gap: 16, marginTop: 20 }}>
+      {/* Trips, soonest action first; flows into columns on wide screens */}
+      <section aria-label="Trips" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 480px), 1fr))', alignItems: 'start', gap: 16, marginTop: 20 }}>
         {trips.length === 0 && (
           <div style={{ background: '#fff', border, borderRadius: 18, padding: '32px 20px', textAlign: 'center' }}>
             <p style={{ fontSize: 16, fontWeight: 700, margin: 0 }}>No trips assigned yet</p>

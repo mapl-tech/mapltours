@@ -20,7 +20,7 @@ const soft = '#57534C'
 function Shell({ children }: { children: React.ReactNode }) {
   return (
     <div style={{ minHeight: '100vh', background: '#F4F1EB' }}>
-      <div style={{ maxWidth: 760, margin: '0 auto', padding: '32px 16px 80px', fontFamily: dm, color: ink }}>
+      <div style={{ width: '100%', padding: '32px clamp(16px, 2.5vw, 32px) 80px', fontFamily: dm, color: ink }}>
         {children}
       </div>
     </div>
