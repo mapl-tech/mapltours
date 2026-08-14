@@ -20,7 +20,7 @@ const soft = 'var(--text-secondary, #57534C)'
 function Shell({ children }: { children: React.ReactNode }) {
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg-warm, #F4F1EB)' }}>
-      <div className="container" style={{ maxWidth: 1000, margin: '0 auto', padding: '40px 20px 90px', fontFamily: dm, color: ink }}>
+      <div style={{ width: '100%', maxWidth: 1500, margin: '0 auto', padding: '40px clamp(20px, 3vw, 44px) 90px', fontFamily: dm, color: ink }}>
         {children}
       </div>
     </div>

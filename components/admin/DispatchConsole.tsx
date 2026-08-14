@@ -338,7 +338,7 @@ function FlightTracking({ legLabel, flightRaw, dateIso, bookedLabel, mbjRole }: 
 
   const check = async () => {
     setLoading(true)
-    const r = await fetch(`/api/admin/flight?flight=${encodeURIComponent(flightRaw ?? '')}&date=${flightDate(dateIso) ?? ''}`).catch(() => null)
+    const r = await fetch(`/api/admin/flight?flight=${encodeURIComponent(flightRaw ?? '')}&date=${flightDate(dateIso) ?? ''}&role=${mbjRole}`).catch(() => null)
     setSt(r ? await r.json().catch(() => null) : null)
     setLoading(false)
   }

@@ -42,12 +42,19 @@ function DriverLoginContent() {
     }}>
       <main style={{ width: '100%', maxWidth: 400 }}>
         <div style={{ textAlign: 'center', marginBottom: 26 }}>
-          <span style={{ width: 44, height: 44, borderRadius: 12, background: ink, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
-            <Leaf size={21} strokeWidth={2.5} color="#fff" />
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 11 }}>
+            <span style={{ width: 40, height: 40, borderRadius: 11, background: ink, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Leaf size={19} strokeWidth={2.5} color="#fff" />
+            </span>
+            <span style={{ display: 'inline-flex', flexDirection: 'column', lineHeight: 1, textAlign: 'left' }}>
+              <span style={{ fontWeight: 800, fontSize: 17, letterSpacing: '0.06em', textTransform: 'uppercase', color: ink }}>MAPL Tours</span>
+              <span style={{ fontWeight: 700, fontSize: 11, letterSpacing: '0.14em', textTransform: 'uppercase', color: '#6E5A1C', marginTop: 2 }}>Jamaica</span>
+            </span>
           </span>
-          <h1 style={{ fontWeight: 800, fontSize: 24, letterSpacing: '-0.02em', margin: '14px 0 0' }}>Driver portal</h1>
+          <div aria-hidden="true" style={{ height: 2, maxWidth: 120, margin: '18px auto 0', background: 'linear-gradient(90deg, transparent, #C4A44A 50%, transparent)' }} />
+          <h1 style={{ fontWeight: 800, fontSize: 25, letterSpacing: '-0.02em', margin: '14px 0 0' }}>Driver portal</h1>
           <p style={{ fontSize: 14, color: soft, margin: '6px 0 0', lineHeight: 1.5 }}>
-            MAPL Tours Jamaica. Your trips, guests, flights and pay in one place.
+            Your trips, guests, flights and pay in one place.
           </p>
         </div>
 

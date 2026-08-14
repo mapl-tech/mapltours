@@ -54,6 +54,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'flight_not_on_a_booking' }, { status: 404 })
   }
 
-  const status = await lookupFlight(rawFlight, date)
+  const role = url.searchParams.get('role') === 'departure' ? 'departure' as const : 'arrival' as const
+  const status = await lookupFlight(rawFlight, date, role)
   return NextResponse.json(status)
 }

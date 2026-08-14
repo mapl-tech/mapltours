@@ -5,14 +5,14 @@ import { Leaf } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 
 /**
- * Chrome around the driver portal: warm page background, slim sticky header
- * with the MAPL lockup, who is signed in, and sign out. Mobile-first;
- * max-width 720 (single-column reading width for a field tool).
+ * Chrome around the driver portal: MAPL Tours branded. Ink header band with
+ * the brand lockup (gold leaf tile + MAPL / TOURS JAMAICA) and a gold hairline
+ * signature, warm paper page ground. Mobile-first; max-width 720.
  */
 
 const dm = 'var(--font-dm-sans)'
 const ink = '#171614'
-const soft = '#57534C'
+const goldWarm = '#C4A44A'
 
 export default function DriverShell({ signedInAs, children }: { signedInAs: string; children: React.ReactNode }) {
   const router = useRouter()
@@ -23,27 +23,26 @@ export default function DriverShell({ signedInAs, children }: { signedInAs: stri
   }
   return (
     <div style={{ minHeight: '100vh', background: '#F4F1EB', fontFamily: dm }}>
-      <header style={{
-        position: 'sticky', top: 0, zIndex: 5, background: 'rgba(244,241,235,0.92)', backdropFilter: 'blur(10px)',
-        borderBottom: '1px solid #E7E1D6',
-      }}>
-        <div style={{ maxWidth: 720, margin: '0 auto', padding: '0 16px', height: 58, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
-          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 9 }}>
-            <span style={{ width: 30, height: 30, borderRadius: 8, background: ink, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
-              <Leaf size={15} strokeWidth={2.5} color="#fff" />
+      <header style={{ position: 'sticky', top: 0, zIndex: 5, background: ink, boxShadow: '0 2px 14px rgba(23,22,20,0.28)' }}>
+        {/* Gold brand signature */}
+        <div aria-hidden="true" style={{ height: 3, background: `linear-gradient(90deg, transparent, ${goldWarm} 35%, ${goldWarm} 65%, transparent)` }} />
+        <div style={{ width: '100%', padding: '0 clamp(16px, 2.5vw, 28px)', height: 60, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 10 }}>
+            <span style={{ width: 32, height: 32, borderRadius: 9, background: goldWarm, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Leaf size={16} strokeWidth={2.5} color={ink} />
             </span>
             <span style={{ display: 'inline-flex', flexDirection: 'column', lineHeight: 1 }}>
-              <span style={{ fontWeight: 800, fontSize: 14, letterSpacing: '0.06em', textTransform: 'uppercase', color: ink }}>MAPL</span>
-              <span style={{ fontWeight: 700, fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', color: soft, marginTop: 1 }}>Driver portal</span>
+              <span style={{ fontWeight: 800, fontSize: 15, letterSpacing: '0.06em', textTransform: 'uppercase', color: '#fff' }}>MAPL Tours</span>
+              <span style={{ fontWeight: 700, fontSize: 10.5, letterSpacing: '0.16em', textTransform: 'uppercase', color: goldWarm, marginTop: 2 }}>Jamaica · Driver portal</span>
             </span>
           </span>
           <span style={{ display: 'inline-flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
-            <span className="driver-shell-email" style={{ fontSize: 12.5, color: soft, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 180 }}>{signedInAs}</span>
+            <span className="driver-shell-email" style={{ fontSize: 12.5, color: 'rgba(255,255,255,0.66)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 180 }}>{signedInAs}</span>
             <button
-              type="button" onClick={signOut}
+              type="button" onClick={signOut} className="drv-act"
               style={{
-                minHeight: 40, padding: '0 14px', borderRadius: 9999, border: '1px solid #E7E1D6', background: '#fff',
-                fontFamily: dm, fontSize: 13, fontWeight: 600, color: ink, cursor: 'pointer',
+                minHeight: 40, padding: '0 15px', borderRadius: 9999, border: '1px solid rgba(255,255,255,0.35)', background: 'transparent',
+                fontFamily: dm, fontSize: 13, fontWeight: 600, color: '#fff', cursor: 'pointer',
               }}
             >
               Sign out
@@ -51,12 +50,16 @@ export default function DriverShell({ signedInAs, children }: { signedInAs: stri
           </span>
         </div>
       </header>
-      <main style={{ maxWidth: 720, margin: '0 auto', padding: '22px 16px 72px' }}>
+      <main style={{ maxWidth: 720, margin: '0 auto', padding: '24px 16px 72px' }}>
         {children}
       </main>
       <style jsx>{`
         @media (max-width: 480px) {
           :global(.driver-shell-email) { display: none; }
+        }
+        header :global(.drv-act:focus-visible) {
+          outline: 3px solid ${goldWarm};
+          outline-offset: 2px;
         }
       `}</style>
     </div>

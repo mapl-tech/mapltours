@@ -27,7 +27,7 @@ function leg(node: any): FlightStatus['departure'] {
   }
 }
 
-export async function lookupFlight(rawFlight: string | null, date: string | null): Promise<FlightStatus> {
+export async function lookupFlight(rawFlight: string | null, date: string | null, prefer: 'arrival' | 'departure' = 'arrival'): Promise<FlightStatus> {
   const { iata } = normalizeFlight(rawFlight)
   const key = process.env.AERODATABOX_API_KEY
   const base: FlightStatus = {
@@ -60,7 +60,18 @@ export async function lookupFlight(rawFlight: string | null, date: string | null
     if (!res.ok) return { ...base, error: `provider_${res.status}` }
     const data = await res.json()
     const flights = Array.isArray(data) ? data : data?.flights ?? []
-    const f = flights[0]
+    // A date query can return two rotations (e.g. an overnight flight departing
+    // the 24th arriving the 25th, plus one departing the 25th). Pick the one
+    // whose RELEVANT leg is on the queried date: the departure leg for a
+    // hotel-to-airport ride, the arrival leg for an airport pickup.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const legDate = (f: any, side: 'arrival' | 'departure') => String(f?.[side]?.scheduledTime?.local ?? '').slice(0, 10)
+    const f =
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      flights.find((x: any) => legDate(x, prefer) === date) ??
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      flights.find((x: any) => legDate(x, 'departure') === date || legDate(x, 'arrival') === date) ??
+      flights[0]
     if (!f) return { ...base, found: false }
     return {
       ...base,

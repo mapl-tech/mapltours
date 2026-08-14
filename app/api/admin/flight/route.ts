@@ -21,6 +21,7 @@ export async function GET(request: NextRequest) {
   if (!adminRow) return NextResponse.json({ error: 'forbidden' }, { status: 403 })
 
   const url = new URL(request.url)
-  const status = await lookupFlight(url.searchParams.get('flight'), url.searchParams.get('date'))
+  const role = url.searchParams.get('role') === 'departure' ? 'departure' as const : 'arrival' as const
+  const status = await lookupFlight(url.searchParams.get('flight'), url.searchParams.get('date'), role)
   return NextResponse.json(status)
 }
