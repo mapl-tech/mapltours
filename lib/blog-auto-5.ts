@@ -333,7 +333,7 @@ export const POSTS_5: BlogPost[] = [
     slug: 'nine-mile-marley-pilgrimage',
     title: "Nine Mile, Jamaica: A Bob Marley Pilgrimage",
     excerpt:
-      "Nine Mile Jamaica is the birthplace and burial site of Bob Marley. Here is what the drive is like, what the tour covers, and why it is different from the Kingston museum.",
+      "Nine Mile, Jamaica, is the birthplace and burial site of Bob Marley. Here is what the drive is like, what the tour covers, and why it is different from the Kingston museum.",
     category: 'Culture',
     image: BLOG_IMAGES['nine-mile-marley-pilgrimage'],
     readTime: 8,

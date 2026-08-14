@@ -146,7 +146,7 @@ export const POSTS_1: BlogPost[] = [
     slug: 'montego-bay-tours-ranked',
     title: 'Montego Bay Tours, Ranked by an Actual Local',
     excerpt:
-      'An honest ranking of Montego Bay tours, what the strip hides, what the concierge oversells, and which day trips are actually worth booking.',
+      'An honest ranking of Montego Bay tours, from the Rastafari Indigenous Village to Martha Brae rafting, and which day trips are actually worth booking.',
     category: 'Guides',
     image: BLOG_IMAGES['montego-bay-tours-ranked'],
     readTime: 5,
@@ -173,6 +173,10 @@ export const POSTS_1: BlogPost[] = [
       {
         type: 'p',
         text: "Third: the drive out to YS Falls in St. Elizabeth. It's 90 minutes each way so you lose most of the day in the van, but it's the prettiest waterfall on the island, the crowds are a fraction of Dunn's River, and the rope swing into the lower pool is the cleanest adrenaline you can buy for $22.",
+      },
+      {
+        type: 'p',
+        text: "Fourth: the Rastafari Indigenous Village on the Montego River, twenty minutes from the Hip Strip. It's a living community, not a show, you're walked through drumming, ital cooking, and the herb gardens by the people who actually live there. Budget around two hours; it's the most honest cultural stop in the parish.",
       },
       {
         type: 'quote',
@@ -352,7 +356,7 @@ export const POSTS_1: BlogPost[] = [
     slug: 'kingston-gastronomy-tour',
     title: 'A Gastronomy Tour of Kingston, Jamaica',
     excerpt:
-      'A gastronomy tour of Kingston, Jamaica, patties, pepperpot, Devon House, Port Royal seafood, and the chefs redefining Caribbean fine dining.',
+      "A gastronomy tour of Kingston, Jamaica: patties, pepperpot, Devon House, seafood at Gloria's in Port Royal, and the chefs redefining Caribbean fine dining.",
     category: 'Food',
     image: BLOG_IMAGES['kingston-gastronomy-tour'],
     readTime: 5,
