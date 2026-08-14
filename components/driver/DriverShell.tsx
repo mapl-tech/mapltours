@@ -30,8 +30,8 @@ export default function DriverShell({ signedInAs, children }: { signedInAs: stri
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/mapl-logo-dark.svg" alt="MAPL Tours Jamaica" style={{ height: 46, width: 'auto', display: 'block', margin: '-8px 0' }} />
             <span className="driver-shell-tag" style={{
-              fontSize: 10.5, fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: goldWarm,
-              padding: '5px 11px', borderRadius: 9999, border: '1px solid rgba(196,164,74,0.45)', whiteSpace: 'nowrap',
+              fontSize: 12, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: goldWarm,
+              padding: '5px 12px', borderRadius: 9999, border: '1px solid rgba(196,164,74,0.45)', whiteSpace: 'nowrap',
             }}>
               Driver portal
             </span>

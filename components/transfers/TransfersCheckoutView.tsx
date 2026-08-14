@@ -902,7 +902,7 @@ function TransferCard({
           {rt && (
             <>
               <Input
-                label="Departure date & time"
+                label="Hotel pickup date & time (for your departure)"
                 type="datetime-local"
                 min={item.arrivalAt || minDateTime}
                 value={item.departureAt ?? ''}

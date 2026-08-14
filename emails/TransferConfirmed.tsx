@@ -149,7 +149,7 @@ export default function TransferConfirmed(props: TransferConfirmedProps) {
               <Section style={{ marginTop: 8, paddingLeft: 12, borderLeft: '2px solid #e7e7e7' }}>
                 <Text style={s.sectionLabel}>Departure · hotel → MBJ</Text>
                 <Text style={{ ...s.body, marginTop: 2 }}>
-                  {fmtDateTime(t.departureAt)} Jamaica time
+                  Hotel pickup {fmtDateTime(t.departureAt)} Jamaica time
                   {t.departureFlight ? ` · flight ${t.departureFlight}` : ''}
                 </Text>
               </Section>

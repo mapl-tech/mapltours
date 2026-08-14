@@ -365,7 +365,7 @@ function Success({ data }: { data: ConfirmData }) {
               {t.tripType === 'round_trip' && t.departureAt && (
                 <Leg
                   label="Departure · hotel → MBJ"
-                  whenLabel={`${formatDateTime(t.departureAt)} Jamaica time`}
+                  whenLabel={`Hotel pickup ${formatDateTime(t.departureAt)} Jamaica time`}
                   flight={t.departureFlight}
                   dot="var(--gold)"
                 />

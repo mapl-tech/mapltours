@@ -4,7 +4,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import {
   type Bk, firstLeg, bookingRef, moneyBlock, money,
-  jaDate, jaTime, shiftIso, gcalLink, waLink, DEPARTURE_BUFFER_MIN, ARRIVAL_CLEAR_MIN,
+  jaDate, jaTime, shiftIso, gcalLink, waLink, ARRIVAL_CLEAR_MIN, MIN_PICKUP_LEAD_MIN,
   visibleSteps, progress,
   msgDriverRequest, msgCustomerConfirmation, msgFlightDetailsRequest, msgDriverReminder,
   msgFlightLanded, msgCustomerFollowup, msgReviewRequest,
@@ -109,9 +109,9 @@ export default function DispatchConsole({ booking, stripeFee }: { booking: Bk; s
   }) : null
   const departureCal = m.isRoundTrip && leg.departureAt ? gcalLink({
     title: `MAPL departure pickup: ${name} (${ref})`,
-    startIso: shiftIso(leg.departureAt, -DEPARTURE_BUFFER_MIN), durationMin: 90,
+    startIso: leg.departureAt, durationMin: 90,
     location: leg.hotel,
-    details: `Drop at ${AIRPORT}. Flight ${leg.departureFlight ?? ''} departs ${jaTime(leg.departureAt)} Jamaica time. Driver pay: ${money(m.driverPerLeg)} (leg 2 of 2).`,
+    details: `Drop at ${AIRPORT}. Hotel pickup ${jaTime(leg.departureAt)} Jamaica time (time requested by the guest)${leg.departureFlight ? `, flight ${leg.departureFlight}` : ''}. Driver pay: ${money(m.driverPerLeg)} (leg 2 of 2).`,
   }) : null
 
   return (
@@ -166,8 +166,8 @@ export default function DispatchConsole({ booking, stripeFee }: { booking: Bk; s
               <p style={{ ...tnum, fontSize: 11.5, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: faint, margin: '16px 0 6px' }}>Departure</p>
               <div style={{ fontSize: 14, fontWeight: 600 }}>{leg.hotel} → {AIRPORT}</div>
               <div style={{ fontSize: 13, color: soft, marginTop: 2, ...tnum }}>{jaDate(leg.departureAt)}</div>
-              <div style={{ fontSize: 13, color: soft, ...tnum }}>Flight departs {jaTime(leg.departureAt)}{leg.departureFlight ? ` (flight ${leg.departureFlight})` : ''}</div>
-              <div style={{ fontSize: 12.5, color: amber, marginTop: 2, fontWeight: 600, ...tnum }}>Suggested hotel pickup {jaTime(shiftIso(leg.departureAt, -DEPARTURE_BUFFER_MIN))} (flight minus 4h, adjust for traffic).</div>
+              <div style={{ fontSize: 13, color: soft, ...tnum }}>Hotel pickup {jaTime(leg.departureAt)}{leg.departureFlight ? ` · flight ${leg.departureFlight}` : ''}</div>
+              <div style={{ fontSize: 12.5, color: amber, marginTop: 2, fontWeight: 600 }}>This is the pickup time the guest requested. Check it against the flight below.</div>
               {departureCal && <div style={{ marginTop: 10 }}><Btn href={departureCal}>📅 Add departure to Google Calendar</Btn></div>}
             </>
           )}
@@ -178,7 +178,7 @@ export default function DispatchConsole({ booking, stripeFee }: { booking: Bk; s
       <div style={{ marginTop: 14 }}>
         <Card title="Flight tracking">
           <p style={{ fontSize: 12.5, color: faint, margin: '0 0 12px', lineHeight: 1.5 }}>
-            The times above are what the customer typed. Confirm them against the airline before dispatch, especially the departure.
+            The arrival time is when the flight lands; the departure time is the hotel pickup the guest asked for. Check both against the airline before dispatch.
           </p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
             <FlightTracking legLabel="Arrival flight" flightRaw={leg.arrivalFlight} dateIso={leg.arrivalAt} bookedLabel={jaTime(leg.arrivalAt)} mbjRole="arrival" />
@@ -345,15 +345,21 @@ function FlightTracking({ legLabel, flightRaw, dateIso, bookedLabel, mbjRole }: 
 
   const authLeg = st ? (mbjRole === 'arrival' ? st.arrival : st.departure) : null
   const authTime = authLeg?.revisedLocal || authLeg?.scheduledLocal || null
+  const isDeparture = mbjRole === 'departure'
+  // Arrival: booked time IS the flight time, so any real gap is a mismatch.
+  // Departure: booked time is the guest's requested HOTEL PICKUP; the check is
+  // whether it leaves enough lead before the actual flight.
   const diff = authTime ? (() => { const a = clockMinutes(bookedLabel); const b = clockMinutes(authTime); return a != null && b != null ? b - a : null })() : null
-  const bigMismatch = diff != null && Math.abs(diff) > 30
+  const lead = isDeparture && diff != null ? (diff < -720 ? diff + 1440 : diff) : null // pickup -> flight, wrap overnight
+  const leadLabel = lead != null ? `${Math.floor(Math.abs(lead) / 60)}h ${String(Math.abs(lead) % 60).padStart(2, '0')}m` : ''
+  const warn = isDeparture ? (lead != null && lead < MIN_PICKUP_LEAD_MIN) : (diff != null && Math.abs(diff) > 30)
 
   return (
     <div>
       <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, flexWrap: 'wrap' }}>
         <span style={{ fontSize: 13.5, fontWeight: 600 }}>{legLabel}</span>
         <span style={{ fontSize: 13, color: soft, ...tnum }}>{links?.ident ?? flightRaw ?? 'flight TBD'}</span>
-        <span style={{ fontSize: 12.5, color: faint, ...tnum }}>Customer said {bookedLabel} Jamaica time</span>
+        <span style={{ fontSize: 12.5, color: faint, ...tnum }}>{isDeparture ? 'Requested pickup' : 'Lands'} {bookedLabel} Jamaica time</span>
       </div>
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 8 }}>
         {links && <Btn href={links.google}>Google</Btn>}
@@ -366,18 +372,33 @@ function FlightTracking({ legLabel, flightRaw, dateIso, bookedLabel, mbjRole }: 
           {st.found && authTime ? (
             <div style={{
               padding: '10px 12px', borderRadius: 8,
-              background: bigMismatch ? '#FCEDEA' : '#EAF4EE',
-              border: `1px solid ${bigMismatch ? 'rgba(176,28,12,0.25)' : 'rgba(29,122,80,0.25)'}`,
+              background: warn ? '#FCEDEA' : '#EAF4EE',
+              border: `1px solid ${warn ? 'rgba(176,28,12,0.25)' : 'rgba(29,122,80,0.25)'}`,
             }}>
-              <div style={{ fontSize: 13.5, fontWeight: 600, color: bigMismatch ? '#B01C0C' : green, ...tnum }}>
-                Airline: {authTime}{st.status ? ` · ${st.status}` : ''}
+              <div style={{ fontSize: 13.5, fontWeight: 600, color: warn ? '#B01C0C' : green, ...tnum }}>
+                Airline: flight {isDeparture ? 'departs' : 'lands'} {authTime}{st.status ? ` · ${st.status}` : ''}
               </div>
-              {bigMismatch && (
+              {isDeparture && lead != null && (
+                lead <= 0 ? (
+                  <div style={{ fontSize: 12.5, color: '#B01C0C', marginTop: 4 }}>
+                    The requested {bookedLabel} pickup is at or after the flight time. Fix this with the guest before dispatch.
+                  </div>
+                ) : lead < MIN_PICKUP_LEAD_MIN ? (
+                  <div style={{ fontSize: 12.5, color: '#B01C0C', marginTop: 4 }}>
+                    Pickup at {bookedLabel} leaves only {leadLabel} before the flight. Confirm with the guest; suggest an earlier pickup.
+                  </div>
+                ) : (
+                  <div style={{ fontSize: 12.5, color: faint, marginTop: 4 }}>
+                    Pickup at {bookedLabel} leaves {leadLabel} before the flight. Comfortable.
+                  </div>
+                )
+              )}
+              {!isDeparture && warn && (
                 <div style={{ fontSize: 12.5, color: '#B01C0C', marginTop: 4 }}>
-                  This is about {Math.abs(diff!)} min off the {bookedLabel} the customer entered. Update the pickup time to match the airline.
+                  This is about {Math.abs(diff!)} min off the {bookedLabel} the customer entered. Update the pickup plan to match the airline.
                 </div>
               )}
-              {!bigMismatch && diff != null && (
+              {!isDeparture && !warn && diff != null && (
                 <div style={{ fontSize: 12.5, color: faint, marginTop: 4 }}>Matches the customer&rsquo;s time.</div>
               )}
             </div>

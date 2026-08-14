@@ -135,8 +135,8 @@ export default function TransferOperatorAlert({
               <Section style={{ marginTop: 8, paddingLeft: 12, borderLeft: '2px solid #fce9b8' }}>
                 <Text style={s.sectionLabel}>Departure · hotel → MBJ</Text>
                 <Text style={{ ...s.body, marginTop: 2 }}>
-                  {fmtDateTime(t.departureAt)} Jamaica time
-                  {t.departureFlight ? ` · ${t.departureFlight}` : ' · (flight not provided)'}
+                  Hotel pickup {fmtDateTime(t.departureAt)} Jamaica time
+                  {t.departureFlight ? ` · flight ${t.departureFlight}` : ' · (flight not provided)'}
                 </Text>
               </Section>
             )}

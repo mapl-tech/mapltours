@@ -86,6 +86,49 @@ export function driverTrip(b: Bk): DriverTrip | null {
   }
 }
 
+/* ── Tours (driver-safe): itinerary only, NO money of any kind ── */
+
+export interface DriverTourItem {
+  title: string
+  destination: string | null
+  date: string | null // YYYY-MM-DD
+  travelers: number
+}
+
+export interface DriverTour {
+  id: string
+  ref: string
+  guestName: string
+  guestPhone: string | null
+  specialRequests: string | null
+  items: DriverTourItem[]
+  /** earliest tour date, for sorting */
+  firstDate: string | null
+}
+
+/** Build the driver-safe view of one paid tour booking. Tours have no driver
+ *  payout model, so this deliberately carries ZERO price fields. */
+export function driverTour(b: Bk): DriverTour | null {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const items: DriverTourItem[] = ((b.booking_items ?? []) as any[]).map((i) => ({
+    title: i.title ?? 'Experience',
+    destination: i.destination ?? null,
+    date: i.date ?? null,
+    travelers: i.travelers ?? 1,
+  }))
+  if (!items.length) return null
+  const dates = items.map((i) => i.date).filter(Boolean).sort() as string[]
+  return {
+    id: b.id,
+    ref: bookingRef(b.id),
+    guestName: `${b.first_name ?? ''} ${b.last_name ?? ''}`.trim() || 'Guest',
+    guestPhone: b.phone ?? null,
+    specialRequests: b.special_requests ?? null,
+    items,
+    firstDate: dates[0] ?? null,
+  }
+}
+
 /** Sort key: the next thing the driver has to do (soonest upcoming leg first). */
 export function nextActionAt(t: DriverTrip): number {
   const now = Date.now()

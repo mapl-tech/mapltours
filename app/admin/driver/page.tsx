@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { createServiceClient } from '@/lib/supabase/service'
-import { driverAllowlist, driverTrip, nextActionAt, type DriverTrip } from '@/lib/driver'
+import { driverAllowlist, driverTrip, driverTour, nextActionAt, type DriverTrip, type DriverTour } from '@/lib/driver'
 import DriverDashboard from '@/components/driver/DriverDashboard'
 
 /**
@@ -53,6 +53,19 @@ export default async function AdminDriverPreviewPage() {
     .filter((t): t is DriverTrip => t !== null)
     .sort((a, b) => nextActionAt(a) - nextActionAt(b))
 
+  const { data: tourRows } = await svc
+    .from('bookings')
+    .select('id, first_name, last_name, phone, special_requests, booking_items(title, destination, date, travelers)')
+    .eq('status', 'paid')
+    .eq('booking_type', 'tour')
+    .order('created_at', { ascending: false })
+    .limit(100)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const tours = ((tourRows ?? []) as any[])
+    .map(driverTour)
+    .filter((t): t is DriverTour => t !== null)
+    .sort((a, b) => (a.firstDate ?? '9999').localeCompare(b.firstDate ?? '9999'))
+
   const allow = driverAllowlist()
   return (
     <Shell>
@@ -67,7 +80,7 @@ export default async function AdminDriverPreviewPage() {
           <span aria-hidden="true">←</span> Bookings
         </Link>
       </div>
-      <DriverDashboard trips={trips} driverLabel="your driver" adminPreview />
+      <DriverDashboard trips={trips} tours={tours} driverLabel="your driver" adminPreview />
     </Shell>
   )
 }

@@ -125,11 +125,11 @@ export function shiftIso(iso: string, minutes: number): string {
   return new Date(new Date(iso).getTime() + minutes * 60000).toISOString()
 }
 
-/** Recommended hotel pickup for the departure leg: flight time minus a buffer
- *  (3h international check-in + ~1h drive). Operator can always adjust. */
-export const DEPARTURE_BUFFER_MIN = 240 // flight - 4h
 /** Customers typically clear customs + bags ~45 min after landing. */
 export const ARRIVAL_CLEAR_MIN = 45
+/** Sensible gap between hotel pickup and flight departure: below this, warn.
+ *  (~1h drive from most zones + 2.5h international check-in.) */
+export const MIN_PICKUP_LEAD_MIN = 210
 
 /* ── Google Calendar link (correct Jamaica timezone via ctz) ── */
 
@@ -187,8 +187,8 @@ export function msgDriverRequest(b: Bk, m: MoneyBlock): string {
       `Pick up: ${leg.hotel}`,
       `Drop-off: ${AIRPORT}`,
       `Date: ${jaDate(leg.departureAt)}`,
-      `Flight departs: ${jaTime(leg.departureAt)} Jamaica time${leg.departureFlight ? ` (flight ${leg.departureFlight})` : ''}`,
-      `Suggested hotel pickup: ${jaTime(shiftIso(leg.departureAt, -DEPARTURE_BUFFER_MIN))} (flight minus 4h, please adjust)`,
+      `Hotel pickup: ${jaTime(leg.departureAt)} Jamaica time (time requested by the guest)`,
+      ...(leg.departureFlight ? [`Departure flight: ${leg.departureFlight}`] : []),
     )
   }
   lines.push(
@@ -211,10 +211,10 @@ export function msgCustomerConfirmation(b: Bk): string {
     `Pick up: ${AIRPORT}`,
     `Drop-off: ${leg.hotel}`,
     `Date: ${jaDate(leg.arrivalAt)}`,
-    `Time: ${jaTime(leg.arrivalAt)} Jamaica time`,
+    `Flight lands: ${jaTime(leg.arrivalAt)} Jamaica time`,
   ]
   if (leg.tripType === 'round_trip' && leg.departureAt) {
-    d.push('', 'DEPARTURE', `Pick up: ${leg.hotel}`, `Drop-off: ${AIRPORT}`, `Date: ${jaDate(leg.departureAt)}`, `Time: ${jaTime(leg.departureAt)} Jamaica time`)
+    d.push('', 'DEPARTURE', `Pick up: ${leg.hotel}`, `Drop-off: ${AIRPORT}`, `Date: ${jaDate(leg.departureAt)}`, `Hotel pickup: ${jaTime(leg.departureAt)} Jamaica time`)
   }
   d.push(
     '',

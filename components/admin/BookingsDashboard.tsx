@@ -159,7 +159,7 @@ function BookingCard({ b, variant }: { b: Row; variant: 'abandoned' | 'paid' }) 
                       <div style={{ fontSize: 12.5, color: soft, ...tnum }}>Arrive: {[i.arrival_flight ? `flight ${i.arrival_flight}` : null, flightTime(i.arrival_at)].filter(Boolean).join(', ')}</div>
                     ) : null}
                     {i.departure_at || i.departure_flight ? (
-                      <div style={{ fontSize: 12.5, color: soft, ...tnum }}>Depart: {[i.departure_flight ? `flight ${i.departure_flight}` : null, flightTime(i.departure_at)].filter(Boolean).join(', ')}</div>
+                      <div style={{ fontSize: 12.5, color: soft, ...tnum }}>Departure pickup: {[flightTime(i.departure_at), i.departure_flight ? `flight ${i.departure_flight}` : null].filter(Boolean).join(' · ')}</div>
                     ) : null}
                     <div style={{ fontSize: 12.5, color: faint, ...tnum }}>{money2(i.price_per_person)}</div>
                   </>

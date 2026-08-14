@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { createServiceClient } from '@/lib/supabase/service'
-import { driverTrip, isAllowedDriver, nextActionAt, type DriverTrip } from '@/lib/driver'
+import { driverTrip, driverTour, isAllowedDriver, nextActionAt, type DriverTrip, type DriverTour } from '@/lib/driver'
 import DriverDashboard from '@/components/driver/DriverDashboard'
 import DriverShell from '@/components/driver/DriverShell'
 
@@ -36,10 +36,24 @@ export default async function DriverPage() {
     .filter((t): t is DriverTrip => t !== null)
     .sort((a, b) => nextActionAt(a) - nextActionAt(b))
 
+  // Tours: itinerary only; the select carries no price columns at all.
+  const { data: tourRows } = await svc
+    .from('bookings')
+    .select('id, first_name, last_name, phone, special_requests, booking_items(title, destination, date, travelers)')
+    .eq('status', 'paid')
+    .eq('booking_type', 'tour')
+    .order('created_at', { ascending: false })
+    .limit(100)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const tours = ((tourRows ?? []) as any[])
+    .map(driverTour)
+    .filter((t): t is DriverTour => t !== null)
+    .sort((a, b) => (a.firstDate ?? '9999').localeCompare(b.firstDate ?? '9999'))
+
   const label = user.email?.split('@')[0] ?? 'Driver'
   return (
     <DriverShell signedInAs={user.email ?? ''}>
-      <DriverDashboard trips={trips} driverLabel={label.charAt(0).toUpperCase() + label.slice(1)} />
+      <DriverDashboard trips={trips} tours={tours} driverLabel={label.charAt(0).toUpperCase() + label.slice(1)} />
     </DriverShell>
   )
 }
