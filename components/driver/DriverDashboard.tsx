@@ -196,6 +196,7 @@ function Leg({ role, from, to, dateIso, flightRaw, extra, actions }: {
 /* ── One trip card ── */
 
 function TripCard({ t }: { t: DriverTrip }) {
+  const [open, setOpen] = useState(false)
   const isRT = t.tripType === 'round_trip'
   const arrCal = t.arrivalAt ? gcalLink({
     title: `MAPL pickup: ${t.guestName} (${t.ref})`,
@@ -212,20 +213,39 @@ function TripCard({ t }: { t: DriverTrip }) {
   const mapsHotel = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(t.hotel + ', Jamaica')}`
 
   return (
-    <article aria-label={`Trip ${t.ref}`} style={{ background: '#fff', border, borderRadius: 18, overflow: 'hidden', boxShadow: '0 1px 2px rgba(23,22,20,0.04), 0 6px 22px rgba(23,22,20,0.05)' }}>
-      {/* Header band */}
-      <div style={{
-        padding: '15px 20px', background: '#FCFBF8', borderBottom: borderSoft,
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap',
-        borderTop: `3px solid ${t.fullyPaid ? green : goldWarm}`,
-      }}>
-        <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, flexWrap: 'wrap' }}>
-          <span style={{ fontWeight: 800, fontSize: 16, letterSpacing: '0.01em', ...tnum }}>{t.ref}</span>
-          <span style={{ fontSize: 13, color: soft, fontWeight: 500 }}>{isRT ? 'Round trip' : 'One-way'} · {t.passengers} passenger{t.passengers === 1 ? '' : 's'}</span>
+    <article aria-label={`Trip ${t.ref}`} style={{ background: '#fff', border, borderRadius: 16, overflow: 'hidden', boxShadow: '0 1px 2px rgba(23,22,20,0.04), 0 6px 22px rgba(23,22,20,0.05)' }}>
+      {/* Clickable summary header (collapsed view), admin-bookings style */}
+      <div
+        role="button"
+        tabIndex={0}
+        aria-expanded={open}
+        onClick={() => setOpen((o) => !o)}
+        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setOpen((o) => !o) } }}
+        style={{
+          cursor: 'pointer', padding: '15px 20px', background: '#FCFBF8',
+          borderBottom: open ? borderSoft : undefined,
+          borderTop: `3px solid ${t.fullyPaid ? green : goldWarm}`,
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, flexWrap: 'wrap' }}>
+            <span style={{ fontWeight: 800, fontSize: 16, letterSpacing: '0.01em', ...tnum }}>{t.ref}</span>
+            <span style={{ fontSize: 13, color: soft, fontWeight: 500 }}>{isRT ? 'Round trip' : 'One-way'} · {t.passengers} passenger{t.passengers === 1 ? '' : 's'}</span>
+          </div>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 12 }}>
+            <PayChip paid={t.fullyPaid} label={t.fullyPaid ? 'Paid in full' : 'Pay pending'} />
+            <span aria-hidden="true" style={{ display: 'inline-block', transform: open ? 'rotate(90deg)' : 'none', transition: 'transform 0.15s ease', color: faint, fontSize: 20, lineHeight: 1 }}>›</span>
+          </span>
         </div>
-        <PayChip paid={t.fullyPaid} label={t.fullyPaid ? 'Paid in full' : 'Pay pending'} />
+        <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 10, marginTop: 7, flexWrap: 'wrap' }}>
+          <span style={{ fontSize: 13.5, color: soft, minWidth: 0 }}>
+            {t.guestName} · {t.airport} <span aria-hidden="true">→</span> {t.hotel} · {jaDate(t.arrivalAt)}, {jaTime(t.arrivalAt)}
+          </span>
+          <span style={{ fontSize: 14.5, fontWeight: 800, color: green, whiteSpace: 'nowrap', ...tnum }}>{money(t.payoutTotal)}</span>
+        </div>
       </div>
 
+      {open && (
       <div style={{ padding: '18px 20px 20px', display: 'flex', flexDirection: 'column', gap: 18 }}>
         {/* Guest */}
         <div>
@@ -293,6 +313,7 @@ function TripCard({ t }: { t: DriverTrip }) {
           </div>
         </div>
       </div>
+      )}
     </article>
   )
 }
@@ -390,8 +411,8 @@ export default function DriverDashboard({ trips, driverLabel, adminPreview }: {
         ))}
       </section>
 
-      {/* Trips, soonest action first; flows into columns on wide screens */}
-      <section aria-label="Trips" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 480px), 1fr))', alignItems: 'start', gap: 16, marginTop: 20 }}>
+      {/* Trips, soonest action first; full-width collapsible rows like the admin page */}
+      <section aria-label="Trips" style={{ display: 'flex', flexDirection: 'column', gap: 14, marginTop: 20 }}>
         {trips.length === 0 && (
           <div style={{ background: '#fff', border, borderRadius: 18, padding: '32px 20px', textAlign: 'center' }}>
             <p style={{ fontSize: 16, fontWeight: 700, margin: 0 }}>No trips assigned yet</p>
