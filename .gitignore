@@ -45,3 +45,7 @@ playwright-findings.json
 design-shots/
 scripts/shots.mjs
 .ga-service-account.json
+
+# Saved-webpage scrapes (not source assets)
+*_files/
+*Google Search*
