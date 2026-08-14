@@ -9,6 +9,7 @@ import {
   msgDriverRequest, msgCustomerConfirmation, msgFlightDetailsRequest, msgDriverReminder,
   msgFlightLanded, msgCustomerFollowup, msgReviewRequest,
 } from '@/lib/dispatch'
+import { flightLinks, flightDate, type FlightStatus } from '@/lib/flight'
 
 const dm = 'var(--font-dm-sans)'
 const ink = 'var(--text-primary, #171614)'
@@ -173,6 +174,21 @@ export default function DispatchConsole({ booking, stripeFee }: { booking: Bk; s
         </Card>
       </div>
 
+      {/* Flight tracking */}
+      <div style={{ marginTop: 14 }}>
+        <Card title="Flight tracking">
+          <p style={{ fontSize: 12.5, color: faint, margin: '0 0 12px', lineHeight: 1.5 }}>
+            The times above are what the customer typed. Confirm them against the airline before dispatch, especially the departure.
+          </p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <FlightTracking legLabel="Arrival flight" flightRaw={leg.arrivalFlight} dateIso={leg.arrivalAt} bookedLabel={jaTime(leg.arrivalAt)} mbjRole="arrival" />
+            {m.isRoundTrip && (
+              <FlightTracking legLabel="Departure flight" flightRaw={leg.departureFlight} dateIso={leg.departureAt} bookedLabel={jaTime(leg.departureAt)} mbjRole="departure" />
+            )}
+          </div>
+        </Card>
+      </div>
+
       {/* Driver details */}
       <div style={{ marginTop: 14 }}>
         <Card title="Driver + vehicle">
@@ -296,4 +312,86 @@ function StepActions({ stepKey, b, m, arrivalCal, departureCal }: {
     default:
       return null
   }
+}
+
+/* ── Flight tracking (any airline) ── */
+
+function clockMinutes(s: string | null | undefined): number | null {
+  if (!s) return null
+  const m = s.match(/(\d{1,2}):(\d{2})\s*(AM|PM)/i)
+  if (!m) return null
+  let h = Number(m[1]) % 12
+  if (/pm/i.test(m[3])) h += 12
+  return h * 60 + Number(m[2])
+}
+
+function FlightTracking({ legLabel, flightRaw, dateIso, bookedLabel, mbjRole }: {
+  legLabel: string
+  flightRaw: string | null
+  dateIso: string | null
+  bookedLabel: string
+  mbjRole: 'arrival' | 'departure'
+}) {
+  const [st, setSt] = useState<FlightStatus | null>(null)
+  const [loading, setLoading] = useState(false)
+  const links = flightLinks(flightRaw, dateIso)
+
+  const check = async () => {
+    setLoading(true)
+    const r = await fetch(`/api/admin/flight?flight=${encodeURIComponent(flightRaw ?? '')}&date=${flightDate(dateIso) ?? ''}`).catch(() => null)
+    setSt(r ? await r.json().catch(() => null) : null)
+    setLoading(false)
+  }
+
+  const authLeg = st ? (mbjRole === 'arrival' ? st.arrival : st.departure) : null
+  const authTime = authLeg?.revisedLocal || authLeg?.scheduledLocal || null
+  const diff = authTime ? (() => { const a = clockMinutes(bookedLabel); const b = clockMinutes(authTime); return a != null && b != null ? b - a : null })() : null
+  const bigMismatch = diff != null && Math.abs(diff) > 30
+
+  return (
+    <div>
+      <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, flexWrap: 'wrap' }}>
+        <span style={{ fontSize: 13.5, fontWeight: 600 }}>{legLabel}</span>
+        <span style={{ fontSize: 13, color: soft, ...tnum }}>{links?.ident ?? flightRaw ?? 'flight TBD'}</span>
+        <span style={{ fontSize: 12.5, color: faint, ...tnum }}>Customer said {bookedLabel} Jamaica time</span>
+      </div>
+      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 8 }}>
+        {links && <Btn href={links.google}>Google</Btn>}
+        {links && <Btn href={links.flightaware}>FlightAware</Btn>}
+        {links && <Btn href={links.flightradar24}>Flightradar24</Btn>}
+        {links && <Btn tone="solid" onClick={check}>{loading ? 'Checking…' : 'Check live status'}</Btn>}
+      </div>
+      {st && (
+        <div style={{ marginTop: 10 }}>
+          {st.found && authTime ? (
+            <div style={{
+              padding: '10px 12px', borderRadius: 8,
+              background: bigMismatch ? '#FCEDEA' : '#EAF4EE',
+              border: `1px solid ${bigMismatch ? 'rgba(176,28,12,0.25)' : 'rgba(29,122,80,0.25)'}`,
+            }}>
+              <div style={{ fontSize: 13.5, fontWeight: 600, color: bigMismatch ? '#B01C0C' : green, ...tnum }}>
+                Airline: {authTime}{st.status ? ` · ${st.status}` : ''}
+              </div>
+              {bigMismatch && (
+                <div style={{ fontSize: 12.5, color: '#B01C0C', marginTop: 4 }}>
+                  This is about {Math.abs(diff!)} min off the {bookedLabel} the customer entered. Update the pickup time to match the airline.
+                </div>
+              )}
+              {!bigMismatch && diff != null && (
+                <div style={{ fontSize: 12.5, color: faint, marginTop: 4 }}>Matches the customer&rsquo;s time.</div>
+              )}
+            </div>
+          ) : !st.configured ? (
+            <p style={{ fontSize: 12.5, color: faint }}>
+              Live auto-fetch is off (no AERODATABOX_API_KEY set). Use the links above to verify manually, or add a key to pull the airline time automatically.
+            </p>
+          ) : !st.resolvable ? (
+            <p style={{ fontSize: 12.5, color: faint }}>Flight number is incomplete (needs the airline code, e.g. VS165). Use the links above.</p>
+          ) : (
+            <p style={{ fontSize: 12.5, color: faint }}>No airline data for this flight and date yet. Use the links above.</p>
+          )}
+        </div>
+      )}
+    </div>
+  )
 }
