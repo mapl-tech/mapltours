@@ -47,6 +47,7 @@ export default function TopNav({ onCartClick }: { onCartClick?: () => void }) {
   const isExperience = pathname.startsWith('/experience')
   const isCheckout = pathname.startsWith('/checkout')
   const isExplore = pathname.startsWith('/explore')
+  const isProfile = pathname.startsWith('/profile')
   const isTransfers = pathname.startsWith('/transfers')
 
   useEffect(() => {
@@ -165,8 +166,8 @@ export default function TopNav({ onCartClick }: { onCartClick?: () => void }) {
           </div>
         </Link>
 
-        {/* ── Search Bar (hidden on experience/checkout/explore/mobile) ── */}
-        {!isExperience && !isCheckout && !isExplore && <div className="hide-mobile"
+        {/* ── Search Bar (hidden on experience/checkout/explore/profile/mobile) ── */}
+        {!isExperience && !isCheckout && !isExplore && !isProfile && <div className="hide-mobile"
           style={{
             display: 'flex',
             alignItems: 'center',

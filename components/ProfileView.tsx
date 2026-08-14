@@ -210,11 +210,11 @@ export default function ProfileView() {
       try {
         const [profileRes, bookingsRes, creatorsRes, badgesRes, likesRes] = await Promise.all([
           supabase.from('users').select('name, avatar_url, location').eq('id', user.id).single(),
-          supabase
-            .from('bookings')
-            .select('id, created_at, total_paid, booking_items(title, destination, travelers, date, experience_id)')
-            .eq('user_id', user.id)
-            .order('created_at', { ascending: false }),
+          // Server route: matches bookings by user_id OR verified email, so
+          // guest checkouts appear too (and get claimed onto this account).
+          fetch('/api/profile/bookings')
+            .then(async (r) => ({ data: r.ok ? (await r.json()).data : [] }))
+            .catch(() => ({ data: [] })),
           supabase.from('saved_creators').select('creator_handle').eq('user_id', user.id),
           supabase.from('user_badges').select('badge_name, earned_at').eq('user_id', user.id),
           supabase.from('experience_likes').select('id', { count: 'exact', head: true }).eq('user_id', user.id),
