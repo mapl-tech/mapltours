@@ -387,6 +387,8 @@ function FlightTracking({ legLabel, flightRaw, dateIso, bookedLabel, mbjRole }: 
             </p>
           ) : !st.resolvable ? (
             <p style={{ fontSize: 12.5, color: faint }}>Flight number is incomplete (needs the airline code, e.g. VS165). Use the links above.</p>
+          ) : st.error === 'rate_limited' ? (
+            <p style={{ fontSize: 12.5, color: faint }}>Airline service is busy (rate limit). Wait a few seconds and check again, or use the links above.</p>
           ) : (
             <p style={{ fontSize: 12.5, color: faint }}>No airline data for this flight and date yet. Use the links above.</p>
           )}

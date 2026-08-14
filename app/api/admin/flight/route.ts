@@ -62,12 +62,21 @@ export async function GET(request: NextRequest) {
   if (!iata) return NextResponse.json({ ...base, error: 'flight_number_incomplete' })
   if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) return NextResponse.json({ ...base, error: 'bad_date' })
 
+  const provider = () => fetch(
+    `https://aerodatabox.p.rapidapi.com/flights/number/${encodeURIComponent(iata)}/${date}?withAircraftImage=false&withLocation=false`,
+    { headers: { 'X-RapidAPI-Key': key, 'X-RapidAPI-Host': 'aerodatabox.p.rapidapi.com' } },
+  )
+
   try {
-    const res = await fetch(
-      `https://aerodatabox.p.rapidapi.com/flights/number/${encodeURIComponent(iata)}/${date}?withAircraftImage=false&withLocation=false`,
-      { headers: { 'X-RapidAPI-Key': key, 'X-RapidAPI-Host': 'aerodatabox.p.rapidapi.com' } },
-    )
+    let res = await provider()
+    // The BASIC plan caps at 1 request/second; a rapid arrival+departure check
+    // can trip a 429. Wait out the window and try once more before giving up.
+    if (res.status === 429) {
+      await new Promise((r) => setTimeout(r, 1300))
+      res = await provider()
+    }
     if (res.status === 404) return NextResponse.json({ ...base, found: false })
+    if (res.status === 429) return NextResponse.json({ ...base, error: 'rate_limited' })
     if (!res.ok) return NextResponse.json({ ...base, error: `provider_${res.status}` })
     const data = await res.json()
     const flights = Array.isArray(data) ? data : data?.flights ?? []

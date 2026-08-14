@@ -91,22 +91,57 @@ function BookingCard({ b, variant }: { b: Row; variant: 'abandoned' | 'paid' }) 
   const statusText = variant === 'paid' ? 'Paid' : 'Abandoned'
   const money2 = (n: number | null | undefined) => (n == null ? null : `${money(n)} ${currency}`)
 
+  const [open, setOpen] = useState(false)
+  const item0 = items[0]
+  const customerName = [b.first_name, b.last_name].filter(Boolean).join(' ') || '(no name)'
+  const routeSummary = isTransfer
+    ? `${item0?.airport ?? 'MBJ'} → ${item0?.hotel ?? item0?.destination ?? ''}`
+    : items.length === 1 ? (item0?.title ?? 'Tour') : `${items.length} experiences`
+  const paxSummary = isTransfer ? plural(item0?.passengers ?? item0?.travelers ?? 1, 'passenger') : null
+  const dispatchDone = Object.keys(b.dispatch || {}).length
+  const dispatchTotal = visibleSteps(item0?.trip_type === 'round_trip').length
+
   return (
     <div style={{ background: '#fff', border, borderRadius: 14, overflow: 'hidden' }}>
-      <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 12, padding: '14px 18px', borderBottom: borderSoft, background: '#FCFBF8', flexWrap: 'wrap' }}>
-        <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, flexWrap: 'wrap' }}>
-          <span style={{ fontWeight: 700, fontSize: 15, ...tnum }}>{ref(b.id)}</span>
-          <span style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', color: faint }}>{b.booking_type ?? 'tour'}</span>
-          <span style={{ fontSize: 11.5, fontWeight: 700, color: statusColor }}>{statusText}</span>
-        </div>
-        <div style={{ textAlign: 'right' }}>
-          <div style={{ fontWeight: 800, fontSize: 20, ...tnum }}>{money(b.total_paid)} <span style={{ fontSize: 12, fontWeight: 600, color: faint }}>{currency}</span></div>
-          <div style={{ fontSize: 11.5, color: faint }}>
-            {variant === 'paid' ? `Paid ${dateTime(b.paid_at ?? b.created_at)}` : `Started ${ageLabel(b.created_at)} · ${dateTime(b.created_at)}`}
+      {/* Clickable header + at-a-glance summary (collapsed view) */}
+      <div
+        role="button"
+        tabIndex={0}
+        aria-expanded={open}
+        onClick={() => setOpen((o) => !o)}
+        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setOpen((o) => !o) } }}
+        style={{ cursor: 'pointer', padding: '14px 18px', background: '#FCFBF8', borderBottom: open ? borderSoft : undefined }}
+      >
+        <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, flexWrap: 'wrap' }}>
+            <span style={{ fontWeight: 700, fontSize: 15, ...tnum }}>{ref(b.id)}</span>
+            <span style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', color: faint }}>{b.booking_type ?? 'tour'}</span>
+            <span style={{ fontSize: 11.5, fontWeight: 700, color: statusColor }}>{statusText}</span>
           </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div style={{ textAlign: 'right' }}>
+              <div style={{ fontWeight: 800, fontSize: 20, ...tnum }}>{money(b.total_paid)} <span style={{ fontSize: 12, fontWeight: 600, color: faint }}>{currency}</span></div>
+              <div style={{ fontSize: 11.5, color: faint }}>
+                {variant === 'paid' ? `Paid ${dateTime(b.paid_at ?? b.created_at)}` : `Started ${ageLabel(b.created_at)}`}
+              </div>
+            </div>
+            <span aria-hidden="true" style={{ display: 'inline-block', transform: open ? 'rotate(90deg)' : 'none', transition: 'transform 0.15s ease', color: faint, fontSize: 20, lineHeight: 1 }}>›</span>
+          </div>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginTop: 6, flexWrap: 'wrap' }}>
+          <span style={{ fontSize: 13, color: soft }}>{[customerName, routeSummary, paxSummary].filter(Boolean).join(' · ')}</span>
+          {variant === 'paid' && isTransfer && (
+            <span onClick={(e) => e.stopPropagation()} style={{ display: 'inline-flex', alignItems: 'center', gap: 10 }}>
+              <span style={{ fontSize: 12, color: faint, ...tnum }}>Dispatch {dispatchDone}/{dispatchTotal}</span>
+              <Link href={`/admin/dispatch/${b.id}`} onClick={(e) => e.stopPropagation()} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, height: 30, padding: '0 12px', borderRadius: 9999, border: '1px solid var(--accent, #171614)', background: 'var(--accent, #171614)', color: '#fff', fontSize: 12, fontWeight: 600, textDecoration: 'none' }}>
+                Manage dispatch →
+              </Link>
+            </span>
+          )}
         </div>
       </div>
 
+      {open && (
       <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1.35fr) minmax(0,1fr)', gap: 0 }} className="admin-card-grid">
         <div style={{ padding: '16px 18px', borderRight: borderSoft }}>
           <p style={{ ...label, marginBottom: 10 }}>Itinerary</p>
@@ -196,15 +231,6 @@ function BookingCard({ b, variant }: { b: Row; variant: 'abandoned' | 'paid' }) 
           </div>
         </div>
       </div>
-      {variant === 'paid' && isTransfer && (
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, padding: '12px 18px', borderTop: borderSoft, background: '#FCFBF8', flexWrap: 'wrap' }}>
-          <span style={{ fontSize: 12.5, color: faint, ...tnum }}>
-            Dispatch {Object.keys(b.dispatch || {}).length} / {visibleSteps(items[0]?.trip_type === 'round_trip').length} steps
-          </span>
-          <Link href={`/admin/dispatch/${b.id}`} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, height: 34, padding: '0 14px', borderRadius: 9999, border: '1px solid var(--accent, #171614)', background: 'var(--accent, #171614)', color: '#fff', fontSize: 12.5, fontWeight: 600, textDecoration: 'none' }}>
-            Manage dispatch →
-          </Link>
-        </div>
       )}
     </div>
   )
