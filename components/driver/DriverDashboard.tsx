@@ -297,7 +297,7 @@ function TripCard({ t, open, onToggle }: { t: DriverTrip; open: boolean; onToggl
           </span>
           <span style={{ whiteSpace: 'nowrap' }}>
             <span style={{ fontSize: 12.5, fontWeight: 600, color: faint }}>You get </span>
-            <span style={{ fontSize: 15, fontWeight: 800, color: green, ...tnum }}>{money(t.payoutTotal)}</span>
+            <span style={{ fontSize: 15, fontWeight: 800, color: green, ...tnum }}>{money(t.payoutTotal)} <span style={{ fontSize: 11.5, fontWeight: 700 }}>USD</span></span>
           </span>
         </div>
       </div>
@@ -358,7 +358,7 @@ function TripCard({ t, open, onToggle }: { t: DriverTrip; open: boolean; onToggl
                   {isRT ? (p.leg === 'arrival' ? 'Before the arrival pickup' : 'Before the departure pickup') : 'Before the ride'}
                 </span>
                 <span style={{ display: 'inline-flex', alignItems: 'center', gap: 10 }}>
-                  <span style={{ fontSize: 16, fontWeight: 800, ...tnum }}>{money(p.amount)}</span>
+                  <span style={{ fontSize: 16, fontWeight: 800, ...tnum }}>{money(p.amount)} <span style={{ fontSize: 11.5, fontWeight: 700, color: faint }}>USD</span></span>
                   <PayChip paid={p.paid} label={p.paid ? `Paid ${paidStamp(p.paidAt)}` : 'Pending'} />
                 </span>
               </div>
@@ -539,8 +539,8 @@ export default function DriverDashboard({ trips, tours = [], driverLabel, adminP
       <section aria-label="Pay summary" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 10, marginTop: 14 }}>
         {[
           { k: 'Trips', v: String(trips.length), c: ink, bg: '#fff', bd: border },
-          { k: 'Paid to you', v: money(paidTotal), c: green, bg: '#fff', bd: border },
-          { k: 'Pending', v: money(pendingTotal), c: pendingTotal > 0 ? amber : faint, bg: pendingTotal > 0 ? '#FBF6E7' : '#fff', bd: pendingTotal > 0 ? '1px solid #EBDFC0' : border },
+          { k: 'Paid to you (USD)', v: money(paidTotal), c: green, bg: '#fff', bd: border },
+          { k: 'Pending (USD)', v: money(pendingTotal), c: pendingTotal > 0 ? amber : faint, bg: pendingTotal > 0 ? '#FBF6E7' : '#fff', bd: pendingTotal > 0 ? '1px solid #EBDFC0' : border },
         ].map((s) => (
           <div key={s.k} style={{ background: s.bg, border: s.bd, borderRadius: 14, padding: '14px 15px' }}>
             <p style={{ ...eyebrow, letterSpacing: '0.07em' }}>{s.k}</p>
