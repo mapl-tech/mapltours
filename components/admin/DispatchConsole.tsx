@@ -296,7 +296,7 @@ function StepActions({ stepKey, b, m, arrivalCal, departureCal }: {
     }
     case 'paid_first':
     case 'paid_second':
-      return <div style={{ marginTop: 6, fontSize: 13, color: '#7A5A08', fontWeight: 600, ...tnum }}>Pay driver {money(m.driverPerLeg)}{m.isRoundTrip ? (stepKey === 'paid_first' ? ' (first half)' : ' (second half)') : ''}.</div>
+      return <div style={{ marginTop: 6, fontSize: 13, color: '#7A5A08', fontWeight: 600, ...tnum }}>Pay driver {money(m.driverPerLeg)}{m.isRoundTrip ? (stepKey === 'paid_first' ? ' (first half)' : ' (second half)') : ''} before the pickup.</div>
     case 'arrival_followup': {
       const msg = msgCustomerFollowup(b)
       return wrap(<><CopyBtn text={msg} label="Copy follow-up" /><Btn tone="wa" href={waLink(custPhone, msg)}>Send on WhatsApp</Btn></>)

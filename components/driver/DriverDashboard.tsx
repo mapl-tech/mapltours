@@ -278,7 +278,7 @@ function TripCard({ t }: { t: DriverTrip }) {
             {t.payoutLegs.map((p) => (
               <div key={p.leg} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap' }}>
                 <span style={{ fontSize: 14, color: soft }}>
-                  {isRT ? (p.leg === 'arrival' ? 'After arrival dropoff' : 'After airport dropoff') : 'After the ride'}
+                  {isRT ? (p.leg === 'arrival' ? 'Before the arrival pickup' : 'Before the departure pickup') : 'Before the ride'}
                 </span>
                 <span style={{ display: 'inline-flex', alignItems: 'center', gap: 10 }}>
                   <span style={{ fontSize: 16, fontWeight: 800, ...tnum }}>{money(p.amount)}</span>
@@ -402,7 +402,7 @@ export default function DriverDashboard({ trips, driverLabel, adminPreview }: {
       </section>
 
       <p style={{ fontSize: 12.5, color: faint, lineHeight: 1.6, marginTop: 24 }}>
-        Times are Jamaica time. Pay is your agreed rate per trip; round trips are paid in two halves, one after each completed leg, over WhatsApp. Questions: contact@mapltours.com.
+        Times are Jamaica time. Pay is your agreed rate per trip; round trips are paid in two halves, one before each leg, over WhatsApp. Questions: contact@mapltours.com.
       </p>
 
       <style jsx global>{`

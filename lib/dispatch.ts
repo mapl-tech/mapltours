@@ -290,13 +290,13 @@ export const STEPS: Step[] = [
   { key: 'customer_confirmed', num: 4, title: 'Send confirmation to the customer', group: 'setup' },
   { key: 'flight_requested', num: 5, title: 'Request flight details (24 to 48h before arrival)', group: 'arrival' },
   { key: 'driver_reconfirmed', num: 6, title: 'Remind + reconfirm the driver', group: 'arrival' },
-  { key: 'landed', num: 7, title: 'Flight landed - notify the driver', group: 'arrival' },
-  { key: 'arrival_complete', num: 8, title: 'Customer picked up + dropped at hotel', group: 'arrival' },
-  { key: 'paid_first', num: 9, title: 'Pay driver (first half)', group: 'arrival' },
+  { key: 'paid_first', num: 7, title: 'Pay driver (first half, before the pickup)', group: 'arrival' },
+  { key: 'landed', num: 8, title: 'Flight landed - notify the driver', group: 'arrival' },
+  { key: 'arrival_complete', num: 9, title: 'Customer picked up + dropped at hotel', group: 'arrival' },
   { key: 'arrival_followup', num: 10, title: 'Send arrival follow-up to customer', group: 'arrival' },
   { key: 'departure_reminded', num: 11, title: 'Remind the driver (24 to 48h before departure)', group: 'departure', roundTripOnly: true },
-  { key: 'departure_complete', num: 12, title: 'Customer picked up + dropped at airport', group: 'departure', roundTripOnly: true },
-  { key: 'paid_second', num: 13, title: 'Pay driver (second half)', group: 'departure', roundTripOnly: true },
+  { key: 'paid_second', num: 12, title: 'Pay driver (second half, before the pickup)', group: 'departure', roundTripOnly: true },
+  { key: 'departure_complete', num: 13, title: 'Customer picked up + dropped at airport', group: 'departure', roundTripOnly: true },
   { key: 'review_requested', num: 14, title: 'Send review request', group: 'close' },
 ]
 
