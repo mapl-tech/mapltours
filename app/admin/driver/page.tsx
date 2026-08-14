@@ -1,7 +1,8 @@
 import Link from 'next/link'
+import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { createServiceClient } from '@/lib/supabase/service'
-import { driverAllowlist, driverTrip, driverTour, nextActionAt, type DriverTrip, type DriverTour } from '@/lib/driver'
+import { driverAllowlist, driverTrip, driverTour, isAllowedDriver, nextActionAt, type DriverTrip, type DriverTour } from '@/lib/driver'
 import DriverDashboard from '@/components/driver/DriverDashboard'
 
 /**
@@ -36,7 +37,17 @@ export default async function AdminDriverPreviewPage() {
   const svc = createServiceClient()
   const { data: adminRow } = await svc.from('admins').select('user_id').eq('user_id', user.id).maybeSingle()
   if (!adminRow) {
-    return <Shell><h1 style={{ fontWeight: 700, fontSize: 22 }}>Not authorised</h1><p style={{ marginTop: 8, color: soft }}>This page is limited to MAPL admins.</p></Shell>
+    // A driver who lands on the admin preview by mistake belongs in his own
+    // portal; send him there instead of a dead end. (Observed: Collins hit
+    // this page 6x from Kingston on launch day.)
+    if (isAllowedDriver(user.email)) redirect('/driver')
+    return (
+      <Shell>
+        <h1 style={{ fontWeight: 700, fontSize: 22 }}>Not authorised</h1>
+        <p style={{ marginTop: 8, color: soft }}>This page is limited to MAPL admins.</p>
+        <p style={{ marginTop: 6, color: soft }}>Driving for MAPL? Your portal is at <Link href="/driver" style={{ color: ink, fontWeight: 600 }}>mapltours.com/driver</Link>.</p>
+      </Shell>
+    )
   }
 
   const { data: bookings } = await svc
