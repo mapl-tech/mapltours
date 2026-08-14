@@ -1,7 +1,6 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { Leaf } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 
 /**
@@ -27,13 +26,14 @@ export default function DriverShell({ signedInAs, children }: { signedInAs: stri
         {/* Gold brand signature */}
         <div aria-hidden="true" style={{ height: 3, background: `linear-gradient(90deg, transparent, ${goldWarm} 35%, ${goldWarm} 65%, transparent)` }} />
         <div style={{ width: '100%', padding: '0 clamp(16px, 2.5vw, 28px)', height: 60, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
-          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 10 }}>
-            <span style={{ width: 32, height: 32, borderRadius: 9, background: goldWarm, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
-              <Leaf size={16} strokeWidth={2.5} color={ink} />
-            </span>
-            <span style={{ display: 'inline-flex', flexDirection: 'column', lineHeight: 1 }}>
-              <span style={{ fontWeight: 800, fontSize: 15, letterSpacing: '0.06em', textTransform: 'uppercase', color: '#fff' }}>MAPL Tours</span>
-              <span style={{ fontWeight: 700, fontSize: 10.5, letterSpacing: '0.16em', textTransform: 'uppercase', color: goldWarm, marginTop: 2 }}>Jamaica · Driver portal</span>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/mapl-logo-dark.svg" alt="MAPL Tours Jamaica" style={{ height: 46, width: 'auto', display: 'block', margin: '-8px 0' }} />
+            <span className="driver-shell-tag" style={{
+              fontSize: 10.5, fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: goldWarm,
+              padding: '5px 11px', borderRadius: 9999, border: '1px solid rgba(196,164,74,0.45)', whiteSpace: 'nowrap',
+            }}>
+              Driver portal
             </span>
           </span>
           <span style={{ display: 'inline-flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
@@ -56,6 +56,9 @@ export default function DriverShell({ signedInAs, children }: { signedInAs: stri
       <style jsx>{`
         @media (max-width: 480px) {
           :global(.driver-shell-email) { display: none; }
+        }
+        @media (max-width: 419px) {
+          :global(.driver-shell-tag) { display: none; }
         }
         header :global(.drv-act:focus-visible) {
           outline: 3px solid ${goldWarm};

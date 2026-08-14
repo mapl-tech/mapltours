@@ -2,7 +2,6 @@
 
 import { Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
-import { Leaf } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { DESTINATION_IMAGES } from '@/lib/experiences'
 
@@ -42,13 +41,14 @@ function DriverLoginContent() {
     <div className="drv-login" style={{ minHeight: '100vh', fontFamily: dm, display: 'flex', flexDirection: 'column' }}>
       {/* Brand lockup, top left */}
       <header style={{ position: 'relative', zIndex: 2, padding: 'max(18px, env(safe-area-inset-top)) clamp(16px, 2.5vw, 28px) 0' }}>
-        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 10 }}>
-          <span style={{ width: 34, height: 34, borderRadius: 9, background: goldWarm, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
-            <Leaf size={17} strokeWidth={2.5} color={ink} />
-          </span>
-          <span style={{ display: 'inline-flex', flexDirection: 'column', lineHeight: 1 }}>
-            <span style={{ fontWeight: 800, fontSize: 15, letterSpacing: '0.06em', textTransform: 'uppercase', color: '#fff' }}>MAPL Tours</span>
-            <span style={{ fontWeight: 700, fontSize: 10.5, letterSpacing: '0.16em', textTransform: 'uppercase', color: goldWarm, marginTop: 2 }}>Jamaica · Driver portal</span>
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 12 }}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/mapl-logo-dark.svg" alt="MAPL Tours Jamaica" style={{ height: 48, width: 'auto', display: 'block', margin: '-8px 0' }} />
+          <span style={{
+            fontSize: 10.5, fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: goldWarm,
+            padding: '5px 11px', borderRadius: 9999, border: '1px solid rgba(196,164,74,0.45)', whiteSpace: 'nowrap',
+          }}>
+            Driver portal
           </span>
         </span>
       </header>
