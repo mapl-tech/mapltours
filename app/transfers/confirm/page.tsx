@@ -245,7 +245,9 @@ export default async function TransferConfirmPage({
 }
 
 function Success({ data }: { data: ConfirmData }) {
-  const showBreakdown = data.subtotal !== null || data.bookingFee !== null
+  // Transfers are sold at one all-in price; `subtotal` is the driver's cost
+  // and `bookingFee` is MAPL's margin, so neither is shown to the customer.
+  const showBreakdown = false
 
   return (
     <div style={{ textAlign: 'center' }}>

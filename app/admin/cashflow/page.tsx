@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { createServiceClient } from '@/lib/supabase/service'
 import { supplierPayout, round2 } from '@/lib/dispatch'
+import { estimatedRateDestinations, driverCost, getTransferPrice } from '@/lib/airport-transfers'
 import CashflowView, { type CashRow } from '@/components/admin/CashflowView'
 
 /**
@@ -95,9 +96,53 @@ export default async function CashflowPage() {
     }
   }))
 
+  // Driver rates we inferred rather than received from Collins. Surfaced here
+  // so they can be confirmed; each is set at or above the nearest quoted
+  // resort, so a booking can never sell below cost in the meantime.
+  const estimates = estimatedRateDestinations()
+
   return (
     <Shell>
       <CashflowView rows={rows} />
+
+      {estimates.length > 0 && (
+        <section style={{ marginTop: 28, background: '#fff', border: '1px solid #E7E1D6', borderRadius: 16, overflow: 'hidden' }}>
+          <div style={{ padding: '14px 18px', background: '#FCF6E4', borderBottom: '1px solid #F0E4BE' }}>
+            <span style={{ fontSize: 12, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#7A5A08' }}>
+              Driver rates to confirm with Collins · {estimates.length}
+            </span>
+          </div>
+          <div style={{ padding: '14px 18px' }}>
+            <p style={{ fontSize: 13.5, color: soft, margin: '0 0 12px', lineHeight: 1.55 }}>
+              These resorts are not on Collins&rsquo;s rate sheet, so each uses a conservative
+              estimate set at or above the nearest quoted resort. Confirm them and the
+              customer price updates automatically.
+            </p>
+            <div style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13.5 }}>
+                <thead>
+                  <tr style={{ textAlign: 'left', color: '#6E6A62' }}>
+                    <th style={{ padding: '6px 10px 6px 0', fontWeight: 600 }}>Resort</th>
+                    <th style={{ padding: '6px 10px', fontWeight: 600, textAlign: 'right' }}>Collins, one-way</th>
+                    <th style={{ padding: '6px 10px', fontWeight: 600, textAlign: 'right' }}>Customer, one-way</th>
+                    <th style={{ padding: '6px 0 6px 10px', fontWeight: 600, textAlign: 'right' }}>Customer, round trip</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {estimates.map((d) => (
+                    <tr key={d.id} style={{ borderTop: '1px solid #F1ECE3' }}>
+                      <td style={{ padding: '8px 10px 8px 0' }}>{d.name}</td>
+                      <td style={{ padding: '8px 10px', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>${driverCost(d.id, 'one_way')?.toFixed(2)}</td>
+                      <td style={{ padding: '8px 10px', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>${getTransferPrice(d.id, 'one_way')?.toFixed(2)}</td>
+                      <td style={{ padding: '8px 0 8px 10px', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>${getTransferPrice(d.id, 'round_trip')?.toFixed(2)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+      )}
     </Shell>
   )
 }

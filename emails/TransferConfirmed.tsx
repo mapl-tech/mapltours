@@ -71,7 +71,12 @@ export default function TransferConfirmed(props: TransferConfirmedProps) {
     transfers,
   } = props
   const name = firstName?.trim() || 'there'
-  const showBreakdown = subtotal != null || bookingFee != null
+  // Transfers are quoted and sold at ONE all-in price. `subtotal` is the
+  // driver's wholesale cost and `bookingFee` is MAPL's margin, so itemising
+  // them here would publish internal costs to the customer. Show the total.
+  const showBreakdown = false
+  void subtotal
+  void bookingFee
   const paidAtPretty = fmtDateTime(paidAt)
   const customerLines = [
     [firstName, props.lastName].filter(Boolean).join(' ').trim() || null,

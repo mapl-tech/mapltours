@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import TransfersView from '@/components/transfers/TransfersView'
-import { ZONES, DESTINATIONS } from '@/lib/airport-transfers'
+import { ZONES, DESTINATIONS, getTransferPrice, zoneFromPrice } from '@/lib/airport-transfers'
 import { TRANSFER_FAQS, TRANSFER_REVIEWS } from '@/lib/airport-transfers-content'
 import { HERO } from '@/lib/images'
 
@@ -11,7 +11,7 @@ export const metadata: Metadata = {
   title:
     'Jamaica Airport Transfers | Flat-Rate Private Rides from Montego Bay (MBJ)',
   description:
-    'Book a private airport transfer in Jamaica from Sangster International (MBJ) to Negril, Ocho Rios, Montego Bay, Falmouth, and every major resort. Flat rates from $35, 1–4 passengers, meet-and-greet, flight tracking, free cancellation up to 24 hours. Rated 4.9 from 340+ trips.',
+    'Book a private airport transfer in Jamaica from Sangster International (MBJ) to Negril, Ocho Rios, Montego Bay, Falmouth, and every major resort. Flat rates from $24, 1–4 passengers, meet-and-greet, flight tracking, free cancellation up to 24 hours. Rated 4.9 from 340+ trips.',
   keywords: [
     'Jamaica airport transfer',
     'Montego Bay airport transfer',
@@ -77,8 +77,10 @@ export const metadata: Metadata = {
  *  • BreadcrumbList, home > transfers crumb trail.
  */
 function buildStructuredData() {
-  const minPrice = Math.min(...Object.values(ZONES).map((z) => z.oneWay))
-  const maxPrice = Math.max(...Object.values(ZONES).map((z) => z.roundTrip))
+  const allOneWay = DESTINATIONS.map((d) => getTransferPrice(d.id, 'one_way') ?? 0).filter(Boolean)
+  const allRound = DESTINATIONS.map((d) => getTransferPrice(d.id, 'round_trip') ?? 0).filter(Boolean)
+  const minPrice = Math.min(...allOneWay)
+  const maxPrice = Math.max(...allRound)
 
   const serviceSchema = {
     '@context': 'https://schema.org',
@@ -138,20 +140,28 @@ function buildStructuredData() {
         {
           '@type': 'Offer',
           name: `One-way transfer, ${z.label}`,
-          price: String(z.oneWay),
+          priceSpecification: {
+            '@type': 'PriceSpecification',
+            minPrice: String(zoneFromPrice(z.code, 'one_way')),
+            priceCurrency: 'USD',
+          },
           priceCurrency: 'USD',
           availability: 'https://schema.org/InStock',
           areaServed: z.label,
-          description: `${z.duration}. Flat rate for 1–4 passengers.`,
+          description: `${z.duration}. Flat price per vehicle for 1–4 passengers; exact price depends on the resort.`,
         },
         {
           '@type': 'Offer',
           name: `Round-trip transfer, ${z.label}`,
-          price: String(z.roundTrip),
+          priceSpecification: {
+            '@type': 'PriceSpecification',
+            minPrice: String(zoneFromPrice(z.code, 'round_trip')),
+            priceCurrency: 'USD',
+          },
           priceCurrency: 'USD',
           availability: 'https://schema.org/InStock',
           areaServed: z.label,
-          description: `${z.duration}. Flat rate for 1–4 passengers, both legs.`,
+          description: `${z.duration}. Flat price per vehicle for 1–4 passengers, both legs; exact price depends on the resort.`,
         },
       ]),
     },

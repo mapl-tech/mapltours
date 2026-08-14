@@ -1,3 +1,4 @@
+import { getTransferPrice } from '@/lib/airport-transfers'
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import type { TransferQuote, TransferTripType } from './airport-transfers'
@@ -53,9 +54,13 @@ export const useTransfersCart = create<TransfersCartStore>()(
         // Idempotent, if the same destination + trip type already exists,
         // update the passenger count instead of adding a duplicate.
         if (items.some((i) => i.id === id)) {
+          // Refresh the PRICE as well as the passenger count: re-adding a line
+          // must never leave a stale fare behind (it would fail checkout).
           set({
             items: items.map((i) =>
-              i.id === id ? { ...i, passengers: quote.passengers } : i,
+              i.id === id
+                ? { ...i, passengers: quote.passengers, priceUsd: quote.priceUsd }
+                : i,
             ),
           })
           return
@@ -85,15 +90,33 @@ export const useTransfersCart = create<TransfersCartStore>()(
 
       clearCart: () => set({ items: [] }),
 
+      // Prices from lib/airport-transfers are ALL-IN: the driver's rate, MAPL's
+      // margin and card processing are already inside the number quoted to the
+      // customer, so there is no separate fee line at checkout. The server
+      // still records the driver-cost / margin split on the booking.
       subtotal: () => get().items.reduce((sum, i) => sum + i.priceUsd, 0),
 
-      // Platform service fee on transfers, 10% flat. Covers concierge
-      // booking, 24/7 support, meet-and-greet, and flight tracking on top
-      // of the driver rate baked into the zone fares.
-      fee: () => Math.round(get().subtotal() * 0.10),
+      fee: () => 0,
 
-      grandTotal: () => get().subtotal() + get().fee(),
+      grandTotal: () => get().subtotal(),
     }),
-    { name: 'mapl-transfers-cart', version: 1 },
+    {
+      name: 'mapl-transfers-cart',
+      // v2: prices became ALL-IN (driver cost + margin + card processing) and
+      // are per destination rather than per zone. A cart persisted under v1
+      // holds retired fares, which the server rejects as a total mismatch and
+      // which a reload alone can never clear. Re-derive every line from the
+      // live rate table, dropping any destination that no longer exists.
+      version: 2,
+      migrate: (persisted, version) => {
+        const state = persisted as { items?: TransferCartItem[] } | undefined
+        if (!state || version >= 2) return state as TransfersCartStore
+        const items = (state.items ?? []).flatMap((i) => {
+          const priceUsd = getTransferPrice(i.destinationId, i.tripType)
+          return priceUsd === null ? [] : [{ ...i, priceUsd }]
+        })
+        return { ...state, items } as TransfersCartStore
+      },
+    },
   ),
 )

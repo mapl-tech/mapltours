@@ -517,27 +517,9 @@ export default function TransfersCheckoutView() {
                 borderTop: '1px solid var(--border)',
               }}
             >
-              {[
-                { label: 'Subtotal', value: subtotal() },
-                { label: 'Service fee (10%)', value: fee() },
-              ].map((row) => (
-                <div
-                  key={row.label}
-                  style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    fontSize: 13.5,
-                    fontFamily: 'var(--font-dm-sans)',
-                    color: 'var(--text-secondary)',
-                    marginBottom: 6,
-                  }}
-                >
-                  <span>{row.label}</span>
-                  <span style={{ fontFamily: 'var(--font-dm-sans)', fontFeatureSettings: '"tnum" 1' }}>
-                    ${row.value.toFixed(2)}
-                  </span>
-                </div>
-              ))}
+              {/* All-in pricing: the quoted price already covers the ride,
+                  MAPL's margin and card processing, so there is no Subtotal or
+                  Service-fee row here. The booking still records the split. */}
               <div
                 style={{
                   display: 'flex',

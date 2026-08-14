@@ -5,6 +5,7 @@ import { createServiceClient } from '@/lib/supabase/service'
 import {
   getDestination,
   getTransferPrice,
+  driverCost,
   type TransferTripType,
 } from '@/lib/airport-transfers'
 import { assertCheckoutSchema, SchemaNotReadyError } from '@/lib/checkout-schema'
@@ -26,6 +27,8 @@ import { sanitizeAttribution } from '@/lib/attribution'
  *   • PI attach is verified, if it can't be persisted, the request
  *     fails closed.
  */
+
+const round2 = (n: number) => Math.round(n * 100) / 100
 
 export const runtime = 'nodejs'
 
@@ -106,6 +109,7 @@ export async function POST(request: NextRequest) {
 
     // 1. Server-side pricing: validate every line and rebuild the total.
     let subtotal = 0
+    let total = 0
     interface PricedRow {
       input: TransferItemIn
       destination: ReturnType<typeof getDestination>
@@ -148,20 +152,27 @@ export async function POST(request: NextRequest) {
         )
       }
       priced.push({ input: { ...item, passengers: pax }, destination: dest, price })
-      subtotal += price
+      // `price` is the ALL-IN price the customer pays; `subtotal` tracks what
+      // the driver is owed, so the split stored on the booking stays
+      // supplier-cost vs MAPL-margin.
+      subtotal += driverCost(item.destinationId, item.tripType) ?? 0
+      total += price
     }
 
-    // Transfers fee mirrors lib/transfers-cart.ts (10% flat).
-    const fee = Math.round(subtotal * 0.10)
-    const total = subtotal + fee
+    // Customers see one all-in price; MAPL's margin is whatever is left after
+    // the driver's cost (it covers the 10% markup and card processing).
+    const fee = round2(total - subtotal)
     const amountInCents = Math.round(total * 100)
     if (amountInCents < 50) {
       return NextResponse.json({ error: 'Amount must be at least $0.50' }, { status: 400 })
     }
 
-    // Reject overt client tampering. We tolerate $1 of rounding drift.
+    // The client derives its total from the same pure rate table, so any
+    // disagreement means a stale cart or tampering. A $1 tolerance used to let
+    // a retired fare through and charge a different amount than the page
+    // displayed, so this now matches to the cent.
     const claimed = Number(body.amount)
-    if (Number.isFinite(claimed) && Math.abs(claimed - total) > 1) {
+    if (Number.isFinite(claimed) && Math.abs(claimed - total) > 0.01) {
       console.warn('[transfers/checkout]', reqId, 'amount mismatch', { claimed, total })
       return NextResponse.json(
         { error: 'Cart total mismatch, please reload and try again', requestId: reqId },

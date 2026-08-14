@@ -21,6 +21,8 @@ import {
   groupDestinationsByZone,
   type TransferTripType,
   type TransferZone,
+  zoneFromPrice,
+  getTransferPrice,
 } from '@/lib/airport-transfers'
 import { useTransfersCart } from '@/lib/transfers-cart'
 import { useI18n } from '@/lib/i18n'
@@ -154,11 +156,11 @@ export default function TransfersView() {
             </p>
 
             <p className="xfer-hero-price-strip">
-              <span>From <strong>{formatPrice(35)}</strong> to Rose Hall</span>
+              <span>From <strong>{formatPrice(getTransferPrice('hilton-rose-hall', 'one_way') ?? 0)}</strong> to Rose Hall</span>
               <span aria-hidden>·</span>
-              <span><strong>{formatPrice(80)}</strong> to Negril</span>
+              <span><strong>{formatPrice(getTransferPrice('riu-negril', 'one_way') ?? 0)}</strong> to Negril</span>
               <span aria-hidden>·</span>
-              <span><strong>{formatPrice(100)}</strong> to Ocho Rios</span>
+              <span><strong>{formatPrice(getTransferPrice('moon-palace-ocho-rios', 'one_way') ?? 0)}</strong> to Ocho Rios</span>
               <span aria-hidden>·</span>
               <span style={{ color: 'var(--text-tertiary)' }}>flat per vehicle, one-way</span>
             </p>
@@ -506,9 +508,9 @@ export default function TransfersView() {
           {/* Price-anchor strip, concrete savings on the most-quoted routes */}
           <div className="xfer-savings-strip" aria-label="Typical price comparison">
             <div className="xfer-savings-row">
-              <SavingsRow route="MBJ → Negril (round-trip)" mapl={140} typical="180–220" />
-              <SavingsRow route="MBJ → Ocho Rios (round-trip)" mapl={180} typical="220–260" />
-              <SavingsRow route="MBJ → Rose Hall (round-trip)" mapl={60} typical="80–120" />
+              <SavingsRow route="MBJ → Negril (round-trip)" mapl={getTransferPrice('riu-negril', 'round_trip') ?? 0} typical="240–400" />
+              <SavingsRow route="MBJ → Ocho Rios (round-trip)" mapl={getTransferPrice('moon-palace-ocho-rios', 'round_trip') ?? 0} typical="240–400" />
+              <SavingsRow route="MBJ → Rose Hall (round-trip)" mapl={getTransferPrice('hilton-rose-hall', 'round_trip') ?? 0} typical="90–160" />
             </div>
             <p className="xfer-savings-note">
               Typical taxi quotes pulled from average prices reported by JUTA
@@ -569,12 +571,12 @@ export default function TransfersView() {
                     </div>
                     <div className="xfer-zone-prices">
                       <div>
-                        <p className="xfer-zone-price-label">One-way</p>
-                        <p className="xfer-zone-price-value">{formatPrice(z.oneWay)}</p>
+                        <p className="xfer-zone-price-label">One-way from</p>
+                        <p className="xfer-zone-price-value">{formatPrice(zoneFromPrice(code, 'one_way'))}</p>
                       </div>
                       <div>
-                        <p className="xfer-zone-price-label">Round-trip</p>
-                        <p className="xfer-zone-price-value">{formatPrice(z.roundTrip)}</p>
+                        <p className="xfer-zone-price-label">Round-trip from</p>
+                        <p className="xfer-zone-price-value">{formatPrice(zoneFromPrice(code, 'round_trip'))}</p>
                       </div>
                     </div>
                     <p className="xfer-zone-destinations">
@@ -679,7 +681,7 @@ export default function TransfersView() {
             id="mbj-to-negril"
             heading="MBJ to Negril private transfer"
             travel="Roughly 1h 30m along the A1, then the coast road past Lucea."
-            price={140}
+            price={getTransferPrice('sandals-negril', 'round_trip') ?? 0}
             destinationId="sandals-negril"
             onSelect={selectRoute}
             body="Sangster International (MBJ) is the airport everyone flying to Negril uses, Norman Manley (KIN) is on the wrong side of the island, three hours further. The drive is straightforward and scenic; the catch is that the Negril taxi queue at MBJ is one of the most-overpriced in the Caribbean during peak season. A pre-booked private transfer locks the price, skips the queue, and gets you to Seven Mile Beach with bottled water and the AC already running."
@@ -689,7 +691,7 @@ export default function TransfersView() {
             id="mbj-to-ocho-rios"
             heading="MBJ to Ocho Rios airport transfer"
             travel="About 1h 45m on the new north-coast highway."
-            price={180}
+            price={getTransferPrice('sandals-ochi', 'round_trip') ?? 0}
             destinationId="sandals-ochi"
             onSelect={selectRoute}
             body="The toll highway between Montego Bay and Ocho Rios cut a chunk off this drive, what used to be three hours on the old coastal road is now closer to 1h 45m. Most resorts in St. Ann (Sandals Ochi, Beaches Ocho Rios, Moon Palace, Bahia Principe) sit within 20 minutes of each other on this same stretch. Round-trip is the way most travelers book; you keep the same driver and skip the cab math twice."
@@ -699,17 +701,17 @@ export default function TransfersView() {
             id="montego-bay-airport-transfer"
             heading="Montego Bay airport transfer to your hotel"
             travel="5–25 minutes for any Rose Hall or Ironshore property."
-            price={60}
+            price={getTransferPrice('iberostar-rose-hall', 'round_trip') ?? 0}
             destinationId="iberostar-rose-hall"
             onSelect={selectRoute}
-            body="If you’re staying anywhere in the Rose Hall corridor, Iberostar, Hyatt Ziva, Hilton, Half Moon, the Sandals MoBay properties, your transfer is the cheapest tier on the island. Round-trip runs $60 flat, less than the cost of a single cab leg in many cases. Solo travelers get the same vehicle; the price is per car, not per passenger."
+            body="If you’re staying anywhere in the Rose Hall corridor, Iberostar, Hyatt Ziva, Hilton, Half Moon, the Sandals MoBay properties, your transfer is the cheapest tier on the island. Round-trips in this corridor are the cheapest on the island. Solo travelers get the same vehicle; the price is per car, not per passenger."
           />
 
           <RouteSection
             id="mbj-to-falmouth"
             heading="MBJ to Falmouth resort transfer"
             travel="About 35–45 minutes east on the highway."
-            price={110}
+            price={getTransferPrice('royalton-blue-water-trelawny', 'round_trip') ?? 0}
             destinationId="royalton-blue-water-trelawny"
             onSelect={selectRoute}
             body="Royalton Blue Water and Excellence Oyster Bay both sit just outside Falmouth, in Trelawny. The drive is short and almost entirely highway. If you’re a cruise passenger meeting your ship at the Falmouth Cruise Port, the same flat rate applies, just pick the port as your destination at checkout."
@@ -806,7 +808,7 @@ export default function TransfersView() {
           <>
             <div>
               <p className="xfer-sticky-dest">Airport transfer · MBJ</p>
-              <p className="xfer-sticky-meta">From {formatPrice(35)} · 1–4 passengers · flight tracked</p>
+              <p className="xfer-sticky-meta">From {formatPrice(zoneFromPrice('A', 'one_way'))} · 1–4 passengers · flight tracked</p>
             </div>
             <button
               type="button"
