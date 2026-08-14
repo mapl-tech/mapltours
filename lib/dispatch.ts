@@ -3,10 +3,14 @@
  * dispatch console. Nothing here mutates money or touches the payment path; it
  * only DERIVES display values and message text from an existing booking.
  *
- * Money model (confirmed with the operator):
- *   customer fare (subtotal) = driver base rate x 1.20  (20% markup)
- *   customer total           = subtotal + 10% transfer fee
- *   => driver is owed  subtotal / 1.20  (round-trips split half per leg)
+ * Money model (corrected with the operator, Aug 14 2026):
+ *   the SUPPLIER is paid the subtotal in full, and MAPL's entire margin is
+ *   the customer-facing fee charged on top:
+ *     transfers: customer pays fare + 10% trip fee -> driver gets the fare
+ *     tours:     customer pays price + 20% fee     -> operator gets the price
+ *   => driver is owed  subtotal  (round-trips split half per leg)
+ *   => MAPL keeps      fee - Stripe fee
+ *   There is no separate markup: the fee IS the markup.
  *
  * Time model: the checkout stores the customer's typed wall-clock (a
  * `datetime-local`, no zone) as `...T13:09:00+00:00`. That wall-clock IS the
@@ -56,8 +60,14 @@ export function bookingRef(id: string): string {
 export function round2(n: number): number {
   return Math.round(n * 100) / 100
 }
-export function driverOwed(subtotal: number): number {
-  return round2(subtotal / 1.2)
+/**
+ * What MAPL owes the supplier for a booking: the SUBTOTAL IN FULL.
+ * The customer-facing fee (10% transfers, 20% tours) is MAPL's whole margin,
+ * so nothing is deducted from the supplier's rate. Used for the transfer
+ * driver and, on the cash-flow page, for tour operators.
+ */
+export function supplierPayout(subtotal: number): number {
+  return round2(subtotal)
 }
 export function money(n: number | null | undefined): string {
   return '$' + Number(n ?? 0).toFixed(2)
@@ -65,18 +75,17 @@ export function money(n: number | null | undefined): string {
 
 export interface MoneyBlock {
   customerPaid: number
-  /** what MAPL pays the driver = the base rate the fare was marked up from. */
-  driverBase: number
-  /** the 20% markup MAPL adds to the driver rate to get the fare. */
-  markup: number
+  /** the fare, which IS the driver's rate (MAPL's margin is the trip fee). */
   fare: number
+  /** the 10% trip fee charged on top: MAPL's entire margin on a transfer. */
   transferFee: number
   stripeFee: number | null
   /** what Stripe deposits (customer paid minus Stripe fee), BEFORE the driver. */
   netToMapl: number | null
+  /** paid to the driver: the full fare. */
   driverTotal: number
   driverPerLeg: number
-  /** MAPL's actual profit: customer paid minus Stripe fee minus driver payout. */
+  /** MAPL's actual profit: the trip fee minus the Stripe fee. */
   maplKeeps: number | null
   isRoundTrip: boolean
 }
@@ -85,14 +94,12 @@ export function moneyBlock(b: Bk, stripeFee: number | null): MoneyBlock {
   const fare = Number(b.subtotal ?? 0)
   const transferFee = Number(b.booking_fee ?? 0)
   const customerPaid = Number(b.total_paid ?? 0)
-  const driverTotal = driverOwed(fare)
+  const driverTotal = supplierPayout(fare)
   const netToMapl = stripeFee != null ? round2(customerPaid - stripeFee) : null
   const leg = firstLeg(b)
   const isRoundTrip = leg?.tripType === 'round_trip'
   return {
     customerPaid,
-    driverBase: driverTotal,
-    markup: round2(fare - driverTotal),
     fare,
     transferFee,
     stripeFee,

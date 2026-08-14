@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { createServiceClient } from '@/lib/supabase/service'
-import { driverOwed, round2 } from '@/lib/dispatch'
+import { supplierPayout, round2 } from '@/lib/dispatch'
 import CashflowView, { type CashRow } from '@/components/admin/CashflowView'
 
 /**
@@ -78,7 +78,9 @@ export default async function CashflowPage() {
   const rows: CashRow[] = await Promise.all(((bookings ?? []) as Row[]).map(async (b) => {
     const { feeUsd, settledCad } = await stripeMoney(b.stripe_payment_id)
     const gross = Number(b.total_paid ?? 0)
-    const driverPayout = b.booking_type === 'transfer' ? driverOwed(Number(b.subtotal ?? 0)) : 0
+    // The supplier (transfer driver OR tour operator) is paid the subtotal in
+    // full; MAPL's margin is the fee charged on top (10% transfers, 20% tours).
+    const supplierCost = supplierPayout(Number(b.subtotal ?? 0))
     return {
       id: b.id,
       ref: 'MAPL-' + b.id.slice(0, 8).toUpperCase(),
@@ -87,8 +89,8 @@ export default async function CashflowPage() {
       type: (b.booking_type ?? 'tour') as 'tour' | 'transfer',
       gross,
       stripeFeeUsd: feeUsd,
-      driverPayout,
-      netUsd: round2(gross - (feeUsd ?? 0) - driverPayout),
+      supplierPayout: supplierCost,
+      netUsd: round2(gross - (feeUsd ?? 0) - supplierCost),
       settledCad,
     }
   }))

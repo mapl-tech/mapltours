@@ -11,7 +11,7 @@ export interface CashRow {
   type: 'tour' | 'transfer'
   gross: number
   stripeFeeUsd: number | null
-  driverPayout: number
+  supplierPayout: number
   netUsd: number
   settledCad: number | null
 }
@@ -49,8 +49,8 @@ export default function CashflowView({ rows }: { rows: CashRow[] }) {
 
   const collected = sum(rows.map((r) => r.gross))
   const stripeFees = sum(rows.map((r) => r.stripeFeeUsd ?? 0))
-  const driverPayouts = sum(rows.map((r) => r.driverPayout))
-  const netKept = Math.round((collected - stripeFees - driverPayouts) * 100) / 100
+  const supplierPayouts = sum(rows.map((r) => r.supplierPayout))
+  const netKept = Math.round((collected - stripeFees - supplierPayouts) * 100) / 100
   const settledCad = rows.some((r) => r.settledCad != null) ? sum(rows.map((r) => r.settledCad ?? 0)) : null
   const hasTour = rows.some((r) => r.type === 'tour')
 
@@ -61,14 +61,14 @@ export default function CashflowView({ rows }: { rows: CashRow[] }) {
 
   const parts = [
     { key: 'net', label: 'Net kept', value: netKept, color: C.net },
-    { key: 'payout', label: 'Driver payouts', value: driverPayouts, color: C.payout },
+    { key: 'payout', label: 'Supplier payouts', value: supplierPayouts, color: C.payout },
     { key: 'fee', label: 'Stripe fees', value: stripeFees, color: C.fee },
   ].filter((p) => p.value > 0)
 
   const kpis = [
     { label: 'Collected', value: usd(collected), sub: `${rows.length} paid ${rows.length === 1 ? 'booking' : 'bookings'}`, color: ink },
     { label: 'Stripe fees', value: usd(stripeFees), sub: 'processing + FX, in USD', color: C.fee },
-    { label: 'Driver payouts', value: usd(driverPayouts), sub: 'transfers', color: C.payout },
+    { label: 'Supplier payouts', value: usd(supplierPayouts), sub: 'drivers + tour operators', color: C.payout },
     { label: 'Net kept', value: usd(netKept), sub: settledCad != null ? `${usd(settledCad).replace('$', '')} CAD settled` : 'after fees + payouts', color: C.net, hero: true },
   ]
 
@@ -178,7 +178,7 @@ export default function CashflowView({ rows }: { rows: CashRow[] }) {
                   <td style={{ padding: '12px 16px', textTransform: 'capitalize', color: soft }}>{r.type}</td>
                   <td style={{ padding: '12px 16px', textAlign: 'right', ...tnum }}>{usd(r.gross)}</td>
                   <td style={{ padding: '12px 16px', textAlign: 'right', color: FEE_TEXT, ...tnum }}>{r.stripeFeeUsd != null ? '- ' + usd(r.stripeFeeUsd) : '-'}</td>
-                  <td style={{ padding: '12px 16px', textAlign: 'right', color: r.driverPayout > 0 ? C.payout : faint, ...tnum }}>{r.driverPayout > 0 ? '- ' + usd(r.driverPayout) : '-'}</td>
+                  <td style={{ padding: '12px 16px', textAlign: 'right', color: r.supplierPayout > 0 ? C.payout : faint, ...tnum }}>{r.supplierPayout > 0 ? '- ' + usd(r.supplierPayout) : '-'}</td>
                   <td style={{ padding: '12px 16px', textAlign: 'right', fontWeight: 700, color: C.net, ...tnum }}>{usd(r.netUsd)}</td>
                   <td style={{ padding: '12px 16px', textAlign: 'right', color: soft, ...tnum }}>{r.settledCad != null ? usd(r.settledCad) : '-'}</td>
                 </tr>

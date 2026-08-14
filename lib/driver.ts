@@ -1,4 +1,4 @@
-import { firstLeg, bookingRef, driverOwed, round2, type Bk } from '@/lib/dispatch'
+import { firstLeg, bookingRef, supplierPayout, round2, type Bk } from '@/lib/dispatch'
 
 /**
  * Driver-portal data model. The single job of this module is the PRIVACY
@@ -45,7 +45,7 @@ export interface DriverTrip {
   arrivalAt: string | null
   departureFlight: string | null
   departureAt: string | null
-  /** total the driver earns on this booking (fare / 1.20). */
+  /** total the driver earns on this booking: the full fare. */
   payoutTotal: number
   payoutLegs: DriverPayoutLeg[]
   /** true once every payout leg is paid. */
@@ -57,7 +57,7 @@ export function driverTrip(b: Bk): DriverTrip | null {
   const leg = firstLeg(b)
   if (!leg) return null
   const dispatch = (b.dispatch ?? {}) as Record<string, string>
-  const total = driverOwed(Number(b.subtotal ?? 0))
+  const total = supplierPayout(Number(b.subtotal ?? 0))
   const isRT = leg.tripType === 'round_trip'
   const perLeg = isRT ? round2(total / 2) : total
   const payoutLegs: DriverPayoutLeg[] = [
