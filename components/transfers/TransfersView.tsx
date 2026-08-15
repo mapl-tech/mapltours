@@ -161,26 +161,27 @@ export default function TransfersView() {
                   background: 'var(--gold)',
                 }}
               />
-              <Kicker>A MAPL private service · MBJ · KIN on request</Kicker>
+              <Kicker>Private airport transfers · Montego Bay (MBJ)</Kicker>
             </div>
             <h1 className="xfer-hero-h1">
-              Sangster to your hotel.{' '}
+              Skip the taxi line.{' '}
               <span style={{ fontStyle: 'italic', fontWeight: 500 }}>
-                Quietly arranged.
+                Your driver is already waiting.
               </span>
             </h1>
             <p className="xfer-hero-sub">
-              Private vehicle, 1–4 passengers, priced up front. Meet-and-greet
-              at arrivals, flight tracking, and the same driver both ways when
-              you book round-trip.
+              A licensed local driver meets you inside arrivals with a MAPL
+              sign and takes you straight to your resort. One flat price for
+              the whole car, up to 4 people. We track your flight, so a delay
+              costs you nothing, and you can cancel free up to 24 hours before.
             </p>
 
             <p className="xfer-hero-price-strip">
               <span>From <strong>{formatPrice(getTransferPrice('hilton-rose-hall', 'one_way') ?? 0)}</strong> to Rose Hall</span>
               <span aria-hidden>·</span>
-              <span><strong>{formatPrice(getTransferPrice('riu-negril', 'one_way') ?? 0)}</strong> to Negril</span>
+              <span>from <strong>{formatPrice(getTransferPrice('riu-negril', 'one_way') ?? 0)}</strong> to Negril</span>
               <span aria-hidden>·</span>
-              <span><strong>{formatPrice(getTransferPrice('moon-palace-ocho-rios', 'one_way') ?? 0)}</strong> to Ocho Rios</span>
+              <span>from <strong>{formatPrice(getTransferPrice('moon-palace-ocho-rios', 'one_way') ?? 0)}</strong> to Ocho Rios</span>
               <span aria-hidden>·</span>
               <span style={{ color: 'var(--text-tertiary)' }}>flat per vehicle, one-way</span>
             </p>

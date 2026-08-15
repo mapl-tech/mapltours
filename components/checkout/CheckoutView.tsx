@@ -862,7 +862,6 @@ export default function CheckoutView() {
   const { items, subtotal, fee, grandTotal, isDayOverLimit, hoursByDate } = useCartStore()
   const { t, formatPrice } = useI18n()
 
-  // Fetch live gas price on mount
   // Transport is no longer charged: Collin's tour prices include
   // transportation and entrance fees (his confirmation, Aug 2026), so the
   // total is the cart total, full stop.
