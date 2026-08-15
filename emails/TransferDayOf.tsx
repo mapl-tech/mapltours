@@ -123,7 +123,7 @@ export default function TransferDayOf(props: TransferDayOfProps) {
             <>
               <Text style={s.body}>1. Be in the lobby a few minutes before the pickup time above.</Text>
               <Text style={s.body}>2. Your driver will be outside in the vehicle listed above.</Text>
-              <Text style={s.body}>3. If anything changes with your flight, message him on WhatsApp so he can adjust.</Text>
+              <Text style={s.body}>3. If anything changes with your flight or your plans, reply to this email and we will let your driver know and adjust the pickup for you.</Text>
             </>
           )}
         </Section>
