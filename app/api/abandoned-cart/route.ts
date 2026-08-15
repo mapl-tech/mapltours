@@ -26,6 +26,10 @@ import AbandonedCart from '@/emails/AbandonedCart'
  */
 
 export const runtime = 'nodejs'
+// Declared dynamic on its own merits. Without this the route stays dynamic
+// only because it happens to export POST; if that handler were ever removed,
+// the GET would be prerendered at build and the cron would poll a frozen body.
+export const dynamic = 'force-dynamic'
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!)
 

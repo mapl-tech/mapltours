@@ -45,7 +45,10 @@ export async function lookupFlight(rawFlight: string | null, date: string | null
 
   const provider = () => fetch(
     `https://aerodatabox.p.rapidapi.com/flights/number/${encodeURIComponent(iata)}/${date}?withAircraftImage=false&withLocation=false`,
-    { headers: { 'X-RapidAPI-Key': key, 'X-RapidAPI-Host': 'aerodatabox.p.rapidapi.com' } },
+    // no-store: the RapidAPI key rides in X-RapidAPI-Key, not Authorization,
+    // so Next's auto-no-cache heuristic can never protect this fetch. A cached
+    // response here would freeze a live flight's status.
+    { cache: 'no-store', headers: { 'X-RapidAPI-Key': key, 'X-RapidAPI-Host': 'aerodatabox.p.rapidapi.com' } },
   )
 
   try {

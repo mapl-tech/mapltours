@@ -42,7 +42,7 @@ async function stripeMoney(paymentId: string | null): Promise<{ feeUsd: number |
   if (!paymentId) return empty
   const sk = process.env.STRIPE_SECRET_KEY
   if (!sk) return empty
-  const g = async (p: string) => (await fetch(`https://api.stripe.com/v1/${p}`, { headers: { Authorization: `Bearer ${sk}` } })).json()
+  const g = async (p: string) => (await fetch(`https://api.stripe.com/v1/${p}`, { cache: 'no-store', headers: { Authorization: `Bearer ${sk}` } })).json()
   try {
     const pi = await g(`payment_intents/${paymentId}`)
     if (!pi.latest_charge) return empty

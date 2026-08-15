@@ -21,6 +21,10 @@ export async function GET(request: Request) {
 
   try {
     const res = await fetch(url, {
+      // revalidate 0 = never serve this lookup from the Data Cache. Declared
+      // via the `next` option (stripped before the platform fetch runs)
+      // rather than `cache: 'no-store'`, which edge runtimes can reject.
+      next: { revalidate: 0 },
       signal: AbortSignal.timeout(3000),
       headers: { 'User-Agent': 'mapltours/1.0' },
     })

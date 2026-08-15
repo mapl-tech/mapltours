@@ -23,6 +23,14 @@ export function createClient() {
           }
         },
       },
+      global: {
+        // Same guard as lib/supabase/service.ts: opt every query out of
+        // Next's Data Cache explicitly. Until now this client was protected
+        // only as a side effect of the cookies() call above setting
+        // revalidate = 0 before any query ran — an ordering accident, not a
+        // guarantee. Session and booking reads must always be live.
+        fetch: (input, init) => fetch(input, { ...init, cache: 'no-store' }),
+      },
     }
   )
 }
