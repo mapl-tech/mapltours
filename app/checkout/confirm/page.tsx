@@ -265,10 +265,10 @@ export default async function ConfirmPage({
 /* ─── Success, comprehensive details ─── */
 
 function Success({ data }: { data: ConfirmData }) {
+  // Tours are sold at one all-in price: `subtotal` is the operator's cost and
+  // `bookingFee` is MAPL's margin, so neither is shown to the customer.
   const showBreakdown =
-    data.subtotal !== null ||
-    data.bookingFee !== null ||
-    data.transportCost !== null ||
+    (data.transportCost !== null && data.transportCost > 0) ||
     (data.rewardDiscount !== null && data.rewardDiscount > 0)
 
   return (
@@ -437,12 +437,6 @@ function Success({ data }: { data: ConfirmData }) {
         <div style={{ padding: '16px 24px 18px' }}>
           {showBreakdown && (
             <>
-              {data.subtotal !== null && (
-                <BreakdownRow label="Subtotal" value={formatMoney(data.subtotal, data.currency)} />
-              )}
-              {data.bookingFee !== null && (
-                <BreakdownRow label="Service fee" value={formatMoney(data.bookingFee, data.currency)} />
-              )}
               {data.transportCost !== null && data.transportCost > 0 && (
                 <BreakdownRow
                   label="Private transport"

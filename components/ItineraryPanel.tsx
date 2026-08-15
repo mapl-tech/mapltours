@@ -4,13 +4,14 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { useEffect, useRef } from 'react'
 import { useCartStore } from '@/lib/cart'
+import { tourPrice } from '@/lib/experiences'
 import { X } from 'lucide-react'
 import { useI18n } from '@/lib/i18n'
 import { useAuth } from '@/lib/supabase/auth-context'
 import TripTimeBar from '@/components/TripTimeBar'
 
 export default function ItineraryPanel({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const { items, removeItem, subtotal, fee, grandTotal } = useCartStore()
+  const { items, removeItem, subtotal, grandTotal } = useCartStore()
   const { t, formatPrice } = useI18n()
   const { user, loading: authLoading } = useAuth()
 
@@ -147,7 +148,7 @@ export default function ItineraryPanel({ open, onClose }: { open: boolean; onClo
                 </p>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                   <span style={{ fontSize: 13.5, fontFamily: 'var(--font-dm-sans)', fontWeight: 700 }}>
-                    {formatPrice(item.price)} × {item.travelers}
+                    {formatPrice(tourPrice(item.pricing, item.travelers))} · {item.travelers} {item.travelers === 1 ? 'traveler' : 'travelers'}
                   </span>
                   <button onClick={() => removeItem(item.id)} style={{
                     background: 'none', border: 'none', color: 'var(--text-tertiary)',
@@ -165,7 +166,6 @@ export default function ItineraryPanel({ open, onClose }: { open: boolean; onClo
         <div style={{ borderTop: '1px solid var(--border)', padding: '18px 24px 24px' }}>
           {[
             { label: t('Subtotal'), value: subtotal() },
-            { label: t('Service fee (20%)'), value: fee() },
           ].map((row) => (
             <div key={row.label} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13.5, fontFamily: 'var(--font-dm-sans)', color: 'var(--text-secondary)', marginBottom: 6 }}>
               <span>{row.label}</span>

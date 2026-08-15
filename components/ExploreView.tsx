@@ -9,8 +9,20 @@ import type { ExperienceCategory } from '@/lib/experiences'
 import ExpCard from './ExpCard'
 import MobileShort from './MobileShort'
 
-const categories: ('All' | ExperienceCategory)[] = ['All', 'Adventure', 'Nature', 'Music', 'Food', 'Culture', 'Water']
-const parishes = ['All Parishes', 'Negril', 'Montego Bay', 'Kingston', 'Ocho Rios', 'Port Antonio', 'Blue Mountains', 'St. Andrew', 'St. Ann', 'Westmoreland', 'Portland', 'St. Elizabeth']
+// Derived from the live catalog so a filter can never point at a category or
+// parish nothing is tagged with, and no tour can be stranded behind a missing
+// chip (the old hardcoded lists offered Kingston/Music/Food and omitted
+// Trelawny, which hid the Martha Brae rafting tour).
+const categories: ('All' | ExperienceCategory)[] = [
+  'All',
+  ...(Array.from(new Set(experiences.map((e) => e.category))).sort() as ExperienceCategory[]),
+]
+const parishes = [
+  'All Parishes',
+  ...Array.from(
+    new Set(experiences.flatMap((e) => [e.destination, e.parish])),
+  ).sort(),
+]
 
 export default function ExploreView() {
   const searchParams = useSearchParams()

@@ -90,9 +90,12 @@ export default function BookingConfirmed(props: BookingConfirmedProps) {
     items,
   } = props
   const name = firstName?.trim() || 'there'
+  // Tours are sold at one all-in price: `subtotal` is the operator's cost and
+  // `bookingFee` is MAPL's margin, so neither is shown. Transport and reward
+  // ARE the customer's own lines and still render.
+  void subtotal
+  void bookingFee
   const showBreakdown =
-    subtotal != null ||
-    bookingFee != null ||
     (transportCost != null && transportCost > 0) ||
     (rewardDiscount != null && rewardDiscount > 0)
   const paidAtPretty = fmtDateTime(paidAt)
@@ -173,12 +176,6 @@ export default function BookingConfirmed(props: BookingConfirmedProps) {
         <Section style={s.cardBody}>
           {showBreakdown && (
             <>
-              {subtotal != null && (
-                <BreakdownLine label="Subtotal" value={fmtMoney(subtotal, currency)} />
-              )}
-              {bookingFee != null && (
-                <BreakdownLine label="Service fee" value={fmtMoney(bookingFee, currency)} />
-              )}
               {transportCost != null && transportCost > 0 && (
                 <BreakdownLine label="Private transport" value={fmtMoney(transportCost, currency)} />
               )}

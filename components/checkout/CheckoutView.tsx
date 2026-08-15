@@ -7,6 +7,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { ArrowLeft, Check, MapPin, Users, Calendar, Leaf, Lock, ShieldCheck } from 'lucide-react'
 import { useCartStore, DAILY_HOUR_LIMIT } from '@/lib/cart'
+import { tourPrice } from '@/lib/experiences'
 import { getStoredAttribution } from '@/lib/attribution'
 import TripTimeBar from '@/components/TripTimeBar'
 import { useAvailableReward, consumeReward } from '@/lib/tour-videos'
@@ -319,7 +320,7 @@ function ReviewStep() {
               </div>
               <div style={{ textAlign: 'right' }}>
                 <span style={{ fontFamily: 'var(--font-dm-sans)', fontWeight: 700, fontSize: 18 }}>
-                  {formatPrice(item.price * item.travelers)}
+                  {formatPrice(tourPrice(item.pricing, item.travelers))}
                 </span>
                 <p style={{ fontSize: 12, color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-sans)', marginTop: 1 }}>
                   {formatPrice(item.price)} × {item.travelers}
@@ -817,7 +818,7 @@ function ConfirmedView() {
                 </p>
               </div>
               <span style={{ fontSize: 14, fontWeight: 700, fontFamily: 'var(--font-dm-sans)', flexShrink: 0 }}>
-                {formatPrice(item.price * item.travelers)}
+                {formatPrice(tourPrice(item.pricing, item.travelers))}
               </span>
             </div>
           ))}
@@ -1041,14 +1042,14 @@ export default function CheckoutView() {
                     <p style={{ fontSize: 12, color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-sans)' }}>{item.travelers} × {formatPrice(item.price)}</p>
                   </div>
                   <span style={{ fontSize: 13, fontWeight: 700, fontFamily: 'var(--font-dm-sans)', flexShrink: 0 }}>
-                    {formatPrice(item.price * item.travelers)}
+                    {formatPrice(tourPrice(item.pricing, item.travelers))}
                   </span>
                 </div>
               ))}
             </div>
 
             <div style={{ padding: '16px 24px', background: 'var(--bg-warm)', borderTop: '1px solid var(--border)' }}>
-              {[{ l: t('Subtotal'), v: subtotal() }, { l: t('Service fee'), v: fee() }].map((r) => (
+              {([] as { l: string; v: number }[]).map((r) => (
                 <div key={r.l} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13.5, fontFamily: 'var(--font-dm-sans)', color: 'var(--text-secondary)', marginBottom: 6 }}>
                   <span>{r.l}</span><span>{formatPrice(r.v)}</span>
                 </div>

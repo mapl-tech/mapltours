@@ -1,4 +1,4 @@
-import { tourPrice } from './experiences'
+import { tourPrice, experiences } from './experiences'
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { Experience } from './experiences'
@@ -140,6 +140,23 @@ export const useCartStore = create<CartStore>()(
       // render both start empty (identical HTML → no hydration mismatch);
       // LayoutShell calls .persist.rehydrate() after mount to load the cart.
       skipHydration: true,
+      // v1: the catalog was replaced and Experience gained `pricing`. A cart
+      // saved before that holds items with no `pricing` (and ids that now map
+      // to different tours), which would throw inside tourPrice() during
+      // render of the cart drawer, i.e. on every page. Re-hydrate each line
+      // from the live catalog and drop anything that no longer exists.
+      version: 1,
+      migrate: (persisted, version) => {
+        const state = persisted as { items?: CartItem[] } | undefined
+        if (!state) return persisted as CartStore
+        const items = (state.items ?? []).flatMap((i) => {
+          const current = experiences.find((e: Experience) => e.id === i.id)
+          if (!current) return []
+          return [{ ...current, travelers: i.travelers ?? 2, date: i.date ?? '' }]
+        })
+        void version
+        return { ...state, items } as CartStore
+      },
     }
   )
 )

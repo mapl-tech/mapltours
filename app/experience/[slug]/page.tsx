@@ -59,11 +59,29 @@ export default function ExperiencePage({ params }: { params: { slug: string } })
       priceCurrency: 'USD',
       availability: 'https://schema.org/InStock',
     },
-    aggregateRating: {
-      '@type': 'AggregateRating',
-      ratingValue: exp.rating,
-      reviewCount: exp.reviews,
-    },
+    // Only emit a rating when real reviews exist; a 0/0 aggregateRating is
+
+    // invalid schema and gets the rich result dropped.
+
+    ...(exp.reviews > 0
+
+      ? {
+
+          aggregateRating: {
+
+            '@type': 'AggregateRating',
+
+            ratingValue: String(exp.rating),
+
+            reviewCount: String(exp.reviews),
+
+            bestRating: '5',
+
+          },
+
+        }
+
+      : {}),
   }
 
   return (

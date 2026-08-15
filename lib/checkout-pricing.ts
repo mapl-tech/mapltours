@@ -113,7 +113,11 @@ export function priceTourCart(
       experience,
       travelers,
       date: raw.date,
-      pricePerPerson: lineTotal,
+      // A genuine per-head figure so every downstream consumer that renders
+      // "N travelers x price" (confirmation email, operator alert, receipt
+      // page, admin card) still multiplies back to exactly `lineTotal`. For a
+      // group tour this is the party price divided across the party.
+      pricePerPerson: Math.round((lineTotal / travelers) * 100) / 100,
       lineTotal,
     })
     subtotal += operatorCost
