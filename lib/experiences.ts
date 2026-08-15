@@ -34,6 +34,10 @@ export interface TourPricing {
 
 /** MAPL's margin on tours. */
 export const TOUR_MARGIN = 0.15
+/** Cover for paying the operator via Remitly from Canada: CAD 3.99 flat per
+ *  send plus a ~2.1% FX spread, measured live 2026-08-15. Matches
+ *  REMITLY_COVER in lib/airport-transfers. */
+export const TOUR_REMITLY_COVER = 0.05
 /** Card processing, matching lib/airport-transfers (verified against live charges). */
 const CARD_RATE = 0.057
 const CARD_FIXED = 0.22
@@ -54,7 +58,7 @@ export function tourOperatorCost(p: TourPricing, travelers: number): number {
  */
 export function tourPrice(p: TourPricing, travelers: number): number {
   const cost = tourOperatorCost(p, travelers)
-  return Math.ceil((cost * (1 + TOUR_MARGIN) + CARD_FIXED) / (1 - CARD_RATE))
+  return Math.ceil((cost * (1 + TOUR_MARGIN + TOUR_REMITLY_COVER) + CARD_FIXED) / (1 - CARD_RATE))
 }
 
 /**
