@@ -1,4 +1,5 @@
 import {
+  Img,
   Html,
   Head,
   Body,
@@ -72,7 +73,13 @@ export function MaplLayout({ preheader, children }: MaplLayoutProps) {
 
           {/* Wordmark band */}
           <Section style={brandBand} className="mapl-pad">
-            <Text style={brandWordmark}>MAPL TOURS</Text>
+            <Img
+              src={`${siteUrl()}/mapl-logo-email.png`}
+              alt="MAPL Tours Jamaica"
+              width="128"
+              height="47"
+              style={brandLogo}
+            />
             <Section style={brandRule} />
             <Text style={brandTagline}>Discover Jamaica beyond the resort</Text>
           </Section>
@@ -402,6 +409,15 @@ const brandBand: React.CSSProperties = {
   padding: '26px 32px 22px',
   borderBottom: `1px solid ${BORDER_SOFT}`,
   background: CARD,
+}
+
+const brandLogo: React.CSSProperties = {
+  display: 'block',
+  width: 128,
+  height: 'auto',
+  border: 0,
+  // Outlook ignores CSS width on images without this.
+  maxWidth: '100%',
 }
 
 const brandWordmark: React.CSSProperties = {
