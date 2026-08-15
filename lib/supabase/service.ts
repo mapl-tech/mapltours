@@ -23,5 +23,13 @@ export function createServiceClient(): SupabaseClient {
       autoRefreshToken: false,
       persistSession: false,
     },
+    global: {
+      // Next patches global fetch and caches GETs in its Data Cache, which for
+      // a service-role client is always wrong: these callers are webhooks and
+      // crons reading live booking state. Left on, a cron re-reads a snapshot
+      // and cannot see a driver just assigned or an email just sent. Opt every
+      // service-role query out of the cache.
+      fetch: (input, init) => fetch(input, { ...init, cache: 'no-store' }),
+    },
   })
 }
