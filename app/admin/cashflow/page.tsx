@@ -109,12 +109,12 @@ export default async function CashflowPage() {
         <section style={{ marginTop: 28, background: '#fff', border: '1px solid #E7E1D6', borderRadius: 16, overflow: 'hidden' }}>
           <div style={{ padding: '14px 18px', background: '#FCF6E4', borderBottom: '1px solid #F0E4BE' }}>
             <span style={{ fontSize: 12, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#7A5A08' }}>
-              Driver rates to confirm with Collins · {estimates.length}
+              Driver rates to confirm with Collin · {estimates.length}
             </span>
           </div>
           <div style={{ padding: '14px 18px' }}>
             <p style={{ fontSize: 13.5, color: soft, margin: '0 0 12px', lineHeight: 1.55 }}>
-              These resorts are not on Collins&rsquo;s rate sheet, so each uses a conservative
+              These resorts are not on Collin&rsquo;s rate sheet, so each uses a conservative
               estimate set at or above the nearest quoted resort. Confirm them and the
               customer price updates automatically.
             </p>
@@ -123,7 +123,7 @@ export default async function CashflowPage() {
                 <thead>
                   <tr style={{ textAlign: 'left', color: '#6E6A62' }}>
                     <th style={{ padding: '6px 10px 6px 0', fontWeight: 600 }}>Resort</th>
-                    <th style={{ padding: '6px 10px', fontWeight: 600, textAlign: 'right' }}>Collins, one-way</th>
+                    <th style={{ padding: '6px 10px', fontWeight: 600, textAlign: 'right' }}>Collin, one-way</th>
                     <th style={{ padding: '6px 10px', fontWeight: 600, textAlign: 'right' }}>Customer, one-way</th>
                     <th style={{ padding: '6px 0 6px 10px', fontWeight: 600, textAlign: 'right' }}>Customer, round trip</th>
                   </tr>

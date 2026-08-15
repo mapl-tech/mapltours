@@ -140,7 +140,7 @@ export default function DispatchConsole({ booking, stripeFee }: { booking: Bk; s
         {/* Money */}
         <Card title="Money">
           <div style={subLabel}>What the customer paid</div>
-          <MRow k="Driver's rate (paid to Collins)" v={money(m.fare)} />
+          <MRow k="Driver's rate (paid to Collin)" v={money(m.fare)} />
           <MRow k="MAPL margin (covers card fees)" v={`+ ${money(m.transferFee)}`} />
           <MRow k="Customer paid" v={`${money(m.customerPaid)} USD`} big />
 

@@ -8,7 +8,7 @@ import DriverDashboard from '@/components/driver/DriverDashboard'
 /**
  * Admin preview of the driver portal: renders EXACTLY the same DriverTrip
  * data and component the driver sees, wrapped in an admin gate, so the
- * operator can verify what Collins sees at any time. Read-only.
+ * operator can verify what Collin sees at any time. Read-only.
  */
 
 export const dynamic = 'force-dynamic'
