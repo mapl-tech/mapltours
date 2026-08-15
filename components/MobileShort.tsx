@@ -134,8 +134,9 @@ export default memo(function MobileShort({ exp, priority = false }: { exp: Exper
             }}
           />
 
-          {/* Video, mounts when near viewport, plays when visible */}
-          {videoMounted && (
+          {/* Video, mounts when near viewport, plays when visible. Tours
+              without footage simply keep showing their photo. */}
+          {videoMounted && exp.video && (
             <video
               ref={videoRef}
               src={exp.video}

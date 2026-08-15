@@ -23,7 +23,7 @@
  * client could name its own discount.
  */
 
-import { experiences, type Experience } from './experiences'
+import { experiences, type Experience , tourPrice, tourOperatorCost } from './experiences'
 
 
 /** Reward discount can never exceed this % of (subtotal + fee + transport),
@@ -90,6 +90,7 @@ export function priceTourCart(
 
   const lines: PricedLine[] = []
   let subtotal = 0
+  let customerTotal = 0
 
   for (const raw of items) {
     const experience = experiences.find((e) => e.id === raw.id)
@@ -103,19 +104,25 @@ export function priceTourCart(
         `experience ${raw.id} traveler count out of bounds (got ${raw.travelers})`,
       )
     }
-    const lineTotal = experience.price * travelers
+    // `lineTotal` is what the CUSTOMER pays for this line (all-in, group-tier
+    // aware); `subtotal` accumulates what MAPL owes the OPERATOR, so the
+    // booking stores supplier-cost vs margin exactly like transfers do.
+    const lineTotal = tourPrice(experience.pricing, travelers)
+    const operatorCost = tourOperatorCost(experience.pricing, travelers)
     lines.push({
       experience,
       travelers,
       date: raw.date,
-      pricePerPerson: experience.price,
+      pricePerPerson: lineTotal,
       lineTotal,
     })
-    subtotal += lineTotal
+    subtotal += operatorCost
+    customerTotal += lineTotal
   }
 
-  // 20% platform/service fee, matches lib/cart.ts.
-  const fee = Math.round(subtotal * 0.20)
+  // MAPL's margin is whatever is left of the all-in price after the operator
+  // is paid; it covers the 15% markup and card processing.
+  const fee = Math.round((customerTotal - subtotal) * 100) / 100
 
   // Transport is NO LONGER CHARGED: Collin confirmed his tour prices include
   // transportation and entrance fees, so a separate transport line was a

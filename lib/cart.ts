@@ -1,3 +1,4 @@
+import { tourPrice } from './experiences'
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { Experience } from './experiences'
@@ -89,13 +90,20 @@ export const useCartStore = create<CartStore>()(
 
       isInCart: (id: number) => get().items.some((i) => i.id === id),
 
-      subtotal: () => get().items.reduce((sum, i) => sum + i.price * i.travelers, 0),
+      // Tours are quoted ALL-IN from the operator's group-tier rate card:
+      // the price already covers MAPL's margin and card processing, and a
+      // group tour charges one price for the whole party (1..tierMax).
+      subtotal: () =>
+        get().items.reduce(
+          (sum, i) => sum + tourPrice(i.pricing, i.travelers),
+          0,
+        ),
 
       // Flat 20% service fee on subtotal, covers platform costs, support,
       // and the tour-guide rate bundled into the per-experience price.
-      fee: () => Math.round(get().subtotal() * 0.20),
+      fee: () => 0,
 
-      grandTotal: () => get().subtotal() + get().fee(),
+      grandTotal: () => get().subtotal(),
 
       hoursByDate: () => {
         const map: Record<string, number> = {}

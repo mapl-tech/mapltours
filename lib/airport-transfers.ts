@@ -210,6 +210,21 @@ export function getTransferPrice(
   return Math.ceil((cost * (1 + TRANSFER_MARGIN + REMITLY_COVER) + CARD_FIXED) / (1 - CARD_RATE))
 }
 
+/** Cheapest and dearest all-in price in a zone. Prices are set per resort, so
+ *  a single "from" figure hides real spread (Negril costs more than Runaway
+ *  Bay in the same zone); the UI shows the full range instead. */
+export function zonePriceRange(
+  zone: TransferZone,
+  tripType: TransferTripType,
+): { min: number; max: number } {
+  const prices = DESTINATIONS.filter((d) => d.zone === zone)
+    .map((d) => getTransferPrice(d.id, tripType))
+    .filter((p): p is number => p !== null)
+  return prices.length
+    ? { min: Math.min(...prices), max: Math.max(...prices) }
+    : { min: 0, max: 0 }
+}
+
 /** Cheapest all-in price in a zone, for "from $X" display. */
 export function zoneFromPrice(
   zone: TransferZone,

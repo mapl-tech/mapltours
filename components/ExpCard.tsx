@@ -3,7 +3,7 @@
 import { useRef, useState, memo } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { Experience, CATEGORY_COLORS, slugify } from '@/lib/experiences'
+import { Experience, CATEGORY_COLORS, slugify , priceUnitLabel } from '@/lib/experiences'
 import { useCartStore } from '@/lib/cart'
 import { Plus, Check, Play, MapPin, Star } from 'lucide-react'
 import { useI18n } from '@/lib/i18n'
@@ -160,7 +160,7 @@ export default memo(function ExpCard({ exp }: { exp: Experience }) {
         </p>
         <p style={{ fontSize: 13.5, fontFamily: 'var(--font-dm-sans)', fontWeight: 600, marginTop: 4 }}>
           {t('From')} {formatPrice(exp.price)}
-          <span style={{ fontWeight: 400, color: 'var(--text-tertiary)', fontSize: 12 }}> {t('/person')}</span>
+          <span style={{ fontWeight: 400, color: 'var(--text-tertiary)', fontSize: 12 }}> {priceUnitLabel(exp.pricing)}</span>
         </p>
       </Link>
     </article>

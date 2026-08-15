@@ -22,6 +22,7 @@ import {
   type TransferTripType,
   type TransferZone,
   zoneFromPrice,
+  zonePriceRange,
   getTransferPrice,
   getDestination,
 } from '@/lib/airport-transfers'
@@ -78,6 +79,13 @@ const ZONE_IMAGES: Record<TransferZone, { src: string; alt: string }> = {
     src: DESTINATION_IMAGES['Ocho Rios'],
     alt: 'Turquoise water and wooden pier in Ocho Rios, Jamaica, Zone V airport transfers.',
   },
+}
+
+/** "$94" when every resort in a zone costs the same, "$94–$106" when they differ. */
+function priceRangeLabel(zone: TransferZone, tripType: TransferTripType): string {
+  const { min, max } = zonePriceRange(zone, tripType)
+  const fmt = (n: number) => `$${n}`
+  return min === max ? fmt(min) : `${fmt(min)}\u2013${fmt(max)}`
 }
 
 export default function TransfersView() {
@@ -534,15 +542,16 @@ export default function TransfersView() {
       <section className="xfer-zones-section">
         <div className="container" style={{ maxWidth: 1100 }}>
           <div className="xfer-center-head">
-            <Kicker centered>Zone rates · in USD</Kicker>
+            <Kicker centered>Rates by area · in USD</Kicker>
             <h2 className="xfer-section-h2">
               Priced{' '}
               <span style={{ fontStyle: 'italic', fontWeight: 500 }}>per vehicle</span>
               . Not per person.
             </h2>
             <p className="xfer-section-sub">
-              Flat fares to every major resort in Jamaica served by Sangster
-              International. Five zones, no surge, no surprises.
+              One flat price for the whole vehicle, set for your exact resort
+              and quoted before you book. No surge, no per-passenger add-ons,
+              no surprises at the curb.
             </p>
           </div>
 
@@ -580,12 +589,12 @@ export default function TransfersView() {
                     </div>
                     <div className="xfer-zone-prices">
                       <div>
-                        <p className="xfer-zone-price-label">One-way from</p>
-                        <p className="xfer-zone-price-value">{formatPrice(zoneFromPrice(code, 'one_way'))}</p>
+                        <p className="xfer-zone-price-label">One-way</p>
+                        <p className="xfer-zone-price-value">{priceRangeLabel(code, 'one_way')}</p>
                       </div>
                       <div>
-                        <p className="xfer-zone-price-label">Round-trip from</p>
-                        <p className="xfer-zone-price-value">{formatPrice(zoneFromPrice(code, 'round_trip'))}</p>
+                        <p className="xfer-zone-price-label">Round-trip</p>
+                        <p className="xfer-zone-price-value">{priceRangeLabel(code, 'round_trip')}</p>
                       </div>
                     </div>
                     <p className="xfer-zone-destinations">
@@ -713,7 +722,7 @@ export default function TransfersView() {
             price={getTransferPrice('hilton-rose-hall', 'round_trip') ?? 0}
             destinationId="hilton-rose-hall"
             onSelect={selectRoute}
-            body="If you’re staying anywhere in the Rose Hall corridor, Iberostar, Hyatt Ziva, Hilton, Half Moon, the Sandals MoBay properties, your transfer is the cheapest tier on the island. Solo travelers get the same vehicle; the price is per car, not per passenger."
+            body="If you’re staying anywhere in the Rose Hall corridor, Iberostar, Hyatt Ziva, Hilton, Half Moon, the Sandals MoBay properties, you’re on the shortest run we drive and the cheapest fare we quote. Solo travelers get the same vehicle at the same price; it is per car, not per passenger."
           />
 
           <RouteSection

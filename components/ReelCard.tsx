@@ -1,6 +1,6 @@
 'use client'
 
-import { Experience, CATEGORY_COLORS } from '@/lib/experiences'
+import { Experience, CATEGORY_COLORS , priceUnitLabel } from '@/lib/experiences'
 import { useCartStore } from '@/lib/cart'
 import { useI18n } from '@/lib/i18n'
 import { useState } from 'react'
@@ -380,7 +380,7 @@ export default function ReelCard({
                 fontFamily: 'var(--font-dm-sans)',
               }}
             >
-              {t('/person')}
+              {priceUnitLabel(exp.pricing)}
             </span>
           </div>
           <div style={{ flex: 1 }} />
