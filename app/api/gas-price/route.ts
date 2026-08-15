@@ -5,7 +5,16 @@ import { NextResponse } from 'next/server'
  * and converts to JMD/liter using live exchange rates.
  *
  * Caches the result for 6 hours (Petrojam updates biweekly).
+ *
+ * force-dynamic is load-bearing: without it this GET-only route is prerendered
+ * at build time and the Full Route Cache serves that one frozen body forever,
+ * so the 6-hour TTL below never runs. (Found live: a cachedUntil 11 hours in
+ * the past, still being served.) The upstream fetches also pass no-store so
+ * the Data Cache cannot freeze them one layer down; the module-level TTL here
+ * is the only cache this route wants.
  */
+
+export const dynamic = 'force-dynamic'
 
 let cachedPrice: { jmdPerLiter: number; usdPerLiter: number; fetchedAt: number } | null = null
 const CACHE_TTL = 6 * 60 * 60 * 1000 // 6 hours
@@ -24,6 +33,7 @@ async function fetchJamaicaGasPrice(): Promise<{ jmdPerLiter: number; usdPerLite
     const res = await fetch(
       'https://www.globalpetrolprices.com/Jamaica/gasoline_prices/',
       {
+        cache: 'no-store',
         headers: {
           'User-Agent': 'Mozilla/5.0 (compatible; MAPLTours/1.0)',
           'Accept': 'text/html',
@@ -61,6 +71,7 @@ async function fetchJamaicaGasPrice(): Promise<{ jmdPerLiter: number; usdPerLite
   // Get live JMD exchange rate to compute JMD price
   try {
     const fxRes = await fetch('https://api.exchangerate-api.com/v4/latest/USD', {
+      cache: 'no-store',
       signal: AbortSignal.timeout(4000),
     })
     if (fxRes.ok) {
