@@ -80,7 +80,7 @@ export default async function CashflowPage() {
     const { feeUsd, settledCad } = await stripeMoney(b.stripe_payment_id)
     const gross = Number(b.total_paid ?? 0)
     // The supplier (transfer driver OR tour operator) is paid the subtotal in
-    // full; MAPL's margin is the fee charged on top (10% transfers, 20% tours).
+    // full; MAPL's margin is the fee charged on top (10% + 5% Remitly cover on transfers, 20% tours).
     const supplierCost = supplierPayout(Number(b.subtotal ?? 0))
     return {
       id: b.id,

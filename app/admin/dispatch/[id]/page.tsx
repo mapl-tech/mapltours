@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { createServiceClient } from '@/lib/supabase/service'
 import DispatchConsole from '@/components/admin/DispatchConsole'
+import { driverNotifyEmail } from '@/lib/email/send'
 
 /**
  * Transfer dispatch console (per booking). Server component: confirms the
@@ -73,7 +74,7 @@ export default async function DispatchPage({ params }: { params: { id: string } 
   return (
     <Shell>
       {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-      <DispatchConsole booking={booking as any} stripeFee={stripeFee} />
+      <DispatchConsole booking={booking as any} stripeFee={stripeFee} driverEmailConfigured={!!driverNotifyEmail()} />
     </Shell>
   )
 }

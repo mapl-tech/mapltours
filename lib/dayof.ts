@@ -1,6 +1,7 @@
 import { sendEmail, opsBcc } from '@/lib/email/send'
 import TransferDayOf from '@/emails/TransferDayOf'
-import { firstLeg, bookingRef, jaDate, jaTime, type Bk } from '@/lib/dispatch'
+import { firstLeg, bookingRef, jaDate, jaTime, legInstantMs, type Bk } from '@/lib/dispatch'
+export { legInstantMs }
 
 /**
  * Day-of-travel emails for transfers: when they are due, and sending one.
@@ -21,18 +22,6 @@ export type Leg = 'arrival' | 'departure'
 
 /** Jamaica is UTC-5 all year. It has never observed daylight saving. */
 const JA_OFFSET_MIN = -300
-
-/**
- * The real instant a leg happens.
- *
- * Leg times are stored as the guest's Jamaica wall-clock carrying a `Z`, which
- * every guest-facing surface reads back verbatim in UTC. So a row reading
- * `16:05Z` means 4:05 PM IN JAMAICA, which is really 21:05 UTC. Scheduling off
- * the raw parse would fire every email five hours early.
- */
-export function legInstantMs(iso: string): number {
-  return Date.parse(iso) - JA_OFFSET_MIN * 60_000
-}
 
 /** Hour of the day in Jamaica, 0-23, for a real instant. */
 export function jaHour(nowMs: number): number {
@@ -149,13 +138,14 @@ export async function sendDayOf(
     jaDateKey(legInstantMs(at)) === jaDateKey(Date.now()) ? 'Today' : 'Tomorrow'
   const claimedAt = new Date().toISOString()
 
-  // Claim first, and only if nobody else holds it.
-  const { data: claimed } = await svc
-    .from('bookings')
-    .update({ dispatch: { ...((b.dispatch as Record<string, string>) ?? {}), [key]: claimedAt } })
-    .eq('id', b.id)
-    .is(`dispatch->>${key}`, null)
-    .select('id')
+  // Claim first, and only if nobody else holds it. merge_dispatch is an
+  // atomic jsonb merge in one statement, so this can never erase keys a
+  // concurrent writer (console step ticks, payment records) is setting.
+  const { data: claimed } = await svc.rpc('merge_dispatch', {
+    p_booking_id: b.id,
+    p_patch: { [key]: claimedAt },
+    p_only_if_absent: opts.force ? null : key,
+  })
   if (!opts.force && (!claimed || claimed.length === 0)) {
     return { ...base, ok: false, skipped: 'already sent' }
   }
@@ -187,10 +177,9 @@ export async function sendDayOf(
   })
 
   if (!res?.ok) {
-    // Release the claim so the next run retries rather than silently dropping.
-    const revert = { ...((b.dispatch as Record<string, string>) ?? {}) }
-    delete revert[key]
-    await svc.from('bookings').update({ dispatch: revert }).eq('id', b.id)
+    // Release the claim so the next run retries rather than silently
+    // dropping. Removing only OUR key atomically: nothing else is touched.
+    await svc.rpc('merge_dispatch', { p_booking_id: b.id, p_remove: [key] })
     return { ...base, ok: false, error: res?.error ?? 'send failed' }
   }
 

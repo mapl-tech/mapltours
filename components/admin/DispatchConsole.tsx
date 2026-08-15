@@ -1,11 +1,11 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import {
   type Bk, firstLeg, bookingRef, moneyBlock, money,
   jaDate, jaTime, shiftIso, gcalLink, waLink, ARRIVAL_CLEAR_MIN, MIN_PICKUP_LEAD_MIN,
-  visibleSteps, progress,
+  visibleSteps, progress, autoStepDone,
   msgDriverRequest, msgCustomerConfirmation, msgFlightDetailsRequest, msgDriverReminder,
   msgFlightLanded, msgCustomerFollowup, msgReviewRequest,
 } from '@/lib/dispatch'
@@ -72,7 +72,7 @@ function CopyBtn({ text, label }: { text: string; label: string }) {
   return <Btn onClick={copy}>{done ? '✓ Copied' : label}</Btn>
 }
 
-export default function DispatchConsole({ booking, stripeFee }: { booking: Bk; stripeFee: number | null }) {
+export default function DispatchConsole({ booking, stripeFee, driverEmailConfigured = true }: { booking: Bk; stripeFee: number | null; driverEmailConfigured?: boolean }) {
   const b0 = booking
   const [dispatch, setDispatch] = useState<Record<string, string>>((b0.dispatch as Record<string, string>) ?? {})
   const [driver, setDriver] = useState({
@@ -88,11 +88,26 @@ export default function DispatchConsole({ booking, stripeFee }: { booking: Bk; s
   const ref = bookingRef(b.id)
   const name = `${b.first_name ?? ''} ${b.last_name ?? ''}`.trim() || '(no name)'
   const prog = progress({ ...b, dispatch })
-  const steps = visibleSteps(m.isRoundTrip)
+  const steps = visibleSteps(m.isRoundTrip, !!leg.arrivalAt)
+
+  // Re-render each minute so time-based auto steps (landed, pickup window)
+  // flip at the real moment even if the console just sits open.
+  const [nowMs, setNowMs] = useState(() => Date.now())
+  useEffect(() => { const t = setInterval(() => setNowMs(Date.now()), 60_000); return () => clearInterval(t) }, [])
+
+  // Feedback for the pay steps: the response says whether the driver email
+  // actually went out, and the operator deserves to see that, not a log line.
+  const [payNote, setPayNote] = useState<Record<string, 'sent' | 'failed'>>({})
 
   async function toggle(step: string, done: boolean) {
     setDispatch((d) => { const n = { ...d }; if (done) n[step] = new Date().toISOString(); else delete n[step]; return n })
-    await fetch('/api/admin/dispatch', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ bookingId: b.id, step, done }) }).catch(() => {})
+    const r = await fetch('/api/admin/dispatch', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ bookingId: b.id, step, done }) }).catch(() => null)
+    if (done && (step === 'paid_first' || step === 'paid_second')) {
+      const j = r && r.ok ? await r.json().catch(() => null) : null
+      if (j && j.driverEmailed !== null && j.driverEmailed !== undefined) {
+        setPayNote((n) => ({ ...n, [step]: j.driverEmailed ? 'sent' : 'failed' }))
+      }
+    }
   }
   async function saveDriver() {
     setSavingDriver(true)
@@ -220,27 +235,36 @@ export default function DispatchConsole({ booking, stripeFee }: { booking: Bk; s
           <div style={{ display: 'flex', flexDirection: 'column' }}>
             {steps.map((s, idx) => {
               const doneAt = dispatch[s.key]
+              // What the platform can prove happened on its own. A manual tick
+              // wins for display; auto rows are not clickable, because there
+              // is nothing for a human to record: the evidence IS the record.
+              const auto = !doneAt ? autoStepDone({ ...b0, dispatch }, s.key, nowMs, { driverEmailConfigured }) : null
+              const isDone = !!doneAt || !!auto
               return (
                 <div key={s.key} style={{ display: 'flex', gap: 12, padding: '14px 0', borderTop: idx === 0 ? undefined : borderSoft }}>
                   <button
                     type="button"
-                    onClick={() => toggle(s.key, !doneAt)}
-                    aria-pressed={!!doneAt}
-                    aria-label={`Mark step ${s.num} ${doneAt ? 'not done' : 'done'}`}
+                    onClick={auto ? undefined : () => toggle(s.key, !doneAt)}
+                    disabled={!!auto}
+                    aria-pressed={isDone}
+                    aria-label={auto ? `Step ${s.num} completed automatically: ${auto}` : `Mark step ${s.num} ${doneAt ? 'not done' : 'done'}`}
                     style={{
-                      flexShrink: 0, width: 26, height: 26, borderRadius: 8, marginTop: 1, cursor: 'pointer',
-                      border: doneAt ? `1px solid ${green}` : border, background: doneAt ? green : '#fff',
+                      flexShrink: 0, width: 26, height: 26, borderRadius: 8, marginTop: 1, cursor: auto ? 'default' : 'pointer',
+                      border: isDone ? `1px solid ${green}` : border, background: isDone ? green : '#fff',
                       color: '#fff', fontSize: 15, lineHeight: 1, display: 'flex', alignItems: 'center', justifyContent: 'center',
                     }}
-                  >{doneAt ? '✓' : ''}</button>
+                  >{isDone ? '✓' : ''}</button>
 
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, flexWrap: 'wrap' }}>
                       <span style={{ fontSize: 11.5, fontWeight: 700, color: faint, ...tnum }}>{String(s.num).padStart(2, '0')}</span>
-                      <span style={{ fontSize: 14.5, fontWeight: 600, color: doneAt ? faint : ink, textDecoration: doneAt ? 'line-through' : undefined }}>{s.title}</span>
+                      <span style={{ fontSize: 14.5, fontWeight: 600, color: isDone ? faint : ink, textDecoration: doneAt ? 'line-through' : undefined }}>{s.title}</span>
                       {doneAt && <span style={{ fontSize: 11.5, color: green, ...tnum }}>✓ {jaDateOrTime(doneAt)}</span>}
+                      {auto && <span style={{ fontSize: 11.5, color: green }}>✓ auto · {auto}</span>}
+                      {payNote[s.key] === 'sent' && <span style={{ fontSize: 11.5, color: green }}>✉️ driver emailed</span>}
+                      {payNote[s.key] === 'failed' && <span style={{ fontSize: 11.5, color: '#8A2A0A', fontWeight: 600 }}>payment saved, but the driver email did not send</span>}
                     </div>
-                    {s.hint && <div style={{ fontSize: 12.5, color: faint, marginTop: 3 }}>{s.hint}</div>}
+                    {s.hint && !isDone && <div style={{ fontSize: 12.5, color: faint, marginTop: 3 }}>{s.hint}</div>}
                     <StepActions stepKey={s.key} b={b} m={m} arrivalCal={arrivalCal} departureCal={departureCal} />
                   </div>
                 </div>

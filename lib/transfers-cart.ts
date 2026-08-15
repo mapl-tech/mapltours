@@ -103,14 +103,16 @@ export const useTransfersCart = create<TransfersCartStore>()(
     {
       name: 'mapl-transfers-cart',
       // v2: prices became ALL-IN (driver cost + margin + card processing) and
-      // are per destination rather than per zone. A cart persisted under v1
-      // holds retired fares, which the server rejects as a total mismatch and
-      // which a reload alone can never clear. Re-derive every line from the
-      // live rate table, dropping any destination that no longer exists.
-      version: 2,
+      // are per destination rather than per zone.
+      // v3: prices grew a 5% Remitly cover. Any cart persisted under an older
+      // version holds retired fares, which the server rejects as a total
+      // mismatch and which a reload alone can never clear. Re-derive every
+      // line from the live rate table, dropping destinations that no longer
+      // exist.
+      version: 3,
       migrate: (persisted, version) => {
         const state = persisted as { items?: TransferCartItem[] } | undefined
-        if (!state || version >= 2) return state as TransfersCartStore
+        if (!state || version >= 3) return state as TransfersCartStore
         const items = (state.items ?? []).flatMap((i) => {
           const priceUsd = getTransferPrice(i.destinationId, i.tripType)
           return priceUsd === null ? [] : [{ ...i, priceUsd }]

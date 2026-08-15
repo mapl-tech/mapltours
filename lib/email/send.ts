@@ -165,6 +165,19 @@ const list = (v: string | undefined): string[] =>
  * guest's name, hotel and flight. So it copies none and says so: a missing BCC
  * is recoverable, a leak is not.
  */
+/**
+ * The driver's own inbox, for mail addressed TO the driver (payment notices).
+ * DRIVER_NOTIFY_EMAIL wins; a single-entry allowlist is unambiguous enough to
+ * use; with several drivers and no explicit notify address we return null and
+ * the caller skips the send, because guessing means mailing the wrong driver.
+ */
+export function driverNotifyEmail(): string | null {
+  const notify = list(process.env.DRIVER_NOTIFY_EMAIL)
+  if (notify.length) return notify[0]
+  const allowed = list(process.env.DRIVER_ALLOWED_EMAILS)
+  return allowed.length === 1 ? allowed[0] : null
+}
+
 export function opsBcc(guestEmail?: string | null, extra?: (string | null | undefined)[]): string[] {
   const ops = list(process.env.OPERATIONS_EMAIL ?? 'tech@mapltech.com')
 

@@ -147,6 +147,14 @@ export function getZoneForDestination(id: string): ZoneInfo | undefined {
 /** MAPL's margin on top of the driver's cost. */
 export const TRANSFER_MARGIN = 0.10
 /**
+ * Cover for paying the driver via Remitly from Canada, measured live
+ * 2026-08-15: CAD 3.99 flat per send (and a round trip is TWO sends, one per
+ * half) plus a ~2.1% FX spread on CAD to JMD. At MAPL's ticket sizes the
+ * blended cost runs 3 to 6.7% of the payout; 5% covers every send of $140+
+ * and the average across the range. Remeasure if the payout rail changes.
+ */
+export const REMITLY_COVER = 0.05
+/**
  * Card processing, built INTO the displayed price so the customer sees a
  * single all-in number and the margin survives intact. Stripe on this account:
  * 2.9% + 0.8% (international card) + 2% (USD settled to CAD) + C$0.30 fixed.
@@ -180,7 +188,7 @@ export function getTransferPrice(
 ): number | null {
   const cost = driverCost(destinationId, tripType)
   if (cost === null) return null
-  return Math.ceil((cost * (1 + TRANSFER_MARGIN) + CARD_FIXED) / (1 - CARD_RATE))
+  return Math.ceil((cost * (1 + TRANSFER_MARGIN + REMITLY_COVER) + CARD_FIXED) / (1 - CARD_RATE))
 }
 
 /** Cheapest all-in price in a zone, for "from $X" display. */

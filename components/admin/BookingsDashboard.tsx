@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
-import { visibleSteps } from '@/lib/dispatch'
+import { progress } from '@/lib/dispatch'
 import { attributionLabel } from '@/lib/attribution'
 
 /**
@@ -100,8 +100,9 @@ function BookingCard({ b, variant, open, onToggle }: { b: Row; variant: 'abandon
   const items = (b.booking_items ?? []) as Row[]
   // Darker amber so the "Abandoned" label clears AA (4.5:1) on the card header;
   // #B8873D was only 3.08:1.
-  const statusColor = variant === 'paid' ? green : '#7A5A08'
-  const statusText = variant === 'paid' ? 'Paid' : 'Abandoned'
+  const refunded = b.status === 'refunded'
+  const statusColor = refunded ? '#8A2A0A' : variant === 'paid' ? green : '#7A5A08'
+  const statusText = refunded ? 'REFUNDED' : variant === 'paid' ? 'Paid' : 'Abandoned'
   const money2 = (n: number | null | undefined) => (n == null ? null : `${money(n)} ${currency}`)
 
   const item0 = items[0]
@@ -110,8 +111,9 @@ function BookingCard({ b, variant, open, onToggle }: { b: Row; variant: 'abandon
     ? `${item0?.airport ?? 'MBJ'} → ${item0?.hotel ?? item0?.destination ?? ''}`
     : items.length === 1 ? (item0?.title ?? 'Tour') : `${items.length} experiences`
   const paxSummary = isTransfer ? plural(item0?.passengers ?? item0?.travelers ?? 1, 'passenger') : null
-  const dispatchDone = Object.keys(b.dispatch || {}).length
-  const dispatchTotal = visibleSteps(item0?.trip_type === 'round_trip').length
+  const prog = progress(b)
+  const dispatchDone = prog.done
+  const dispatchTotal = prog.total
 
   return (
     <div ref={cardRef} style={{ background: '#fff', border, borderRadius: 14, overflow: 'hidden', scrollMarginTop: 20 }}>
@@ -274,9 +276,12 @@ export default function BookingsDashboard({ bookings }: { bookings: Row[] }) {
   const [filter, setFilter] = useState<Filter>('all')
 
   const abandoned = bookings.filter((b) => b.status === 'pending')
-  const paid = bookings.filter((b) => b.status === 'paid')
+  // Refunded bookings stay in this list with a badge: a trip that took money
+  // and gave it back is exactly what an operator needs to SEE, not lose.
+  const paid = bookings.filter((b) => b.status === 'paid' || b.status === 'refunded')
+  const genuinelyPaid = bookings.filter((b) => b.status === 'paid')
   const recovered = abandoned.filter((b) => b.recovery_email_sent_at)
-  const paidRevenue = paid.reduce((s, b) => s + Number(b.total_paid ?? 0), 0)
+  const paidRevenue = genuinelyPaid.reduce((s, b) => s + Number(b.total_paid ?? 0), 0)
   const abandonedValue = abandoned.reduce((s, b) => s + Number(b.total_paid ?? 0), 0)
 
   const stats = [

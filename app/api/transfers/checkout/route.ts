@@ -14,7 +14,7 @@ import { sanitizeAttribution } from '@/lib/attribution'
 
 /**
  * Transfers checkout, sibling of /api/checkout, with the same hardening:
- *   • Server-side pricing (rates from lib/airport-transfers + 10% fee)
+ *   • Server-side pricing (rates from lib/airport-transfers, 10% margin + 5% Remitly cover)
  *   • Atomic idempotency via the unique partial index on bookings
  *   • Verified PI attach
  *   • Schema guard
@@ -160,7 +160,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Customers see one all-in price; MAPL's margin is whatever is left after
-    // the driver's cost (it covers the 10% markup and card processing).
+    // the driver's cost (it covers the 10% markup, 5% Remitly cover, and card processing).
     const fee = round2(total - subtotal)
     const amountInCents = Math.round(total * 100)
     if (amountInCents < 50) {

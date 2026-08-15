@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createServiceClient } from '@/lib/supabase/service'
-import { STEPS } from '@/lib/dispatch'
+import { STEPS, firstLeg, moneyBlock, money, round2, bookingRef, jaDate, jaTime, type Bk } from '@/lib/dispatch'
+import { sendEmail, opsBcc, driverNotifyEmail } from '@/lib/email/send'
+import DriverPaid from '@/emails/DriverPaid'
 
 /**
  * Admin-only dispatch mutations for a transfer booking.
@@ -42,7 +44,7 @@ export async function POST(request: NextRequest) {
 
   const { data: current, error: readErr } = await svc
     .from('bookings')
-    .select('id, dispatch')
+    .select('*, booking_items(*)')
     .eq('id', bookingId)
     .maybeSingle()
   if (readErr) return NextResponse.json({ error: readErr.message }, { status: 500 })
@@ -52,12 +54,18 @@ export async function POST(request: NextRequest) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const update: Record<string, any> = {}
 
+  // Step toggles merge atomically (merge_dispatch) rather than rewriting the
+  // whole map: review traced real lost-update races where this write could
+  // erase a day-of stamp the cron was setting in the same moment, and a lost
+  // once-only key means a duplicate email to a real person.
+  let stepToggled = false
   if (typeof body.step === 'string') {
     if (!STEP_KEYS.has(body.step)) return NextResponse.json({ error: 'unknown_step' }, { status: 400 })
-    const dispatch = { ...((current.dispatch as Record<string, string>) ?? {}) }
-    if (body.done === false) delete dispatch[body.step]
-    else dispatch[body.step] = new Date().toISOString()
-    update.dispatch = dispatch
+    const { error: mergeErr } = await svc.rpc('merge_dispatch', body.done === false
+      ? { p_booking_id: bookingId, p_remove: [body.step] }
+      : { p_booking_id: bookingId, p_patch: { [body.step]: new Date().toISOString() } })
+    if (mergeErr) return NextResponse.json({ error: mergeErr.message }, { status: 500 })
+    stepToggled = true
   }
 
   if (body.driver) {
@@ -67,15 +75,104 @@ export async function POST(request: NextRequest) {
     if ('plate' in body.driver) update.driver_plate = (body.driver.plate ?? '').slice(0, 40) || null
   }
 
-  if (Object.keys(update).length === 0) return NextResponse.json({ error: 'nothing_to_update' }, { status: 400 })
+  if (Object.keys(update).length === 0 && !stepToggled) {
+    return NextResponse.json({ error: 'nothing_to_update' }, { status: 400 })
+  }
 
-  const { data: saved, error: writeErr } = await svc
+  if (Object.keys(update).length > 0) {
+    const { error: writeErr } = await svc.from('bookings').update(update).eq('id', bookingId)
+    if (writeErr) return NextResponse.json({ error: writeErr.message }, { status: 500 })
+  }
+  const { data: saved, error: rereadErr } = await svc
     .from('bookings')
-    .update(update)
-    .eq('id', bookingId)
     .select('dispatch, driver_name, driver_phone, driver_vehicle, driver_plate')
+    .eq('id', bookingId)
     .single()
-  if (writeErr) return NextResponse.json({ error: writeErr.message }, { status: 500 })
+  if (rereadErr) return NextResponse.json({ error: rereadErr.message }, { status: 500 })
 
-  return NextResponse.json({ ok: true, ...saved })
+  // 4) Checking a pay step notifies the driver by email, at most once.
+  // Non-fatal by design: the step tick above is already saved, and a mail
+  // outage must not make the operator think the payment record failed. The
+  // response says whether the email went, so the console can show it.
+  let driverEmailed: boolean | null = null
+  const payHalf = body.step === 'paid_first' ? 'first' : body.step === 'paid_second' ? 'second' : null
+  const firstCheck = payHalf && body.done !== false && !((current.dispatch as Record<string, string>) ?? {})[body.step!]
+  if (payHalf && firstCheck && current.booking_type === 'transfer' && current.status === 'paid') {
+    driverEmailed = await notifyDriverPaid(svc, current as Bk, body.step!, payHalf)
+  }
+
+  return NextResponse.json({ ok: true, driverEmailed, ...saved })
+}
+
+/**
+ * Email the driver that a payment was sent, with an atomic once-only claim.
+ *
+ * The claim key (`paid_first_notified` / `paid_second_notified`) lives in the
+ * same dispatch map as everything else, and the conditional update means two
+ * operators double-clicking in two tabs produce exactly one email. Unchecking
+ * and re-checking the step does NOT resend: the claim survives, because a
+ * second "payment sent" email for the same half would be a false record.
+ * Amounts come from moneyBlock, the same figures the console shows.
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function notifyDriverPaid(svc: any, b: Bk, step: string, half: 'first' | 'second'): Promise<boolean> {
+  const to = driverNotifyEmail()
+  if (!to) {
+    console.warn('[dispatch] pay step checked but no driver email configured (DRIVER_NOTIFY_EMAIL)')
+    return false
+  }
+  const l = firstLeg(b)
+  if (!l) return false
+
+  const m = moneyBlock(b, null)
+  // A zero or negative amount is a data problem, never an email. Checked
+  // BEFORE the claim, so a fixed subtotal can still notify later.
+  const firstAmount = m.driverPerLeg
+  const secondAmount = round2(m.driverTotal - m.driverPerLeg)
+  const thisAmount = half === 'second' ? secondAmount : firstAmount
+  if (!(thisAmount > 0)) {
+    console.warn('[dispatch] pay-step email skipped, non-positive amount', { booking: b.id, half, thisAmount })
+    return false
+  }
+
+  // Atomic once-only claim. Deliberately NOT released on a failed send: a
+  // send can fail on our side after Resend accepted it, and a resend of a
+  // money notice is worse than a missing one the console reports.
+  const claimKey = `${step}_notified`
+  const { data: claimed } = await svc.rpc('merge_dispatch', {
+    p_booking_id: b.id,
+    p_patch: { [claimKey]: new Date().toISOString() },
+    p_only_if_absent: claimKey,
+  })
+  if (!claimed || claimed.length === 0) return false
+
+  const effectiveHalf: 'first' | 'second' | 'full' = m.isRoundTrip ? half : 'full'
+  // First half pays the leg that happens first; for a departure-only one-way
+  // that IS the ride to the airport.
+  const isArrivalLeg = half === 'first' ? !!l.arrivalAt : false
+  const at = isArrivalLeg ? l.arrivalAt : l.departureAt
+  const guestName = `${b.first_name ?? ''} ${b.last_name ?? ''}`.trim() || 'Guest'
+
+  const res = await sendEmail({
+    to,
+    bcc: opsBcc(to),
+    subject: `${money(thisAmount)} sent · ${effectiveHalf === 'full' ? 'payment in full' : `${effectiveHalf} half`} · ${bookingRef(b.id)}`,
+    react: DriverPaid({
+      driverName: b.driver_name?.trim() || 'driver',
+      bookingRef: bookingRef(b.id),
+      guestName,
+      half: effectiveHalf,
+      amount: money(thisAmount),
+      totalForTrip: money(m.driverTotal),
+      tripLabel: isArrivalLeg ? `MBJ Airport → ${l.hotel}` : `${l.hotel} → MBJ Airport`,
+      whenLabel: at ? `${jaDate(at)}, ${jaTime(at)}` : 'time to be confirmed',
+      passengers: l.passengers,
+    }),
+    tags: [{ name: 'type', value: 'driver_paid' }],
+  })
+  if (!res?.ok) {
+    console.error('[dispatch] driver payment email failed, claim held to prevent doubles', res?.error)
+    return false
+  }
+  return true
 }

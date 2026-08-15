@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import Stripe from 'stripe'
 import { createServiceClient } from '@/lib/supabase/service'
+import { DEFAULT_DRIVER } from '@/lib/dispatch'
 import { sendEmail, opsBcc } from '@/lib/email/send'
 import BookingConfirmed from '@/emails/BookingConfirmed'
 import OperatorBookingAlert from '@/emails/OperatorBookingAlert'
@@ -53,6 +54,9 @@ interface BookingRow {
   id: string
   status: string
   booking_type: 'tour' | 'transfer'
+  /** Loaded via select('*'); read by the default-driver auto-assign. */
+  driver_name: string | null
+  driver_phone: string | null
   first_name: string | null
   last_name: string | null
   email: string | null
@@ -103,6 +107,9 @@ export async function POST(req: Request) {
         break
       case 'payment_intent.canceled':
         await handlePaymentCanceled(event.data.object as Stripe.PaymentIntent)
+        break
+      case 'charge.refunded':
+        await handleChargeRefunded(event.data.object as Stripe.Charge)
         break
       default:
         // Ignore unsubscribed events; keep Stripe happy with 200.
@@ -212,20 +219,61 @@ async function handlePaymentSucceeded(pi: Stripe.PaymentIntent) {
     return
   }
 
+  // 'refunded' is TERMINAL. A refund can land while a succeeded delivery is
+  // still in Stripe's retry queue (our own throw-on-transient-email-failure
+  // makes multi-day retries normal), and without this gate the retry would
+  // resurrect the refunded booking to paid, re-email the guest, and put the
+  // dead trip back on the driver's schedule. Belt AND suspenders: an early
+  // return here, plus a .neq guard on the write below for the read-update
+  // race where the refund commits between our read and our write.
+  if (booking.status === 'refunded') {
+    console.log('[stripe-webhook] succeeded delivery for refunded booking ignored', booking.id)
+    return
+  }
+
   // Mark paid only if we haven't already. We DO NOT short-circuit when
   // status is already 'paid', instead we fall through to the email step
   // which has its own per-channel idempotency. That way a transient
   // Resend outage during the first delivery is healed by Stripe's retry.
   if (booking.status !== 'paid') {
-    const { error } = await supabase
+    const { data: transitioned, error } = await supabase
       .from('bookings')
       .update({ status: 'paid', paid_at: new Date().toISOString() })
       .eq('id', booking.id)
+      .neq('status', 'refunded')
+      .select('id')
     if (error) {
       console.error('[stripe-webhook] failed to mark booking paid', error)
       throw new Error(error.message) // → Stripe retries
     }
+    if (!transitioned || transitioned.length === 0) {
+      // The refund won the race. Leave the booking dead.
+      console.log('[stripe-webhook] paid transition skipped, booking already refunded', booking.id)
+      return
+    }
     booking.status = 'paid'
+
+    // Auto-assign the default driver, exactly once: on the delivery that
+    // flipped this booking to paid. Living inside the transition means a
+    // Stripe redelivery can never re-stamp a driver an operator deliberately
+    // cleared, and a fresh paid transfer always has null driver columns, so
+    // nothing manual can be overwritten. Non-fatal: the charge already
+    // succeeded, so a failure here is logged for the console rather than
+    // failing the webhook; the dispatch console shows the missing driver.
+    if (booking.booking_type === 'transfer' && !booking.driver_name && !booking.driver_phone) {
+      const { error: driverErr } = await supabase
+        .from('bookings')
+        .update(DEFAULT_DRIVER)
+        .eq('id', booking.id)
+        .is('driver_name', null)
+        .is('driver_phone', null)
+        .eq('status', 'paid')
+      if (driverErr) {
+        console.warn('[stripe-webhook] default driver assign failed', { booking_id: booking.id, error: driverErr.message })
+      } else {
+        Object.assign(booking, DEFAULT_DRIVER)
+      }
+    }
   }
 
   // Consume the video-upload reward, if one was applied to this checkout.
@@ -275,7 +323,10 @@ async function handlePaymentSucceeded(pi: Stripe.PaymentIntent) {
 
 async function handlePaymentFailed(pi: Stripe.PaymentIntent) {
   const { supabase, booking } = await loadBooking(pi)
-  if (!booking || booking.status === 'paid') return
+  // 'paid' and 'refunded' are both ahead of 'failed' in the lifecycle: a
+  // late-delivered failure from an earlier attempt must not scrub either.
+  // In-memory check plus a status predicate on the write for the race.
+  if (!booking || booking.status === 'paid' || booking.status === 'refunded') return
 
   const errMsg =
     pi.last_payment_error?.message ??
@@ -292,12 +343,14 @@ async function handlePaymentFailed(pi: Stripe.PaymentIntent) {
         : `[failure: ${errMsg}]`,
     })
     .eq('id', booking.id)
+    .not('status', 'in', '("paid","refunded")')
 }
 
 async function handlePaymentCanceled(pi: Stripe.PaymentIntent) {
   const { supabase, booking } = await loadBooking(pi)
-  if (!booking || booking.status === 'paid') return
+  if (!booking || booking.status === 'paid' || booking.status === 'refunded') return
   await supabase.from('bookings').update({ status: 'canceled' }).eq('id', booking.id)
+    .not('status', 'in', '("paid","refunded")')
 }
 
 // `retryable` distinguishes a transient send failure (worth having Stripe
@@ -323,6 +376,9 @@ async function claimEmailChannel(
     .update({ [column]: new Date().toISOString() })
     .eq('id', bookingId)
     .is(column, null)
+    // Never claim an email channel for a booking that stopped being paid
+    // between our read and this write (refund racing the handler).
+    .eq('status', 'paid')
     .select('id')
   if (error) {
     console.error('[stripe-webhook] email claim failed', { bookingId, column, error: error.message })
@@ -545,4 +601,72 @@ async function maybeSendOperatorAlert(
 // Short, user-friendly booking reference, first 8 of the uuid, upper-cased.
 function humanizeId(id: string): string {
   return 'MAPL-' + id.slice(0, 8).toUpperCase()
+}
+
+/**
+ * A FULL refund releases the trip: the guest is not traveling with us, so the
+ * booking leaves the operational world. Setting status to 'refunded' makes
+ * every downstream surface drop it at once, because they all filter on
+ * status = 'paid': the day-of email cron and its guard, the driver portal,
+ * the dispatch console list, and the cash-flow revenue view.
+ *
+ * Partial refunds (a goodwill credit) leave the trip on: charge.refunded is
+ * true only when the charge is fully refunded.
+ *
+ * Idempotent: the update matches only status = 'paid', so a redelivered
+ * event finds zero rows and does nothing. A DB error throws so Stripe
+ * retries, the same healing path the paid transition uses.
+ */
+async function handleChargeRefunded(charge: Stripe.Charge) {
+  if (!charge.refunded) return
+  const piId = typeof charge.payment_intent === 'string' ? charge.payment_intent : charge.payment_intent?.id
+  const metaBookingId = typeof charge.metadata?.booking_id === 'string' ? charge.metadata.booking_id : null
+  if (!piId && !metaBookingId) return
+  const supabase = createServiceClient()
+
+  // Catches 'pending' AND 'failed' as well as 'paid': Stripe does not
+  // guarantee event order, and a refund consumed as a 200 no-op is never
+  // redelivered, leaving a later succeeded retry free to mark the refunded
+  // booking paid. 'failed' belongs in the list because a multi-attempt
+  // PaymentIntent can decline once (row goes 'failed'), then charge on the
+  // second attempt, then be refunded, all before the succeeded delivery is
+  // processed. Only 'canceled' and 'refunded' itself stay out: canceled
+  // never took money, and refunded is already terminal.
+  const REFUNDABLE = ['pending', 'paid', 'failed']
+  const refundByPi = () => supabase
+    .from('bookings').update({ status: 'refunded' }).in('status', REFUNDABLE)
+    .eq('stripe_payment_id', piId!).select('id, dispatch')
+  const refundByMeta = () => supabase
+    .from('bookings').update({ status: 'refunded' }).in('status', REFUNDABLE)
+    .eq('id', metaBookingId!).select('id, dispatch')
+
+  // Two-step lookup, mirroring loadBooking: an orphan booking whose
+  // stripe_payment_id was never healed matches zero rows by PI, and the
+  // refund must then resolve through metadata rather than being consumed.
+  let data: { id: string; dispatch: unknown }[] | null = null
+  let error: { message: string } | null = null
+  if (piId) ({ data, error } = await refundByPi())
+  if (!error && (!data || data.length === 0) && metaBookingId) ({ data, error } = await refundByMeta())
+
+  if (error) {
+    console.error('[stripe-webhook] refund status update failed', { pi: piId, error: error.message })
+    throw new Error(error.message)
+  }
+  if (!data || data.length === 0) {
+    // Either an idempotent redelivery (already refunded) or a refund for a
+    // booking we cannot resolve. Log it: silence here is how money states
+    // drift apart.
+    console.warn('[stripe-webhook] charge.refunded matched no refundable booking', { pi: piId, meta: metaBookingId })
+  }
+  if (data?.length) {
+    // Record when we learned of the refund, for support conversations.
+    for (const row of data) {
+      const { error: stampErr } = await supabase.rpc('merge_dispatch', {
+        p_booking_id: row.id,
+        p_patch: { refunded_at: new Date().toISOString() },
+      })
+      if (stampErr) console.error('[stripe-webhook] refunded_at stamp failed', { booking: row.id, error: stampErr.message })
+    }
+    console.log('[stripe-webhook] booking refunded, dispatch released', data.map((r: { id: string }) => r.id))
+  }
 }

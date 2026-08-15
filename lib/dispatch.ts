@@ -6,7 +6,7 @@
  * Money model (corrected with the operator, Aug 14 2026):
  *   the SUPPLIER is paid the subtotal in full, and MAPL's entire margin is
  *   the customer-facing fee charged on top:
- *     transfers: customer pays fare + 10% trip fee -> driver gets the fare
+ *     transfers: customer pays fare + 15% (10% margin + 5% Remitly cover) -> driver gets the fare
  *     tours:     customer pays price + 20% fee     -> operator gets the price
  *   => driver is owed  subtotal  (round-trips split half per leg)
  *   => MAPL keeps      fee - Stripe fee
@@ -51,6 +51,19 @@ export function firstLeg(b: Bk): TransferLeg | null {
   }
 }
 
+/**
+ * The default driver. MAPL currently runs every transfer with Collin, so a
+ * paid transfer is stamped with his details automatically and the dispatch
+ * console only needs touching when a different driver covers a trip. Update
+ * or remove this when a second driver joins the roster.
+ */
+export const DEFAULT_DRIVER = {
+  driver_name: 'Collin',
+  driver_phone: '+1 876 919-7534',
+  driver_vehicle: 'Toyota Noah minivan, black',
+  driver_plate: 'PM 9482',
+} as const
+
 export function bookingRef(id: string): string {
   return 'MAPL-' + id.slice(0, 8).toUpperCase()
 }
@@ -62,7 +75,7 @@ export function round2(n: number): number {
 }
 /**
  * What MAPL owes the supplier for a booking: the SUBTOTAL IN FULL.
- * The customer-facing fee (10% transfers, 20% tours) is MAPL's whole margin,
+ * The customer-facing fee (15% transfers incl. Remitly cover, 20% tours) is MAPL's whole margin,
  * so nothing is deducted from the supplier's rate. Used for the transfer
  * driver and, on the cash-flow page, for tour operators.
  */
@@ -77,7 +90,7 @@ export interface MoneyBlock {
   customerPaid: number
   /** the fare, which IS the driver's rate (MAPL's margin is the trip fee). */
   fare: number
-  /** the 10% trip fee charged on top: MAPL's entire margin on a transfer. */
+  /** the trip fee charged on top (10% margin + 5% Remitly cover): MAPL's entire margin on a transfer. */
   transferFee: number
   stripeFee: number | null
   /** what Stripe deposits (customer paid minus Stripe fee), BEFORE the driver. */
@@ -127,6 +140,15 @@ export function jaTime(iso: string | null | undefined): string {
     return new Date(iso).toLocaleTimeString('en-US', { ...JA, hour: 'numeric', minute: '2-digit' })
   } catch { return '-' }
 }
+/**
+ * The real instant of a stored leg time. Leg times are the guest's Jamaica
+ * wall-clock carrying a Z (read back verbatim by every display surface), so
+ * the true UTC instant is 5 hours later. Jamaica has never observed DST.
+ */
+export function legInstantMs(iso: string): number {
+  return Date.parse(iso) + 5 * 3_600_000
+}
+
 /** shift a stored wall-clock time by N minutes, returning a new ISO. */
 export function shiftIso(iso: string, minutes: number): string {
   return new Date(new Date(iso).getTime() + minutes * 60000).toISOString()
@@ -307,13 +329,83 @@ export const STEPS: Step[] = [
   { key: 'review_requested', num: 14, title: 'Send review request', group: 'close' },
 ]
 
-export function visibleSteps(isRoundTrip: boolean): Step[] {
-  return STEPS.filter((s) => isRoundTrip || !s.roundTripOnly)
+/**
+ * Steps the platform can prove happened, so the operator never bookkeeps what
+ * the system already did. Returns a short evidence label when the step is
+ * auto-satisfied, null when it still needs a human.
+ *
+ * The two payment steps are deliberately never auto-completed: money leaving
+ * MAPL is confirmed by the person who sent it, not inferred by a machine.
+ * A manual tick always wins over auto for display, and unticking a manually
+ * ticked step falls back to whatever the evidence says.
+ */
+export function autoStepDone(b: Bk, key: string, nowMs: number, opts: { driverEmailConfigured?: boolean } = {}): string | null {
+  const driverEmailConfigured = opts.driverEmailConfigured !== false
+  const l = firstLeg(b)
+  if (!l) return null
+  const d = (b.dispatch ?? {}) as Record<string, string>
+  const arriveMs = l.arrivalAt ? legInstantMs(l.arrivalAt) : null
+  const departMs = l.departureAt ? legInstantMs(l.departureAt) : null
+  const CLEARED_MIN = 150 // land + immigration + bags + the drive, generously
+
+  switch (key) {
+    case 'verified':
+      return l.hotel && (arriveMs ?? departMs) && l.passengers >= 1 && (b.phone || b.email)
+        ? 'booking data complete' : null
+    case 'sent_to_driver':
+      // The driver is BCCed on the guest confirmation, so sending it IS
+      // sending the booking to the driver. Only claimable when a driver
+      // inbox is actually configured; otherwise a human must send it.
+      return driverEmailConfigured && b.confirmation_email_sent_at && b.driver_name
+        ? 'confirmation BCCed to the driver' : null
+    case 'driver_confirmed':
+      return b.driver_name && b.driver_phone && b.driver_vehicle && b.driver_plate
+        ? 'driver details on the booking' : null
+    case 'customer_confirmed':
+      return b.confirmation_email_sent_at ? 'confirmation emailed to the guest' : null
+    case 'flight_requested':
+      return l.arrivalFlight || (!arriveMs && l.departureFlight)
+        ? 'flight already on the booking' : null
+    case 'driver_reconfirmed':
+      return d.dayof_arrival_sent || (!arriveMs && d.dayof_departure_sent)
+        ? 'day-of email BCCed to the driver' : null
+    case 'landed':
+      return arriveMs && nowMs > arriveMs ? 'scheduled landing time passed' : null
+    case 'arrival_complete':
+      return arriveMs && nowMs > arriveMs + CLEARED_MIN * 60_000 ? 'pickup window passed' : null
+    case 'arrival_followup':
+      return arriveMs && d.dayof_arrival_sent && nowMs > arriveMs + CLEARED_MIN * 60_000
+        ? 'guest had full day-of details' : null
+    case 'departure_reminded':
+      return d.dayof_departure_sent ? 'day-of email BCCed to the driver' : null
+    case 'departure_complete':
+      return departMs && nowMs > departMs + 120 * 60_000 ? 'departure passed' : null
+    case 'review_requested': {
+      const endMs = departMs ?? arriveMs
+      return endMs && nowMs > endMs + 24 * 3_600_000 ? 'trip complete' : null
+    }
+  }
+  return null
+}
+
+/** Steps that describe the arrival leg itself. A departure-only one-way has
+ *  no arrival to land, clear or follow up on, but it still needs its flight
+ *  details requested, its driver reminded, and above all its DRIVER PAID:
+ *  those live in the arrival group for layout, so they must survive. */
+const ARRIVAL_EVENT_STEPS = new Set(['landed', 'arrival_complete', 'arrival_followup'])
+
+export function visibleSteps(isRoundTrip: boolean, hasArrival = true): Step[] {
+  return STEPS.filter((s) =>
+    (isRoundTrip || !s.roundTripOnly) && (hasArrival || !ARRIVAL_EVENT_STEPS.has(s.key)))
 }
 
 export function progress(b: Bk): { done: number; total: number } {
   const leg = firstLeg(b)
-  const steps = visibleSteps(leg?.tripType === 'round_trip')
+  const steps = visibleSteps(leg?.tripType === 'round_trip', !!leg?.arrivalAt)
   const dispatch = (b.dispatch ?? {}) as Record<string, string>
-  return { done: steps.filter((s) => dispatch[s.key]).length, total: steps.length }
+  const now = Date.now()
+  return {
+    done: steps.filter((s) => dispatch[s.key] || autoStepDone(b, s.key, now)).length,
+    total: steps.length,
+  }
 }
