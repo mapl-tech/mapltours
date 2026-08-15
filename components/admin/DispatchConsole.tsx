@@ -157,7 +157,10 @@ export default function DispatchConsole({ booking, stripeFee }: { booking: Bk; s
           <div style={{ fontSize: 13, color: soft, marginTop: 2, ...tnum }}>{jaDate(leg.arrivalAt)}</div>
           <div style={{ fontSize: 13, color: soft, ...tnum }}>Flight lands {jaTime(leg.arrivalAt)}{leg.arrivalFlight ? ` (flight ${leg.arrivalFlight})` : ' (flight TBD)'}</div>
           <div style={{ fontSize: 12.5, color: faint, marginTop: 2, ...tnum }}>Customer usually clears customs ~{ARRIVAL_CLEAR_MIN} min after landing ({jaTime(leg.arrivalAt ? shiftIso(leg.arrivalAt, ARRIVAL_CLEAR_MIN) : null)}).</div>
-          {arrivalCal && <div style={{ marginTop: 10 }}><Btn href={arrivalCal}>📅 Add arrival to Google Calendar</Btn></div>}
+          <div style={{ marginTop: 10, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            {arrivalCal && <Btn href={arrivalCal}>📅 Add arrival to Google Calendar</Btn>}
+            <DayOfBtn bookingId={b.id} leg="arrival" sentAt={dispatch.dayof_arrival_sent} />
+          </div>
 
           {m.isRoundTrip && leg.departureAt && (
             <>
@@ -166,7 +169,10 @@ export default function DispatchConsole({ booking, stripeFee }: { booking: Bk; s
               <div style={{ fontSize: 13, color: soft, marginTop: 2, ...tnum }}>{jaDate(leg.departureAt)}</div>
               <div style={{ fontSize: 13, color: soft, ...tnum }}>Hotel pickup {jaTime(leg.departureAt)}{leg.departureFlight ? ` · flight ${leg.departureFlight}` : ''}</div>
               <div style={{ fontSize: 12.5, color: amber, marginTop: 2, fontWeight: 600 }}>This is the pickup time the guest requested. Check it against the flight below.</div>
-              {departureCal && <div style={{ marginTop: 10 }}><Btn href={departureCal}>📅 Add departure to Google Calendar</Btn></div>}
+              <div style={{ marginTop: 10, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                {departureCal && <Btn href={departureCal}>📅 Add departure to Google Calendar</Btn>}
+                <DayOfBtn bookingId={b.id} leg="departure" sentAt={dispatch.dayof_departure_sent} />
+              </div>
             </>
           )}
         </Card>
@@ -310,6 +316,29 @@ function StepActions({ stepKey, b, m, arrivalCal, departureCal }: {
     default:
       return null
   }
+}
+
+/**
+ * Sends the guest their day-of details for one leg. Deliberately manual: it
+ * should only go out once the driver is assigned, since an email naming no
+ * driver is worse than no email at all.
+ */
+function DayOfBtn({ bookingId, leg, sentAt }: { bookingId: string; leg: 'arrival' | 'departure'; sentAt?: string }) {
+  const [state, setState] = useState<'idle' | 'sending' | 'sent' | 'error'>(sentAt ? 'sent' : 'idle')
+  const send = async () => {
+    setState('sending')
+    const r = await fetch('/api/admin/dayof', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ bookingId, leg }),
+    }).catch(() => null)
+    setState(r && r.ok ? 'sent' : 'error')
+  }
+  const label = state === 'sending' ? 'Sending…'
+    : state === 'sent' ? '✓ Day-of email sent'
+    : state === 'error' ? 'Send failed, retry'
+    : `✉️ Send day-of email`
+  return <Btn tone={state === 'sent' ? 'outline' : 'solid'} onClick={send}>{label}</Btn>
 }
 
 /* ── Flight tracking (any airline) ── */
