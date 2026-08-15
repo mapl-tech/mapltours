@@ -33,6 +33,17 @@ export interface TransferDayOfProps {
   supportEmail: string
 }
 
+/** Numbered steps as a real list: the order carries meaning, so it is marked
+ *  up as a sequence rather than faked with "1." in the copy. */
+const stepList: React.CSSProperties = {
+  margin: 0,
+  paddingLeft: 20,
+  color: '#57534C',
+  fontSize: 14.5,
+  lineHeight: 1.6,
+}
+const stepItem: React.CSSProperties = { margin: '0 0 8px' }
+
 function Row({ label, value }: { label: string; value: string }) {
   return (
     <Section style={{ padding: '9px 0', borderBottom: '1px solid #f0f0f0' }}>
@@ -112,20 +123,23 @@ export default function TransferDayOf(props: TransferDayOfProps) {
           <Text style={s.cardHeaderText}>{isArrival ? 'When you land' : 'Before you go'}</Text>
         </Section>
         <Section style={s.cardBody}>
-          {isArrival ? (
-            <>
-              <Text style={s.body}>1. Clear immigration and collect your bags. No rush, your driver is tracking the flight.</Text>
-              <Text style={s.body}>2. Walk out through customs into the arrivals hall.</Text>
-              <Text style={s.body}>3. Look for the <strong>MAPL Tours Jamaica</strong> sign with your name on it.</Text>
-              <Text style={s.body}>4. If you do not see it within a few minutes, message the driver on WhatsApp above, or email us and we will call him.</Text>
-            </>
-          ) : (
-            <>
-              <Text style={s.body}>1. Be in the lobby a few minutes before the pickup time above.</Text>
-              <Text style={s.body}>2. Your driver will be outside in the vehicle listed above.</Text>
-              <Text style={s.body}>3. If anything changes with your flight or your plans, reply to this email and we will let your driver know and adjust the pickup for you.</Text>
-            </>
-          )}
+          <ol style={stepList}>
+            {(isArrival
+              ? [
+                  <>Clear immigration and collect your bags. No rush, your driver is tracking the flight.</>,
+                  <>Walk out through customs into the arrivals hall.</>,
+                  <>Look for the <strong>MAPL Tours Jamaica</strong> sign with your name on it.</>,
+                  <>If you do not see it within a few minutes, message the driver on WhatsApp above, or email us and we will call him.</>,
+                ]
+              : [
+                  <>Be in the lobby a few minutes before the pickup time above.</>,
+                  <>Your driver will be outside in the vehicle listed above.</>,
+                  <>If anything changes with your flight or your plans, reply to this email and we will let your driver know and adjust the pickup for you.</>,
+                ]
+            ).map((step, i) => (
+              <li key={i} style={stepItem}>{step}</li>
+            ))}
+          </ol>
         </Section>
       </Section>
 

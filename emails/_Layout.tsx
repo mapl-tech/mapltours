@@ -26,7 +26,7 @@ import {
 const INK = '#1A1714' // primary text, warm near-black
 const INK_SOFT = '#57534C' // secondary text
 const MUTED = '#6E6A62' // notes / muted (kept ≥ AA on white)
-const FAINT = '#94908A' // decorative only (© line)
+const FAINT = '#6E6A62' // © line; AA on both paper (4.78:1) and card (5.38:1)
 const BG = '#F4F1EB' // warm page ground
 const CARD = '#FFFFFF'
 const BORDER = '#E7E1D6' // warm hairline
@@ -114,7 +114,7 @@ export const maplStyles = {
   eyebrow: {
     margin: '0 0 12px',
     fontFamily: SYSTEM_SANS(),
-    fontSize: 11.5,
+    fontSize: 13,
     fontWeight: 700,
     letterSpacing: '0.14em',
     textTransform: 'uppercase' as const,
@@ -141,7 +141,7 @@ export const maplStyles = {
   sectionLabel: {
     margin: 0,
     fontFamily: SYSTEM_SANS(),
-    fontSize: 11,
+    fontSize: 13,
     fontWeight: 600,
     letterSpacing: '0.12em',
     textTransform: 'uppercase' as const,
@@ -164,7 +164,7 @@ export const maplStyles = {
   cardHeaderText: {
     margin: 0,
     fontFamily: SYSTEM_SANS(),
-    fontSize: 11.5,
+    fontSize: 13,
     fontWeight: 700,
     letterSpacing: '0.1em',
     textTransform: 'uppercase' as const,
@@ -245,7 +245,7 @@ export const maplStyles = {
     border: `1px solid ${BORDER}`,
     borderRadius: 8,
     fontFamily: SYSTEM_MONO(),
-    fontSize: 13,
+    fontSize: 13.5,
     fontWeight: 600,
     letterSpacing: '0.06em',
     color: INK,
@@ -270,7 +270,7 @@ export const maplStyles = {
   note: {
     margin: '14px 0 0',
     fontFamily: SYSTEM_SANS(),
-    fontSize: 12.5,
+    fontSize: 13,
     color: MUTED,
     lineHeight: 1.5,
   } as React.CSSProperties,
@@ -283,7 +283,7 @@ export const maplStyles = {
   highlightCardHeaderText: {
     margin: 0,
     fontFamily: SYSTEM_SANS(),
-    fontSize: 11.5,
+    fontSize: 13,
     fontWeight: 700,
     letterSpacing: '0.1em',
     textTransform: 'uppercase' as const,
@@ -298,7 +298,7 @@ export const maplStyles = {
   kicker: {
     margin: 0,
     fontFamily: SYSTEM_SANS(),
-    fontSize: 11.5,
+    fontSize: 13,
     fontWeight: 700,
     letterSpacing: '0.14em',
     textTransform: 'uppercase' as const,
@@ -323,7 +323,7 @@ export const maplStyles = {
   panelKicker: {
     margin: 0,
     fontFamily: SYSTEM_SANS(),
-    fontSize: 11,
+    fontSize: 13,
     fontWeight: 700,
     letterSpacing: '0.12em',
     textTransform: 'uppercase' as const,
@@ -362,7 +362,7 @@ export const maplStyles = {
   } as React.CSSProperties,
   footnote: {
     marginTop: 22,
-    fontSize: 12,
+    fontSize: 13,
     color: MUTED,
     textAlign: 'center' as const,
     lineHeight: 1.55,
@@ -394,7 +394,7 @@ const container: React.CSSProperties = {
 const accentBar: React.CSSProperties = {
   height: 3,
   background: GOLD,
-  fontSize: 0,
+  fontSize: 13,
   lineHeight: '3px',
 }
 
@@ -418,7 +418,7 @@ const brandRule: React.CSSProperties = {
   width: 34,
   background: GOLD,
   margin: '10px 0 0',
-  fontSize: 0,
+  fontSize: 13,
   lineHeight: '2px',
 }
 
@@ -426,7 +426,7 @@ const brandTagline: React.CSSProperties = {
   margin: '10px 0 0',
   fontFamily: SYSTEM_SANS(),
   fontStyle: 'italic',
-  fontSize: 12.5,
+  fontSize: 13,
   color: MUTED,
 }
 
@@ -448,7 +448,7 @@ const footerPad: React.CSSProperties = {
 const footerLine: React.CSSProperties = {
   margin: '0 0 6px',
   fontFamily: SYSTEM_SANS(),
-  fontSize: 12,
+  fontSize: 13,
   color: INK_SOFT,
   lineHeight: 1.5,
 }
@@ -456,7 +456,7 @@ const footerLine: React.CSSProperties = {
 const footerLineMuted: React.CSSProperties = {
   margin: '6px 0 0',
   fontFamily: SYSTEM_SANS(),
-  fontSize: 11,
+  fontSize: 13,
   color: FAINT,
   lineHeight: 1.5,
 }
