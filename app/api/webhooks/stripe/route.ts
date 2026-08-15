@@ -22,6 +22,7 @@ import TransferOperatorAlert from '@/emails/TransferOperatorAlert'
  *     - payment_intent.succeeded
  *     - payment_intent.payment_failed
  *     - payment_intent.canceled
+ *     - charge.refunded        (full refunds release the trip: -> 'refunded')
  *   Copy the "Signing secret" → STRIPE_WEBHOOK_SECRET env var.
  */
 
@@ -624,20 +625,20 @@ async function handleChargeRefunded(charge: Stripe.Charge) {
   if (!piId && !metaBookingId) return
   const supabase = createServiceClient()
 
-  // Catches 'pending' AND 'failed' as well as 'paid': Stripe does not
-  // guarantee event order, and a refund consumed as a 200 no-op is never
-  // redelivered, leaving a later succeeded retry free to mark the refunded
-  // booking paid. 'failed' belongs in the list because a multi-attempt
-  // PaymentIntent can decline once (row goes 'failed'), then charge on the
-  // second attempt, then be refunded, all before the succeeded delivery is
-  // processed. Only 'canceled' and 'refunded' itself stay out: canceled
-  // never took money, and refunded is already terminal.
-  const REFUNDABLE = ['pending', 'paid', 'failed']
+  // Matches EVERY status except 'refunded' itself. Stripe guarantees neither
+  // event order nor single delivery, and a refund consumed as a 200 no-op is
+  // never redelivered, leaving a later succeeded retry free to resurrect the
+  // booking. Three review rounds each found a status being reasoned out of
+  // this list ('pending', then 'failed', then 'canceled' via a sibling
+  // PaymentIntent cancelling the row while the charging PI refunds), so the
+  // rule is now structural: charge.refunded proves money moved, therefore it
+  // terminates the booking whatever transient state the row is in. Flipping
+  // an already-dead canceled row to refunded is harmless; missing one is not.
   const refundByPi = () => supabase
-    .from('bookings').update({ status: 'refunded' }).in('status', REFUNDABLE)
+    .from('bookings').update({ status: 'refunded' }).neq('status', 'refunded')
     .eq('stripe_payment_id', piId!).select('id, dispatch')
   const refundByMeta = () => supabase
-    .from('bookings').update({ status: 'refunded' }).in('status', REFUNDABLE)
+    .from('bookings').update({ status: 'refunded' }).neq('status', 'refunded')
     .eq('id', metaBookingId!).select('id, dispatch')
 
   // Two-step lookup, mirroring loadBooking: an orphan booking whose
