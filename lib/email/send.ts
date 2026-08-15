@@ -90,6 +90,9 @@ export interface SendEmailInput {
   replyTo?: string
   /** Optional Resend tags for filtering in their dashboard */
   tags?: { name: string; value: string }[]
+  /** Blind copies. Used so operations and the driver receive exactly what the
+   *  guest received, without either address appearing in the guest's headers. */
+  bcc?: string | string[]
 }
 
 export interface SendEmailResult {
@@ -99,7 +102,7 @@ export interface SendEmailResult {
 }
 
 export async function sendEmail({
-  to, subject, react, from, replyTo, tags,
+  to, subject, react, from, replyTo, tags, bcc,
 }: SendEmailInput): Promise<SendEmailResult> {
   if (!resend) {
     // Dev convenience, no Resend key means we only log.
@@ -131,6 +134,8 @@ export async function sendEmail({
       html,
       text,
       replyTo: finalReplyTo,
+      // Empty arrays are rejected by Resend, so only include when present.
+      ...(bcc && (Array.isArray(bcc) ? bcc.length : bcc) ? { bcc } : {}),
       tags,
     })
 
@@ -144,4 +149,38 @@ export async function sendEmail({
     console.error('[email] render/send threw', { subject, to, err: msg })
     return { ok: false, error: msg }
   }
+}
+
+const list = (v: string | undefined): string[] =>
+  (v ?? '').split(',').map((e) => e.trim()).filter((e) => e.includes('@'))
+
+/**
+ * Who gets a blind copy of guest-facing operational mail: MAPL operations and
+ * the driver, so both hold exactly what the guest holds.
+ *
+ * The driver copy resolves from DRIVER_NOTIFY_EMAIL, or from
+ * DRIVER_ALLOWED_EMAILS only while that names EXACTLY ONE driver. With a
+ * second driver on the allowlist we cannot tell from an address list which one
+ * is on this trip, and copying all of them would hand every driver every
+ * guest's name, hotel and flight. So it copies none and says so: a missing BCC
+ * is recoverable, a leak is not.
+ */
+export function opsBcc(guestEmail?: string | null, extra?: (string | null | undefined)[]): string[] {
+  const ops = list(process.env.OPERATIONS_EMAIL ?? 'tech@mapltech.com')
+
+  const notify = list(process.env.DRIVER_NOTIFY_EMAIL)
+  const allowed = list(process.env.DRIVER_ALLOWED_EMAILS)
+  let drivers: string[] = notify
+  if (!notify.length) {
+    if (allowed.length === 1) drivers = allowed
+    else if (allowed.length > 1) {
+      console.warn('[email] %d drivers on the allowlist, so no driver was BCCed. Set DRIVER_NOTIFY_EMAIL.', allowed.length)
+    }
+  }
+
+  const all = [...ops, ...drivers, ...(extra ?? [])]
+    .filter((e): e is string => !!e && e.includes('@'))
+    .map((e) => e.toLowerCase())
+  const guest = (guestEmail ?? '').toLowerCase()
+  return Array.from(new Set(all)).filter((e) => e !== guest)
 }

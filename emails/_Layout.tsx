@@ -93,7 +93,7 @@ export function MaplLayout({ preheader, children }: MaplLayoutProps) {
           <Hr style={hr} />
           <Section style={footerPad} className="mapl-pad">
             <Text style={footerLine}>
-              MAPL Tours · Kingston · Negril · Ocho Rios · Portland
+              MAPL Tours · Montego Bay · Falmouth · Ocho Rios · Negril
             </Text>
             <Text style={footerLine}>
               <Link href={siteUrl()} style={footerLink}>

@@ -43,7 +43,12 @@ function dateShort(iso: string | null | undefined): string {
 function flightTime(iso: string | null | undefined): string {
   if (!iso) return ''
   try {
-    return new Date(iso).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' })
+    // Leg times are the guest's Jamaica wall-clock, stored verbatim. Read them
+    // back in UTC so this dashboard shows the SAME time the guest was quoted on
+    // the confirmation and the day-of email. Without the timeZone this rendered
+    // in the admin's own zone, so a Toronto operator saw every pickup 4 hours
+    // out from what the driver and the guest had agreed.
+    return new Date(iso).toLocaleString('en-US', { timeZone: 'UTC', month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' })
   } catch { return '' }
 }
 function ageLabel(iso: string): string {

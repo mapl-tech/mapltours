@@ -21,6 +21,9 @@ export interface TransferDayOfProps {
   leg: 'arrival' | 'departure'
   /** Pretty Jamaica-time string, already formatted by the caller. */
   whenLabel: string
+  /** 'Today' or 'Tomorrow'. Dawn pickups are mailed the evening before, so the
+   *  copy must not assert "today" without being told it is true. */
+  dayLabel: 'Today' | 'Tomorrow'
   /** Where the driver meets them. */
   pickupLabel: string
   dropoffLabel: string
@@ -55,9 +58,13 @@ function Row({ label, value }: { label: string; value: string }) {
 
 export default function TransferDayOf(props: TransferDayOfProps) {
   const {
-    bookingRef, firstName, leg, whenLabel, pickupLabel, dropoffLabel, flight,
-    passengers, driverName, driverPhone, driverVehicle, driverPlate, supportEmail,
+    bookingRef, firstName, leg, whenLabel, dayLabel, pickupLabel, dropoffLabel,
+    flight, passengers, driverName, driverPhone, driverVehicle, driverPlate,
+    supportEmail,
   } = props
+  // Name the driver where we have it; never assume a pronoun for them.
+  const driver = driverName?.trim() || 'Your driver'
+  const isToday = dayLabel === 'Today'
   const name = firstName?.trim() || 'there'
   const isArrival = leg === 'arrival'
   const waLink = driverPhone
@@ -65,15 +72,15 @@ export default function TransferDayOf(props: TransferDayOfProps) {
     : null
 
   return (
-    <MaplLayout preheader={`Today: your MAPL driver, ${whenLabel} · ${bookingRef}`}>
-      <Text style={s.eyebrow}>Today · {isArrival ? 'Airport pickup' : 'Departure pickup'}</Text>
+    <MaplLayout preheader={`${dayLabel}: your MAPL driver, ${whenLabel} · ${bookingRef}`}>
+      <Text style={s.eyebrow}>{dayLabel} · {isArrival ? 'Airport pickup' : 'Departure pickup'}</Text>
       <Heading as="h1" style={s.hero} className="mapl-h1">
         {isArrival ? `Welcome to Jamaica, ${name}.` : `Safe travels, ${name}.`}
       </Heading>
       <Text style={s.heroLead}>
         {isArrival
-          ? 'Your driver will be waiting in the arrivals area holding a MAPL Tours Jamaica sign with your name on it. Take your time through immigration and baggage, he tracks your flight and will be there when you come out.'
-          : 'Your driver will collect you from your hotel today and take you back to Sangster International. He will be outside at the time below.'}
+          ? `${driver} will be waiting in the arrivals area with a MAPL Tours sign showing your name. Take your time through immigration and baggage: we watch your flight, so your driver already knows if it lands early or late.`
+          : `${driver} will collect you from your hotel ${isToday ? 'today' : 'tomorrow'} and take you back to Sangster International, and will be outside at the time below.`}
       </Text>
 
       <Section style={{ margin: '20px 0 0' }}>
@@ -109,7 +116,7 @@ export default function TransferDayOf(props: TransferDayOfProps) {
           <Row label={isArrival ? 'Flight lands' : 'Hotel pickup'} value={`${whenLabel} Jamaica time`} />
           <Row label="Pick up" value={pickupLabel} />
           <Row label="Drop off" value={dropoffLabel} />
-          {flight && <Row label="Flight" value={flight} />}
+          {flight && <Row label="Flight" value={flight.toUpperCase()} />}
           <Section style={{ padding: '9px 0' }}>
             <Text style={{ ...s.sectionLabel, margin: 0 }}>Passengers</Text>
             <Text style={{ ...s.body, margin: '3px 0 0', fontWeight: 600 }}>{passengers}</Text>
@@ -126,10 +133,10 @@ export default function TransferDayOf(props: TransferDayOfProps) {
           <ol style={stepList}>
             {(isArrival
               ? [
-                  <>Clear immigration and collect your bags. No rush, your driver is tracking the flight.</>,
+                  <>Clear immigration and collect your bags. No rush, we are tracking the flight.</>,
                   <>Walk out through customs into the arrivals hall.</>,
-                  <>Look for the <strong>MAPL Tours Jamaica</strong> sign with your name on it.</>,
-                  <>If you do not see it within a few minutes, message the driver on WhatsApp above, or email us and we will call him.</>,
+                  <>Look for the <strong>MAPL Tours</strong> sign with your name on it.</>,
+                  <>If you do not see it within a few minutes, message {driver} on WhatsApp above, or reply to this email and we will call the driver for you.</>,
                 ]
               : [
                   <>Be in the lobby a few minutes before the pickup time above.</>,

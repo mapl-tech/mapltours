@@ -323,22 +323,46 @@ function StepActions({ stepKey, b, m, arrivalCal, departureCal }: {
  * should only go out once the driver is assigned, since an email naming no
  * driver is worse than no email at all.
  */
+/**
+ * Manual override for the day-of email. The hourly job sends these on its own,
+ * so this is for the exceptions: a driver assigned late, or a guest who lost
+ * the mail. A blocked send says WHY rather than just failing, and an
+ * already-sent one turns into a deliberate two-step resend.
+ */
 function DayOfBtn({ bookingId, leg, sentAt }: { bookingId: string; leg: 'arrival' | 'departure'; sentAt?: string }) {
-  const [state, setState] = useState<'idle' | 'sending' | 'sent' | 'error'>(sentAt ? 'sent' : 'idle')
-  const send = async () => {
+  const [state, setState] = useState<'idle' | 'sending' | 'sent' | 'blocked' | 'confirm' | 'error'>(sentAt ? 'sent' : 'idle')
+  const [why, setWhy] = useState<string | null>(null)
+
+  const send = async (force = false) => {
     setState('sending')
     const r = await fetch('/api/admin/dayof', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ bookingId, leg }),
+      body: JSON.stringify({ bookingId, leg, force }),
     }).catch(() => null)
-    setState(r && r.ok ? 'sent' : 'error')
+    if (r && r.ok) { setState('sent'); setWhy(null); return }
+    const detail = r ? await r.json().catch(() => null) : null
+    const reason = detail?.error ?? 'send failed'
+    setWhy(reason)
+    // "Already sent" is not a failure, it is the guard working. Offer a resend.
+    setState(r?.status === 409 ? (reason === 'already sent' ? 'confirm' : 'blocked') : 'error')
   }
+
   const label = state === 'sending' ? 'Sending…'
     : state === 'sent' ? '✓ Day-of email sent'
+    : state === 'confirm' ? 'Already sent · send again?'
+    : state === 'blocked' ? `Cannot send: ${why}`
     : state === 'error' ? 'Send failed, retry'
-    : `✉️ Send day-of email`
-  return <Btn tone={state === 'sent' ? 'outline' : 'solid'} onClick={send}>{label}</Btn>
+    : '✉️ Send day-of email'
+
+  return (
+    <Btn
+      tone={state === 'sent' || state === 'blocked' ? 'outline' : 'solid'}
+      onClick={() => send(state === 'confirm')}
+    >
+      {label}
+    </Btn>
+  )
 }
 
 /* ── Flight tracking (any airline) ── */

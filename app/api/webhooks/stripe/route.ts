@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import Stripe from 'stripe'
 import { createServiceClient } from '@/lib/supabase/service'
-import { sendEmail } from '@/lib/email/send'
+import { sendEmail, opsBcc } from '@/lib/email/send'
 import BookingConfirmed from '@/emails/BookingConfirmed'
 import OperatorBookingAlert from '@/emails/OperatorBookingAlert'
 import TransferConfirmed from '@/emails/TransferConfirmed'
@@ -360,6 +360,8 @@ async function maybeSendTravelerConfirmation(
   const res = isTransfer
     ? await sendEmail({
         to: booking.email,
+        // Operations and the driver hold exactly what the guest holds.
+        bcc: opsBcc(booking.email),
         subject: `Transfer confirmed, your Jamaica airport ride (${bookingRef})`,
         react: TransferConfirmed({
           bookingRef,
@@ -393,6 +395,8 @@ async function maybeSendTravelerConfirmation(
       })
     : await sendEmail({
         to: booking.email,
+        // Operations and the driver hold exactly what the guest holds.
+        bcc: opsBcc(booking.email),
         subject: `Booking confirmed, your Jamaica trip with MAPL (${bookingRef})`,
         react: BookingConfirmed({
           bookingRef,
