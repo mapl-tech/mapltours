@@ -64,6 +64,8 @@ export default function TransferDayOf(props: TransferDayOfProps) {
   } = props
   // Name the driver where we have it; never assume a pronoun for them.
   const driver = driverName?.trim() || 'Your driver'
+  // "Collin, your driver will be waiting" when named; plain otherwise.
+  const driverIntro = driverName?.trim() ? `${driverName.trim()}, your driver` : 'Your driver'
   const isToday = dayLabel === 'Today'
   const name = firstName?.trim() || 'there'
   const isArrival = leg === 'arrival'
@@ -81,7 +83,7 @@ export default function TransferDayOf(props: TransferDayOfProps) {
       </Heading>
       <Text style={s.heroLead}>
         {isArrival
-          ? `${driver} will be waiting just outside the arrivals hall with a MAPL Tours sign showing your name. Take your time through immigration and baggage${flight ? ': we watch your flight, so your driver already knows if it lands early or late' : ', your driver will be there'}.`
+          ? `${driverIntro} will be waiting just outside the arrivals hall with a MAPL Tours sign showing your name. Take your time through immigration and baggage${flight ? ': we watch your flight, so your driver already knows if it lands early or late' : ', your driver will be there'}.`
           : `${driver} will collect you from your hotel ${isToday ? 'today' : 'tomorrow'} and take you back to Sangster International, and will be outside at the time below.`}
       </Text>
 

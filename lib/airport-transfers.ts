@@ -168,13 +168,23 @@ export const CARD_FIXED = 0.22
  * What the driver is paid for the whole trip: one direction, or both for a
  * round trip. This is the booking's subtotal and the driver's payout.
  */
+/** Collin's round-trip discount, confirmed by him on WhatsApp 2026-08-15
+ *  ("10% off"): a round trip costs 1.8x his one-way rate, not 2x. Applied at
+ *  the COST layer so the customer price, MAPL's 15% margin structure, the
+ *  stored subtotal, and the supplier payout all move together: the discount
+ *  is his, so his payout carries it too. */
+export const ROUND_TRIP_DISCOUNT = 0.10
+
 export function driverCost(
   destinationId: string,
   tripType: TransferTripType,
 ): number | null {
   const dest = getDestination(destinationId)
   if (!dest) return null
-  return tripType === 'round_trip' ? dest.baseRate * 2 : dest.baseRate
+  if (tripType === 'round_trip') {
+    return Math.round(dest.baseRate * 2 * (1 - ROUND_TRIP_DISCOUNT) * 100) / 100
+  }
+  return dest.baseRate
 }
 
 /**

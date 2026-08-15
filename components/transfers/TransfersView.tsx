@@ -342,7 +342,7 @@ export default function TransfersView() {
                   onClick={() => setTripType('round_trip')}
                   title="Round-trip"
                   sub="Arrival + departure"
-                  badge="Most booked"
+                  badge="10% off"
                 />
                 <TripToggle
                   active={tripType === 'one_way'}
@@ -694,7 +694,7 @@ export default function TransfersView() {
             price={getTransferPrice('sandals-ochi', 'round_trip') ?? 0}
             destinationId="sandals-ochi"
             onSelect={selectRoute}
-            body="The toll highway between Montego Bay and Ocho Rios cut a chunk off this drive, what used to be three hours on the old coastal road is now closer to 1h 45m. Most resorts in St. Ann (Sandals Ochi, Beaches Ocho Rios, Moon Palace, Bahia Principe) sit within 20 minutes of each other on this same stretch. Round-trip is the way most travelers book; you keep the same driver and skip the cab math twice."
+            body="The toll highway between Montego Bay and Ocho Rios cut a chunk off this drive, what used to be three hours on the old coastal road is now closer to 1h 45m. Most resorts in St. Ann (Sandals Ochi, Beaches Ocho Rios, Moon Palace, Bahia Principe) sit within 20 minutes of each other on this same stretch. Round-trip is the way most travelers book; it is 10% cheaper than two one-ways, you keep the same driver, and you skip the cab math twice."
           />
 
           <RouteSection
