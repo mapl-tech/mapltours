@@ -508,9 +508,9 @@ export default function TransfersView() {
           {/* Price-anchor strip, concrete savings on the most-quoted routes */}
           <div className="xfer-savings-strip" aria-label="Typical price comparison">
             <div className="xfer-savings-row">
-              <SavingsRow route="MBJ → Negril (round-trip)" mapl={getTransferPrice('riu-negril', 'round_trip') ?? 0} typical="240–400" />
-              <SavingsRow route="MBJ → Ocho Rios (round-trip)" mapl={getTransferPrice('moon-palace-ocho-rios', 'round_trip') ?? 0} typical="240–400" />
-              <SavingsRow route="MBJ → Rose Hall (round-trip)" mapl={getTransferPrice('hilton-rose-hall', 'round_trip') ?? 0} typical="90–160" />
+              <SavingsRow route="MBJ → Riu Negril (round-trip)" mapl={getTransferPrice('riu-negril', 'round_trip') ?? 0} typical="240–400" />
+              <SavingsRow route="MBJ → Moon Palace, Ocho Rios (round-trip)" mapl={getTransferPrice('moon-palace-ocho-rios', 'round_trip') ?? 0} typical="240–400" />
+              <SavingsRow route="MBJ → Hilton Rose Hall (round-trip)" mapl={getTransferPrice('hilton-rose-hall', 'round_trip') ?? 0} typical="90–160" />
             </div>
             <p className="xfer-savings-note">
               Typical taxi quotes pulled from average prices reported by JUTA
@@ -1307,7 +1307,6 @@ export default function TransfersView() {
           font-family: var(--font-dm-sans);
           font-size: 12.5px;
           color: var(--text-tertiary);
-          text-decoration: line-through;
         }
         .xfer-saving-tag {
           margin-top: 4px;
@@ -1951,7 +1950,7 @@ function SavingsRow({
       <span className="xfer-saving-route">{route}</span>
       <span className="xfer-saving-prices">
         <span className="xfer-saving-mapl">{formatPrice(mapl)}</span>
-        <span className="xfer-saving-typical">${typical}</span>
+        <span className="xfer-saving-typical">taxi quotes ${typical}</span>
       </span>
       <span className="xfer-saving-tag">MAPL flat rate</span>
     </div>
