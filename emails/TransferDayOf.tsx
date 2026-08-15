@@ -81,7 +81,7 @@ export default function TransferDayOf(props: TransferDayOfProps) {
       </Heading>
       <Text style={s.heroLead}>
         {isArrival
-          ? `${driver} will be waiting in the arrivals area with a MAPL Tours sign showing your name. Take your time through immigration and baggage: we watch your flight, so your driver already knows if it lands early or late.`
+          ? `${driver} will be waiting just outside the arrivals hall with a MAPL Tours sign showing your name. Take your time through immigration and baggage: we watch your flight, so your driver already knows if it lands early or late.`
           : `${driver} will collect you from your hotel ${isToday ? 'today' : 'tomorrow'} and take you back to Sangster International, and will be outside at the time below.`}
       </Text>
 
@@ -136,8 +136,8 @@ export default function TransferDayOf(props: TransferDayOfProps) {
             {(isArrival
               ? [
                   <>Clear immigration and collect your bags. No rush, we are tracking the flight.</>,
-                  <>Walk out through customs into the arrivals hall.</>,
-                  <>Look for the <strong>MAPL Tours</strong> sign with your name on it.</>,
+                  <>Walk out through customs, past the public hall, and step outside.</>,
+                  <>Turn right: your driver is in front of the sixth car rental office, holding a <strong>MAPL Tours</strong> sign with your name on it.</>,
                   <>If you do not see it within a few minutes, message {driver} on WhatsApp above, or reply to this email and we will call the driver for you.</>,
                 ]
               : [
