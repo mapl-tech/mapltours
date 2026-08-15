@@ -82,6 +82,20 @@ export function blockedReason(b: Bk, leg: Leg): string | null {
   if (!at) return `no ${leg} time on this booking`
   if ((b.dispatch ?? {})[stampKey(leg)]) return 'already sent'
   if (!b.driver_name || !b.driver_phone) return 'driver not assigned yet'
+  // Temporal gate, shared by the cron and the manual button. Without it an
+  // operator on a booking weeks out could fire a day-of email that claims the
+  // stamp, which would permanently suppress the correctly-timed automated
+  // send. The label is also only 'Today' | 'Tomorrow', so a send outside that
+  // window would put a false day in the subject line.
+  const nowMs = Date.now()
+  const atMs = legInstantMs(at)
+  if (atMs <= nowMs) return 'pickup time has passed'
+  const today = jaDateKey(nowMs)
+  const legDay = jaDateKey(atMs)
+  const tomorrow = jaDateKey(nowMs + 24 * 3_600_000)
+  if (legDay !== today && legDay !== tomorrow) {
+    return `not until ${legDay}; the hourly job sends it on the day`
+  }
   return null
 }
 
