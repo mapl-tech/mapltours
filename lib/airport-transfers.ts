@@ -93,6 +93,9 @@ export const DESTINATIONS: TransferDestination[] = [
   { id: 'sandals-royal-caribbean', name: 'Sandals Royal Caribbean, Montego Bay', parish: 'St. James', zone: 'A', baseRate: 25, estimated: true },
   { id: 'riu-montego-bay', name: 'Riu Montego Bay', parish: 'St. James', zone: 'A', baseRate: 20 },
   { id: 'riu-palace-jamaica', name: 'Riu Palace Jamaica', parish: 'St. James', zone: 'A', baseRate: 20 },
+  { id: 'riu-reggae', name: 'Riu Reggae', parish: 'St. James', zone: 'A', baseRate: 20 },
+  { id: 'deja-resort', name: 'Deja Resort, Montego Bay', parish: 'St. James', zone: 'A', baseRate: 15 },
+  { id: 's-hotel-montego-bay', name: 'S Hotel, Montego Bay', parish: 'St. James', zone: 'A', baseRate: 15 },
   { id: 'breathless-montego-bay', name: 'Breathless Montego Bay', parish: 'St. James', zone: 'A', baseRate: 40 },
   { id: 'iberostar-grand-rose-hall', name: 'Iberostar Grand Rose Hall', parish: 'St. James', zone: 'A', baseRate: 40 },
   { id: 'half-moon-resort', name: 'Half Moon, A RockResort', parish: 'St. James', zone: 'A', baseRate: 40, estimated: true },
@@ -100,6 +103,8 @@ export const DESTINATIONS: TransferDestination[] = [
   // Zone B, Falmouth
   { id: 'royalton-blue-water-trelawny', name: 'Royalton Blue Water (Falmouth)', parish: 'Trelawny', zone: 'B', baseRate: 60 },
   { id: 'excellence-oyster-bay', name: 'Excellence Oyster Bay', parish: 'Trelawny', zone: 'B', baseRate: 60 },
+  { id: 'royalton-white-sands', name: 'Royalton White Sands (Falmouth)', parish: 'Trelawny', zone: 'B', baseRate: 60 },
+  { id: 'riu-aquarelle', name: 'Riu Aquarelle (Falmouth)', parish: 'Trelawny', zone: 'B', baseRate: 60 },
   { id: 'falmouth-cruise-port', name: 'Falmouth Cruise Port', parish: 'Trelawny', zone: 'B', baseRate: 60, estimated: true },
 
   // Zone C, Trelawny / Hanover / Lucea
@@ -118,13 +123,18 @@ export const DESTINATIONS: TransferDestination[] = [
   { id: 'the-cliff-negril', name: 'The Cliff Hotel, Negril', parish: 'Westmoreland', zone: 'D', baseRate: 90, estimated: true },
   { id: 'couples-swept-away', name: 'Couples Swept Away, Negril', parish: 'Westmoreland', zone: 'D', baseRate: 90 },
   { id: 'couples-negril', name: 'Couples Negril', parish: 'Westmoreland', zone: 'D', baseRate: 90 },
+  { id: 'hedonism-ii', name: 'Hedonism II, Negril', parish: 'Westmoreland', zone: 'D', baseRate: 90 },
   { id: 'bahia-principe-runaway-bay', name: 'Bahia Principe Grand, Runaway Bay', parish: 'St. Ann', zone: 'D', baseRate: 80 },
+  { id: 'bahia-principe-escape', name: 'Bahia Principe Escape, Runaway Bay', parish: 'St. Ann', zone: 'D', baseRate: 80 },
   { id: 'jewel-paradise-cove', name: 'Jewel Paradise Cove, Runaway Bay', parish: 'St. Ann', zone: 'D', baseRate: 80, estimated: true },
 
   // Zone E, Ocho Rios & South Coast
   { id: 'sandals-ochi', name: 'Sandals Ochi Beach Resort', parish: 'St. Ann', zone: 'E', baseRate: 90, estimated: true },
   { id: 'sandals-dunns-river', name: "Sandals Dunn's River", parish: 'St. Ann', zone: 'E', baseRate: 90, estimated: true },
   { id: 'moon-palace-ocho-rios', name: 'Moon Palace Jamaica, Ocho Rios', parish: 'St. Ann', zone: 'E', baseRate: 90 },
+  { id: 'riu-ocho-rios', name: 'Riu Ocho Rios', parish: 'St. Ann', zone: 'E', baseRate: 90 },
+  { id: 'jewel-dunns-river', name: "Jewel Dunn's River Beach Resort & Spa, Ocho Rios", parish: 'St. Ann', zone: 'E', baseRate: 90 },
+  { id: 'sandals-royal-plantation', name: 'Sandals Royal Plantation, Ocho Rios', parish: 'St. Ann', zone: 'E', baseRate: 90 },
   { id: 'beaches-ocho-rios', name: 'Beaches Ocho Rios', parish: 'St. Ann', zone: 'E', baseRate: 90, estimated: true },
   { id: 'couples-sans-souci', name: 'Couples Sans Souci, Ocho Rios', parish: 'St. Ann', zone: 'E', baseRate: 90, estimated: true },
   { id: 'couples-tower-isle', name: 'Couples Tower Isle, Ocho Rios', parish: 'St. Mary', zone: 'E', baseRate: 110 },
