@@ -27,6 +27,7 @@ function LoginContent() {
   const [mode, setMode] = useState<'login' | 'signup'>('login')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
   const [name, setName] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -121,8 +122,9 @@ function LoginContent() {
         <div className="login-aside-overlay" />
         <div className="login-aside-text">
           <span style={{
-            fontFamily: 'var(--font-dm-sans)', fontWeight: 600, fontSize: 11,
-            letterSpacing: '0.22em', textTransform: 'uppercase', color: 'var(--gold-warm)',
+            fontFamily: 'var(--font-dm-sans)', fontWeight: 600, fontSize: 12,
+            letterSpacing: '0.22em', textTransform: 'uppercase', color: '#E8CB7A',
+            textShadow: '0 1px 10px rgba(0,0,0,0.55)',
           }}>
             MAPL Tours · Jamaica
           </span>
@@ -229,7 +231,7 @@ function LoginContent() {
               </span>
             </div>
           </Link>
-          <p style={{
+          <h1 style={{
             fontFamily: 'var(--font-dm-sans)',
             fontSize: 'clamp(1.75rem, 2.4vw, 2.25rem)',
             fontWeight: 700,
@@ -238,7 +240,7 @@ function LoginContent() {
             marginTop: 16,
           }}>
             {mode === 'login' ? 'Welcome back' : 'Create your account'}
-          </p>
+          </h1>
         </div>
 
         {/* Card */}
@@ -374,20 +376,25 @@ function LoginContent() {
               <input
                 id="login-email"
                 type="email"
+                name="email"
+                autoComplete="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="you@example.com"
                 required
+                aria-invalid={error ? true : undefined}
+                aria-describedby={error ? 'login-error' : undefined}
+                className="login-field"
                 style={{
                   width: '100%',
-                  height: 44,
+                  height: 46,
                   borderRadius: 'var(--r-md)',
-                  border: '1px solid var(--border-strong)',
+                  border: '1px solid rgba(23,22,20,0.4)',
                   padding: '0 14px',
-                  fontSize: 15,
+                  fontSize: 16,
                   fontFamily: 'var(--font-dm-sans)',
                   color: 'var(--text-primary)',
-                  background: 'var(--bg-warm)',
+                  background: '#F1EFEA',
                   outline: 'none',
                   boxSizing: 'border-box',
                 }}
@@ -405,28 +412,50 @@ function LoginContent() {
               }} htmlFor="login-password">
                 Password
               </label>
-              <input
-                id="login-password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder={mode === 'signup' ? 'At least 6 characters' : ''}
-                required
-                minLength={6}
-                style={{
-                  width: '100%',
-                  height: 44,
-                  borderRadius: 'var(--r-md)',
-                  border: '1px solid var(--border-strong)',
-                  padding: '0 14px',
-                  fontSize: 15,
-                  fontFamily: 'var(--font-dm-sans)',
-                  color: 'var(--text-primary)',
-                  background: 'var(--bg-warm)',
-                  outline: 'none',
-                  boxSizing: 'border-box',
-                }}
-              />
+              <div style={{ position: 'relative' }}>
+                <input
+                  id="login-password"
+                  type={showPassword ? 'text' : 'password'}
+                  name="password"
+                  autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder={mode === 'signup' ? 'At least 6 characters' : ''}
+                  required
+                  minLength={6}
+                  aria-invalid={error ? true : undefined}
+                  aria-describedby={error ? 'login-error' : undefined}
+                  className="login-field"
+                  style={{
+                    width: '100%',
+                    height: 46,
+                    borderRadius: 'var(--r-md)',
+                    border: '1px solid rgba(23,22,20,0.4)',
+                    padding: '0 46px 0 14px',
+                    fontSize: 16,
+                    fontFamily: 'var(--font-dm-sans)',
+                    color: 'var(--text-primary)',
+                    background: '#F1EFEA',
+                    outline: 'none',
+                    boxSizing: 'border-box',
+                  }}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((v) => !v)}
+                  aria-pressed={showPassword}
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                  style={{
+                    position: 'absolute', right: 1, top: 1, bottom: 1, width: 44,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    background: 'none', border: 'none', cursor: 'pointer',
+                    color: 'var(--text-secondary)', fontSize: 15,
+                    borderRadius: 'var(--r-md)',
+                  }}
+                >
+                  {showPassword ? '\u{1F648}' : '\u{1F441}'}
+                </button>
+              </div>
             </div>
 
             {mode === 'login' && (
@@ -439,7 +468,8 @@ function LoginContent() {
                   marginTop: -6,
                   background: 'none',
                   border: 'none',
-                  padding: 0,
+                  padding: '10px 4px',
+                  margin: '-6px 0',
                   fontSize: 13,
                   fontWeight: 600,
                   fontFamily: 'var(--font-dm-sans)',
@@ -452,12 +482,12 @@ function LoginContent() {
             )}
 
             {error && (
-              <p style={{
-                fontSize: 13,
-                color: '#DC2626',
+              <p id="login-error" role="alert" style={{
+                fontSize: 14,
+                color: '#B91C1C',
                 fontFamily: 'var(--font-dm-sans)',
-                padding: '8px 12px',
-                background: 'rgba(220,38,38,0.06)',
+                padding: '10px 12px',
+                background: 'rgba(185,28,28,0.07)',
                 borderRadius: 'var(--r-sm)',
               }}>
                 {error}

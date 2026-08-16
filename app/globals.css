@@ -1046,7 +1046,20 @@ img[alt="Devon House Patty & Ice Cream Tour"] {
   padding: 10px 16px;
 }
 .login-back-btn:hover {
-  background: var(--surface, #F6F4F0) !important;
+  background: #ECEAE6 !important;
+  border-color: rgba(23, 22, 20, 0.32) !important;
+  box-shadow: 0 2px 8px rgba(23, 22, 20, 0.12) !important;
+}
+/* Warm placeholder at >= 4.5:1 (the gray-400 default measured 2.41:1) */
+.login-field::placeholder {
+  color: #6E6C67;
+  opacity: 1;
+}
+/* The global gold focus ring measures 2.4:1 on this page's white surfaces;
+   login-scoped darker ring so keyboard focus is actually visible here. */
+.login-shell :focus-visible {
+  outline: 2px solid #8A6D1F !important;
+  outline-offset: 2px;
 }
 @media (max-width: 640px) {
   .login-back-label { display: none; }
