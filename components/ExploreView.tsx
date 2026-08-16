@@ -86,10 +86,10 @@ export default function ExploreView() {
   }, [search, activeCat, activeParish])
 
   return (
-    <div className="page-top-mobile" style={{ minHeight: '100vh', paddingTop: 56 }}>
+    <div className="page-top-mobile" style={{ minHeight: '100vh', paddingTop: 'var(--nav-h)' }}>
       {/* Sticky filters */}
       <div className="explore-sticky-bar" style={{
-        position: 'sticky', top: 56, zIndex: 20,
+        position: 'sticky', top: 'var(--nav-h)', zIndex: 20,
         background: 'rgba(255,255,255,0.97)',
         backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)',
         borderBottom: '1px solid var(--border)',
@@ -214,7 +214,9 @@ export default function ExploreView() {
               </div>
             )}
             {isMobileVp !== false && (
-              <div className="hide-desktop mobile-shorts-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 10 }}>
+              // One full-width reel per row: the 9:16 cards read like a feed
+              // and the video actually carries at this size.
+              <div className="hide-desktop mobile-shorts-grid" style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 10 }}>
                 {filtered.map((exp, i) => <MobileShort key={exp.id} exp={exp} priority={i === 0} />)}
               </div>
             )}

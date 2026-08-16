@@ -231,7 +231,7 @@ export default async function ConfirmPage({
     <div
       style={{
         minHeight: '100vh',
-        paddingTop: 56,
+        paddingTop: 'var(--nav-h)',
         background: 'var(--bg-warm)',
         color: 'var(--text-primary)',
       }}
@@ -520,7 +520,7 @@ function Success({ data }: { data: ConfirmData }) {
           >
             <li>· Your guide will reach out 24–48 hours before each experience with the meeting point.</li>
             <li>· Bring a valid ID, reef-safe sunscreen, and water.</li>
-            <li>· Free cancellation up to 48 hours before the experience, just reply to your confirmation email.</li>
+            <li>· Flexible cancellation within 48 hours of booking, just reply to your confirmation email. Refunds are less a 20% administration charge plus taxes (if applicable).</li>
             <li>
               · Questions? Email{' '}
               <Link href="mailto:contact@mapltours.com" style={{ color: 'var(--text-primary)', textDecoration: 'underline' }}>

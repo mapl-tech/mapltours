@@ -4,6 +4,7 @@ import crypto from 'crypto'
 import { createServiceClient } from '@/lib/supabase/service'
 import { createClient as createServerSupabase } from '@/lib/supabase/server'
 import { priceTourCart, assertAmountMatches, PricingError } from '@/lib/checkout-pricing'
+import { isExperienceDateBookable, LEAD_TIME_MESSAGE } from '@/lib/booking-window'
 import { assertCheckoutSchema, SchemaNotReadyError } from '@/lib/checkout-schema'
 import { rateLimit, getIp } from '@/lib/rate-limit'
 import { sanitizeAttribution } from '@/lib/attribution'
@@ -142,19 +143,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Amount must be at least $0.50' }, { status: 400 })
     }
 
-    // Reject bookings for dates in the past (the date pickers also set
-    // min=today, but never trust the client). One day of grace covers the
-    // traveler/server timezone gap so a same-day booking isn't rejected.
-    const todayUtc = new Date().toISOString().slice(0, 10)
-    const earliestAllowed = new Date(Date.parse(todayUtc) - 24 * 60 * 60 * 1000)
-      .toISOString()
-      .slice(0, 10)
-    const hasPastDate = pricing.lines.some(
-      (l) => l.date && l.date.slice(0, 10) < earliestAllowed,
+    // Enforce the 24-hour lead time (the date pickers also set `min`, but
+    // never trust the client). This subsumes the old past-date check: a date
+    // already gone is by definition inside the window.
+    const tooSoon = pricing.lines.some(
+      (l) => l.date && !isExperienceDateBookable(l.date),
     )
-    if (hasPastDate) {
+    if (tooSoon) {
       return NextResponse.json(
-        { error: 'One or more experiences have a date in the past. Please pick a future date.', requestId: reqId },
+        { error: LEAD_TIME_MESSAGE, requestId: reqId },
         { status: 400 },
       )
     }

@@ -9,7 +9,7 @@ import {
   MapPin,
   Clock,
   ShieldCheck,
-  Phone,
+  Mail,
   Check,
   Star,
   TrendingUp,
@@ -24,6 +24,7 @@ import {
   zoneFromPrice,
   zonePriceRange,
   getTransferPrice,
+  areaFromPrice,
   getDestination,
 } from '@/lib/airport-transfers'
 import { useTransfersCart } from '@/lib/transfers-cart'
@@ -88,6 +89,9 @@ function priceRangeLabel(zone: TransferZone, tripType: TransferTripType): string
   return min === max ? fmt(min) : `${fmt(min)}\u2013${fmt(max)}`
 }
 
+// Mercy's branch passed an hourly illustrative activity feed here. This
+// surface renders the real aggregates from /api/transfers/activity instead
+// (LiveActivityLine); fabricated counts were purged by owner instruction.
 export default function TransfersView() {
   const router = useRouter()
   const addQuote = useTransfersCart((s) => s.addQuote)
@@ -141,7 +145,7 @@ export default function TransfersView() {
     <div
       style={{
         minHeight: '100vh',
-        paddingTop: 56,
+        paddingTop: 'var(--nav-h)',
         background: 'var(--bg-warm)',
         color: 'var(--text-primary)',
       }}
@@ -176,12 +180,16 @@ export default function TransfersView() {
               costs you nothing, and you can cancel free up to 24 hours before.
             </p>
 
+            {/* Each figure is the CHEAPEST rate to that area, derived from the
+                rate table rather than pinned to one hotel, so a rate change
+                can never leave the hero advertising a price we don't offer.
+                "From" governs all three. */}
             <p className="xfer-hero-price-strip">
-              <span>From <strong>{formatPrice(getTransferPrice('hilton-rose-hall', 'one_way') ?? 0)}</strong> to Rose Hall</span>
+              <span>From <strong>{formatPrice(areaFromPrice('Rose Hall', 'one_way'))}</strong> to Rose Hall</span>
               <span aria-hidden>·</span>
-              <span>from <strong>{formatPrice(getTransferPrice('riu-negril', 'one_way') ?? 0)}</strong> to Negril</span>
+              <span><strong>{formatPrice(areaFromPrice('Negril', 'one_way'))}</strong> to Negril</span>
               <span aria-hidden>·</span>
-              <span>from <strong>{formatPrice(getTransferPrice('moon-palace-ocho-rios', 'one_way') ?? 0)}</strong> to Ocho Rios</span>
+              <span><strong>{formatPrice(areaFromPrice('Ocho Rios', 'one_way'))}</strong> to Ocho Rios</span>
               <span aria-hidden>·</span>
               <span style={{ color: 'var(--text-tertiary)' }}>flat per vehicle, one-way</span>
             </p>
@@ -193,7 +201,7 @@ export default function TransfersView() {
                 onClick={scrollToQuote}
                 style={{ height: 50, padding: '0 26px', fontSize: 14 }}
               >
-                Get an instant quote →
+                Book now →
               </button>
               <div className="xfer-hero-rating">
                 <div style={{ display: 'flex', gap: 2 }}>
@@ -222,7 +230,7 @@ export default function TransfersView() {
               <TrustItem
                 icon={<MapPin size={17} />}
                 title="Meet-and-greet"
-                body="MAPL sign at arrivals, bags handled."
+                body="MAPL TOURS JAMAICA sign at arrivals, bags handled."
               />
               <TrustItem
                 icon={<ShieldCheck size={17} />}
@@ -230,9 +238,9 @@ export default function TransfersView() {
                 body="JUTA-affiliated operators only."
               />
               <TrustItem
-                icon={<Phone size={17} />}
+                icon={<Mail size={17} />}
                 title="24/7 support"
-                body="A real voice, not a call-centre script."
+                body="A real person on email, not a call-centre script."
               />
             </div>
           </div>
@@ -312,7 +320,6 @@ export default function TransfersView() {
             />
 
             <div style={{ marginBottom: 24 }}>
-              <Kicker>Instant quote</Kicker>
               <h2 className="xfer-quote-h2">
                 Where are you{' '}
                 <span style={{ fontStyle: 'italic', fontWeight: 500 }}>
@@ -479,7 +486,7 @@ export default function TransfersView() {
               }}
             >
               <Clock size={12} style={{ display: 'inline', verticalAlign: '-1px', marginRight: 4 }} />
-              Free cancellation up to 24 hours before pickup.
+              Flexible cancellation within 48 hours of booking.
             </p>
           </div>
         </div>
@@ -489,7 +496,7 @@ export default function TransfersView() {
       <section className="xfer-why-section">
         <div className="container" style={{ maxWidth: 1100 }}>
           <div className="xfer-center-head">
-            <Kicker centered>Why MAPL instead of the taxi queue</Kicker>
+            <Kicker centered>Why travel with us</Kicker>
             <h2 className="xfer-section-h2">
               The same road.{' '}
               <span style={{ fontStyle: 'italic', fontWeight: 500 }}>
@@ -500,25 +507,23 @@ export default function TransfersView() {
           <div className="xfer-compare-grid">
             <CompareItem
               bold
-              title="MAPL private transfer"
+              title="MAPL TOURS private transfer"
               items={[
                 'Fixed zone price, paid up front',
                 'Driver waits with your name at arrivals',
                 'Flight tracking, no surcharge if you land late',
                 'Chilled bottled water, AC, English-speaking driver',
-                'Free cancellation up to 24 hours before pickup',
-                'Same driver for the return leg when you book round-trip',
+                'Flexible cancellation within 48 hours of booking',
               ]}
             />
             <CompareItem
               title="Airport taxi queue"
               items={[
-                'Metered or "airport fixed rate", often higher than you quoted',
+                'Metered or "airport fixed rate", often higher than you were quoted',
                 'Wait in the queue after a long flight',
-                'No flight tracking, if you’re late, the spot is gone',
-                'Vehicle condition varies; AC not guaranteed',
+                'No flight tracking, your pickup time is fixed',
+                'Vehicle condition varies; comfort not guaranteed',
                 'No cancellation window',
-                'New driver every leg, unfamiliar with your hotel',
               ]}
             />
           </div>
@@ -616,7 +621,7 @@ export default function TransfersView() {
               <p className="xfer-contact-cta-title">Not on the list?</p>
               <p className="xfer-contact-cta-body">
                 Kingston (KIN), Port Antonio, or groups of five or more, we&rsquo;ll
-                quote you directly within the hour.
+                quote you directly within 24 hours.
               </p>
             </div>
             <Link
@@ -737,7 +742,7 @@ export default function TransfersView() {
           />
 
           <p className="xfer-routes-content-foot">
-            Don’t see your hotel? <Link href="#quote" style={{ color: 'var(--text-primary)', textDecoration: 'underline' }}>Run an instant quote above</Link>{' '}
+            Don’t see your hotel? <Link href="#quote" style={{ color: 'var(--text-primary)', textDecoration: 'underline' }}>Book above</Link>{' '}
             or <Link href="/contact" style={{ color: 'var(--text-primary)', textDecoration: 'underline' }}>request a custom route</Link> for Kingston or Port Antonio.
           </p>
         </div>
@@ -770,7 +775,7 @@ export default function TransfersView() {
           <h2 className="xfer-section-h2" style={{ marginTop: 10 }}>
             Book in two minutes.{' '}
             <span style={{ fontStyle: 'italic', fontWeight: 500 }}>
-              Cancel free until 24 hours before pickup.
+              Cancel within 48 hours of booking.
             </span>
           </h2>
           <button
@@ -785,7 +790,7 @@ export default function TransfersView() {
               fontWeight: 600,
             }}
           >
-            Get my instant quote →
+            Book now →
           </button>
           <p
             style={{
@@ -796,14 +801,14 @@ export default function TransfersView() {
             }}
           >
             <Lock />
-            Secure payment via Stripe · Free cancellation until 24h before pickup
+            Secure payment via Stripe · Flexible cancellation within 48 hrs of booking
           </p>
         </div>
       </section>
 
       {/* ───────────── Sticky mobile CTA, always present ─────────────
            Quote selected → "Book · $X" goes straight to checkout.
-           No quote yet → "Get instant quote →" scrolls to the calculator. */}
+           No quote yet → "Book now →" scrolls to the calculator. */}
       <div className="xfer-sticky-cta" role="region" aria-label="Booking shortcut">
         {quote ? (
           <>
@@ -835,7 +840,7 @@ export default function TransfersView() {
               onClick={scrollToQuote}
               style={{ height: 46, padding: '0 20px', fontSize: 14, whiteSpace: 'nowrap' }}
             >
-              Instant quote →
+              Book now →
             </button>
           </>
         )}
@@ -855,12 +860,6 @@ export default function TransfersView() {
           align-items: center;
         }
         .xfer-hero-copy { min-width: 0; }
-        .xfer-hero-kicker-row {
-          display: flex;
-          align-items: center;
-          gap: 10px;
-          margin-bottom: 18px;
-        }
         .xfer-hero-h1 {
           font-family: var(--font-dm-sans);
           font-weight: 700;

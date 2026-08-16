@@ -11,6 +11,7 @@ import { useSwrCache } from '@/lib/swr-cache'
 import { useMyVideoProgress, VIDEO_REWARD_MILESTONE } from '@/lib/tour-videos'
 import { Award, UserRound } from 'lucide-react'
 import type { User } from '@supabase/supabase-js'
+import { quoteRefund, formatCents } from '@/lib/refund-pricing'
 
 // Create the Supabase client once per module load, not per render,
 // keeps referential equality stable across renders.
@@ -19,6 +20,10 @@ const supabase = createClient()
 interface PastBooking {
   id: string
   created_at: string
+  paid_at: string | null
+  status: string
+  refund_state: string
+  refund_amount: number | null
   total_paid: number
   booking_items: {
     title: string
@@ -177,6 +182,136 @@ function EditableField({ label, value, placeholder, type, onSave, verified }: {
   )
 }
 
+/**
+ * Lodge a cancellation REQUEST for a booking still inside its 48-hour window.
+ *
+ * Nothing is refunded here. The request goes to an admin for approval, so the
+ * copy is careful to say the booking is still confirmed until they reply.
+ * The figure shown comes from the same lib/refund-pricing.ts the API uses, so
+ * the traveler sees the amount they would receive; the server re-quotes on
+ * POST regardless, and a stale tab whose window has closed is refused there.
+ */
+function CancelBooking({ booking, onCancelled }: { booking: PastBooking; onCancelled: () => void }) {
+  const [confirming, setConfirming] = useState(false)
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  if (booking.status === 'refunded') {
+    return (
+      <span style={{
+        fontSize: 12, fontWeight: 600, color: 'var(--text-tertiary)',
+        fontFamily: 'var(--font-dm-sans)',
+      }}>
+        Cancelled{booking.refund_amount != null ? ` · ${formatCents(Math.round(booking.refund_amount * 100))} refunded` : ''}
+      </span>
+    )
+  }
+
+  // Requested but not yet decided. The trip is STILL LIVE, so this must not
+  // read as cancelled, or travelers skip a trip they are still booked on.
+  if (booking.refund_state === 'requested') {
+    return (
+      <span style={{
+        fontSize: 12, fontWeight: 600, color: 'var(--text-tertiary)',
+        fontFamily: 'var(--font-dm-sans)',
+      }}>
+        Cancellation requested · awaiting review. Your booking is still confirmed until we reply.
+      </span>
+    )
+  }
+
+  if (booking.refund_state === 'declined') {
+    return (
+      <span style={{
+        fontSize: 12, fontWeight: 600, color: 'var(--text-tertiary)',
+        fontFamily: 'var(--font-dm-sans)',
+      }}>
+        Cancellation not approved · your booking is still confirmed.
+      </span>
+    )
+  }
+
+  const quote = quoteRefund(booking)
+  if (!quote.refundable) return null
+
+  async function cancel() {
+    setBusy(true)
+    setError(null)
+    try {
+      const res = await fetch(`/api/bookings/${booking.id}/cancel`, { method: 'POST' })
+      const body = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        setError(body.message ?? 'We could not cancel this booking. Please contact support.')
+        return
+      }
+      onCancelled()
+    } catch {
+      setError('Network error. Please try again.')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  if (!confirming) {
+    return (
+      <button
+        type="button"
+        onClick={() => setConfirming(true)}
+        style={{
+          background: 'none', border: 'none', padding: 0, cursor: 'pointer',
+          fontSize: 12, fontWeight: 600, color: 'var(--text-tertiary)',
+          fontFamily: 'var(--font-dm-sans)', textDecoration: 'underline',
+          textUnderlineOffset: 3,
+        }}
+      >
+        Request cancellation
+      </button>
+    )
+  }
+
+  return (
+    <div style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 12.5, width: '100%' }}>
+      <p style={{ color: 'var(--text-secondary)', marginBottom: 8, lineHeight: 1.5 }}>
+        You paid {formatCents(quote.grossCents)}. We&rsquo;ll review your request and, if
+        approved, refund{' '}
+        <strong style={{ color: 'var(--text-primary)' }}>{formatCents(quote.refundCents)}</strong> after the{' '}
+        {formatCents(quote.adminChargeCents)} administration charge. Your booking stays
+        confirmed until we reply.
+      </p>
+      {error && (
+        <p role="alert" style={{ color: 'var(--danger, #c0392b)', marginBottom: 8 }}>{error}</p>
+      )}
+      <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+        <button
+          type="button"
+          onClick={cancel}
+          disabled={busy}
+          style={{
+            padding: '7px 14px', borderRadius: 9999, border: 'none',
+            background: 'var(--text-primary)', color: 'var(--card-bg)',
+            fontSize: 12, fontWeight: 700, fontFamily: 'var(--font-dm-sans)',
+            cursor: busy ? 'default' : 'pointer', opacity: busy ? 0.6 : 1,
+          }}
+        >
+          {busy ? 'Sending…' : 'Request cancellation'}
+        </button>
+        <button
+          type="button"
+          onClick={() => { setConfirming(false); setError(null) }}
+          disabled={busy}
+          style={{
+            background: 'none', border: 'none', padding: 0,
+            cursor: busy ? 'default' : 'pointer', fontSize: 12,
+            color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-sans)',
+          }}
+        >
+          Keep booking
+        </button>
+      </div>
+    </div>
+  )
+}
+
 interface ProfileBundle {
   profile: ProfileData
   pastBookings: PastBooking[]
@@ -301,6 +436,21 @@ export default function ProfileView() {
       ...(prev ?? EMPTY_BUNDLE),
       profile: { ...((prev ?? EMPTY_BUNDLE).profile), name: newName },
     }))
+  }
+
+  // Reflect a LODGED REQUEST immediately. The booking is deliberately left
+  // 'paid': nothing is refunded until an admin approves, and showing it as
+  // cancelled here would tell travelers to skip a trip that is still live.
+  function markRequested(bookingId: string) {
+    mutate((prev) => {
+      const base = prev ?? EMPTY_BUNDLE
+      return {
+        ...base,
+        pastBookings: base.pastBookings.map((b) =>
+          b.id === bookingId ? { ...b, refund_state: 'requested' } : b,
+        ),
+      }
+    })
   }
 
   async function updateLocation(newLocation: string) {
@@ -633,9 +783,17 @@ export default function ProfileView() {
                           <span style={{
                             fontSize: 14, fontWeight: 800, color: 'var(--text-primary)',
                             fontFamily: 'var(--font-dm-sans)',
+                            textDecoration: booking.status === 'refunded' ? 'line-through' : 'none',
+                            opacity: booking.status === 'refunded' ? 0.5 : 1,
                           }}>
                             ${Number(booking.total_paid).toFixed(0)}
                           </span>
+                        </div>
+                        <div style={{
+                          padding: '10px 18px', borderTop: '1px solid var(--border)',
+                          background: 'var(--bg-warm)',
+                        }}>
+                          <CancelBooking booking={booking} onCancelled={() => markRequested(booking.id)} />
                         </div>
                       </div>
                     ))}

@@ -5,7 +5,7 @@ import Image from 'next/image'
 import { usePathname, useRouter } from 'next/navigation'
 import { useCartStore } from '@/lib/cart'
 import { useState, useEffect, useRef } from 'react'
-import { Search, Leaf, Lock, MapPin, ShoppingBag, Car } from 'lucide-react'
+import { Search, Lock, MapPin, ShoppingBag, Car, Menu, X } from 'lucide-react'
 import { DESTINATIONS as TRANSFER_DESTINATIONS } from '@/lib/airport-transfers'
 import { TOUR_DESTINATIONS } from '@/lib/experiences'
 import LanguageSwitcher from './LanguageSwitcher'
@@ -28,14 +28,14 @@ export default function TopNav({ onCartClick }: { onCartClick?: () => void }) {
   const [hidden, setHidden] = useState(false)
   const [where, setWhere] = useState('')
   const [showWhere, setShowWhere] = useState(false)
-  const [when, setWhen] = useState('')
   const [guests, setGuests] = useState(0)
   const [showGuests, setShowGuests] = useState(false)
-  const dateRef = useRef<HTMLInputElement>(null)
+  const [showSearch, setShowSearch] = useState(false)
   const lastScrollY = useRef(0)
   const { t } = useI18n()
   const { user } = useAuth()
   const [showProfileMenu, setShowProfileMenu] = useState(false)
+  const [showMenu, setShowMenu] = useState(false)
   const isHome = pathname === '/'
   const isExperience = pathname.startsWith('/experience')
   const isCheckout = pathname.startsWith('/checkout') || pathname.startsWith('/transfers/checkout')
@@ -76,8 +76,32 @@ export default function TopNav({ onCartClick }: { onCartClick?: () => void }) {
     return () => document.removeEventListener('mousedown', close)
   }, [showGuests, showWhere])
 
-  const dark = isHome && !scrolled
+  // Mobile menu / search sheets: close on navigation and Escape, lock the
+  // page scroll while either is open so the sheet never scrolls the content
+  // behind it.
+  useEffect(() => { setShowMenu(false); setShowSearch(false) }, [pathname])
+  useEffect(() => {
+    if (!showMenu && !showSearch) return
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') { setShowMenu(false); setShowSearch(false) }
+    }
+    document.addEventListener('keydown', onKey)
+    const prev = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => {
+      document.removeEventListener('keydown', onKey)
+      document.body.style.overflow = prev
+    }
+  }, [showMenu, showSearch])
+
+  // The sheet is a solid white surface, so the bar above it must not stay
+  // transparent over the hero while it is open.
+  const dark = isHome && !scrolled && !showMenu
   const linkColor = dark ? 'rgba(255,255,255,0.75)' : 'var(--text-secondary)'
+  // One flag for every surface that swaps with the search bar: the desktop
+  // Explore link leaves when the bar is on screen, and the mobile bar swaps
+  // the Transfers pill for the search pill on the same routes.
+  const searchVisible = !isExperience && !isCheckout && !isExplore && !isProfile
 
   if (isExperience) return null
 
@@ -101,13 +125,8 @@ export default function TopNav({ onCartClick }: { onCartClick?: () => void }) {
       >
         <div className="container" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', gap: 16 }}>
           <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0, minHeight: 44 }}>
-            <div style={{ width: 32, height: 32, borderRadius: 8, background: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <Leaf size={16} strokeWidth={2.5} color="#fff" />
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1 }}>
-              <span style={{ fontFamily: 'var(--font-dm-sans)', fontWeight: 800, fontSize: 15, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--text-primary)' }}>MAPL</span>
-              <span style={{ fontFamily: 'var(--font-dm-sans)', fontWeight: 700, fontSize: 12, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--text-secondary)', marginTop: 1 }}>Tours Jamaica</span>
-            </div>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/mapl-logo.svg" alt="MAPL Tours Jamaica" width={160} height={38} style={{ height: 38, width: 'auto', display: 'block' }} />
           </Link>
           <div style={{ display: 'flex', alignItems: 'center', gap: 7, fontFamily: 'var(--font-dm-sans)', fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)' }}>
             <Lock size={13} strokeWidth={2.5} aria-hidden="true" />
@@ -119,6 +138,7 @@ export default function TopNav({ onCartClick }: { onCartClick?: () => void }) {
   }
 
   return (
+    <>
     <header
       className={`nav-header${isCheckout ? ' nav-checkout' : ''}`}
       style={{
@@ -138,7 +158,8 @@ export default function TopNav({ onCartClick }: { onCartClick?: () => void }) {
         borderBottom: dark ? 'none' : '1px solid var(--border)',
       }}
     >
-      {/* Inner container, same max-width as body content */}
+      {/* Inner container, same max-width as body content. Relative so the
+          centered search bar can absolutely position against it. */}
       <div
         className="container"
         style={{
@@ -147,6 +168,7 @@ export default function TopNav({ onCartClick }: { onCartClick?: () => void }) {
           justifyContent: 'space-between',
           width: '100%',
           gap: 16,
+          position: 'relative',
         }}
       >
         {/* ── Logo ── */}
@@ -161,50 +183,32 @@ export default function TopNav({ onCartClick }: { onCartClick?: () => void }) {
             transition: 'all 0.3s ease',
           }}
         >
-          {/* Icon mark */}
-          <div style={{
-            width: 32, height: 32, borderRadius: 8,
-            background: dark ? 'rgba(255,255,255,0.1)' : 'var(--accent)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            transition: 'background 0.3s ease',
-          }}>
-            <Leaf size={16} strokeWidth={2.5} color={dark ? '#fff' : '#fff'} />
-          </div>
-          {/* Wordmark */}
-          <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1 }}>
-            <span style={{
-              fontFamily: 'var(--font-dm-sans)',
-              fontWeight: 800,
-              fontSize: 15,
-              letterSpacing: '0.06em',
-              textTransform: 'uppercase',
-              color: dark ? '#fff' : 'var(--text-primary)',
-              transition: 'color 0.3s ease',
-            }}>
-              MAPL
-            </span>
-            <span style={{
-              fontFamily: 'var(--font-dm-sans)',
-              fontWeight: 700,
-              fontSize: 12,
-              letterSpacing: '0.12em',
-              textTransform: 'uppercase',
-              color: dark ? 'rgba(255,255,255,0.7)' : 'var(--text-secondary)',
-              transition: 'color 0.3s ease',
-              marginTop: 1,
-            }}>
-              Tours Jamaica
-            </span>
-          </div>
+          {/* Brand lockup, from the rebrand. Two files rather than one
+              recoloured by CSS: the mark carries the Jamaica green and gold
+              and only the wordmark flips, so a filter would wreck the flag
+              colours. `dark` is true over the hero video. */}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            className="nav-logo-img"
+            src={dark ? '/mapl-logo-dark.svg' : '/mapl-logo.svg'}
+            alt="MAPL Tours Jamaica"
+            width={176}
+            height={42}
+            style={{
+              height: 42,
+              width: 'auto',
+              display: 'block',
+              transition: 'opacity 0.3s ease',
+            }}
+          />
         </Link>
 
         {/* ── Search Bar (hidden on experience/checkout/explore/profile/mobile) ── */}
-        {!isExperience && !isCheckout && !isExplore && !isProfile && <div className="hide-mobile"
+        {searchVisible && <div className="hide-mobile nav-search-wrap"
           style={{
             display: 'flex',
             alignItems: 'center',
             height: 48,
-            flex: '0 1 520px',
             borderRadius: 9999,
             background: '#FFFFFF',
             border: '1px solid rgba(0,0,0,0.08)',
@@ -354,45 +358,6 @@ export default function TopNav({ onCartClick }: { onCartClick?: () => void }) {
             )}
           </div>
 
-          {/* When */}
-          <div
-            onClick={() => dateRef.current?.showPicker()}
-            style={{
-              flex: 1, padding: '0 16px', cursor: 'pointer',
-              borderRight: '1px solid var(--border)',
-              height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center',
-              position: 'relative',
-            }}
-          >
-            <span style={{
-              fontSize: 12, fontWeight: 600, textTransform: 'uppercase',
-              letterSpacing: '0.08em', color: 'var(--text-tertiary)',
-              fontFamily: 'var(--font-dm-sans)', lineHeight: 1, marginBottom: 1,
-            }}>
-              {t('When')}
-            </span>
-            <span style={{
-              fontSize: 13, fontFamily: 'var(--font-dm-sans)', fontWeight: 500,
-              color: when ? 'var(--text-primary)' : 'var(--text-tertiary)',
-            }}>
-              {when
-                ? new Date(when + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-                : t('Any dates')}
-            </span>
-            <input
-              ref={dateRef}
-              type="date"
-              aria-label="When"
-              value={when}
-              onChange={(e) => setWhen(e.target.value)}
-              style={{
-                position: 'absolute', inset: 0,
-                opacity: 0, cursor: 'pointer',
-                width: '100%', height: '100%',
-              }}
-            />
-          </div>
-
           {/* Who */}
           <div
             data-dropdown
@@ -489,151 +454,49 @@ export default function TopNav({ onCartClick }: { onCartClick?: () => void }) {
           </button>
         </div>}
 
-        {/* ── Mobile language + profile row ── */}
-        <div className="hide-desktop nav-lang-row" style={{
-          position: 'absolute', top: 0, left: 0, right: 0,
-          height: 32, display: 'flex', alignItems: 'center', justifyContent: 'flex-end',
-          paddingRight: 16, gap: 10,
-        }}>
-          <Link
-            href="/transfers"
-            className="tap-target-down"
+        {/* ── Mobile search pill (Airbnb pattern): opens the full-screen
+            search sheet. Shown on the same routes as the desktop bar. ── */}
+        {searchVisible && (
+          <button
+            className="hide-desktop"
+            onClick={() => setShowSearch(true)}
             style={{
-              display: 'inline-flex', alignItems: 'center',
-              fontFamily: 'var(--font-dm-sans)',
-              fontSize: 12,
-              fontWeight: 700,
-              color: '#1A1508',
-              background: 'var(--gold)',
-              borderRadius: 9999,
-              letterSpacing: '0.02em',
-              whiteSpace: 'nowrap',
-              minHeight: 32, padding: '0 14px',
-              textDecoration: 'none',
+              flex: 1, minWidth: 0, height: 40, borderRadius: 9999,
+              display: 'flex', alignItems: 'center', gap: 8,
+              padding: '0 16px', border: '1px solid rgba(0,0,0,0.08)',
+              background: '#fff', cursor: 'pointer',
+              boxShadow: dark ? '0 2px 12px rgba(0,0,0,0.18)' : 'var(--shadow-sm)',
+              fontFamily: 'var(--font-dm-sans)', fontSize: 14, fontWeight: 500,
+              color: 'var(--text-secondary)', whiteSpace: 'nowrap', overflow: 'hidden',
             }}
           >
-            {t('Transfers')}
-          </Link>
-          <span aria-hidden style={{
-            width: 1, height: 12,
-            background: dark ? 'rgba(255,255,255,0.2)' : 'var(--border-strong)',
-          }} />
-          <LanguageSwitcher dark={dark} />
-          <div data-dropdown style={{ position: 'relative' }}>
-            {user ? (
-              <button
-                onClick={() => setShowProfileMenu(!showProfileMenu)}
-                aria-label="Account menu"
-                aria-haspopup="menu"
-                aria-expanded={showProfileMenu}
-                style={{
-                  width: 44, height: 44, margin: '0 -5px', flexShrink: 0, alignSelf: 'flex-start',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  background: 'none', border: 'none', cursor: 'pointer', padding: 0,
-                }}
-              >
-                <span style={{
-                  width: 34, height: 34, borderRadius: '50%',
-                  overflow: 'hidden',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  background: user.user_metadata?.avatar_url
-                    ? 'transparent'
-                    : dark ? 'rgba(255,255,255,0.12)' : 'var(--surface)',
-                  border: dark ? '1px solid rgba(255,255,255,0.16)' : '1px solid var(--border-strong)',
-                }}>
-                {user.user_metadata?.avatar_url ? (
-                  <Image src={user.user_metadata.avatar_url} alt="" width={34} height={34} style={{ objectFit: 'cover' }} />
-                ) : (
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={dark ? 'rgba(255,255,255,0.7)' : 'var(--text-secondary)'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-                    <circle cx="12" cy="7" r="4" />
-                  </svg>
-                )}
-                </span>
-              </button>
-            ) : (
-              <Link href="/login" aria-label="Sign in" style={{
-                width: 44, height: 44, margin: '0 -5px', flexShrink: 0, alignSelf: 'flex-start',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-              }}>
-                <span style={{
-                  width: 34, height: 34, borderRadius: '50%',
-                  overflow: 'hidden',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  background: dark ? 'rgba(255,255,255,0.12)' : 'var(--surface)',
-                  border: dark ? '1px solid rgba(255,255,255,0.16)' : '1px solid var(--border-strong)',
-                }}>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={dark ? 'rgba(255,255,255,0.7)' : 'var(--text-secondary)'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-                  <circle cx="12" cy="7" r="4" />
-                </svg>
-                </span>
-              </Link>
-            )}
-
-            {/* Mobile profile dropdown */}
-            {showProfileMenu && user && (
-              <div style={{
-                position: 'absolute', top: '100%', right: 0, marginTop: 8,
-                background: '#fff', borderRadius: 'var(--r-lg)',
-                border: '1px solid var(--border)',
-                boxShadow: '0 8px 32px rgba(0,0,0,0.12)',
-                padding: '8px 0', minWidth: 180,
-                zIndex: 10,
-              }}>
-                <Link
-                  href="/profile"
-                  onClick={() => setShowProfileMenu(false)}
-                  style={{
-                    display: 'block', padding: '10px 16px',
-                    fontSize: 14, color: 'var(--text-primary)',
-                    fontFamily: 'var(--font-dm-sans)',
-                  }}
-                >
-                  Profile
-                </Link>
-                <div style={{ height: 1, background: 'var(--border)', margin: '4px 0' }} />
-                <button
-                  onClick={async () => {
-                    await supabase.auth.signOut()
-                    setShowProfileMenu(false)
-                    // Auth context handles state update via onAuthStateChange
-                    router.push('/')
-                    router.refresh()
-                  }}
-                  style={{
-                    display: 'block', width: '100%', textAlign: 'left',
-                    padding: '10px 16px',
-                    fontSize: 14, color: 'var(--text-primary)',
-                    fontFamily: 'var(--font-dm-sans)',
-                    background: 'none', border: 'none', cursor: 'pointer',
-                  }}
-                >
-                  Sign out
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
+            <Search size={15} strokeWidth={2.5} color="var(--text-primary)" />
+            {t('Start your search')}
+          </button>
+        )}
 
         {/* ── Right ── */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
-          <Link
-            href="/explore"
-            className="tap-target"
-            aria-current={isExplore ? 'page' : undefined}
-            style={{
-              padding: '6px 12px', fontSize: 13, fontWeight: isExplore ? 700 : 500,
-              fontFamily: 'var(--font-dm-sans)', color: isExplore ? (dark ? '#fff' : 'var(--accent)') : linkColor,
-              borderRadius: 9999, transition: 'color 0.15s ease',
-            }}
-          >
-            {t('Explore')}
-          </Link>
+          {/* Explore steps aside while the search bar is on screen: the bar
+              already routes to /explore, so the link would be a duplicate. */}
+          {!searchVisible && (
+            <Link
+              href="/explore"
+              className="tap-target hide-mobile"
+              aria-current={isExplore ? 'page' : undefined}
+              style={{
+                padding: '6px 12px', fontSize: 13, fontWeight: isExplore ? 700 : 500,
+                fontFamily: 'var(--font-dm-sans)', color: isExplore ? (dark ? '#fff' : 'var(--accent)') : linkColor,
+                borderRadius: 9999, transition: 'color 0.15s ease',
+              }}
+            >
+              {t('Explore')}
+            </Link>
+          )}
 
           <Link
             href="/transfers"
-            className="hide-mobile"
+            className={searchVisible ? 'hide-mobile' : undefined}
             aria-current={isTransfers ? 'page' : undefined}
             style={{
               display: 'inline-flex', alignItems: 'center',
@@ -666,7 +529,7 @@ export default function TopNav({ onCartClick }: { onCartClick?: () => void }) {
               }}
             >
               <ShoppingBag size={14} />
-              {t('Itinerary')}
+              <span className="hide-mobile">{t('Itinerary')}</span>
               <span style={{
                 minWidth: 17, height: 17, padding: '0 5px',
                 borderRadius: 9999, background: 'rgba(255,255,255,0.18)',
@@ -804,8 +667,283 @@ export default function TopNav({ onCartClick }: { onCartClick?: () => void }) {
               </div>
             )}
           </div>
+
+          {/* Menu button, mobile only: opens the sheet holding everything
+              that does not fit the 56px bar (Explore, currency, account). */}
+          <button
+            className="hide-desktop"
+            onClick={() => setShowMenu(!showMenu)}
+            aria-label={showMenu ? 'Close menu' : 'Menu'}
+            aria-expanded={showMenu}
+            style={{
+              width: 44, height: 44, margin: '0 -8px 0 -4px', flexShrink: 0,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              background: 'none', border: 'none', cursor: 'pointer', padding: 0,
+              color: dark ? '#fff' : 'var(--text-primary)',
+            }}
+          >
+            {showMenu ? <X size={22} strokeWidth={2} /> : <Menu size={22} strokeWidth={2} />}
+          </button>
         </div>
       </div>
     </header>
+
+    {/* ── Mobile search sheet ──
+        Full-screen so the keyboard and the suggestion list get the whole
+        viewport. Same containing-block rule as the menu sheet below. */}
+    {showSearch && (
+      <div
+        className="hide-desktop nav-sheet"
+        role="dialog"
+        aria-label="Search"
+        style={{
+          position: 'fixed', inset: 0, zIndex: 120,
+          background: '#fff', display: 'flex', flexDirection: 'column',
+        }}
+      >
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: 8,
+          padding: '10px 12px 10px 16px', borderBottom: '1px solid var(--border)',
+        }}>
+          <div style={{
+            flex: 1, display: 'flex', alignItems: 'center', gap: 10,
+            height: 44, borderRadius: 9999, padding: '0 16px',
+            border: '1px solid var(--border-strong)', background: 'var(--surface)',
+          }}>
+            <Search size={16} strokeWidth={2.5} color="var(--text-primary)" />
+            <input
+              type="text"
+              autoFocus
+              aria-label="Where to?"
+              value={where}
+              onChange={(e) => setWhere(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  setShowSearch(false)
+                  router.push(`/explore?q=${encodeURIComponent(where)}`)
+                }
+              }}
+              placeholder={t('Where to?')}
+              style={{
+                flex: 1, minWidth: 0, background: 'none', border: 'none',
+                outline: 'none', padding: 0, fontSize: 16,
+                fontFamily: 'var(--font-dm-sans)', fontWeight: 500,
+                color: 'var(--text-primary)',
+              }}
+            />
+          </div>
+          <button
+            onClick={() => setShowSearch(false)}
+            aria-label="Close search"
+            style={{
+              width: 44, height: 44, flexShrink: 0,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              background: 'none', border: 'none', cursor: 'pointer', padding: 0,
+              color: 'var(--text-primary)',
+            }}
+          >
+            <X size={22} strokeWidth={2} />
+          </button>
+        </div>
+
+        <div style={{ flex: 1, overflowY: 'auto', padding: '8px 0 16px' }}>
+          {where && TRANSFER_DESTINATIONS.some((d) => d.name.toLowerCase().includes(where.toLowerCase())) && (
+            <>
+              <p style={{
+                fontSize: 12, fontWeight: 600, textTransform: 'uppercase',
+                letterSpacing: '0.06em', color: 'var(--text-tertiary)',
+                fontFamily: 'var(--font-dm-sans)', padding: '10px 20px 6px',
+              }}>
+                {t('Resorts · airport transfers')}
+              </p>
+              {TRANSFER_DESTINATIONS
+                .filter((d) => d.name.toLowerCase().includes(where.toLowerCase()))
+                .slice(0, 5)
+                .map((d) => (
+                  <button
+                    key={d.id}
+                    onClick={() => {
+                      setShowSearch(false)
+                      setWhere(d.name)
+                      router.push(`/transfers?to=${d.id}`)
+                    }}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: 12,
+                      width: '100%', minHeight: 56, padding: '8px 20px',
+                      background: 'none', border: 'none', cursor: 'pointer',
+                      textAlign: 'left', fontFamily: 'var(--font-dm-sans)',
+                    }}
+                  >
+                    <span style={{
+                      width: 40, height: 40, borderRadius: 'var(--r-sm)',
+                      background: 'var(--gold-dim, rgba(196,164,74,0.15))',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      flexShrink: 0,
+                    }}>
+                      <Car size={16} color="var(--gold-text, #6E5A1C)" />
+                    </span>
+                    <span>
+                      <span style={{ display: 'block', fontSize: 15, fontWeight: 600, color: 'var(--text-primary)' }}>{d.name}</span>
+                      <span style={{ display: 'block', fontSize: 13, color: 'var(--text-tertiary)', marginTop: 1 }}>{t('Airport transfer from MBJ')} · {d.parish}</span>
+                    </span>
+                  </button>
+                ))}
+            </>
+          )}
+          <p style={{
+            fontSize: 12, fontWeight: 600, textTransform: 'uppercase',
+            letterSpacing: '0.06em', color: 'var(--text-tertiary)',
+            fontFamily: 'var(--font-dm-sans)', padding: '10px 20px 6px',
+          }}>
+            {where ? t('Results') : t('Popular destinations')}
+          </p>
+          {destinations
+            .filter((d) => !where || d.name.toLowerCase().includes(where.toLowerCase()) || d.parish.toLowerCase().includes(where.toLowerCase()))
+            .map((d) => (
+              <button
+                key={d.name}
+                onClick={() => {
+                  setShowSearch(false)
+                  setWhere(d.name)
+                  router.push(`/explore?q=${encodeURIComponent(d.name)}`)
+                }}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 12,
+                  width: '100%', minHeight: 56, padding: '8px 20px',
+                  background: 'none', border: 'none', cursor: 'pointer',
+                  textAlign: 'left', fontFamily: 'var(--font-dm-sans)',
+                }}
+              >
+                <span style={{
+                  width: 40, height: 40, borderRadius: 'var(--r-sm)',
+                  background: 'var(--surface)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  flexShrink: 0,
+                }}>
+                  <MapPin size={16} color="var(--text-tertiary)" />
+                </span>
+                <span>
+                  <span style={{ display: 'block', fontSize: 15, fontWeight: 600, color: 'var(--text-primary)' }}>{d.name}</span>
+                  <span style={{ display: 'block', fontSize: 13, color: 'var(--text-tertiary)', marginTop: 1 }}>{d.parish}, Jamaica</span>
+                </span>
+              </button>
+            ))}
+          {where && destinations.filter((d) => d.name.toLowerCase().includes(where.toLowerCase()) || d.parish.toLowerCase().includes(where.toLowerCase())).length === 0 && !TRANSFER_DESTINATIONS.some((d) => d.name.toLowerCase().includes(where.toLowerCase())) && (
+            <p style={{ padding: '14px 20px', fontSize: 14, color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-sans)' }}>
+              {t('No destinations found')}
+            </p>
+          )}
+        </div>
+
+        <div style={{ padding: '12px 16px calc(12px + env(safe-area-inset-bottom))', borderTop: '1px solid var(--border)' }}>
+          <button
+            onClick={() => {
+              setShowSearch(false)
+              router.push(`/explore?q=${encodeURIComponent(where)}`)
+            }}
+            style={{
+              width: '100%', height: 48, borderRadius: 9999,
+              background: 'var(--gold)', color: '#1A1508',
+              border: 'none', cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+              fontFamily: 'var(--font-dm-sans)', fontSize: 15, fontWeight: 700,
+            }}
+          >
+            <Search size={16} strokeWidth={2.5} />
+            {t('Search')}
+          </button>
+        </div>
+      </div>
+    )}
+
+    {/* ── Mobile menu sheet ──
+        A sibling of the header, not a child: the header carries a transform
+        (hide-on-scroll), which would turn it into the containing block for
+        position: fixed and collapse the sheet to the header's 56px box. */}
+    {showMenu && (
+        <nav
+          className="hide-desktop nav-sheet"
+          aria-label="Menu"
+          style={{
+            position: 'fixed', top: 56, left: 0, right: 0, bottom: 0,
+            background: '#fff', borderTop: '1px solid var(--border)',
+            padding: '12px 0 24px', overflowY: 'auto', zIndex: 99,
+          }}
+        >
+          {[
+            { label: t('Explore'), href: '/explore', current: isExplore },
+            { label: t('Transfers'), href: '/transfers', current: isTransfers },
+            { label: t('Help Center'), href: '/help', current: false },
+          ].map((item) => (
+            <Link
+              key={item.href}
+              href={item.href}
+              aria-current={item.current ? 'page' : undefined}
+              style={{
+                display: 'flex', alignItems: 'center', minHeight: 48,
+                padding: '0 20px', fontSize: 16,
+                fontWeight: item.current ? 700 : 500,
+                color: item.current ? 'var(--accent)' : 'var(--text-primary)',
+                fontFamily: 'var(--font-dm-sans)',
+              }}
+            >
+              {item.label}
+            </Link>
+          ))}
+
+          <div style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            minHeight: 48, padding: '0 20px',
+            borderTop: '1px solid var(--border)', marginTop: 8, paddingTop: 8,
+          }}>
+            <span style={{
+              fontSize: 16, fontWeight: 500, color: 'var(--text-primary)',
+              fontFamily: 'var(--font-dm-sans)',
+            }}>
+              {t('Currency')}
+            </span>
+            <LanguageSwitcher dark={false} />
+          </div>
+
+          <div style={{ borderTop: '1px solid var(--border)', marginTop: 8, paddingTop: 8 }}>
+            {user ? (
+              <>
+                <Link href="/profile" style={{
+                  display: 'flex', alignItems: 'center', minHeight: 48, padding: '0 20px',
+                  fontSize: 16, fontWeight: 500, color: 'var(--text-primary)',
+                  fontFamily: 'var(--font-dm-sans)',
+                }}>
+                  {t('Profile')}
+                </Link>
+                <button
+                  onClick={async () => {
+                    await supabase.auth.signOut()
+                    setShowMenu(false)
+                    router.push('/')
+                    router.refresh()
+                  }}
+                  style={{
+                    display: 'flex', alignItems: 'center', minHeight: 48, padding: '0 20px',
+                    width: '100%', textAlign: 'left', fontSize: 16, fontWeight: 500,
+                    color: 'var(--text-primary)', fontFamily: 'var(--font-dm-sans)',
+                    background: 'none', border: 'none', cursor: 'pointer',
+                  }}
+                >
+                  Sign out
+                </button>
+              </>
+            ) : (
+              <Link href="/login" style={{
+                display: 'flex', alignItems: 'center', minHeight: 48, padding: '0 20px',
+                fontSize: 16, fontWeight: 600, color: 'var(--accent)',
+                fontFamily: 'var(--font-dm-sans)',
+              }}>
+                {t('Sign in')}
+              </Link>
+            )}
+          </div>
+        </nav>
+      )}
+    </>
   )
 }

@@ -26,10 +26,12 @@ export async function GET() {
   const svc = createServiceClient()
   const email = user.email_confirmed_at && user.email ? user.email.toLowerCase() : null
 
+  // 'refunded' is included so a booking the traveler just cancelled stays
+  // visible (marked refunded) instead of vanishing from the page.
   const query = svc
     .from('bookings')
-    .select('id, created_at, paid_at, total_paid, booking_type, email, user_id, booking_items(*)')
-    .eq('status', 'paid')
+    .select('id, created_at, paid_at, total_paid, status, refund_amount, refund_state, booking_type, email, user_id, booking_items(*)')
+    .in('status', ['paid', 'refunded'])
     .order('created_at', { ascending: false })
     .limit(100)
   const { data, error } = email
@@ -48,6 +50,12 @@ export async function GET() {
   const shaped = rows.map((b) => ({
     id: b.id,
     created_at: b.created_at,
+    // paid_at and status drive the cancellation quote in the UI; the server
+    // re-derives both on POST, so these are for display only.
+    paid_at: b.paid_at ?? null,
+    status: b.status,
+    refund_amount: b.refund_amount == null ? null : Number(b.refund_amount),
+    refund_state: b.refund_state ?? 'none',
     total_paid: Number(b.total_paid ?? 0),
     booking_items: (b.booking_items ?? []).map((i: Row) =>
       b.booking_type === 'transfer'

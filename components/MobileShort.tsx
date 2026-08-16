@@ -21,16 +21,7 @@ export default memo(function MobileShort({ exp, priority = false }: { exp: Exper
   const [isVisible, setIsVisible] = useState(false)
   const [videoMounted, setVideoMounted] = useState(false)
   const [isPlaying, setIsPlaying] = useState(false)
-  const [userPaused, setUserPaused] = useState(false)
 
-  const toggleVideo = (e: React.MouseEvent) => {
-    e.preventDefault()
-    e.stopPropagation()
-    const v = videoRef.current
-    if (!v) return
-    if (v.paused) { v.play().catch(() => {}); setUserPaused(false) }
-    else { v.pause(); setIsPlaying(false); setUserPaused(true) }
-  }
   const playAttempted = useRef(false)
   const retryTimer = useRef<ReturnType<typeof setTimeout>>()
 
@@ -184,25 +175,6 @@ export default memo(function MobileShort({ exp, priority = false }: { exp: Exper
             aria-label={t(exp.title)}
             style={{ position: 'absolute', inset: 0, zIndex: 1 }}
           />
-
-          {/* WCAG 2.2.2: looping autoplay needs a user pause control. */}
-          {(isPlaying || userPaused) && (
-            <button
-              type="button"
-              onClick={toggleVideo}
-              aria-label={isPlaying ? 'Pause video' : 'Play video'}
-              aria-pressed={userPaused}
-              style={{
-                position: 'absolute', top: 44, left: 12, zIndex: 4,
-                width: 44, height: 44, borderRadius: 9999,
-                background: 'rgba(0,0,0,0.55)', border: '1px solid rgba(255,255,255,0.35)',
-                color: '#fff', cursor: 'pointer', fontSize: 13,
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-              }}
-            >
-              {isPlaying ? '\u23F8' : '\u25B6'}
-            </button>
-          )}
 
           {/* Bottom gradient */}
           <div style={{

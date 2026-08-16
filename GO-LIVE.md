@@ -126,7 +126,7 @@ In test mode (before flipping live keys):
 ## 7. Outstanding items (not blockers, but worth scheduling)
 
 - **Admin booking view** — `/app/admin/` already exists. Add a bookings list + detail for ops. Currently bookings are visible only in Supabase.
-- **Refund flow** — you advertise 48-hour free cancellation. MVP: refund manually in Stripe Dashboard, then mark the row `status='refunded'` via SQL. Post-MVP: self-serve cancel button in the user's `/profile`.
+- **Refund flow** — built. Travelers request a cancellation from `/profile`; nothing is refunded until an admin approves it at `/admin/refunds`, which is the only route that calls Stripe. The 20% administration charge is computed by `lib/refund-pricing.ts` and the quote is stored at request time, so an approval that lands after the 48-hour window still pays what the traveler was quoted. Remaining before go-live: apply migrations 012–014, subscribe `charge.refunded` in the Stripe dashboard, and run one end-to-end refund in test mode.
 - **Rate limit `/api/checkout`** — no throttle today. Someone could hammer it to create thousands of PaymentIntents. Add an IP-based throttle (Vercel middleware or `@upstash/ratelimit`).
 - **Jamaica GCT (15%)** — confirm with your accountant whether MAPL owes GCT on tours sold via the platform. If yes, surface on the order summary and reconcile with Stripe.
 - **Stripe Connect** — if you want automatic split payouts to operators, migrate to Connect. Single-merchant for now is fine; you pay operators manually on a schedule.

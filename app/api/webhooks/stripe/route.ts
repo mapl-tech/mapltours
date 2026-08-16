@@ -3,6 +3,11 @@ import Stripe from 'stripe'
 import { createServiceClient } from '@/lib/supabase/service'
 import { DEFAULT_DRIVER } from '@/lib/dispatch'
 import { sendEmail, opsBcc } from '@/lib/email/send'
+import { sendCancellationEmails } from '@/lib/email/cancellation'
+import {
+  claimEmailChannel as sharedClaimEmailChannel,
+  releaseEmailChannel as sharedReleaseEmailChannel,
+} from '@/lib/email/claim'
 import BookingConfirmed from '@/emails/BookingConfirmed'
 import OperatorBookingAlert from '@/emails/OperatorBookingAlert'
 import TransferConfirmed from '@/emails/TransferConfirmed'
@@ -354,6 +359,15 @@ async function handlePaymentCanceled(pi: Stripe.PaymentIntent) {
     .not('status', 'in', '("paid","refunded")')
 }
 
+/**
+ * A refund happened on Stripe's side. This exists so refunds issued BY HAND
+ * in the Stripe Dashboard land in the database too, instead of leaving the
+ * row reading 'paid' while the money has gone back.
+ *
+ * /api/bookings/[id]/cancel already stamps the row before calling Stripe, so
+ * for self-serve cancellations this webhook simply finds the work done and
+ * no-ops. It is the manual path that needs it.
+ */
 // `retryable` distinguishes a transient send failure (worth having Stripe
 // re-deliver the webhook) from a permanent one (no email on record, no ops
 // address configured) where retrying can never succeed.
@@ -372,20 +386,11 @@ async function claimEmailChannel(
   bookingId: string,
   column: 'confirmation_email_sent_at' | 'operator_email_sent_at',
 ): Promise<boolean> {
-  const { data, error } = await supabase
-    .from('bookings')
-    .update({ [column]: new Date().toISOString() })
-    .eq('id', bookingId)
-    .is(column, null)
-    // Never claim an email channel for a booking that stopped being paid
-    // between our read and this write (refund racing the handler).
-    .eq('status', 'paid')
-    .select('id')
-  if (error) {
-    console.error('[stripe-webhook] email claim failed', { bookingId, column, error: error.message })
-    return false
-  }
-  return (data?.length ?? 0) > 0
+  // Implementation lives in lib/email/claim.ts so the cancellation path
+  // shares it. The paid-status guard is NON-NEGOTIABLE here: without it a
+  // refund racing the handler lets a confirmation email escape for a
+  // booking that is no longer paid.
+  return sharedClaimEmailChannel(supabase, bookingId, column, { requireStatus: 'paid' })
 }
 
 async function releaseEmailChannel(
@@ -393,7 +398,7 @@ async function releaseEmailChannel(
   bookingId: string,
   column: 'confirmation_email_sent_at' | 'operator_email_sent_at',
 ): Promise<void> {
-  await supabase.from('bookings').update({ [column]: null }).eq('id', bookingId)
+  await sharedReleaseEmailChannel(supabase, bookingId, column)
 }
 
 async function maybeSendTravelerConfirmation(
@@ -634,17 +639,29 @@ async function handleChargeRefunded(charge: Stripe.Charge) {
   // rule is now structural: charge.refunded proves money moved, therefore it
   // terminates the booking whatever transient state the row is in. Flipping
   // an already-dead canceled row to refunded is harmless; missing one is not.
+  // Refund bookkeeping rides on the SAME conditional update that flips the
+  // status, so amounts can never be recorded for a row the guard rejected.
+  // Stripe's figure is what actually left the account (a Dashboard refund
+  // can be any amount); admin_charge is derived from it per row below.
+  const refundedCents = charge.amount_refunded ?? 0
+  const refundFields = {
+    status: 'refunded',
+    refund_state: 'approved',
+    refund_decided_at: new Date().toISOString(),
+    refunded_at: new Date().toISOString(),
+    refund_amount: refundedCents / 100,
+  }
   const refundByPi = () => supabase
-    .from('bookings').update({ status: 'refunded' }).neq('status', 'refunded')
-    .eq('stripe_payment_id', piId!).select('id, dispatch')
+    .from('bookings').update(refundFields).neq('status', 'refunded')
+    .eq('stripe_payment_id', piId!).select('id, dispatch, total_paid')
   const refundByMeta = () => supabase
-    .from('bookings').update({ status: 'refunded' }).neq('status', 'refunded')
-    .eq('id', metaBookingId!).select('id, dispatch')
+    .from('bookings').update(refundFields).neq('status', 'refunded')
+    .eq('id', metaBookingId!).select('id, dispatch, total_paid')
 
   // Two-step lookup, mirroring loadBooking: an orphan booking whose
   // stripe_payment_id was never healed matches zero rows by PI, and the
   // refund must then resolve through metadata rather than being consumed.
-  let data: { id: string; dispatch: unknown }[] | null = null
+  let data: { id: string; dispatch: unknown; total_paid: number | null }[] | null = null
   let error: { message: string } | null = null
   if (piId) ({ data, error } = await refundByPi())
   if (!error && (!data || data.length === 0) && metaBookingId) ({ data, error } = await refundByMeta())
@@ -667,6 +684,21 @@ async function handleChargeRefunded(charge: Stripe.Charge) {
         p_patch: { refunded_at: new Date().toISOString() },
       })
       if (stampErr) console.error('[stripe-webhook] refunded_at stamp failed', { booking: row.id, error: stampErr.message })
+    }
+    // What we kept, from Stripe's own figure against the row's gross.
+    for (const row of data) {
+      const grossCents = Math.round(Number(row.total_paid ?? 0) * 100)
+      const { error: chargeErr } = await supabase
+        .from('bookings')
+        .update({ admin_charge: Math.max(0, grossCents - refundedCents) / 100 })
+        .eq('id', row.id)
+      if (chargeErr) console.error('[stripe-webhook] admin_charge stamp failed', { booking: row.id, error: chargeErr.message })
+    }
+    // Notify on BOTH paths. A self-serve cancellation already sent these and
+    // the claimed columns make this a no-op; for a Dashboard refund this is
+    // the only thing that tells the traveler and stands the driver down.
+    for (const row of data) {
+      await sendCancellationEmails(row.id, { source: 'dashboard' })
     }
     console.log('[stripe-webhook] booking refunded, dispatch released', data.map((r: { id: string }) => r.id))
   }

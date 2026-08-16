@@ -261,7 +261,7 @@ const HAND_POSTS: BlogPost[] = [
       { type: 'h2', text: 'Weather' },
       {
         type: 'p',
-        text: "November to April is high season for a reason, dry, breezy, 80°F. May through October is hot and humid, with afternoon showers you can almost set a watch by. Hurricane season peaks August-October. Book with free cancellation.",
+        text: "November to April is high season for a reason, dry, breezy, 80°F. May through October is hot and humid, with afternoon showers you can almost set a watch by. Hurricane season peaks August-October. If weather forces a cancellation, we refund in full or reschedule at no cost.",
       },
       { type: 'h2', text: 'Cultural notes' },
       {

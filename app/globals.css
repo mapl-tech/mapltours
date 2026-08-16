@@ -8,6 +8,10 @@
    ═══════════════════════════════════════════ */
 
 :root {
+  /* Height of the fixed nav. Every page that clears the header offsets by
+     this, so the two can never drift apart. */
+  --nav-h: 72px;
+
   /* Surfaces */
   --bg:             #FFFFFF;
   --bg-warm:        #FAF9F7;
@@ -170,6 +174,21 @@ video {
 .nav-header {
   will-change: transform;
   transform: translateZ(0);
+}
+
+/* Desktop search bar: flows between logo and actions on smaller desktops,
+   then locks to the true horizontal center of the header once there is room
+   for the 520px bar plus both side clusters (logo ~200px, actions ~340px). */
+.nav-search-wrap { flex: 0 1 520px; margin: 0 auto; }
+@media (min-width: 1240px) {
+  .nav-search-wrap {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 520px;
+    flex: none;
+    margin: 0;
+  }
 }
 
 /* ═══════════════════════════════════
@@ -373,24 +392,15 @@ h5, h6 { letter-spacing: -0.01em; }
     padding-right: 16px !important;
   }
 
-  /* ── Nav, two rows on mobile ── */
-  .nav-header {
-    height: 98px !important;
-    flex-wrap: wrap !important;
-    padding-top: 46px !important;
-  }
-  .nav-header .hide-mobile {
-    display: none !important;
-  }
-  .nav-lang-row {
-    background: inherit;
-    height: 42px !important;
-    padding-top: 9px !important;
-  }
-  /* The header reserves 36px of top padding, which clears the 32px
-     absolutely positioned lang row; the row below it is free to carry a
-     full 44px logo target. */
-  .nav-header .nav-lang-row { z-index: 2; }
+  /* ── Nav, one 56px row on mobile ── */
+  /* Redefine the token on :root, NOT on .nav-header — pages read --nav-h to
+     clear the header, and a value scoped to the nav itself would leave them
+     offsetting by the desktop height and sliding under it. The bar keeps the
+     logo, the gold Transfers CTA, the itinerary count, and a 44px menu
+     button; Explore, currency, and account live in the sheet below it. */
+  :root { --nav-h: 56px; }
+  .nav-header .nav-logo-img { height: 30px !important; }
+  .nav-sheet { animation: navSheetIn 0.22s ease both; }
 
   /* ── Hero on mobile ── */
   .hero-section {
@@ -555,7 +565,9 @@ h5, h6 { letter-spacing: -0.01em; }
 
   /* ── Page top padding for taller mobile nav ── */
   .page-top-mobile {
-    padding-top: 90px !important;
+    /* Tracks the live header height, the old hardcoded 90px left a dead gap
+       once the mobile bar slimmed to 56px. */
+    padding-top: var(--nav-h) !important;
   }
   .explore-sticky-bar {
     top: 0 !important;
@@ -994,7 +1006,6 @@ button:hover > .reel-action-disc {
   -webkit-text-fill-color: transparent;
   color: transparent;
   display: inline;
-  font-style: italic;
   filter: drop-shadow(0 2px 14px rgba(0, 0, 0, 0.5));
 }
 
@@ -1254,6 +1265,14 @@ img[alt="Devon House Patty & Ice Cream Tour"] {
 @media (prefers-reduced-motion: reduce) {
   .pkg-card { transition: none; }
   .pkg-card:hover { transform: none; }
+}
+
+@keyframes navSheetIn {
+  from { opacity: 0; transform: translateY(-6px); }
+  to { opacity: 1; transform: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .nav-sheet { animation: none !important; }
 }
 
 .pkg-buy button { transition: background-color 0.22s ease, color 0.22s ease, filter 0.15s ease; }

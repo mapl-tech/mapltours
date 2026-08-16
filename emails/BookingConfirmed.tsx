@@ -277,8 +277,9 @@ export default function BookingConfirmed(props: BookingConfirmedProps) {
             · Bring a valid ID, reef-safe sunscreen, and water.
           </Text>
           <Text style={{ ...s.body, marginTop: 6 }}>
-            · Free cancellation up to 48 hours before each experience. Just
-            reply to this email.
+            · Flexible cancellation within 48 hours of booking. Just reply to
+            this email. Refunds are less an administration charge equivalent to
+            20% of the total amount of your fees plus taxes (if applicable).
           </Text>
           <Text style={s.note}>
             Questions? Reply to this email any time. Our team on the ground

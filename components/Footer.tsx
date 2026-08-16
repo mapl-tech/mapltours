@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { Leaf, Star } from 'lucide-react'
+import { Star } from 'lucide-react'
 import LanguageSwitcher from './LanguageSwitcher'
 import { useI18n } from '@/lib/i18n'
 
@@ -13,33 +13,31 @@ export default function Footer() {
       <div className="container">
         {/* Logo + tagline */}
         <div className="footer-brand" style={{ marginBottom: 40 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
-            <div style={{
-              width: 40, height: 40, borderRadius: 10,
-              background: 'rgba(255,255,255,0.08)',
-              border: '1px solid rgba(255,255,255,0.1)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-            }}>
-              <Leaf size={20} strokeWidth={2.5} color="#fff" />
-            </div>
-            <div style={{ lineHeight: 1 }}>
-              <span style={{
-                fontFamily: 'var(--font-dm-sans)', fontWeight: 800,
-                fontSize: 18, letterSpacing: '0.06em',
-                textTransform: 'uppercase', color: 'white',
-                display: 'block',
-              }}>
-                MAPL
-              </span>
-              <span style={{
-                fontFamily: 'var(--font-dm-sans)', fontWeight: 700,
-                fontSize: 12, letterSpacing: '0.12em',
-                textTransform: 'uppercase', color: '#cccccc',
-                marginTop: 2, display: 'block',
-              }}>
-                Tours Jamaica
-              </span>
-            </div>
+          {/* Original-colour logo on a white plate. The mark is near-black and
+              the footer is --bg-dark (1.11:1, i.e. invisible), so the plate is
+              what makes the brand legible here. Footer only — the header sits
+              on white and needs no plate. */}
+          {/* The plate lives on a wrapper, not on the <img>. With the global
+              box-sizing: border-box, padding on the image itself eats into
+              its height — a 42px image with 10px padding rendered the artwork
+              at 22px, half the header's size. */}
+          <div style={{
+            display: 'inline-block',
+            background: '#fff',
+            borderRadius: 12,
+            padding: '10px 16px',
+            marginBottom: 16,
+          }}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/mapl-logo.svg"
+              alt="MAPL Tours Jamaica"
+              width={185}
+              height={42}
+              /* Same 42px as the header lockup, so the mark reads at one
+                 consistent size top and bottom. */
+              style={{ height: 42, width: 'auto', display: 'block' }}
+            />
           </div>
           <p style={{
             fontSize: 14, color: 'var(--text-on-dark-2)',
@@ -154,7 +152,7 @@ export default function Footer() {
           fontSize: 12, color: 'var(--text-on-dark-3)',
           fontFamily: 'var(--font-dm-sans)', flexWrap: 'wrap', gap: 16,
         }}>
-          <p>© 2026 MAPL Tours. {t('All rights reserved.')} A <a href="https://www.mapltech.com" target="_blank" rel="noopener noreferrer" style={{ color: 'white', fontWeight: 600 }}>MAPL TECH</a> company.</p>
+          <p>© 2026 MAPL TOURS JAMAICA. {t('All rights reserved.')}</p>
           <div className="footer-legal" style={{ display: 'flex', gap: 20, flexWrap: 'wrap' }}>
             {[
               { label: 'Privacy Policy', href: '/privacy' },

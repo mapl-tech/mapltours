@@ -3,7 +3,6 @@
 import { Suspense, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
-import { Leaf } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { getSafeRedirect } from '@/lib/safe-redirect'
 import { DESTINATION_IMAGES } from '@/lib/experiences'
@@ -180,10 +179,6 @@ function LoginContent() {
           background: var(--bg-warm);
           min-height: 100vh;
         }
-        @media (max-width: 900px) {
-          .login-shell { grid-template-columns: 1fr; }
-          .login-aside { display: none; }
-        }
       `}</style>
 
       <div className="login-formcol">
@@ -194,36 +189,14 @@ function LoginContent() {
         {/* Logo */}
         <div style={{ textAlign: 'center', marginBottom: 36 }}>
           <Link href="/" style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 10, minHeight: 44 }}>
-            <div style={{
-              width: 36, height: 36, borderRadius: 10,
-              background: 'var(--accent)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-            }}>
-              <Leaf size={18} strokeWidth={2.5} color="#fff" />
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1, textAlign: 'left' }}>
-              <span style={{
-                fontFamily: 'var(--font-dm-sans)',
-                fontWeight: 800,
-                fontSize: 17,
-                letterSpacing: '0.06em',
-                textTransform: 'uppercase',
-                color: 'var(--text-primary)',
-              }}>
-                MAPL
-              </span>
-              <span style={{
-                fontFamily: 'var(--font-dm-sans)',
-                fontWeight: 700,
-                fontSize: 12,
-                letterSpacing: '0.12em',
-                textTransform: 'uppercase',
-                color: 'var(--text-secondary)',
-                marginTop: 1,
-              }}>
-                Tours Jamaica
-              </span>
-            </div>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/mapl-logo.svg"
+              alt="MAPL Tours Jamaica"
+              width={185}
+              height={44}
+              style={{ height: 44, width: 'auto', display: 'block' }}
+            />
           </Link>
           <h1 style={{
             fontFamily: 'var(--font-dm-sans)',

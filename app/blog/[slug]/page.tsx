@@ -473,13 +473,13 @@ export default function BlogPostPage({
   const related = getRelatedPosts(post, 3)
 
   return (
-    <article style={{ minHeight: '100vh', paddingTop: 56, background: 'var(--bg)' }}>
+    <article style={{ minHeight: '100vh', paddingTop: 'var(--nav-h)', background: 'var(--bg)' }}>
       <ArticleJsonLd post={post} />
       {/* Editorial banner */}
       <header
         style={{
           borderBottom: '1px solid var(--border-strong)',
-          paddingTop: 56,
+          paddingTop: 'var(--nav-h)',
           paddingBottom: 24,
         }}
       >
@@ -730,7 +730,7 @@ export default function BlogPostPage({
               <p style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 14, color: 'var(--text-secondary)', margin: 0, lineHeight: 1.6 }}>
                 {ZONES[dest.zone].duration}. One flat price per vehicle for up to 4
                 people: <strong>${oneWay} one-way</strong>, <strong>${roundTrip} round-trip</strong> (10% off two one-ways).
-                Meet and greet with a name sign, live flight tracking, free cancellation up to 24 hours before pickup.
+                Meet and greet with a name sign, live flight tracking, flexible cancellation within 48 hours of booking.
               </p>
               <Link
                 href={`/transfers?to=${dest.id}`}

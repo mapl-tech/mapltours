@@ -27,7 +27,7 @@ export default function EditorialPage({
   children: React.ReactNode
 }) {
   return (
-    <div style={{ minHeight: '100vh', paddingTop: 56 }}>
+    <div style={{ minHeight: '100vh', paddingTop: 'var(--nav-h)' }}>
       {/* Hero banner */}
       <div style={{
         position: 'relative', height: 240, overflow: 'hidden',

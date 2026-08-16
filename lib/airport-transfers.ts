@@ -236,6 +236,24 @@ export function zoneFromPrice(
   return prices.length ? Math.min(...prices) : 0
 }
 
+/**
+ * Cheapest all-in price to a named AREA, for "from $X" display.
+ *
+ * Zones are the pricing unit, but the hero quotes places travelers actually
+ * search for, and the two don't line up: Rose Hall and Montego Bay share
+ * zone A, so zoneFromPrice('A') returns a Montego Bay rate that would be
+ * wrong under a "to Rose Hall" label. Matching on the destination name keeps
+ * the figure honest, and derives it from the rate table rather than pinning
+ * the display to one hotel id that may not stay the cheapest.
+ */
+export function areaFromPrice(area: string, tripType: TransferTripType): number {
+  const needle = area.toLowerCase()
+  const prices = DESTINATIONS.filter((d) => d.name.toLowerCase().includes(needle))
+    .map((d) => getTransferPrice(d.id, tripType))
+    .filter((p): p is number => p !== null)
+  return prices.length ? Math.min(...prices) : 0
+}
+
 /** Destinations whose rate is still an estimate, for operator confirmation. */
 export function estimatedRateDestinations(): TransferDestination[] {
   return DESTINATIONS.filter((d) => d.estimated)

@@ -1,3 +1,4 @@
+import { useCallback, useEffect, useState } from 'react'
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 
@@ -26,7 +27,6 @@ export const languages: Language[] = [
 const T: Record<string, Record<string, string>> = {
   es: {
     'Discover': 'Descubre', 'beyond the resort.': 'mas alla del resort.',
-    'Authentic cultural experiences crafted by locals who know the island best.': 'Experiencias culturales autenticas creadas por locales que conocen mejor la isla.',
     'Popular destinations': 'Destinos populares', 'Featured experiences': 'Experiencias destacadas',
     'View all': 'Ver todo', 'Curated for you': 'Seleccionado para ti',
     'More experiences': 'Mas experiencias', 'Trending Now': 'Tendencia ahora',
@@ -37,7 +37,7 @@ const T: Record<string, Record<string, string>> = {
     '/person': '/persona', 'From': 'Desde',
     'A Taste of Jamaica': 'Un sabor de Jamaica', 'Food & Culture': 'Comida y cultura',
     'Your Itinerary': 'Tu itinerario', 'experience': 'experiencia', 'experiences': 'experiencias',
-    'Continue to checkout': 'Continuar al pago', 'Free cancellation within 48 hours': 'Cancelacion gratuita en 48 horas',
+    'Continue to checkout': 'Continuar al pago', 'Flexible cancellation within 48 hrs of booking': 'Cancelacion flexible dentro de 48 horas de la reserva',
     'Remove': 'Eliminar', 'Subtotal': 'Subtotal', 'Service fee': 'Tarifa de servicio', 'Total': 'Total',
     'Review your trip': 'Revisa tu viaje', 'Your details': 'Tus datos', 'Payment': 'Pago',
     'First Name': 'Nombre', 'Last Name': 'Apellido', 'Email': 'Correo', 'Phone': 'Telefono', 'Country': 'Pais',
@@ -59,7 +59,7 @@ const T: Record<string, Record<string, string>> = {
     'Only the best experiences': 'Solo las mejores experiencias',
     'Real local creators': 'Creadores locales reales',
     '24/7 trip support': 'Soporte de viaje 24/7',
-    'Free cancellation': 'Cancelacion gratuita',
+    'Flexible cancellation': 'Cancelacion flexible',
     '90%+ satisfaction': '90%+ satisfaccion',
     'Supports local economy': 'Apoya la economia local',
     'Contact Us': 'Contactanos', 'Get in touch': 'Ponerse en contacto',
@@ -82,7 +82,6 @@ const T: Record<string, Record<string, string>> = {
     'Complete Booking': 'Completar reserva',
     'Processing...': 'Procesando...',
     'Encrypted & secure': 'Encriptado y seguro',
-    'Free cancellation within 48 hrs': 'Cancelacion gratuita en 48 horas',
     'Step': 'Paso',
     'of': 'de',
     'Back': 'Volver',
@@ -203,7 +202,6 @@ const T: Record<string, Record<string, string>> = {
   },
   fr: {
     'Discover': 'Decouvrez', 'beyond the resort.': 'au-dela du resort.',
-    'Authentic cultural experiences crafted by locals who know the island best.': 'Experiences culturelles authentiques creees par des locaux qui connaissent le mieux ile.',
     'Popular destinations': 'Destinations populaires', 'Featured experiences': 'Experiences en vedette',
     'View all': 'Voir tout', 'Curated for you': 'Selectionne pour vous',
     'More experiences': 'Plus d\'experiences', 'Trending Now': 'Tendance maintenant',
@@ -530,7 +528,12 @@ interface I18nStore {
   formatPrice: (usdPrice: number) => string
 }
 
-export const useI18n = create<I18nStore>()(
+/**
+ * Raw store. Prefer the `useI18n()` hook below in components — reading this
+ * directly during render reintroduces the hydration bug it exists to prevent.
+ * Exposed for `.persist.rehydrate()` and non-render access.
+ */
+export const useI18nStore = create<I18nStore>()(
   persist(
     (set, get) => ({
       lang: languages[0],
@@ -563,6 +566,43 @@ export const useI18n = create<I18nStore>()(
     }
   )
 )
+
+/**
+ * Mount-gated view of the language store. Use this in components.
+ *
+ * Until the calling component has mounted, `t` returns the English key and
+ * `formatPrice` formats in USD — exactly what the server rendered. After
+ * mount it switches to the persisted language, as an ordinary state update.
+ *
+ * The gate is PER COMPONENT rather than a single global flag on purpose.
+ * Pages inside a Suspense boundary (/explore) hydrate lazily, well after the
+ * root has mounted and rehydrated the store. A global flag, or deferring the
+ * rehydrate, still leaves those boundaries rendering Spanish against English
+ * server HTML. What React actually requires is that each component's own
+ * first render matches the server, whenever that render happens, and only a
+ * per-component gate guarantees it.
+ */
+export function useI18n() {
+  const store = useI18nStore()
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => setMounted(true), [])
+
+  const { t: storeT, formatPrice: storeFormatPrice } = store
+  const t = useCallback(
+    (key: string) => (mounted ? storeT(key) : key),
+    [mounted, storeT],
+  )
+  const formatPrice = useCallback(
+    (usdPrice: number) =>
+      mounted
+        ? storeFormatPrice(usdPrice)
+        // Must equal the server's output: languages[0] is USD at rate 1.
+        : `${languages[0].currencySymbol}${Math.round(usdPrice).toLocaleString()}`,
+    [mounted, storeFormatPrice],
+  )
+
+  return { ...store, t, formatPrice }
+}
 
 // Detect from browser language
 export function detectLanguage(): Language {
