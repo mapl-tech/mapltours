@@ -375,7 +375,13 @@ h5, h6 { letter-spacing: -0.01em; }
 
   /* ── Hero on mobile ── */
   .hero-section {
-    aspect-ratio: 1 / 1 !important;
+    /* The 1:1 square was shorter than the hero text stack (eyebrow +
+       headline + subhead + two CTAs + trust line), so the headline climbed
+       under the transparent nav row. Let content set the height, keep a
+       cinematic minimum, and reserve the header band explicitly. */
+    aspect-ratio: auto !important;
+    min-height: 580px !important;
+    padding-top: 88px !important;
   }
 
   /* ── Typography, bolder, more editorial ── */
@@ -1071,3 +1077,8 @@ img[alt="Devon House Patty & Ice Cream Tour"] {
   }
 }
 
+
+/* Hero CTA hover states (audit measured both as hover-inert) */
+.hero-cta-primary:hover { filter: brightness(1.07); transform: translateY(-1px); }
+.hero-cta-primary:active { transform: translateY(0) scale(0.98); }
+.hero-cta-ghost:hover { background: rgba(255,255,255,0.26) !important; border-color: rgba(255,255,255,0.75) !important; }

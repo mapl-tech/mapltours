@@ -141,10 +141,10 @@ function StepCarousel({ steps, renderCard }: { steps: any[]; renderCard: (s: any
           <ChevronLeft size={18} />
         </button>
         <button onClick={() => scroll('right')} aria-label="Next step" style={{
-          width: 36, height: 36, borderRadius: '50%', background: 'var(--gold)',
+          width: 44, height: 44, borderRadius: '50%', background: 'var(--gold)',
           border: 'none', cursor: 'pointer',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          color: '#fff', transition: 'all 0.15s ease',
+          color: '#1A1508', transition: 'all 0.15s ease',
         }}>
           <ChevronRight size={18} />
         </button>
@@ -225,12 +225,12 @@ function FoodSection() {
               onClick={() => scroll('right')}
               aria-label="Next"
               style={{
-                width: 42, height: 42, borderRadius: '50%',
+                width: 44, height: 44, borderRadius: '50%',
                 background: 'var(--gold)',
                 border: 'none',
                 cursor: 'pointer',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                color: '#fff',
+                color: '#1A1508',
                 transition: 'all 0.2s ease',
               }}
               onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--gold-warm)' }}
@@ -567,18 +567,21 @@ export default function FeedView() {
           <div className="animate-fade-up stagger-3" style={{ display: 'flex', gap: 12, marginTop: 24, flexWrap: 'wrap' }}>
             <Link
               href="/transfers"
+              className="hero-cta-primary"
               style={{
                 display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
                 minHeight: 50, padding: '0 26px', borderRadius: 9999,
                 background: 'var(--gold)', color: '#1A1508',
                 fontFamily: 'var(--font-dm-sans)', fontSize: 15, fontWeight: 700,
                 textDecoration: 'none', boxShadow: '0 4px 24px rgba(0,0,0,0.35)',
+                transition: 'filter 0.15s ease, transform 0.15s ease',
               }}
             >
               Book Your Airport Transfer
             </Link>
             <Link
               href="/explore"
+              className="hero-cta-ghost"
               style={{
                 display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
                 minHeight: 50, padding: '0 24px', borderRadius: 9999,
@@ -586,6 +589,7 @@ export default function FeedView() {
                 border: '1px solid rgba(255,255,255,0.5)',
                 fontFamily: 'var(--font-dm-sans)', fontSize: 15, fontWeight: 600,
                 textDecoration: 'none',
+                transition: 'background 0.15s ease, border-color 0.15s ease',
               }}
             >
               Explore Experiences
