@@ -21,14 +21,6 @@ function HeroVideo({ src, poster }: { src: string; poster: string }) {
   const videoRef = useRef<HTMLVideoElement>(null)
   const [shouldLoad, setShouldLoad] = useState(false)
   const [isPlaying, setIsPlaying] = useState(false)
-  const [paused, setPaused] = useState(false)
-
-  const togglePause = () => {
-    const v = videoRef.current
-    if (!v) return
-    if (v.paused) { v.play().catch(() => {}); setPaused(false) }
-    else { v.pause(); setPaused(true) }
-  }
 
   useEffect(() => {
     // Motion preference first: a user who asked for reduced motion gets the
@@ -87,23 +79,6 @@ function HeroVideo({ src, poster }: { src: string; poster: string }) {
         >
           <source src={src} type="video/mp4" />
         </video>
-      )}
-      {isPlaying && (
-        <button
-          type="button"
-          onClick={togglePause}
-          aria-label={paused ? 'Play background video' : 'Pause background video'}
-          style={{
-            position: 'absolute', right: 18, bottom: 18, zIndex: 3,
-            width: 44, height: 44, borderRadius: 9999,
-            background: 'rgba(10,10,8,0.62)', border: '1px solid rgba(255,255,255,0.35)',
-            color: '#fff', cursor: 'pointer',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: 14, lineHeight: 1,
-          }}
-        >
-          {paused ? '\u25B6' : '\u23F8'}
-        </button>
       )}
     </>
   )
@@ -166,7 +141,7 @@ function StepCarousel({ steps, renderCard }: { steps: any[]; renderCard: (s: any
           width: 44, height: 44, borderRadius: '50%', background: 'var(--gold)',
           border: 'none', cursor: 'pointer',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          color: '#fff', transition: 'all 0.15s ease',
+          color: '#1A1508', transition: 'all 0.15s ease',
         }}>
           <ChevronRight size={18} />
         </button>
@@ -249,12 +224,12 @@ function FoodSection() {
               onClick={() => scroll('right')}
               aria-label="Next"
               style={{
-                width: 42, height: 42, borderRadius: '50%',
+                width: 44, height: 44, borderRadius: '50%',
                 background: 'var(--gold)',
                 border: 'none',
                 cursor: 'pointer',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                color: '#fff',
+                color: '#1A1508',
                 transition: 'all 0.2s ease',
               }}
               onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--gold-warm)' }}
@@ -818,18 +793,21 @@ export default function FeedView() {
           <div className="animate-fade-up stagger-3" style={{ display: 'flex', gap: 12, marginTop: 24, flexWrap: 'wrap' }}>
             <Link
               href="/transfers"
+              className="hero-cta-primary"
               style={{
                 display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
                 minHeight: 50, padding: '0 26px', borderRadius: 9999,
                 background: 'var(--gold)', color: '#1A1508',
                 fontFamily: 'var(--font-dm-sans)', fontSize: 15, fontWeight: 700,
                 textDecoration: 'none', boxShadow: '0 4px 24px rgba(0,0,0,0.35)',
+                transition: 'filter 0.15s ease, transform 0.15s ease',
               }}
             >
               Book Your Airport Transfer
             </Link>
             <Link
               href="/explore"
+              className="hero-cta-ghost"
               style={{
                 display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
                 minHeight: 50, padding: '0 24px', borderRadius: 9999,
@@ -837,6 +815,7 @@ export default function FeedView() {
                 border: '1px solid rgba(255,255,255,0.5)',
                 fontFamily: 'var(--font-dm-sans)', fontSize: 15, fontWeight: 600,
                 textDecoration: 'none',
+                transition: 'background 0.15s ease, border-color 0.15s ease',
               }}
             >
               Explore Experiences

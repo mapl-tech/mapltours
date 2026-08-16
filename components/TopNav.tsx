@@ -508,7 +508,7 @@ export default function TopNav({ onCartClick }: { onCartClick?: () => void }) {
               borderRadius: 9999,
               letterSpacing: '0.02em',
               whiteSpace: 'nowrap',
-              minHeight: 24, padding: '0 12px',
+              minHeight: 32, padding: '0 14px',
               textDecoration: 'none',
             }}
           >

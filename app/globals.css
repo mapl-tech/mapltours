@@ -394,7 +394,13 @@ h5, h6 { letter-spacing: -0.01em; }
 
   /* ── Hero on mobile ── */
   .hero-section {
-    aspect-ratio: 1 / 1 !important;
+    /* The 1:1 square was shorter than the hero text stack (eyebrow +
+       headline + subhead + two CTAs + trust line), so the headline climbed
+       under the transparent nav row. Let content set the height, keep a
+       cinematic minimum, and reserve the header band explicitly. */
+    aspect-ratio: auto !important;
+    min-height: 580px !important;
+    padding-top: 88px !important;
   }
 
   /* ── Typography, bolder, more editorial ── */
@@ -1101,6 +1107,45 @@ img[alt="Devon House Patty & Ice Cream Tour"] {
   .admin-card-grid { grid-template-columns: 1fr !important; }
   .admin-card-grid > div { border-right: none !important; }
 }
+
+/* Login back button: the class existed only in JSX, so the pill rendered
+   with zero padding. 44px minimum target, quiet hover, icon-only on phones
+   (the label otherwise crowds the logo, as the JSX comment warned). */
+.login-back-btn {
+  min-height: 44px;
+  padding: 10px 16px;
+}
+.login-back-btn:hover {
+  background: #ECEAE6 !important;
+  border-color: rgba(23, 22, 20, 0.32) !important;
+  box-shadow: 0 2px 8px rgba(23, 22, 20, 0.12) !important;
+}
+/* Warm placeholder at >= 4.5:1 (the gray-400 default measured 2.41:1) */
+.login-field::placeholder {
+  color: #6E6C67;
+  opacity: 1;
+}
+/* The global gold focus ring measures 2.4:1 on this page's white surfaces;
+   login-scoped darker ring so keyboard focus is actually visible here. */
+.login-shell :focus-visible {
+  outline: 2px solid #8A6D1F !important;
+  outline-offset: 2px;
+}
+@media (max-width: 640px) {
+  .login-back-label { display: none; }
+  .login-back-btn {
+    width: 44px;
+    height: 44px;
+    justify-content: center;
+    padding: 0;
+  }
+}
+
+
+/* Hero CTA hover states (audit measured both as hover-inert) */
+.hero-cta-primary:hover { filter: brightness(1.07); transform: translateY(-1px); }
+.hero-cta-primary:active { transform: translateY(0) scale(0.98); }
+.hero-cta-ghost:hover { background: rgba(255,255,255,0.26) !important; border-color: rgba(255,255,255,0.75) !important; }
 
 /* ═══════════════════════════════════════════
    PACKAGES, ready-made days
