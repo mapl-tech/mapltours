@@ -117,8 +117,11 @@ export default memo(function MobileShort({ exp, priority = false }: { exp: Exper
 
   return (
     <div ref={containerRef}>
-      <Link href={`/experience/${slugify(exp.title)}`} style={{ display: 'block', textDecoration: 'none' }}>
-        <div style={{
+      {/* Buttons must not nest inside the card link (invalid interactive
+          nesting, and the link's name becomes the whole card text). The
+          link is a stretched overlay under the buttons; its name is the
+          title alone. */}
+      <div style={{
           position: 'relative',
           aspectRatio: '9 / 16',
           borderRadius: 'var(--r-2xl)',
@@ -174,6 +177,12 @@ export default memo(function MobileShort({ exp, priority = false }: { exp: Exper
             pointerEvents: 'none',
           }} />
 
+          <Link
+            href={`/experience/${slugify(exp.title)}`}
+            aria-label={t(exp.title)}
+            style={{ position: 'absolute', inset: 0, zIndex: 1 }}
+          />
+
           {/* WCAG 2.2.2: looping autoplay needs a user pause control. */}
           {(isPlaying || userPaused) && (
             <button
@@ -182,7 +191,7 @@ export default memo(function MobileShort({ exp, priority = false }: { exp: Exper
               aria-label={isPlaying ? 'Pause video' : 'Play video'}
               aria-pressed={userPaused}
               style={{
-                position: 'absolute', top: 10, right: 10, zIndex: 4,
+                position: 'absolute', top: 44, left: 12, zIndex: 4,
                 width: 44, height: 44, borderRadius: 9999,
                 background: 'rgba(0,0,0,0.55)', border: '1px solid rgba(255,255,255,0.35)',
                 color: '#fff', cursor: 'pointer', fontSize: 13,
@@ -218,7 +227,7 @@ export default memo(function MobileShort({ exp, priority = false }: { exp: Exper
             position: 'absolute', top: 12, left: 12, zIndex: 2,
             padding: '5px 12px', borderRadius: 9999,
             background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(12px)',
-            fontSize: 11, fontWeight: 600, color: '#fff',
+            fontSize: 12, fontWeight: 600, color: '#fff', pointerEvents: 'none',
             fontFamily: 'var(--font-dm-sans)', textTransform: 'uppercase',
             letterSpacing: '0.05em',
           }}>
@@ -230,8 +239,8 @@ export default memo(function MobileShort({ exp, priority = false }: { exp: Exper
             onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleCart() }}
             aria-label={inCart ? 'Remove from your trip' : `Add ${exp.title} to your trip`}
             style={{
-              position: 'absolute', top: 12, right: 12, zIndex: 2,
-              width: 40, height: 40, borderRadius: '50%',
+              position: 'absolute', top: 12, right: 12, zIndex: 3,
+              width: 44, height: 44, borderRadius: '50%',
               background: inCart ? 'var(--emerald)' : 'rgba(0,0,0,0.4)',
               backdropFilter: 'blur(8px)', border: 'none', cursor: 'pointer',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -241,10 +250,11 @@ export default memo(function MobileShort({ exp, priority = false }: { exp: Exper
             {inCart ? <Check size={17} strokeWidth={2.5} /> : <Plus size={17} strokeWidth={2} />}
           </button>
 
-          {/* Bottom info */}
+          {/* Bottom info: pointer-transparent so taps on text open the
+              link below; only the CTA re-enables pointer events. */}
           <div style={{
             position: 'absolute', bottom: 0, left: 0, right: 0,
-            padding: '0 16px 18px', zIndex: 2,
+            padding: '0 16px 18px', zIndex: 2, pointerEvents: 'none',
           }}>
             <p style={{
               fontSize: 12.5, fontWeight: 600, color: '#fff',
@@ -284,7 +294,7 @@ export default memo(function MobileShort({ exp, priority = false }: { exp: Exper
                 <span style={{
                   padding: '1px 8px', borderRadius: 999,
                   background: 'rgba(255,255,255,0.18)', color: '#fff',
-                  fontSize: 11, fontWeight: 600,
+                  fontSize: 12, fontWeight: 600,
                 }}>{t('New')}</span>
               )}
             </div>
@@ -308,6 +318,7 @@ export default memo(function MobileShort({ exp, priority = false }: { exp: Exper
             <button
               onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleCart() }}
               style={{
+                pointerEvents: 'auto',
                 width: '100%', marginTop: 10,
                 padding: '12px 0', borderRadius: 14,
                 background: inCart ? 'var(--emerald)' : 'white',
@@ -321,7 +332,6 @@ export default memo(function MobileShort({ exp, priority = false }: { exp: Exper
             </button>
           </div>
         </div>
-      </Link>
     </div>
   )
 })

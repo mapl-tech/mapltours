@@ -33,8 +33,8 @@ export default memo(function ExpCard({ exp }: { exp: Experience }) {
 
   return (
     <article className="exp-card" style={{ cursor: 'pointer' }}>
-      {/* Photo / Video area */}
-      <Link href={`/experience/${slugify(exp.title)}`}>
+      {/* Photo / Video area. The add button must not nest inside the card
+          link, so the link is a stretched overlay under it. */}
         <div
           className="photo-card"
           style={{ aspectRatio: '4/3', marginBottom: 10 }}
@@ -92,10 +92,17 @@ export default memo(function ExpCard({ exp }: { exp: Experience }) {
 
           <div className="overlay-bottom" />
 
+          <Link
+            href={`/experience/${slugify(exp.title)}`}
+            aria-label={t(exp.title)}
+            style={{ position: 'absolute', inset: 0, zIndex: 2 }}
+          />
+
           {/* Play indicator on hover */}
           {hovering && (
             <div style={{
               position: 'absolute', top: 12, left: 12, zIndex: 3,
+              pointerEvents: 'none',
               display: 'flex', alignItems: 'center', gap: 5,
               padding: '4px 10px', borderRadius: 9999,
               background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(6px)',
@@ -130,7 +137,7 @@ export default memo(function ExpCard({ exp }: { exp: Experience }) {
 
           {/* Location */}
           <span style={{
-            position: 'absolute', bottom: 12, left: 12, zIndex: 2,
+            position: 'absolute', bottom: 12, left: 12, zIndex: 3, pointerEvents: 'none',
             fontSize: 12, fontWeight: 500, color: 'rgba(255,255,255,0.92)',
             fontFamily: 'var(--font-dm-sans)',
             display: 'flex', alignItems: 'center', gap: 4,
@@ -139,12 +146,11 @@ export default memo(function ExpCard({ exp }: { exp: Experience }) {
             {exp.destination}, {exp.parish}
           </span>
         </div>
-      </Link>
 
       {/* Info */}
       <Link href={`/experience/${slugify(exp.title)}`} style={{ display: 'block', padding: '2px 8px 10px' }}>
         <span style={{
-          fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em',
+          fontSize: 12, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em',
           color: CATEGORY_COLORS[exp.category], fontFamily: 'var(--font-dm-sans)',
         }}>
           {t(exp.category)}
@@ -158,7 +164,7 @@ export default memo(function ExpCard({ exp }: { exp: Experience }) {
           </span>
         ) : (
           <span style={{
-            fontSize: 11, fontFamily: 'var(--font-dm-sans)', fontWeight: 700, marginTop: 4,
+            fontSize: 12, fontFamily: 'var(--font-dm-sans)', fontWeight: 700, marginTop: 4,
             display: 'inline-flex', alignSelf: 'flex-start', padding: '2px 8px', borderRadius: 999,
             background: 'var(--gold-dim, rgba(196,164,74,0.15))', color: 'var(--gold-text, #6E5A1C)',
             letterSpacing: '0.04em', textTransform: 'uppercase',

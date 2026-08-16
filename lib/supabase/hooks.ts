@@ -16,12 +16,14 @@ export function useUser() {
 // ── Experience Likes ──
 interface LikeSnapshot { liked: boolean; count: number }
 
-export function useExperienceLike(experienceId: number) {
+export function useExperienceLike(experienceId: number, enabled = true) {
   const { user } = useAuth()
   const [loading, setLoading] = useState(false)
 
   // Cache key includes user id so logging in/out doesn't show a stale "liked"
   // state. For anonymous visitors we still cache the public count.
+  // `enabled` lets feed surfaces defer the fetch until a reel is actually
+  // shown, one load of the reel page was firing 22 count queries at once.
   const cacheKey = `like:${experienceId}:${user?.id ?? 'anon'}`
   const { data, mutate } = useSwrCache<LikeSnapshot>(
     cacheKey,
@@ -44,7 +46,8 @@ export function useExperienceLike(experienceId: number) {
         liked: !!likeRes.data,
         count: countRes.count ?? 0,
       }
-    }
+    },
+    { enabled }
   )
 
   const liked = data?.liked ?? false

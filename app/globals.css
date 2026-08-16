@@ -687,6 +687,34 @@ h5, h6 { letter-spacing: -0.01em; }
   outline: 2px solid var(--gold-warm) !important;
   outline-offset: 2px;
   border-radius: 3px;
+  /* The ring must appear instantly: elements with `transition: all` were
+     animating the outline in from `medium currentColor`, flashing an
+     off-brand ring for ~200ms after keyboard focus. */
+  transition-property: background, background-color, color, border-color,
+    box-shadow, transform, filter, opacity !important;
+}
+
+/* The tour listing sits on light surfaces where the gold ring measures
+   2.1-2.4:1 (WCAG 1.4.11 needs 3:1). Scoped swap to the AA-safe gold;
+   dark surfaces keep the brighter ring. */
+.explore-sticky-bar :focus-visible,
+.exp-card :focus-visible,
+.mobile-shorts-grid :focus-visible {
+  outline-color: var(--gold-text, #6E5A1C) !important;
+}
+
+/* 44px minimum hit area without changing the visual box. The pseudo
+   element extends the element's own hit-test region; parents must not
+   clip it with overflow hidden. */
+.tap-target { position: relative; }
+.tap-target::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: max(100%, 44px);
+  height: max(100%, 44px);
 }
 
 textarea.field-input {

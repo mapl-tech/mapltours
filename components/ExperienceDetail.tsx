@@ -57,7 +57,7 @@ function Reel({ exp, isActive, totalCount, currentIndex, onComments }: { exp: Ex
   const [paused, setPaused] = useState(false)
   const { addItem, removeItem, isInCart } = useCartStore()
   const { t, formatPrice } = useI18n()
-  const { liked, likeCount, toggleLike } = useExperienceLike(exp.id)
+  const { liked, likeCount, toggleLike } = useExperienceLike(exp.id, isActive)
   const inCart = isInCart(exp.id)
   const toggleCart = () => { if (inCart) { removeItem(exp.id) } else { addItem(exp) } }
   // Give the page exactly one <h1>: the active reel's title carries the primary
@@ -208,7 +208,7 @@ function Reel({ exp, isActive, totalCount, currentIndex, onComments }: { exp: Ex
           aria-label={paused ? 'Play video' : 'Pause video'}
           aria-pressed={paused}
           style={{
-            position: 'absolute', top: 12, left: 12, zIndex: 30,
+            position: 'absolute', top: 70, left: 12, zIndex: 30,
             width: 44, height: 44, borderRadius: 9999,
             background: 'rgba(0,0,0,0.55)', border: '1px solid rgba(255,255,255,0.3)',
             color: '#fff', cursor: 'pointer', fontSize: 13,
@@ -741,7 +741,7 @@ function MobileCommentsSheet({ comments, commentText, setCommentText, addComment
         {/* Header */}
         <div style={{ padding: '0 20px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid rgba(255,255,255,0.06)', flexShrink: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <h3 style={{ fontFamily: 'var(--font-dm-sans)', fontWeight: 700, fontSize: 17, color: 'white' }}>Comments</h3>
+            <h2 style={{ fontFamily: 'var(--font-dm-sans)', fontWeight: 700, fontSize: 17, color: 'white' }}>Comments</h2>
             <span style={{ padding: '2px 8px', borderRadius: 9999, background: 'rgba(255,255,255,0.08)', fontSize: 12, fontWeight: 600, color: '#cccccc', fontFamily: 'var(--font-dm-sans)' }}>{comments.length}</span>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -836,9 +836,14 @@ function MobileCommentsSheet({ comments, commentText, setCommentText, addComment
             />
             <input type="text"
               ref={inputRef}
-              placeholder={replyingTo ? `Reply to @${replyingTo.user}...` : 'Add a comment...'}
+              placeholder={isLoggedIn ? (replyingTo ? `Reply to @${replyingTo.user}...` : 'Add a comment...') : 'Sign in to comment...'}
               value={commentText} onChange={(e) => setCommentText(e.target.value)}
               onKeyDown={(e) => { if (e.key === 'Enter') submitAndBlur() }}
+              readOnly={!isLoggedIn}
+              onClick={() => {
+                // Deliberate activation only, never on focus (WCAG 3.2.1).
+                if (!isLoggedIn) window.location.href = `/login?redirect=/experience/${slug}`
+              }}
               style={{
                 flex: 1, background: 'rgba(255,255,255,0.06)',
                 border: replyingTo ? '1px solid rgba(255,179,0,0.3)' : '1px solid rgba(255,255,255,0.06)',
@@ -945,13 +950,6 @@ export default function ExperienceDetail({ slug }: { slug: string }) {
       root.style.removeProperty('--reel-bottom-offset')
     }
   }, [])
-  useEffect(() => {
-    return () => {
-      mobileBarCleanup.current?.()
-      mobileBarCleanup.current = null
-    }
-  }, [])
-
   useEffect(() => {
     if (scrollRef.current && startIdx >= 0) {
       const children = scrollRef.current.children
@@ -1168,9 +1166,9 @@ export default function ExperienceDetail({ slug }: { slug: string }) {
         }}>
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 3 }}>
-              <h3 style={{ fontFamily: 'var(--font-dm-sans)', fontWeight: 700, fontSize: 17, color: 'white' }}>
+              <h2 style={{ fontFamily: 'var(--font-dm-sans)', fontWeight: 700, fontSize: 17, color: 'white' }}>
                 Comments
-              </h3>
+              </h2>
               <span style={{
                 padding: '2px 8px', borderRadius: 9999,
                 background: 'rgba(255,255,255,0.08)',
@@ -1205,8 +1203,11 @@ export default function ExperienceDetail({ slug }: { slug: string }) {
               </Link>
             )}
             <button
-              onClick={() => router.back()}
-              aria-label="Close"
+              onClick={() => {
+                if (window.history.length > 2) router.back()
+                else router.push('/explore')
+              }}
+              aria-label="Close comments and return"
               style={{
                 width: 34, height: 34, borderRadius: '50%',
                 border: '1px solid rgba(255,255,255,0.08)', background: 'rgba(255,255,255,0.05)',
@@ -1423,7 +1424,7 @@ export default function ExperienceDetail({ slug }: { slug: string }) {
           style={{
             flex: 1, display: 'flex', alignItems: 'center', gap: 8,
             background: 'rgba(255,255,255,0.08)', border: 'none',
-            borderRadius: 9999, padding: '10px 16px',
+            borderRadius: 9999, padding: '10px 16px', minHeight: 44,
             cursor: 'pointer', color: 'rgba(255,255,255,0.66)',
             fontSize: 13, fontFamily: 'var(--font-dm-sans)',
             textAlign: 'left',

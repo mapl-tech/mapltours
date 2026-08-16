@@ -55,13 +55,14 @@ export default function TopNav({ onCartClick }: { onCartClick?: () => void }) {
     const onScroll = () => {
       const y = window.scrollY
       setScrolled(y > 10)
-      // Show when scrolling down, hide when scrolling up
+      // Hide when scrolling down (content immersion), show when scrolling
+      // up (the universal reach-the-chrome gesture).
       if (y < 10) {
         setHidden(false) // Always show at very top
       } else if (y > lastScrollY.current + 5) {
-        setHidden(false) // Scrolling down - show
+        setHidden(true) // Scrolling down - hide
       } else if (y < lastScrollY.current - 5) {
-        setHidden(true) // Scrolling up - hide
+        setHidden(false) // Scrolling up - show
       }
       lastScrollY.current = y
     }
@@ -503,6 +504,7 @@ export default function TopNav({ onCartClick }: { onCartClick?: () => void }) {
         }}>
           <Link
             href="/transfers"
+            className="tap-target"
             style={{
               display: 'inline-flex', alignItems: 'center',
               fontFamily: 'var(--font-dm-sans)',
@@ -532,16 +534,20 @@ export default function TopNav({ onCartClick }: { onCartClick?: () => void }) {
                 aria-haspopup="menu"
                 aria-expanded={showProfileMenu}
                 style={{
+                  width: 44, height: 44, margin: '0 -5px', flexShrink: 0,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  background: 'none', border: 'none', cursor: 'pointer', padding: 0,
+                }}
+              >
+                <span style={{
                   width: 34, height: 34, borderRadius: '50%',
-                  overflow: 'hidden', flexShrink: 0,
+                  overflow: 'hidden',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   background: user.user_metadata?.avatar_url
                     ? 'transparent'
                     : dark ? 'rgba(255,255,255,0.12)' : 'var(--surface)',
                   border: dark ? '1px solid rgba(255,255,255,0.16)' : '1px solid var(--border-strong)',
-                  cursor: 'pointer', padding: 0,
-                }}
-              >
+                }}>
                 {user.user_metadata?.avatar_url ? (
                   <Image src={user.user_metadata.avatar_url} alt="" width={34} height={34} style={{ objectFit: 'cover' }} />
                 ) : (
@@ -550,19 +556,25 @@ export default function TopNav({ onCartClick }: { onCartClick?: () => void }) {
                     <circle cx="12" cy="7" r="4" />
                   </svg>
                 )}
+                </span>
               </button>
             ) : (
               <Link href="/login" aria-label="Sign in" style={{
-                width: 34, height: 34, borderRadius: '50%',
-                overflow: 'hidden', flexShrink: 0,
+                width: 44, height: 44, margin: '0 -5px', flexShrink: 0,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                background: dark ? 'rgba(255,255,255,0.12)' : 'var(--surface)',
-                border: dark ? '1px solid rgba(255,255,255,0.16)' : '1px solid var(--border-strong)',
               }}>
+                <span style={{
+                  width: 34, height: 34, borderRadius: '50%',
+                  overflow: 'hidden',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  background: dark ? 'rgba(255,255,255,0.12)' : 'var(--surface)',
+                  border: dark ? '1px solid rgba(255,255,255,0.16)' : '1px solid var(--border-strong)',
+                }}>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={dark ? 'rgba(255,255,255,0.7)' : 'var(--text-secondary)'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
                   <circle cx="12" cy="7" r="4" />
                 </svg>
+                </span>
               </Link>
             )}
 
@@ -615,6 +627,7 @@ export default function TopNav({ onCartClick }: { onCartClick?: () => void }) {
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
           <Link
             href="/explore"
+            className="tap-target"
             aria-current={isExplore ? 'page' : undefined}
             style={{
               padding: '6px 12px', fontSize: 13, fontWeight: isExplore ? 700 : 500,

@@ -2,6 +2,7 @@
 
 import { useState, useMemo, useEffect, useRef } from 'react'
 import { useSearchParams } from 'next/navigation'
+import { Search } from 'lucide-react'
 import { experiences } from '@/lib/experiences'
 import { useI18n } from '@/lib/i18n'
 import type { ExperienceCategory } from '@/lib/experiences'
@@ -32,6 +33,16 @@ export default function ExploreView() {
   const [filterHidden, setFilterHidden] = useState(false)
   const { t } = useI18n()
   const lastScrollY = useRef(0)
+  // null until hydration = render both grids exactly like the server did.
+  const [isMobileVp, setIsMobileVp] = useState<boolean | null>(null)
+
+  useEffect(() => {
+    const mql = window.matchMedia('(max-width: 767px)')
+    const update = () => setIsMobileVp(mql.matches)
+    update()
+    mql.addEventListener('change', update)
+    return () => mql.removeEventListener('change', update)
+  }, [])
 
   useEffect(() => {
     const q = searchParams.get('q')
@@ -88,6 +99,43 @@ export default function ExploreView() {
         <div className="container" style={{ paddingTop: 18, paddingBottom: 16 }}>
           <h1 style={{ fontFamily: 'var(--font-dm-sans)', fontWeight: 500, fontSize: 'clamp(1.75rem, 3vw, 2.5rem)', letterSpacing: '-0.02em', marginBottom: 14 }}>{t('Explore')}</h1>
           <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 14, flexWrap: 'wrap' }}>
+            <div style={{
+              flex: '1 1 260px', maxWidth: 420, position: 'relative',
+              display: 'flex', alignItems: 'center',
+            }}>
+              <Search size={16} strokeWidth={2} style={{
+                position: 'absolute', left: 16, pointerEvents: 'none',
+                color: 'var(--text-tertiary)',
+              }} />
+              <input
+                type="search"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder={t('Search experiences...')}
+                aria-label="Search experiences"
+                style={{
+                  width: '100%', height: 44, borderRadius: 9999,
+                  border: '1px solid var(--border)', background: 'var(--surface)',
+                  padding: '0 40px 0 42px', fontSize: 16,
+                  fontFamily: 'var(--font-dm-sans)', color: 'var(--text-primary)',
+                  outline: 'none',
+                }}
+              />
+              {search && (
+                <button
+                  onClick={() => setSearch('')}
+                  aria-label="Clear search"
+                  style={{
+                    position: 'absolute', right: 2, width: 40, height: 40,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    background: 'none', border: 'none', cursor: 'pointer',
+                    color: 'var(--text-secondary)', fontSize: 16, borderRadius: 9999,
+                  }}
+                >
+                  {'\u2715'}
+                </button>
+              )}
+            </div>
           </div>
 
           <div className="scroll-x" style={{ gap: 8 }}>
@@ -112,7 +160,7 @@ export default function ExploreView() {
           <div className="scroll-x" style={{ gap: 8, marginTop: 8 }}>
             <span style={{
               alignSelf: 'center', flexShrink: 0, margin: '0 4px',
-              fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em',
+              fontSize: 12, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em',
               color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-sans)',
             }}>
               Parish
@@ -160,12 +208,16 @@ export default function ExploreView() {
           </div>
         ) : (
           <>
-            <div className="hide-mobile" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 20 }}>
-              {filtered.map((exp) => <ExpCard key={exp.id} exp={exp} />)}
-            </div>
-            <div className="hide-desktop mobile-shorts-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 10 }}>
-              {filtered.map((exp, i) => <MobileShort key={exp.id} exp={exp} priority={i === 0} />)}
-            </div>
+            {isMobileVp !== true && (
+              <div className="hide-mobile" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 20 }}>
+                {filtered.map((exp) => <ExpCard key={exp.id} exp={exp} />)}
+              </div>
+            )}
+            {isMobileVp !== false && (
+              <div className="hide-desktop mobile-shorts-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 10 }}>
+                {filtered.map((exp, i) => <MobileShort key={exp.id} exp={exp} priority={i === 0} />)}
+              </div>
+            )}
           </>
         )}
       </div>
