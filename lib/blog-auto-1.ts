@@ -57,7 +57,7 @@ export const POSTS_1: BlogPost[] = [
       },
       {
         type: 'p',
-        text: "The other honest tip: buy your ticket at the gate, not through a resort concierge. The concierge markup on a Dunn's River Falls tour is often $40–60 per person on top of the real admission. Park entry is $25 for adults, $17 for kids 2–11.",
+        text: "The other honest tip: check the gate price before you book through a resort concierge, because a booked-through-the-desk ticket usually carries a commission on top of the park's own admission. Ask what the all-in figure is and what the gate charges, then decide.",
       },
       {
         type: 'p',
@@ -245,7 +245,7 @@ export const POSTS_1: BlogPost[] = [
       { type: 'h2', text: "Shared shuttle, the budget option" },
       {
         type: 'p',
-        text: "Companies like Knutsford Express and a handful of resort-specific shuttles run shared vans from MBJ to Ocho Rios. Price is $25–40 per person, duration is 2.5–3.5 hours because of multi-resort drop-offs, and you're on their schedule. Fine for solo travelers, painful for families with kids.",
+        text: "Knutsford Express and a handful of resort-specific shuttles run shared vans from MBJ to Ocho Rios. They price per person rather than per vehicle, the run takes longer because of multi-resort drop-offs, and you travel on their schedule. Fine for solo travellers, painful for families, and the per-person basis is what makes a group expensive.",
       },
       {
         type: 'quote',
@@ -275,7 +275,7 @@ export const POSTS_1: BlogPost[] = [
       { type: 'h2', text: "What it costs" },
       {
         type: 'p',
-        text: "The honest math: private driver $120–160, shared shuttle $25–40pp, rental car $70/day plus fuel, helicopter $1,200 total. For families or groups, private is almost always cheaper per person once you do the arithmetic. For solo backpackers, Knutsford Express is unbeatable.",
+        text: "The honest math turns on one thing: shared shuttles and resort desks charge per person, a private transfer charges per vehicle. So the more of you there are, the better private looks, and a family of four is usually past the crossover already. For a solo traveller on a flexible schedule, the coach is hard to beat.",
       },
       {
         type: 'p',
@@ -475,7 +475,7 @@ export const POSTS_1: BlogPost[] = [
       },
       {
         type: 'p',
-        text: "On food: nearly every cottage offers an optional Jamaican chef for one or two dinners a week, typically $40–60 per person for a multi-course meal cooked in your kitchen. Brown-stew fish, rundown, fresh callaloo. You eat on the porch while the sun drops into the Caribbean.",
+        text: "On food: nearly every cottage offers an optional Jamaican chef for one or two dinners a week, a multi-course meal cooked in your own kitchen for a set price per head. Brown-stew fish, rundown, fresh callaloo. You eat on the porch while the sun drops into the Caribbean.",
       },
       { type: 'h2', text: "What it costs" },
       {
@@ -618,7 +618,7 @@ export const POSTS_1: BlogPost[] = [
       { type: 'h2', text: "What it costs" },
       {
         type: 'p',
-        text: "A 60-minute CBD massage at a licensed boutique runs $110–140. A 90-minute, $140–180. CBD facials average $120–160. A CBD bath soak is usually bundled with another treatment, adding $30–50. Resort-spa pricing for the same treatments tends to be 25–40% higher and the milligram dose is often lower.",
+        text: "Licensed boutiques price by treatment length, with facials and bath soaks usually offered alongside. Resort-spa pricing for the same treatments tends to run higher, and the milligram dose is often lower, so ask for both the price and the dose before you book.",
       },
       {
         type: 'p',

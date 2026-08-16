@@ -599,7 +599,7 @@ export const POSTS_5: BlogPost[] = [
       },
       {
         type: 'p',
-        text: "Our /explore page lists every MAPL experience with honest pricing, no hidden fees, no concierge markup. The budget version of Jamaica is the real version. No problem.",
+        text: "Our /explore page lists every MAPL experience with the all-in price, card processing included, booked direct with the operator. The budget version of Jamaica is the real version. No problem.",
       },
     ],
     relatedSlugs: ['getting-around-jamaica-guide', 'first-time-jamaica'],

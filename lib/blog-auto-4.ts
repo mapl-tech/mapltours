@@ -672,7 +672,7 @@ export const POSTS_4: BlogPost[] = [
       },
       {
         type: 'p',
-        text: "Get the money basics right and the rest of your trip gets cheaper and easier. Our Jamaica experiences at /explore price in USD, book direct, and cut the resort-concierge markup out entirely.",
+        text: "Get the money basics right and the rest of your trip gets cheaper and easier. Our Jamaica experiences at /explore price in USD and book direct, so there is no desk commission between you and the operator.",
       },
     ],
     relatedSlugs: ['first-time-jamaica', 'jamaica-on-a-budget'],
