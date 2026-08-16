@@ -760,7 +760,7 @@ export default function TransfersView() {
           <h2 className="xfer-section-h2" style={{ marginTop: 10 }}>
             Book in two minutes.{' '}
             <span style={{ fontStyle: 'italic', fontWeight: 500 }}>
-              Cancel free for 24 hours.
+              Cancel free until 24 hours before pickup.
             </span>
           </h2>
           <button
@@ -786,7 +786,7 @@ export default function TransfersView() {
             }}
           >
             <Lock />
-            Secure payment via Stripe · Free cancellation ≤ 24h
+            Secure payment via Stripe · Free cancellation until 24h before pickup
           </p>
         </div>
       </section>

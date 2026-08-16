@@ -11,7 +11,7 @@ export const metadata: Metadata = {
   title:
     'Jamaica Airport Transfers | Flat-Rate Private Rides from Montego Bay (MBJ)',
   description:
-    'Book a private airport transfer in Jamaica from Sangster International (MBJ) to Negril, Ocho Rios, Montego Bay, Falmouth, and every major resort. Flat rates from $19, 1–4 passengers, meet-and-greet, flight tracking, free cancellation up to 24 hours. Rated 4.9 from 340+ trips.',
+    'Book a private airport transfer in Jamaica from Sangster International (MBJ) to Negril, Ocho Rios, Montego Bay, Falmouth, and every major resort. Flat rates from $19, 1–4 passengers, meet-and-greet, flight tracking, free cancellation up to 24 hours before pickup.',
   keywords: [
     'Jamaica airport transfer',
     'Montego Bay airport transfer',
@@ -92,7 +92,7 @@ function buildStructuredData() {
     serviceType: 'Airport transfer',
     name: 'MAPL Tours Jamaica, Private Airport Transfers',
     description:
-      'Private flat-rate airport transfers from Sangster International Airport (MBJ) to every major resort destination in Jamaica. Licensed drivers, flight tracking, meet-and-greet at arrivals, free cancellation up to 24 hours.',
+      'Private flat-rate airport transfers from Sangster International Airport (MBJ) to every major resort destination in Jamaica. Licensed drivers, flight tracking, meet-and-greet at arrivals, free cancellation up to 24 hours before pickup.',
     image: HERO,
     url: PAGE_URL,
     brand: { '@type': 'Brand', name: 'MAPL Tours Jamaica' },
