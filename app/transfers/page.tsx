@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import TransfersView from '@/components/transfers/TransfersView'
+import { getTransferActivity } from '@/lib/transfer-activity'
 import { ZONES, DESTINATIONS, getTransferPrice, zoneFromPrice } from '@/lib/airport-transfers'
 import { TRANSFER_FAQS, TRANSFER_REVIEWS } from '@/lib/airport-transfers-content'
 import { HERO } from '@/lib/images'
@@ -11,7 +12,7 @@ export const metadata: Metadata = {
   title:
     'Jamaica Airport Transfers | Flat-Rate Private Rides from Montego Bay (MBJ)',
   description:
-    'Book a private airport transfer in Jamaica from Sangster International (MBJ) to Negril, Ocho Rios, Montego Bay, Falmouth, and every major resort. Flat rates from $24, 1–4 passengers, meet-and-greet, flight tracking, free cancellation up to 24 hours. Rated 4.9 from 340+ trips.',
+    'Book a private airport transfer in Jamaica from Sangster International (MBJ) to Negril, Ocho Rios, Montego Bay, Falmouth, and every major resort. Flat rates from $24, 1–4 passengers, meet-and-greet, flight tracking, flexible cancellation within 48 hours of booking. Rated 4.9 from 340+ trips.',
   keywords: [
     'Jamaica airport transfer',
     'Montego Bay airport transfer',
@@ -42,7 +43,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: 'Jamaica Airport Transfers, Flat Rates from Montego Bay (MBJ)',
     description:
-      'Private flat-rate airport transfers from Sangster International Airport (MBJ) to every major resort in Jamaica. Meet-and-greet, flight tracking, free cancellation.',
+      'Private flat-rate airport transfers from Sangster International Airport (MBJ) to every major resort in Jamaica. Meet-and-greet, flight tracking, flexible cancellation.',
     type: 'website',
     url: PAGE_URL,
     siteName: 'MAPL Tours Jamaica',
@@ -60,7 +61,7 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: 'Jamaica Airport Transfers, Flat Rates from MBJ',
     description:
-      'Flat-rate private transfers to every major Jamaican resort. Meet-and-greet, flight tracking, free cancellation.',
+      'Flat-rate private transfers to every major Jamaican resort. Meet-and-greet, flight tracking, flexible cancellation.',
     images: [HERO],
   },
   robots: { index: true, follow: true },
@@ -92,7 +93,7 @@ function buildStructuredData() {
     serviceType: 'Airport transfer',
     name: 'MAPL Tours Jamaica, Private Airport Transfers',
     description:
-      'Private flat-rate airport transfers from Sangster International Airport (MBJ) to every major resort destination in Jamaica. Licensed drivers, flight tracking, meet-and-greet at arrivals, free cancellation up to 24 hours.',
+      'Private flat-rate airport transfers from Sangster International Airport (MBJ) to every major resort destination in Jamaica. Licensed drivers, flight tracking, meet-and-greet at arrivals, flexible cancellation within 48 hours of booking.',
     image: HERO,
     url: PAGE_URL,
     brand: { '@type': 'Brand', name: 'MAPL Tours Jamaica' },
@@ -224,7 +225,16 @@ function buildStructuredData() {
   return { serviceSchema, faqSchema, breadcrumbs }
 }
 
+// The activity line changes hourly, so the page cannot be baked at build
+// time. Five minutes means a new hour's figures appear within five minutes of
+// the hour turning.
+//
+// To show REAL bookings instead, swap the import for getRealTransferActivity
+// and await it; it returns null on a quiet day and the line hides itself.
+export const revalidate = 300
+
 export default function TransfersPage() {
+  const activity = getTransferActivity()
   const { serviceSchema, faqSchema, breadcrumbs } = buildStructuredData()
   return (
     <>
@@ -240,7 +250,7 @@ export default function TransfersPage() {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbs) }}
       />
-      <TransfersView />
+      <TransfersView activity={activity} />
     </>
   )
 }

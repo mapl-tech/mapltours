@@ -11,6 +11,7 @@ import {
   ShieldCheck,
   Users,
 } from 'lucide-react'
+import { leadTimeCutoff } from '@/lib/booking-window'
 import { useTransfersCart, type TransferCartItem } from '@/lib/transfers-cart'
 import { getStoredAttribution } from '@/lib/attribution'
 
@@ -53,15 +54,16 @@ export default function TransfersCheckoutView() {
   const [stripeError, setStripeError] = useState<string | null>(null)
   const [confirmed] = useState(false)
   const [intentKey, setIntentKey] = useState(0)
-  // Local-time "now" as a datetime-local value (YYYY-MM-DDTHH:mm). Computed
-  // AFTER mount so SSR and the first client render both emit min="" (no
-  // hydration mismatch); the browser then constrains the pickers to future.
+  // Earliest bookable pickup as a datetime-local value (YYYY-MM-DDTHH:mm):
+  // now plus the 24-hour lead time, NOT now. Computed AFTER mount so SSR and
+  // the first client render both emit min="" (no hydration mismatch); the
+  // browser then constrains the pickers. The server re-checks regardless.
   const [minDateTime, setMinDateTime] = useState('')
   useEffect(() => {
-    const now = new Date()
+    const cutoff = leadTimeCutoff(new Date())
     const pad = (n: number) => String(n).padStart(2, '0')
     setMinDateTime(
-      `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`,
+      `${cutoff.getFullYear()}-${pad(cutoff.getMonth() + 1)}-${pad(cutoff.getDate())}T${pad(cutoff.getHours())}:${pad(cutoff.getMinutes())}`,
     )
   }, [])
 
@@ -156,7 +158,7 @@ export default function TransfersCheckoutView() {
     <div
       style={{
         minHeight: '100vh',
-        paddingTop: 56,
+        paddingTop: 'var(--nav-h)',
         background: 'var(--bg-warm)',
         color: 'var(--text-primary)',
       }}
@@ -356,7 +358,7 @@ export default function TransfersCheckoutView() {
                 }}
               >
                 <Lock size={12} /> Encrypted end-to-end ·{' '}
-                <ShieldCheck size={12} /> Free cancellation ≤ 24 hours
+                <ShieldCheck size={12} /> Flexible cancellation within 48 hrs of booking
               </p>
             </>
           ) : (

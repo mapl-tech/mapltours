@@ -6,8 +6,13 @@ const PH = (id: number) => `https://images.pexels.com/photos/${id}/pexels-photo-
 // Hero, aerial of scenic coastal road, Buff Bay, Jamaica
 export const HERO = PH(14788935)
 
-// Hero video, Pexels 35684532, served locally
-export const HERO_VIDEO = '/hero-video.mp4'
+// Hero video, aerial over the Negril coast, turquoise shallows, white sand,
+// fishing boats and green hills. Pexels 20532693 by Amal Lohith, free for
+// commercial use with no attribution required. Served locally (21MB, 1080p30,
+// 32s) so the hero never depends on a third-party CDN.
+// Replaced Pexels 35684532 (/hero-video.mp4), a hazy roadside shot that read
+// flat and grey behind the headline.
+export const HERO_VIDEO = '/hero-negril-jamaica.mp4'
 
 // All destinations, confirmed Jamaica locations
 export const DESTINATIONS: Record<string, string> = {

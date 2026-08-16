@@ -8,7 +8,7 @@ import PageTransition from './PageTransition'
 import ScrollReveal from './ScrollReveal'
 import { AuthProvider } from '@/lib/supabase/auth-context'
 import { useCartStore } from '@/lib/cart'
-import { useI18n } from '@/lib/i18n'
+import { useI18nStore } from '@/lib/i18n'
 import { captureAttribution } from '@/lib/attribution'
 
 export default function LayoutShell({ children }: { children: React.ReactNode }) {
@@ -19,11 +19,15 @@ export default function LayoutShell({ children }: { children: React.ReactNode })
   const hideNav = pathname === '/login' || pathname.startsWith('/admin') || pathname.startsWith('/driver')
 
   // Both stores use skipHydration so SSR and the first client paint render
-  // identical (empty cart / USD) HTML, no React hydration mismatch. Load
-  // the persisted state once, after mount.
+  // identical (empty cart / USD) HTML. Load the persisted state once, after
+  // mount.
+  //
+  // Safe to rehydrate inline: useI18n() gates translation per component
+  // until that component mounts, so a lazily-hydrating Suspense boundary
+  // still renders the server's English on its first pass.
   useEffect(() => {
     useCartStore.persist.rehydrate()
-    useI18n.persist.rehydrate()
+    useI18nStore.persist.rehydrate()
     // Record where this visit came from (referrer/UTM); never throws.
     captureAttribution()
   }, [])

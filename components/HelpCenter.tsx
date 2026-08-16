@@ -39,7 +39,7 @@ const categories = [
     faqs: [
       {
         q: 'Can I cancel my booking?',
-        a: 'Yes. Cancel within 48 hours of booking for a refund, no questions asked. One thing to note: the payment processing fee is non-refundable, so it is deducted from every refund. Cancellations made at least 7 days before the experience date receive a 50% refund. Less than 7 days out, bookings are non-refundable.',
+        a: 'Yes. Cancel within 48 hours of booking for a refund, no questions asked. One thing to note: refunds are subject to an administration charge equivalent to 20% of the total amount of your fees plus taxes (if applicable), which is deducted from every refund. After that 48-hour window, bookings are non-refundable, and no-shows are charged in full.',
       },
       {
         q: 'What if the creator cancels my experience?',
@@ -184,7 +184,7 @@ export default function HelpCenter() {
   }, [search])
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--bg)', paddingTop: 56 }}>
+    <div style={{ minHeight: '100vh', background: 'var(--bg)', paddingTop: 'var(--nav-h)' }}>
 
       {/* ── Hero ── */}
       <div style={{

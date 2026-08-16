@@ -308,7 +308,7 @@ Layers (bottom to top):
 - `className="animate-slide-right"` on mount
 - **Header**: "Your Itinerary" (Syne 700) + "{n} experience(s) - Jamaica trip"
 - **Item rows**: 58px gradient thumbnail + title (truncated) + destination - duration + `$price x travelers` in gold + remove button
-- **Footer** (`border-top`): Subtotal + Booking fee (5%) + Total (Syne 800, gold) + "Checkout" `btn-primary` full-width -> href="/checkout" + "Free cancellation - 48 hrs" note
+- **Footer** (`border-top`): Subtotal + Booking fee (20%, see `lib/checkout-pricing.ts`) + Total (Syne 800, gold) + "Checkout" `btn-primary` full-width -> href="/checkout" + "Flexible cancellation within 48 hrs of booking" note
 
 ### CheckoutView (3-step shell)
 - `'use client'`, state: `step` (1-3), `confirmed` (boolean)

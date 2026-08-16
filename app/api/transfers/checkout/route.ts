@@ -8,6 +8,7 @@ import {
   driverCost,
   type TransferTripType,
 } from '@/lib/airport-transfers'
+import { areTransferLegsBookable, LEAD_TIME_MESSAGE } from '@/lib/booking-window'
 import { assertCheckoutSchema, SchemaNotReadyError } from '@/lib/checkout-schema'
 import { rateLimit, getIp } from '@/lib/rate-limit'
 import { sanitizeAttribution } from '@/lib/attribution'
@@ -99,14 +100,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'No transfers selected' }, { status: 400 })
     }
 
-    // Reject bookings for arrivals in the past. One day of grace covers the
-    // traveler/server timezone gap (same policy as /api/checkout). The client
-    // date pickers also set min=now, but the server never trusts them.
-    const todayUtc = new Date().toISOString().slice(0, 10)
-    const earliestAllowed = new Date(Date.parse(todayUtc) - 24 * 60 * 60 * 1000)
-      .toISOString()
-      .slice(0, 10)
-
     // 1. Server-side pricing: validate every line and rebuild the total.
     let subtotal = 0
     let total = 0
@@ -132,10 +125,12 @@ export async function POST(request: NextRequest) {
           { status: 400 },
         )
       }
-      // Arrival can't be in the past.
-      if (item.arrivalAt && item.arrivalAt.slice(0, 10) < earliestAllowed) {
+      // 24-hour lead time on every scheduled leg. Exact here, because
+      // transfers store real pickup timestamps. Subsumes the old past-date
+      // check: a pickup already gone is inside the window by definition.
+      if (!areTransferLegsBookable({ arrivalAt: item.arrivalAt, departureAt: item.departureAt })) {
         return NextResponse.json(
-          { error: 'Arrival date is in the past. Please pick a future date.', requestId: reqId },
+          { error: LEAD_TIME_MESSAGE, requestId: reqId },
           { status: 400 },
         )
       }

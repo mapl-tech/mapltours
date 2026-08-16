@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import Image from 'next/image'
-import { Leaf, Mail, MapPin, Clock, Send, Check, Camera, Music2 } from 'lucide-react'
+import { Leaf, Mail, Clock, Send, Check, Camera, Music2 } from 'lucide-react'
 import { DESTINATION_IMAGES } from '@/lib/experiences'
 
 export default function ContactView() {
@@ -39,7 +39,7 @@ export default function ContactView() {
   }
 
   return (
-    <div style={{ minHeight: '100vh', paddingTop: 56 }}>
+    <div style={{ minHeight: '100vh', paddingTop: 'var(--nav-h)' }}>
       {/* Hero banner */}
       <div style={{
         position: 'relative', height: 280, overflow: 'hidden',
@@ -104,8 +104,7 @@ export default function ContactView() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: 20, marginBottom: 36 }}>
               {[
                 { icon: <Mail size={16} />, label: 'Email', value: 'contact@mapltours.com' },
-                { icon: <MapPin size={16} />, label: 'Location', value: 'Kingston, Jamaica' },
-                { icon: <Clock size={16} />, label: 'Hours', value: 'Mon - Sat, 8am - 8pm EST' },
+                { icon: <Clock size={16} />, label: 'Hours', value: '24/7' },
               ].map((item) => (
                 <div key={item.label} style={{ display: 'flex', alignItems: 'flex-start', gap: 14 }}>
                   <div style={{

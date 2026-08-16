@@ -205,7 +205,7 @@ export default async function TransferConfirmPage({
     <div
       style={{
         minHeight: '100vh',
-        paddingTop: 56,
+        paddingTop: 'var(--nav-h)',
         background: 'var(--bg-warm)',
         color: 'var(--text-primary)',
       }}
@@ -501,7 +501,7 @@ function Success({ data }: { data: ConfirmData }) {
                 contact@mapltours.com
               </Link>
             </li>
-            <li>· Free cancellation up to 24 hours before pickup.</li>
+            <li>· Flexible cancellation within 48 hours of booking. Refunds are less a 20% administration charge plus taxes (if applicable).</li>
           </ul>
         </div>
       </Card>

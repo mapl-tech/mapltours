@@ -551,7 +551,7 @@ export default function BlogIndex({ posts }: { posts: BlogPost[] }) {
   const [spread1, spread2, ...tail] = filtered
 
   return (
-    <div style={{ minHeight: '100vh', paddingTop: 56, background: 'var(--bg)' }}>
+    <div style={{ minHeight: '100vh', paddingTop: 'var(--nav-h)', background: 'var(--bg)' }}>
       <Masthead />
 
       <CategoryNav active={active} onSelect={setActive} />

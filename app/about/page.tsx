@@ -25,7 +25,7 @@ const VALUES = [
   },
   {
     title: 'A standard we stand behind',
-    body: 'Every experience is personally vetted. Every booking is supported around the clock. Every cancellation, within 48 hours, is free. No problem.',
+    body: 'Every experience is personally vetted. Every booking is supported around the clock. Every cancellation is flexible within 48 hours of booking. No problem.',
   },
 ]
 
@@ -42,7 +42,7 @@ const INK_WARM = '#1A1917'
 
 export default function AboutPage() {
   return (
-    <div style={{ minHeight: '100vh', paddingTop: 56, background: 'var(--bg)', color: INK }}>
+    <div style={{ minHeight: '100vh', paddingTop: 'var(--nav-h)', background: 'var(--bg)', color: INK }}>
       {/* ═══════════════════════════════════
          HERO, cinematic full-bleed
          ═══════════════════════════════════ */}

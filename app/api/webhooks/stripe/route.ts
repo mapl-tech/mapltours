@@ -2,6 +2,11 @@ import { NextResponse } from 'next/server'
 import Stripe from 'stripe'
 import { createServiceClient } from '@/lib/supabase/service'
 import { sendEmail } from '@/lib/email/send'
+import { sendCancellationEmails } from '@/lib/email/cancellation'
+import {
+  claimEmailChannel as sharedClaimEmailChannel,
+  releaseEmailChannel as sharedReleaseEmailChannel,
+} from '@/lib/email/claim'
 import BookingConfirmed from '@/emails/BookingConfirmed'
 import OperatorBookingAlert from '@/emails/OperatorBookingAlert'
 import TransferConfirmed from '@/emails/TransferConfirmed'
@@ -21,6 +26,7 @@ import TransferOperatorAlert from '@/emails/TransferOperatorAlert'
  *     - payment_intent.succeeded
  *     - payment_intent.payment_failed
  *     - payment_intent.canceled
+ *     - charge.refunded
  *   Copy the "Signing secret" → STRIPE_WEBHOOK_SECRET env var.
  */
 
@@ -103,6 +109,9 @@ export async function POST(req: Request) {
         break
       case 'payment_intent.canceled':
         await handlePaymentCanceled(event.data.object as Stripe.PaymentIntent)
+        break
+      case 'charge.refunded':
+        await handleChargeRefunded(event.data.object as Stripe.Charge)
         break
       default:
         // Ignore unsubscribed events; keep Stripe happy with 200.
@@ -300,6 +309,56 @@ async function handlePaymentCanceled(pi: Stripe.PaymentIntent) {
   await supabase.from('bookings').update({ status: 'canceled' }).eq('id', booking.id)
 }
 
+/**
+ * A refund happened on Stripe's side. This exists so refunds issued BY HAND
+ * in the Stripe Dashboard land in the database too, instead of leaving the
+ * row reading 'paid' while the money has gone back.
+ *
+ * /api/bookings/[id]/cancel already stamps the row before calling Stripe, so
+ * for self-serve cancellations this webhook simply finds the work done and
+ * no-ops. It is the manual path that needs it.
+ */
+async function handleChargeRefunded(charge: Stripe.Charge) {
+  const paymentIntentId =
+    typeof charge.payment_intent === 'string' ? charge.payment_intent : charge.payment_intent?.id
+  if (!paymentIntentId) return
+
+  const supabase = createServiceClient()
+  const { data, error } = await supabase
+    .from('bookings')
+    .select('id, status, total_paid')
+    .eq('stripe_payment_id', paymentIntentId)
+    .maybeSingle()
+  if (error) throw new Error(`booking lookup failed: ${error.message}`)
+  if (!data || data.status === 'refunded') return
+
+  // Trust Stripe's figure over any local calculation: it is what actually
+  // left the account, including a Dashboard refund for an arbitrary amount.
+  const refundedCents = charge.amount_refunded ?? 0
+  const grossCents = Math.round(Number(data.total_paid ?? 0) * 100)
+
+  await supabase
+    .from('bookings')
+    .update({
+      status: 'refunded',
+      // A Dashboard refund IS the decision, so close out any request still
+      // sitting in the approval queue rather than leaving it pending forever.
+      refund_state: 'approved',
+      refund_decided_at: new Date().toISOString(),
+      refunded_at: new Date().toISOString(),
+      refund_amount: refundedCents / 100,
+      admin_charge: Math.max(0, grossCents - refundedCents) / 100,
+    })
+    .eq('id', data.id)
+    .neq('status', 'refunded')
+
+  // Notify on BOTH paths. For a self-serve cancellation the endpoint has
+  // already sent these and the claimed columns make this a no-op; for a
+  // Dashboard refund this is the only thing that tells the traveler and
+  // stands the driver down.
+  await sendCancellationEmails(data.id, { source: 'dashboard' })
+}
+
 // `retryable` distinguishes a transient send failure (worth having Stripe
 // re-deliver the webhook) from a permanent one (no email on record, no ops
 // address configured) where retrying can never succeed.
@@ -318,17 +377,9 @@ async function claimEmailChannel(
   bookingId: string,
   column: 'confirmation_email_sent_at' | 'operator_email_sent_at',
 ): Promise<boolean> {
-  const { data, error } = await supabase
-    .from('bookings')
-    .update({ [column]: new Date().toISOString() })
-    .eq('id', bookingId)
-    .is(column, null)
-    .select('id')
-  if (error) {
-    console.error('[stripe-webhook] email claim failed', { bookingId, column, error: error.message })
-    return false
-  }
-  return (data?.length ?? 0) > 0
+  // Implementation lives in lib/email/claim.ts so the cancellation path
+  // shares it. Signature kept column-typed for the callers below.
+  return sharedClaimEmailChannel(supabase, bookingId, column)
 }
 
 async function releaseEmailChannel(
@@ -336,7 +387,7 @@ async function releaseEmailChannel(
   bookingId: string,
   column: 'confirmation_email_sent_at' | 'operator_email_sent_at',
 ): Promise<void> {
-  await supabase.from('bookings').update({ [column]: null }).eq('id', bookingId)
+  await sharedReleaseEmailChannel(supabase, bookingId, column)
 }
 
 async function maybeSendTravelerConfirmation(

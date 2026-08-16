@@ -8,6 +8,10 @@
    ═══════════════════════════════════════════ */
 
 :root {
+  /* Height of the fixed nav. Every page that clears the header offsets by
+     this, so the two can never drift apart. */
+  --nav-h: 72px;
+
   /* Surfaces */
   --bg:             #FFFFFF;
   --bg-warm:        #FAF9F7;
@@ -360,6 +364,10 @@ h5, h6 { letter-spacing: -0.01em; }
   }
 
   /* ── Nav, two rows on mobile ── */
+  /* Redefine the token on :root, NOT on .nav-header — pages read --nav-h to
+     clear the header, and a value scoped to the nav itself would leave them
+     offsetting by the desktop height and sliding under it. */
+  :root { --nav-h: 90px; }
   .nav-header {
     height: 90px !important;
     flex-wrap: wrap !important;
@@ -375,7 +383,14 @@ h5, h6 { letter-spacing: -0.01em; }
 
   /* ── Hero on mobile ── */
   .hero-section {
-    aspect-ratio: 1 / 1 !important;
+    /* Square is the FLOOR, not a fixed box. The hero content (eyebrow,
+       headline, subtitle, both CTAs, transport note) is taller than 1:1 on a
+       narrow phone, and a hard aspect-ratio with overflow:hidden clipped the
+       headline off the top. min-height keeps the original square framing
+       wherever the content still fits. */
+    aspect-ratio: auto !important;
+    min-height: 100vw;
+    padding-top: 88px;
   }
 
   /* ── Typography, bolder, more editorial ── */

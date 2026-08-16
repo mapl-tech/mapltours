@@ -8,7 +8,7 @@ import MobileShort from './MobileShort'
 import Footer from './Footer'
 import { useI18n } from '@/lib/i18n'
 import { useRef, useState, useEffect } from 'react'
-import { Award, Users, Headphones, ShieldCheck, Star, Heart, UtensilsCrossed, TrendingUp, ChevronLeft, ChevronRight, MapPin } from 'lucide-react'
+import { Award, Users, Headphones, ShieldCheck, Star, Heart, UtensilsCrossed, TrendingUp, ChevronLeft, ChevronRight, MapPin, PlaneLanding, Route, ArrowRight } from 'lucide-react'
 
 const foodExperiences = experiences.filter((e) => e.category === 'Food')
 
@@ -128,7 +128,7 @@ function StepCarousel({ steps, renderCard }: { steps: any[]; renderCard: (s: any
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginBottom: 14, paddingRight: 4 }}>
-        <button onClick={() => scroll('left')} aria-label="Previous step" style={{
+        <button onClick={() => scroll('left')} aria-label="Previous option" style={{
           width: 36, height: 36, borderRadius: '50%', background: 'transparent',
           border: '1px solid rgba(255,255,255,0.15)', cursor: 'pointer',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -136,7 +136,7 @@ function StepCarousel({ steps, renderCard }: { steps: any[]; renderCard: (s: any
         }}>
           <ChevronLeft size={18} />
         </button>
-        <button onClick={() => scroll('right')} aria-label="Next step" style={{
+        <button onClick={() => scroll('right')} aria-label="Next option" style={{
           width: 36, height: 36, borderRadius: '50%', background: 'var(--gold)',
           border: 'none', cursor: 'pointer',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -145,7 +145,7 @@ function StepCarousel({ steps, renderCard }: { steps: any[]; renderCard: (s: any
           <ChevronRight size={18} />
         </button>
       </div>
-      <div ref={scrollRef} className="no-scrollbar" tabIndex={0} role="region" aria-label="How it works, scroll steps" style={{
+      <div ref={scrollRef} className="no-scrollbar" tabIndex={0} role="region" aria-label="Ways to book, scroll options" style={{
         display: 'flex', gap: 12, overflowX: 'auto',
         scrollSnapType: 'x mandatory', WebkitOverflowScrolling: 'touch',
         paddingLeft: 16, paddingRight: 16,
@@ -506,20 +506,16 @@ export default function FeedView() {
             grounding the headline. Legibility also comes from the flag
             drop-shadow + the headline text-shadow below. */}
         <div style={{
-          position: 'absolute', bottom: 0, left: 0, right: 0, height: '62%',
-          background: 'linear-gradient(0deg, rgba(8,8,6,0.86) 0%, rgba(8,8,6,0.48) 26%, rgba(8,8,6,0.12) 56%, transparent 100%)',
+          // Taller and denser than it needs to be for a dim clip, because the
+          // Negril footage is bright, turquoise shallows and white sand run
+          // straight through the text band. Tuned so the gold eyebrow and the
+          // green "Jamaica" in the headline stay legible against sand, while
+          // the top of the frame keeps the footage vivid.
+          position: 'absolute', bottom: 0, left: 0, right: 0, height: '78%',
+          background: 'linear-gradient(0deg, rgba(8,8,6,0.93) 0%, rgba(8,8,6,0.78) 22%, rgba(8,8,6,0.55) 45%, rgba(8,8,6,0.26) 68%, transparent 100%)',
           pointerEvents: 'none',
         }} />
         <div className="container" style={{ position: 'relative', zIndex: 1, paddingBottom: 'clamp(40px, 6vw, 72px)' }}>
-          <span className="animate-fade-up" style={{
-            display: 'block',
-            fontFamily: 'var(--font-dm-sans)', fontWeight: 600,
-            fontSize: 11, letterSpacing: '0.2em', textTransform: 'uppercase',
-            color: 'var(--gold-warm)', marginBottom: 18,
-            textShadow: '0 1px 10px rgba(0,0,0,0.75)',
-          }}>
-            Jamaica, beyond the brochure
-          </span>
           <h1 className="animate-fade-up stagger-1" style={{
             fontFamily: 'var(--font-dm-sans)',
             fontWeight: 700,
@@ -542,7 +538,48 @@ export default function FeedView() {
             lineHeight: 1.55,
             textShadow: '0 1px 6px rgba(0,0,0,0.4)',
           }}>
-            {t('Authentic cultural experiences crafted by locals who know the island best.')}
+            {t('Discover Jamaica beyond the resort. Curated experiences from the people who know Jamaica best.')}
+          </p>
+
+          {/* Two doors, above the fold. Visitors arrive needing one of exactly
+              two things, a ride from the airport or a day out, and previously
+              the hero offered neither, so the distinction only appeared far
+              down the page. The note below removes the one real ambiguity:
+              whether a tour needs a transfer booked alongside it. */}
+          <div className="animate-fade-up stagger-3" style={{
+            display: 'flex', flexWrap: 'wrap', gap: 12, marginTop: 26,
+          }}>
+            <a href="/explore" style={{
+              display: 'inline-flex', alignItems: 'center', gap: 8,
+              height: 48, padding: '0 24px', borderRadius: 9999,
+              background: 'var(--gold)', color: '#fff',
+              fontFamily: 'var(--font-dm-sans)', fontWeight: 600, fontSize: 14.5,
+              textDecoration: 'none', boxShadow: '0 4px 18px rgba(0,0,0,0.35)',
+            }}>
+              Browse tours &amp; experiences <ArrowRight size={16} />
+            </a>
+            <a href="/transfers" style={{
+              display: 'inline-flex', alignItems: 'center', gap: 8,
+              height: 48, padding: '0 24px', borderRadius: 9999,
+              background: 'rgba(255,255,255,0.12)', color: '#fff',
+              border: '1px solid rgba(255,255,255,0.35)',
+              backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)',
+              fontFamily: 'var(--font-dm-sans)', fontWeight: 600, fontSize: 14.5,
+              textDecoration: 'none',
+            }}>
+              Book an airport transfer <ArrowRight size={16} />
+            </a>
+          </div>
+          <p className="animate-fade-up stagger-4" style={{
+            fontSize: 13, color: 'rgba(255,255,255,0.9)',
+            fontFamily: 'var(--font-dm-sans)', marginTop: 14, maxWidth: 520,
+            lineHeight: 1.5,
+            // Sits over the brightest part of the footage, above the bottom
+            // scrim, so it needs a heavier shadow than the headline.
+            textShadow: '0 1px 3px rgba(0,0,0,0.9), 0 2px 12px rgba(0,0,0,0.7)',
+          }}>
+            Tours already include private transport to and from your hotel.
+            Airport pickups and dropoffs are booked separately.
           </p>
         </div>
       </section>
@@ -565,85 +602,140 @@ export default function FeedView() {
               letterSpacing: '-0.025em', lineHeight: 1.1,
               marginBottom: 14, color: '#fff',
             }}>
-              Build your perfect day in Jamaica.
+              Two ways to travel with MAPL.
             </h2>
             <p className="concierge-body" style={{
               fontSize: 15.5, color: '#cccccc',
               fontFamily: 'var(--font-dm-sans)', lineHeight: 1.65,
-              maxWidth: 460, margin: '0 auto',
+              maxWidth: 520, margin: '0 auto',
             }}>
-              Pick the experiences you love. We arrange your private transport, guide, and full itinerary from door to door.
+              Book a private airport transfer on its own, or build a day of experiences
+              with private transport included between every stop. Take one, or both.
             </p>
           </div>
 
           {(() => {
-            const steps = [
-              { icon: <Heart size={18} color="var(--gold-warm)" />, title: 'Tap the experiences that move you', body: 'Browse reels crafted by locals. Add the ones that speak to you, no packages, no fillers.' },
-              { icon: <MapPin size={18} color="var(--gold-warm)" />, title: 'Tell us your villa', body: 'Your hotel, villa, or the airport. We plan the route, the guide, and the private transport.' },
-              { icon: <ShieldCheck size={18} color="var(--gold-warm)" />, title: 'Show up, we handle the rest', body: 'We pick you up, your guide takes it from there, and we bring you home when it’s done.' },
+            // Two INDEPENDENT products, not three sequential steps. A traveler
+            // can book a transfer without ever touching a tour, and a tour
+            // itinerary already carries its own hotel-to-tour transport, so
+            // the airport transfer is never an implied add-on to it.
+            const paths = [
+              {
+                kicker: 'Airport transfer',
+                icon: <PlaneLanding size={18} color="var(--gold-warm)" />,
+                title: 'Airport to your hotel, and back',
+                body: 'Your driver is waiting at arrivals at Sangster International (MBJ) and takes you straight to your door. Book the arrival on its own, or add the return leg for your flight home.',
+                steps: [
+                  'Give us your flight number and hotel',
+                  'We track the flight and meet you at arrivals',
+                  'One way, or round trip for the ride back',
+                ],
+                cta: { text: 'Book a transfer', href: '/transfers' },
+              },
+              {
+                kicker: 'Tours and itinerary',
+                icon: <Route size={18} color="var(--gold-warm)" />,
+                title: 'Build a day of experiences',
+                body: 'Pick the experiences you love and we build the day around them, with a private driver from your hotel to each tour, on to the next one, and home again.',
+                steps: [
+                  'Tap the experiences that move you',
+                  'Tell us your hotel or villa',
+                  'We drive you hotel → tour → tour → hotel',
+                ],
+                cta: { text: 'Explore experiences', href: '/explore' },
+              },
             ]
-            const stepCard = (pillar: typeof steps[0], idx: number) => (
-              <div key={pillar.title} data-reveal style={{
-                padding: '36px 32px',
+            const pathCard = (path: typeof paths[0], idx: number) => (
+              <div key={path.title} data-reveal style={{
+                padding: '34px 32px 30px',
                 borderRadius: 'var(--r-xl)',
                 background: 'linear-gradient(180deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.02) 100%)',
                 border: '1px solid rgba(255,255,255,0.08)',
                 boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.06)',
                 textAlign: 'left',
                 position: 'relative',
-                flex: '0 0 280px',
+                display: 'flex',
+                flexDirection: 'column',
+                flex: '0 0 min(86vw, 340px)',
                 scrollSnapAlign: 'start',
                 ['--i' as string]: idx,
               } as React.CSSProperties}>
-                {/* Oversized editorial step numeral */}
-                <span aria-hidden style={{
-                  display: 'block',
-                  fontFamily: 'var(--font-dm-sans)', fontWeight: 300,
-                  fontSize: 64, lineHeight: 1,
-                  color: 'var(--gold-warm)', opacity: 0.28,
-                  marginBottom: 8,
-                }}>
-                  {idx + 1}
-                </span>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 9, marginBottom: 14 }}>
-                  {pillar.icon}
+                  {path.icon}
                   <span style={{
                     fontSize: 11, fontWeight: 600, fontFamily: 'var(--font-dm-sans)',
                     letterSpacing: '0.16em', textTransform: 'uppercase',
                     color: 'var(--gold-warm)',
                   }}>
-                    Step {idx + 1}
+                    {path.kicker}
                   </span>
                 </div>
                 <h4 style={{
-                  fontFamily: 'var(--font-dm-sans)', fontWeight: 600, fontSize: 19,
-                  marginBottom: 9, lineHeight: 1.22, letterSpacing: '-0.01em', color: '#fff',
+                  fontFamily: 'var(--font-dm-sans)', fontWeight: 600, fontSize: 20,
+                  marginBottom: 10, lineHeight: 1.22, letterSpacing: '-0.01em', color: '#fff',
                 }}>
-                  {pillar.title}
+                  {path.title}
                 </h4>
                 <p style={{
                   fontSize: 13.5, color: 'rgba(255,255,255,0.72)',
                   fontFamily: 'var(--font-dm-sans)', lineHeight: 1.62,
+                  marginBottom: 18,
                 }}>
-                  {pillar.body}
+                  {path.body}
                 </p>
+                <ul style={{
+                  listStyle: 'none', padding: 0, margin: '0 0 22px',
+                  display: 'flex', flexDirection: 'column', gap: 9,
+                }}>
+                  {path.steps.map((step, i) => (
+                    <li key={step} style={{
+                      display: 'flex', alignItems: 'flex-start', gap: 10,
+                      fontSize: 13, color: 'rgba(255,255,255,0.82)',
+                      fontFamily: 'var(--font-dm-sans)', lineHeight: 1.5,
+                    }}>
+                      <span aria-hidden style={{
+                        flexShrink: 0, width: 20, height: 20, borderRadius: '50%',
+                        border: '1px solid rgba(196,164,74,0.45)',
+                        color: 'var(--gold-warm)',
+                        display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                        fontSize: 10.5, fontWeight: 600, marginTop: 1,
+                      }}>
+                        {i + 1}
+                      </span>
+                      {step}
+                    </li>
+                  ))}
+                </ul>
+                <a
+                  href={path.cta.href}
+                  style={{
+                    marginTop: 'auto', alignSelf: 'flex-start',
+                    display: 'inline-flex', alignItems: 'center', gap: 7,
+                    height: 40, padding: '0 20px', borderRadius: 9999,
+                    background: 'var(--gold)', color: '#fff',
+                    fontFamily: 'var(--font-dm-sans)', fontWeight: 600, fontSize: 13,
+                    textDecoration: 'none',
+                  }}
+                >
+                  {path.cta.text} <ArrowRight size={15} />
+                </a>
               </div>
             )
             return (
               <>
-                {/* Desktop: grid with a faint gold connecting rule behind it */}
-                <div className="hide-mobile" style={{ position: 'relative', marginBottom: 48 }}>
-                  <div aria-hidden style={{
-                    position: 'absolute', top: '50%', left: '12%', right: '12%', height: 1,
-                    background: 'linear-gradient(90deg, transparent, rgba(196,164,74,0.28) 20%, rgba(196,164,74,0.28) 80%, transparent)',
-                  }} />
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16, position: 'relative' }}>
-                    {steps.map((s, i) => stepCard(s, i))}
+                {/* Desktop: two equal columns. No connecting rule here, it would
+                    read as a sequence and these are alternatives. */}
+                <div className="hide-mobile" style={{ marginBottom: 48 }}>
+                  <div style={{
+                    display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)',
+                    gap: 20, maxWidth: 860, margin: '0 auto',
+                  }}>
+                    {paths.map((p, i) => pathCard(p, i))}
                   </div>
                 </div>
                 {/* Mobile: carousel with arrows */}
                 <div className="hide-desktop" style={{ marginBottom: 0 }}>
-                  <StepCarousel steps={steps} renderCard={stepCard} />
+                  <StepCarousel steps={paths} renderCard={pathCard} />
                 </div>
               </>
             )
@@ -656,7 +748,7 @@ export default function FeedView() {
             {[
               { icon: <Users size={14} color="var(--gold-warm)" />, text: 'Personal local guides' },
               { icon: <MapPin size={14} color="var(--gold-warm)" />, text: 'Private door-to-door transport' },
-              { icon: <ShieldCheck size={14} color="var(--gold-warm)" />, text: 'Free cancellation within 48 hrs' },
+              { icon: <ShieldCheck size={14} color="var(--gold-warm)" />, text: 'Flexible cancellation within 48 hrs of booking' },
             ].map((t) => (
               <span key={t.text} style={{
                 display: 'inline-flex', alignItems: 'center', gap: 7,
@@ -863,7 +955,7 @@ export default function FeedView() {
                 { icon: <Award size={18} />, title: 'Only the best experiences', desc: 'Every adventure is vetted. We reject 80% of submissions to keep quality uncompromising.' },
                 { icon: <Users size={18} />, title: 'Real local creators', desc: 'Not tour guides, your Jamaican cousin who knows everywhere worth going.' },
                 { icon: <Headphones size={18} />, title: '24/7 trip support', desc: 'Text us anytime. We handle logistics so you just show up and enjoy.' },
-                { icon: <ShieldCheck size={18} />, title: 'Free cancellation', desc: 'Change of plans? Cancel within 48 hours for a refund, less the payment processing fee. No stress.' },
+                { icon: <ShieldCheck size={18} />, title: 'Flexible cancellation', desc: 'Change of plans? Cancel within 48 hours of booking for a refund, less a 20% administration charge. No stress.' },
                 { icon: <Star size={18} />, title: '90%+ satisfaction', desc: 'Our guests consistently rate their experiences 4.8 stars or higher.' },
                 { icon: <Heart size={18} />, title: 'Supports local economy', desc: 'Every dollar goes directly to Jamaican creators and their communities.' },
               ].map((item) => (

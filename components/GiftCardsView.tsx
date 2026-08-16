@@ -27,7 +27,7 @@ export default function GiftCardsView() {
   const finalAmount = isCustom ? (parseInt(customAmount) || 0) : selectedAmount
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--bg)', paddingTop: 56 }}>
+    <div style={{ minHeight: '100vh', background: 'var(--bg)', paddingTop: 'var(--nav-h)' }}>
 
       {/* ── Hero ── */}
       <div style={{

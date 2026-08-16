@@ -589,7 +589,7 @@ export const POSTS_4: BlogPost[] = [
       },
       {
         type: 'p',
-        text: "Hurricane risk is real but over-stated. Direct hits are rare; peripheral weather is common. Book with free cancellation between June and October, watch the National Hurricane Center's 7-day outlook, and you will be fine most years. 2020's Beryl landfall and 2023's heavy season were outliers, the decade-average direct-hit rate is under one storm per year.",
+        text: "Hurricane risk is real but over-stated. Direct hits are rare; peripheral weather is common. Between June and October, watch the National Hurricane Center's 7-day outlook, and know that if weather forces a cancellation we refund in full or reschedule at no cost, and you will be fine most years. 2020's Beryl landfall and 2023's heavy season were outliers, the decade-average direct-hit rate is under one storm per year.",
       },
       {
         type: 'p',

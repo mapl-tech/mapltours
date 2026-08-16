@@ -472,13 +472,13 @@ export default function BlogPostPage({
   const related = getRelatedPosts(post, 3)
 
   return (
-    <article style={{ minHeight: '100vh', paddingTop: 56, background: 'var(--bg)' }}>
+    <article style={{ minHeight: '100vh', paddingTop: 'var(--nav-h)', background: 'var(--bg)' }}>
       <ArticleJsonLd post={post} />
       {/* Editorial banner */}
       <header
         style={{
           borderBottom: '1px solid var(--border-strong)',
-          paddingTop: 56,
+          paddingTop: 'var(--nav-h)',
           paddingBottom: 24,
         }}
       >

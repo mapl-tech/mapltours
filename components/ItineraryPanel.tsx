@@ -182,7 +182,7 @@ export default function ItineraryPanel({ open, onClose }: { open: boolean; onClo
             </button>
           </Link>
           <p style={{ textAlign: 'center', fontSize: 12, color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-sans)', marginTop: 12 }}>
-            {t('Free cancellation within 48 hours')}
+            {t('Flexible cancellation within 48 hrs of booking')}
           </p>
         </div>
       </aside>

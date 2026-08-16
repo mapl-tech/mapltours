@@ -5,7 +5,7 @@ import Image from 'next/image'
 import { usePathname, useRouter } from 'next/navigation'
 import { useCartStore } from '@/lib/cart'
 import { useState, useEffect, useRef } from 'react'
-import { Search, Leaf, MapPin, ShoppingBag } from 'lucide-react'
+import { Search, MapPin, ShoppingBag } from 'lucide-react'
 import LanguageSwitcher from './LanguageSwitcher'
 import { useI18n } from '@/lib/i18n'
 import { useAuth } from '@/lib/supabase/auth-context'
@@ -31,7 +31,6 @@ export default function TopNav({ onCartClick }: { onCartClick?: () => void }) {
   const pathname = usePathname()
   const router = useRouter()
   const items = useCartStore((s) => s.items)
-  const [scrolled, setScrolled] = useState(false)
   const [hidden, setHidden] = useState(false)
   const [where, setWhere] = useState('')
   const [showWhere, setShowWhere] = useState(false)
@@ -43,7 +42,6 @@ export default function TopNav({ onCartClick }: { onCartClick?: () => void }) {
   const { t } = useI18n()
   const { user } = useAuth()
   const [showProfileMenu, setShowProfileMenu] = useState(false)
-  const isHome = pathname === '/'
   const isExperience = pathname.startsWith('/experience')
   const isCheckout = pathname.startsWith('/checkout')
   const isExplore = pathname.startsWith('/explore')
@@ -53,7 +51,6 @@ export default function TopNav({ onCartClick }: { onCartClick?: () => void }) {
   useEffect(() => {
     const onScroll = () => {
       const y = window.scrollY
-      setScrolled(y > 10)
       // Show when scrolling down, hide when scrolling up
       if (y < 10) {
         setHidden(false) // Always show at very top
@@ -82,7 +79,11 @@ export default function TopNav({ onCartClick }: { onCartClick?: () => void }) {
     return () => document.removeEventListener('mousedown', close)
   }, [showGuests, showWhere])
 
-  const dark = isHome && !scrolled
+  // The header is solid white on every route, including over the hero video.
+  // Kept as a named constant rather than deleted because the background, link
+  // colours, and the logo variant all branch on it; this keeps that wiring in
+  // one place if a transparent nav is ever wanted again.
+  const dark = false
   const linkColor = dark ? 'rgba(255,255,255,0.75)' : 'var(--text-secondary)'
 
   if (isExperience) return null
@@ -96,7 +97,7 @@ export default function TopNav({ onCartClick }: { onCartClick?: () => void }) {
         left: 0,
         right: 0,
         zIndex: 100,
-        height: 56,
+        height: 'var(--nav-h)',
         display: 'flex',
         alignItems: 'center',
         transition: 'all 0.35s cubic-bezier(0.22,1,0.36,1)',
@@ -129,41 +130,23 @@ export default function TopNav({ onCartClick }: { onCartClick?: () => void }) {
             transition: 'all 0.3s ease',
           }}
         >
-          {/* Icon mark */}
-          <div style={{
-            width: 32, height: 32, borderRadius: 8,
-            background: dark ? 'rgba(255,255,255,0.1)' : 'var(--accent)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            transition: 'background 0.3s ease',
-          }}>
-            <Leaf size={16} strokeWidth={2.5} color={dark ? '#fff' : '#fff'} />
-          </div>
-          {/* Wordmark */}
-          <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1 }}>
-            <span style={{
-              fontFamily: 'var(--font-dm-sans)',
-              fontWeight: 800,
-              fontSize: 15,
-              letterSpacing: '0.06em',
-              textTransform: 'uppercase',
-              color: dark ? '#fff' : 'var(--text-primary)',
-              transition: 'color 0.3s ease',
-            }}>
-              MAPL
-            </span>
-            <span style={{
-              fontFamily: 'var(--font-dm-sans)',
-              fontWeight: 700,
-              fontSize: 11,
-              letterSpacing: '0.12em',
-              textTransform: 'uppercase',
-              color: dark ? 'rgba(255,255,255,0.7)' : 'var(--text-secondary)',
-              transition: 'color 0.3s ease',
-              marginTop: 1,
-            }}>
-              Tours Jamaica
-            </span>
-          </div>
+          {/* Brand lockup. Two files rather than one recoloured by CSS: the
+              mark carries the Jamaica green and gold, and only the wordmark
+              flips, so a filter would wreck the flag colours. `dark` is true
+              over the hero video, false once the nav goes solid. */}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={dark ? '/mapl-logo-dark.svg' : '/mapl-logo.svg'}
+            alt="MAPL Tours Jamaica"
+            width={176}
+            height={42}
+            style={{
+              height: 42,
+              width: 'auto',
+              display: 'block',
+              transition: 'opacity 0.3s ease',
+            }}
+          />
         </Link>
 
         {/* ── Search Bar (hidden on experience/checkout/explore/profile/mobile) ── */}

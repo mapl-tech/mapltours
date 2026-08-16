@@ -24,7 +24,7 @@ export function GET() {
 
 > Experiential travel platform for Jamaica. Discover authentic, locally-led tours and cultural experiences, cliff diving in Negril, Blue Mountain coffee treks, reggae studio sessions, jerk cooking classes, and more. Curated and operated by Jamaican creators, not resort concierges.
 
-MAPL Tours connects travelers directly with Jamaican guides, chefs, selectors, and cultural stewards. Every experience is bookable online in USD, with free cancellation 48 hours ahead. The product is built around a vertical-video discovery feed; users build an itinerary and check out like Shopify.
+MAPL Tours connects travelers directly with Jamaican guides, chefs, selectors, and cultural stewards. Every experience is bookable online in USD, with flexible cancellation within 48 hours of booking. The product is built around a vertical-video discovery feed; users build an itinerary and check out like Shopify.
 
 Tagline: "Discover Jamaica Beyond the Resort."
 
@@ -54,7 +54,7 @@ ${blogLines}
 
 - Country: Jamaica
 - Currency: USD
-- Cancellation: Free up to 48 hours before the experience
+- Cancellation: Flexible within 48 hours of booking, less a 20% administration charge plus taxes (if applicable)
 - Booking fee: 5% added to subtotal at checkout
 - Price range: $55–$145 per person
 - Payments: Stripe

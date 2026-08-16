@@ -3,7 +3,6 @@
 import { Suspense, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
-import { Leaf } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { getSafeRedirect } from '@/lib/safe-redirect'
 import { DESTINATION_IMAGES } from '@/lib/experiences'
@@ -176,14 +175,18 @@ function LoginContent() {
           background: var(--bg-warm);
           min-height: 100vh;
         }
-        .login-back-btn { padding: 10px 18px 10px 14px; }
+        /* :global because these target a <Link>. styled-jsx only adds its
+           scoping class to native elements, so a component-rendered <a> never
+           matched the scoped rule and the button rendered with no padding at
+           all (20x20 on mobile instead of 40x40). */
+        :global(.login-back-btn) { padding: 10px 18px 10px 14px; }
         .login-back-label { display: inline; }
         @media (max-width: 900px) {
           .login-shell { grid-template-columns: 1fr; }
           .login-aside { display: none; }
         }
         @media (max-width: 480px) {
-          .login-back-btn {
+          :global(.login-back-btn) {
             padding: 0; width: 40px; height: 40px; justify-content: center;
           }
           .login-back-label { display: none; }
@@ -198,36 +201,14 @@ function LoginContent() {
         {/* Logo */}
         <div style={{ textAlign: 'center', marginBottom: 36 }}>
           <Link href="/" style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 10 }}>
-            <div style={{
-              width: 36, height: 36, borderRadius: 10,
-              background: 'var(--accent)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-            }}>
-              <Leaf size={18} strokeWidth={2.5} color="#fff" />
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1, textAlign: 'left' }}>
-              <span style={{
-                fontFamily: 'var(--font-dm-sans)',
-                fontWeight: 800,
-                fontSize: 17,
-                letterSpacing: '0.06em',
-                textTransform: 'uppercase',
-                color: 'var(--text-primary)',
-              }}>
-                MAPL
-              </span>
-              <span style={{
-                fontFamily: 'var(--font-dm-sans)',
-                fontWeight: 700,
-                fontSize: 11,
-                letterSpacing: '0.12em',
-                textTransform: 'uppercase',
-                color: 'var(--text-secondary)',
-                marginTop: 1,
-              }}>
-                Tours Jamaica
-              </span>
-            </div>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/mapl-logo.svg"
+              alt="MAPL Tours Jamaica"
+              width={185}
+              height={44}
+              style={{ height: 44, width: 'auto', display: 'block' }}
+            />
           </Link>
           <p style={{
             fontFamily: 'var(--font-dm-sans)',

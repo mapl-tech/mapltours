@@ -47,26 +47,22 @@ export const TRANSFER_FAQS: TransferFaq[] = [
   },
   {
     q: 'What happens if my flight is delayed?',
-    a: 'We track your flight in real time from the moment it leaves. If you land late, your driver adjusts, there is no delay surcharge on any booking, even multi-hour holds. If your flight is cancelled outright, reply to the confirmation email and we will refund in full.',
+    a: 'We track your flight in real time from the moment it leaves. If you land late, your driver adjusts, there is no delay surcharge on any booking, even multi-hour holds. If your flight is cancelled outright, just let us know and we will gladly reschedule your pickup or arrange a refund.',
   },
   {
     q: 'How do I find my driver at MBJ?',
-    a: 'After you clear immigration and customs, walk through the arrivals doors. Your driver will be on the left side holding a MAPL Tours sign with your name. If you do not see them within five minutes, contact us using the details in your confirmation email.',
+    a: 'After you clear immigration and customs, walk through the arrivals doors. Your driver will be holding a MAPL TOURS JAMAICA sign with your name. If you do not see them within ten minutes, contact us using the details in your confirmation email.',
   },
   {
     q: 'Can I pay in cash?',
     a: 'Payment is taken online up front via Stripe, in USD. That is how we keep the pricing transparent and how you get a real receipt. Cash tips for the driver are welcome but never expected.',
   },
   {
-    q: 'What about child seats, wheelchair access, or extra luggage?',
-    a: 'All handled, add details in the special requests field at checkout. Child seats are complimentary; wheelchair-accessible vehicles require 48 hours notice and may adjust the rate slightly for the larger vehicle.',
-  },
-  {
     q: 'Do you serve Kingston (KIN) and Port Antonio?',
-    a: 'Yes, but those routes are priced individually rather than by zone. Use the contact form with your dates and we will quote within the hour. Kingston transfers typically run $90 to $150 depending on destination; Port Antonio is $180 to $240 depending on the hotel.',
+    a: 'Yes, but those routes are priced individually rather than by zone. Use the contact form with your dates and we will quote within 24 hours. Kingston transfers typically run $90 to $150 depending on destination; Port Antonio is $180 to $240 depending on the hotel.',
   },
   {
     q: 'What is your cancellation policy?',
-    a: 'Free cancellation up to 24 hours before your scheduled pickup time, with a refund of the amount paid less the non-refundable payment processing fee. Inside 24 hours we charge 50% of the fare, your driver is already booked and is turning down other trips. No-shows are charged in full.',
+    a: 'Flexible cancellation within 48 hours of booking, with a refund of the amount paid less an administration charge equivalent to 20% of the total amount of your fees plus taxes (if applicable). After that 48-hour window the fare is non-refundable, your driver is already booked and is turning down other trips. No-shows are charged in full.',
   },
 ]

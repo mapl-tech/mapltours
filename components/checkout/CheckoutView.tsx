@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
 import { ArrowLeft, Check, MapPin, Users, Calendar, Leaf, Lock, ShieldCheck } from 'lucide-react'
+import { earliestBookableExperienceDate } from '@/lib/booking-window'
 import { useCartStore, DAILY_HOUR_LIMIT } from '@/lib/cart'
 import { getStoredAttribution } from '@/lib/attribution'
 import TripTimeBar from '@/components/TripTimeBar'
@@ -109,11 +110,11 @@ function ReviewStep() {
   const { t, formatPrice } = useI18n()
   const [customDates, setCustomDates] = useState(false)
 
-  // Earliest selectable date is today, block bookings for dates in the past
-  // (also validated server-side). Computed after mount to keep SSR/CSR
-  // markup identical.
+  // Earliest selectable date honours the 24-hour lead time, so a date that
+  // checkout would reject cannot be picked (also validated server-side).
+  // Computed after mount to keep SSR/CSR markup identical.
   const [minDate, setMinDate] = useState('')
-  useEffect(() => { setMinDate(new Date().toISOString().slice(0, 10)) }, [])
+  useEffect(() => { setMinDate(earliestBookableExperienceDate(new Date())) }, [])
 
   // Get the shared date from the first item
   const sharedDate = items[0]?.date || ''
@@ -713,7 +714,7 @@ function DetailsStep({ waiverAccepted, setWaiverAccepted, waiverError, formData,
                   <p style={{ marginBottom: 16 }}>All prices are listed in USD. A service fee is applied to all transactions to cover your tour guide, platform costs, and customer support. Payment is processed securely through Stripe. Your card will be charged at the time of booking. You will receive a confirmation email with your booking details, meeting point, and creator contact information within 24 hours.</p>
 
                   <p style={{ fontWeight: 600, color: 'var(--text-primary)', marginBottom: 6 }}>3. Cancellation & Refunds</p>
-                  <p style={{ marginBottom: 16 }}>Free cancellation is available within 48 hours of booking for a refund of the amount paid, less the payment processing fee, which is non-refundable. Cancellations made more than 48 hours after booking but at least 7 days before the experience date will receive a 50% refund. Cancellations made less than 7 days before the experience date are non-refundable. If a Creator cancels an experience, you will receive a full refund or the option to rebook. Weather-related cancellations will be rescheduled at no additional cost.</p>
+                  <p style={{ marginBottom: 16 }}>Flexible cancellation is available within 48 hours of booking. If you cancel within that window, you will receive a refund of the amount paid, less an administration charge equivalent to 20% of the total amount of your fees plus taxes (if applicable). Cancellations made more than 48 hours after booking are non-refundable. If you do not arrive for your experience, the booking is charged in full. If a Creator cancels an experience, you will receive a full refund or the option to rebook. Weather-related cancellations will be rescheduled at no additional cost.</p>
 
                   <p style={{ fontWeight: 600, color: 'var(--text-primary)', marginBottom: 6 }}>4. Guest Responsibilities</p>
                   <p style={{ marginBottom: 16 }}>Guests must arrive at the designated meeting point on time. Guests must follow all safety instructions provided by the Creator or guide. Guests must be of legal drinking age to participate in experiences involving alcohol. Guests are responsible for their own travel insurance and personal belongings. Guests must treat Creators, local communities, and the natural environment with respect.</p>
@@ -841,7 +842,7 @@ function ConfirmedView() {
       </button>
 
       <p style={{ marginTop: 16, fontSize: 12.5, color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-sans)' }}>
-        Free cancellation within 48 hours · No problem.
+        Flexible cancellation within 48 hrs of booking · No problem.
       </p>
     </div>
   )
@@ -960,7 +961,7 @@ export default function CheckoutView() {
   const ctas = [`${t('Continue to details')} →`, `${t('Continue to payment')} →`, `${t('Complete booking')} · ${formatPrice(finalTotal)}`]
 
   return (
-    <div className="checkout-wrapper" style={{ minHeight: '100vh', paddingTop: 56, background: step === 3 ? 'var(--bg)' : 'var(--bg-warm)' }}>
+    <div className="checkout-wrapper" style={{ minHeight: '100vh', paddingTop: 'var(--nav-h)', background: step === 3 ? 'var(--bg)' : 'var(--bg-warm)' }}>
       {/* Top bar */}
       <div style={{ borderBottom: '1px solid var(--border)', background: '#fff' }}>
         <div className="container checkout-top-bar" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 16px', maxWidth: 1100 }}>
@@ -1330,7 +1331,7 @@ export default function CheckoutView() {
                 </button>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: 12, fontSize: 12, color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-sans)' }}>
                   <Lock size={11} />
-                  <span>Secure checkout · Free cancellation 48hrs</span>
+                  <span>Secure checkout · Flexible cancellation within 48 hrs of booking</span>
                 </div>
               </div>
             )}

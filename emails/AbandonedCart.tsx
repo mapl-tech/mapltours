@@ -97,8 +97,8 @@ export default function AbandonedCart(props: AbandonedCartProps) {
             · Private transport and a full itinerary, arranged for you.
           </Text>
           <Text style={{ ...s.body, marginTop: 6 }}>
-            · Free cancellation up to 48 hours before, less the payment
-            processing fee.
+            · Flexible cancellation within 48 hours of booking, less a 20%
+            administration charge plus taxes (if applicable).
           </Text>
           <Text style={s.note}>
             Questions before you book? Reply to this email any time. Reference{' '}
