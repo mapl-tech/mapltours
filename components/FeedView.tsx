@@ -429,7 +429,7 @@ function PackagesSection() {
   return (
     <section className="pkg-band">
       <div className="container">
-        <div style={{ maxWidth: 620, marginBottom: 34 }}>
+        <div style={{ maxWidth: 760, marginBottom: 40 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
             <span aria-hidden style={{ width: 26, height: 2, background: 'var(--gold)', borderRadius: 2 }} />
             <span style={{
@@ -443,15 +443,16 @@ function PackagesSection() {
           <h2 style={{
             fontFamily: 'var(--font-dm-sans)', fontWeight: 700,
             fontSize: 'var(--fs-h2)',
-            color: 'var(--text-primary)', lineHeight: 1.15, letterSpacing: '-0.02em',
+            color: 'var(--text-primary)', lineHeight: 1.1, letterSpacing: '-0.025em',
+            textWrap: 'balance',
           }}>
-            {t('One booking, the whole day planned')}
+            {t('Whole days, already planned')}
           </h2>
           <p style={{
             fontSize: 15, color: 'var(--text-secondary)',
             fontFamily: 'var(--font-dm-sans)', marginTop: 10, lineHeight: 1.5,
           }}>
-            {t('Two or three experiences run back to back, in the right order, driven door to door. Add one and it replaces the singles it already covers.')}
+            {t('Two or three experiences run back to back, in the right order, driven door to door.')}
           </p>
         </div>
 
@@ -499,6 +500,8 @@ function PackagesSection() {
                       {t(pkg.title)}
                     </Link>
                   </h3>
+
+                  <p className="pkg-lede">{t(pkg.description)}</p>
 
                   <ol className="pkg-steps">
                     {steps.map((title) => <li key={title}>{t(title)}</li>)}
