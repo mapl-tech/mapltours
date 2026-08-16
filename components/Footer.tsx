@@ -112,9 +112,8 @@ export default function Footer() {
               { label: 'Nine Mile', href: '/explore?q=Nine%20Mile' },
             ]},
             { title: 'Connect', links: [
-              { label: 'Instagram', href: 'https://www.instagram.com/mapltours' },
-              { label: 'TikTok', href: 'https://www.tiktok.com/@mapltours' },
-              { label: 'Twitter', href: 'https://twitter.com/mapltours' },
+              { label: 'Instagram', href: 'https://www.instagram.com/mapltoursjamaica' },
+              { label: 'TikTok', href: 'https://www.tiktok.com/@mapltoursjamaica' },
             ]},
           ].map((col) => (
             <div key={col.title}>

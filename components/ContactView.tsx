@@ -135,8 +135,8 @@ export default function ContactView() {
               </p>
               <div style={{ display: 'flex', gap: 10 }}>
                 {[
-                  { icon: <Camera size={16} />, label: 'Instagram', href: 'https://www.instagram.com/mapltours' },
-                  { icon: <Music2 size={16} />, label: 'TikTok', href: 'https://www.tiktok.com/@mapltours' },
+                  { icon: <Camera size={16} />, label: 'Instagram', href: 'https://www.instagram.com/mapltoursjamaica' },
+                  { icon: <Music2 size={16} />, label: 'TikTok', href: 'https://www.tiktok.com/@mapltoursjamaica' },
                 ].map((s) => (
                   <a
                     key={s.label}

@@ -184,9 +184,8 @@ function JsonLd() {
       ],
     },
     sameAs: [
-      'https://www.instagram.com/mapltours',
-      'https://www.tiktok.com/@mapltours',
-      'https://twitter.com/mapltours',
+      'https://www.instagram.com/mapltoursjamaica',
+      'https://www.tiktok.com/@mapltoursjamaica',
     ],
   }
 
