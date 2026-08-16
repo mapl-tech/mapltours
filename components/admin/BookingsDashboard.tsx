@@ -65,12 +65,12 @@ function plural(n: number, w: string): string { return `${n} ${w}${n === 1 ? '' 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Row = any
 
-const label: React.CSSProperties = { fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: faint, margin: 0 }
+const label: React.CSSProperties = { fontSize: 12, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: faint, margin: 0 }
 
 function Field({ k, v }: { k: string; v: React.ReactNode }) {
   if (v == null || v === '') return null
   return (
-    <div style={{ display: 'flex', gap: 8, fontSize: 13.5, lineHeight: 1.5 }}>
+    <div style={{ display: 'flex', gap: 8, fontSize: 13, lineHeight: 1.5 }}>
       <span style={{ color: faint, minWidth: 78, flexShrink: 0 }}>{k}</span>
       <span style={{ color: ink, ...tnum }}>{v}</span>
     </div>
@@ -133,13 +133,13 @@ function BookingCard({ b, variant, open, onToggle }: { b: Row; variant: 'abandon
           <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
             <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, flexWrap: 'wrap' }}>
               <span style={{ fontWeight: 700, fontSize: 15, ...tnum }}>{ref(b.id)}</span>
-              <span style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', color: faint }}>{b.booking_type ?? 'tour'}</span>
-              <span style={{ fontSize: 11.5, fontWeight: 700, color: statusColor }}>{statusText}</span>
+              <span style={{ fontSize: 12, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', color: faint }}>{b.booking_type ?? 'tour'}</span>
+              <span style={{ fontSize: 12, fontWeight: 700, color: statusColor }}>{statusText}</span>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
               <div style={{ textAlign: 'right' }}>
                 <div style={{ fontWeight: 800, fontSize: 20, ...tnum }}>{money(b.total_paid)} <span style={{ fontSize: 12, fontWeight: 600, color: faint }}>{currency}</span></div>
-                <div style={{ fontSize: 11.5, color: faint }}>
+                <div style={{ fontSize: 12, color: faint }}>
                   {variant === 'paid' ? `Paid ${dateTime(b.paid_at ?? b.created_at)}` : `Started ${ageLabel(b.created_at)}`}
                 </div>
               </div>
@@ -149,11 +149,11 @@ function BookingCard({ b, variant, open, onToggle }: { b: Row; variant: 'abandon
           <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginTop: 7, flexWrap: 'wrap' }}>
             <span style={{ fontSize: 14, fontWeight: 700, color: ink }}>{customerName}</span>
             <span aria-hidden="true" style={{ color: faint }}>·</span>
-            <span style={{ fontSize: 13.5, color: soft }}>{routeSummary}</span>
+            <span style={{ fontSize: 13, color: soft }}>{routeSummary}</span>
             {paxSummary && (
               <>
                 <span aria-hidden="true" style={{ color: faint }}>·</span>
-                <span style={{ fontSize: 13.5, color: soft }}>{paxSummary}</span>
+                <span style={{ fontSize: 13, color: soft }}>{paxSummary}</span>
               </>
             )}
           </div>
@@ -179,22 +179,22 @@ function BookingCard({ b, variant, open, onToggle }: { b: Row; variant: 'abandon
                 {isTransfer ? (
                   <>
                     <div style={{ fontWeight: 600, fontSize: 14 }}>{(i.airport ?? 'MBJ')} → {i.hotel ?? i.destination}</div>
-                    <div style={{ fontSize: 12.5, color: soft }}>
+                    <div style={{ fontSize: 12, color: soft }}>
                       {[i.zone ? `Zone ${i.zone}` : null, i.trip_type === 'round_trip' ? 'Round-trip' : 'One-way', plural(i.passengers ?? i.travelers ?? 1, 'passenger')].filter(Boolean).join(' · ')}
                     </div>
                     {i.arrival_at || i.arrival_flight ? (
-                      <div style={{ fontSize: 12.5, color: soft, ...tnum }}>Arrive: {[i.arrival_flight ? `flight ${i.arrival_flight}` : null, flightTime(i.arrival_at)].filter(Boolean).join(', ')}</div>
+                      <div style={{ fontSize: 12, color: soft, ...tnum }}>Arrive: {[i.arrival_flight ? `flight ${i.arrival_flight}` : null, flightTime(i.arrival_at)].filter(Boolean).join(', ')}</div>
                     ) : null}
                     {i.departure_at || i.departure_flight ? (
-                      <div style={{ fontSize: 12.5, color: soft, ...tnum }}>Departure pickup: {[flightTime(i.departure_at), i.departure_flight ? `flight ${i.departure_flight}` : null].filter(Boolean).join(' · ')}</div>
+                      <div style={{ fontSize: 12, color: soft, ...tnum }}>Departure pickup: {[flightTime(i.departure_at), i.departure_flight ? `flight ${i.departure_flight}` : null].filter(Boolean).join(' · ')}</div>
                     ) : null}
-                    <div style={{ fontSize: 12.5, color: faint, ...tnum }}>{money2(i.price_per_person)}</div>
+                    <div style={{ fontSize: 12, color: faint, ...tnum }}>{money2(i.price_per_person)}</div>
                   </>
                 ) : (
                   <>
                     <div style={{ fontWeight: 600, fontSize: 14 }}>{i.title}</div>
-                    <div style={{ fontSize: 12.5, color: soft, ...tnum }}>{[i.destination, dateShort(i.date), plural(i.travelers ?? 1, 'traveler')].filter(Boolean).join(' · ')}</div>
-                    <div style={{ fontSize: 12.5, color: faint, ...tnum }}>{money(i.price_per_person)} each · line {money((i.price_per_person ?? 0) * (i.travelers ?? 1))} {currency}</div>
+                    <div style={{ fontSize: 12, color: soft, ...tnum }}>{[i.destination, dateShort(i.date), plural(i.travelers ?? 1, 'traveler')].filter(Boolean).join(' · ')}</div>
+                    <div style={{ fontSize: 12, color: faint, ...tnum }}>{money(i.price_per_person)} each · line {money((i.price_per_person ?? 0) * (i.travelers ?? 1))} {currency}</div>
                   </>
                 )}
               </div>
@@ -234,7 +234,7 @@ function BookingCard({ b, variant, open, onToggle }: { b: Row; variant: 'abandon
               {b.transport_cost != null && Number(b.transport_cost) > 0 && <MoneyRow k="Transport" v={money2(b.transport_cost)} />}
               {b.reward_discount != null && Number(b.reward_discount) > 0 && <MoneyRow k="Reward" v={`- ${money2(b.reward_discount)}`} em />}
               <div style={{ display: 'flex', justifyContent: 'space-between', paddingTop: 6, marginTop: 2, borderTop: borderSoft }}>
-                <span style={{ fontSize: 13.5, fontWeight: 700 }}>{variant === 'paid' ? 'Total paid' : 'Cart total'}</span>
+                <span style={{ fontSize: 13, fontWeight: 700 }}>{variant === 'paid' ? 'Total paid' : 'Cart total'}</span>
                 <span style={{ fontSize: 15, fontWeight: 800, ...tnum }}>{money(b.total_paid)}</span>
               </div>
             </div>
@@ -332,7 +332,7 @@ export default function BookingsDashboard({ bookings }: { bookings: Row[] }) {
           <div key={s.label} style={{ background: '#fff', border, borderRadius: 14, padding: '18px 20px' }}>
             <div style={label}>{s.label}</div>
             <div style={{ fontFamily: dm, fontWeight: 800, fontSize: 30, letterSpacing: '-0.02em', marginTop: 8, ...tnum }}>{s.value}</div>
-            <div style={{ fontSize: 12.5, color: soft, marginTop: 2, ...tnum }}>{s.sub}</div>
+            <div style={{ fontSize: 12, color: soft, marginTop: 2, ...tnum }}>{s.sub}</div>
           </div>
         ))}
       </div>
@@ -350,7 +350,7 @@ export default function BookingsDashboard({ bookings }: { bookings: Row[] }) {
                 onClick={() => setTab(t.key)}
                 style={{
                   display: 'inline-flex', alignItems: 'center', gap: 8, height: 38, padding: '0 18px',
-                  borderRadius: 9999, border: 'none', cursor: 'pointer', fontFamily: dm, fontSize: 13.5, fontWeight: 600,
+                  borderRadius: 9999, border: 'none', cursor: 'pointer', fontFamily: dm, fontSize: 13, fontWeight: 600,
                   background: active ? accent : 'transparent', color: active ? '#fff' : soft, transition: 'all 0.15s ease',
                 }}
               >
@@ -385,7 +385,7 @@ export default function BookingsDashboard({ bookings }: { bookings: Row[] }) {
 
       {/* Active list */}
       <div style={{ marginTop: 12 }}>
-        <p style={{ fontSize: 12.5, color: faint, margin: '10px 2px 0', minHeight: 18 }}>
+        <p style={{ fontSize: 12, color: faint, margin: '10px 2px 0', minHeight: 18 }}>
           {tab === 'abandoned'
             ? 'Pending checkouts that were never paid. A recovery email is sent automatically once a cart is 30 minutes old and still unpaid.'
             : 'Completed, paid bookings.'}

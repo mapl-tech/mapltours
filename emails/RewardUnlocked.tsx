@@ -45,7 +45,7 @@ export default function RewardUnlocked({
         <div style={s.codePill}>{code}</div>
         <Text style={{
           margin: '10px 0 0',
-          fontSize: 11.5,
+          fontSize: 12,
           letterSpacing: '0.06em',
           textTransform: 'uppercase',
           color: 'rgba(255,255,255,0.5)',

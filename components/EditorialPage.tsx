@@ -45,7 +45,7 @@ export default function EditorialPage({
         }} />
         <div className="container" style={{ position: 'relative', zIndex: 1, paddingBottom: 28, maxWidth: 900 }}>
           <p style={{
-            fontSize: 11, fontWeight: 600, textTransform: 'uppercase',
+            fontSize: 12, fontWeight: 600, textTransform: 'uppercase',
             letterSpacing: '0.1em', color: 'var(--gold-warm)',
             fontFamily: 'var(--font-dm-sans)', marginBottom: 8,
           }}>
@@ -53,7 +53,7 @@ export default function EditorialPage({
           </p>
           <h1 style={{
             fontFamily: 'var(--font-dm-sans)', fontWeight: 700,
-            fontSize: 'clamp(1.75rem, 3vw, 2.5rem)', color: 'white',
+            fontSize: 'var(--fs-h2)', color: 'white',
             lineHeight: 1.1, letterSpacing: '-0.02em',
           }}>
             {title}
@@ -66,7 +66,7 @@ export default function EditorialPage({
         maxWidth: 800, paddingTop: 48, paddingBottom: 80,
       }}>
         <div style={{
-          fontFamily: 'var(--font-dm-sans)', fontSize: 15.5,
+          fontFamily: 'var(--font-dm-sans)', fontSize: 15,
           color: 'var(--text-secondary)', lineHeight: 1.75,
         }}>
           {children}
@@ -106,7 +106,7 @@ export function ValueCard({ title, desc }: { title: string; desc: string }) {
       }}>
         {title}
       </h3>
-      <p style={{ fontSize: 14.5, color: 'var(--text-secondary)', lineHeight: 1.65 }}>
+      <p style={{ fontSize: 14, color: 'var(--text-secondary)', lineHeight: 1.65 }}>
         {desc}
       </p>
     </div>

@@ -64,13 +64,13 @@ function DriverLoginContent() {
             <h1 style={{ fontWeight: 800, fontSize: 'clamp(24px, 5vw, 27px)', letterSpacing: '-0.02em', color: ink, margin: 0 }}>
               Good to see you, driver
             </h1>
-            <p style={{ fontSize: 14.5, color: soft, margin: '8px 0 0', lineHeight: 1.55 }}>
+            <p style={{ fontSize: 14, color: soft, margin: '8px 0 0', lineHeight: 1.55 }}>
               Your trips, guests, flight tracking and pay, all in one place.
             </p>
 
             {notAllowed && (
               <p role="alert" style={{
-                fontSize: 13.5, lineHeight: 1.5, margin: '18px 0 0', padding: '11px 14px', borderRadius: 10,
+                fontSize: 13, lineHeight: 1.5, margin: '18px 0 0', padding: '11px 14px', borderRadius: 10,
                 background: '#FCEDEA', border: '1px solid rgba(176,28,12,0.25)', color: '#B01C0C',
               }}>
                 That Google account is not approved for the driver portal. Sign in with the Gmail address MAPL Tours approved, or contact contact@mapltours.com.
@@ -82,7 +82,7 @@ function DriverLoginContent() {
               style={{
                 width: '100%', minHeight: 52, borderRadius: 13, border: '1px solid #D8D2C6', background: '#fff',
                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 11, marginTop: 22,
-                fontFamily: dm, fontSize: 15.5, fontWeight: 600, color: ink, cursor: 'pointer',
+                fontFamily: dm, fontSize: 15, fontWeight: 600, color: ink, cursor: 'pointer',
                 transition: 'border-color 0.15s ease, background 0.15s ease, transform 0.12s ease',
               }}
             >
@@ -96,12 +96,12 @@ function DriverLoginContent() {
             </button>
 
             <div aria-hidden="true" style={{ height: 1, margin: '22px 0 14px', background: 'linear-gradient(90deg, transparent, #E7E1D6 50%, transparent)' }} />
-            <p style={{ fontSize: 12.5, color: '#6E6A62', lineHeight: 1.55, margin: 0, textAlign: 'center' }}>
+            <p style={{ fontSize: 12, color: '#6E6A62', lineHeight: 1.55, margin: 0, textAlign: 'center' }}>
               Access is limited to approved MAPL drivers.
             </p>
           </div>
 
-          <p style={{ fontSize: 12.5, color: 'rgba(255,255,255,0.75)', textAlign: 'center', margin: '20px 0 0', lineHeight: 1.5, textShadow: '0 1px 8px rgba(0,0,0,0.5)' }}>
+          <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.75)', textAlign: 'center', margin: '20px 0 0', lineHeight: 1.5, textShadow: '0 1px 8px rgba(0,0,0,0.5)' }}>
             MAPL Tours Jamaica · contact@mapltours.com
           </p>
         </div>

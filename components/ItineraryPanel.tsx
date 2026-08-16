@@ -99,7 +99,7 @@ export default function ItineraryPanel({ open, onClose }: { open: boolean; onClo
         }}>
           <div>
             <h3 className="text-headline" style={{ fontSize: 18, marginBottom: 2 }}>{t('Your Itinerary')}</h3>
-            <p style={{ fontSize: 12.5, color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-sans)' }}>
+            <p style={{ fontSize: 12, color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-sans)' }}>
               {items.length} experience{items.length !== 1 ? 's' : ''} · Jamaica
             </p>
           </div>
@@ -121,7 +121,7 @@ export default function ItineraryPanel({ open, onClose }: { open: boolean; onClo
         }}>
           <p style={{
             fontFamily: 'var(--font-dm-sans)',
-            fontSize: 11, fontWeight: 600,
+            fontSize: 12, fontWeight: 600,
             letterSpacing: '0.1em', textTransform: 'uppercase',
             color: 'var(--text-tertiary)',
             marginBottom: 8,
@@ -142,14 +142,14 @@ export default function ItineraryPanel({ open, onClose }: { open: boolean; onClo
                 <Image src={item.image} alt={item.title} fill sizes="60px" style={{ objectFit: 'cover' }} />
               </div>
               <div style={{ flex: 1, minWidth: 0 }}>
-                <p style={{ fontSize: 13.5, fontWeight: 600, fontFamily: 'var(--font-dm-sans)', marginBottom: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                <p style={{ fontSize: 13, fontWeight: 600, fontFamily: 'var(--font-dm-sans)', marginBottom: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   {t(item.title)}
                 </p>
                 <p style={{ fontSize: 12, color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-sans)', marginBottom: 5 }}>
                   {item.destination} · {t(item.duration)}
                 </p>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <span style={{ fontSize: 13.5, fontFamily: 'var(--font-dm-sans)', fontWeight: 700 }}>
+                  <span style={{ fontSize: 13, fontFamily: 'var(--font-dm-sans)', fontWeight: 700 }}>
                     {formatPrice(tourPrice(item.pricing, item.travelers))} · {item.travelers} {item.travelers === 1 ? 'traveler' : 'travelers'}
                   </span>
                   <button onClick={() => removeItem(item.id)} style={{
@@ -166,7 +166,7 @@ export default function ItineraryPanel({ open, onClose }: { open: boolean; onClo
           {stops.length > 0 && (
             <div style={{ marginTop: items.length > 0 ? 4 : 0 }}>
               <p style={{
-                fontFamily: 'var(--font-dm-sans)', fontSize: 11, fontWeight: 600,
+                fontFamily: 'var(--font-dm-sans)', fontSize: 12, fontWeight: 600,
                 letterSpacing: '0.1em', textTransform: 'uppercase',
                 color: 'var(--text-tertiary)', marginBottom: 10,
               }}>
@@ -198,7 +198,7 @@ export default function ItineraryPanel({ open, onClose }: { open: boolean; onClo
                   </div>
                 </div>
               ))}
-              <p style={{ fontSize: 11.5, color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-sans)', marginBottom: 4 }}>
+              <p style={{ fontSize: 12, color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-sans)', marginBottom: 4 }}>
                 {t('Free roadside stops, your driver builds them into your route.')}
               </p>
             </div>
@@ -210,7 +210,7 @@ export default function ItineraryPanel({ open, onClose }: { open: boolean; onClo
           {[
             { label: t('Subtotal'), value: subtotal() },
           ].map((row) => (
-            <div key={row.label} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13.5, fontFamily: 'var(--font-dm-sans)', color: 'var(--text-secondary)', marginBottom: 6 }}>
+            <div key={row.label} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, fontFamily: 'var(--font-dm-sans)', color: 'var(--text-secondary)', marginBottom: 6 }}>
               <span>{row.label}</span>
               <span>{formatPrice(row.value)}</span>
             </div>

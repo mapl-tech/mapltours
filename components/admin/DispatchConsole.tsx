@@ -21,7 +21,7 @@ const accent = 'var(--accent, #171614)'
 const border = '1px solid var(--border, #E7E1D6)'
 const borderSoft = '1px solid var(--border-subtle, #F1ECE3)'
 const tnum = { fontVariantNumeric: 'tabular-nums' as const }
-const subLabel: React.CSSProperties = { fontSize: 11, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: faint, margin: '0 0 6px' }
+const subLabel: React.CSSProperties = { fontSize: 12, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: faint, margin: '0 0 6px' }
 const AIRPORT = 'Sangster International Airport (MBJ)'
 
 function Card({ title, children }: { title?: string; children: React.ReactNode }) {
@@ -29,7 +29,7 @@ function Card({ title, children }: { title?: string; children: React.ReactNode }
     <section style={{ background: '#fff', border, borderRadius: 14, overflow: 'hidden' }}>
       {title && (
         <div style={{ padding: '13px 20px', borderBottom: borderSoft, background: '#FCFBF8' }}>
-          <span style={{ fontSize: 11.5, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: faint }}>{title}</span>
+          <span style={{ fontSize: 12, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: faint }}>{title}</span>
         </div>
       )}
       <div style={{ padding: '18px 20px' }}>{children}</div>
@@ -148,7 +148,7 @@ export default function DispatchConsole({ booking, stripeFee, driverEmailConfigu
         <div style={{ flex: 1, height: 8, borderRadius: 9999, background: 'var(--surface, #F1ECE3)', overflow: 'hidden', maxWidth: 320 }}>
           <div style={{ width: `${(prog.done / prog.total) * 100}%`, height: '100%', background: green, transition: 'width 0.3s ease' }} />
         </div>
-        <span style={{ fontSize: 12.5, color: faint, ...tnum }}>{prog.done} / {prog.total} steps</span>
+        <span style={{ fontSize: 12, color: faint, ...tnum }}>{prog.done} / {prog.total} steps</span>
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) minmax(0,1fr)', gap: 14, marginTop: 20 }} className="admin-card-grid">
@@ -167,11 +167,11 @@ export default function DispatchConsole({ booking, stripeFee, driverEmailConfigu
 
         {/* Trip */}
         <Card title="Trip (Jamaica time)">
-          <p style={{ ...tnum, fontSize: 11.5, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: faint, margin: '0 0 6px' }}>Arrival</p>
+          <p style={{ ...tnum, fontSize: 12, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: faint, margin: '0 0 6px' }}>Arrival</p>
           <div style={{ fontSize: 14, fontWeight: 600 }}>{AIRPORT} → {leg.hotel}</div>
           <div style={{ fontSize: 13, color: soft, marginTop: 2, ...tnum }}>{jaDate(leg.arrivalAt)}</div>
           <div style={{ fontSize: 13, color: soft, ...tnum }}>Flight lands {jaTime(leg.arrivalAt)}{leg.arrivalFlight ? ` (flight ${leg.arrivalFlight})` : ' (flight TBD)'}</div>
-          <div style={{ fontSize: 12.5, color: faint, marginTop: 2, ...tnum }}>Customer usually clears customs ~{ARRIVAL_CLEAR_MIN} min after landing ({jaTime(leg.arrivalAt ? shiftIso(leg.arrivalAt, ARRIVAL_CLEAR_MIN) : null)}).</div>
+          <div style={{ fontSize: 12, color: faint, marginTop: 2, ...tnum }}>Customer usually clears customs ~{ARRIVAL_CLEAR_MIN} min after landing ({jaTime(leg.arrivalAt ? shiftIso(leg.arrivalAt, ARRIVAL_CLEAR_MIN) : null)}).</div>
           <div style={{ marginTop: 10, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
             {arrivalCal && <Btn href={arrivalCal}>📅 Add arrival to Google Calendar</Btn>}
             <DayOfBtn bookingId={b.id} leg="arrival" sentAt={dispatch.dayof_arrival_sent} />
@@ -179,11 +179,11 @@ export default function DispatchConsole({ booking, stripeFee, driverEmailConfigu
 
           {m.isRoundTrip && leg.departureAt && (
             <>
-              <p style={{ ...tnum, fontSize: 11.5, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: faint, margin: '16px 0 6px' }}>Departure</p>
+              <p style={{ ...tnum, fontSize: 12, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: faint, margin: '16px 0 6px' }}>Departure</p>
               <div style={{ fontSize: 14, fontWeight: 600 }}>{leg.hotel} → {AIRPORT}</div>
               <div style={{ fontSize: 13, color: soft, marginTop: 2, ...tnum }}>{jaDate(leg.departureAt)}</div>
               <div style={{ fontSize: 13, color: soft, ...tnum }}>Hotel pickup {jaTime(leg.departureAt)}{leg.departureFlight ? ` · flight ${leg.departureFlight}` : ''}</div>
-              <div style={{ fontSize: 12.5, color: amber, marginTop: 2, fontWeight: 600 }}>This is the pickup time the guest requested. Check it against the flight below.</div>
+              <div style={{ fontSize: 12, color: amber, marginTop: 2, fontWeight: 600 }}>This is the pickup time the guest requested. Check it against the flight below.</div>
               <div style={{ marginTop: 10, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                 {departureCal && <Btn href={departureCal}>📅 Add departure to Google Calendar</Btn>}
                 <DayOfBtn bookingId={b.id} leg="departure" sentAt={dispatch.dayof_departure_sent} />
@@ -196,7 +196,7 @@ export default function DispatchConsole({ booking, stripeFee, driverEmailConfigu
       {/* Flight tracking */}
       <div style={{ marginTop: 14 }}>
         <Card title="Flight tracking">
-          <p style={{ fontSize: 12.5, color: faint, margin: '0 0 12px', lineHeight: 1.5 }}>
+          <p style={{ fontSize: 12, color: faint, margin: '0 0 12px', lineHeight: 1.5 }}>
             The arrival time is when the flight lands; the departure time is the hotel pickup the guest asked for. Check both against the airline before dispatch.
           </p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
@@ -257,14 +257,14 @@ export default function DispatchConsole({ booking, stripeFee, driverEmailConfigu
 
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, flexWrap: 'wrap' }}>
-                      <span style={{ fontSize: 11.5, fontWeight: 700, color: faint, ...tnum }}>{String(s.num).padStart(2, '0')}</span>
-                      <span style={{ fontSize: 14.5, fontWeight: 600, color: isDone ? faint : ink, textDecoration: doneAt ? 'line-through' : undefined }}>{s.title}</span>
-                      {doneAt && <span style={{ fontSize: 11.5, color: green, ...tnum }}>✓ {jaDateOrTime(doneAt)}</span>}
-                      {auto && <span style={{ fontSize: 11.5, color: green }}>✓ auto · {auto}</span>}
-                      {payNote[s.key] === 'sent' && <span style={{ fontSize: 11.5, color: green }}>✉️ driver emailed</span>}
-                      {payNote[s.key] === 'failed' && <span style={{ fontSize: 11.5, color: '#8A2A0A', fontWeight: 600 }}>payment saved, but the driver email did not send</span>}
+                      <span style={{ fontSize: 12, fontWeight: 700, color: faint, ...tnum }}>{String(s.num).padStart(2, '0')}</span>
+                      <span style={{ fontSize: 14, fontWeight: 600, color: isDone ? faint : ink, textDecoration: doneAt ? 'line-through' : undefined }}>{s.title}</span>
+                      {doneAt && <span style={{ fontSize: 12, color: green, ...tnum }}>✓ {jaDateOrTime(doneAt)}</span>}
+                      {auto && <span style={{ fontSize: 12, color: green }}>✓ auto · {auto}</span>}
+                      {payNote[s.key] === 'sent' && <span style={{ fontSize: 12, color: green }}>✉️ driver emailed</span>}
+                      {payNote[s.key] === 'failed' && <span style={{ fontSize: 12, color: '#8A2A0A', fontWeight: 600 }}>payment saved, but the driver email did not send</span>}
                     </div>
-                    {s.hint && !isDone && <div style={{ fontSize: 12.5, color: faint, marginTop: 3 }}>{s.hint}</div>}
+                    {s.hint && !isDone && <div style={{ fontSize: 12, color: faint, marginTop: 3 }}>{s.hint}</div>}
                     <StepActions stepKey={s.key} b={b} m={m} arrivalCal={arrivalCal} departureCal={departureCal} />
                   </div>
                 </div>
@@ -432,9 +432,9 @@ function FlightTracking({ legLabel, flightRaw, dateIso, bookedLabel, mbjRole }: 
   return (
     <div>
       <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, flexWrap: 'wrap' }}>
-        <span style={{ fontSize: 13.5, fontWeight: 600 }}>{legLabel}</span>
+        <span style={{ fontSize: 13, fontWeight: 600 }}>{legLabel}</span>
         <span style={{ fontSize: 13, color: soft, ...tnum }}>{links?.ident ?? flightRaw ?? 'flight TBD'}</span>
-        <span style={{ fontSize: 12.5, color: faint, ...tnum }}>{isDeparture ? 'Requested pickup' : 'Lands'} {bookedLabel} Jamaica time</span>
+        <span style={{ fontSize: 12, color: faint, ...tnum }}>{isDeparture ? 'Requested pickup' : 'Lands'} {bookedLabel} Jamaica time</span>
       </div>
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 8 }}>
         {links && <Btn href={links.google}>Google</Btn>}
@@ -450,43 +450,43 @@ function FlightTracking({ legLabel, flightRaw, dateIso, bookedLabel, mbjRole }: 
               background: warn ? '#FCEDEA' : '#EAF4EE',
               border: `1px solid ${warn ? 'rgba(176,28,12,0.25)' : 'rgba(29,122,80,0.25)'}`,
             }}>
-              <div style={{ fontSize: 13.5, fontWeight: 600, color: warn ? '#B01C0C' : green, ...tnum }}>
+              <div style={{ fontSize: 13, fontWeight: 600, color: warn ? '#B01C0C' : green, ...tnum }}>
                 Airline: flight {isDeparture ? 'departs' : 'lands'} {authTime}{st.status ? ` · ${st.status}` : ''}
               </div>
               {isDeparture && lead != null && (
                 lead <= 0 ? (
-                  <div style={{ fontSize: 12.5, color: '#B01C0C', marginTop: 4 }}>
+                  <div style={{ fontSize: 12, color: '#B01C0C', marginTop: 4 }}>
                     The requested {bookedLabel} pickup is at or after the flight time. Fix this with the guest before dispatch.
                   </div>
                 ) : lead < MIN_PICKUP_LEAD_MIN ? (
-                  <div style={{ fontSize: 12.5, color: '#B01C0C', marginTop: 4 }}>
+                  <div style={{ fontSize: 12, color: '#B01C0C', marginTop: 4 }}>
                     Pickup at {bookedLabel} leaves only {leadLabel} before the flight. Confirm with the guest; suggest an earlier pickup.
                   </div>
                 ) : (
-                  <div style={{ fontSize: 12.5, color: faint, marginTop: 4 }}>
+                  <div style={{ fontSize: 12, color: faint, marginTop: 4 }}>
                     Pickup at {bookedLabel} leaves {leadLabel} before the flight. Comfortable.
                   </div>
                 )
               )}
               {!isDeparture && warn && (
-                <div style={{ fontSize: 12.5, color: '#B01C0C', marginTop: 4 }}>
+                <div style={{ fontSize: 12, color: '#B01C0C', marginTop: 4 }}>
                   This is about {Math.abs(diff!)} min off the {bookedLabel} the customer entered. Update the pickup plan to match the airline.
                 </div>
               )}
               {!isDeparture && !warn && diff != null && (
-                <div style={{ fontSize: 12.5, color: faint, marginTop: 4 }}>Matches the customer&rsquo;s time.</div>
+                <div style={{ fontSize: 12, color: faint, marginTop: 4 }}>Matches the customer&rsquo;s time.</div>
               )}
             </div>
           ) : !st.configured ? (
-            <p style={{ fontSize: 12.5, color: faint }}>
+            <p style={{ fontSize: 12, color: faint }}>
               Live auto-fetch is off (no AERODATABOX_API_KEY set). Use the links above to verify manually, or add a key to pull the airline time automatically.
             </p>
           ) : !st.resolvable ? (
-            <p style={{ fontSize: 12.5, color: faint }}>Flight number is incomplete (needs the airline code, e.g. VS165). Use the links above.</p>
+            <p style={{ fontSize: 12, color: faint }}>Flight number is incomplete (needs the airline code, e.g. VS165). Use the links above.</p>
           ) : st.error === 'rate_limited' ? (
-            <p style={{ fontSize: 12.5, color: faint }}>Airline service is busy (rate limit). Wait a few seconds and check again, or use the links above.</p>
+            <p style={{ fontSize: 12, color: faint }}>Airline service is busy (rate limit). Wait a few seconds and check again, or use the links above.</p>
           ) : (
-            <p style={{ fontSize: 12.5, color: faint }}>No airline data for this flight and date yet. Use the links above.</p>
+            <p style={{ fontSize: 12, color: faint }}>No airline data for this flight and date yet. Use the links above.</p>
           )}
         </div>
       )}

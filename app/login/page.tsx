@@ -121,7 +121,7 @@ function LoginContent() {
         <div className="login-aside-overlay" />
         <div className="login-aside-text">
           <span style={{
-            fontFamily: 'var(--font-dm-sans)', fontWeight: 600, fontSize: 11,
+            fontFamily: 'var(--font-dm-sans)', fontWeight: 600, fontSize: 12,
             letterSpacing: '0.22em', textTransform: 'uppercase', color: 'var(--gold-warm)',
           }}>
             MAPL Tours · Jamaica
@@ -135,7 +135,7 @@ function LoginContent() {
             Discover Jamaica<br />beyond the resort.
           </h2>
           <p style={{
-            fontFamily: 'var(--font-dm-sans)', fontSize: 14.5, lineHeight: 1.6,
+            fontFamily: 'var(--font-dm-sans)', fontSize: 14, lineHeight: 1.6,
             color: 'rgba(255,255,255,0.82)', marginTop: 16, maxWidth: 380,
             textShadow: '0 1px 12px rgba(0,0,0,0.4)',
           }}>
@@ -219,7 +219,7 @@ function LoginContent() {
               <span style={{
                 fontFamily: 'var(--font-dm-sans)',
                 fontWeight: 700,
-                fontSize: 11,
+                fontSize: 12,
                 letterSpacing: '0.12em',
                 textTransform: 'uppercase',
                 color: 'var(--text-secondary)',

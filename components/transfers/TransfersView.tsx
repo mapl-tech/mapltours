@@ -622,7 +622,7 @@ export default function TransfersView() {
             <Link
               href="/contact"
               className="btn-outline"
-              style={{ height: 44, padding: '0 22px', fontSize: 13.5 }}
+              style={{ height: 44, padding: '0 22px', fontSize: 13 }}
             >
               Request a custom quote
             </Link>
@@ -791,7 +791,7 @@ export default function TransfersView() {
             style={{
               marginTop: 14,
               fontFamily: 'var(--font-dm-sans)',
-              fontSize: 12.5,
+              fontSize: 12,
               color: 'var(--text-tertiary)',
             }}
           >
@@ -1638,7 +1638,7 @@ function Kicker({
         display: centered ? 'block' : 'inline-block',
         margin: 0,
         fontFamily: 'var(--font-dm-sans)',
-        fontSize: 11,
+        fontSize: 12,
         fontWeight: 700,
         letterSpacing: '0.22em',
         textTransform: 'uppercase',
@@ -1666,7 +1666,7 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
         style={{
           display: 'block',
           fontFamily: 'var(--font-dm-sans)',
-          fontSize: 12.5,
+          fontSize: 12,
           fontWeight: 600,
           color: 'var(--text-secondary)',
           marginBottom: 8,
@@ -1716,14 +1716,14 @@ function TripToggle({
             top: -9,
             right: 10,
             fontFamily: 'var(--font-dm-sans)',
-            fontSize: 11,
+            fontSize: 12,
             fontWeight: 700,
             letterSpacing: '0.1em',
             textTransform: 'uppercase',
             background: 'var(--gold-text)',
             color: '#fff',
             padding: '3px 8px',
-            borderRadius: 999,
+            borderRadius: 9999,
           }}
         >
           {badge}
@@ -1796,7 +1796,7 @@ function TrustItem({
         <p
           style={{
             fontFamily: 'var(--font-dm-sans)',
-            fontSize: 12.5,
+            fontSize: 12,
             color: 'var(--text-tertiary)',
             lineHeight: 1.5,
           }}
@@ -1850,7 +1850,7 @@ function CompareItem({
               display: 'flex',
               gap: 10,
               fontFamily: 'var(--font-dm-sans)',
-              fontSize: 13.5,
+              fontSize: 13,
               color: 'var(--text-secondary)',
               lineHeight: 1.55,
             }}

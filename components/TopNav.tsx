@@ -106,7 +106,7 @@ export default function TopNav({ onCartClick }: { onCartClick?: () => void }) {
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1 }}>
               <span style={{ fontFamily: 'var(--font-dm-sans)', fontWeight: 800, fontSize: 15, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--text-primary)' }}>MAPL</span>
-              <span style={{ fontFamily: 'var(--font-dm-sans)', fontWeight: 700, fontSize: 11, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--text-secondary)', marginTop: 1 }}>Tours Jamaica</span>
+              <span style={{ fontFamily: 'var(--font-dm-sans)', fontWeight: 700, fontSize: 12, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--text-secondary)', marginTop: 1 }}>Tours Jamaica</span>
             </div>
           </Link>
           <div style={{ display: 'flex', alignItems: 'center', gap: 7, fontFamily: 'var(--font-dm-sans)', fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)' }}>
@@ -185,7 +185,7 @@ export default function TopNav({ onCartClick }: { onCartClick?: () => void }) {
             <span style={{
               fontFamily: 'var(--font-dm-sans)',
               fontWeight: 700,
-              fontSize: 11,
+              fontSize: 12,
               letterSpacing: '0.12em',
               textTransform: 'uppercase',
               color: dark ? 'rgba(255,255,255,0.7)' : 'var(--text-secondary)',
@@ -221,7 +221,7 @@ export default function TopNav({ onCartClick }: { onCartClick?: () => void }) {
             position: 'relative',
           }}>
             <span style={{
-              fontSize: 11, fontWeight: 600, textTransform: 'uppercase',
+              fontSize: 12, fontWeight: 600, textTransform: 'uppercase',
               letterSpacing: '0.08em', color: 'var(--text-tertiary)',
               fontFamily: 'var(--font-dm-sans)', lineHeight: 1, marginBottom: 1,
             }}>
@@ -261,7 +261,7 @@ export default function TopNav({ onCartClick }: { onCartClick?: () => void }) {
                 {where && TRANSFER_DESTINATIONS.some((d) => d.name.toLowerCase().includes(where.toLowerCase())) && (
                   <>
                     <p style={{
-                      fontSize: 11, fontWeight: 600, textTransform: 'uppercase',
+                      fontSize: 12, fontWeight: 600, textTransform: 'uppercase',
                       letterSpacing: '0.06em', color: 'var(--text-tertiary)',
                       fontFamily: 'var(--font-dm-sans)', padding: '8px 16px 6px',
                     }}>
@@ -297,7 +297,7 @@ export default function TopNav({ onCartClick }: { onCartClick?: () => void }) {
                             <Car size={15} color="var(--gold-text, #6E5A1C)" />
                           </div>
                           <div>
-                            <p style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--text-primary)' }}>{d.name}</p>
+                            <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>{d.name}</p>
                             <p style={{ fontSize: 12, color: 'var(--text-tertiary)', marginTop: 1 }}>{t('Airport transfer from MBJ')} · {d.parish}</p>
                           </div>
                         </button>
@@ -305,7 +305,7 @@ export default function TopNav({ onCartClick }: { onCartClick?: () => void }) {
                   </>
                 )}
                 <p style={{
-                  fontSize: 11, fontWeight: 600, textTransform: 'uppercase',
+                  fontSize: 12, fontWeight: 600, textTransform: 'uppercase',
                   letterSpacing: '0.06em', color: 'var(--text-tertiary)',
                   fontFamily: 'var(--font-dm-sans)', padding: '8px 16px 6px',
                 }}>
@@ -339,7 +339,7 @@ export default function TopNav({ onCartClick }: { onCartClick?: () => void }) {
                         <MapPin size={15} color="var(--text-tertiary)" />
                       </div>
                       <div>
-                        <p style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--text-primary)' }}>{d.name}</p>
+                        <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>{d.name}</p>
                         <p style={{ fontSize: 12, color: 'var(--text-tertiary)', marginTop: 1 }}>{d.parish}, Jamaica</p>
                       </div>
                     </button>
@@ -364,7 +364,7 @@ export default function TopNav({ onCartClick }: { onCartClick?: () => void }) {
             }}
           >
             <span style={{
-              fontSize: 11, fontWeight: 600, textTransform: 'uppercase',
+              fontSize: 12, fontWeight: 600, textTransform: 'uppercase',
               letterSpacing: '0.08em', color: 'var(--text-tertiary)',
               fontFamily: 'var(--font-dm-sans)', lineHeight: 1, marginBottom: 1,
             }}>
@@ -403,7 +403,7 @@ export default function TopNav({ onCartClick }: { onCartClick?: () => void }) {
             }}
           >
             <span style={{
-              fontSize: 11, fontWeight: 600, textTransform: 'uppercase',
+              fontSize: 12, fontWeight: 600, textTransform: 'uppercase',
               letterSpacing: '0.08em', color: 'var(--text-tertiary)',
               fontFamily: 'var(--font-dm-sans)', lineHeight: 1, marginBottom: 1,
             }}>
@@ -636,7 +636,7 @@ export default function TopNav({ onCartClick }: { onCartClick?: () => void }) {
             aria-current={isTransfers ? 'page' : undefined}
             style={{
               display: 'inline-flex', alignItems: 'center',
-              minHeight: 38, padding: '0 16px', fontSize: 13.5, fontWeight: 700,
+              minHeight: 38, padding: '0 16px', fontSize: 13, fontWeight: 700,
               fontFamily: 'var(--font-dm-sans)', color: '#1A1508',
               background: 'var(--gold)', borderRadius: 9999,
               transition: 'filter 0.15s ease', whiteSpace: 'nowrap',

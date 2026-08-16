@@ -31,7 +31,7 @@ const faint = '#6E6A62' // AA-passing tertiary
 const border = '1px solid var(--border, #E7E1D6)'
 const borderSoft = '1px solid var(--border-subtle, #F1ECE3)'
 const tnum = { fontVariantNumeric: 'tabular-nums' as const }
-const label: React.CSSProperties = { fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: faint, margin: 0 }
+const label: React.CSSProperties = { fontSize: 12, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: faint, margin: 0 }
 
 function usd(n: number): string {
   return '$' + n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
@@ -96,7 +96,7 @@ export default function CashflowView({ rows }: { rows: CashRow[] }) {
             {k.hero && <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 4, background: C.net }} />}
             <div style={label}>{k.label}</div>
             <div style={{ fontWeight: 800, fontSize: k.hero ? 34 : 30, letterSpacing: '-0.02em', marginTop: 8, color: k.hero ? C.net : ink, ...tnum }}>{k.value}</div>
-            <div style={{ fontSize: 12.5, color: soft, marginTop: 2, ...tnum }}>{k.sub}</div>
+            <div style={{ fontSize: 12, color: soft, marginTop: 2, ...tnum }}>{k.sub}</div>
           </div>
         ))}
       </div>
@@ -105,7 +105,7 @@ export default function CashflowView({ rows }: { rows: CashRow[] }) {
       <section style={{ background: '#fff', border, borderRadius: 14, padding: '20px 22px', marginTop: 16 }}>
         <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
           <h2 style={{ fontWeight: 700, fontSize: 17, letterSpacing: '-0.02em', margin: 0 }}>Where your revenue goes</h2>
-          <span style={{ fontSize: 12.5, color: faint, ...tnum }}>of {usd(collected)} collected</span>
+          <span style={{ fontSize: 12, color: faint, ...tnum }}>of {usd(collected)} collected</span>
         </div>
 
         {collected > 0 ? (
@@ -119,7 +119,7 @@ export default function CashflowView({ rows }: { rows: CashRow[] }) {
                     onMouseMove={(e) => setTip({ x: e.clientX, y: e.clientY, lines: [p.label, `${usd(p.value)} (${pct.toFixed(1)}%)`] })}
                     style={{ flex: `${p.value} 0 0`, minWidth: 3, background: p.color, display: 'flex', alignItems: 'center', paddingLeft: 12, color: '#fff', cursor: 'default' }}
                   >
-                    {pct >= 12 && <span style={{ fontSize: 12.5, fontWeight: 700, ...tnum }}>{Math.round(pct)}%</span>}
+                    {pct >= 12 && <span style={{ fontSize: 12, fontWeight: 700, ...tnum }}>{Math.round(pct)}%</span>}
                   </div>
                 )
               })}
@@ -134,7 +134,7 @@ export default function CashflowView({ rows }: { rows: CashRow[] }) {
               ))}
             </div>
           </>
-        ) : <p style={{ marginTop: 14, color: faint, fontSize: 13.5 }}>No paid revenue yet.</p>}
+        ) : <p style={{ marginTop: 14, color: faint, fontSize: 13 }}>No paid revenue yet.</p>}
       </section>
 
       {/* Monthly collected */}
@@ -152,7 +152,7 @@ export default function CashflowView({ rows }: { rows: CashRow[] }) {
                     onMouseMove={(e) => setTip({ x: e.clientX, y: e.clientY, lines: [monthLabel(mo), usd(v)] })}
                     style={{ width: 40, height: h, background: ink, borderRadius: '5px 5px 2px 2px', transition: 'height 0.3s ease', cursor: 'default' }}
                   />
-                  <span style={{ fontSize: 11.5, color: faint, ...tnum }}>{monthLabel(mo)}</span>
+                  <span style={{ fontSize: 12, color: faint, ...tnum }}>{monthLabel(mo)}</span>
                 </div>
               )
             })}
@@ -164,9 +164,9 @@ export default function CashflowView({ rows }: { rows: CashRow[] }) {
       <section style={{ marginTop: 16 }}>
         <h2 style={{ fontWeight: 700, fontSize: 17, letterSpacing: '-0.02em', margin: '0 0 12px' }}>Transactions</h2>
         <div tabIndex={0} role="region" aria-label="Transactions table" style={{ overflowX: 'auto', border, borderRadius: 14, background: '#fff' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13.5, minWidth: 860 }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13, minWidth: 860 }}>
             <thead>
-              <tr style={{ textAlign: 'left', color: faint, fontSize: 11.5, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+              <tr style={{ textAlign: 'left', color: faint, fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
                 {['Date', 'Booking', 'Customer', 'Type', 'Gross', 'Stripe (USD)', 'Driver', 'Remitly (est.)', 'Net kept', 'Settled (CAD)'].map((h, i) => (
                   <th key={h} style={{ padding: '12px 16px', fontWeight: 600, textAlign: i >= 4 ? 'right' : 'left', whiteSpace: 'nowrap' }}>{h}</th>
                 ))}
@@ -198,7 +198,7 @@ export default function CashflowView({ rows }: { rows: CashRow[] }) {
       </p>
 
       {tip && (
-        <div style={{ position: 'fixed', left: tip.x + 14, top: tip.y + 14, zIndex: 50, background: ink, color: '#fff', borderRadius: 8, padding: '8px 11px', fontSize: 12.5, pointerEvents: 'none', boxShadow: '0 6px 22px rgba(0,0,0,0.25)' }}>
+        <div style={{ position: 'fixed', left: tip.x + 14, top: tip.y + 14, zIndex: 50, background: ink, color: '#fff', borderRadius: 8, padding: '8px 11px', fontSize: 12, pointerEvents: 'none', boxShadow: '0 6px 22px rgba(0,0,0,0.25)' }}>
           {tip.lines.map((l, i) => <div key={i} style={{ fontWeight: i === 0 ? 700 : 500, ...tnum }}>{l}</div>)}
         </div>
       )}

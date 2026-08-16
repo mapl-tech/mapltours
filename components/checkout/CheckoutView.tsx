@@ -156,7 +156,7 @@ function ReviewStep() {
             <div>
               <p style={{
                 fontFamily: 'var(--font-dm-sans)',
-                fontSize: 11, fontWeight: 600,
+                fontSize: 12, fontWeight: 600,
                 letterSpacing: '0.1em', textTransform: 'uppercase',
                 color: 'var(--text-tertiary)',
                 marginBottom: 4,
@@ -221,7 +221,7 @@ function ReviewStep() {
             borderBottom: i < items.length - 1 ? '1px solid var(--border)' : 'none',
           }}>
             <div style={{ flex: 1, minWidth: 0 }}>
-              <p style={{ fontSize: 13.5, fontWeight: 600, fontFamily: 'var(--font-dm-sans)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t(item.title)}</p>
+              <p style={{ fontSize: 13, fontWeight: 600, fontFamily: 'var(--font-dm-sans)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t(item.title)}</p>
               <p style={{ fontSize: 12, color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-sans)', marginTop: 1 }}>
                 {item.destination} · {item.duration}
               </p>
@@ -257,7 +257,7 @@ function ReviewStep() {
               background: customDates ? 'var(--accent)' : 'var(--surface)',
               border: customDates ? 'none' : '1px solid var(--border)',
               cursor: 'pointer',
-              fontSize: 13.5, fontWeight: 600, fontFamily: 'var(--font-dm-sans)',
+              fontSize: 13, fontWeight: 600, fontFamily: 'var(--font-dm-sans)',
               color: customDates ? 'white' : 'var(--accent)',
               display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
               transition: 'all 0.2s ease',
@@ -284,7 +284,7 @@ function ReviewStep() {
                 <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 6 }}>
                   <div>
                     <h4 style={{ fontFamily: 'var(--font-dm-sans)', fontWeight: 700, fontSize: 16, marginBottom: 4, lineHeight: 1.25 }}>{t(item.title)}</h4>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 12.5, color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-sans)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 12, color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-sans)' }}>
                       <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}><MapPin size={12} /> {item.destination}, {item.parish}</span>
                       <span>·</span>
                       <span>{item.duration}</span>
@@ -314,7 +314,7 @@ function ReviewStep() {
               borderTop: '1px solid var(--border)',
               background: 'var(--bg-warm)',
             }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12.5, color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-sans)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-sans)' }}>
                 <Calendar size={13} />
                 <span>{new Date(item.date + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
               </div>
@@ -395,7 +395,7 @@ function DetailsStep({ waiverAccepted, setWaiverAccepted, waiverError, formData,
           { key: 'phone', label: 'Phone', placeholder: '+1 (555) 000-0000', span: 1, type: 'tel', auto: 'tel' },
         ].map((f) => (
           <div key={f.key} data-field={f.key} style={{ gridColumn: f.span === 2 ? 'span 2' : undefined }}>
-            <label htmlFor={`checkout-${f.key}`} style={{ fontSize: 12.5, color: formErrors[f.key] ? '#c00' : 'var(--text-secondary)', fontFamily: 'var(--font-dm-sans)', fontWeight: 600, display: 'block', marginBottom: 6 }}>
+            <label htmlFor={`checkout-${f.key}`} style={{ fontSize: 12, color: formErrors[f.key] ? '#c00' : 'var(--text-secondary)', fontFamily: 'var(--font-dm-sans)', fontWeight: 600, display: 'block', marginBottom: 6 }}>
               {f.label} {formErrors[f.key] && <span style={{ fontWeight: 400 }}>- {f.key === 'email' && formData[f.key]?.trim() ? 'invalid email' : f.key === 'phone' && formData[f.key]?.trim() ? 'invalid phone' : 'required'}</span>}
             </label>
             <input
@@ -416,7 +416,7 @@ function DetailsStep({ waiverAccepted, setWaiverAccepted, waiverError, formData,
         ))}
         {/* Country dropdown */}
         <div data-field="country">
-          <label htmlFor="checkout-country" style={{ fontSize: 12.5, color: formErrors['country'] ? '#c00' : 'var(--text-secondary)', fontFamily: 'var(--font-dm-sans)', fontWeight: 600, display: 'block', marginBottom: 6 }}>
+          <label htmlFor="checkout-country" style={{ fontSize: 12, color: formErrors['country'] ? '#c00' : 'var(--text-secondary)', fontFamily: 'var(--font-dm-sans)', fontWeight: 600, display: 'block', marginBottom: 6 }}>
             Country {formErrors['country'] && <span style={{ fontWeight: 400 }}>- required</span>}
           </label>
           <select
@@ -484,7 +484,7 @@ function DetailsStep({ waiverAccepted, setWaiverAccepted, waiverError, formData,
 
           {/* Pickup */}
           <div data-field="pickup" style={{ marginBottom: 16 }}>
-            <label style={{ fontSize: 12.5, color: formErrors['pickup'] ? '#c00' : 'var(--text-secondary)', fontFamily: 'var(--font-dm-sans)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
+            <label style={{ fontSize: 12, color: formErrors['pickup'] ? '#c00' : 'var(--text-secondary)', fontFamily: 'var(--font-dm-sans)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
               <span style={{ width: 8, height: 8, borderRadius: '50%', background: formErrors['pickup'] ? '#c00' : 'var(--emerald)', flexShrink: 0 }} />
               {t('Pickup Location')} {formErrors['pickup'] && <span style={{ fontWeight: 400 }}>- required</span>}
             </label>
@@ -513,7 +513,7 @@ function DetailsStep({ waiverAccepted, setWaiverAccepted, waiverError, formData,
 
           {/* Drop-off */}
           <div data-field="dropoff">
-            <label style={{ fontSize: 12.5, color: formErrors['dropoff'] ? '#c00' : 'var(--text-secondary)', fontFamily: 'var(--font-dm-sans)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
+            <label style={{ fontSize: 12, color: formErrors['dropoff'] ? '#c00' : 'var(--text-secondary)', fontFamily: 'var(--font-dm-sans)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
               <span style={{ width: 8, height: 8, borderRadius: '50%', background: formErrors['dropoff'] ? '#c00' : 'var(--gold)', flexShrink: 0 }} />
               {t('Drop-off Location')} {formErrors['dropoff'] && <span style={{ fontWeight: 400 }}>- required</span>}
             </label>
@@ -547,7 +547,7 @@ function DetailsStep({ waiverAccepted, setWaiverAccepted, waiverError, formData,
         </datalist>
 
         <div style={{ gridColumn: 'span 2' }}>
-          <label htmlFor="checkout-special-requests" style={{ fontSize: 12.5, color: 'var(--text-secondary)', fontFamily: 'var(--font-dm-sans)', fontWeight: 600, display: 'block', marginBottom: 6 }}>Special Requests</label>
+          <label htmlFor="checkout-special-requests" style={{ fontSize: 12, color: 'var(--text-secondary)', fontFamily: 'var(--font-dm-sans)', fontWeight: 600, display: 'block', marginBottom: 6 }}>Special Requests</label>
           <textarea
             id="checkout-special-requests"
             className="field-input"
@@ -594,10 +594,10 @@ function DetailsStep({ waiverAccepted, setWaiverAccepted, waiverError, formData,
             style={{ display: 'none' }}
           />
           <div>
-            <p style={{ fontSize: 13.5, fontFamily: 'var(--font-dm-sans)', fontWeight: 600, color: 'var(--text-primary)', lineHeight: 1.4, marginBottom: 4 }}>
+            <p style={{ fontSize: 13, fontFamily: 'var(--font-dm-sans)', fontWeight: 600, color: 'var(--text-primary)', lineHeight: 1.4, marginBottom: 4 }}>
               Activity Waiver & Release
             </p>
-            <p style={{ fontSize: 12.5, fontFamily: 'var(--font-dm-sans)', color: 'var(--text-tertiary)', lineHeight: 1.55 }}>
+            <p style={{ fontSize: 12, fontFamily: 'var(--font-dm-sans)', color: 'var(--text-tertiary)', lineHeight: 1.55 }}>
               I acknowledge that the experiences booked involve physical activities including but not limited to swimming, hiking, cliff jumping, and water sports. I accept all associated risks and agree to the{' '}
               <span
                 onClick={(e) => { e.preventDefault(); setModalContent('waiver') }}
@@ -671,7 +671,7 @@ function DetailsStep({ waiverAccepted, setWaiverAccepted, waiverError, formData,
             {/* Modal body */}
             <div className="no-scrollbar" style={{
               padding: '24px', overflowY: 'auto', flex: 1,
-              fontSize: 13.5, fontFamily: 'var(--font-dm-sans)',
+              fontSize: 13, fontFamily: 'var(--font-dm-sans)',
               color: 'var(--text-secondary)', lineHeight: 1.7,
             }}>
               {modalContent === 'waiver' ? (
@@ -839,7 +839,7 @@ function ConfirmedView() {
         Explore more experiences →
       </button>
 
-      <p style={{ marginTop: 16, fontSize: 12.5, color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-sans)' }}>
+      <p style={{ marginTop: 16, fontSize: 12, color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-sans)' }}>
         Free cancellation within 48 hours · No problem.
       </p>
     </div>
@@ -953,7 +953,7 @@ export default function CheckoutView() {
       {/* Top bar */}
       <div style={{ borderBottom: '1px solid var(--border)', background: '#fff' }}>
         <div className="container checkout-top-bar" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 16px', maxWidth: 1100 }}>
-          <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13.5, fontFamily: 'var(--font-dm-sans)', fontWeight: 500, color: 'var(--text-secondary)', transition: 'color 0.15s ease' }}>
+          <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, fontFamily: 'var(--font-dm-sans)', fontWeight: 500, color: 'var(--text-secondary)', transition: 'color 0.15s ease' }}>
             <ArrowLeft size={15} /> Back
           </Link>
           <div style={{ textAlign: 'center' }}>
@@ -965,7 +965,7 @@ export default function CheckoutView() {
 
       {/* Mobile step label */}
       <div className="hide-desktop container" style={{ paddingTop: 16, paddingBottom: 4 }}>
-        <p style={{ fontSize: 11, fontWeight: 600, fontFamily: 'var(--font-dm-sans)', textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--gold)', marginBottom: 4 }}>
+        <p style={{ fontSize: 12, fontWeight: 600, fontFamily: 'var(--font-dm-sans)', textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--gold)', marginBottom: 4 }}>
           Step {step} of 3
         </p>
         <h3 style={{ fontFamily: 'var(--font-dm-sans)', fontWeight: 700, fontSize: 22 }}>
@@ -1054,7 +1054,7 @@ export default function CheckoutView() {
 
             <div style={{ padding: '16px 24px', background: 'var(--bg-warm)', borderTop: '1px solid var(--border)' }}>
               {([] as { l: string; v: number }[]).map((r) => (
-                <div key={r.l} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13.5, fontFamily: 'var(--font-dm-sans)', color: 'var(--text-secondary)', marginBottom: 6 }}>
+                <div key={r.l} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, fontFamily: 'var(--font-dm-sans)', color: 'var(--text-secondary)', marginBottom: 6 }}>
                   <span>{r.l}</span><span>{formatPrice(r.v)}</span>
                 </div>
               ))}
@@ -1081,7 +1081,7 @@ export default function CheckoutView() {
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <p style={{
-                      fontFamily: 'var(--font-dm-sans)', fontWeight: 700, fontSize: 13.5,
+                      fontFamily: 'var(--font-dm-sans)', fontWeight: 700, fontSize: 13,
                       color: 'var(--text-primary)', letterSpacing: '-0.005em',
                     }}>
                       {availableReward.percent}% MAPL reward
@@ -1113,7 +1113,7 @@ export default function CheckoutView() {
               {rewardApplied && availableReward && rewardDiscount > 0 && step === 3 && (
                 <div style={{
                   display: 'flex', justifyContent: 'space-between',
-                  marginTop: 10, fontSize: 13.5,
+                  marginTop: 10, fontSize: 13,
                   fontFamily: 'var(--font-dm-sans)', fontWeight: 600,
                   color: 'var(--emerald, #00A550)',
                 }}>
@@ -1274,7 +1274,7 @@ function DailyLimitModal({ hoursByDate, onClose }: {
 
         <p style={{
           fontFamily: 'var(--font-dm-sans)',
-          fontSize: 14.5,
+          fontSize: 14,
           lineHeight: 1.55,
           color: 'var(--text-secondary)',
           marginBottom: 20,
@@ -1292,7 +1292,7 @@ function DailyLimitModal({ hoursByDate, onClose }: {
           }}>
             <p style={{
               fontFamily: 'var(--font-dm-sans)',
-              fontSize: 11,
+              fontSize: 12,
               fontWeight: 600,
               textTransform: 'uppercase',
               letterSpacing: '0.08em',
@@ -1310,7 +1310,7 @@ function DailyLimitModal({ hoursByDate, onClose }: {
                   display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                   padding: '4px 0',
                   fontFamily: 'var(--font-dm-sans)',
-                  fontSize: 13.5,
+                  fontSize: 13,
                   color: 'var(--text-primary)',
                 }}>
                   <span>{pretty}</span>

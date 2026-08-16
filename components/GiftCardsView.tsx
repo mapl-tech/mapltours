@@ -51,7 +51,7 @@ export default function GiftCardsView() {
           maxWidth: 640, padding: '0 24px',
         }}>
           <p style={{
-            fontSize: 11, fontWeight: 700, textTransform: 'uppercase',
+            fontSize: 12, fontWeight: 700, textTransform: 'uppercase',
             letterSpacing: '0.16em', color: 'var(--gold-warm)',
             fontFamily: 'var(--font-dm-sans)', marginBottom: 16,
           }}>
@@ -119,7 +119,7 @@ export default function GiftCardsView() {
                       MAPL
                     </p>
                     <p style={{
-                      fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.5)',
+                      fontSize: 12, fontWeight: 700, color: 'rgba(255,255,255,0.5)',
                       fontFamily: 'var(--font-dm-sans)', letterSpacing: '0.12em',
                       textTransform: 'uppercase',
                     }}>
@@ -127,7 +127,7 @@ export default function GiftCardsView() {
                     </p>
                   </div>
                   <p style={{
-                    fontSize: 11, fontWeight: 600, color: 'rgba(255,255,255,0.45)',
+                    fontSize: 12, fontWeight: 600, color: 'rgba(255,255,255,0.45)',
                     fontFamily: 'var(--font-dm-sans)', letterSpacing: '0.08em',
                     textTransform: 'uppercase',
                   }}>

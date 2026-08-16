@@ -192,7 +192,7 @@ export default function TransfersCheckoutView() {
               display: 'flex',
               alignItems: 'center',
               gap: 6,
-              fontSize: 13.5,
+              fontSize: 13,
               fontFamily: 'var(--font-dm-sans)',
               fontWeight: 500,
               color: 'var(--text-secondary)',
@@ -760,7 +760,7 @@ function TransferCard({
           <p
             style={{
               fontFamily: 'var(--font-dm-sans)',
-              fontSize: 11,
+              fontSize: 12,
               fontWeight: 700,
               letterSpacing: '0.22em',
               textTransform: 'uppercase',
@@ -785,7 +785,7 @@ function TransferCard({
           <p
             style={{
               fontFamily: 'var(--font-dm-sans)',
-              fontSize: 12.5,
+              fontSize: 12,
               color: 'var(--text-tertiary)',
               display: 'flex',
               alignItems: 'center',
@@ -963,7 +963,7 @@ function Input({
       <label
         htmlFor={id}
         style={{
-          fontSize: 12.5,
+          fontSize: 12,
           color: error ? '#c00' : 'var(--text-secondary)',
           fontFamily: 'var(--font-dm-sans)',
           fontWeight: 600,
@@ -1028,7 +1028,7 @@ function Textarea({
       <label
         htmlFor={id}
         style={{
-          fontSize: 12.5,
+          fontSize: 12,
           color: 'var(--text-secondary)',
           fontFamily: 'var(--font-dm-sans)',
           fontWeight: 600,
@@ -1149,7 +1149,7 @@ function ConfirmedInline({
         <p
           style={{
             fontFamily: 'var(--font-dm-sans)',
-            fontSize: 11,
+            fontSize: 12,
             fontWeight: 700,
             letterSpacing: '0.22em',
             textTransform: 'uppercase',

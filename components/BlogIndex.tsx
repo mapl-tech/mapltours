@@ -283,7 +283,7 @@ function FeaturedLead({ post }: { post: BlogPost }) {
             style={{
               fontFamily: 'var(--font-dm-sans)',
               fontWeight: 700,
-              fontSize: 'clamp(1.85rem, 3.6vw, 3rem)',
+              fontSize: 'var(--fs-h2)',
               lineHeight: 1.08,
               letterSpacing: '-0.025em',
               color: 'var(--text-primary)',
@@ -320,7 +320,7 @@ function FeaturedLead({ post }: { post: BlogPost }) {
             <div
               style={{
                 fontFamily: 'var(--font-dm-sans)',
-                fontSize: 11,
+                fontSize: 12,
                 fontWeight: 600,
                 textTransform: 'uppercase',
                 letterSpacing: '0.18em',
@@ -333,7 +333,7 @@ function FeaturedLead({ post }: { post: BlogPost }) {
             <div
               style={{
                 fontFamily: 'var(--font-dm-sans)',
-                fontSize: 12.5,
+                fontSize: 12,
                 color: 'var(--text-tertiary)',
               }}
             >
@@ -345,7 +345,7 @@ function FeaturedLead({ post }: { post: BlogPost }) {
             style={{
               marginLeft: 'auto',
               fontFamily: 'var(--font-dm-sans)',
-              fontSize: 11,
+              fontSize: 12,
               fontWeight: 600,
               textTransform: 'uppercase',
               letterSpacing: '0.18em',
@@ -425,7 +425,7 @@ function PostCard({ post, size = 'md' }: { post: BlogPost; size?: 'md' | 'lg' })
         <div
           style={{
             fontFamily: 'var(--font-dm-sans)',
-            fontSize: 11,
+            fontSize: 12,
             fontWeight: 600,
             textTransform: 'uppercase',
             letterSpacing: '0.18em',
@@ -476,7 +476,7 @@ function Colophon() {
           style={{
             fontFamily: 'var(--font-dm-sans)',
             fontStyle: 'italic',
-            fontSize: 16.5,
+            fontSize: 17,
             color: 'var(--text-secondary)',
             lineHeight: 1.65,
             marginBottom: 32,
@@ -520,7 +520,7 @@ function Colophon() {
               padding: '12px 4px',
               cursor: 'pointer',
               fontFamily: 'var(--font-dm-sans)',
-              fontSize: 11,
+              fontSize: 12,
               fontWeight: 700,
               textTransform: 'uppercase',
               letterSpacing: '0.22em',
@@ -608,7 +608,7 @@ export default function BlogIndex({ posts }: { posts: BlogPost[] }) {
                 style={{
                   fontFamily: 'var(--font-dm-sans)',
                   fontWeight: 700,
-                  fontSize: 'clamp(1.4rem, 2.4vw, 1.85rem)',
+                  fontSize: 'var(--fs-h2)',
                   letterSpacing: '-0.01em',
                   color: 'var(--text-primary)',
                 }}

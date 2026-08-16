@@ -37,7 +37,7 @@ export default function DriverShell({ signedInAs, children }: { signedInAs: stri
             </span>
           </span>
           <span style={{ display: 'inline-flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
-            <span className="driver-shell-email" style={{ fontSize: 12.5, color: 'rgba(255,255,255,0.66)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 180 }}>{signedInAs}</span>
+            <span className="driver-shell-email" style={{ fontSize: 12, color: 'rgba(255,255,255,0.66)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 180 }}>{signedInAs}</span>
             <button
               type="button" onClick={signOut} className="drv-act"
               style={{

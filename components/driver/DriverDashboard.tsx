@@ -87,7 +87,7 @@ function PayChip({ paid, label }: { paid: boolean; label: string }) {
   return (
     <span style={{
       display: 'inline-flex', alignItems: 'center', gap: 6, padding: '5px 12px', borderRadius: 9999,
-      fontSize: 12.5, fontWeight: 700,
+      fontSize: 12, fontWeight: 700,
       background: paid ? 'rgba(29,122,80,0.12)' : 'rgba(122,90,8,0.12)',
       border: `1px solid ${paid ? 'rgba(29,122,80,0.35)' : 'rgba(122,90,8,0.35)'}`,
       color: paid ? green : amber,
@@ -141,7 +141,7 @@ function FlightRow({ flightRaw, dateIso, mbjRole }: {
         {links && <Act href={links.google}>Google</Act>}
         {links && <Act href={links.flightaware}>FlightAware</Act>}
         {links && <Act tone="solid" onClick={check}><Radar size={16} aria-hidden="true" />{loading ? 'Checking…' : 'Live status'}</Act>}
-        {!links && <span style={{ fontSize: 13.5, color: faint }}>No flight number yet. MAPL will send it.</span>}
+        {!links && <span style={{ fontSize: 13, color: faint }}>No flight number yet. MAPL will send it.</span>}
       </div>
       {st && (
         <div style={{ marginTop: 8 }}>
@@ -207,14 +207,14 @@ function Leg({ role, from, to, dateIso, flightRaw, extra, actions }: {
       {/* Content */}
       <div style={{ flex: 1, minWidth: 0, paddingBottom: 4 }}>
         <h3 style={{ ...eyebrow, color: tint }}>{isArr ? 'Arrival · airport to hotel' : 'Departure · hotel to airport'}</h3>
-        <p style={{ fontSize: 16.5, fontWeight: 700, margin: '7px 0 0', lineHeight: 1.4, letterSpacing: '-0.01em' }}>
+        <p style={{ fontSize: 17, fontWeight: 700, margin: '7px 0 0', lineHeight: 1.4, letterSpacing: '-0.01em' }}>
           {from} <span aria-hidden="true" style={{ color: faint }}>→</span> {to}
         </p>
         <p style={{ fontSize: 14, color: soft, margin: '5px 0 0', ...tnum }}>
           {jaDate(dateIso)} · <strong style={{ color: ink, fontWeight: 700 }}>{isArr ? 'lands' : 'hotel pickup'} {jaTime(dateIso)}</strong> Jamaica time
         </p>
         {extra}
-        <p style={{ fontSize: 13.5, margin: '7px 0 0' }}>
+        <p style={{ fontSize: 13, margin: '7px 0 0' }}>
           <span style={{ fontWeight: 700 }}>Flight</span>{' '}
           <span style={{ color: soft, ...tnum }}>{flightLinks(flightRaw, dateIso)?.ident ?? flightRaw ?? 'TBD'}</span>
         </p>
@@ -274,30 +274,30 @@ function TripCard({ t, open, onToggle }: { t: DriverTrip; open: boolean; onToggl
         <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 12, marginTop: 9, flexWrap: 'wrap' }}>
           <span style={{ display: 'flex', flexDirection: 'column', gap: 4, minWidth: 0 }}>
             <span style={{ display: 'flex', alignItems: 'baseline', gap: 8, flexWrap: 'wrap' }}>
-              <span style={{ fontSize: 14.5, fontWeight: 700, color: ink }}>{t.guestName}</span>
+              <span style={{ fontSize: 14, fontWeight: 700, color: ink }}>{t.guestName}</span>
               <span aria-hidden="true" style={{ color: faint }}>·</span>
-              <span style={{ fontSize: 13.5, color: soft }}>{t.airport} <span aria-hidden="true">→</span> {t.hotel}</span>
+              <span style={{ fontSize: 13, color: soft }}>{t.airport} <span aria-hidden="true">→</span> {t.hotel}</span>
               {t.specialRequests && (
                 <span style={{
-                  fontSize: 11.5, fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase',
+                  fontSize: 12, fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase',
                   padding: '2px 9px', borderRadius: 9999, background: '#FCF6E4', border: '1px solid #E8D9A8', color: amber,
                 }}>
                   Note
                 </span>
               )}
             </span>
-            <span style={{ fontSize: 13.5, color: soft, ...tnum }}>
+            <span style={{ fontSize: 13, color: soft, ...tnum }}>
               Lands <strong style={{ color: ink, fontWeight: 600 }}>{jaShort(t.arrivalAt)} · {jaTime(t.arrivalAt)}</strong> Jamaica time
             </span>
             {t.tripType === 'round_trip' && t.departureAt && (
-              <span style={{ fontSize: 13.5, color: soft, ...tnum }}>
+              <span style={{ fontSize: 13, color: soft, ...tnum }}>
                 Return pickup <strong style={{ color: ink, fontWeight: 600 }}>{jaShort(t.departureAt)} · {jaTime(t.departureAt)}</strong> Jamaica time
               </span>
             )}
           </span>
           <span style={{ whiteSpace: 'nowrap' }}>
-            <span style={{ fontSize: 12.5, fontWeight: 600, color: faint }}>You get </span>
-            <span style={{ fontSize: 15, fontWeight: 800, color: green, ...tnum }}>{money(t.payoutTotal)} <span style={{ fontSize: 11.5, fontWeight: 700 }}>USD</span></span>
+            <span style={{ fontSize: 12, fontWeight: 600, color: faint }}>You get </span>
+            <span style={{ fontSize: 15, fontWeight: 800, color: green, ...tnum }}>{money(t.payoutTotal)} <span style={{ fontSize: 12, fontWeight: 700 }}>USD</span></span>
           </span>
         </div>
       </div>
@@ -320,7 +320,7 @@ function TripCard({ t, open, onToggle }: { t: DriverTrip; open: boolean; onToggl
           )}
           {t.specialRequests && (
             <div style={{ marginTop: 12, padding: '10px 13px', background: '#FCF6E4', border: '1px solid #F0E4BE', borderRadius: 10 }}>
-              <span style={{ fontSize: 12.5, fontWeight: 700, color: amber }}>Note: </span>
+              <span style={{ fontSize: 12, fontWeight: 700, color: amber }}>Note: </span>
               <span style={{ fontSize: 14, color: ink, whiteSpace: 'pre-wrap' }}>{t.specialRequests}</span>
             </div>
           )}
@@ -339,7 +339,7 @@ function TripCard({ t, open, onToggle }: { t: DriverTrip; open: boolean; onToggl
             <Leg
               role="departure" from={t.hotel} to={t.airport} dateIso={t.departureAt} flightRaw={t.departureFlight}
               extra={
-                <p style={{ fontSize: 13.5, color: amber, fontWeight: 700, margin: '5px 0 0' }}>
+                <p style={{ fontSize: 13, color: amber, fontWeight: 700, margin: '5px 0 0' }}>
                   This is the pickup time the guest requested.
                 </p>
               }
@@ -358,7 +358,7 @@ function TripCard({ t, open, onToggle }: { t: DriverTrip; open: boolean; onToggl
                   {isRT ? (p.leg === 'arrival' ? 'Before the arrival pickup' : 'Before the departure pickup') : 'Before the ride'}
                 </span>
                 <span style={{ display: 'inline-flex', alignItems: 'center', gap: 10 }}>
-                  <span style={{ fontSize: 16, fontWeight: 800, ...tnum }}>{money(p.amount)} <span style={{ fontSize: 11.5, fontWeight: 700, color: faint }}>USD</span></span>
+                  <span style={{ fontSize: 16, fontWeight: 800, ...tnum }}>{money(p.amount)} <span style={{ fontSize: 12, fontWeight: 700, color: faint }}>USD</span></span>
                   <PayChip paid={p.paid} label={p.paid ? `Paid ${paidStamp(p.paidAt)}` : 'Pending'} />
                 </span>
               </div>
@@ -405,11 +405,11 @@ function TourCard({ t, open, onToggle }: { t: DriverTour; open: boolean; onToggl
           <span aria-hidden="true" style={{ display: 'inline-block', transform: open ? 'rotate(90deg)' : 'none', transition: 'transform 0.15s ease', color: faint, fontSize: 20, lineHeight: 1 }}>›</span>
         </div>
         <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginTop: 9, flexWrap: 'wrap' }}>
-          <span style={{ fontSize: 14.5, fontWeight: 700, color: ink }}>{t.guestName}</span>
+          <span style={{ fontSize: 14, fontWeight: 700, color: ink }}>{t.guestName}</span>
           <span aria-hidden="true" style={{ color: faint }}>·</span>
-          <span style={{ fontSize: 13.5, color: soft }}>{t.items[0].title}{t.items.length > 1 ? ` +${t.items.length - 1} more` : ''}</span>
+          <span style={{ fontSize: 13, color: soft }}>{t.items[0].title}{t.items.length > 1 ? ` +${t.items.length - 1} more` : ''}</span>
           <span aria-hidden="true" style={{ color: faint }}>·</span>
-          <span style={{ fontSize: 13.5, color: soft, ...tnum }}>{tourDate(t.firstDate)}</span>
+          <span style={{ fontSize: 13, color: soft, ...tnum }}>{tourDate(t.firstDate)}</span>
         </div>
       </div>
       {open && (
@@ -429,7 +429,7 @@ function TourCard({ t, open, onToggle }: { t: DriverTour; open: boolean; onToggl
             )}
             {t.specialRequests && (
               <div style={{ marginTop: 12, padding: '10px 13px', background: '#FCF6E4', border: '1px solid #F0E4BE', borderRadius: 10 }}>
-                <span style={{ fontSize: 12.5, fontWeight: 700, color: amber }}>Note: </span>
+                <span style={{ fontSize: 12, fontWeight: 700, color: amber }}>Note: </span>
                 <span style={{ fontSize: 14, color: ink, whiteSpace: 'pre-wrap' }}>{t.specialRequests}</span>
               </div>
             )}
@@ -437,14 +437,14 @@ function TourCard({ t, open, onToggle }: { t: DriverTour; open: boolean; onToggl
           <div style={{ paddingTop: 14, borderTop: borderSoft, display: 'flex', flexDirection: 'column', gap: 12 }}>
             {t.items.map((i, idx) => (
               <div key={idx}>
-                <p style={{ fontSize: 15.5, fontWeight: 700, margin: 0 }}>{i.title}</p>
-                <p style={{ fontSize: 13.5, color: soft, margin: '4px 0 0', ...tnum }}>
+                <p style={{ fontSize: 15, fontWeight: 700, margin: 0 }}>{i.title}</p>
+                <p style={{ fontSize: 13, color: soft, margin: '4px 0 0', ...tnum }}>
                   {[i.destination, tourDate(i.date), `${i.travelers} guest${i.travelers === 1 ? '' : 's'}`].filter(Boolean).join(' · ')}
                 </p>
               </div>
             ))}
           </div>
-          <p style={{ fontSize: 12.5, color: faint, margin: 0 }}>Tour bookings are for your awareness; MAPL will contact you if a ride is needed.</p>
+          <p style={{ fontSize: 12, color: faint, margin: 0 }}>Tour bookings are for your awareness; MAPL will contact you if a ride is needed.</p>
         </div>
       )}
     </article>
@@ -527,7 +527,7 @@ export default function DriverDashboard({ trips, tours = [], driverLabel, adminP
             <p style={{ fontSize: 'clamp(21px, 5vw, 26px)', fontWeight: 800, margin: '10px 0 0', lineHeight: 1.25, letterSpacing: '-0.015em', ...tnum }}>
               {jaDate(next.iso)} · {jaTime(next.iso)}
             </p>
-            <p style={{ fontSize: 14.5, color: 'rgba(255,255,255,0.88)', margin: '6px 0 0', lineHeight: 1.5 }}>
+            <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.88)', margin: '6px 0 0', lineHeight: 1.5 }}>
               {next.t.guestName} · {next.t.ref} · {next.t.passengers} passenger{next.t.passengers === 1 ? '' : 's'}
               {next.role === 'departure' ? ' · pickup time requested by the guest' : ''}
             </p>
@@ -602,7 +602,7 @@ export default function DriverDashboard({ trips, tours = [], driverLabel, adminP
         </section>
       )}
 
-      <p style={{ fontSize: 12.5, color: faint, lineHeight: 1.6, marginTop: 24 }}>
+      <p style={{ fontSize: 12, color: faint, lineHeight: 1.6, marginTop: 24 }}>
         Times are Jamaica time. Pay is your agreed rate per trip; round trips are paid in two halves, one before each leg. Questions: contact@mapltours.com.
       </p>
 

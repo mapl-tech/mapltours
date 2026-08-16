@@ -209,7 +209,7 @@ export default function HelpCenter() {
           maxWidth: 620, padding: '0 24px',
         }}>
           <p style={{
-            fontSize: 11, fontWeight: 700, textTransform: 'uppercase',
+            fontSize: 12, fontWeight: 700, textTransform: 'uppercase',
             letterSpacing: '0.14em', color: 'var(--gold-warm)',
             fontFamily: 'var(--font-dm-sans)', marginBottom: 12,
           }}>
@@ -296,7 +296,7 @@ export default function HelpCenter() {
                 <div key={i} style={{ borderBottom: '1px solid var(--border)' }}>
                   <div style={{ padding: '20px 0' }}>
                     <span style={{
-                      fontSize: 11, fontWeight: 600, color: 'var(--gold-text)',
+                      fontSize: 12, fontWeight: 600, color: 'var(--gold-text)',
                       fontFamily: 'var(--font-dm-sans)',
                       textTransform: 'uppercase', letterSpacing: '0.06em',
                     }}>
@@ -351,7 +351,7 @@ export default function HelpCenter() {
                       border: active ? '1px solid var(--accent)' : '1px solid var(--border)',
                       background: active ? 'var(--accent)' : 'var(--card-bg)',
                       color: active ? '#fff' : 'var(--text-secondary)',
-                      fontSize: 13.5, fontWeight: 600,
+                      fontSize: 13, fontWeight: 600,
                       fontFamily: 'var(--font-dm-sans)',
                       cursor: 'pointer',
                       whiteSpace: 'nowrap',

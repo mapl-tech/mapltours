@@ -42,7 +42,7 @@ const stepList: React.CSSProperties = {
   margin: 0,
   paddingLeft: 20,
   color: '#57534C',
-  fontSize: 14.5,
+  fontSize: 14,
   lineHeight: 1.6,
 }
 const stepItem: React.CSSProperties = { margin: '0 0 8px' }

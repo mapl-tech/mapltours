@@ -213,7 +213,7 @@ export default function LeftNav() {
               borderRadius: '50%',
               background: 'var(--gold)',
               color: '#000',
-              fontSize: 11,
+              fontSize: 12,
               fontWeight: 700,
               fontFamily: 'var(--font-dm-sans)',
               display: 'flex',

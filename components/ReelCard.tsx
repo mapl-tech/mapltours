@@ -355,7 +355,7 @@ export default function ReelCard({
           <div style={{ display: 'flex', alignItems: 'baseline', gap: 4, alignSelf: 'center' }}>
             <span
               style={{
-                fontSize: 11,
+                fontSize: 12,
                 textTransform: 'uppercase',
                 letterSpacing: 1,
                 color: 'rgba(255,255,255,0.4)',

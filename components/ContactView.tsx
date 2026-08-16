@@ -57,7 +57,7 @@ export default function ContactView() {
         }} />
         <div className="container" style={{ position: 'relative', zIndex: 1, paddingBottom: 32 }}>
           <p style={{
-            fontSize: 11, fontWeight: 600, textTransform: 'uppercase',
+            fontSize: 12, fontWeight: 600, textTransform: 'uppercase',
             letterSpacing: '0.1em', color: 'var(--gold-warm)',
             fontFamily: 'var(--font-dm-sans)', marginBottom: 8,
           }}>
@@ -65,7 +65,7 @@ export default function ContactView() {
           </p>
           <h1 style={{
             fontFamily: 'var(--font-dm-sans)', fontWeight: 700,
-            fontSize: 'clamp(1.75rem, 3vw, 2.5rem)', color: 'white',
+            fontSize: 'var(--fs-h2)', color: 'white',
             lineHeight: 1.1, letterSpacing: '-0.02em',
           }}>
             Contact Us
@@ -88,7 +88,7 @@ export default function ContactView() {
                 </div>
                 <div style={{ lineHeight: 1 }}>
                   <span style={{ fontFamily: 'var(--font-dm-sans)', fontWeight: 800, fontSize: 16, textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block' }}>MAPL</span>
-                  <span style={{ fontFamily: 'var(--font-dm-sans)', fontWeight: 700, fontSize: 11, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--text-tertiary)', display: 'block', marginTop: 1 }}>Tours Jamaica</span>
+                  <span style={{ fontFamily: 'var(--font-dm-sans)', fontWeight: 700, fontSize: 12, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--text-tertiary)', display: 'block', marginTop: 1 }}>Tours Jamaica</span>
                 </div>
               </div>
               <p style={{
@@ -120,7 +120,7 @@ export default function ContactView() {
                     <p style={{ fontSize: 12, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-sans)', marginBottom: 3 }}>
                       {item.label}
                     </p>
-                    <p style={{ fontSize: 14.5, fontWeight: 500, color: 'var(--text-primary)', fontFamily: 'var(--font-dm-sans)' }}>
+                    <p style={{ fontSize: 14, fontWeight: 500, color: 'var(--text-primary)', fontFamily: 'var(--font-dm-sans)' }}>
                       {item.value}
                     </p>
                   </div>
@@ -178,7 +178,7 @@ export default function ContactView() {
                 <h3 style={{ fontFamily: 'var(--font-dm-sans)', fontWeight: 700, fontSize: 22, marginBottom: 8 }}>
                   Message Sent
                 </h3>
-                <p style={{ fontSize: 14.5, color: 'var(--text-secondary)', fontFamily: 'var(--font-dm-sans)', lineHeight: 1.6 }}>
+                <p style={{ fontSize: 14, color: 'var(--text-secondary)', fontFamily: 'var(--font-dm-sans)', lineHeight: 1.6 }}>
                   Thank you for reaching out. Our team will get back to you within 24 hours.
                 </p>
               </div>
@@ -190,27 +190,27 @@ export default function ContactView() {
                 <h3 style={{ fontFamily: 'var(--font-dm-sans)', fontWeight: 700, fontSize: 20, marginBottom: 6 }}>
                   Send us a message
                 </h3>
-                <p style={{ fontSize: 13.5, color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-sans)', marginBottom: 24 }}>
+                <p style={{ fontSize: 13, color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-sans)', marginBottom: 24 }}>
                   We would love to hear from you
                 </p>
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
                     <div>
-                      <label htmlFor="contact-name" style={{ fontSize: 12.5, fontWeight: 600, color: 'var(--text-secondary)', fontFamily: 'var(--font-dm-sans)', display: 'block', marginBottom: 6 }}>Name</label>
+                      <label htmlFor="contact-name" style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)', fontFamily: 'var(--font-dm-sans)', display: 'block', marginBottom: 6 }}>Name</label>
                       <input id="contact-name" className="field-input" placeholder="Your name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
                     </div>
                     <div>
-                      <label htmlFor="contact-email" style={{ fontSize: 12.5, fontWeight: 600, color: 'var(--text-secondary)', fontFamily: 'var(--font-dm-sans)', display: 'block', marginBottom: 6 }}>Email</label>
+                      <label htmlFor="contact-email" style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)', fontFamily: 'var(--font-dm-sans)', display: 'block', marginBottom: 6 }}>Email</label>
                       <input id="contact-email" className="field-input" type="email" placeholder="you@email.com" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} required />
                     </div>
                   </div>
                   <div>
-                    <label htmlFor="contact-subject" style={{ fontSize: 12.5, fontWeight: 600, color: 'var(--text-secondary)', fontFamily: 'var(--font-dm-sans)', display: 'block', marginBottom: 6 }}>Subject</label>
+                    <label htmlFor="contact-subject" style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)', fontFamily: 'var(--font-dm-sans)', display: 'block', marginBottom: 6 }}>Subject</label>
                     <input id="contact-subject" className="field-input" placeholder="How can we help?" value={form.subject} onChange={(e) => setForm({ ...form, subject: e.target.value })} required />
                   </div>
                   <div>
-                    <label htmlFor="contact-message" style={{ fontSize: 12.5, fontWeight: 600, color: 'var(--text-secondary)', fontFamily: 'var(--font-dm-sans)', display: 'block', marginBottom: 6 }}>Message</label>
+                    <label htmlFor="contact-message" style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)', fontFamily: 'var(--font-dm-sans)', display: 'block', marginBottom: 6 }}>Message</label>
                     <textarea id="contact-message" className="field-input" placeholder="Tell us about your trip plans, questions, or feedback..." rows={5} value={form.message} onChange={(e) => setForm({ ...form, message: e.target.value })} required />
                   </div>
                   {/* Honeypot, kept off-screen so real users never see it. */}
@@ -233,7 +233,7 @@ export default function ContactView() {
                     className="btn-primary"
                     type="submit"
                     disabled={submitting}
-                    style={{ width: '100%', height: 48, fontSize: 14.5, marginTop: 4, gap: 8, opacity: submitting ? 0.7 : 1, cursor: submitting ? 'wait' : 'pointer' }}
+                    style={{ width: '100%', height: 48, fontSize: 14, marginTop: 4, gap: 8, opacity: submitting ? 0.7 : 1, cursor: submitting ? 'wait' : 'pointer' }}
                   >
                     <Send size={16} /> {submitting ? 'Sending…' : 'Send Message'}
                   </button>

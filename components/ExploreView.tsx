@@ -97,7 +97,7 @@ export default function ExploreView() {
         transform: filterHidden ? 'translateY(-100%)' : 'translateY(0)',
       }}>
         <div className="container" style={{ paddingTop: 18, paddingBottom: 16 }}>
-          <h1 style={{ fontFamily: 'var(--font-dm-sans)', fontWeight: 500, fontSize: 'clamp(1.75rem, 3vw, 2.5rem)', letterSpacing: '-0.02em', marginBottom: 14 }}>{t('Explore')}</h1>
+          <h1 style={{ fontFamily: 'var(--font-dm-sans)', fontWeight: 500, fontSize: 'var(--fs-h2)', letterSpacing: '-0.02em', marginBottom: 14 }}>{t('Explore')}</h1>
           <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 14, flexWrap: 'wrap' }}>
             <div style={{
               flex: '1 1 260px', maxWidth: 420, position: 'relative',

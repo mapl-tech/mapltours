@@ -493,7 +493,7 @@ export default function ProfileView() {
                     }}>
                       <span style={{ fontSize: 16, color: 'var(--gold)' }}>★</span>
                       <span style={{
-                        fontSize: 13.5, fontFamily: 'var(--font-dm-sans)',
+                        fontSize: 13, fontFamily: 'var(--font-dm-sans)',
                         fontWeight: 500, color: 'var(--text-primary)',
                       }}>
                         {b.badge_name}
@@ -886,7 +886,7 @@ function MaplRewardsCard() {
         <div style={{ flex: 1, minWidth: 0 }}>
           <p style={{
             fontFamily: 'var(--font-dm-sans)',
-            fontSize: 11, fontWeight: 600,
+            fontSize: 12, fontWeight: 600,
             letterSpacing: '0.1em', textTransform: 'uppercase',
             color: hasActive ? 'var(--emerald)' : 'var(--gold)',
             marginBottom: 4,
@@ -972,7 +972,7 @@ function RewardRow({ code, status, percent }: { code: string; status: 'available
       </div>
       <span style={{
         padding: '3px 10px', borderRadius: 9999,
-        fontSize: 11, fontWeight: 700,
+        fontSize: 12, fontWeight: 700,
         fontFamily: 'var(--font-dm-sans)',
         letterSpacing: '0.06em', textTransform: 'uppercase',
         background: used ? 'rgba(0,0,0,0.08)' : 'rgba(0,165,80,0.12)',

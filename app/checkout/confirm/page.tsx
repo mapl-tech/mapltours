@@ -276,7 +276,7 @@ function Success({ data }: { data: ConfirmData }) {
       <p
         style={{
           fontFamily: 'var(--font-dm-sans)',
-          fontSize: 11,
+          fontSize: 12,
           fontWeight: 700,
           letterSpacing: '0.22em',
           textTransform: 'uppercase',
@@ -334,7 +334,7 @@ function Success({ data }: { data: ConfirmData }) {
             marginBottom: 32,
           }}
         >
-          <span style={{ color: 'var(--text-tertiary)', fontSize: 11, letterSpacing: '0.22em' }}>BOOKING REF</span>
+          <span style={{ color: 'var(--text-tertiary)', fontSize: 12, letterSpacing: '0.22em' }}>BOOKING REF</span>
           {data.bookingRef}
         </div>
       )}
@@ -420,7 +420,7 @@ function Success({ data }: { data: ConfirmData }) {
               style={{
                 fontFamily: 'var(--font-dm-sans)',
                 fontStyle: 'italic',
-                fontSize: 14.5,
+                fontSize: 14,
                 color: 'var(--text-primary)',
                 lineHeight: 1.55,
                 whiteSpace: 'pre-wrap',
@@ -513,7 +513,7 @@ function Success({ data }: { data: ConfirmData }) {
               margin: 0,
               padding: 0,
               fontFamily: 'var(--font-dm-sans)',
-              fontSize: 14.5,
+              fontSize: 14,
               color: 'var(--text-secondary)',
               lineHeight: 1.7,
             }}
@@ -580,7 +580,7 @@ function Card({
         <p
           style={{
             fontFamily: 'var(--font-dm-sans)',
-            fontSize: 11,
+            fontSize: 12,
             fontWeight: 700,
             letterSpacing: '0.22em',
             textTransform: 'uppercase',
@@ -616,7 +616,7 @@ function DetailRows({
           <span
             style={{
               fontFamily: 'var(--font-dm-sans)',
-              fontSize: 11,
+              fontSize: 12,
               fontWeight: 700,
               letterSpacing: '0.18em',
               textTransform: 'uppercase',
@@ -644,7 +644,7 @@ function DetailRows({
             style={{
               fontFamily: 'var(--font-dm-sans)',
               fontWeight: 700,
-              fontSize: 14.5,
+              fontSize: 14,
               color: 'var(--text-primary)',
               textAlign: 'right',
               wordBreak: 'break-word',
@@ -673,7 +673,7 @@ function BreakdownRow({
         display: 'flex',
         justifyContent: 'space-between',
         fontFamily: 'var(--font-dm-sans)',
-        fontSize: 13.5,
+        fontSize: 13,
         color: 'var(--text-secondary)',
         marginBottom: 6,
       }}
@@ -701,7 +701,7 @@ function Processing() {
       <p
         style={{
           fontFamily: 'var(--font-dm-sans)',
-          fontSize: 11,
+          fontSize: 12,
           fontWeight: 700,
           letterSpacing: '0.22em',
           textTransform: 'uppercase',
@@ -746,7 +746,7 @@ function Failed() {
       <p
         style={{
           fontFamily: 'var(--font-dm-sans)',
-          fontSize: 11,
+          fontSize: 12,
           fontWeight: 700,
           letterSpacing: '0.22em',
           textTransform: 'uppercase',

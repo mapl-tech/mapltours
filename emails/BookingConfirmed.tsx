@@ -197,7 +197,7 @@ export default function BookingConfirmed(props: BookingConfirmedProps) {
                     display: 'block',
                     marginTop: 2,
                     fontFamily: 'inherit',
-                    fontSize: 11.5,
+                    fontSize: 12,
                     fontWeight: 400,
                     color: '#9a9a9a',
                     letterSpacing: 0,

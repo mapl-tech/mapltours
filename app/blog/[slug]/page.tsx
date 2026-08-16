@@ -208,7 +208,7 @@ function Block({ block, isFirst }: { block: BlogBlock; isFirst: boolean }) {
             style={{
               fontFamily: 'var(--font-dm-sans)',
               fontWeight: 700,
-              fontSize: 'clamp(1.4rem, 2.4vw, 1.85rem)',
+              fontSize: 'var(--fs-h2)',
               color: 'var(--text-primary)',
               lineHeight: 1.2,
               letterSpacing: '-0.02em',
@@ -310,7 +310,7 @@ function Block({ block, isFirst }: { block: BlogBlock; isFirst: boolean }) {
             <cite
               style={{
                 fontFamily: 'var(--font-dm-sans)',
-                fontSize: 11,
+                fontSize: 12,
                 fontStyle: 'normal',
                 fontWeight: 600,
                 color: 'var(--text-tertiary)',
@@ -447,7 +447,7 @@ function RelatedCard({ post }: { post: BlogPost }) {
       <div
         style={{
           fontFamily: 'var(--font-dm-sans)',
-          fontSize: 11,
+          fontSize: 12,
           fontWeight: 600,
           textTransform: 'uppercase',
           letterSpacing: '0.18em',
@@ -499,7 +499,7 @@ export default function BlogPostPage({
               href="/blog"
               style={{
                 fontFamily: 'var(--font-dm-sans)',
-                fontSize: 11,
+                fontSize: 12,
                 fontWeight: 600,
                 textTransform: 'uppercase',
                 letterSpacing: '0.22em',
@@ -566,7 +566,7 @@ export default function BlogPostPage({
             <div
               style={{
                 fontFamily: 'var(--font-dm-sans)',
-                fontSize: 11,
+                fontSize: 12,
                 fontWeight: 600,
                 textTransform: 'uppercase',
                 letterSpacing: '0.22em',
@@ -677,7 +677,7 @@ export default function BlogPostPage({
               style={{
                 fontFamily: 'var(--font-dm-sans)',
                 fontStyle: 'italic',
-                fontSize: 14.5,
+                fontSize: 14,
                 color: 'var(--text-secondary)',
                 lineHeight: 1.6,
               }}
@@ -721,7 +721,7 @@ export default function BlogPostPage({
                 background: 'var(--bg-warm)', padding: '24px 26px',
               }}
             >
-              <p style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 11, fontWeight: 700, letterSpacing: '0.18em', textTransform: 'uppercase', color: 'var(--text-secondary)', margin: 0 }}>
+              <p style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 12, fontWeight: 700, letterSpacing: '0.18em', textTransform: 'uppercase', color: 'var(--text-secondary)', margin: 0 }}>
                 Getting there from MBJ
               </p>
               <p style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 17, fontWeight: 700, color: 'var(--text-primary)', margin: '10px 0 4px' }}>
@@ -766,7 +766,7 @@ export default function BlogPostPage({
               background: 'var(--gold)',
               color: '#1A1508',
               fontFamily: 'var(--font-dm-sans)',
-              fontSize: 14.5,
+              fontSize: 14,
               fontWeight: 700,
               textDecoration: 'none',
             }}

@@ -62,7 +62,7 @@ export default function UserTourVideos({ experienceId, experienceTitle }: Props)
       <div style={{ marginBottom: 26 }}>
         <p style={{
           fontFamily: 'var(--font-dm-sans)',
-          fontSize: 11, fontWeight: 600,
+          fontSize: 12, fontWeight: 600,
           letterSpacing: '0.16em', textTransform: 'uppercase',
           color: '#FFB300',
           marginBottom: 8,
@@ -82,7 +82,7 @@ export default function UserTourVideos({ experienceId, experienceTitle }: Props)
         </h2>
         <p style={{
           fontFamily: 'var(--font-dm-sans)',
-          fontSize: 13.5,
+          fontSize: 13,
           lineHeight: 1.5,
           color: 'rgba(255, 255, 255, 0.55)',
           maxWidth: 460,
@@ -151,7 +151,7 @@ function RewardProgressBand({ onStart }: { onStart: () => void }) {
   const kicker: React.CSSProperties = {
     margin: 0,
     fontFamily: 'var(--font-dm-sans)',
-    fontSize: 11, fontWeight: 600,
+    fontSize: 12, fontWeight: 600,
     letterSpacing: '0.14em', textTransform: 'uppercase',
     color: '#FFB300',
   }
@@ -310,7 +310,7 @@ function VideoStripe({
             <p style={{
               margin: 0,
               fontFamily: 'var(--font-dm-sans)',
-              fontSize: 12.5, fontWeight: 700,
+              fontSize: 12, fontWeight: 700,
               letterSpacing: '-0.01em',
               color: '#fff',
               whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
@@ -785,7 +785,7 @@ function UploadSheet({
           <div style={{ minWidth: 0 }}>
             <p style={{
               fontFamily: 'var(--font-dm-sans)',
-              fontSize: 11, fontWeight: 600,
+              fontSize: 12, fontWeight: 600,
               letterSpacing: '0.14em', textTransform: 'uppercase',
               color: '#FFB300',
               margin: 0,
@@ -815,7 +815,7 @@ function UploadSheet({
             padding: 14, borderRadius: 12,
             background: 'var(--bg-warm, #FAF8F3)',
             border: '1px solid rgba(0,0,0,0.06)',
-            fontFamily: 'var(--font-dm-sans)', fontSize: 13.5,
+            fontFamily: 'var(--font-dm-sans)', fontSize: 13,
             color: 'var(--text-secondary)',
             marginBottom: 16, lineHeight: 1.45,
           }}>
@@ -930,7 +930,7 @@ function UploadSheet({
                 borderRadius: 12,
                 border: '1px solid rgba(0,0,0,0.08)',
                 background: 'var(--bg-warm, #FAF8F3)',
-                fontFamily: 'var(--font-dm-sans)', fontSize: 13.5,
+                fontFamily: 'var(--font-dm-sans)', fontSize: 13,
                 color: 'var(--text-primary)',
                 resize: 'none', outline: 'none',
                 boxSizing: 'border-box',
@@ -945,7 +945,7 @@ function UploadSheet({
             padding: '10px 12px', borderRadius: 10,
             background: 'rgba(255, 90, 54, 0.08)',
             border: '1px solid rgba(255, 90, 54, 0.28)',
-            fontSize: 12.5, color: '#c00',
+            fontSize: 12, color: '#c00',
             fontFamily: 'var(--font-dm-sans)', fontWeight: 500,
           }}>
             {error}
@@ -1019,7 +1019,7 @@ function EmptyState({ onUpload }: { onUpload: () => void }) {
         Be the first to share this one
       </p>
       <p style={{
-        fontFamily: 'var(--font-dm-sans)', fontSize: 13.5,
+        fontFamily: 'var(--font-dm-sans)', fontSize: 13,
         color: 'rgba(255, 255, 255, 0.55)', lineHeight: 1.55,
         maxWidth: 340, margin: '0 auto 22px',
       }}>
@@ -1089,7 +1089,7 @@ const ghostCtaStyle: React.CSSProperties = {
   color: '#ffffff',
   cursor: 'pointer',
   fontFamily: 'var(--font-dm-sans)',
-  fontWeight: 600, fontSize: 12.5,
+  fontWeight: 600, fontSize: 12,
   whiteSpace: 'nowrap',
 }
 

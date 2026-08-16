@@ -259,7 +259,7 @@ export default memo(function MobileShort({ exp, priority = false }: { exp: Exper
             padding: '0 16px 18px', zIndex: 2, pointerEvents: 'none',
           }}>
             <p style={{
-              fontSize: 12.5, fontWeight: 600, color: '#fff',
+              fontSize: 12, fontWeight: 600, color: '#fff',
               fontFamily: 'var(--font-dm-sans)', marginBottom: 6,
               letterSpacing: '0.02em',
             }}>
@@ -278,7 +278,7 @@ export default memo(function MobileShort({ exp, priority = false }: { exp: Exper
 
             <div style={{
               display: 'flex', alignItems: 'center', gap: 10,
-              fontSize: 12.5, color: '#fff', fontFamily: 'var(--font-dm-sans)',
+              fontSize: 12, color: '#fff', fontFamily: 'var(--font-dm-sans)',
               fontWeight: 500,
               marginBottom: 14,
             }}>
@@ -294,7 +294,7 @@ export default memo(function MobileShort({ exp, priority = false }: { exp: Exper
                 </span>
               ) : (
                 <span style={{
-                  padding: '1px 8px', borderRadius: 999,
+                  padding: '1px 8px', borderRadius: 9999,
                   background: 'rgba(255,255,255,0.18)', color: '#fff',
                   fontSize: 12, fontWeight: 600,
                 }}>{t('New')}</span>

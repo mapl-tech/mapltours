@@ -121,13 +121,13 @@ export default async function CashflowPage() {
             </span>
           </div>
           <div style={{ padding: '14px 18px' }}>
-            <p style={{ fontSize: 13.5, color: soft, margin: '0 0 12px', lineHeight: 1.55 }}>
+            <p style={{ fontSize: 13, color: soft, margin: '0 0 12px', lineHeight: 1.55 }}>
               These resorts are not on Collin&rsquo;s rate sheet, so each uses a conservative
               estimate set at or above the nearest quoted resort. Confirm them and the
               customer price updates automatically.
             </p>
             <div style={{ overflowX: 'auto' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13.5 }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
                 <thead>
                   <tr style={{ textAlign: 'left', color: '#6E6A62' }}>
                     <th style={{ padding: '6px 10px 6px 0', fontWeight: 600 }}>Resort</th>

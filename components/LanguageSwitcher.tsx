@@ -33,7 +33,7 @@ export default function LanguageSwitcher({ variant = 'header', dark = false }: {
           border: isFooter ? '1px solid rgba(255,255,255,0.1)' : dark ? '1px solid rgba(255,255,255,0.15)' : '1px solid var(--border)',
           cursor: 'pointer',
           color: isFooter ? '#cccccc' : dark ? 'white' : 'var(--text-secondary)',
-          fontSize: 12.5, fontWeight: 500, fontFamily: 'var(--font-dm-sans)',
+          fontSize: 12, fontWeight: 500, fontFamily: 'var(--font-dm-sans)',
           transition: 'all 0.15s ease',
         }}
       >

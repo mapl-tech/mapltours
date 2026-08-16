@@ -169,15 +169,15 @@ export default memo(function ExpCard({ exp }: { exp: Experience }) {
         ) : (
           <span style={{
             fontSize: 12, fontFamily: 'var(--font-dm-sans)', fontWeight: 700, marginTop: 4,
-            display: 'inline-flex', alignSelf: 'flex-start', padding: '2px 8px', borderRadius: 999,
+            display: 'inline-flex', alignSelf: 'flex-start', padding: '2px 8px', borderRadius: 9999,
             background: 'var(--gold-dim, rgba(196,164,74,0.15))', color: 'var(--gold-text, #6E5A1C)',
             letterSpacing: '0.04em', textTransform: 'uppercase',
           }}>{'New'}</span>
         )}
-        <p style={{ fontSize: 12.5, color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-sans)', marginTop: 3 }}>
+        <p style={{ fontSize: 12, color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-sans)', marginTop: 3 }}>
           {exp.duration} · @{exp.creator}
         </p>
-        <p style={{ fontSize: 13.5, fontFamily: 'var(--font-dm-sans)', fontWeight: 600, marginTop: 4 }}>
+        <p style={{ fontSize: 13, fontFamily: 'var(--font-dm-sans)', fontWeight: 600, marginTop: 4 }}>
           {t('From')} {formatPrice(exp.price)}
           <span style={{ fontWeight: 400, color: 'var(--text-tertiary)', fontSize: 12 }}> {priceUnitLabel(exp.pricing)}</span>
         </p>

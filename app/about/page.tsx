@@ -81,14 +81,14 @@ export default function AboutPage() {
           color: 'rgba(255,255,255,0.86)',
         }}>
           <span style={{
-            fontFamily: 'var(--font-dm-sans)', fontSize: 11,
+            fontFamily: 'var(--font-dm-sans)', fontSize: 12,
             fontWeight: 600, textTransform: 'uppercase',
             letterSpacing: '0.22em', color: GOLD_WARM,
           }}>
             Our Story
           </span>
           <span style={{
-            fontFamily: 'var(--font-dm-sans)', fontSize: 11,
+            fontFamily: 'var(--font-dm-sans)', fontSize: 12,
             fontWeight: 500, textTransform: 'uppercase',
             letterSpacing: '0.26em', color: 'rgba(255,255,255,0.55)',
           }}>
@@ -136,7 +136,7 @@ export default function AboutPage() {
         padding: 'clamp(72px, 10vh, 140px) 6vw clamp(48px, 6vh, 80px)',
       }}>
         <p style={{
-          fontFamily: 'var(--font-dm-sans)', fontSize: 11,
+          fontFamily: 'var(--font-dm-sans)', fontSize: 12,
           fontWeight: 600, textTransform: 'uppercase',
           letterSpacing: '0.24em', color: 'var(--gold-text)',
           marginBottom: 28,
@@ -183,7 +183,7 @@ export default function AboutPage() {
               backdropFilter: 'blur(10px)',
               WebkitBackdropFilter: 'blur(10px)',
               color: 'rgba(255,255,255,0.92)',
-              fontFamily: 'var(--font-dm-sans)', fontSize: 11,
+              fontFamily: 'var(--font-dm-sans)', fontSize: 12,
               fontWeight: 600, letterSpacing: '0.2em', textTransform: 'uppercase',
             }}>
               Rio Grande · Portland
@@ -192,7 +192,7 @@ export default function AboutPage() {
 
           <div className="about-split-copy">
             <p style={{
-              fontFamily: 'var(--font-dm-sans)', fontSize: 11,
+              fontFamily: 'var(--font-dm-sans)', fontSize: 12,
               fontWeight: 600, textTransform: 'uppercase',
               letterSpacing: '0.24em', color: 'var(--gold-text)', marginBottom: 18,
             }}>
@@ -234,7 +234,7 @@ export default function AboutPage() {
           }}>
             <div>
               <p style={{
-                fontFamily: 'var(--font-dm-sans)', fontSize: 11,
+                fontFamily: 'var(--font-dm-sans)', fontSize: 12,
                 fontWeight: 600, textTransform: 'uppercase',
                 letterSpacing: '0.24em', color: 'var(--gold-text)', marginBottom: 14,
               }}>
@@ -242,7 +242,7 @@ export default function AboutPage() {
               </p>
               <h2 style={{
                 fontFamily: 'var(--font-dm-sans)', fontWeight: 700,
-                fontSize: 'clamp(1.8rem, 3.2vw, 2.75rem)',
+                fontSize: 'var(--fs-h2)',
                 lineHeight: 1.08, letterSpacing: '-0.02em',
                 color: INK, textWrap: 'balance', maxWidth: 720,
               }}>
@@ -250,7 +250,7 @@ export default function AboutPage() {
               </h2>
             </div>
             <p style={{
-              fontFamily: 'var(--font-dm-sans)', fontSize: 11,
+              fontFamily: 'var(--font-dm-sans)', fontSize: 12,
               fontWeight: 500, letterSpacing: '0.22em', textTransform: 'uppercase',
               color: 'var(--text-tertiary)',
             }}>
@@ -308,7 +308,7 @@ export default function AboutPage() {
         padding: 'clamp(72px, 10vh, 140px) 6vw',
       }}>
         <p style={{
-          fontFamily: 'var(--font-dm-sans)', fontSize: 11,
+          fontFamily: 'var(--font-dm-sans)', fontSize: 12,
           fontWeight: 600, textTransform: 'uppercase',
           letterSpacing: '0.24em', color: 'var(--gold-text)', marginBottom: 14,
           textAlign: 'center',
@@ -360,7 +360,7 @@ export default function AboutPage() {
       }}>
         <div style={{ maxWidth: 880, margin: '0 auto', textAlign: 'center' }}>
           <p style={{
-            fontFamily: 'var(--font-dm-sans)', fontSize: 11,
+            fontFamily: 'var(--font-dm-sans)', fontSize: 12,
             fontWeight: 600, textTransform: 'uppercase',
             letterSpacing: '0.28em', color: GOLD_WARM, marginBottom: 28,
           }}>
@@ -390,7 +390,7 @@ export default function AboutPage() {
               The MAPL Tours Team
             </span>
             <span style={{
-              fontFamily: 'var(--font-dm-sans)', fontSize: 11,
+              fontFamily: 'var(--font-dm-sans)', fontSize: 12,
               fontWeight: 500, textTransform: 'uppercase',
               letterSpacing: '0.24em', color: 'rgba(255,255,255,0.55)',
             }}>

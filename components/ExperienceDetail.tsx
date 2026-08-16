@@ -335,7 +335,7 @@ function Reel({ exp, isActive, totalCount, currentIndex, onComments }: { exp: Ex
             // than the client's first paint. Suppress the warning, the
             // client value is the correct one and renders within ms.
             suppressHydrationWarning
-            style={{ fontSize: 12.5, fontWeight: 700, fontFamily: 'var(--font-dm-sans)', padding: '1px 8px', borderRadius: 999, background: 'rgba(0,0,0,0.5)' }}
+            style={{ fontSize: 12, fontWeight: 700, fontFamily: 'var(--font-dm-sans)', padding: '1px 8px', borderRadius: 9999, background: 'rgba(0,0,0,0.5)' }}
           >
             {(exp.reviews + likeCount).toLocaleString('en-US')}
           </span>
@@ -354,7 +354,7 @@ function Reel({ exp, isActive, totalCount, currentIndex, onComments }: { exp: Ex
           <span className="reel-action-disc">
             <MessageCircle size={24} strokeWidth={1.8} />
           </span>
-          <span style={{ fontSize: 12.5, fontWeight: 700, fontFamily: 'var(--font-dm-sans)', padding: '1px 8px', borderRadius: 999, background: 'rgba(0,0,0,0.5)' }}>
+          <span style={{ fontSize: 12, fontWeight: 700, fontFamily: 'var(--font-dm-sans)', padding: '1px 8px', borderRadius: 9999, background: 'rgba(0,0,0,0.5)' }}>
             {exp.comments.length}
           </span>
         </button>
@@ -808,7 +808,7 @@ function MobileCommentsSheet({ comments, commentText, setCommentText, addComment
                             <span style={{ fontSize: 12, fontWeight: 600, fontFamily: 'var(--font-dm-sans)', color: 'white' }}>@{reply.user}</span>
                             <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.25)', fontFamily: 'var(--font-dm-sans)' }}>{reply.time}</span>
                           </div>
-                          <p style={{ fontSize: 12.5, color: 'rgba(255,255,255,0.6)', fontFamily: 'var(--font-dm-sans)', lineHeight: 1.5 }}>{reply.text}</p>
+                          <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.6)', fontFamily: 'var(--font-dm-sans)', lineHeight: 1.5 }}>{reply.text}</p>
                         </div>
                       </div>
                     ))}
@@ -1185,7 +1185,7 @@ export default function ExperienceDetail({ slug }: { slug: string }) {
                 {activeComments.length}
               </span>
             </div>
-            <p style={{ fontSize: 12.5, color: '#cccccc', fontFamily: 'var(--font-dm-sans)' }}>
+            <p style={{ fontSize: 12, color: '#cccccc', fontFamily: 'var(--font-dm-sans)' }}>
               {activeExp.title}
             </p>
           </div>
@@ -1242,7 +1242,7 @@ export default function ExperienceDetail({ slug }: { slug: string }) {
             border: '2px solid rgba(255,255,255,0.15)',
           }} />
           <div style={{ flex: 1 }}>
-            <span style={{ fontSize: 13.5, fontWeight: 600, fontFamily: 'var(--font-dm-sans)', color: 'white' }}>
+            <span style={{ fontSize: 13, fontWeight: 600, fontFamily: 'var(--font-dm-sans)', color: 'white' }}>
               @{activeExp.creator}
             </span>
             <span style={{ fontSize: 12, color: '#cccccc', fontFamily: 'var(--font-dm-sans)', marginLeft: 6 }}>
@@ -1279,7 +1279,7 @@ export default function ExperienceDetail({ slug }: { slug: string }) {
                       </span>
                     </div>
                     <p style={{
-                      fontSize: 13.5, color: '#cccccc',
+                      fontSize: 13, color: '#cccccc',
                       fontFamily: 'var(--font-dm-sans)', lineHeight: 1.5, marginBottom: 8,
                     }}>{comment.text}</p>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
@@ -1329,7 +1329,7 @@ export default function ExperienceDetail({ slug }: { slug: string }) {
                             </span>
                           </div>
                           <p style={{
-                            fontSize: 12.5, color: 'rgba(255,255,255,0.6)',
+                            fontSize: 12, color: 'rgba(255,255,255,0.6)',
                             fontFamily: 'var(--font-dm-sans)', lineHeight: 1.5,
                           }}>{reply.text}</p>
                         </div>

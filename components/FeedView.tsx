@@ -195,7 +195,7 @@ function FoodSection() {
   }
 
   return (
-    <section style={{ marginTop: 56, background: 'var(--bg-dark)', padding: '56px 0 64px' }}>
+    <section className="section-y reveal" style={{ background: 'var(--bg-dark)' }}>
       <div className="container">
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 8 }}>
@@ -212,13 +212,13 @@ function FoodSection() {
             </div>
             <h2 style={{
               fontFamily: 'var(--font-dm-sans)', fontWeight: 700,
-              fontSize: 'clamp(1.5rem, 2.5vw, 2rem)',
+              fontSize: 'var(--fs-h2)',
               color: 'white', lineHeight: 1.15, letterSpacing: '-0.02em',
             }}>
               {t('A Taste of Jamaica')}
             </h2>
             <p style={{
-              fontSize: 14.5, color: '#cccccc',
+              fontSize: 14, color: '#cccccc',
               fontFamily: 'var(--font-dm-sans)', marginTop: 8,
               maxWidth: 440,
             }}>
@@ -324,7 +324,7 @@ function FoodSection() {
                 position: 'absolute', top: 12, left: 12,
                 padding: '3px 10px', borderRadius: 9999,
                 background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(8px)',
-                fontSize: 11, fontWeight: 600, color: '#fff',
+                fontSize: 12, fontWeight: 600, color: '#fff',
                 fontFamily: 'var(--font-dm-sans)', letterSpacing: '0.04em',
                 textTransform: 'uppercase',
               }}>
@@ -336,7 +336,7 @@ function FoodSection() {
             <div style={{ padding: '16px 18px 18px' }}>
               <h3 style={{
                 fontFamily: 'var(--font-dm-sans)', fontWeight: 600,
-                fontSize: 14.5, color: 'white', lineHeight: 1.3,
+                fontSize: 14, color: 'white', lineHeight: 1.3,
                 marginBottom: 4,
               }}>
                 {r.name}
@@ -348,7 +348,7 @@ function FoodSection() {
                 {r.knownFor}
               </p>
               <p style={{
-                fontSize: 12.5, color: '#cccccc',
+                fontSize: 12, color: '#cccccc',
                 fontFamily: 'var(--font-dm-sans)', lineHeight: 1.45,
                 marginBottom: 14,
                 display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden',
@@ -400,7 +400,7 @@ function FoodSection() {
       {/* Honest framing: these are recommendations, not MAPL products. */}
       <div className="container">
         <p style={{
-          marginTop: 20, fontSize: 12.5, color: '#999999',
+          marginTop: 20, fontSize: 12, color: '#999999',
           fontFamily: 'var(--font-dm-sans)',
         }}>
           Stops you add are free, they ride along with your booking and your driver builds them into your day.
@@ -442,7 +442,7 @@ function PackagesSection() {
           </div>
           <h2 style={{
             fontFamily: 'var(--font-dm-sans)', fontWeight: 700,
-            fontSize: 'clamp(1.6rem, 2.6vw, 2.1rem)',
+            fontSize: 'var(--fs-h2)',
             color: 'var(--text-primary)', lineHeight: 1.15, letterSpacing: '-0.02em',
           }}>
             {t('One booking, the whole day planned')}
@@ -512,7 +512,7 @@ function PackagesSection() {
                       }}>
                         {formatPrice(pkg.price)}
                       </span>
-                      <span style={{ fontSize: 12.5, color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-sans)', marginLeft: 4 }}>
+                      <span style={{ fontSize: 12, color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-sans)', marginLeft: 4 }}>
                         {priceUnitLabel(pkg.pricing)}
                       </span>
                     </div>
@@ -525,7 +525,7 @@ function PackagesSection() {
                         background: inCart ? 'var(--emerald)' : 'var(--gold)',
                         color: inCart ? '#fff' : '#1A1508',
                         border: 'none', cursor: 'pointer',
-                        fontSize: 13.5, fontWeight: 700, fontFamily: 'var(--font-dm-sans)',
+                        fontSize: 13, fontWeight: 700, fontFamily: 'var(--font-dm-sans)',
                         whiteSpace: 'nowrap',
                       }}
                       onMouseEnter={(e) => { e.currentTarget.style.filter = 'brightness(1.08)' }}
@@ -570,7 +570,7 @@ function DestinationsSection() {
   )
 
   return (
-    <section style={{ paddingTop: 40, paddingBottom: 0 }}>
+    <section className="section-y reveal">
       {/* Desktop: grid */}
       <div className="container hide-mobile">
         <SectionHeader label="Popular destinations" />
@@ -657,14 +657,16 @@ function AllExperiencesSection() {
   const remaining = singleExperiences.length - visibleCount
 
   return (
-    <section className="container" style={{ paddingTop: 48, paddingBottom: 0 }}>
+    <section className="container section-y reveal">
       <SectionHeader label="All experiences" />
       {/* Desktop: cards */}
       <div className="hide-mobile" style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 14 }}>
         {visible.map((e) => <ExpCard key={e.id} exp={e} />)}
       </div>
       {/* Mobile: shorts, 1 col */}
-      <div className="hide-desktop mobile-shorts-grid" style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 10 }}>
+      {/* Two columns, matching /explore: one column of 9:16 shorts made the
+          home page 22816px tall on a phone. */}
+      <div className="hide-desktop mobile-shorts-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 10 }}>
         {visible.map((e) => <MobileShort key={e.id} exp={e} />)}
       </div>
       {hasMore && (
@@ -735,7 +737,7 @@ export default function FeedView() {
           <span className="animate-fade-up" style={{
             display: 'inline-flex', alignItems: 'center', gap: 12,
             fontFamily: 'var(--font-dm-sans)', fontWeight: 600,
-            fontSize: 11, letterSpacing: '0.2em', textTransform: 'uppercase',
+            fontSize: 12, letterSpacing: '0.2em', textTransform: 'uppercase',
             color: '#fff', marginBottom: 16,
             textShadow: '0 1px 8px rgba(0,0,0,0.45)',
           }}>
@@ -755,7 +757,7 @@ export default function FeedView() {
             {t('Discover')} <span className="flag-text">Jamaica</span><br />{t('beyond the resort.')}
           </h1>
           <p className="animate-fade-up stagger-2" style={{
-            fontSize: 16.5,
+            fontSize: 17,
             color: '#fff',
             fontFamily: 'var(--font-dm-sans)',
             fontWeight: 500,
@@ -807,12 +809,12 @@ export default function FeedView() {
       </section>
 
       {/* ═══ CONCIERGE PROMISE ═══ */}
-      <section style={{ background: 'var(--bg-dark)', paddingTop: 72, paddingBottom: 72 }}>
+      <section className="section-y reveal" style={{ background: 'var(--bg-dark)' }}>
         <div className="container" style={{ maxWidth: 1100, margin: '0 auto' }}>
           {/* Headline */}
           <div data-reveal style={{ textAlign: 'center', marginBottom: 52 }}>
             <span style={{
-              fontSize: 11, fontWeight: 600, fontFamily: 'var(--font-dm-sans)',
+              fontSize: 12, fontWeight: 600, fontFamily: 'var(--font-dm-sans)',
               textTransform: 'uppercase', letterSpacing: '0.14em',
               color: 'var(--gold-warm)', marginBottom: 16, display: 'block',
             }}>
@@ -820,14 +822,14 @@ export default function FeedView() {
             </span>
             <h2 style={{
               fontFamily: 'var(--font-dm-sans)', fontWeight: 800,
-              fontSize: 'clamp(1.65rem, 3.5vw, 2.4rem)',
+              fontSize: 'var(--fs-h2)',
               letterSpacing: '-0.025em', lineHeight: 1.1,
               marginBottom: 14, color: '#fff',
             }}>
               Build your perfect day in Jamaica.
             </h2>
             <p className="concierge-body" style={{
-              fontSize: 15.5, color: '#cccccc',
+              fontSize: 15, color: '#cccccc',
               fontFamily: 'var(--font-dm-sans)', lineHeight: 1.65,
               maxWidth: 460, margin: '0 auto',
             }}>
@@ -867,7 +869,7 @@ export default function FeedView() {
                 <div style={{ display: 'flex', alignItems: 'center', gap: 9, marginBottom: 14 }}>
                   {pillar.icon}
                   <span style={{
-                    fontSize: 11, fontWeight: 600, fontFamily: 'var(--font-dm-sans)',
+                    fontSize: 12, fontWeight: 600, fontFamily: 'var(--font-dm-sans)',
                     letterSpacing: '0.16em', textTransform: 'uppercase',
                     color: 'var(--gold-warm)',
                   }}>
@@ -881,7 +883,7 @@ export default function FeedView() {
                   {pillar.title}
                 </h4>
                 <p style={{
-                  fontSize: 13.5, color: 'rgba(255,255,255,0.72)',
+                  fontSize: 13, color: 'rgba(255,255,255,0.72)',
                   fontFamily: 'var(--font-dm-sans)', lineHeight: 1.62,
                 }}>
                   {pillar.body}
@@ -919,7 +921,7 @@ export default function FeedView() {
             ].map((t) => (
               <span key={t.text} style={{
                 display: 'inline-flex', alignItems: 'center', gap: 7,
-                fontSize: 12.5, fontFamily: 'var(--font-dm-sans)', color: 'rgba(255,255,255,0.7)', fontWeight: 500,
+                fontSize: 12, fontFamily: 'var(--font-dm-sans)', color: 'rgba(255,255,255,0.7)', fontWeight: 500,
               }}>
                 {t.icon} {t.text}
               </span>
@@ -932,7 +934,7 @@ export default function FeedView() {
       <DestinationsSection />
 
       {/* ═══ FEATURED, 3 col, wide ═══ */}
-      <section className="container" style={{ paddingTop: 48, paddingBottom: 0 }}>
+      <section className="container section-y reveal">
         <SectionHeader label="Featured experiences" action={{ text: 'View all', href: '/explore' }} />
         <ResponsiveGrid items={singleExperiences.slice(0, 3)} cols={3} priorityFirst />
       </section>
@@ -943,20 +945,8 @@ export default function FeedView() {
       {/* ═══ PACKAGES, light band, follows the dark food carousel ═══ */}
       <PackagesSection />
 
-      {/* ═══ CURATED FOR YOU ═══ */}
-      <section className="container" style={{ paddingTop: 48, paddingBottom: 0 }}>
-        <SectionHeader label="Curated for you" />
-        <ResponsiveGrid items={singleExperiences.slice(0, 6)} cols={6} />
-      </section>
-
-      {/* ═══ MORE EXPERIENCES ═══ */}
-      <section className="container" style={{ paddingTop: 48, paddingBottom: 0 }}>
-        <SectionHeader label="More experiences" action={{ text: 'Explore all', href: '/explore' }} />
-        <ResponsiveGrid items={singleExperiences.slice(4)} cols={5} />
-      </section>
-
       {/* ═══ TRENDING NOW, viral experiences ═══ */}
-      <section style={{ marginTop: 56, background: 'var(--bg-dark)', padding: '64px 0 72px' }}>
+      <section className="section-y reveal" style={{ background: 'var(--bg-dark)' }}>
         <div className="container">
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
             <TrendingUp size={16} color="var(--gold-warm)" />
@@ -970,7 +960,7 @@ export default function FeedView() {
           </div>
           <p style={{
             fontFamily: 'var(--font-dm-sans)', fontWeight: 700,
-            fontSize: 'clamp(1.5rem, 2.5vw, 2rem)', color: 'white',
+            fontSize: 'var(--fs-h2)', color: 'white',
             lineHeight: 1.15, letterSpacing: '-0.02em', marginBottom: 36,
           }}>
             Viral experiences you&apos;ve seen everywhere.
@@ -1010,7 +1000,7 @@ export default function FeedView() {
                     {t(viralExperiences[0].title)}
                   </h3>
                   <p style={{
-                    fontSize: 13.5, color: '#cccccc', fontFamily: 'var(--font-dm-sans)',
+                    fontSize: 13, color: '#cccccc', fontFamily: 'var(--font-dm-sans)',
                     lineHeight: 1.45, marginBottom: 10, maxWidth: 360,
                   }}>
                     {t(viralExperiences[0].description)}
@@ -1105,7 +1095,7 @@ export default function FeedView() {
           <div className="mapl-diff-content" style={{ flex: 1, padding: '80px 64px 80px 32px' }}>
             <h2 style={{
               fontFamily: 'var(--font-dm-sans)', fontWeight: 700,
-              fontSize: 'clamp(1.75rem, 3vw, 2.5rem)',
+              fontSize: 'var(--fs-h2)',
               color: 'white', lineHeight: 1.12, letterSpacing: '-0.02em',
               marginBottom: 4,
             }}>
@@ -1113,7 +1103,7 @@ export default function FeedView() {
             </h2>
             <p style={{
               fontFamily: 'var(--font-dm-sans)', fontWeight: 700,
-              fontSize: 'clamp(1.75rem, 3vw, 2.5rem)',
+              fontSize: 'var(--fs-h2)',
               color: 'var(--text-on-dark-3)', lineHeight: 1.12, letterSpacing: '-0.02em',
               marginBottom: 48,
             }}>
@@ -1140,12 +1130,12 @@ export default function FeedView() {
                   </div>
                   <h4 style={{
                     fontFamily: 'var(--font-dm-sans)', fontWeight: 600,
-                    fontSize: 14.5, color: 'white', marginBottom: 6,
+                    fontSize: 14, color: 'white', marginBottom: 6,
                   }}>
                     {t(item.title)}
                   </h4>
                   <p style={{
-                    fontSize: 13.5, color: 'var(--text-on-dark-2)',
+                    fontSize: 13, color: 'var(--text-on-dark-2)',
                     fontFamily: 'var(--font-dm-sans)', lineHeight: 1.55,
                   }}>
                     {item.desc}

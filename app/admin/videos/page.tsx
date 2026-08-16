@@ -119,7 +119,7 @@ export default function AdminVideosPage() {
                 border: active ? '1px solid transparent' : border,
                 background: active ? ink : '#fff',
                 color: active ? '#fff' : soft,
-                fontFamily: dm, fontSize: 13.5, fontWeight: 600, letterSpacing: '-0.005em',
+                fontFamily: dm, fontSize: 13, fontWeight: 600, letterSpacing: '-0.005em',
                 transition: 'all 0.15s ease',
               }}
             >
@@ -198,16 +198,16 @@ function ModerationCard({ video, onChanged }: { video: AdminVideo; onChanged: ()
         <p style={{ fontFamily: dm, fontWeight: 700, fontSize: 14, color: ink, letterSpacing: '-0.01em' }}>
           @{video.uploader_name || 'guest'}
         </p>
-        <p style={{ fontFamily: dm, fontSize: 12.5, color: soft, lineHeight: 1.45 }}>
+        <p style={{ fontFamily: dm, fontSize: 12, color: soft, lineHeight: 1.45 }}>
           {experience?.title ?? `Experience #${video.experience_id}`}
         </p>
-        <p style={{ fontFamily: dm, fontSize: 11.5, color: faint }}>
+        <p style={{ fontFamily: dm, fontSize: 12, color: faint }}>
           {new Date(video.created_at).toLocaleString()}
           {video.duration_seconds ? ` · ${video.duration_seconds}s` : ''}
         </p>
         {video.caption && (
           <p style={{
-            fontFamily: dm, fontSize: 12.5, color: ink,
+            fontFamily: dm, fontSize: 12, color: ink,
             background: 'var(--bg-warm, #F4F1EB)', padding: '8px 10px', borderRadius: 8, lineHeight: 1.45,
           }}>
             {video.caption}
@@ -253,7 +253,7 @@ function StatusPill({ status }: { status: VideoStatus }) {
   return (
     <span style={{
       display: 'inline-block', padding: '4px 10px', borderRadius: 9999,
-      fontSize: 11, fontWeight: 700, fontFamily: dm,
+      fontSize: 12, fontWeight: 700, fontFamily: dm,
       letterSpacing: '0.06em', textTransform: 'uppercase',
       background: tone.bg, color: tone.fg,
       backdropFilter: 'blur(6px)',
@@ -288,7 +288,7 @@ function ActionBtn({ variant, onClick, disabled, children }: {
         color: disabled ? faint : tone.fg,
         border: `1px solid ${disabled ? 'var(--border, #E7E1D6)' : tone.bd}`,
         cursor: disabled ? 'not-allowed' : 'pointer',
-        fontFamily: dm, fontWeight: 700, fontSize: 12.5,
+        fontFamily: dm, fontWeight: 700, fontSize: 12,
       }}
     >
       {children}

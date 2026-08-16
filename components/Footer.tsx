@@ -33,7 +33,7 @@ export default function Footer() {
               </span>
               <span style={{
                 fontFamily: 'var(--font-dm-sans)', fontWeight: 700,
-                fontSize: 11, letterSpacing: '0.12em',
+                fontSize: 12, letterSpacing: '0.12em',
                 textTransform: 'uppercase', color: '#cccccc',
                 marginTop: 2, display: 'block',
               }}>
@@ -151,7 +151,7 @@ export default function Footer() {
         <div className="footer-bottom" style={{
           paddingTop: 20,
           display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-          fontSize: 12.5, color: 'var(--text-on-dark-3)',
+          fontSize: 12, color: 'var(--text-on-dark-3)',
           fontFamily: 'var(--font-dm-sans)', flexWrap: 'wrap', gap: 16,
         }}>
           <p>© 2026 MAPL Tours. {t('All rights reserved.')} A <a href="https://www.mapltech.com" target="_blank" rel="noopener noreferrer" style={{ color: 'white', fontWeight: 600 }}>MAPL TECH</a> company.</p>
