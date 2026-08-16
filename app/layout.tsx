@@ -29,10 +29,10 @@ const siteUrl = 'https://mapltours.com'
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {
-    default: 'MAPL Tours Jamaica | Best Tours & Cultural Experiences in Jamaica',
+    default: 'MAPL Tours Jamaica | Tours, Transfers & Day Trips',
     template: '%s | MAPL Tours Jamaica',
   },
-  description: 'Discover the best tours in Jamaica. Book authentic cultural experiences, cliff diving in Negril, Blue Mountain coffee treks, reggae studio sessions, jerk cooking classes, and more. Curated by locals who know Jamaica best.',
+  description: 'Book Jamaica tours and private airport transfers online: Dunn\'s River, Blue Hole, bamboo rafting, Nine Mile, Rick\'s Cafe. Local drivers, flat prices, no surprises.',
   keywords: [
     'best tours in Jamaica',
     'Jamaica tours',
@@ -122,7 +122,9 @@ function JsonLd() {
     '@type': 'TravelAgency',
     name: 'MAPL Tours Jamaica',
     url: siteUrl,
-    logo: `${siteUrl}/icon`,
+    // Google wants a crawlable raster logo (>=112px); the SVG favicon route
+    // is not reliable for this.
+    logo: `${siteUrl}/brand/mapl-icon-1024.png`,
     description: 'Discover the best tours in Jamaica. Authentic cultural experiences crafted by locals who know Jamaica best.',
     address: {
       '@type': 'PostalAddress',
@@ -142,7 +144,7 @@ function JsonLd() {
       { '@type': 'City', name: 'Negril' },
       { '@type': 'City', name: 'Nine Mile' },
     ],
-    priceRange: '$19 - $440',
+    priceRange: '$19 - $459',
     // Note: aggregateRating intentionally omitted from the site-wide entity.
     // Google rejects "self-serving" reviews, ratings/reviews belong on the
     // specific thing reviewed (Product / Service / TouristTrip), not on the
@@ -158,7 +160,7 @@ function JsonLd() {
             name: "Rick's Cafe Cliff Diving & Sunset",
             description: 'Jump from legendary cliffs as the sun melts into the Caribbean.',
             touristType: 'Adventure',
-            offers: { '@type': 'Offer', price: '245', priceCurrency: 'USD' },
+            offers: { '@type': 'Offer', price: '255', priceCurrency: 'USD' },
           },
         },
         {
@@ -168,7 +170,7 @@ function JsonLd() {
             name: 'Bob Marley Nine Mile Pilgrimage',
             description: 'Walk where Bob walked. Feel the spirit of One Love.',
             touristType: 'Culture',
-            offers: { '@type': 'Offer', price: '440', priceCurrency: 'USD' },
+            offers: { '@type': 'Offer', price: '459', priceCurrency: 'USD' },
           },
         },
         {
@@ -178,7 +180,7 @@ function JsonLd() {
             name: "Dunn's River Falls Climb",
             description: 'Climb 600 feet of cascading falls hand-in-hand.',
             touristType: 'Adventure',
-            offers: { '@type': 'Offer', price: '336', priceCurrency: 'USD' },
+            offers: { '@type': 'Offer', price: '351', priceCurrency: 'USD' },
           },
         },
       ],

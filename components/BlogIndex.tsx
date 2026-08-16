@@ -127,9 +127,11 @@ function Masthead() {
 
         <Rule weight={2} />
 
-        {/* Nameplate */}
+        {/* Nameplate. The masthead IS the page heading, so it is the h1:
+            the page previously had none, which left every article h2 orphaned
+            in the outline. */}
         <div style={{ textAlign: 'center', padding: '32px 8px 24px' }}>
-          <div
+          <h1
             style={{
               fontFamily: 'var(--font-dm-sans)',
               fontWeight: 700,
@@ -143,7 +145,7 @@ function Masthead() {
             <span style={{ fontStyle: 'italic', fontWeight: 500 }}>The</span>{' '}
             MAPL{' '}
             <span style={{ fontStyle: 'italic', fontWeight: 500 }}>Journal</span>
-          </div>
+          </h1>
           <Kicker color="var(--gold-text)" size={12}>
             Dispatches from the real Jamaica · Established MMXXIV
           </Kicker>

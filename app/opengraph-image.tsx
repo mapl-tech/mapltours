@@ -11,7 +11,15 @@ export const alt = 'MAPL Tours Jamaica, Discover Jamaica Beyond the Resort'
 export const size = { width: 1200, height: 630 }
 export const contentType = 'image/png'
 
-export default function OG() {
+export default async function OG() {
+  // The real brand lockup (dark variant, built for dark grounds) instead of
+  // tracked-out text. Satori accepts the raw ArrayBuffer as an img src.
+  // Co-located with this route on purpose: at edge runtime the file must be
+  // bundled with the module, and a path into /public is not resolvable here.
+  const logo = await fetch(
+    new URL('./og-logo.png', import.meta.url)
+  ).then((r) => r.arrayBuffer())
+
   return new ImageResponse(
     (
       <div
@@ -27,15 +35,9 @@ export default function OG() {
           fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif',
         }}
       >
-        <div
-          style={{
-            display: 'flex',
-            fontSize: 22,
-            fontWeight: 700,
-            letterSpacing: '0.18em',
-          }}
-        >
-          MAPL TOURS
+        <div style={{ display: 'flex' }}>
+          {/* eslint-disable-next-line @next/next/no-img-element, jsx-a11y/alt-text */}
+          <img src={logo as unknown as string} width={194} height={90} />
         </div>
         <div style={{ display: 'flex', flexDirection: 'column' }}>
           <div

@@ -174,9 +174,9 @@ export default function ContactView() {
                 }}>
                   <Check size={26} strokeWidth={2.5} />
                 </div>
-                <h3 style={{ fontFamily: 'var(--font-dm-sans)', fontWeight: 700, fontSize: 22, marginBottom: 8 }}>
+                <h2 style={{ fontFamily: 'var(--font-dm-sans)', fontWeight: 700, fontSize: 22, marginBottom: 8 }}>
                   Message Sent
-                </h3>
+                </h2>
                 <p style={{ fontSize: 14, color: 'var(--text-secondary)', fontFamily: 'var(--font-dm-sans)', lineHeight: 1.6 }}>
                   Thank you for reaching out. Our team will get back to you within 24 hours.
                 </p>
@@ -186,9 +186,9 @@ export default function ContactView() {
                 borderRadius: 'var(--r-xl)', border: '1px solid var(--border)',
                 background: '#fff', padding: 32,
               }}>
-                <h3 style={{ fontFamily: 'var(--font-dm-sans)', fontWeight: 700, fontSize: 20, marginBottom: 6 }}>
+                <h2 style={{ fontFamily: 'var(--font-dm-sans)', fontWeight: 700, fontSize: 20, marginBottom: 6 }}>
                   Send us a message
-                </h3>
+                </h2>
                 <p style={{ fontSize: 13, color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-sans)', marginBottom: 24 }}>
                   We would love to hear from you
                 </p>

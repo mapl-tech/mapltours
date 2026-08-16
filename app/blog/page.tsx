@@ -6,7 +6,7 @@ const SITE_URL = 'https://mapltours.com'
 const BLOG_URL = `${SITE_URL}/blog`
 
 export const metadata: Metadata = {
-  title: 'The MAPL Journal, Jamaica Travel Stories & Guides',
+  title: 'The MAPL Journal | Jamaica Travel Guides',
   description:
     'Stories, guides, and dispatches from the real Jamaica. Essays from pit masters, selectors, and local creators who know the island beyond the resort.',
   alternates: { canonical: BLOG_URL },

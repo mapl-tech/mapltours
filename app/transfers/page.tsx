@@ -8,10 +8,9 @@ const SITE_URL = 'https://mapltours.com'
 const PAGE_URL = `${SITE_URL}/transfers`
 
 export const metadata: Metadata = {
-  title:
-    'Jamaica Airport Transfers | Flat-Rate Private Rides from Montego Bay (MBJ)',
+  title: 'Jamaica Airport Transfers from MBJ',
   description:
-    'Book a private airport transfer in Jamaica from Sangster International (MBJ) to Negril, Ocho Rios, Montego Bay, Falmouth, and every major resort. Flat rates from $19, 1–4 passengers, meet-and-greet, flight tracking, flexible cancellation within 48 hours of booking.',
+    'Private transfers from Sangster (MBJ) to Negril, Ocho Rios, Falmouth and every resort. Flat rates from $19 per vehicle, meet-and-greet, flight tracking.',
   keywords: [
     'Jamaica airport transfer',
     'Montego Bay airport transfer',
@@ -100,7 +99,7 @@ function buildStructuredData() {
       '@type': 'Organization',
       name: 'MAPL Tours Jamaica',
       url: SITE_URL,
-      logo: `${SITE_URL}/icon.png`,
+      logo: `${SITE_URL}/brand/mapl-icon-1024.png`,
     },
     // Geographic coverage: the towns MAPL actually drives to, so search
     // engines associate the transfer service with each destination, not just

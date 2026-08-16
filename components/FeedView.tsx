@@ -527,22 +527,54 @@ function PackagesSection() {
                       {priceUnitLabel(pkg.pricing)}
                     </span>
                   </div>
-                  <button
-                    onClick={() => (inCart ? removeItem(pkg.id) : addItem(pkg))}
-                    aria-pressed={inCart}
-                    aria-label={inCart ? `Remove ${pkg.title} from your itinerary` : `Add ${pkg.title} to your itinerary`}
-                    style={{
-                      width: '100%', minHeight: 44, borderRadius: 9999,
-                      background: inCart ? 'var(--emerald)' : 'var(--gold)',
-                      color: inCart ? '#fff' : '#1A1508',
-                      border: 'none', cursor: 'pointer',
-                      fontSize: 13.5, fontWeight: 700, fontFamily: 'var(--font-dm-sans)',
-                    }}
-                    onMouseEnter={(e) => { e.currentTarget.style.filter = 'brightness(1.08)' }}
-                    onMouseLeave={(e) => { e.currentTarget.style.filter = '' }}
-                  >
-                    {inCart ? t('\u2713 Added') : t('Add this day')}
-                  </button>
+                  {/* Once the day is in the itinerary the button stops being a
+                      toggle and becomes the way forward: tapping it goes to
+                      checkout. Removing moves to a quiet secondary link, so the
+                      primary action is never "undo what you just did". */}
+                  {inCart ? (
+                    <>
+                      <Link
+                        href="/checkout"
+                        style={{
+                          width: '100%', minHeight: 44, borderRadius: 9999,
+                          background: 'var(--emerald)', color: '#fff',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7,
+                          textDecoration: 'none',
+                          fontSize: 13.5, fontWeight: 700, fontFamily: 'var(--font-dm-sans)',
+                        }}
+                        onMouseEnter={(e) => { e.currentTarget.style.filter = 'brightness(1.08)' }}
+                        onMouseLeave={(e) => { e.currentTarget.style.filter = '' }}
+                      >
+                        {t('\u2713 Added')} \u00b7 {t('Checkout')} <ArrowRight size={15} />
+                      </Link>
+                      <button
+                        onClick={() => removeItem(pkg.id)}
+                        aria-label={`Remove ${pkg.title} from your itinerary`}
+                        style={{
+                          minHeight: 32, background: 'none', border: 'none', cursor: 'pointer',
+                          fontSize: 12.5, fontWeight: 600, color: 'var(--text-tertiary)',
+                          fontFamily: 'var(--font-dm-sans)', textDecoration: 'underline',
+                        }}
+                      >
+                        {t('Remove')}
+                      </button>
+                    </>
+                  ) : (
+                    <button
+                      onClick={() => addItem(pkg)}
+                      aria-label={`Add ${pkg.title} to your itinerary`}
+                      style={{
+                        width: '100%', minHeight: 44, borderRadius: 9999,
+                        background: 'var(--gold)', color: '#1A1508',
+                        border: 'none', cursor: 'pointer',
+                        fontSize: 13.5, fontWeight: 700, fontFamily: 'var(--font-dm-sans)',
+                      }}
+                      onMouseEnter={(e) => { e.currentTarget.style.filter = 'brightness(1.08)' }}
+                      onMouseLeave={(e) => { e.currentTarget.style.filter = '' }}
+                    >
+                      {t('Add this day')}
+                    </button>
+                  )}
                   {replaces.length > 0 && !inCart && (
                     <p className="pkg-replaces" style={{ fontSize: 12, color: 'var(--gold-text)', fontFamily: 'var(--font-dm-sans)' }}>
                       {t('Replaces the')} {replaces.length} {replaces.length === 1 ? t('experience') : t('experiences')} {t('in your itinerary')}
@@ -675,7 +707,8 @@ function AllExperiencesSection() {
       {/* Mobile: shorts, 1 col */}
       {/* Two columns, matching /explore: one column of 9:16 shorts made the
           home page 22816px tall on a phone. */}
-      <div className="hide-desktop mobile-shorts-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 10 }}>
+      {/* One full-width reel per row, matching the explore page. */}
+      <div className="hide-desktop mobile-shorts-grid" style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 10 }}>
         {visible.map((e) => <MobileShort key={e.id} exp={e} />)}
       </div>
       {hasMore && (
@@ -893,12 +926,12 @@ export default function FeedView() {
                     {path.kicker}
                   </span>
                 </div>
-                <h4 style={{
+                <h3 style={{
                   fontFamily: 'var(--font-dm-sans)', fontWeight: 600, fontSize: 20,
                   marginBottom: 10, lineHeight: 1.22, letterSpacing: '-0.01em', color: '#fff',
                 }}>
                   {path.title}
-                </h4>
+                </h3>
                 <p style={{
                   fontSize: 13, color: 'rgba(255,255,255,0.72)',
                   fontFamily: 'var(--font-dm-sans)', lineHeight: 1.62,
@@ -1079,12 +1112,12 @@ export default function FeedView() {
                   pointerEvents: 'none',
                 }} />
                 <div style={{ position: 'relative', zIndex: 1 }}>
-                  <h4 style={{
+                  <h3 style={{
                     fontFamily: 'var(--font-dm-sans)', fontWeight: 600, fontSize: 14,
                     color: 'white', lineHeight: 1.25, marginBottom: 5,
                   }}>
                     {t(exp.title)}
-                  </h4>
+                  </h3>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                     <span style={{ fontSize: 14, fontWeight: 700, color: 'white', fontFamily: 'var(--font-dm-sans)' }}>
                       {formatPrice(exp.price)}
@@ -1176,12 +1209,12 @@ export default function FeedView() {
                   }}>
                     {item.icon}
                   </div>
-                  <h4 style={{
+                  <h3 style={{
                     fontFamily: 'var(--font-dm-sans)', fontWeight: 600,
                     fontSize: 14, color: 'white', marginBottom: 6,
                   }}>
                     {t(item.title)}
-                  </h4>
+                  </h3>
                   <p style={{
                     fontSize: 13, color: 'var(--text-on-dark-2)',
                     fontFamily: 'var(--font-dm-sans)', lineHeight: 1.55,

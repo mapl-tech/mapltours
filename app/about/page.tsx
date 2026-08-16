@@ -5,7 +5,7 @@ import { DESTINATION_IMAGES } from '@/lib/experiences'
 import Footer from '@/components/Footer'
 
 export const metadata: Metadata = {
-  title: 'About MAPL Tours, Jamaica, Told by Its People',
+  title: 'About MAPL Tours',
   description: 'The story behind MAPL Tours Jamaica: a cultural travel platform connecting travelers with authentic experiences crafted by local creators.',
   alternates: { canonical: 'https://mapltours.com/about' },
 }

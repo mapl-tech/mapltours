@@ -55,7 +55,7 @@ ${blogLines}
 - Country: Jamaica
 - Currency: USD
 - Airport transfers: one flat all-in price per vehicle for 1-4 passengers, nothing added at checkout. From $19 one-way (Montego Bay hotels) up to $159 (Treasure Beach); round trips are 10% off two one-ways. Cancellation: flexible within 48 hours of booking, less a 20% administration charge plus taxes (if applicable); after that window bookings are non-refundable, and no-shows are charged in full.
-- Tours and experiences: priced per person, $55-$145, with a service fee added at checkout. Cancellation: flexible within 48 hours of booking, less a 20% administration charge plus taxes (if applicable).
+- Tours and experiences: $103 to $459 all-in, nothing added at checkout. Most are private group tours priced per vehicle for a party of up to 3 or 4, not per person; a few are per person. Ready-made multi-stop day packages run $192 to $332. Cancellation: flexible within 48 hours of booking, less a 20% administration charge plus taxes (if applicable).
 - Payments: Stripe (cards and Apple Pay)
 
 ## For AI agents

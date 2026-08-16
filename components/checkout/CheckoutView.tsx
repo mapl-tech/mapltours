@@ -374,10 +374,26 @@ function DetailsStep({ waiverAccepted, setWaiverAccepted, waiverError, formData,
   const { t } = useI18n()
   const [modalContent, setModalContent] = useState<'waiver' | 'terms' | null>(null)
 
+  // Almost every guest is dropped back where they were collected, so drop-off
+  // mirrors pickup as it is typed and stops the moment the guest edits it
+  // themselves. Without this, drop-off is a required field they must retype
+  // their own hotel into, which is the most common stall in this form.
+  const [dropoffEdited, setDropoffEdited] = useState(false)
+
   const updateField = (key: string, value: string) => {
-    setFormData({ ...formData, [key]: value })
-    if (key === 'pickup') setPickup(value)
-    if (key === 'dropoff') setDropoff(value)
+    const next = { ...formData, [key]: value }
+    if (key === 'pickup') {
+      setPickup(value)
+      if (!dropoffEdited) {
+        next.dropoff = value
+        setDropoff(value)
+      }
+    }
+    if (key === 'dropoff') {
+      setDropoffEdited(true)
+      setDropoff(value)
+    }
+    setFormData(next)
   }
   return (
     <div>
@@ -517,10 +533,13 @@ function DetailsStep({ waiverAccepted, setWaiverAccepted, waiverError, formData,
             <label style={{ fontSize: 12, color: formErrors['dropoff'] ? '#c00' : 'var(--text-secondary)', fontFamily: 'var(--font-dm-sans)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
               <span style={{ width: 8, height: 8, borderRadius: '50%', background: formErrors['dropoff'] ? '#c00' : 'var(--gold)', flexShrink: 0 }} />
               {t('Drop-off Location')} {formErrors['dropoff'] && <span style={{ fontWeight: 400 }}>- required</span>}
+              {!formErrors['dropoff'] && formData['dropoff'] && formData['dropoff'] === formData['pickup'] && (
+                <span style={{ fontWeight: 400, color: 'var(--text-tertiary)' }}>· same as pickup</span>
+              )}
             </label>
             <input
               className="field-input"
-              placeholder={t('Same as pickup or different location...')}
+              placeholder={t('Where should we drop you off?')}
               value={formData['dropoff'] || ''}
               onChange={(e) => updateField('dropoff', e.target.value)}
               list="jamaica-locations-dropoff"
@@ -578,8 +597,13 @@ function DetailsStep({ waiverAccepted, setWaiverAccepted, waiverError, formData,
         background: waiverError && !waiverAccepted ? 'rgba(200,0,0,0.03)' : '#fff',
         transition: 'all 0.2s ease',
       }}>
-        <label style={{ display: 'flex', gap: 12, cursor: 'pointer', alignItems: 'flex-start' }}>
-          <div style={{
+        {/* The real checkbox is visually hidden but NEVER display:none, which
+            would drop it out of the tab order and the accessibility tree and
+            leave a keyboard-only guest unable to accept the waiver, i.e.
+            unable to book at all. `.visually-hidden` keeps it focusable; the
+            custom box mirrors its state and shows the focus ring. */}
+        <label className="waiver-label" style={{ display: 'flex', gap: 12, cursor: 'pointer', alignItems: 'flex-start' }}>
+          <span aria-hidden="true" className="waiver-box" style={{
             width: 22, height: 22, borderRadius: 6, flexShrink: 0, marginTop: 1,
             border: waiverAccepted ? 'none' : `2px solid ${waiverError ? 'rgba(200,0,0,0.5)' : 'var(--border-strong)'}`,
             background: waiverAccepted ? 'var(--accent)' : '#fff',
@@ -587,18 +611,19 @@ function DetailsStep({ waiverAccepted, setWaiverAccepted, waiverError, formData,
             transition: 'all 0.15s ease',
           }}>
             {waiverAccepted && <Check size={14} strokeWidth={3} color="#fff" />}
-          </div>
+          </span>
           <input
             type="checkbox"
+            className="visually-hidden"
             checked={waiverAccepted}
             onChange={(e) => setWaiverAccepted(e.target.checked)}
-            style={{ display: 'none' }}
+            aria-describedby="waiver-copy"
           />
           <div>
             <p style={{ fontSize: 13, fontFamily: 'var(--font-dm-sans)', fontWeight: 600, color: 'var(--text-primary)', lineHeight: 1.4, marginBottom: 4 }}>
               Activity Waiver & Release
             </p>
-            <p style={{ fontSize: 12, fontFamily: 'var(--font-dm-sans)', color: 'var(--text-tertiary)', lineHeight: 1.55 }}>
+            <p id="waiver-copy" style={{ fontSize: 12, fontFamily: 'var(--font-dm-sans)', color: 'var(--text-tertiary)', lineHeight: 1.55 }}>
               I acknowledge that the experiences booked involve physical activities including but not limited to swimming, hiking, cliff jumping, and water sports. I accept all associated risks and agree to the{' '}
               <span
                 onClick={(e) => { e.preventDefault(); setModalContent('waiver') }}
@@ -940,9 +965,14 @@ export default function CheckoutView() {
         <div style={{ width: 64, height: 64, borderRadius: '50%', background: 'var(--surface)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 20 }}>
           <Leaf size={24} color="var(--text-tertiary)" />
         </div>
-        <p style={{ fontSize: 20, fontFamily: 'var(--font-dm-sans)', fontWeight: 700, marginBottom: 8 }}>{t('Your itinerary is empty')}</p>
+        <h1 style={{ fontSize: 20, fontFamily: 'var(--font-dm-sans)', fontWeight: 700, marginBottom: 8 }}>{t('Your itinerary is empty')}</h1>
         <p style={{ fontSize: 14, color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-sans)', marginBottom: 24, maxWidth: 300 }}>Start exploring Jamaica and add experiences to build your trip</p>
-        <Link href="/" className="btn-primary" style={{ height: 46, padding: '0 28px', fontSize: 14 }}>{t('Browse experiences')}</Link>
+        {/* Two ways out, because an empty cart has two intents: browse tours,
+            or the guest actually wanted a transfer. */}
+        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', justifyContent: 'center' }}>
+          <Link href="/explore" className="btn-primary" style={{ height: 46, padding: '0 28px', fontSize: 14 }}>{t('Browse experiences')}</Link>
+          <Link href="/transfers" className="btn-outline" style={{ height: 46, padding: '0 24px', fontSize: 14, display: 'inline-flex', alignItems: 'center' }}>{t('Book an airport transfer')}</Link>
+        </div>
       </div>
     )
   }
@@ -958,7 +988,9 @@ export default function CheckoutView() {
             <ArrowLeft size={15} /> Back
           </Link>
           <div style={{ textAlign: 'center' }}>
-            <h2 style={{ fontFamily: 'var(--font-dm-sans)', fontWeight: 700, fontSize: 18 }}>{t('Checkout')}</h2>
+            {/* The page heading. It was an h2 with no h1 above it, leaving
+                the checkout with no document heading at all. */}
+            <h1 style={{ fontFamily: 'var(--font-dm-sans)', fontWeight: 700, fontSize: 18 }}>{t('Checkout')}</h1>
           </div>
           <div className="hide-mobile"><StepIndicator step={step} /></div>
         </div>
@@ -967,7 +999,7 @@ export default function CheckoutView() {
       {/* Mobile step label */}
       <div className="hide-desktop container" style={{ paddingTop: 16, paddingBottom: 4 }}>
         <p style={{ fontSize: 12, fontWeight: 600, fontFamily: 'var(--font-dm-sans)', textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--gold)', marginBottom: 4 }}>
-          Step {step} of 3
+          Step {step} of 2
         </p>
         <h3 style={{ fontFamily: 'var(--font-dm-sans)', fontWeight: 700, fontSize: 22 }}>
           {step === 1 ? t('Your trip and details') : t('Payment')}

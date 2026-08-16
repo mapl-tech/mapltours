@@ -24,11 +24,11 @@ const categories = [
       },
       {
         q: 'How far in advance should I book?',
-        a: 'We recommend booking at least 48 hours in advance to guarantee availability. Popular experiences like the Bob Marley Heritage Pilgrimage and Rick\'s Cafe Cliff Diving can sell out a week ahead during peak season (December-March).',
+        a: 'We recommend booking at least 48 hours in advance to guarantee availability. Popular experiences like the Bob Marley Nine Mile Pilgrimage and Rick\'s Cafe Cliff Diving can sell out a week ahead during peak season (December-March).',
       },
       {
         q: 'Can I modify my booking after checkout?',
-        a: 'Yes. You can change your date or number of guests from your Profile page up to 48 hours before the experience. For other changes, contact our support team and we\'ll sort it out.',
+        a: 'Yes. Email contact@mapltours.com with your booking reference and what you need changed, the date, the number of guests, your hotel, and we will sort it out. Your upcoming bookings are listed on your Profile page.',
       },
     ],
   },
@@ -43,7 +43,7 @@ const categories = [
       },
       {
         q: 'What if the creator cancels my experience?',
-        a: 'If a creator cancels, you receive a full refund automatically, or you can choose to rebook at no additional cost. We\'ll notify you immediately and help arrange an alternative experience if you prefer.',
+        a: 'If we cancel, you receive your money back in full, with no administration charge, or you can rebook at no additional cost. The 20% administration charge applies only when you cancel; it is never applied to a cancellation on our side. We\'ll notify you immediately and help arrange an alternative experience if you prefer.',
       },
       {
         q: 'How long do refunds take to process?',
@@ -66,7 +66,7 @@ const categories = [
       },
       {
         q: 'What happens if it rains?',
-        a: 'Jamaica gets brief tropical showers, most experiences run rain or shine (it\'s part of the adventure). If severe weather forces a cancellation, we\'ll reschedule at no cost or issue a full refund.',
+        a: 'Jamaica gets brief tropical showers, most experiences run rain or shine (it\'s part of the adventure). If severe weather forces a cancellation, we\'ll reschedule at no cost or return your money in full, with no administration charge, because the cancellation is on our side.',
       },
       {
         q: 'Are experiences suitable for children?',
@@ -230,6 +230,7 @@ export default function HelpCenter() {
           }}>
             <input
               type="text"
+              aria-label="Search help articles"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search for answers..."

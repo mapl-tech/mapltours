@@ -50,10 +50,14 @@ export default function GiftCardsView() {
           position: 'relative', zIndex: 1, textAlign: 'center',
           maxWidth: 640, padding: '0 24px',
         }}>
+          {/* --gold-warm measures 2.91:1 against this hero's mid-tone
+              photograph, under the 4.5 AA floor for 12px text. This lighter
+              gold measures 4.59:1 on the same ground and keeps the hue. */}
           <p style={{
             fontSize: 12, fontWeight: 700, textTransform: 'uppercase',
-            letterSpacing: '0.16em', color: 'var(--gold-warm)',
+            letterSpacing: '0.16em', color: '#E8D08A',
             fontFamily: 'var(--font-dm-sans)', marginBottom: 16,
+            textShadow: '0 1px 6px rgba(0,0,0,0.5)',
           }}>
             Give Jamaica
           </p>
@@ -260,6 +264,7 @@ export default function GiftCardsView() {
                           <span style={{ fontFamily: 'var(--font-dm-sans)', fontWeight: 800, fontSize: 22, color: 'var(--text-primary)' }}>$</span>
                           <input
                             type="number"
+                            aria-label="Custom gift card amount in US dollars"
                             value={customAmount}
                             onChange={(e) => setCustomAmount(e.target.value)}
                             placeholder="0"
@@ -322,6 +327,7 @@ export default function GiftCardsView() {
                         </label>
                         <input
                           type={f.type || 'text'}
+                          aria-label={f.label}
                           value={f.value}
                           onChange={(e) => f.onChange(e.target.value)}
                           placeholder={f.placeholder}
@@ -345,6 +351,7 @@ export default function GiftCardsView() {
                         Personal message
                       </label>
                       <textarea
+                        aria-label="Personal message"
                         value={message}
                         onChange={(e) => setMessage(e.target.value)}
                         placeholder="Wishing you an amazing time in Jamaica..."

@@ -476,10 +476,20 @@ h5, h6 { letter-spacing: -0.01em; }
   }
 
   /* ── Footer, elegant single column, centered ── */
+  /* Compressed rhythm: the desktop 36px padding+margin pairs doubled up into
+     70px+ dead bands on a 390px screen. Mobile spec: 40/24 section padding,
+     ~20px stack gaps. */
+  footer { padding: 40px 0 24px !important; }
+  .footer-brand { margin-bottom: 24px !important; }
+  .footer-lang { padding-bottom: 16px !important; margin-bottom: 16px !important; }
+  .footer-trust { padding-bottom: 20px !important; margin-bottom: 20px !important; }
+  .footer-bottom { padding-top: 16px !important; }
   .grid-footer {
     grid-template-columns: 1fr 1fr !important;
-    gap: 32px 20px !important;
+    gap: 24px 20px !important;
+    padding-bottom: 24px !important;
   }
+  .grid-footer a:last-child { margin-bottom: 0 !important; }
   .footer-brand {
     text-align: center !important;
     display: flex !important;
@@ -1064,7 +1074,11 @@ img[alt="Devon House Patty & Ice Cream Tour"] {
   }
   .about-split-img {
     aspect-ratio: 4 / 3;
-    min-height: 280px;
+    /* No min-height: with an aspect-ratio set, a height floor taller than
+       (column width x 3/4) makes the box grow WIDER to keep the ratio, which
+       pushed it 30px past its grid track and gave the page a horizontal
+       scroll. Let the ratio derive height from the available width. */
+    min-height: 0;
   }
   .about-stats {
     flex-direction: column;
@@ -1178,7 +1192,12 @@ img[alt="Devon House Patty & Ice Cream Tour"] {
   scroll-snap-type: x mandatory;
   -webkit-overflow-scrolling: touch;
   padding-top: 28px;
-  padding-bottom: 4px;
+  /* Room for the card shadow: the rail scrolls on x, which forces y to clip,
+     so without this padding the shadow's bottom 6px (and most of the hover
+     shadow) is sliced off. The negative margin gives the space back to the
+     band so the section rhythm does not grow. */
+  padding-bottom: 28px;
+  margin-bottom: -24px;
   /* Match .container's inset so the first card lines up with the heading,
      and give scroll-snap the same inset or it snaps the first card flush
      to the scrollport and undoes the alignment. */
@@ -1341,4 +1360,29 @@ img[alt="Devon House Patty & Ice Cream Tour"] {
 }
 @media (prefers-reduced-motion: reduce) {
   .login-back-btn:hover { transform: none; }
+}
+
+/* ═══════════════════════════════════════════
+   Accessible custom checkbox (checkout waiver)
+   The native input stays in the tab order and the a11y tree; only its
+   pixels are hidden. display:none would make the waiver unreachable by
+   keyboard, which blocks the whole booking.
+   ═══════════════════════════════════════════ */
+.visually-hidden {
+  position: absolute;
+  width: 1px; height: 1px;
+  margin: -1px; padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+.waiver-label input:focus-visible + div,
+.waiver-label input:focus-visible ~ div {
+  outline: none;
+}
+.waiver-label:focus-within .waiver-box {
+  outline: 3px solid var(--gold-text, #6E5A1C);
+  outline-offset: 3px;
 }

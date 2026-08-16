@@ -14,8 +14,15 @@ export function generateMetadata({ params }: { params: { slug: string } }): Meta
   if (!exp) {
     return { title: 'Experience not found', robots: { index: false, follow: false } }
   }
-  const title = `${exp.title}, ${exp.destination}, Jamaica`
-  const description = exp.description
+  // The layout template appends " | MAPL Tours Jamaica" (22 chars), so the
+  // per-page part has to stay short or Google truncates the tour name itself.
+  const title = exp.title.length > 28 ? exp.title : `${exp.title}, ${exp.destination}`
+  // Search snippets cut around 160 characters; several tour blurbs run past
+  // 180, which truncates mid-sentence in the SERP.
+  const description =
+    exp.description.length > 160
+      ? exp.description.slice(0, 157).replace(/[\s,;:]+\S*$/, '') + '...'
+      : exp.description
   const url = `${SITE_URL}/experience/${params.slug}`
   return {
     title,

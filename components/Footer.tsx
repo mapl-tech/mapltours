@@ -13,29 +13,18 @@ export default function Footer() {
       <div className="container">
         {/* Logo + tagline */}
         <div className="footer-brand" style={{ marginBottom: 40 }}>
-          {/* Original-colour logo on a white plate. The mark is near-black and
-              the footer is --bg-dark (1.11:1, i.e. invisible), so the plate is
-              what makes the brand legible here. Footer only — the header sits
-              on white and needs no plate. */}
-          {/* The plate lives on a wrapper, not on the <img>. With the global
-              box-sizing: border-box, padding on the image itself eats into
-              its height — a 42px image with 10px padding rendered the artwork
-              at 22px, half the header's size. */}
-          <div style={{
-            display: 'inline-block',
-            background: '#fff',
-            borderRadius: 12,
-            padding: '10px 16px',
-            marginBottom: 16,
-          }}>
+          {/* Dark-ground variant, sitting directly on --bg-dark. It carries a
+              white wordmark and an outlined bus, so it needs no white plate
+              behind it, the plate was a workaround from before that variant
+              existed. Same 42px as the header lockup so the mark reads at one
+              consistent size top and bottom. */}
+          <div style={{ display: 'inline-block', marginBottom: 16 }}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src="/mapl-logo.svg"
+              src="/mapl-logo-dark.svg"
               alt="MAPL Tours Jamaica"
               width={185}
               height={42}
-              /* Same 42px as the header lockup, so the mark reads at one
-                 consistent size top and bottom. */
               style={{ height: 42, width: 'auto', display: 'block' }}
             />
           </div>

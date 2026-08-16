@@ -494,21 +494,24 @@ export default function TopNav({ onCartClick }: { onCartClick?: () => void }) {
             </Link>
           )}
 
-          <Link
-            href="/transfers"
-            className={searchVisible ? 'hide-mobile' : undefined}
-            aria-current={isTransfers ? 'page' : undefined}
-            style={{
-              display: 'inline-flex', alignItems: 'center',
-              minHeight: 38, padding: '0 16px', fontSize: 13, fontWeight: 700,
-              fontFamily: 'var(--font-dm-sans)', color: '#1A1508',
-              background: 'var(--gold)', borderRadius: 9999,
-              transition: 'filter 0.15s ease', whiteSpace: 'nowrap',
-              textDecoration: 'none',
-            }}
-          >
-            {t('Transfers')}
-          </Link>
+          {/* The gold Transfers CTA disappears on the transfers page itself:
+              a primary CTA pointing at the page you are on is dead weight. */}
+          {!isTransfers && (
+            <Link
+              href="/transfers"
+              className={searchVisible ? 'hide-mobile' : undefined}
+              style={{
+                display: 'inline-flex', alignItems: 'center',
+                minHeight: 38, padding: '0 16px', fontSize: 13, fontWeight: 700,
+                fontFamily: 'var(--font-dm-sans)', color: '#1A1508',
+                background: 'var(--gold)', borderRadius: 9999,
+                transition: 'filter 0.15s ease', whiteSpace: 'nowrap',
+                textDecoration: 'none',
+              }}
+            >
+              {t('Transfers')}
+            </Link>
+          )}
 
           <div className="hide-mobile"><LanguageSwitcher dark={dark} /></div>
 

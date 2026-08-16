@@ -155,29 +155,16 @@ export default function TransfersView() {
         <div className="container xfer-hero-grid" style={{ maxWidth: 1180 }}>
           {/* Copy */}
           <div className="xfer-hero-copy">
-            <div className="xfer-hero-kicker-row">
-              <span
-                aria-hidden
-                style={{
-                  display: 'inline-block',
-                  width: 28,
-                  height: 1,
-                  background: 'var(--gold)',
-                }}
-              />
-              <Kicker>Private airport transfers · Montego Bay (MBJ)</Kicker>
-            </div>
             <h1 className="xfer-hero-h1">
-              Skip the taxi line.{' '}
+              Sangster to your hotel.{' '}
               <span style={{ fontStyle: 'italic', fontWeight: 500 }}>
-                Your driver is already waiting.
+                Avoid the hassle.
               </span>
             </h1>
             <p className="xfer-hero-sub">
-              A licensed local driver meets you inside arrivals with a MAPL
-              sign and takes you straight to your resort. One flat price for
-              the whole car, up to 4 people. We track your flight, so a delay
-              costs you nothing, and you can cancel free up to 24 hours before.
+              Private vehicle, 1–4 passengers, priced up front. Meet-and-greet
+              at arrivals, flight tracking, and an experienced, fully vetted
+              driver who knows the road.
             </p>
 
             {/* Each figure is the CHEAPEST rate to that area, derived from the
@@ -548,16 +535,15 @@ export default function TransfersView() {
       <section className="xfer-zones-section">
         <div className="container" style={{ maxWidth: 1100 }}>
           <div className="xfer-center-head">
-            <Kicker centered>Rates by area · in USD</Kicker>
+            <Kicker centered>Zone rates · in USD</Kicker>
             <h2 className="xfer-section-h2">
               Priced{' '}
               <span style={{ fontStyle: 'italic', fontWeight: 500 }}>per vehicle</span>
               . Not per person.
             </h2>
             <p className="xfer-section-sub">
-              One flat price for the whole vehicle, set for your exact resort
-              and quoted before you book. No surge, no per-passenger add-ons,
-              no surprises at the curb.
+              Flat fares to every major resort in Jamaica served by Sangster
+              International. Five zones, no surge, no surprises.
             </p>
           </div>
 

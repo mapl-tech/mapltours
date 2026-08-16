@@ -838,6 +838,7 @@ function MobileCommentsSheet({ comments, commentText, setCommentText, addComment
             />
             <input type="text"
               ref={inputRef}
+              aria-label={isLoggedIn ? 'Write a comment' : 'Sign in to comment'}
               placeholder={isLoggedIn ? (replyingTo ? `Reply to @${replyingTo.user}...` : 'Add a comment...') : 'Sign in to comment...'}
               value={commentText} onChange={(e) => setCommentText(e.target.value)}
               onKeyDown={(e) => { if (e.key === 'Enter') submitAndBlur() }}
@@ -1373,6 +1374,7 @@ export default function ExperienceDetail({ slug }: { slug: string }) {
             />
             <input
               type="text"
+              aria-label={isLoggedIn ? 'Write a comment' : 'Sign in to comment'}
               data-desktop-comment-input
               placeholder={isLoggedIn ? (replyingTo ? `Reply to @${replyingTo.user}...` : 'Add a comment...') : 'Sign in to comment...'}
               value={commentText}
