@@ -105,11 +105,11 @@ export default function Footer() {
               { label: 'Gift Cards', href: '/gifts' },
             ]},
             { title: 'Destinations', links: [
-              { label: 'Negril', href: '/explore' },
-              { label: 'Kingston', href: '/explore' },
-              { label: 'Portland', href: '/explore' },
-              { label: 'Ocho Rios', href: '/explore' },
-              { label: 'Blue Mountains', href: '/explore' },
+              { label: 'Ocho Rios', href: '/explore?q=Ocho%20Rios' },
+              { label: 'Montego Bay', href: '/explore?q=Montego%20Bay' },
+              { label: 'Falmouth', href: '/explore?q=Falmouth' },
+              { label: 'Negril', href: '/explore?q=Negril' },
+              { label: 'Nine Mile', href: '/explore?q=Nine%20Mile' },
             ]},
             { title: 'Connect', links: [
               { label: 'Instagram', href: 'https://www.instagram.com/mapltours' },

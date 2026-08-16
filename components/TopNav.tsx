@@ -525,7 +525,7 @@ export default function TopNav({ onCartClick }: { onCartClick?: () => void }) {
                 aria-haspopup="menu"
                 aria-expanded={showProfileMenu}
                 style={{
-                  width: 44, height: 44, margin: '0 -5px', flexShrink: 0,
+                  width: 44, height: 44, margin: '0 -5px', flexShrink: 0, alignSelf: 'flex-start',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   background: 'none', border: 'none', cursor: 'pointer', padding: 0,
                 }}
@@ -551,7 +551,7 @@ export default function TopNav({ onCartClick }: { onCartClick?: () => void }) {
               </button>
             ) : (
               <Link href="/login" aria-label="Sign in" style={{
-                width: 44, height: 44, margin: '0 -5px', flexShrink: 0,
+                width: 44, height: 44, margin: '0 -5px', flexShrink: 0, alignSelf: 'flex-start',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
               }}>
                 <span style={{

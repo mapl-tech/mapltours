@@ -239,7 +239,7 @@ export default memo(function MobileShort({ exp, priority = false }: { exp: Exper
           {/* Add button top-right */}
           <button
             onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleCart() }}
-            aria-label={inCart ? 'Remove from your trip' : `Add ${exp.title} to your trip`}
+            aria-label={inCart ? `Remove ${exp.title} from your trip` : `Add ${exp.title} to your trip`}
             style={{
               position: 'absolute', top: 12, right: 12, zIndex: 3,
               width: 44, height: 44, borderRadius: '50%',
