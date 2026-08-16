@@ -18,8 +18,19 @@ function HeroVideo({ src, poster }: { src: string; poster: string }) {
   const videoRef = useRef<HTMLVideoElement>(null)
   const [shouldLoad, setShouldLoad] = useState(false)
   const [isPlaying, setIsPlaying] = useState(false)
+  const [paused, setPaused] = useState(false)
+
+  const togglePause = () => {
+    const v = videoRef.current
+    if (!v) return
+    if (v.paused) { v.play().catch(() => {}); setPaused(false) }
+    else { v.pause(); setPaused(true) }
+  }
 
   useEffect(() => {
+    // Motion preference first: a user who asked for reduced motion gets the
+    // poster, full stop. Then data constraints.
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
     const nav = navigator as Navigator & { connection?: { effectiveType?: string; saveData?: boolean } }
     const conn = nav.connection
     if (conn?.saveData || conn?.effectiveType === '2g' || conn?.effectiveType === 'slow-2g') {
@@ -73,6 +84,23 @@ function HeroVideo({ src, poster }: { src: string; poster: string }) {
         >
           <source src={src} type="video/mp4" />
         </video>
+      )}
+      {isPlaying && (
+        <button
+          type="button"
+          onClick={togglePause}
+          aria-label={paused ? 'Play background video' : 'Pause background video'}
+          style={{
+            position: 'absolute', right: 18, bottom: 18, zIndex: 3,
+            width: 44, height: 44, borderRadius: 9999,
+            background: 'rgba(10,10,8,0.62)', border: '1px solid rgba(255,255,255,0.35)',
+            color: '#fff', cursor: 'pointer',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: 14, lineHeight: 1,
+          }}
+        >
+          {paused ? '\u25B6' : '\u23F8'}
+        </button>
       )}
     </>
   )
@@ -511,20 +539,25 @@ export default function FeedView() {
           background: 'linear-gradient(0deg, rgba(8,8,6,0.92) 0%, rgba(8,8,6,0.55) 26%, rgba(8,8,6,0.30) 56%, transparent 100%)',
           pointerEvents: 'none',
         }} />
-        {/* Corner glow-down: an organic pool of shade behind the text column,
-            so small type never depends on the footage. With the scrim above
-            it measures 9.7:1 for white text on a worst-case bright frame. */}
+        {/* Constant cinematic veil: a floor of shade over EVERY frame, so a
+            blown-white sky can never strip the text of its ground. */}
         <div style={{
-          position: 'absolute', bottom: 0, left: 0, width: '72%', height: '78%',
-          background: 'radial-gradient(120% 95% at 0% 100%, rgba(8,8,6,0.60) 0%, rgba(8,8,6,0.32) 45%, transparent 72%)',
+          position: 'absolute', inset: 0,
+          background: 'rgba(8,8,6,0.28)',
           pointerEvents: 'none',
         }} />
         <div className="container" style={{ position: 'relative', zIndex: 1, paddingBottom: 'clamp(40px, 6vw, 72px)' }}>
+          <div aria-hidden style={{
+            position: 'absolute', inset: '-36px -64px', zIndex: -1,
+            background: 'rgba(8,8,6,0.60)', borderRadius: 56,
+            filter: 'blur(44px)',
+            pointerEvents: 'none',
+          }} />
           <span className="animate-fade-up" style={{
             display: 'inline-flex', alignItems: 'center', gap: 12,
             fontFamily: 'var(--font-dm-sans)', fontWeight: 600,
-            fontSize: 11, letterSpacing: '0.22em', textTransform: 'uppercase',
-            color: '#fff', marginBottom: 18,
+            fontSize: 11, letterSpacing: '0.2em', textTransform: 'uppercase',
+            color: '#fff', marginBottom: 16,
             textShadow: '0 1px 8px rgba(0,0,0,0.45)',
           }}>
             <span aria-hidden style={{ width: 28, height: 2, background: 'var(--gold-warm)', borderRadius: 1, flexShrink: 0 }} />
@@ -547,7 +580,7 @@ export default function FeedView() {
             color: '#fff',
             fontFamily: 'var(--font-dm-sans)',
             fontWeight: 500,
-            marginTop: 18,
+            marginTop: 16,
             maxWidth: 480,
             lineHeight: 1.55,
             textShadow: '0 1px 6px rgba(0,0,0,0.4)',
@@ -556,7 +589,7 @@ export default function FeedView() {
           </p>
           {/* The two doors, in selling order: transfers convert today, the
               experiences build the dream. 48px targets, AA on the scrim. */}
-          <div className="animate-fade-up stagger-3" style={{ display: 'flex', gap: 12, marginTop: 26, flexWrap: 'wrap' }}>
+          <div className="animate-fade-up stagger-3" style={{ display: 'flex', gap: 12, marginTop: 24, flexWrap: 'wrap' }}>
             <Link
               href="/transfers"
               style={{
@@ -574,9 +607,8 @@ export default function FeedView() {
               style={{
                 display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
                 minHeight: 50, padding: '0 24px', borderRadius: 9999,
-                background: 'rgba(255,255,255,0.12)', color: '#fff',
-                border: '1px solid rgba(255,255,255,0.45)',
-                backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)',
+                background: 'rgba(255,255,255,0.16)', color: '#fff',
+                border: '1px solid rgba(255,255,255,0.5)',
                 fontFamily: 'var(--font-dm-sans)', fontSize: 15, fontWeight: 600,
                 textDecoration: 'none',
               }}
@@ -588,7 +620,7 @@ export default function FeedView() {
               exact moment of decision. Sits in the deepest scrim zone. */}
           <p className="animate-fade-up stagger-4" style={{
             fontFamily: 'var(--font-dm-sans)', fontSize: 13, fontWeight: 500,
-            color: '#fff', marginTop: 14, textShadow: '0 1px 6px rgba(0,0,0,0.5)',
+            color: '#fff', marginTop: 16, textShadow: '0 1px 6px rgba(0,0,0,0.5)',
           }}>
             From $19 · Free cancellation until 24 hours before pickup
           </p>

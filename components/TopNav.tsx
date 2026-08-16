@@ -5,7 +5,8 @@ import Image from 'next/image'
 import { usePathname, useRouter } from 'next/navigation'
 import { useCartStore } from '@/lib/cart'
 import { useState, useEffect, useRef } from 'react'
-import { Search, Leaf, Lock, MapPin, ShoppingBag } from 'lucide-react'
+import { Search, Leaf, Lock, MapPin, ShoppingBag, Car } from 'lucide-react'
+import { DESTINATIONS as TRANSFER_DESTINATIONS } from '@/lib/airport-transfers'
 import LanguageSwitcher from './LanguageSwitcher'
 import { useI18n } from '@/lib/i18n'
 import { useAuth } from '@/lib/supabase/auth-context'
@@ -264,6 +265,52 @@ export default function TopNav({ onCartClick }: { onCartClick?: () => void }) {
                 padding: '8px 0', minWidth: 280, width: '100%',
                 zIndex: 10, maxHeight: 320, overflowY: 'auto',
               }}>
+                {where && TRANSFER_DESTINATIONS.some((d) => d.name.toLowerCase().includes(where.toLowerCase())) && (
+                  <>
+                    <p style={{
+                      fontSize: 11, fontWeight: 600, textTransform: 'uppercase',
+                      letterSpacing: '0.06em', color: 'var(--text-tertiary)',
+                      fontFamily: 'var(--font-dm-sans)', padding: '8px 16px 6px',
+                    }}>
+                      {t('Resorts · airport transfers')}
+                    </p>
+                    {TRANSFER_DESTINATIONS
+                      .filter((d) => d.name.toLowerCase().includes(where.toLowerCase()))
+                      .slice(0, 5)
+                      .map((d) => (
+                        <button
+                          key={d.id}
+                          onClick={() => {
+                            setWhere(d.name)
+                            setShowWhere(false)
+                            router.push(`/transfers?to=${d.id}`)
+                          }}
+                          style={{
+                            display: 'flex', alignItems: 'center', gap: 10,
+                            width: '100%', padding: '10px 16px',
+                            background: 'none', border: 'none', cursor: 'pointer',
+                            textAlign: 'left', transition: 'background 0.1s ease',
+                            fontFamily: 'var(--font-dm-sans)',
+                          }}
+                          onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--surface)' }}
+                          onMouseLeave={(e) => { e.currentTarget.style.background = 'none' }}
+                        >
+                          <div style={{
+                            width: 34, height: 34, borderRadius: 'var(--r-sm)',
+                            background: 'var(--gold-dim, rgba(196,164,74,0.15))',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            flexShrink: 0,
+                          }}>
+                            <Car size={15} color="var(--gold-text, #6E5A1C)" />
+                          </div>
+                          <div>
+                            <p style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--text-primary)' }}>{d.name}</p>
+                            <p style={{ fontSize: 12, color: 'var(--text-tertiary)', marginTop: 1 }}>{t('Airport transfer from MBJ')} · {d.parish}</p>
+                          </div>
+                        </button>
+                      ))}
+                  </>
+                )}
                 <p style={{
                   fontSize: 11, fontWeight: 600, textTransform: 'uppercase',
                   letterSpacing: '0.06em', color: 'var(--text-tertiary)',
