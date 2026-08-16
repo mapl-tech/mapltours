@@ -11,26 +11,15 @@ export const HERO_VIDEO = '/hero-video.mp4'
 
 // All destinations, confirmed Jamaica locations
 export const DESTINATIONS: Record<string, string> = {
-  // The real Rick's Cafe cliff cove, from the supplier's own TripAdvisor
-  // album (self-hosted, square crop). Instantly reads as Negril.
-  'Negril': '/img/dest/negril-ricks-cove.jpg',
-  'Blue Mountains': '/media/img/9158428.jpg', // Blue Mountains Jamaica shrouded in clouds
-  'Kingston': '/media/img/36977962.jpg',      // Kingston Jamaica
-  'Portland': '/media/img/11820457.jpg',      // Rafting on crystal-clear waters, Jamaica
-  // Aerial Jamaican waterfall in emerald jungle (Pexels 30681023, page
-  // location "Portland Parish, Jamaica"). Evokes the Dunn's River draw that
-  // defines Ochi; no true Dunn's River photo exists on Pexels. Swap for a
-  // real Collins photo when his album yields one.
-  'Ocho Rios': '/media/img/30681023.jpg',
-  'Treasure Beach': '/media/img/11820459.jpg', // Colorful wooden boats, tropical Jamaica coast
-  // Interim: honest bamboo-raft-on-a-jungle-river frame while a stronger
-  // Falmouth tile is sourced.
-  'Falmouth': '/media/img/38921246.jpg',
-  // Lone palm over layered turquoise water (Pexels 27222664, page location
-  // "Montego Bay, St. James Parish, Jamaica"). Source file is PNG, the
-  // .jpeg variant 404s.
-  'Montego Bay': '/media/img/27222664.jpg',
-  'Nine Mile': '/tours/nine-mile-trading-post.jpg', // The real Nine Mile Trading Post
+  // Each tile is the destination's famous landmark, self-hosted. Sourced from
+  // the attraction's own site wherever possible (dunnsriverfallsja.com,
+  // rosehall.com, rickscafejamaica.com), which is both the strongest proof
+  // the photo is really that place and the safest licensing position.
+  'Ocho Rios':   '/img/dest/ocho-rios-dunns-river.jpg',   // Dunn's River Falls terraces
+  'Montego Bay': '/img/dest/montego-bay-rose-hall.jpg',   // Rose Hall Great House at twilight
+  'Falmouth':    '/img/dest/falmouth-martha-brae.jpg',    // Martha Brae bamboo raft, captain poling
+  'Negril':      '/img/dest/negril-ricks-cafe.jpg',       // Rick's Cafe on the West End cliffs
+  'Nine Mile':   '/img/dest/nine-mile-mausoleum.jpg',     // Bob Marley's mausoleum, rasta-painted arch
 }
 
 // Culture section, Jamaica beach sunset
