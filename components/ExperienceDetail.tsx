@@ -905,7 +905,7 @@ export default function ExperienceDetail({ slug }: { slug: string }) {
   // Checkout requires an account. Rather than a silent 307 → /login after the
   // user commits, surface it on the CTA and route logged-out users straight to
   // /login with a return path back to checkout (mirrors ItineraryPanel).
-  const checkoutHref = isLoggedIn ? '/checkout' : '/login?redirect=%2Fcheckout'
+  const checkoutHref = '/checkout'
 
   // Measure the mobile bottom bar live so the reel's right rail and
   // "Add to Trip" pill can sit exactly 12px above it regardless of safe-area,
@@ -1206,7 +1206,7 @@ export default function ExperienceDetail({ slug }: { slug: string }) {
                 }}
               >
                 <ShoppingBag size={13} />
-                {isLoggedIn ? `Checkout (${items.length})` : t('Sign in to check out')}
+                {`Checkout (${items.length})`}
               </Link>
             )}
             <button
@@ -1451,7 +1451,7 @@ export default function ExperienceDetail({ slug }: { slug: string }) {
             }}
           >
             <ShoppingBag size={14} />
-            {isLoggedIn ? `Checkout (${items.length})` : t('Sign in to check out')}
+            {`Checkout (${items.length})`}
           </Link>
         )}
       </div>

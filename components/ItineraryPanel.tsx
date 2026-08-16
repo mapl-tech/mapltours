@@ -8,13 +8,11 @@ import { useHydrated } from '@/lib/use-hydrated'
 import { tourPrice } from '@/lib/experiences'
 import { X } from 'lucide-react'
 import { useI18n } from '@/lib/i18n'
-import { useAuth } from '@/lib/supabase/auth-context'
 import TripTimeBar from '@/components/TripTimeBar'
 
 export default function ItineraryPanel({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { items, stops, removeItem, removeStop, subtotal, grandTotal } = useCartStore()
   const { t, formatPrice } = useI18n()
-  const { user, loading: authLoading } = useAuth()
 
   const asideRef = useRef<HTMLElement>(null)
   const previousFocusRef = useRef<HTMLElement | null>(null)
@@ -69,8 +67,7 @@ export default function ItineraryPanel({ open, onClose }: { open: boolean; onClo
   // Checkout requires an account. Surface that on the CTA instead of a
   // silent redirect after the user commits, send them to /login with a
   // return path straight back to checkout.
-  const needsSignIn = !authLoading && !user
-  const checkoutHref = needsSignIn ? '/login?redirect=%2Fcheckout' : '/checkout'
+  const checkoutHref = '/checkout'
 
   return (
     <>
@@ -232,7 +229,7 @@ export default function ItineraryPanel({ open, onClose }: { open: boolean; onClo
           </div>
           <Link href={checkoutHref} onClick={onClose} style={{ display: 'block', textDecoration: 'none' }}>
             <button className="btn-primary" style={{ width: '100%', height: 46, fontSize: 14 }}>
-              {needsSignIn ? t('Sign in to check out') : t('Continue to checkout')} →
+              {t('Continue to checkout')} →
             </button>
           </Link>
           <p style={{ textAlign: 'center', fontSize: 12, color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-sans)', marginTop: 12 }}>

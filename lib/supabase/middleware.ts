@@ -35,7 +35,13 @@ export async function updateSession(request: NextRequest) {
   } = await supabase.auth.getUser()
 
   // Protected routes, redirect to /login if not authenticated
-  const protectedPaths = ['/profile', '/checkout']
+  // /checkout is deliberately NOT here. Tours sell to guests exactly as
+  // transfers do: bookings.user_id is nullable by design (migration 005),
+  // the checkout API prices server-side and treats an anonymous caller as
+  // reward-less rather than refusing it, and a signed-in buyer still gets
+  // their reward because the API resolves it from the session, not the
+  // client. Gating it only cost bookings.
+  const protectedPaths = ['/profile']
   const isProtected = protectedPaths.some((path) =>
     request.nextUrl.pathname.startsWith(path)
   )
