@@ -145,20 +145,20 @@ const VIDEOS = {
   // URL HEAD-checked 200, every subject confirmed from its Pexels page, no
   // file shared between tours). Collins's own footage replaces these as it
   // comes in; /rafting-video.mp4 is already his.
-  waterfall:   'https://videos.pexels.com/video-files/5744454/5744454-hd_1920_1080_24fps.mp4',
+  waterfall:   'https://videos.pexels.com/video-files/17259005/17259005-hd_1920_1080_60fps.mp4',
   blueHole:    'https://videos.pexels.com/video-files/4055909/4055909-hd_1920_1080_25fps.mp4',
   rafting:     '/rafting-video.mp4',
   whiteRiver:  'https://videos.pexels.com/video-files/30800508/13173809_1080_1920_30fps.mp4',
   rastafari:   'https://videos.pexels.com/video-files/9653702/9653702-hd_1920_1080_25fps.mp4',
-  offRoad:     'https://videos.pexels.com/video-files/3207798/3207798-hd_1920_1080_24fps.mp4',
+  offRoad:     'https://videos.pexels.com/video-files/10571253/10571253-hd_1920_1080_24fps.mp4',
   zipline:     'https://videos.pexels.com/video-files/35685214/15123771_1080_1920_60fps.mp4',
   horseback:   'https://videos.pexels.com/video-files/8822474/8822474-hd_1920_1080_30fps.mp4',
-  beachSwim:   'https://videos.pexels.com/video-files/3765078/3765078-hd_1920_1080_30fps.mp4',
-  jetSki:      'https://videos.pexels.com/video-files/854572/854572-hd_1920_1080_25fps.mp4',
+  beachSwim:   'https://videos.pexels.com/video-files/10904849/10904849-hd_1920_1080_30fps.mp4',
+  jetSki:      'https://videos.pexels.com/video-files/15290251/15290251-uhd_2560_1440_24fps.mp4',
   parasail:    'https://videos.pexels.com/video-files/2523901/2523901-hd_1920_1080_30fps.mp4',
-  snorkeling:  'https://videos.pexels.com/video-files/7318633/7318633-hd_1920_1080_30fps.mp4',
-  river:       'https://videos.pexels.com/video-files/2558530/2558530-hd_1920_1080_25fps.mp4',
-  cliffDiving: 'https://videos.pexels.com/video-files/4985239/4985239-hd_1080_1920_25fps.mp4',
+  snorkeling:  'https://videos.pexels.com/video-files/38809773/16496082_1080_1920_29fps.mp4',
+  river:       'https://videos.pexels.com/video-files/11598677/11598677-hd_1920_1080_30fps.mp4',
+  cliffDiving: 'https://videos.pexels.com/video-files/27952003/12271998_1080_1920_30fps.mp4',
   culture:     'https://videos.pexels.com/video-files/6201022/6201022-hd_1920_1080_25fps.mp4',
   tubing:      'https://videos.pexels.com/video-files/6740290/6740290-sd_960_540_30fps.mp4',
   droneKayak:  'https://videos.pexels.com/video-files/4207416/4207416-hd_1920_1080_25fps.mp4',
@@ -166,7 +166,7 @@ const VIDEOS = {
   offRoad2:    'https://videos.pexels.com/video-files/5319274/5319274-hd_1080_1920_30fps.mp4',
   rasta2:      'https://videos.pexels.com/video-files/31466203/13417522_2560_1440_30fps.mp4',
   raftZip:     'https://videos.pexels.com/video-files/38230652/16231332_960_540_60fps.mp4',
-  cliffSunset: 'https://videos.pexels.com/video-files/10441596/10441596-hd_1920_1080_30fps.mp4',
+  cliffSunset: 'https://videos.pexels.com/video-files/38902703/16542704_1080_1920_120fps.mp4',
 } as const
 
 export const experiences: Experience[] = [
