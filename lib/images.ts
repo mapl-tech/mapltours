@@ -17,9 +17,9 @@ export const DESTINATIONS: Record<string, string> = {
   // the photo is really that place and the safest licensing position.
   'Ocho Rios':   '/img/dest/ocho-rios-dunns-river.jpg',   // Dunn's River Falls terraces
   'Montego Bay': '/img/dest/montego-bay-rose-hall.jpg',   // Rose Hall Great House at twilight
-  'Falmouth':    '/img/dest/falmouth-martha-brae.jpg',    // Martha Brae bamboo raft, captain poling
+  'Falmouth':    '/img/dest/falmouth-martha-brae-raft.jpg',    // Martha Brae bamboo raft, captain poling
   'Negril':      '/img/dest/negril-ricks-cafe.jpg',       // Rick's Cafe on the West End cliffs
-  'Nine Mile':   '/img/dest/nine-mile-mausoleum.jpg',     // Bob Marley's mausoleum, rasta-painted arch
+  'Nine Mile':   '/tours/nine-mile-trading-post.jpg',     // same photo as the Nine Mile tour card
 
   /* Editorial-only. These parishes are NOT bookable destinations (the tiles
      are derived from the tour catalogue), but the about page and the blog
