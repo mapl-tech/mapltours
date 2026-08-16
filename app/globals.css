@@ -1037,3 +1037,24 @@ img[alt="Devon House Patty & Ice Cream Tour"] {
   .admin-card-grid { grid-template-columns: 1fr !important; }
   .admin-card-grid > div { border-right: none !important; }
 }
+
+/* Login back button: the class existed only in JSX, so the pill rendered
+   with zero padding. 44px minimum target, quiet hover, icon-only on phones
+   (the label otherwise crowds the logo, as the JSX comment warned). */
+.login-back-btn {
+  min-height: 44px;
+  padding: 10px 16px;
+}
+.login-back-btn:hover {
+  background: var(--surface, #F6F4F0) !important;
+}
+@media (max-width: 640px) {
+  .login-back-label { display: none; }
+  .login-back-btn {
+    width: 44px;
+    height: 44px;
+    justify-content: center;
+    padding: 0;
+  }
+}
+
