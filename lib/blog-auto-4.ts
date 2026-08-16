@@ -314,7 +314,7 @@ export const POSTS_4: BlogPost[] = [
       { type: 'h2', text: 'Practical notes' },
       {
         type: 'p',
-        text: "Sangster International to most Montego Bay hotels is a 10 to 20 minute taxi ride, $15 to $25 JUTA, less by Knutsford shuttle. Budget the Hip Strip at $150 to $250 per night shoulder-season; Rose Hall resorts clear $400 easily. Route taxis run the length of the city for under $3 in JMD, keep small bills.",
+        text: "Sangster International to most Montego Bay hotels is a 10 to 20 minute ride. JUTA and JCAL share the authorised taxi desk just outside customs, with fixed rates posted at the counter, and a pre-booked private transfer is quoted per vehicle rather than per head. Route taxis run the length of the city for a few hundred JMD, so keep small bills.",
       },
       {
         type: 'p',

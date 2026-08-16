@@ -488,7 +488,7 @@ export const POSTS_5: BlogPost[] = [
       { type: 'h2', text: "JUTA and licensed taxis, the tourist option" },
       {
         type: 'p',
-        text: "JUTA is the regulated tourist taxi network. Rates are fixed, drivers are vetted, and your hotel concierge will know every driver by name. A JUTA ride from Montego Bay airport to Negril runs around $100 one way; Kingston airport to New Kingston is $25 to $35. Reliable, but pricier than the alternatives.",
+        text: "JUTA is the regulated tourist taxi network, and along with JCAL it staffs the authorised taxi desk just outside customs at Sangster. Rates are fixed and posted at the counter rather than metered, drivers are vetted, and vehicles carry the red and white PP plates that Canadian and US travel advisories tell visitors to look for. Ask the rate before you set off, and remember a desk taxi is priced for the trip in front of you while a pre-booked transfer is quoted per vehicle in advance.",
       },
       { type: 'h2', text: "Private drivers, the sweet spot for trips" },
       {
