@@ -633,3 +633,18 @@ export const experiences: Experience[] = [
     comments: [],
   },
 ]
+
+/**
+ * Destinations where Collins actually runs tours, derived from the catalog
+ * so the "Popular destinations" surfaces can never drift from what is
+ * bookable. Ordered by how many tours each destination has.
+ */
+export const TOUR_DESTINATIONS: { name: string; parish: string; count: number }[] = (() => {
+  const seen = new Map<string, { name: string; parish: string; count: number }>()
+  for (const e of experiences) {
+    const cur = seen.get(e.destination)
+    if (cur) cur.count += 1
+    else seen.set(e.destination, { name: e.destination, parish: e.parish, count: 1 })
+  }
+  return Array.from(seen.values()).sort((a, b) => b.count - a.count)
+})()

@@ -7,6 +7,7 @@ import { useCartStore } from '@/lib/cart'
 import { useState, useEffect, useRef } from 'react'
 import { Search, Leaf, Lock, MapPin, ShoppingBag, Car } from 'lucide-react'
 import { DESTINATIONS as TRANSFER_DESTINATIONS } from '@/lib/airport-transfers'
+import { TOUR_DESTINATIONS } from '@/lib/experiences'
 import LanguageSwitcher from './LanguageSwitcher'
 import { useI18n } from '@/lib/i18n'
 import { useAuth } from '@/lib/supabase/auth-context'
@@ -15,18 +16,8 @@ import { createClient } from '@/lib/supabase/client'
 // One module-level client, don't recreate on every render.
 const supabase = createClient()
 
-const destinations = [
-  { name: 'Negril', parish: 'Westmoreland' },
-  { name: 'Blue Mountains', parish: 'St. Andrew' },
-  { name: 'Kingston', parish: 'Kingston' },
-  { name: 'Ocho Rios', parish: 'St. Ann' },
-  { name: 'Port Antonio', parish: 'Portland' },
-  { name: 'Montego Bay', parish: 'St. James' },
-  { name: 'Treasure Beach', parish: 'St. Elizabeth' },
-  { name: 'Falmouth', parish: 'Trelawny' },
-  { name: 'Boston Bay', parish: 'Portland' },
-  { name: 'Nine Mile', parish: 'St. Ann' },
-]
+// Tour search suggestions: only destinations Collins actually serves.
+const destinations = TOUR_DESTINATIONS
 
 export default function TopNav({ onCartClick }: { onCartClick?: () => void }) {
   const pathname = usePathname()

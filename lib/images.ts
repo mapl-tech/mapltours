@@ -19,6 +19,7 @@ export const DESTINATIONS: Record<string, string> = {
   'Treasure Beach': PD(11820459), // Colorful wooden boats, tropical Jamaica coast
   'Falmouth': PD(16147280),      // Jamaican flag on red boat, serene lake
   'Montego Bay': PD(30680796),   // Aerial verdant mountains, Montego Bay
+  'Nine Mile': PD(14086456),     // Rural St. Ann hills, Nine Mile (same photo as the tour)
 }
 
 // Culture section, Jamaica beach sunset

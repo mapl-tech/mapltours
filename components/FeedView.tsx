@@ -2,7 +2,7 @@
 
 import Image from 'next/image'
 import Link from 'next/link'
-import { experiences, HERO_IMAGE, DESTINATION_IMAGES, slugify } from '@/lib/experiences'
+import { experiences, HERO_IMAGE, DESTINATION_IMAGES, TOUR_DESTINATIONS, slugify } from '@/lib/experiences'
 import { CULTURE_IMAGE, HERO_VIDEO } from '@/lib/images'
 import ExpCard from './ExpCard'
 import MobileShort from './MobileShort'
@@ -123,14 +123,8 @@ function ResponsiveGrid({ items, cols = 3, priorityFirst = false }: { items: typ
 }
 const viralExperiences = experiences.filter((e) => e.id >= 11 && e.id <= 15)
 
-const destinations = [
-  { name: 'Negril', parish: 'Westmoreland' },
-  { name: 'Blue Mountains', parish: 'St. Andrew' },
-  { name: 'Kingston', parish: 'Kingston' },
-  { name: 'Portland', parish: 'Portland' },
-  { name: 'Ocho Rios', parish: 'St. Ann' },
-  { name: 'Treasure Beach', parish: 'St. Elizabeth' },
-]
+// Only destinations Collins actually serves, straight from the catalog.
+const destinations = TOUR_DESTINATIONS
 
 function SectionHeader({ label, action }: { label: string; action?: { text: string; href: string } }) {
   const { t } = useI18n()
@@ -379,7 +373,7 @@ function DestinationsSection() {
   }
 
   const destCard = (d: { name: string; parish: string }) => (
-    <a key={d.name} href="/explore" className="photo-card" style={{
+    <a key={d.name} href={`/explore?q=${encodeURIComponent(d.name)}`} className="photo-card" style={{
       aspectRatio: '1', display: 'flex', alignItems: 'flex-end', padding: 14,
     }}>
       <Image src={DESTINATION_IMAGES[d.name]} alt={d.name} fill sizes="(max-width:768px) 50vw, 16vw" style={{ objectFit: 'cover' }} />
