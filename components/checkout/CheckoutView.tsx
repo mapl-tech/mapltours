@@ -12,8 +12,6 @@ import TripTimeBar from '@/components/TripTimeBar'
 import { useAvailableReward, consumeReward } from '@/lib/tour-videos'
 import { Award } from 'lucide-react'
 import { useI18n } from '@/lib/i18n'
-import { calculateTransportation, GAS_PRICE_USD_PER_LITER, GAS_PRICE_JMD_PER_LITER, fetchGasPrice } from '@/lib/transportation'
-import { Fuel, Car, Route } from 'lucide-react'
 
 // Stripe SDK is ~80 KB gz, only load it when the user actually reaches
 // step 3 by dynamic-importing the panel (which in turn pulls Stripe in).
@@ -859,28 +857,15 @@ export default function CheckoutView() {
   const [formData, setFormData] = useState<Record<string, string>>({})
   const [formErrors, setFormErrors] = useState<Record<string, boolean>>({})
   const [stripeError, setStripeError] = useState<string | null>(null)
-  const [gasRate, setGasRate] = useState({ usd: GAS_PRICE_USD_PER_LITER, jmd: GAS_PRICE_JMD_PER_LITER })
   const [limitModalOpen, setLimitModalOpen] = useState(false)
   const { items, subtotal, fee, grandTotal, isDayOverLimit, hoursByDate } = useCartStore()
   const { t, formatPrice } = useI18n()
 
   // Fetch live gas price on mount
-  useEffect(() => {
-    fetchGasPrice().then((rate) => setGasRate(rate))
-  }, [])
-
-  // ── Transportation cost calculation ──
-  // Default pickup: Sangster International Airport (most common entry point)
-  const pickupLoc = formData['pickup'] || 'Sangster International Airport (MBJ)'
-  const dropoffLoc = formData['dropoff'] || pickupLoc
-  const transportCost = calculateTransportation(
-    pickupLoc,
-    items.map((i) => ({ destination: i.destination, date: i.date })),
-    dropoffLoc
-  )
-
-  const transportTotal = transportCost?.totalTransportUsd || 0
-  const baseTotal = grandTotal() + transportTotal
+  // Transport is no longer charged: Collin's tour prices include
+  // transportation and entrance fees (his confirmation, Aug 2026), so the
+  // total is the cart total, full stop.
+  const baseTotal = grandTotal()
 
   // ── Video-reward discount (auto-applied when the user has one unused) ──
   const availableReward = useAvailableReward()
@@ -923,7 +908,6 @@ export default function CheckoutView() {
           breakdown: {
             subtotal: subtotal(),
             fee: fee(),
-            transport: transportTotal,
             rewardDiscount: rewardDiscount,
           },
           attribution: getStoredAttribution(),
@@ -1070,136 +1054,6 @@ export default function CheckoutView() {
                 </div>
               ))}
 
-              {/* ── Transportation & Fuel (payment step only) ── */}
-              {step === 3 && transportCost && (
-                <div style={{ marginTop: 12, paddingTop: 16, borderTop: '1px solid var(--border)' }}>
-                  {/* Section header */}
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                      <div style={{ width: 32, height: 32, borderRadius: 9, background: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        <Car size={15} color="#fff" />
-                      </div>
-                      <div>
-                        <span style={{ fontSize: 14, fontWeight: 700, fontFamily: 'var(--font-dm-sans)', color: 'var(--text-primary)', display: 'block', lineHeight: 1.2 }}>
-                          Private Transport
-                        </span>
-                        <span style={{ fontSize: 12, color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-sans)' }}>
-                          Door-to-door service
-                        </span>
-                      </div>
-                    </div>
-                    <span style={{
-                      fontSize: 12, fontWeight: 600, fontFamily: 'var(--font-dm-sans)',
-                      color: 'var(--emerald)', background: 'var(--emerald-dim)',
-                      padding: '4px 12px', borderRadius: 9999,
-                    }}>
-                      {transportCost.rentalDays} day{transportCost.rentalDays > 1 ? 's' : ''}
-                    </span>
-                  </div>
-
-                  {/* Route itinerary, per-day cards */}
-                  {transportCost.dayBreakdowns.map((day, idx) => (
-                    <div key={day.date} style={{
-                      marginBottom: 10, padding: '14px 16px',
-                      borderRadius: 'var(--r-md)',
-                      background: idx % 2 === 0 ? 'var(--bg-warm)' : '#fff',
-                      border: '1px solid var(--border)',
-                    }}>
-                      {/* Day header */}
-                      <div style={{ display: 'flex', alignItems: 'center', marginBottom: 10 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
-                          <Calendar size={13} color="var(--text-secondary)" />
-                          <span style={{ fontSize: 13, fontWeight: 700, fontFamily: 'var(--font-dm-sans)', color: 'var(--text-primary)' }}>
-                            {transportCost.isMultiDay
-                              ? `Day ${idx + 1} · ${new Date(day.date + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}`
-                              : new Date(day.date + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })
-                            }
-                          </span>
-                        </div>
-                      </div>
-
-                      {/* Route visualization */}
-                      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, marginBottom: 10 }}>
-                        {/* Route dots */}
-                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', paddingTop: 4, flexShrink: 0 }}>
-                          <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--emerald)' }} />
-                          {day.destinations.map((_, i) => (
-                            <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                              <div style={{ width: 1.5, height: 14, background: 'var(--border-strong)' }} />
-                              <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--gold)' }} />
-                            </div>
-                          ))}
-                          <div style={{ width: 1.5, height: 14, background: 'var(--border-strong)' }} />
-                          <div style={{ width: 8, height: 8, borderRadius: '50%', border: '2px solid var(--emerald)', background: '#fff' }} />
-                        </div>
-                        {/* Route labels */}
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <p style={{ fontSize: 12.5, color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-sans)', marginBottom: 4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                            {formData['pickup'] || 'Sangster Airport (MBJ)'}
-                          </p>
-                          {day.destinations.map((dest, i) => (
-                            <p key={i} style={{ fontSize: 13.5, fontWeight: 600, fontFamily: 'var(--font-dm-sans)', color: 'var(--text-primary)', marginBottom: 4, marginTop: 10 }}>
-                              {dest}
-                            </p>
-                          ))}
-                          <p style={{ fontSize: 12.5, color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-sans)', marginTop: 10, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                            {formData['dropoff'] || formData['pickup'] || 'Sangster Airport (MBJ)'}
-                          </p>
-                        </div>
-                      </div>
-
-                      {/* Day stats */}
-                      <div style={{
-                        display: 'flex', gap: 0, borderTop: '1px solid var(--border)', paddingTop: 10,
-                      }}>
-                        <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 5 }}>
-                          <Route size={12} color="var(--text-tertiary)" />
-                          <span style={{ fontSize: 12.5, color: 'var(--text-secondary)', fontFamily: 'var(--font-dm-sans)' }}>
-                            {day.distanceKm} km
-                          </span>
-                        </div>
-                        <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 5 }}>
-                          <Fuel size={12} color="var(--text-tertiary)" />
-                          <span style={{ fontSize: 12.5, color: 'var(--text-secondary)', fontFamily: 'var(--font-dm-sans)' }}>
-                            {day.litersNeeded}L
-                          </span>
-                        </div>
-                        <div style={{ flex: 1, textAlign: 'right' }}>
-                          <span style={{ fontSize: 13, fontWeight: 700, fontFamily: 'var(--font-dm-sans)', color: 'var(--text-primary)' }}>
-                            {formatPrice(day.fuelCost)}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-
-                  {/* Cost summary rows */}
-                  <div style={{ marginTop: 12 }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13.5, fontFamily: 'var(--font-dm-sans)', color: 'var(--text-secondary)', marginBottom: 6 }}>
-                      <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                        <Car size={13} color="var(--text-tertiary)" />
-                        Vehicle rental · {transportCost.rentalDays} day{transportCost.rentalDays > 1 ? 's' : ''}
-                      </span>
-                      <span style={{ fontWeight: 600 }}>{formatPrice(transportCost.rentalCostUsd)}</span>
-                    </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13.5, fontFamily: 'var(--font-dm-sans)', color: 'var(--text-secondary)', marginBottom: 6 }}>
-                      <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                        <Fuel size={13} color="var(--text-tertiary)" />
-                        Fuel · {transportCost.totalDistanceKm} km · {transportCost.litersNeeded}L
-                      </span>
-                      <span style={{ fontWeight: 600 }}>{formatPrice(transportCost.fuelCostUsd)}</span>
-                    </div>
-                    <p style={{ fontSize: 12, color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-sans)', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 5 }}>
-                      <span style={{ width: 5, height: 5, borderRadius: '50%', background: 'var(--emerald)', flexShrink: 0 }} />
-                      J${gasRate.jmd}/L (${gasRate.usd}/L USD) · Petrojam live pricing
-                    </p>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 14.5, fontFamily: 'var(--font-dm-sans)', fontWeight: 700, color: 'var(--text-primary)', paddingTop: 10, borderTop: '1px solid var(--border)' }}>
-                      <span>Transport</span>
-                      <span>{formatPrice(transportCost.totalTransportUsd)}</span>
-                    </div>
-                  </div>
-                </div>
-              )}
 
               {/* Video-reward discount strip */}
               {availableReward && (

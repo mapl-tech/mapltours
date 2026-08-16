@@ -25,14 +25,6 @@
 
 import { experiences, type Experience } from './experiences'
 
-/** Per travel-day ceiling on private-transport cost. A realistic Jamaica
- *  day (economy rental ~$65 + a long round-trip's fuel ~$60) tops out near
- *  $130/day, so $250/day is generous head-room while still bounding a
- *  tampered or buggy payload. The cap scales with distinct travel days so
- *  multi-day itineraries (each its own rental day) are not rejected. */
-const TRANSPORT_MAX_PER_DAY_USD = 250
-/** Floor so a single-day trip keeps a sane minimum ceiling. */
-const TRANSPORT_FLOOR_USD = 300
 
 /** Reward discount can never exceed this % of (subtotal + fee + transport),
  *  a defensive backstop on top of the server-verified percent. */
@@ -125,16 +117,12 @@ export function priceTourCart(
   // 20% platform/service fee, matches lib/cart.ts.
   const fee = Math.round(subtotal * 0.20)
 
-  // Transport: client-supplied (depends on the live gas price the client
-  // already fetched) but clamped to a ceiling that SCALES with distinct
-  // travel days. Each date in the cart is its own rental day, so an 8-day
-  // itinerary legitimately costs far more than a flat cap would allow.
-  const distinctDays = new Set(
-    items.map((i) => (i.date || '').trim()).filter(Boolean),
-  ).size || 1
-  const transportCap = Math.max(TRANSPORT_FLOOR_USD, distinctDays * TRANSPORT_MAX_PER_DAY_USD)
-  const rawTransport = Number(breakdown.transport ?? 0)
-  const transport = Math.max(0, Math.min(transportCap, isFinite(rawTransport) ? rawTransport : 0))
+  // Transport is NO LONGER CHARGED: Collin confirmed his tour prices include
+  // transportation and entrance fees, so a separate transport line was a
+  // double charge. Structurally zero on the server regardless of what any
+  // client sends; the field survives (as 0) so booking rows, receipts and
+  // emails keep their shape and old bookings still render their history.
+  const transport = 0
 
   // Reward: NEVER trusted from the client. The caller passes a
   // server-verified percent (from the authenticated user's reward row);
