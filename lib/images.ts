@@ -23,9 +23,9 @@ export const DESTINATIONS: Record<string, string> = {
   // real Collins photo when his album yields one.
   'Ocho Rios': '/media/img/30681023.jpg',
   'Treasure Beach': '/media/img/11820459.jpg', // Colorful wooden boats, tropical Jamaica coast
-  // The real Martha Brae: guest and raft captain on the river, from the
-  // supplier's own TripAdvisor album (self-hosted, square crop).
-  'Falmouth': '/img/dest/falmouth-martha-brae.jpg',
+  // Interim: honest bamboo-raft-on-a-jungle-river frame while a stronger
+  // Falmouth tile is sourced.
+  'Falmouth': '/media/img/38921246.jpg',
   // Lone palm over layered turquoise water (Pexels 27222664, page location
   // "Montego Bay, St. James Parish, Jamaica"). Source file is PNG, the
   // .jpeg variant 404s.
