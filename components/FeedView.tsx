@@ -508,16 +508,17 @@ export default function FeedView() {
             drop-shadow + the headline text-shadow below. */}
         <div style={{
           position: 'absolute', bottom: 0, left: 0, right: 0, height: '62%',
-          background: 'linear-gradient(0deg, rgba(8,8,6,0.86) 0%, rgba(8,8,6,0.48) 26%, rgba(8,8,6,0.12) 56%, transparent 100%)',
+          background: 'linear-gradient(0deg, rgba(8,8,6,0.92) 0%, rgba(8,8,6,0.55) 26%, rgba(8,8,6,0.30) 56%, transparent 100%)',
           pointerEvents: 'none',
         }} />
         <div className="container" style={{ position: 'relative', zIndex: 1, paddingBottom: 'clamp(40px, 6vw, 72px)' }}>
           <span className="animate-fade-up" style={{
-            display: 'block',
+            display: 'inline-flex', alignItems: 'center',
             fontFamily: 'var(--font-dm-sans)', fontWeight: 600,
             fontSize: 11, letterSpacing: '0.2em', textTransform: 'uppercase',
             color: 'var(--gold-warm)', marginBottom: 18,
-            textShadow: '0 1px 10px rgba(0,0,0,0.75)',
+            background: 'rgba(10,10,8,0.82)', borderRadius: 9999,
+            padding: '7px 15px',
           }}>
             Jamaica, beyond the brochure
           </span>
@@ -535,7 +536,7 @@ export default function FeedView() {
           </h1>
           <p className="animate-fade-up stagger-2" style={{
             fontSize: 16.5,
-            color: 'rgba(255,255,255,0.82)',
+            color: '#fff',
             fontFamily: 'var(--font-dm-sans)',
             fontWeight: 500,
             marginTop: 18,
