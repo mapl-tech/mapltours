@@ -82,6 +82,19 @@ export function round2(n: number): number {
 export function supplierPayout(subtotal: number): number {
   return round2(subtotal)
 }
+/**
+ * Estimated cost of DELIVERING a payout via Remitly (Canada to Jamaica),
+ * measured live 2026-08-15: CAD 3.99 flat per send (about US$2.90) plus a
+ * ~2.1% FX spread on the amount. A round trip paid in halves is TWO sends,
+ * so the flat fee bites twice; batching sends cuts this cost sharply.
+ */
+export const REMITLY_FLAT_USD = 2.90
+export const REMITLY_FX = 0.021
+export function remitlyEstimate(payoutUsd: number, sends: number): number {
+  if (payoutUsd <= 0 || sends <= 0) return 0
+  return round2(sends * REMITLY_FLAT_USD + payoutUsd * REMITLY_FX)
+}
+
 export function money(n: number | null | undefined): string {
   return '$' + Number(n ?? 0).toFixed(2)
 }

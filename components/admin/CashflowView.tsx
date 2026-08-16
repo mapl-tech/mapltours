@@ -12,13 +12,14 @@ export interface CashRow {
   gross: number
   stripeFeeUsd: number | null
   supplierPayout: number
+  remitlyEstUsd: number
   netUsd: number
   settledCad: number | null
 }
 
 /* Validated categorical palette (dataviz validator, light surface, all checks pass):
    net = green, driver payouts = blue, Stripe fees = copper. */
-const C = { net: '#1D7A50', payout: '#2F6FB0', fee: '#B87333' }
+const C = { net: '#1D7A50', payout: '#2F6FB0', fee: '#B87333', remit: '#6E4694' }
 // Darker copper for fee TEXT (the #B87333 fill is only 3.79:1 on white, which
 // fails AA for small text). Fills/swatches keep the validated hue; text uses this.
 const FEE_TEXT = '#8A5320'
@@ -50,7 +51,8 @@ export default function CashflowView({ rows }: { rows: CashRow[] }) {
   const collected = sum(rows.map((r) => r.gross))
   const stripeFees = sum(rows.map((r) => r.stripeFeeUsd ?? 0))
   const supplierPayouts = sum(rows.map((r) => r.supplierPayout))
-  const netKept = Math.round((collected - stripeFees - supplierPayouts) * 100) / 100
+  const remitlyEst = sum(rows.map((r) => r.remitlyEstUsd))
+  const netKept = Math.round((collected - stripeFees - supplierPayouts - remitlyEst) * 100) / 100
   const settledCad = rows.some((r) => r.settledCad != null) ? sum(rows.map((r) => r.settledCad ?? 0)) : null
   const hasTour = rows.some((r) => r.type === 'tour')
 
@@ -63,13 +65,15 @@ export default function CashflowView({ rows }: { rows: CashRow[] }) {
     { key: 'net', label: 'Net kept', value: netKept, color: C.net },
     { key: 'payout', label: 'Supplier payouts', value: supplierPayouts, color: C.payout },
     { key: 'fee', label: 'Stripe fees', value: stripeFees, color: C.fee },
+    { key: 'remit', label: 'Remitly (est.)', value: remitlyEst, color: C.remit },
   ].filter((p) => p.value > 0)
 
   const kpis = [
     { label: 'Collected', value: usd(collected), sub: `${rows.length} paid ${rows.length === 1 ? 'booking' : 'bookings'}`, color: ink },
     { label: 'Stripe fees', value: usd(stripeFees), sub: 'processing + FX, in USD', color: C.fee },
     { label: 'Supplier payouts', value: usd(supplierPayouts), sub: 'drivers + tour operators', color: C.payout },
-    { label: 'Net kept', value: usd(netKept), sub: settledCad != null ? `${usd(settledCad).replace('$', '')} CAD settled` : 'after fees + payouts', color: C.net, hero: true },
+    { label: 'Remitly (est.)', value: usd(remitlyEst), sub: 'cost of sending the payouts', color: C.remit },
+    { label: 'Net kept', value: usd(netKept), sub: settledCad != null ? `${usd(settledCad).replace('$', '')} CAD settled` : 'after fees, payouts + Remitly', color: C.net, hero: true },
   ]
 
   return (
@@ -160,16 +164,16 @@ export default function CashflowView({ rows }: { rows: CashRow[] }) {
       <section style={{ marginTop: 16 }}>
         <h2 style={{ fontWeight: 700, fontSize: 17, letterSpacing: '-0.02em', margin: '0 0 12px' }}>Transactions</h2>
         <div tabIndex={0} role="region" aria-label="Transactions table" style={{ overflowX: 'auto', border, borderRadius: 14, background: '#fff' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13.5, minWidth: 760 }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13.5, minWidth: 860 }}>
             <thead>
               <tr style={{ textAlign: 'left', color: faint, fontSize: 11.5, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-                {['Date', 'Booking', 'Customer', 'Type', 'Gross', 'Stripe (USD)', 'Driver', 'Net kept', 'Settled (CAD)'].map((h, i) => (
+                {['Date', 'Booking', 'Customer', 'Type', 'Gross', 'Stripe (USD)', 'Driver', 'Remitly (est.)', 'Net kept', 'Settled (CAD)'].map((h, i) => (
                   <th key={h} style={{ padding: '12px 16px', fontWeight: 600, textAlign: i >= 4 ? 'right' : 'left', whiteSpace: 'nowrap' }}>{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
-              {rows.length === 0 && <tr><td colSpan={9} style={{ padding: 22, color: faint, textAlign: 'center' }}>No paid bookings yet.</td></tr>}
+              {rows.length === 0 && <tr><td colSpan={10} style={{ padding: 22, color: faint, textAlign: 'center' }}>No paid bookings yet.</td></tr>}
               {rows.map((r) => (
                 <tr key={r.id} style={{ borderTop: borderSoft }}>
                   <td style={{ padding: '12px 16px', whiteSpace: 'nowrap', color: soft, ...tnum }}>{dateShort(r.date)}</td>
@@ -179,7 +183,8 @@ export default function CashflowView({ rows }: { rows: CashRow[] }) {
                   <td style={{ padding: '12px 16px', textAlign: 'right', ...tnum }}>{usd(r.gross)}</td>
                   <td style={{ padding: '12px 16px', textAlign: 'right', color: FEE_TEXT, ...tnum }}>{r.stripeFeeUsd != null ? '- ' + usd(r.stripeFeeUsd) : '-'}</td>
                   <td style={{ padding: '12px 16px', textAlign: 'right', color: r.supplierPayout > 0 ? C.payout : faint, ...tnum }}>{r.supplierPayout > 0 ? '- ' + usd(r.supplierPayout) : '-'}</td>
-                  <td style={{ padding: '12px 16px', textAlign: 'right', fontWeight: 700, color: C.net, ...tnum }}>{usd(r.netUsd)}</td>
+                  <td style={{ padding: '12px 16px', textAlign: 'right', color: r.remitlyEstUsd > 0 ? C.remit : faint, ...tnum }}>{r.remitlyEstUsd > 0 ? '- ' + usd(r.remitlyEstUsd) : '-'}</td>
+                  <td style={{ padding: '12px 16px', textAlign: 'right', fontWeight: 700, color: r.netUsd < 0 ? '#8A2A0A' : C.net, ...tnum }}>{usd(r.netUsd)}</td>
                   <td style={{ padding: '12px 16px', textAlign: 'right', color: soft, ...tnum }}>{r.settledCad != null ? usd(r.settledCad) : '-'}</td>
                 </tr>
               ))}
@@ -189,7 +194,7 @@ export default function CashflowView({ rows }: { rows: CashRow[] }) {
       </section>
 
       <p style={{ fontSize: 12, color: faint, marginTop: 16, lineHeight: 1.55, maxWidth: 760 }}>
-        Figures are in USD (the currency customers are charged). Your Stripe account is Canadian and settles in CAD, so each Stripe fee (processing plus currency conversion) is converted to USD at the transaction rate, and the actual amount deposited is shown as Settled (CAD).{hasTour ? ' Tour supplier costs (guides and creators) are not tracked yet, so the net kept on tour bookings is shown before any supplier payout.' : ''}
+        Figures are in USD (the currency customers are charged). Your Stripe account is Canadian and settles in CAD, so each Stripe fee (processing plus currency conversion) is converted to USD at the transaction rate, and the actual amount deposited is shown as Settled (CAD). Pricing since Aug 15 builds in a 10% margin, a 5% Remitly cover, and card processing on top of the supplier&rsquo;s rate, with round trips at 90% of double the one-way base (Collin&rsquo;s discount). The Remitly column estimates what sending each payout costs (about $2.90 flat per send plus 2.1% FX, two sends for a round trip paid in halves), so Net kept is profit after EVERYTHING. Bookings paid before Aug 15 were priced under the old 10%-only model, which is why some show thin or negative nets: that is the real history, and the new pricing exists to fix it. Batching payouts into one weekly send cuts the Remitly cost sharply.{hasTour ? ' Tour supplier costs (guides and creators) are not tracked yet, so the net kept on tour bookings is shown before any supplier payout.' : ''}
       </p>
 
       {tip && (

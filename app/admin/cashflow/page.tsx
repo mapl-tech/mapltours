@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { createServiceClient } from '@/lib/supabase/service'
-import { supplierPayout, round2 } from '@/lib/dispatch'
+import { supplierPayout, round2, remitlyEstimate } from '@/lib/dispatch'
 import { estimatedRateDestinations, driverCost, getTransferPrice } from '@/lib/airport-transfers'
 import CashflowView, { type CashRow } from '@/components/admin/CashflowView'
 
@@ -71,7 +71,7 @@ export default async function CashflowPage() {
 
   const { data: bookings } = await svc
     .from('bookings')
-    .select('id, first_name, last_name, booking_type, subtotal, total_paid, stripe_payment_id, paid_at, created_at')
+    .select('id, first_name, last_name, booking_type, subtotal, total_paid, stripe_payment_id, paid_at, created_at, booking_items(trip_type)')
     .eq('status', 'paid')
     .order('paid_at', { ascending: false, nullsFirst: false })
     .limit(500)
@@ -82,6 +82,13 @@ export default async function CashflowPage() {
     // The supplier (transfer driver OR tour operator) is paid the subtotal in
     // full; MAPL's margin is the fee charged on top (10% + 5% Remitly cover on transfers, 20% tours).
     const supplierCost = supplierPayout(Number(b.subtotal ?? 0))
+    // Delivering the payout costs money too: per the current send pattern a
+    // round trip is paid in two halves (two Remitly sends), everything else
+    // in one. This is the estimate the 5% Remitly cover in pricing exists
+    // to fund, so profit is shown AFTER it.
+    const isRoundTrip = (b.booking_items as { trip_type?: string }[] | null)?.some((i) => i.trip_type === 'round_trip') ?? false
+    const sends = b.booking_type === 'transfer' && isRoundTrip ? 2 : 1
+    const remitlyEstUsd = remitlyEstimate(supplierCost, sends)
     return {
       id: b.id,
       ref: 'MAPL-' + b.id.slice(0, 8).toUpperCase(),
@@ -91,7 +98,8 @@ export default async function CashflowPage() {
       gross,
       stripeFeeUsd: feeUsd,
       supplierPayout: supplierCost,
-      netUsd: round2(gross - (feeUsd ?? 0) - supplierCost),
+      remitlyEstUsd,
+      netUsd: round2(gross - (feeUsd ?? 0) - supplierCost - remitlyEstUsd),
       settledCad,
     }
   }))
