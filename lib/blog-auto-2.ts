@@ -352,7 +352,7 @@ export const POSTS_2: BlogPost[] = [
       },
       {
         type: 'p',
-        text: "Uber technically operates around Montego Bay but coverage is patchy and airport pickups are not permitted in the official pickup zone. Local app JUTA Taxi is a decent backup. For most first-time visitors, pre-book a private driver through your hotel or a reputable operator and have them meet you past customs with a name card.",
+        text: "Ride-hailing apps do operate around Montego Bay, but they sit under a government ban that remains officially in force, and Sangster's own site lists only its two authorised taxi companies at the desk outside customs. Do not plan an arrival around one. For most first-time visitors, pre-book a private driver through your hotel or a reputable operator and have them meet you past customs with a name card.",
       },
       {
         type: 'h2',

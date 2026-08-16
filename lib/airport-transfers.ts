@@ -179,7 +179,7 @@ export const CARD_FIXED = 0.22
  */
 /** Collin's round-trip discount, confirmed by him on WhatsApp 2026-08-15
  *  ("10% off"): a round trip costs 1.8x his one-way rate, not 2x. Applied at
- *  the COST layer so the customer price, MAPL's 15% margin structure, the
+ *  the COST layer so the customer price, MAPL's 10% margin structure, the
  *  stored subtotal, and the supplier payout all move together: the discount
  *  is his, so his payout carries it too. */
 export const ROUND_TRIP_DISCOUNT = 0.10

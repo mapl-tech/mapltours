@@ -231,7 +231,7 @@ export const POSTS_1: BlogPost[] = [
       },
       {
         type: 'p',
-        text: "There's no train, no public bus that picks up at the terminal, and no Uber at MBJ. So your options are narrower than they feel. Here they are, ranked.",
+        text: "There's no train and no public bus that picks up at the terminal, and the airport's own site lists only two authorised taxi companies at the desk outside customs. Ride-hailing sits under a government ban that is still officially in force, so it is not something to plan an arrival around. Your options are narrower than they feel. Here they are, ranked.",
       },
       { type: 'h2', text: "Private driver, the pick" },
       {
