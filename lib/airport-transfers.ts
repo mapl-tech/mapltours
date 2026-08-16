@@ -88,7 +88,7 @@ export const DESTINATIONS: TransferDestination[] = [
   { id: 'hyatt-ziva-rose-hall', name: 'Hyatt Ziva Rose Hall', parish: 'St. James', zone: 'A', baseRate: 30 },
   { id: 'hyatt-zilara-rose-hall', name: 'Hyatt Zilara Rose Hall', parish: 'St. James', zone: 'A', baseRate: 30 },
   { id: 'hilton-rose-hall', name: 'Hilton Rose Hall Resort', parish: 'St. James', zone: 'A', baseRate: 30 },
-  { id: 'royalton-blue-waters-mb', name: 'Royalton Blue Waters, Montego Bay', parish: 'St. James', zone: 'A', baseRate: 40, estimated: true },
+  { id: 'royalton-blue-waters-mb', name: 'Royalton Blue Waters (Falmouth)', parish: 'Trelawny', zone: 'B', baseRate: 60, estimated: true },
   { id: 'sandals-montego-bay', name: 'Sandals Montego Bay', parish: 'St. James', zone: 'A', baseRate: 25 },
   { id: 'sandals-royal-caribbean', name: 'Sandals Royal Caribbean, Montego Bay', parish: 'St. James', zone: 'A', baseRate: 25, estimated: true },
   { id: 'riu-montego-bay', name: 'Riu Montego Bay', parish: 'St. James', zone: 'A', baseRate: 20 },
@@ -108,9 +108,9 @@ export const DESTINATIONS: TransferDestination[] = [
   { id: 'falmouth-cruise-port', name: 'Falmouth Cruise Port', parish: 'Trelawny', zone: 'B', baseRate: 60, estimated: true },
 
   // Zone C, Trelawny / Hanover / Lucea
-  { id: 'grand-palladium-lucea', name: 'Grand Palladium Jamaica, Lucea', parish: 'Hanover', zone: 'C', baseRate: 90, estimated: true },
-  { id: 'ocean-coral-spring', name: 'Ocean Coral Spring', parish: 'Trelawny', zone: 'C', baseRate: 60, estimated: true },
-  { id: 'round-hill-hotel', name: 'Round Hill Hotel & Villas, Hanover', parish: 'Hanover', zone: 'C', baseRate: 60, estimated: true },
+  { id: 'grand-palladium-lucea', name: 'Grand Palladium Jamaica, Lucea', parish: 'Hanover', zone: 'C', baseRate: 75, estimated: true },
+  { id: 'ocean-coral-spring', name: 'Ocean Coral Spring', parish: 'Trelawny', zone: 'C', baseRate: 70, estimated: true },
+  { id: 'round-hill-hotel', name: 'Round Hill Hotel & Villas, Hanover', parish: 'Hanover', zone: 'C', baseRate: 50, estimated: true },
   { id: 'tryall-club', name: 'The Tryall Club, Hanover', parish: 'Hanover', zone: 'C', baseRate: 60, estimated: true },
 
   // Zone D, Negril & Runaway Bay
@@ -135,13 +135,12 @@ export const DESTINATIONS: TransferDestination[] = [
   { id: 'riu-ocho-rios', name: 'Riu Ocho Rios', parish: 'St. Ann', zone: 'E', baseRate: 90 },
   { id: 'jewel-dunns-river', name: "Jewel Dunn's River Beach Resort & Spa, Ocho Rios", parish: 'St. Ann', zone: 'E', baseRate: 90 },
   { id: 'sandals-royal-plantation', name: 'Sandals Royal Plantation, Ocho Rios', parish: 'St. Ann', zone: 'E', baseRate: 90 },
-  { id: 'beaches-ocho-rios', name: 'Beaches Ocho Rios', parish: 'St. Ann', zone: 'E', baseRate: 90, estimated: true },
-  { id: 'couples-sans-souci', name: 'Couples Sans Souci, Ocho Rios', parish: 'St. Ann', zone: 'E', baseRate: 90, estimated: true },
+  { id: 'couples-sans-souci', name: 'Couples Sans Souci, Ocho Rios', parish: 'St. Ann', zone: 'E', baseRate: 100, estimated: true },
   { id: 'couples-tower-isle', name: 'Couples Tower Isle, Ocho Rios', parish: 'St. Mary', zone: 'E', baseRate: 110 },
   { id: 'jamaica-inn-ocho-rios', name: 'Jamaica Inn, Ocho Rios', parish: 'St. Ann', zone: 'E', baseRate: 90, estimated: true },
-  { id: 'goldeneye-oracabessa', name: 'GoldenEye, Oracabessa', parish: 'St. Mary', zone: 'E', baseRate: 110, estimated: true },
+  { id: 'goldeneye-oracabessa', name: 'GoldenEye, Oracabessa', parish: 'St. Mary', zone: 'E', baseRate: 120, estimated: true },
   { id: 'ocho-rios-cruise-port', name: 'Ocho Rios Cruise Port', parish: 'St. Ann', zone: 'E', baseRate: 90, estimated: true },
-  { id: 'sandals-south-coast', name: 'Sandals South Coast (Whitehouse)', parish: 'Westmoreland', zone: 'E', baseRate: 120, estimated: true },
+  { id: 'sandals-south-coast', name: 'Sandals South Coast (Whitehouse)', parish: 'Westmoreland', zone: 'E', baseRate: 110, estimated: true },
   { id: 'jakes-treasure-beach', name: 'Jakes Hotel, Treasure Beach', parish: 'St. Elizabeth', zone: 'E', baseRate: 130, estimated: true },
 ]
 

@@ -105,14 +105,16 @@ export const useTransfersCart = create<TransfersCartStore>()(
       // v2: prices became ALL-IN (driver cost + margin + card processing) and
       // are per destination rather than per zone.
       // v3: prices grew a 5% Remitly cover. v4: round trips gained Collin's
-      // 10% discount. Any cart persisted under an older version holds retired
+      // 10% discount. v5: seven estimated rates recalibrated against real
+      // geography and one closed resort removed. Any cart persisted under an
+      // older version holds retired
       // fares, which the server rejects as a total mismatch and which a
       // reload alone can never clear. Re-derive every line from the live rate
       // table, dropping destinations that no longer exist.
-      version: 4,
+      version: 5,
       migrate: (persisted, version) => {
         const state = persisted as { items?: TransferCartItem[] } | undefined
-        if (!state || version >= 4) return state as TransfersCartStore
+        if (!state || version >= 5) return state as TransfersCartStore
         const items = (state.items ?? []).flatMap((i) => {
           const priceUsd = getTransferPrice(i.destinationId, i.tripType)
           return priceUsd === null ? [] : [{ ...i, priceUsd }]
