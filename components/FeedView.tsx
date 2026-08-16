@@ -18,14 +18,6 @@ function HeroVideo({ src, poster }: { src: string; poster: string }) {
   const videoRef = useRef<HTMLVideoElement>(null)
   const [shouldLoad, setShouldLoad] = useState(false)
   const [isPlaying, setIsPlaying] = useState(false)
-  const [paused, setPaused] = useState(false)
-
-  const togglePause = () => {
-    const v = videoRef.current
-    if (!v) return
-    if (v.paused) { v.play().catch(() => {}); setPaused(false) }
-    else { v.pause(); setPaused(true) }
-  }
 
   useEffect(() => {
     // Motion preference first: a user who asked for reduced motion gets the
@@ -84,23 +76,6 @@ function HeroVideo({ src, poster }: { src: string; poster: string }) {
         >
           <source src={src} type="video/mp4" />
         </video>
-      )}
-      {isPlaying && (
-        <button
-          type="button"
-          onClick={togglePause}
-          aria-label={paused ? 'Play background video' : 'Pause background video'}
-          style={{
-            position: 'absolute', right: 18, bottom: 18, zIndex: 3,
-            width: 44, height: 44, borderRadius: 9999,
-            background: 'rgba(10,10,8,0.62)', border: '1px solid rgba(255,255,255,0.35)',
-            color: '#fff', cursor: 'pointer',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: 14, lineHeight: 1,
-          }}
-        >
-          {paused ? '\u25B6' : '\u23F8'}
-        </button>
       )}
     </>
   )
