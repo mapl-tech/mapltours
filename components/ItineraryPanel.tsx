@@ -100,7 +100,9 @@ export default function ItineraryPanel({ open, onClose }: { open: boolean; onClo
           <div>
             <h3 className="text-headline" style={{ fontSize: 18, marginBottom: 2 }}>{t('Your Itinerary')}</h3>
             <p style={{ fontSize: 12, color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-sans)' }}>
-              {items.length} experience{items.length !== 1 ? 's' : ''} · Jamaica
+              {items.length} {items[0]?.kind === 'package'
+                ? (items.length === 1 ? 'ready-made day' : 'ready-made days')
+                : `experience${items.length !== 1 ? 's' : ''}`} · Jamaica
             </p>
           </div>
           <button onClick={onClose} aria-label="Close itinerary" style={{
@@ -130,6 +132,15 @@ export default function ItineraryPanel({ open, onClose }: { open: boolean; onClo
           </p>
           <TripTimeBar compact />
         </div>
+
+        {items[0]?.kind === 'package' && (
+          <p style={{
+            padding: '10px 24px 0', fontSize: 12.5, color: 'var(--text-tertiary)',
+            fontFamily: 'var(--font-dm-sans)', lineHeight: 1.45,
+          }}>
+            {t('This is a ready-made day. Adding a single experience will replace it.')}
+          </p>
+        )}
 
         {/* Items */}
         <div className="no-scrollbar" style={{ flex: 1, overflowY: 'auto', padding: '14px 24px' }}>

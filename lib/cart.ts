@@ -1,4 +1,4 @@
-import { tourPrice, experiences, conflictingIds } from './experiences'
+import { tourPrice, experiences } from './experiences'
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { Experience } from './experiences'
@@ -90,19 +90,17 @@ export const useCartStore = create<CartStore>()(
       addItem: (exp: Experience) => {
         const { items } = get()
         if (items.some((i) => i.id === exp.id)) return
-        // A package and its own components would charge twice for the same
-        // attraction and put the guest at one place twice in a day. Adding
-        // either side replaces the other rather than stacking with it.
-        const clash = new Set(conflictingIds(exp))
-        const kept = clash.size > 0 ? items.filter((i) => !clash.has(i.id)) : items
+        // A ready-made package day and a self-built day are two different
+        // ways to buy, and an itinerary is one or the other. Mixing them
+        // double-books attractions (every package bundles activities also
+        // sold singly) and makes the day impossible to sequence. Adding
+        // either kind therefore clears the other kind.
+        const kept = items.filter((i) => i.kind === exp.kind)
         set({ items: [...kept, { ...exp, travelers: 2, date: defaultDate() }] })
       },
 
       /** Cart items this experience would replace if added now. */
-      conflictsInCart: (exp: Experience) => {
-        const clash = new Set(conflictingIds(exp))
-        return get().items.filter((i) => clash.has(i.id))
-      },
+      conflictsInCart: (exp: Experience) => get().items.filter((i) => i.kind !== exp.kind),
 
       removeItem: (id: number) => {
         set({ items: get().items.filter((i) => i.id !== id) })

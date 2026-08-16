@@ -460,7 +460,7 @@ function PackagesSection() {
               fontSize: 15, color: 'var(--text-secondary)',
               fontFamily: 'var(--font-dm-sans)', marginTop: 10, lineHeight: 1.5,
             }}>
-              {t('Two or three experiences run back to back, in the right order, driven door to door.')}
+              {t('Two or three experiences run back to back, in the right order, driven door to door. Book a ready-made day or build your own, not both.')}
             </p>
           </div>
 
@@ -581,7 +581,7 @@ function PackagesSection() {
                   </button>
                   {replaces.length > 0 && !inCart && (
                     <p className="pkg-replaces" style={{ fontSize: 12, color: 'var(--gold-text)', fontFamily: 'var(--font-dm-sans)' }}>
-                      {t('Replaces')} {replaces.map((r) => t(r.title)).join(', ')}
+                      {t('Replaces the')} {replaces.length} {replaces.length === 1 ? t('experience') : t('experiences')} {t('in your itinerary')}
                     </p>
                   )}
                 </div>
