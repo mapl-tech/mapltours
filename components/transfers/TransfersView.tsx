@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState, useId, isValidElement, cloneElement } from 'react'
+import { useMemo, useState, useId, isValidElement, cloneElement, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
@@ -298,10 +298,7 @@ export default function TransfersView() {
                   headed?
                 </span>
               </h2>
-              <p className="xfer-quote-activity">
-                <span className="xfer-quote-activity-dot" aria-hidden />
-                12 transfers booked in the last 24 hours · last one 47 minutes ago
-              </p>
+              <LiveActivityLine />
             </div>
 
             <Field label="Destination">
@@ -1933,6 +1930,45 @@ function Lock() {
 
 function roman(n: 'A' | 'B' | 'C' | 'D' | 'E'): string {
   return { A: 'I', B: 'II', C: 'III', D: 'IV', E: 'V' }[n]
+}
+
+/**
+ * Live social proof from real bookings, via /api/transfers/activity.
+ * Tiered: the strongest claim the actual numbers make true, or nothing.
+ * Never invented: every figure shown is a database count.
+ */
+function LiveActivityLine() {
+  const [line, setLine] = useState<string | null>(null)
+  useEffect(() => {
+    let alive = true
+    fetch('/api/transfers/activity')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((a) => {
+        if (!alive || !a) return
+        const ago = (min: number) =>
+          min < 60 ? `${min} minutes ago`
+          : min < 36 * 60 ? `${Math.round(min / 60)} hours ago`
+          : `${Math.round(min / 1440)} days ago`
+        if (a.count24h >= 2 && a.lastAgoMin != null) {
+          setLine(`${a.count24h} transfers booked in the last 24 hours · last one ${ago(a.lastAgoMin)}`)
+        } else if (a.lastAgoMin != null && a.lastAgoMin < 4320 && a.lastHotel) {
+          setLine(`Latest booking: ${a.lastTrip} to ${a.lastHotel} · ${ago(a.lastAgoMin)}`)
+        } else if (a.count30d >= 2) {
+          setLine(`${a.count30d} transfers booked in the last 30 days`)
+        } else if (a.lastAgoMin != null && a.lastHotel) {
+          setLine(`Latest booking: ${a.lastTrip} to ${a.lastHotel}`)
+        }
+      })
+      .catch(() => {})
+    return () => { alive = false }
+  }, [])
+  if (!line) return null
+  return (
+    <p className="xfer-quote-activity">
+      <span className="xfer-quote-activity-dot" aria-hidden />
+      {line}
+    </p>
+  )
 }
 
 function SavingsRow({
