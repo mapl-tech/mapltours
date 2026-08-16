@@ -67,6 +67,6 @@ export const TRANSFER_FAQS: TransferFaq[] = [
   },
   {
     q: 'What is your cancellation policy?',
-    a: 'Free cancellation up to 24 hours before your scheduled pickup time, with a refund of the amount paid less the non-refundable payment processing fee. Inside 24 hours we charge 50% of the fare, your driver is already booked and is turning down other trips. No-shows are charged in full.',
+    a: 'Free cancellation up to 24 hours before your scheduled pickup time, refunded in full. Inside 24 hours we charge 50% of the fare, your driver is already booked and is turning down other trips. No-shows are charged in full.',
   },
 ]

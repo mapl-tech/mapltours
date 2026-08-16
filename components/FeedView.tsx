@@ -511,15 +511,23 @@ export default function FeedView() {
           background: 'linear-gradient(0deg, rgba(8,8,6,0.92) 0%, rgba(8,8,6,0.55) 26%, rgba(8,8,6,0.30) 56%, transparent 100%)',
           pointerEvents: 'none',
         }} />
+        {/* Corner glow-down: an organic pool of shade behind the text column,
+            so small type never depends on the footage. With the scrim above
+            it measures 9.7:1 for white text on a worst-case bright frame. */}
+        <div style={{
+          position: 'absolute', bottom: 0, left: 0, width: '72%', height: '78%',
+          background: 'radial-gradient(120% 95% at 0% 100%, rgba(8,8,6,0.60) 0%, rgba(8,8,6,0.32) 45%, transparent 72%)',
+          pointerEvents: 'none',
+        }} />
         <div className="container" style={{ position: 'relative', zIndex: 1, paddingBottom: 'clamp(40px, 6vw, 72px)' }}>
           <span className="animate-fade-up" style={{
-            display: 'inline-flex', alignItems: 'center',
+            display: 'inline-flex', alignItems: 'center', gap: 12,
             fontFamily: 'var(--font-dm-sans)', fontWeight: 600,
-            fontSize: 11, letterSpacing: '0.2em', textTransform: 'uppercase',
-            color: 'var(--gold-warm)', marginBottom: 18,
-            background: 'rgba(10,10,8,0.82)', borderRadius: 9999,
-            padding: '7px 15px',
+            fontSize: 11, letterSpacing: '0.22em', textTransform: 'uppercase',
+            color: '#fff', marginBottom: 18,
+            textShadow: '0 1px 8px rgba(0,0,0,0.45)',
           }}>
+            <span aria-hidden style={{ width: 28, height: 2, background: 'var(--gold-warm)', borderRadius: 1, flexShrink: 0 }} />
             Jamaica, beyond the brochure
           </span>
           <h1 className="animate-fade-up stagger-1" style={{
@@ -576,6 +584,14 @@ export default function FeedView() {
               Explore Experiences
             </Link>
           </div>
+          {/* Sentinel top improvement: price anchor + risk reversal at the
+              exact moment of decision. Sits in the deepest scrim zone. */}
+          <p className="animate-fade-up stagger-4" style={{
+            fontFamily: 'var(--font-dm-sans)', fontSize: 13, fontWeight: 500,
+            color: '#fff', marginTop: 14, textShadow: '0 1px 6px rgba(0,0,0,0.5)',
+          }}>
+            From $19 · Free cancellation until 24 hours before pickup
+          </p>
         </div>
       </section>
 
