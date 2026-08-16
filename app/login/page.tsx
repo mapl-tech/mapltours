@@ -101,18 +101,20 @@ function LoginContent() {
         className="login-back-btn"
         style={{
           position: 'absolute', top: 'max(16px, env(safe-area-inset-top))', left: 16,
-          display: 'flex', alignItems: 'center', gap: 8,
+          display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+          minHeight: 44, padding: '0 20px 0 16px',
           fontSize: 14, fontWeight: 600, color: 'var(--text-primary)',
           fontFamily: 'var(--font-dm-sans)',
+          textDecoration: 'none',
           borderRadius: 9999,
           background: 'var(--card-bg)',
           border: '1px solid var(--border-strong)',
           boxShadow: 'var(--shadow-sm)',
-          transition: 'all 0.15s ease',
+          transition: 'background 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease',
           zIndex: 3,
         }}
       >
-        <span style={{ fontSize: 18, lineHeight: 1 }}>←</span>
+        <span aria-hidden style={{ fontSize: 17, lineHeight: 1, marginTop: -1 }}>←</span>
         <span className="login-back-label">Back to Home</span>
       </Link>
 
@@ -176,17 +178,9 @@ function LoginContent() {
           background: var(--bg-warm);
           min-height: 100vh;
         }
-        .login-back-btn { padding: 10px 18px 10px 14px; }
-        .login-back-label { display: inline; }
         @media (max-width: 900px) {
           .login-shell { grid-template-columns: 1fr; }
           .login-aside { display: none; }
-        }
-        @media (max-width: 767px) {
-          .login-back-btn {
-            padding: 0; width: 44px; height: 44px; justify-content: center;
-          }
-          .login-back-label { display: none; }
         }
       `}</style>
 

@@ -1256,11 +1256,25 @@ img[alt="Devon House Patty & Ice Cream Tour"] {
     font-size: 16px !important;
   }
   /* Controls the same audit found under the 44px touch floor. */
-  .login-back-btn { min-width: 44px; min-height: 44px; }
+  /* Icon-only on a phone so it never crowds the logo lockup. Declared in
+     globals because the login page's styled-jsx block cannot reach a
+     <Link>: styled-jsx only scopes plain DOM elements. */
+  .login-back-btn { width: 44px; min-width: 44px; padding: 0 !important; }
+  .login-back-label { display: none; }
   .skip-link { min-height: 44px; display: inline-flex; align-items: center; }
 }
 
 @media (max-width: 767px) {
   /* Controls a hit-area scanline found short of the 44px touch floor. */
   .help-topic-pill, .blog-cat-pill { min-height: 44px !important; min-width: 44px !important; }
+}
+
+/* Login back button hover, matching the site's other ghost controls. */
+.login-back-btn:hover {
+  background: var(--surface-hover);
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
+}
+@media (prefers-reduced-motion: reduce) {
+  .login-back-btn:hover { transform: none; }
 }
