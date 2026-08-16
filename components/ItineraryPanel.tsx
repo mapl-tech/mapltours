@@ -4,6 +4,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { useEffect, useRef } from 'react'
 import { useCartStore } from '@/lib/cart'
+import { useHydrated } from '@/lib/use-hydrated'
 import { tourPrice } from '@/lib/experiences'
 import { X } from 'lucide-react'
 import { useI18n } from '@/lib/i18n'
@@ -62,7 +63,8 @@ export default function ItineraryPanel({ open, onClose }: { open: boolean; onClo
     return () => document.removeEventListener('keydown', onKeyDown)
   }, [open, onClose])
 
-  if (!open || items.length === 0) return null
+  const hydrated = useHydrated()
+  if (!hydrated || !open || items.length === 0) return null
 
   // Checkout requires an account. Surface that on the CTA instead of a
   // silent redirect after the user commits, send them to /login with a

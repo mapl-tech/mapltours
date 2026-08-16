@@ -24,7 +24,7 @@ export default function LanguageSwitcher({ variant = 'header', dark = false }: {
     >
       <button
         onClick={() => setOpen(!open)}
-        className="tap-target"
+        className={isFooter ? 'tap-target' : 'tap-target-down'}
         style={{
           display: 'flex', alignItems: 'center', gap: 6,
           padding: isFooter ? '8px 14px' : '6px 12px',

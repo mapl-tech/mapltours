@@ -2,6 +2,7 @@
 
 import { Experience, CATEGORY_COLORS , priceUnitLabel } from '@/lib/experiences'
 import { useCartStore } from '@/lib/cart'
+import { useHydrated } from '@/lib/use-hydrated'
 import { useI18n } from '@/lib/i18n'
 import { useState } from 'react'
 
@@ -75,7 +76,8 @@ export default function ReelCard({
 }: ReelCardProps) {
   const { addItem, isInCart } = useCartStore()
   const { t, formatPrice } = useI18n()
-  const inCart = isInCart(exp.id)
+  const hydrated = useHydrated()
+  const inCart = hydrated && isInCart(exp.id)
   const catColor = CATEGORY_COLORS[exp.category]
   const [heartPop, setHeartPop] = useState(false)
 

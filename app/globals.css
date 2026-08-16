@@ -717,6 +717,20 @@ h5, h6 { letter-spacing: -0.01em; }
   height: max(100%, 44px);
 }
 
+/* Top-edge variant: a centered 44px zone on a control sitting a few px
+   from the screen top pushes past y=0 and only ~41px stays reachable.
+   Extend the zone downward from the control's top edge instead. */
+.tap-target-down { position: relative; }
+.tap-target-down::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 0;
+  transform: translateX(-50%);
+  width: max(100%, 44px);
+  height: 44px;
+}
+
 textarea.field-input {
   height: auto;
   padding: 12px 14px;

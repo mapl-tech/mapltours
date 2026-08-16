@@ -6,12 +6,14 @@ import Link from 'next/link'
 import { Experience, slugify, priceUnitLabel } from '@/lib/experiences'
 import { useI18n } from '@/lib/i18n'
 import { useCartStore } from '@/lib/cart'
+import { useHydrated } from '@/lib/use-hydrated'
 import { Plus, Check, Star, MapPin, Clock, Play } from 'lucide-react'
 
 export default memo(function MobileShort({ exp, priority = false }: { exp: Experience; priority?: boolean }) {
   const { addItem, removeItem, isInCart } = useCartStore()
   const { t, formatPrice } = useI18n()
-  const inCart = isInCart(exp.id)
+  const hydrated = useHydrated()
+  const inCart = hydrated && isInCart(exp.id)
   const toggleCart = () => { if (inCart) { removeItem(exp.id) } else { addItem(exp) } }
 
   const containerRef = useRef<HTMLDivElement>(null)

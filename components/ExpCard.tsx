@@ -5,13 +5,17 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { Experience, CATEGORY_COLORS, slugify , priceUnitLabel } from '@/lib/experiences'
 import { useCartStore } from '@/lib/cart'
+import { useHydrated } from '@/lib/use-hydrated'
 import { Plus, Check, Play, MapPin, Star } from 'lucide-react'
 import { useI18n } from '@/lib/i18n'
 
 export default memo(function ExpCard({ exp }: { exp: Experience }) {
   const { addItem, removeItem, isInCart } = useCartStore()
   const { t, formatPrice } = useI18n()
-  const inCart = isInCart(exp.id)
+  const hydrated = useHydrated()
+  // Cart-derived markup must render the SSR (empty-cart) state during the
+  // hydration pass, see useHydrated.
+  const inCart = hydrated && isInCart(exp.id)
   const toggleCart = () => { if (inCart) { removeItem(exp.id) } else { addItem(exp) } }
   const videoRef = useRef<HTMLVideoElement>(null)
   const [hovering, setHovering] = useState(false)

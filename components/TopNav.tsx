@@ -504,7 +504,7 @@ export default function TopNav({ onCartClick }: { onCartClick?: () => void }) {
         }}>
           <Link
             href="/transfers"
-            className="tap-target"
+            className="tap-target-down"
             style={{
               display: 'inline-flex', alignItems: 'center',
               fontFamily: 'var(--font-dm-sans)',

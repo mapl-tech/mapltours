@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { experiences, Experience, slugify , priceUnitLabel } from '@/lib/experiences'
 import { useI18n } from '@/lib/i18n'
 import { useCartStore, DAILY_HOUR_LIMIT } from '@/lib/cart'
+import { useHydrated } from '@/lib/use-hydrated'
 import Link from 'next/link'
 import dynamic from 'next/dynamic'
 import { Heart, MessageCircle, Play, ChevronLeft, ChevronRight, X, ThumbsUp, Send, MapPin, Star, Clock, ShoppingBag, Film } from 'lucide-react'
@@ -58,7 +59,8 @@ function Reel({ exp, isActive, totalCount, currentIndex, onComments }: { exp: Ex
   const { addItem, removeItem, isInCart } = useCartStore()
   const { t, formatPrice } = useI18n()
   const { liked, likeCount, toggleLike } = useExperienceLike(exp.id, isActive)
-  const inCart = isInCart(exp.id)
+  const hydrated = useHydrated()
+  const inCart = hydrated && isInCart(exp.id)
   const toggleCart = () => { if (inCart) { removeItem(exp.id) } else { addItem(exp) } }
   // Give the page exactly one <h1>: the active reel's title carries the primary
   // heading; off-screen reels keep <h2> so we never render multiple h1s.
