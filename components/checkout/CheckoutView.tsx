@@ -8,7 +8,7 @@ import Image from 'next/image'
 import { ArrowLeft, Check, MapPin, Users, Calendar, Leaf, Lock, ShieldCheck } from 'lucide-react'
 import { earliestBookableExperienceDate } from '@/lib/booking-window'
 import { useCartStore, DAILY_HOUR_LIMIT } from '@/lib/cart'
-import { tourPrice } from '@/lib/experiences'
+import { tourPrice, perTravelerPrice } from '@/lib/experiences'
 import { getStoredAttribution } from '@/lib/attribution'
 import TripTimeBar from '@/components/TripTimeBar'
 import { useAvailableReward, consumeReward } from '@/lib/tour-videos'
@@ -350,7 +350,9 @@ function ReviewStep() {
                   {formatPrice(tourPrice(item.pricing, item.travelers))}
                 </span>
                 <p style={{ fontSize: 12, color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-sans)', marginTop: 1 }}>
-                  {formatPrice(item.price)} × {item.travelers}
+                  {perTravelerPrice(item.pricing, item.travelers) === null
+                    ? `${item.travelers} ${item.travelers === 1 ? t('guest') : t('guests')} · ${item.pricing.mode === 'group' && item.travelers <= item.pricing.tierMax ? t('private tour, one price') : t('all-in')}`
+                    : `${item.travelers} × ${formatPrice(perTravelerPrice(item.pricing, item.travelers)!)}`}
                 </p>
               </div>
             </div>
@@ -1082,7 +1084,11 @@ export default function CheckoutView() {
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <p style={{ fontSize: 13, fontFamily: 'var(--font-dm-sans)', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t(item.title)}</p>
-                    <p style={{ fontSize: 12, color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-sans)' }}>{item.travelers} × {formatPrice(item.price)}</p>
+                    <p style={{ fontSize: 12, color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-sans)' }}>
+                      {perTravelerPrice(item.pricing, item.travelers) === null
+                        ? `${item.travelers} ${item.travelers === 1 ? t('guest') : t('guests')}`
+                        : `${item.travelers} × ${formatPrice(perTravelerPrice(item.pricing, item.travelers)!)}`}
+                    </p>
                   </div>
                   <span style={{ fontSize: 13, fontWeight: 700, fontFamily: 'var(--font-dm-sans)', flexShrink: 0 }}>
                     {formatPrice(tourPrice(item.pricing, item.travelers))}
@@ -1223,18 +1229,43 @@ export default function CheckoutView() {
                   setFormErrors({})
                   setStep(step + 1)
                   window.scrollTo({ top: 0, behavior: 'smooth' })
-                }} style={{ width: '100%', height: 48, fontSize: 14 }}>
+                }} data-checkout-cta style={{ width: '100%', height: 48, fontSize: 14 }}>
                   {ctas[step - 1]}
                 </button>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: 12, fontSize: 12, color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-sans)' }}>
                   <Lock size={11} />
-                  <span>Secure checkout · Flexible cancellation within 48 hrs of booking</span>
+                  <span>
+                    Secure checkout · Cancel within 48 hrs of booking, less a 20% admin charge ·{' '}
+                    <a href="/terms" target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'underline', color: 'inherit' }}>full policy</a>
+                  </span>
                 </div>
               </div>
             )}
           </div>
 
         </div>
+      </div>
+
+      {/* ── Mobile sticky bar ──
+          On a 390px screen step 1 runs ~2,700px: the buyer fills seven
+          required fields with the total and the forward action both offscreen.
+          This keeps the live total and the CTA in the thumb zone, the same
+          pattern /transfers already uses. Desktop keeps its sticky summary
+          column, so this is mobile-only. */}
+      <div className="checkout-sticky-cta hide-desktop">
+        <div>
+          <span className="checkout-sticky-label">{t('Total')}</span>
+          <span className="checkout-sticky-total">{formatPrice(step === 2 ? finalTotal : grandTotal())}</span>
+        </div>
+        <button
+          className="btn-primary"
+          onClick={() => {
+            const el = document.querySelector('[data-checkout-cta]') as HTMLButtonElement | null
+            if (el) { el.scrollIntoView({ behavior: 'smooth', block: 'center' }); el.click() }
+          }}
+        >
+          {ctas[step - 1]}
+        </button>
       </div>
 
       {/* ── 8-hour cap modal ── */}

@@ -366,7 +366,8 @@ export default function TransfersCheckoutView() {
                 }}
               >
                 <Lock size={12} /> Encrypted end-to-end ·{' '}
-                <ShieldCheck size={12} /> Flexible cancellation within 48 hrs of booking
+                <ShieldCheck size={12} /> Cancel within 48 hrs of booking, less a 20% admin charge ·{' '}
+                <a href="/terms" target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'underline', color: 'inherit' }}>full policy</a>
               </p>
             </>
           ) : (

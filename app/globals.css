@@ -1386,3 +1386,51 @@ img[alt="Devon House Patty & Ice Cream Tour"] {
   outline: 3px solid var(--gold-text, #6E5A1C);
   outline-offset: 3px;
 }
+
+/* ═══════════════════════════════════════════
+   Checkout sticky action bar (mobile only)
+   Step 1 is ~2,700px tall on a 390px screen; without this the total and the
+   forward action are both offscreen for the entire form. Delegates its click
+   to the real CTA so validation runs in exactly one place.
+   ═══════════════════════════════════════════ */
+.checkout-sticky-cta { display: none; }
+@media (max-width: 767px) {
+  .checkout-sticky-cta {
+    display: flex;
+    position: fixed;
+    left: 0; right: 0; bottom: 0;
+    z-index: 90;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 10px 16px calc(10px + env(safe-area-inset-bottom));
+    background: rgba(255, 255, 255, 0.97);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-top: 1px solid var(--border);
+    box-shadow: 0 -6px 24px rgba(23, 22, 20, 0.10);
+  }
+  .checkout-sticky-label {
+    display: block;
+    font-size: 12px;
+    color: var(--text-tertiary);
+    font-family: var(--font-dm-sans);
+    line-height: 1.2;
+  }
+  .checkout-sticky-total {
+    display: block;
+    font-size: 20px;
+    font-weight: 700;
+    font-family: var(--font-dm-sans);
+    letter-spacing: -0.02em;
+    font-variant-numeric: tabular-nums;
+  }
+  .checkout-sticky-cta .btn-primary {
+    height: 46px;
+    padding: 0 20px;
+    font-size: 14px;
+    white-space: nowrap;
+  }
+  /* Clear the bar so it never covers the last field or the inline CTA. */
+  .checkout-wrapper { padding-bottom: 96px; }
+}

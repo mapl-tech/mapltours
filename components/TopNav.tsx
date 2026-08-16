@@ -518,9 +518,10 @@ export default function TopNav({ onCartClick }: { onCartClick?: () => void }) {
           {(items.length > 0 || stops.length > 0) && (
             <button
               onClick={onCartClick}
+              aria-label={`${t('Itinerary')}, ${items.length + stops.length} ${items.length + stops.length === 1 ? 'item' : 'items'}`}
               style={{
                 display: 'flex', alignItems: 'center', gap: 5,
-                height: 34, padding: '0 14px',
+                minHeight: 44, padding: '0 14px',
                 borderRadius: 9999, fontSize: 12, fontWeight: 600,
                 fontFamily: 'var(--font-dm-sans)', cursor: 'pointer',
                 background: dark ? 'rgba(255,255,255,0.12)' : 'var(--accent)',
@@ -533,6 +534,7 @@ export default function TopNav({ onCartClick }: { onCartClick?: () => void }) {
             >
               <ShoppingBag size={14} />
               <span className="hide-mobile">{t('Itinerary')}</span>
+              <span className="hide-desktop">{t('Trip')}</span>
               <span style={{
                 minWidth: 17, height: 17, padding: '0 5px',
                 borderRadius: 9999, background: 'rgba(255,255,255,0.18)',
@@ -873,6 +875,24 @@ export default function TopNav({ onCartClick }: { onCartClick?: () => void }) {
             padding: '12px 0 24px', overflowY: 'auto', zIndex: 99,
           }}
         >
+          {(items.length > 0 || stops.length > 0) && (
+            <Link
+              href="/checkout"
+              style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                minHeight: 48, padding: '0 20px', fontSize: 16, fontWeight: 700,
+                color: 'var(--accent)', fontFamily: 'var(--font-dm-sans)',
+              }}
+            >
+              {t('Your itinerary')}
+              <span style={{
+                minWidth: 22, height: 22, padding: '0 7px', borderRadius: 9999,
+                background: 'var(--accent)', color: '#fff',
+                display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: 12, fontWeight: 700,
+              }}>{items.length + stops.length}</span>
+            </Link>
+          )}
           {[
             { label: t('Explore'), href: '/explore', current: isExplore },
             { label: t('Transfers'), href: '/transfers', current: isTransfers },

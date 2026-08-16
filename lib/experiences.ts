@@ -70,6 +70,27 @@ export function priceUnitLabel(p: TourPricing): string {
   return p.mode === 'group' ? `up to ${p.tierMax} people` : 'per person'
 }
 
+/**
+ * The caption under a line total, e.g. "3 × $85.00" or "Private tour, up to
+ * 3 people". It must always reconcile with tourPrice(p, travelers): the
+ * checkout previously printed `catalogPrice × travelers`, which for a group
+ * tour claimed 5 × $351 next to a $478 total.
+ *
+ * Returns null when no per-head figure is meaningful (a flat group rate), so
+ * the caller can render the tier language instead of fake arithmetic.
+ */
+export function perTravelerPrice(p: TourPricing, travelers: number): number | null {
+  const n = Math.max(1, Math.round(travelers))
+  // A flat group rate covers the whole party: dividing it by heads would
+  // invent a per-person price that is not what anyone is charged.
+  if (p.mode === 'group' && n <= p.tierMax) return null
+  const total = tourPrice(p, n)
+  // Only claim "N x $X" when it multiplies back to the exact total. A party
+  // of 5 on a $478 tour is $95.60 each, which displays as $96 and reads as
+  // $480: the caption would contradict the total sitting beside it.
+  return total % n === 0 ? total / n : null
+}
+
 export interface Experience {
   id: number
   destination: string
