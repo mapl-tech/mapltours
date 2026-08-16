@@ -11,14 +11,26 @@ export const HERO_VIDEO = '/hero-video.mp4'
 
 // All destinations, confirmed Jamaica locations
 export const DESTINATIONS: Record<string, string> = {
-  'Negril': PD(19565413),       // Aerial Rockhouse Hotel cliffs, Negril Jamaica
+  // Crimson Negril sunset, boat silhouette on the horizon (Pexels
+  // 14041012, page location "Negril, Westmoreland Parish, Jamaica").
+  'Negril': 'https://images.pexels.com/photos/14041012/pexels-photo-14041012.jpeg?auto=compress&cs=tinysrgb&w=1000&h=800&fit=crop',
   'Blue Mountains': PD(9158428), // Blue Mountains Jamaica shrouded in clouds
   'Kingston': PD(36977962),      // Kingston Jamaica
   'Portland': PD(11820457),      // Rafting on crystal-clear waters, Jamaica
-  'Ocho Rios': PD(16403241),     // Aerial wooden pier, turquoise waters, Ocho Rios
+  // Aerial Jamaican waterfall in emerald jungle (Pexels 30681023, page
+  // location "Portland Parish, Jamaica"). Evokes the Dunn's River draw that
+  // defines Ochi; no true Dunn's River photo exists on Pexels. Swap for a
+  // real Collins photo when his album yields one.
+  'Ocho Rios': 'https://images.pexels.com/photos/30681023/pexels-photo-30681023.jpeg?auto=compress&cs=tinysrgb&w=1000&h=800&fit=crop',
   'Treasure Beach': PD(11820459), // Colorful wooden boats, tropical Jamaica coast
-  'Falmouth': PD(16147280),      // Jamaican flag on red boat, serene lake
-  'Montego Bay': PD(30680796),   // Aerial verdant mountains, Montego Bay
+  // Bamboo raft captain poling a jungle river (Pexels 38921246, "Rio
+  // Grande ... Portland Parish, Jamaica"). Same raft style as the Martha
+  // Brae; the only verifiably-Jamaican rafting photo on Pexels.
+  'Falmouth': 'https://images.pexels.com/photos/38921246/pexels-photo-38921246.jpeg?auto=compress&cs=tinysrgb&w=1000&h=800&fit=crop',
+  // Lone palm over layered turquoise water (Pexels 27222664, page location
+  // "Montego Bay, St. James Parish, Jamaica"). Source file is PNG, the
+  // .jpeg variant 404s.
+  'Montego Bay': 'https://images.pexels.com/photos/27222664/pexels-photo-27222664.png?auto=compress&cs=tinysrgb&w=1000&h=800&fit=crop',
   'Nine Mile': '/tours/nine-mile-trading-post.jpg', // The real Nine Mile Trading Post
 }
 
