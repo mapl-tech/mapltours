@@ -23,6 +23,7 @@ import {
   type TransferZone,
   zoneFromPrice,
   getTransferPrice,
+  getDestination,
 } from '@/lib/airport-transfers'
 import { useTransfersCart } from '@/lib/transfers-cart'
 import { useI18n } from '@/lib/i18n'
@@ -85,6 +86,17 @@ export default function TransfersView() {
   const { formatPrice } = useI18n()
 
   const [destinationId, setDestinationId] = useState<string>('')
+
+  // Deep links (blog resort reviews, ads) preselect the route via ?to=<id>.
+  // Read client-side from location so the page stays fully static; runs once
+  // after hydration and never overrides a choice the visitor already made.
+  useEffect(() => {
+    const to = new URLSearchParams(window.location.search).get('to')
+    if (to && getDestination(to)) {
+      setDestinationId((cur) => cur || to)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
   const [tripType, setTripType] = useState<TransferTripType>('round_trip')
   const [passengers, setPassengers] = useState<number>(2)
 

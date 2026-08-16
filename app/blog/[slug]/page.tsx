@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
 import Footer from '@/components/Footer'
+import { getDestination, getTransferPrice, ZONES } from '@/lib/airport-transfers'
 import {
   BLOG_POSTS,
   getPostBySlug,
@@ -687,23 +688,90 @@ export default function BlogPostPage({
           </div>
         </div>
 
-        {/* CTA */}
+        {(() => {
+          /* Resort reviews get a priced route card: the reader is literally
+             researching a hotel we drive to, so show the fare and deep-link
+             the route preselected. Slugs not in the map render nothing. */
+          const REVIEW_DESTINATIONS: Record<string, string> = {
+            'royalton-negril-review': 'royalton-negril',
+            'azul-beach-resort-negril-review': 'azul-beach-negril',
+            'breathless-montego-bay-review': 'breathless-montego-bay',
+            'secrets-wild-orchid-montego-bay-review': 'secrets-wild-orchid',
+            'jewel-grande-montego-bay-review': 'jewel-grande-montego-bay',
+            'sandals-montego-bay-review': 'sandals-montego-bay',
+            'sandals-negril-review': 'sandals-negril',
+            'sandals-ochi-review': 'sandals-ochi',
+            'moon-palace-jamaica-review': 'moon-palace-ocho-rios',
+            'bahia-principe-grand-jamaica-review': 'bahia-principe-runaway-bay',
+            'riu-montego-bay-review': 'riu-montego-bay',
+            'riu-ocho-rios-review': 'riu-ocho-rios',
+            'riu-negril-review': 'riu-negril',
+          }
+          const destId = REVIEW_DESTINATIONS[post.slug]
+          const dest = destId ? getDestination(destId) : undefined
+          if (!dest) return null
+          const oneWay = getTransferPrice(dest.id, 'one_way')
+          const roundTrip = getTransferPrice(dest.id, 'round_trip')
+          if (oneWay == null || roundTrip == null) return null
+          return (
+            <aside
+              aria-label={`Airport transfer to ${dest.name}`}
+              style={{
+                marginTop: 44, borderRadius: 16, border: '1px solid var(--border-strong)',
+                background: 'var(--bg-warm)', padding: '24px 26px',
+              }}
+            >
+              <p style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 11, fontWeight: 700, letterSpacing: '0.18em', textTransform: 'uppercase', color: 'var(--text-secondary)', margin: 0 }}>
+                Getting there from MBJ
+              </p>
+              <p style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 17, fontWeight: 700, color: 'var(--text-primary)', margin: '10px 0 4px' }}>
+                Private transfer to {dest.name}
+              </p>
+              <p style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 14, color: 'var(--text-secondary)', margin: 0, lineHeight: 1.6 }}>
+                {ZONES[dest.zone].duration}. One flat price per vehicle for up to 4
+                people: <strong>${oneWay} one-way</strong>, <strong>${roundTrip} round-trip</strong> (10% off two one-ways).
+                Meet and greet with a name sign, live flight tracking, free cancellation up to 24 hours before pickup.
+              </p>
+              <Link
+                href={`/transfers?to=${dest.id}`}
+                style={{
+                  display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                  minHeight: 46, padding: '0 24px', borderRadius: 9999, marginTop: 16,
+                  background: 'var(--gold)', color: '#1A1508',
+                  fontFamily: 'var(--font-dm-sans)', fontSize: 14, fontWeight: 700, textDecoration: 'none',
+                }}
+              >
+                Book this transfer →
+              </Link>
+            </aside>
+          )
+        })()}
+
+        {/* CTA: every reader planning a Jamaica trip lands at MBJ and needs a
+            ride, so the one bridge on all posts points at the product that
+            books itself without a login. */}
         <div style={{ textAlign: 'center', marginTop: 48 }}>
+          <p style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 15, color: 'var(--text-secondary)', margin: '0 0 14px' }}>
+            Landing at MBJ? We drive to every resort in this guide.
+          </p>
           <Link
-            href="/explore"
+            href="/transfers"
             style={{
-              display: 'inline-block',
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              minHeight: 48,
+              padding: '0 28px',
+              borderRadius: 9999,
+              background: 'var(--gold)',
+              color: '#1A1508',
               fontFamily: 'var(--font-dm-sans)',
-              fontSize: 11,
+              fontSize: 14.5,
               fontWeight: 700,
-              textTransform: 'uppercase',
-              letterSpacing: '0.24em',
-              color: 'var(--text-primary)',
-              borderBottom: '2px solid var(--gold)',
-              paddingBottom: 6,
+              textDecoration: 'none',
             }}
           >
-            Browse the experiences →
+            Book a flat-rate airport transfer →
           </Link>
         </div>
       </div>

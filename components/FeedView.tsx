@@ -1,6 +1,7 @@
 'use client'
 
 import Image from 'next/image'
+import Link from 'next/link'
 import { experiences, HERO_IMAGE, DESTINATION_IMAGES, slugify } from '@/lib/experiences'
 import { CULTURE_IMAGE, HERO_VIDEO } from '@/lib/images'
 import ExpCard from './ExpCard'
@@ -544,6 +545,36 @@ export default function FeedView() {
           }}>
             {t('Authentic cultural experiences crafted by locals who know the island best.')}
           </p>
+          {/* The two doors, in selling order: transfers convert today, the
+              experiences build the dream. 48px targets, AA on the scrim. */}
+          <div className="animate-fade-up stagger-3" style={{ display: 'flex', gap: 12, marginTop: 26, flexWrap: 'wrap' }}>
+            <Link
+              href="/transfers"
+              style={{
+                display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                minHeight: 50, padding: '0 26px', borderRadius: 9999,
+                background: 'var(--gold)', color: '#1A1508',
+                fontFamily: 'var(--font-dm-sans)', fontSize: 15, fontWeight: 700,
+                textDecoration: 'none', boxShadow: '0 4px 24px rgba(0,0,0,0.35)',
+              }}
+            >
+              Book Your Airport Transfer
+            </Link>
+            <Link
+              href="/explore"
+              style={{
+                display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                minHeight: 50, padding: '0 24px', borderRadius: 9999,
+                background: 'rgba(255,255,255,0.12)', color: '#fff',
+                border: '1px solid rgba(255,255,255,0.45)',
+                backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)',
+                fontFamily: 'var(--font-dm-sans)', fontSize: 15, fontWeight: 600,
+                textDecoration: 'none',
+              }}
+            >
+              Explore Experiences
+            </Link>
+          </div>
         </div>
       </section>
 

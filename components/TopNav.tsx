@@ -457,13 +457,17 @@ export default function TopNav({ onCartClick }: { onCartClick?: () => void }) {
           <Link
             href="/transfers"
             style={{
+              display: 'inline-flex', alignItems: 'center',
               fontFamily: 'var(--font-dm-sans)',
               fontSize: 12,
-              fontWeight: 600,
-              color: linkColor,
+              fontWeight: 700,
+              color: '#1A1508',
+              background: 'var(--gold)',
+              borderRadius: 9999,
               letterSpacing: '0.02em',
               whiteSpace: 'nowrap',
-              padding: '2px 0',
+              minHeight: 24, padding: '0 12px',
+              textDecoration: 'none',
             }}
           >
             {t('Transfers')}
@@ -579,10 +583,12 @@ export default function TopNav({ onCartClick }: { onCartClick?: () => void }) {
             className="hide-mobile"
             aria-current={isTransfers ? 'page' : undefined}
             style={{
-              padding: '6px 12px', fontSize: 13, fontWeight: isTransfers ? 700 : 500,
-              fontFamily: 'var(--font-dm-sans)', color: isTransfers ? (dark ? '#fff' : 'var(--accent)') : linkColor,
-              borderRadius: 9999, transition: 'color 0.15s ease',
-              whiteSpace: 'nowrap',
+              display: 'inline-flex', alignItems: 'center',
+              minHeight: 38, padding: '0 16px', fontSize: 13.5, fontWeight: 700,
+              fontFamily: 'var(--font-dm-sans)', color: '#1A1508',
+              background: 'var(--gold)', borderRadius: 9999,
+              transition: 'filter 0.15s ease', whiteSpace: 'nowrap',
+              textDecoration: 'none',
             }}
           >
             {t('Transfers')}

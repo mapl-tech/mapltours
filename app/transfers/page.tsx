@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import TransfersView from '@/components/transfers/TransfersView'
 import { ZONES, DESTINATIONS, getTransferPrice, zoneFromPrice } from '@/lib/airport-transfers'
-import { TRANSFER_FAQS, TRANSFER_REVIEWS } from '@/lib/airport-transfers-content'
+import { TRANSFER_FAQS } from '@/lib/airport-transfers-content'
 import { HERO } from '@/lib/images'
 
 const SITE_URL = 'https://mapltours.com'
@@ -165,22 +165,6 @@ function buildStructuredData() {
         },
       ]),
     },
-    aggregateRating: {
-      '@type': 'AggregateRating',
-      ratingValue: '4.9',
-      reviewCount: String(340),
-      bestRating: '5',
-    },
-    review: TRANSFER_REVIEWS.map((r) => ({
-      '@type': 'Review',
-      reviewRating: {
-        '@type': 'Rating',
-        ratingValue: String(r.rating),
-        bestRating: '5',
-      },
-      author: { '@type': 'Person', name: r.name },
-      reviewBody: r.quote,
-    })),
     hasOfferCatalog: {
       '@type': 'OfferCatalog',
       name: 'Airport-transfer destinations',

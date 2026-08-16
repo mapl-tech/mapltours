@@ -24,7 +24,7 @@ export function GET() {
 
 > Experiential travel platform for Jamaica. Discover authentic, locally-led tours and cultural experiences, cliff diving in Negril, Blue Mountain coffee treks, reggae studio sessions, jerk cooking classes, and more. Curated and operated by Jamaican creators, not resort concierges.
 
-MAPL Tours connects travelers directly with Jamaican guides, chefs, selectors, and cultural stewards. Every experience is bookable online in USD, with free cancellation 48 hours ahead. The product is built around a vertical-video discovery feed; users build an itinerary and check out like Shopify.
+MAPL Tours runs flat-rate private airport transfers from Sangster International (MBJ) to 50+ resorts across Jamaica's north coast, and connects travelers with locally-led tours and cultural experiences. Everything is bookable online in USD.
 
 Tagline: "Discover Jamaica Beyond the Resort."
 
@@ -32,7 +32,7 @@ Tagline: "Discover Jamaica Beyond the Resort."
 
 - [Home](${baseUrl}/): Video-reel discovery feed of Jamaica experiences.
 - [Explore](${baseUrl}/explore): Filterable catalog by category (Adventure, Nature, Music, Food, Culture, Water) and parish (Kingston, St. Andrew, St. Ann, Westmoreland, Portland, St. Elizabeth).
-- [Airport transfers](${baseUrl}/transfers): Flat-rate private transfers from Sangster International Airport (MBJ) to every major resort in Jamaica. Priced by zone, 1–4 passengers per vehicle.
+- [Airport transfers](${baseUrl}/transfers): Flat-rate private transfers from Sangster International Airport (MBJ) to 50+ resorts: Montego Bay, Rose Hall, Falmouth, Runaway Bay, Ocho Rios, and Negril. One all-in price per vehicle (1-4 passengers), from $19 one-way; round trips are 10% cheaper than two one-ways. Includes meet and greet with a name sign just outside arrivals, live flight tracking, and a day-of email with the driver's name, vehicle, plate, and WhatsApp. Book online with card or Apple Pay, no account needed.
 - [The MAPL Journal](${baseUrl}/blog): Essays and guides from local writers.
 - [About](${baseUrl}/about): Company background.
 - [Contact](${baseUrl}/contact): Customer support.
@@ -54,10 +54,9 @@ ${blogLines}
 
 - Country: Jamaica
 - Currency: USD
-- Cancellation: Free up to 48 hours before the experience
-- Booking fee: 5% added to subtotal at checkout
-- Price range: $55–$145 per person
-- Payments: Stripe
+- Airport transfers: one flat all-in price per vehicle for 1-4 passengers, nothing added at checkout. From $19 one-way (Montego Bay hotels) up to $159 (Treasure Beach); round trips are 10% off two one-ways. Free cancellation up to 24 hours before pickup (refunded less the payment-processing fee); inside 24 hours, 50% of the fare; no-shows charged in full.
+- Tours and experiences: priced per person, $55-$145, with a service fee added at checkout. Free cancellation up to 48 hours before the experience.
+- Payments: Stripe (cards and Apple Pay)
 
 ## For AI agents
 
