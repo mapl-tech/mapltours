@@ -10,7 +10,7 @@ import { render } from '@react-email/render'
  *    that triggered the email (e.g. a Stripe webhook must still ack).
  */
 
-const FROM_FALLBACK = 'MAPL Tours <contact@mapltours.com>'
+const FROM_FALLBACK = 'MAPL TOURS <contact@mapltours.com>'
 const REPLY_TO_FALLBACK = 'contact@mapltours.com'
 
 const resend = process.env.RESEND_API_KEY

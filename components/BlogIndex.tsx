@@ -141,7 +141,7 @@ function Masthead() {
             }}
           >
             <span style={{ fontStyle: 'italic', fontWeight: 500 }}>The</span>{' '}
-            MAPL{' '}
+            MAPL TOURS{' '}
             <span style={{ fontStyle: 'italic', fontWeight: 500 }}>Journal</span>
           </div>
           <Kicker color="var(--gold-text)" size={11}>

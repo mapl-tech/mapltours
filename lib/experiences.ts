@@ -205,7 +205,7 @@ export const experiences: Experience[] = [
     video: VIDEOS.waterfall,
     description: 'Climb 600 feet of cascading falls hand-in-hand, then discover a secret blue hole where locals swim under waterfalls.',
     tags: ['Waterfalls', 'Swimming', 'Nature'],
-    highlights: ['Guided waterfall climb', 'Secret Blue Hole access', 'Lunch at jerk center', 'Hotel pickup included'],
+    highlights: ['Guided waterfall climb', 'Secret Blue Hole access', 'Lunch at jerk center', 'Rope swing and cliff jump'],
     comments: [
       { id: 1, user: 'WaterfallChaser', avatar: '🧑🏻', text: 'The Blue Hole is the real gem here. Barely any tourists, just locals vibing. Incredible.', time: '1 week ago', likes: 45 },
       { id: 2, user: 'FamilyTravel5', avatar: '👩🏼', text: 'Did this with our 3 kids (ages 6-12). They talk about it every single day since we got home 💙', time: '2 months ago', likes: 37 },

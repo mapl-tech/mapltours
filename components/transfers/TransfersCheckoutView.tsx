@@ -51,6 +51,12 @@ export default function TransfersCheckoutView() {
   const [form, setForm] = useState<Record<string, string>>({})
   const [formErrors, setFormErrors] = useState<Record<string, boolean>>({})
   const [clientSecret, setClientSecret] = useState<string | null>(null)
+
+  // Gift card. Validated here, but only ever SPENT server-side.
+  const [giftCodeInput, setGiftCodeInput] = useState('')
+  const [giftCard, setGiftCard] = useState<{ code: string; balanceCents: number } | null>(null)
+  const [giftChecking, setGiftChecking] = useState(false)
+  const [giftError, setGiftError] = useState<string | null>(null)
   const [stripeError, setStripeError] = useState<string | null>(null)
   const [confirmed] = useState(false)
   const [intentKey, setIntentKey] = useState(0)
@@ -128,13 +134,22 @@ export default function TransfersCheckoutView() {
           specialRequests: form['specialRequests'],
         },
         breakdown: { subtotal: subtotal(), fee: fee() },
+        giftCode: giftCard?.code,
         attribution: getStoredAttribution(),
       }),
     })
       .then((r) => r.json())
       .then((data) => {
-        if (data.error) setStripeError(data.error)
-        else setClientSecret(data.clientSecret)
+        if (data.error) {
+          setStripeError(data.error)
+          if (data.giftCode) { setGiftCard(null); setGiftError(data.error) }
+        } else if (data.fullyCoveredByGift) {
+          // The gift covered the whole fare, so there is no card payment and
+          // no webhook. The server already marked it paid and emailed.
+          window.location.href = `/transfers/confirm?booking_id=${data.bookingId}`
+        } else {
+          setClientSecret(data.clientSecret)
+        }
       })
       .catch(() =>
         setStripeError(
@@ -143,6 +158,38 @@ export default function TransfersCheckoutView() {
       )
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [intentKey])
+
+  const giftApplied = giftCard
+    ? Math.min(giftCard.balanceCents / 100, grandTotal())
+    : 0
+  const dueNow = Math.max(0, grandTotal() - giftApplied)
+
+  async function applyGiftCode() {
+    const code = giftCodeInput.trim()
+    if (!code) return
+    setGiftChecking(true)
+    setGiftError(null)
+    try {
+      const res = await fetch('/api/gifts/validate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code }),
+      })
+      const data = await res.json()
+      if (!data.valid) {
+        setGiftError(data.message ?? 'That code could not be used.')
+        return
+      }
+      setGiftCard({ code: data.code, balanceCents: data.balanceCents })
+      // Any PaymentIntent already created was sized without the gift.
+      setClientSecret(null)
+      setStripeError(null)
+    } catch {
+      setGiftError('Could not check that code. Please try again.')
+    } finally {
+      setGiftChecking(false)
+    }
+  }
 
   if (confirmed) {
     return <ConfirmedInline total={grandTotal()} items={items} />
@@ -343,7 +390,7 @@ export default function TransfersCheckoutView() {
                   letterSpacing: '0.02em',
                 }}
               >
-                Continue to payment · ${grandTotal().toFixed(2)} →
+                Continue to payment · ${dueNow.toFixed(2)} →
               </button>
 
               <p
@@ -519,8 +566,69 @@ export default function TransfersCheckoutView() {
                 borderTop: '1px solid var(--border)',
               }}
             >
+              {/* ── Gift card ── */}
+              {giftCard ? (
+                <div style={{
+                  display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                  fontSize: 13, fontFamily: 'var(--font-dm-sans)', fontWeight: 600,
+                  color: 'var(--emerald, #00A550)', marginBottom: 4,
+                }}>
+                  <span>
+                    Gift card {giftCard.code}
+                    <button
+                      onClick={() => { setGiftCard(null); setGiftCodeInput(''); setClientSecret(null); setStripeError(null) }}
+                      style={{
+                        marginLeft: 8, background: 'none', border: 'none', padding: 0,
+                        fontSize: 12, color: 'var(--text-tertiary)', cursor: 'pointer',
+                        textDecoration: 'underline', fontFamily: 'inherit',
+                      }}
+                    >
+                      remove
+                    </button>
+                  </span>
+                  <span>&minus;${giftApplied.toFixed(2)}</span>
+                </div>
+              ) : (
+                <div style={{ marginBottom: 10 }}>
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <input
+                      value={giftCodeInput}
+                      onChange={(e) => { setGiftCodeInput(e.target.value); setGiftError(null) }}
+                      placeholder="Gift card code"
+                      aria-label="Gift card code"
+                      style={{
+                        flex: 1, minWidth: 0, height: 36, borderRadius: 8,
+                        border: '1px solid var(--border)', padding: '0 12px',
+                        fontSize: 13, fontFamily: 'var(--font-dm-sans)',
+                        color: 'var(--text-primary)', background: 'var(--bg)',
+                        outline: 'none', boxSizing: 'border-box', textTransform: 'uppercase',
+                      }}
+                    />
+                    <button
+                      onClick={applyGiftCode}
+                      disabled={giftChecking || giftCodeInput.trim().length < 4}
+                      style={{
+                        height: 36, padding: '0 14px', fontSize: 12.5, fontWeight: 600,
+                        borderRadius: 8, border: '1px solid var(--border)',
+                        background: 'var(--card-bg)', color: 'var(--text-primary)',
+                        fontFamily: 'var(--font-dm-sans)', whiteSpace: 'nowrap',
+                        cursor: giftChecking ? 'wait' : 'pointer',
+                        opacity: giftChecking || giftCodeInput.trim().length < 4 ? 0.5 : 1,
+                      }}
+                    >
+                      {giftChecking ? 'Checking…' : 'Apply'}
+                    </button>
+                  </div>
+                  {giftError && (
+                    <p style={{ marginTop: 6, fontSize: 12, color: '#c00', fontFamily: 'var(--font-dm-sans)' }}>
+                      {giftError}
+                    </p>
+                  )}
+                </div>
+              )}
+
               {/* All-in pricing: the quoted price already covers the ride,
-                  MAPL's margin and card processing, so there is no Subtotal or
+                  MAPL TOURS's margin and card processing, so there is no Subtotal or
                   Service-fee row here. The booking still records the split. */}
               <div
                 style={{
@@ -552,7 +660,7 @@ export default function TransfersCheckoutView() {
                     fontFeatureSettings: '"tnum" 1',
                   }}
                 >
-                  ${grandTotal().toFixed(2)}
+                  ${dueNow.toFixed(2)}
                 </span>
               </div>
             </div>
@@ -1174,7 +1282,7 @@ function ConfirmedInline({
             lineHeight: 1.5,
           }}
         >
-          A confirmation email with meeting instructions is on its way. MAPL
+          A confirmation email with meeting instructions is on its way. MAPL TOURS
           will reach out 24 hours before pickup.
         </p>
         <p

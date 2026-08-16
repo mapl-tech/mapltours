@@ -7,10 +7,11 @@ import ExpCard from './ExpCard'
 import MobileShort from './MobileShort'
 import Footer from './Footer'
 import { useI18n } from '@/lib/i18n'
+import PlacesSection, { type LivePlaces } from './PlacesSection'
+import { FOOD_PLACES, CULTURE_PLACES } from '@/lib/places'
 import { useRef, useState, useEffect } from 'react'
-import { Award, Users, Headphones, ShieldCheck, Star, Heart, UtensilsCrossed, TrendingUp, ChevronLeft, ChevronRight, MapPin, PlaneLanding, Route, ArrowRight } from 'lucide-react'
+import { Award, Users, Headphones, ShieldCheck, Star, Heart, UtensilsCrossed, TrendingUp, ChevronLeft, ChevronRight, MapPin, PlaneLanding, Route, ArrowRight, Landmark } from 'lucide-react'
 
-const foodExperiences = experiences.filter((e) => e.category === 'Food')
 
 /* Hero video, lazy loads on fast connections, shows poster on slow/mobile data */
 function HeroVideo({ src, poster }: { src: string; poster: string }) {
@@ -156,190 +157,6 @@ function StepCarousel({ steps, renderCard }: { steps: any[]; renderCard: (s: any
   )
 }
 
-function FoodSection() {
-  const scrollRef = useRef<HTMLDivElement>(null)
-  const { t, formatPrice } = useI18n()
-
-  const scroll = (dir: 'left' | 'right') => {
-    if (!scrollRef.current) return
-    const amount = 340
-    scrollRef.current.scrollBy({ left: dir === 'left' ? -amount : amount, behavior: 'smooth' })
-  }
-
-  return (
-    <section style={{ marginTop: 56, background: 'var(--bg-dark)', padding: '56px 0 64px' }}>
-      <div className="container">
-        {/* Header */}
-        <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 8 }}>
-          <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-              <UtensilsCrossed size={15} color="var(--gold-warm)" />
-              <span style={{
-                fontFamily: 'var(--font-dm-sans)', fontWeight: 600,
-                fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.08em',
-                color: 'var(--gold-warm)',
-              }}>
-                {t('Food & Culture')}
-              </span>
-            </div>
-            <h2 style={{
-              fontFamily: 'var(--font-dm-sans)', fontWeight: 700,
-              fontSize: 'clamp(1.5rem, 2.5vw, 2rem)',
-              color: 'white', lineHeight: 1.15, letterSpacing: '-0.02em',
-            }}>
-              {t('A Taste of Jamaica')}
-            </h2>
-            <p style={{
-              fontSize: 14.5, color: '#cccccc',
-              fontFamily: 'var(--font-dm-sans)', marginTop: 8,
-              maxWidth: 440,
-            }}>
-              From the smoky jerk pits of Boston Bay to Kingston&apos;s buzzing patty shops - every bite is a cultural experience.
-            </p>
-          </div>
-
-          {/* Arrows */}
-          <div style={{ display: 'flex', gap: 8, flexShrink: 0, marginBottom: 4 }}>
-            <button
-              onClick={() => scroll('left')}
-              aria-label="Previous"
-              style={{
-                width: 42, height: 42, borderRadius: '50%',
-                background: 'transparent',
-                border: '1px solid rgba(255,255,255,0.15)',
-                cursor: 'pointer',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                color: '#cccccc',
-                transition: 'all 0.2s ease',
-              }}
-              onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.08)'; e.currentTarget.style.color = '#fff' }}
-              onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#cccccc' }}
-            >
-              <ChevronLeft size={20} />
-            </button>
-            <button
-              onClick={() => scroll('right')}
-              aria-label="Next"
-              style={{
-                width: 42, height: 42, borderRadius: '50%',
-                background: 'var(--gold)',
-                border: 'none',
-                cursor: 'pointer',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                color: '#fff',
-                transition: 'all 0.2s ease',
-              }}
-              onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--gold-warm)' }}
-              onMouseLeave={(e) => { e.currentTarget.style.background = 'var(--gold)' }}
-            >
-              <ChevronRight size={20} />
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Scrollable cards */}
-      <div
-        ref={scrollRef}
-        className="no-scrollbar"
-        tabIndex={0}
-        role="region"
-        aria-label="Featured experiences, scroll"
-        style={{
-          display: 'flex', gap: 16,
-          overflowX: 'auto',
-          paddingTop: 28,
-          paddingLeft: 'max(16px, calc((100vw - 1832px) / 2 + 48px))',
-          paddingRight: 16,
-        }}
-      >
-        {foodExperiences.map((exp) => (
-          <a
-            key={exp.id}
-            href={`/experience/${slugify(exp.title)}`}
-            style={{
-              flex: '0 0 310px', display: 'block',
-              borderRadius: 'var(--r-xl)',
-              overflow: 'hidden',
-              background: 'var(--bg-dark-warm)',
-              border: '1px solid rgba(255,255,255,0.06)',
-              transition: 'all 0.3s ease',
-            }}
-            onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.14)'; e.currentTarget.style.transform = 'translateY(-3px)' }}
-            onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)'; e.currentTarget.style.transform = '' }}
-          >
-            {/* Image */}
-            <div style={{ position: 'relative', height: 200, overflow: 'hidden' }}>
-              <Image
-                src={exp.image}
-                alt={exp.title}
-                fill sizes="(max-width:768px) 85vw, 310px"
-                style={{ objectFit: 'cover', transition: 'transform 0.4s ease' }}
-              />
-              <div style={{
-                position: 'absolute', inset: 0,
-                background: 'linear-gradient(0deg, rgba(0,0,0,0.4) 0%, transparent 50%)',
-                pointerEvents: 'none',
-              }} />
-              {/* Rating */}
-              <span style={{
-                position: 'absolute', top: 12, right: 12,
-                display: 'flex', alignItems: 'center', gap: 3,
-                padding: '3px 8px', borderRadius: 9999,
-                background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(8px)',
-                fontSize: 12, fontWeight: 600, color: '#fff',
-                fontFamily: 'var(--font-dm-sans)',
-              }}>
-                <Star size={10} fill="var(--gold-warm)" strokeWidth={0} /> {exp.rating}
-              </span>
-              {/* Location */}
-              <span style={{
-                position: 'absolute', bottom: 12, left: 12,
-                fontSize: 12, fontWeight: 500, color: 'rgba(255,255,255,0.85)',
-                fontFamily: 'var(--font-dm-sans)',
-              }}>
-                {exp.destination}, {exp.parish}
-              </span>
-            </div>
-
-            {/* Info */}
-            <div style={{ padding: '16px 18px 18px' }}>
-              <h3 style={{
-                fontFamily: 'var(--font-dm-sans)', fontWeight: 600,
-                fontSize: 14.5, color: 'white', lineHeight: 1.3,
-                marginBottom: 6,
-              }}>
-                {t(exp.title)}
-              </h3>
-              <p style={{
-                fontSize: 12.5, color: '#cccccc',
-                fontFamily: 'var(--font-dm-sans)', lineHeight: 1.45,
-                marginBottom: 12,
-                display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden',
-              }}>
-                {t(exp.description)}
-              </p>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <span style={{
-                  fontFamily: 'var(--font-dm-sans)', fontWeight: 700,
-                  fontSize: 16, color: 'white',
-                }}>
-                  {formatPrice(exp.price)}
-                  <span style={{ fontWeight: 400, color: '#cccccc', fontSize: 12, marginLeft: 3 }}>
-                    /person
-                  </span>
-                </span>
-                <span style={{ fontSize: 12, color: '#cccccc', fontFamily: 'var(--font-dm-sans)' }}>
-                  {exp.duration}
-                </span>
-              </div>
-            </div>
-          </a>
-        ))}
-      </div>
-    </section>
-  )
-}
 
 function DestinationsSection() {
   const scrollRef = useRef<HTMLDivElement>(null)
@@ -492,7 +309,7 @@ function AllExperiencesSection() {
   )
 }
 
-export default function FeedView() {
+export default function FeedView({ livePlaces = {} }: { livePlaces?: LivePlaces }) {
   const { t, formatPrice } = useI18n()
   return (
     <div>
@@ -594,7 +411,7 @@ export default function FeedView() {
               textTransform: 'uppercase', letterSpacing: '0.14em',
               color: 'var(--gold-warm)', marginBottom: 16, display: 'block',
             }}>
-              The MAPL Experience
+              The MAPL TOURS Experience
             </span>
             <h2 style={{
               fontFamily: 'var(--font-dm-sans)', fontWeight: 800,
@@ -602,7 +419,7 @@ export default function FeedView() {
               letterSpacing: '-0.025em', lineHeight: 1.1,
               marginBottom: 14, color: '#fff',
             }}>
-              Two ways to travel with MAPL.
+              Two ways to travel with MAPL TOURS.
             </h2>
             <p className="concierge-body" style={{
               fontSize: 15.5, color: '#cccccc',
@@ -771,7 +588,28 @@ export default function FeedView() {
       </section>
 
       {/* ═══ TASTE OF JAMAICA, dark scrollable food section ═══ */}
-      <FoodSection />
+      {/* Real restaurants. Added to the itinerary for routing; paid at the
+          venue, never through MAPL TOURS. */}
+      <PlacesSection
+        eyebrow="Eat like a local"
+        eyebrowIcon={<UtensilsCrossed size={15} color="var(--gold-warm)" />}
+        title="Where Jamaicans actually eat"
+        intro="Real restaurants and jerk pits across St. James, Trelawny, St. Ann, St. Mary, Westmoreland and Hanover. Add the ones you want, tell us how long you need, and your driver builds the day around them."
+        places={FOOD_PLACES}
+        live={livePlaces}
+        tone="dark"
+      />
+
+      {/* Real cultural sites, same model. */}
+      <PlacesSection
+        eyebrow="Culture & heritage"
+        eyebrowIcon={<Landmark size={15} color="var(--gold-text)" />}
+        title="The island's own history"
+        intro="Great houses, caves, waterfalls and the towns they sit in — the places that explain Jamaica rather than package it. Entry is paid on arrival; we handle getting you there."
+        places={CULTURE_PLACES}
+        live={livePlaces}
+        tone="light"
+      />
 
       {/* ═══ CURATED FOR YOU ═══ */}
       <section className="container" style={{ paddingTop: 48, paddingBottom: 0 }}>
@@ -908,7 +746,7 @@ export default function FeedView() {
       {/* ═══ ALL EXPERIENCES, 5 col, load more ═══ */}
       <AllExperiencesSection />
 
-      {/* ═══ THE MAPL DIFFERENCE ═══ */}
+      {/* ═══ THE MAPL TOURS DIFFERENCE ═══ */}
       <section style={{ marginTop: 80, background: 'var(--bg-dark)', position: 'relative', overflow: 'hidden' }}>
         <div className="mapl-diff">
           {/* Left: Large image with gradient overlay */}

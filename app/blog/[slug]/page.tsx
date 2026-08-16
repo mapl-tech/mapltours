@@ -39,7 +39,7 @@ function ArticleJsonLd({ post }: { post: BlogPost }) {
     },
     publisher: {
       '@type': 'Organization',
-      name: 'MAPL Tours Jamaica',
+      name: 'MAPL TOURS JAMAICA',
       logo: { '@type': 'ImageObject', url: `${SITE_URL}/icon.png` },
     },
     about: {
@@ -54,7 +54,7 @@ function ArticleJsonLd({ post }: { post: BlogPost }) {
     '@type': 'BreadcrumbList',
     itemListElement: [
       { '@type': 'ListItem', position: 1, name: 'Home', item: SITE_URL },
-      { '@type': 'ListItem', position: 2, name: 'The MAPL Journal', item: `${SITE_URL}/blog` },
+      { '@type': 'ListItem', position: 2, name: 'The MAPL TOURS Journal', item: `${SITE_URL}/blog` },
       { '@type': 'ListItem', position: 3, name: post.title, item: url },
     ],
   }
@@ -505,7 +505,7 @@ export default function BlogPostPage({
                 color: 'var(--text-primary)',
               }}
             >
-              ← The MAPL Journal
+              ← The MAPL TOURS Journal
             </Link>
             <Kicker size={10}>
               {post.category} · {formatPostDate(post.publishedAt)}
@@ -681,11 +681,42 @@ export default function BlogPostPage({
                 lineHeight: 1.6,
               }}
             >
-              {post.author.role} at MAPL Journal. Writes about travel, culture, and the parts
+              {post.author.role} at MAPL TOURS Journal. Writes about travel, culture, and the parts
               of Jamaica that don&rsquo;t fit on a postcard.
             </div>
           </div>
         </div>
+
+        {/* Editorial disclaimer.
+            These posts carry hundreds of specific prices, opening times and
+            third-party recommendations. Any of those can change between
+            writing and reading, and several are inherently seasonal. Stating
+            that plainly, next to the content rather than buried in the
+            footer, is what stops an out-of-date figure reading as a promise
+            MAPL TOURS made. It costs nothing in search terms: the body copy,
+            headings and keywords are untouched. */}
+        <aside
+          style={{
+            marginTop: 56,
+            padding: '18px 20px',
+            borderLeft: '3px solid var(--gold)',
+            background: 'var(--bg-warm)',
+            borderRadius: '0 var(--r-md) var(--r-md) 0',
+          }}
+        >
+          <p style={{
+            fontFamily: 'var(--font-dm-sans)', fontSize: 13,
+            lineHeight: 1.65, color: 'var(--text-secondary)', margin: 0,
+          }}>
+            <strong style={{ color: 'var(--text-primary)' }}>A note on details.</strong>{' '}
+            Prices, opening hours and access at the places mentioned here are
+            what we understood them to be at the time of writing, and they
+            change. Independent businesses set their own rates and are not
+            operated by MAPL TOURS. Please confirm anything you are relying on
+            before you travel, and check official advice for weather, road and
+            safety conditions.
+          </p>
+        </aside>
 
         {/* CTA */}
         <div style={{ textAlign: 'center', marginTop: 48 }}>

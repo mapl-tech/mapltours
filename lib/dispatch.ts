@@ -209,7 +209,7 @@ export function msgDriverRequest(b: Bk, m: MoneyBlock): string {
 export function msgCustomerConfirmation(b: Bk): string {
   const leg = firstLeg(b)!
   const d = [
-    'Your MAPL Tours airport transfer is confirmed.',
+    'Your MAPL TOURS airport transfer is confirmed.',
     '',
     `Transfer type: ${leg.tripType === 'round_trip' ? 'Round trip' : 'One-way'}`,
     `Passengers: ${leg.passengers}`,
@@ -225,13 +225,13 @@ export function msgCustomerConfirmation(b: Bk): string {
   }
   d.push(
     '',
-    'Your driver will meet you in the airport arrivals area holding a MAPL Tours Jamaica sign.',
+    'Your driver will meet you in the airport arrivals area holding a MAPL TOURS JAMAICA sign.',
     `Driver: ${b.driver_name ?? '(to be confirmed)'}`,
     `Vehicle: ${b.driver_vehicle ?? '(to be confirmed)'}`,
     `Plate: ${b.driver_plate ?? '(to be confirmed)'}`,
     `Driver WhatsApp: ${b.driver_phone ?? '(to be confirmed)'}`,
     '',
-    'If you have any difficulty locating your driver after clearing customs, contact MAPL Tours at contact@mapltours.com right away.',
+    'If you have any difficulty locating your driver after clearing customs, contact MAPL TOURS at contact@mapltours.com right away.',
   )
   return d.join('\n')
 }
@@ -270,11 +270,11 @@ export function msgFlightLanded(b: Bk): string {
 }
 
 export function msgCustomerFollowup(b: Bk): string {
-  return `Hi ${b.first_name ?? 'there'}. We hope you arrived safely and are enjoying Jamaica. Thank you for choosing MAPL Tours Jamaica.`
+  return `Hi ${b.first_name ?? 'there'}. We hope you arrived safely and are enjoying Jamaica. Thank you for choosing MAPL TOURS JAMAICA.`
 }
 
 export function msgReviewRequest(b: Bk): string {
-  return `Thank you for choosing MAPL Tours Jamaica, ${b.first_name ?? ''}. We hope you had a great experience. If you have a moment, we would really appreciate a quick review.`.replace(' ,', ',')
+  return `Thank you for choosing MAPL TOURS JAMAICA, ${b.first_name ?? ''}. We hope you had a great experience. If you have a moment, we would really appreciate a quick review.`.replace(' ,', ',')
 }
 
 /* ── The step model ── */

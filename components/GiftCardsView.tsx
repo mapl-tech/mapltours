@@ -1,10 +1,23 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useCallback } from 'react'
+import dynamic from 'next/dynamic'
 import Image from 'next/image'
-import { Check } from 'lucide-react'
+import { Check, Loader2 } from 'lucide-react'
 import { DESTINATION_IMAGES } from '@/lib/experiences'
+import { GIFT_MIN, GIFT_MAX, GIFT_VALID_MONTHS } from '@/lib/gift-cards'
 import Footer from './Footer'
+
+// Stripe's SDK is ~80 KB gzipped; nobody browsing gift cards should pay for
+// it until they've actually chosen an amount.
+const StripePaymentPanel = dynamic(() => import('./checkout/StripePaymentPanel'), {
+  ssr: false,
+  loading: () => (
+    <p style={{ fontSize: 14, color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-sans)' }}>
+      Loading secure payment…
+    </p>
+  ),
+})
 
 const presetAmounts = [
   { amount: 50, label: '$50', tagline: 'A taste of Jamaica', desc: 'Street food crawl or sunrise fishing' },
@@ -22,9 +35,127 @@ export default function GiftCardsView() {
   const [recipientEmail, setRecipientEmail] = useState('')
   const [senderName, setSenderName] = useState('')
   const [message, setMessage] = useState('')
-  const [submitted, setSubmitted] = useState(false)
+  const [purchaserEmail, setPurchaserEmail] = useState('')
+
+  // 'form' → 'pay' → 'done'. Nothing is created or sent until the card
+  // clears; 'done' is only reached after Stripe confirms the payment.
+  const [stage, setStage] = useState<'form' | 'pay' | 'done'>('form')
+  const [clientSecret, setClientSecret] = useState<string | null>(null)
+  const [creating, setCreating] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  // The purchased card, revealed after payment. This is the buyer's own copy
+  // of the code — the safety net if the recipient address was mistyped.
+  const [purchased, setPurchased] = useState<{
+    code: string; amount: number; recipientEmail: string; expiresAt: string | null; delivered: boolean
+  } | null>(null)
+  const [revealing, setRevealing] = useState(false)
+
+  // Balance check. A card can be spent across several bookings, so a holder
+  // needs to see what is left without starting a checkout to find out.
+  const [balanceCode, setBalanceCode] = useState('')
+  const [balanceResult, setBalanceResult] = useState<{ ok: boolean; text: string } | null>(null)
+  const [balanceChecking, setBalanceChecking] = useState(false)
+
+  async function checkBalance() {
+    const code = balanceCode.trim()
+    if (!code) return
+    setBalanceChecking(true)
+    setBalanceResult(null)
+    try {
+      const res = await fetch('/api/gifts/validate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code }),
+      })
+      const data = await res.json()
+      setBalanceResult(
+        data.valid
+          ? { ok: true, text: `$${(data.balanceCents / 100).toFixed(2)} left on ${data.code}.` }
+          : { ok: false, text: data.message ?? 'That code could not be checked.' },
+      )
+    } catch {
+      setBalanceResult({ ok: false, text: 'Could not check that code. Please try again.' })
+    } finally {
+      setBalanceChecking(false)
+    }
+  }
+
+  const reveal = useCallback(async (paymentIntentId: string) => {
+    setRevealing(true)
+    try {
+      const res = await fetch('/api/gifts/reveal', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ paymentIntentId }),
+      })
+      const data = await res.json()
+      if (data.ready) {
+        setPurchased({
+          code: data.code, amount: data.amount, recipientEmail: data.recipientEmail,
+          expiresAt: data.expiresAt ?? null, delivered: !!data.delivered,
+        })
+        setStage('done')
+      } else if (data.status && data.status !== 'succeeded') {
+        setError('That payment did not complete. Nothing has been charged.')
+      }
+    } catch {
+      setError('We could not load your gift card. Check your email, or contact us with your payment reference.')
+    } finally {
+      setRevealing(false)
+    }
+  }, [])
+
+  // Stripe sends the buyer back here after payment (and after any 3DS step),
+  // which remounts this component with all its state gone. Without this the
+  // confirmation — and the code — would be lost every single time.
+  useEffect(() => {
+    const pi = new URLSearchParams(window.location.search).get('payment_intent')
+    if (pi) {
+      setStage('pay')
+      void reveal(pi)
+    }
+  }, [reveal])
 
   const finalAmount = isCustom ? (parseInt(customAmount) || 0) : selectedAmount
+  const emailLooksValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(recipientEmail.trim())
+  const purchaserLooksValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(purchaserEmail.trim())
+  // The buyer's address is required, not optional: it carries the receipt that
+  // repeats the code, which is the only recovery path if the recipient address
+  // is wrong. Without it a typo makes the purchase unrecoverable.
+  const canPurchase =
+    finalAmount >= GIFT_MIN && finalAmount <= GIFT_MAX &&
+    emailLooksValid && purchaserLooksValid && !creating
+
+  async function startPurchase() {
+    setError(null)
+    setCreating(true)
+    try {
+      const res = await fetch('/api/gifts/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          amount: finalAmount,
+          recipientName: recipientName.trim(),
+          recipientEmail: recipientEmail.trim(),
+          senderName: senderName.trim(),
+          purchaserEmail: purchaserEmail.trim(),
+          message: message.trim(),
+        }),
+      })
+      const data = await res.json()
+      if (!res.ok || !data.clientSecret) {
+        setError(data.error ?? 'Could not start the purchase. Please try again.')
+        return
+      }
+      setClientSecret(data.clientSecret)
+      setStage('pay')
+    } catch {
+      setError('Could not reach the payment service. Please check your connection and try again.')
+    } finally {
+      setCreating(false)
+    }
+  }
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg)', paddingTop: 'var(--nav-h)' }}>
@@ -70,7 +201,8 @@ export default function GiftCardsView() {
             fontFamily: 'var(--font-dm-sans)', lineHeight: 1.6,
             maxWidth: 460, margin: '0 auto',
           }}>
-            No expiration. No restrictions. Just the freedom to discover Jamaica on their own terms.
+            Spend it on anything we run — experiences, a day out, an airport transfer.
+            Across as many bookings as it takes to use it up.
           </p>
         </div>
       </div>
@@ -116,7 +248,7 @@ export default function GiftCardsView() {
                       fontFamily: 'var(--font-dm-sans)', fontWeight: 800,
                       fontSize: 18, color: 'white', letterSpacing: '0.04em',
                     }}>
-                      MAPL
+                      MAPL TOURS
                     </p>
                     <p style={{
                       fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.5)',
@@ -193,7 +325,7 @@ export default function GiftCardsView() {
           {/* Right: Amount + Form */}
           <div style={{ flex: '1 1 340px' }}>
 
-            {!submitted ? (
+            {stage === 'form' ? (
               <>
                 {/* Amount selection */}
                 <div style={{
@@ -264,7 +396,9 @@ export default function GiftCardsView() {
                             onChange={(e) => setCustomAmount(e.target.value)}
                             placeholder="0"
                             autoFocus
-                            min={10}
+                            aria-label="Custom gift card amount in dollars"
+                            min={GIFT_MIN}
+                            max={GIFT_MAX}
                             style={{
                               width: '100%', border: 'none', background: 'transparent',
                               fontFamily: 'var(--font-dm-sans)', fontWeight: 800, fontSize: 22,
@@ -311,16 +445,21 @@ export default function GiftCardsView() {
                       { label: 'Recipient name', value: recipientName, onChange: setRecipientName, placeholder: 'Their name' },
                       { label: 'Recipient email', value: recipientEmail, onChange: setRecipientEmail, placeholder: 'their@email.com', type: 'email' },
                       { label: 'Your name', value: senderName, onChange: setSenderName, placeholder: 'Your name' },
+                      { label: 'Your email (for your copy of the code)', value: purchaserEmail, onChange: setPurchaserEmail, placeholder: 'you@email.com', type: 'email' },
                     ].map((f) => (
                       <div key={f.label}>
-                        <label style={{
-                          display: 'block', fontSize: 12, fontWeight: 600,
-                          color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-sans)',
-                          marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.04em',
-                        }}>
+                        <label
+                          htmlFor={`gift-${f.label.replace(/[^a-z]/gi, '').toLowerCase()}`}
+                          style={{
+                            display: 'block', fontSize: 12, fontWeight: 600,
+                            color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-sans)',
+                            marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.04em',
+                          }}
+                        >
                           {f.label}
                         </label>
                         <input
+                          id={`gift-${f.label.replace(/[^a-z]/gi, '').toLowerCase()}`}
                           type={f.type || 'text'}
                           value={f.value}
                           onChange={(e) => f.onChange(e.target.value)}
@@ -337,14 +476,18 @@ export default function GiftCardsView() {
                     ))}
 
                     <div>
-                      <label style={{
-                        display: 'block', fontSize: 12, fontWeight: 600,
-                        color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-sans)',
-                        marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.04em',
-                      }}>
+                      <label
+                        htmlFor="gift-message"
+                        style={{
+                          display: 'block', fontSize: 12, fontWeight: 600,
+                          color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-sans)',
+                          marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.04em',
+                        }}
+                      >
                         Personal message
                       </label>
                       <textarea
+                        id="gift-message"
                         value={message}
                         onChange={(e) => setMessage(e.target.value)}
                         placeholder="Wishing you an amazing time in Jamaica..."
@@ -360,17 +503,29 @@ export default function GiftCardsView() {
                     </div>
                   </div>
 
+                  {error && (
+                    <p style={{
+                      fontSize: 13, color: '#c00', fontFamily: 'var(--font-dm-sans)',
+                      marginTop: 18, lineHeight: 1.5,
+                    }}>
+                      {error}
+                    </p>
+                  )}
+
                   <button
-                    onClick={() => setSubmitted(true)}
-                    disabled={finalAmount < 10 || !recipientEmail}
+                    onClick={startPurchase}
+                    disabled={!canPurchase}
                     className="btn-primary"
                     style={{
                       width: '100%', height: 48, marginTop: 24,
                       fontSize: 15, fontWeight: 700,
-                      opacity: (finalAmount < 10 || !recipientEmail) ? 0.5 : 1,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                      opacity: canPurchase ? 1 : 0.5,
+                      cursor: canPurchase ? 'pointer' : 'not-allowed',
                     }}
                   >
-                    Purchase ${finalAmount} Gift Card
+                    {creating && <Loader2 size={16} className="spin" />}
+                    {creating ? 'Preparing checkout…' : `Continue to payment · $${finalAmount}`}
                   </button>
 
                   <p style={{
@@ -378,12 +533,59 @@ export default function GiftCardsView() {
                     fontFamily: 'var(--font-dm-sans)', textAlign: 'center',
                     marginTop: 12, lineHeight: 1.5,
                   }}>
-                    Delivered instantly by email. Never expires.
+                    Emailed to {recipientEmail.trim() || 'your recipient'} as soon as payment
+                    clears. Between ${GIFT_MIN} and ${GIFT_MAX}. Valid for {GIFT_VALID_MONTHS} months.
+                    Gift card purchases are non-refundable.
                   </p>
                 </div>
               </>
+            ) : stage === 'pay' ? (
+              /* ── Payment ── */
+              <div style={{
+                padding: '32px',
+                background: 'var(--card-bg)',
+                borderRadius: 'var(--r-xl)',
+                border: '1px solid var(--border)',
+                boxShadow: 'var(--shadow-lg)',
+              }}>
+                <h2 style={{
+                  fontFamily: 'var(--font-dm-sans)', fontWeight: 800,
+                  fontSize: 20, color: 'var(--text-primary)',
+                  letterSpacing: '-0.02em', marginBottom: 6,
+                }}>
+                  Pay ${finalAmount}
+                </h2>
+                <p style={{
+                  fontSize: 13.5, color: 'var(--text-secondary)',
+                  fontFamily: 'var(--font-dm-sans)', lineHeight: 1.6,
+                  marginBottom: 22,
+                }}>
+                  The card goes to <strong style={{ color: 'var(--text-primary)' }}>{recipientEmail.trim()}</strong>{' '}
+                  once this payment clears.
+                </p>
+
+                {clientSecret && (
+                  <StripePaymentPanel
+                    clientSecret={clientSecret}
+                    returnUrl="/gifts"
+                    onPaymentSuccess={() => setStage('done')}
+                  />
+                )}
+
+                <button
+                  onClick={() => { setStage('form'); setClientSecret(null) }}
+                  style={{
+                    marginTop: 18, background: 'none', border: 'none',
+                    fontSize: 13, color: 'var(--text-tertiary)',
+                    fontFamily: 'var(--font-dm-sans)', cursor: 'pointer',
+                    textDecoration: 'underline', padding: 0,
+                  }}
+                >
+                  Change the amount or details
+                </button>
+              </div>
             ) : (
-              /* ── Success state ── */
+              /* ── Paid ── */
               <div style={{
                 padding: '48px 32px', textAlign: 'center',
                 background: 'var(--card-bg)',
@@ -405,22 +607,98 @@ export default function GiftCardsView() {
                   fontSize: 24, color: 'var(--text-primary)',
                   marginBottom: 8,
                 }}>
-                  Gift card sent!
+                  Payment received
                 </h2>
-                <p style={{
-                  fontSize: 14, color: 'var(--text-secondary)',
-                  fontFamily: 'var(--font-dm-sans)', lineHeight: 1.6,
-                  marginBottom: 24,
-                }}>
-                  A ${finalAmount} gift card has been sent to {recipientEmail}. They&apos;ll receive it within minutes.
-                </p>
+
+                {purchased ? (
+                  <>
+                    <p style={{
+                      fontSize: 14, color: 'var(--text-secondary)',
+                      fontFamily: 'var(--font-dm-sans)', lineHeight: 1.6,
+                      marginBottom: 20,
+                    }}>
+                      {purchased.delivered
+                        ? <>We&rsquo;ve emailed the ${purchased.amount} card to <strong style={{ color: 'var(--text-primary)' }}>{purchased.recipientEmail}</strong>.</>
+                        : <>We&rsquo;re emailing the ${purchased.amount} card to <strong style={{ color: 'var(--text-primary)' }}>{purchased.recipientEmail}</strong> now.</>}
+                      {' '}Here is the code as well &mdash; write it down.
+                    </p>
+
+                    {/* The code, shown on screen. If the recipient address was
+                        mistyped, this is the buyer's only recovery path. */}
+                    <div style={{
+                      padding: '18px 16px', marginBottom: 18,
+                      borderRadius: 'var(--r-md)',
+                      background: 'var(--surface)',
+                      border: '1px dashed var(--gold-warm)',
+                    }}>
+                      <p style={{
+                        fontSize: 11, fontWeight: 700, letterSpacing: '0.14em',
+                        textTransform: 'uppercase', color: 'var(--text-tertiary)',
+                        fontFamily: 'var(--font-dm-sans)', marginBottom: 8,
+                      }}>
+                        Gift card code
+                      </p>
+                      <p style={{
+                        fontFamily: 'var(--font-dm-sans)', fontWeight: 800,
+                        fontSize: 24, letterSpacing: '0.10em',
+                        color: 'var(--text-primary)', wordBreak: 'break-all',
+                      }}>
+                        {purchased.code}
+                      </p>
+                    </div>
+
+                    <button
+                      onClick={() => { void navigator.clipboard?.writeText(purchased.code) }}
+                      className="btn-outline"
+                      style={{
+                        height: 38, padding: '0 20px', fontSize: 13, fontWeight: 600,
+                        borderRadius: 'var(--r-sm)', marginBottom: 18,
+                      }}
+                    >
+                      Copy code
+                    </button>
+
+                    <p style={{
+                      fontSize: 12.5, color: 'var(--text-tertiary)',
+                      fontFamily: 'var(--font-dm-sans)', lineHeight: 1.6,
+                      marginBottom: 20,
+                    }}>
+                      A copy is on its way to {purchaserEmail.trim() || 'your email'} too. If the
+                      recipient&rsquo;s address above is wrong, reply to that email with this code
+                      and we&rsquo;ll send it on &mdash; nothing is lost.
+                    </p>
+                  </>
+                ) : revealing ? (
+                  <p style={{
+                    fontSize: 14, color: 'var(--text-secondary)',
+                    fontFamily: 'var(--font-dm-sans)', marginBottom: 20,
+                  }}>
+                    Loading your gift card code&hellip;
+                  </p>
+                ) : (
+                  <p style={{
+                    fontSize: 14, color: 'var(--text-secondary)',
+                    fontFamily: 'var(--font-dm-sans)', lineHeight: 1.6,
+                    marginBottom: 20,
+                  }}>
+                    Your gift card is on its way by email. If it doesn&rsquo;t arrive within a few
+                    minutes, contact us and we&rsquo;ll resend it.
+                  </p>
+                )}
+
                 <button
                   onClick={() => {
-                    setSubmitted(false)
+                    // Drop the payment_intent so a refresh doesn't drag the
+                    // buyer back into the confirmation they just left.
+                    window.history.replaceState(null, '', '/gifts')
+                    setStage('form')
+                    setClientSecret(null)
+                    setPurchased(null)
                     setRecipientName('')
                     setRecipientEmail('')
                     setSenderName('')
                     setMessage('')
+                    setError(null)
                   }}
                   className="btn-outline"
                   style={{
@@ -436,6 +714,66 @@ export default function GiftCardsView() {
           </div>
         </div>
 
+        {/* ── Check a balance ── */}
+        <div style={{
+          marginTop: 64, padding: '28px 32px',
+          background: 'var(--card-bg)', borderRadius: 'var(--r-xl)',
+          border: '1px solid var(--border)', maxWidth: 520,
+        }}>
+          <h3 style={{
+            fontFamily: 'var(--font-dm-sans)', fontWeight: 700,
+            fontSize: 17, color: 'var(--text-primary)', marginBottom: 6,
+          }}>
+            Already have a card?
+          </h3>
+          <p style={{
+            fontSize: 13.5, color: 'var(--text-secondary)',
+            fontFamily: 'var(--font-dm-sans)', lineHeight: 1.6, marginBottom: 16,
+          }}>
+            Check what&rsquo;s left on it. A card can be spent across as many bookings
+            as it takes to use up.
+          </p>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <label htmlFor="gift-balance-code" style={{ position: 'absolute', width: 1, height: 1, overflow: 'hidden', clip: 'rect(0 0 0 0)' }}>
+              Gift card code
+            </label>
+            <input
+              id="gift-balance-code"
+              value={balanceCode}
+              onChange={(e) => { setBalanceCode(e.target.value); setBalanceResult(null) }}
+              placeholder="MAPL-XXXX-XXXX"
+              style={{
+                flex: 1, minWidth: 0, height: 44, borderRadius: 'var(--r-sm)',
+                border: '1px solid var(--border-strong)', padding: '0 14px',
+                fontSize: 14, fontFamily: 'var(--font-dm-sans)',
+                color: 'var(--text-primary)', background: 'var(--bg)',
+                outline: 'none', boxSizing: 'border-box', textTransform: 'uppercase',
+              }}
+            />
+            <button
+              onClick={checkBalance}
+              disabled={balanceChecking || balanceCode.trim().length < 4}
+              className="btn-outline"
+              style={{
+                height: 44, padding: '0 20px', fontSize: 14, fontWeight: 600,
+                borderRadius: 'var(--r-sm)', whiteSpace: 'nowrap',
+                opacity: balanceChecking || balanceCode.trim().length < 4 ? 0.5 : 1,
+              }}
+            >
+              {balanceChecking ? 'Checking…' : 'Check'}
+            </button>
+          </div>
+          {balanceResult && (
+            <p style={{
+              marginTop: 12, fontSize: 14, fontWeight: 600,
+              fontFamily: 'var(--font-dm-sans)',
+              color: balanceResult.ok ? 'var(--emerald, #00A550)' : '#c00',
+            }}>
+              {balanceResult.text}
+            </p>
+          )}
+        </div>
+
         {/* ── How It Works ── */}
         <div style={{ marginTop: 80 }}>
           <h2 style={{
@@ -447,11 +785,11 @@ export default function GiftCardsView() {
             How it works
           </h2>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 24 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 24 }}>
             {[
               { step: '01', title: 'Choose & personalize', desc: 'Select an amount, add a personal message, and enter the recipient\'s email.' },
-              { step: '02', title: 'They receive it instantly', desc: 'A beautifully designed digital gift card arrives in their inbox with a unique redemption code.' },
-              { step: '03', title: 'They choose their adventure', desc: 'From cliff diving in Negril to a reggae studio session in Kingston, they pick what excites them.' },
+              { step: '02', title: 'It lands in their inbox', desc: 'As soon as your payment clears, they get the card and its redemption code by email. You get a receipt with the same code.' },
+              { step: '03', title: 'They spend it at checkout', desc: 'They enter the code at checkout and the value comes off the total. Any balance left over stays on the card for next time.' },
             ].map((item) => (
               <div key={item.step} style={{ textAlign: 'center' }}>
                 <p style={{

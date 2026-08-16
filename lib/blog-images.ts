@@ -35,7 +35,6 @@ const G_POOL_TROPICAL = px(16638260)  // swimming at tropical resort
 const G_DREADLOCKS = px(2276166)      // dreadlocks portrait
 
 // Unsplash + project-owned URLs already used on experience pages
-const U_JERK = 'https://images.unsplash.com/photo-1592415162645-c055a337b613?w=1600&h=1000&fit=crop&q=80'
 const U_BEACH_SUNSET = 'https://images.unsplash.com/photo-1451411787567-040a8a56a4a1?w=1600&h=1000&fit=crop&q=80'
 const E_RICKS_CAFE = 'https://www.rickscafejamaica.com/images/rickspics/r2/rick4.jpg'
 const E_DUNNS = 'https://media-cdn.tripadvisor.com/media/attractions-splice-spp-674x446/0b/23/23/7a.jpg'
@@ -44,7 +43,6 @@ const E_MARLEY_HERITAGE = 'https://media-cdn.tripadvisor.com/media/attractions-s
 // (500s through the image optimizer). Use a working Pexels Falmouth scene.
 const E_LUMINOUS = px(16147280)
 const E_MYSTIC = 'https://media.tacdn.com/media/attractions-splice-spp-674x446/07/9a/88/aa.jpg'
-const E_RASTA_VILLAGE = 'https://media-cdn.tripadvisor.com/media/attractions-splice-spp-720x480/07/84/a6/8e.jpg'
 const E_PATTY = 'https://jamdownfoodie.com/wp-content/uploads/2022/07/IMG_2003-768x1024.jpg'
 const E_SCOTCHIES = 'https://paradiseinjatours.com/wp-content/uploads/2024/05/Scotchies-Jerk-Center-1-1.jpg'
 const E_MARKET = 'https://oaccessjamaica.com/wp-content/uploads/2015/07/nesta-michael-asafa-coronation-market.jpg'
@@ -55,12 +53,9 @@ export const BLOG_IMAGES: Record<string, string> = {
   'jamaica-excursions-worth-booking': P_BUFF_BAY,
   'montego-bay-tours-ranked': P_MOBAY_AERIAL,
   'ocho-rios-airport-transfer': P_OCHO_RIOS_PIER,
-  'cannabis-wellness-retreat-jamaica': P_BLUE_MTNS,
   'kingston-gastronomy-tour': E_MARKET,
   'westmoreland-eco-cottage-guide': G_PALM_SHORE,
-  'jamaica-cannabis-culinary-tour': U_JERK,
   'cbd-spa-jamaica': G_POOL_PALMS,
-  'ganja-farm-tour-ocho-rios': E_RASTA_VILLAGE,
 
   // Batch 2, location-specific
   'ocho-rios-complete-guide': E_MYSTIC,

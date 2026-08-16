@@ -599,7 +599,7 @@ export const POSTS_5: BlogPost[] = [
       },
       {
         type: 'p',
-        text: "Our /explore page lists every MAPL experience with honest pricing, no hidden fees, no concierge markup. The budget version of Jamaica is the real version. No problem.",
+        text: "Our /explore page lists every MAPL TOURS experience with honest pricing, no hidden fees, no concierge markup. The budget version of Jamaica is the real version. No problem.",
       },
     ],
     relatedSlugs: ['getting-around-jamaica-guide', 'first-time-jamaica'],
@@ -665,7 +665,7 @@ export const POSTS_5: BlogPost[] = [
       },
       {
         type: 'p',
-        text: "We build custom honeymoon itineraries at MAPL, villa, boutique, or a mix, with bookable experiences across the island. Start with /explore to see the anchors, and we can assemble the rest around them. Get married, come here, skip the wristband. No problem.",
+        text: "We build custom honeymoon itineraries at MAPL TOURS, villa, boutique, or a mix, with bookable experiences across the island. Start with /explore to see the anchors, and we can assemble the rest around them. Get married, come here, skip the wristband. No problem.",
       },
     ],
     relatedSlugs: ['negril-guide', 'blue-mountain-sunrise-hike'],

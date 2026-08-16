@@ -123,7 +123,7 @@ function LoginContent() {
             fontFamily: 'var(--font-dm-sans)', fontWeight: 600, fontSize: 11,
             letterSpacing: '0.22em', textTransform: 'uppercase', color: 'var(--gold-warm)',
           }}>
-            MAPL Tours · Jamaica
+            MAPL TOURS · Jamaica
           </span>
           <h2 style={{
             fontFamily: 'var(--font-dm-sans)', fontStyle: 'italic', fontWeight: 500,
@@ -204,7 +204,7 @@ function LoginContent() {
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src="/mapl-logo.svg"
-              alt="MAPL Tours Jamaica"
+              alt="MAPL TOURS JAMAICA"
               width={185}
               height={44}
               style={{ height: 44, width: 'auto', display: 'block' }}

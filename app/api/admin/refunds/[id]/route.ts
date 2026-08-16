@@ -3,6 +3,7 @@ import Stripe from 'stripe'
 import { createClient } from '@/lib/supabase/server'
 import { createServiceClient } from '@/lib/supabase/service'
 import { sendCancellationEmails, sendRefundDeclinedEmail } from '@/lib/email/cancellation'
+import { refundToGiftCard } from '@/lib/gift-redemption'
 
 /**
  * Admin decision on a pending cancellation request.
@@ -33,6 +34,10 @@ interface PendingRow {
   refund_state: string | null
   stripe_payment_id: string | null
   total_paid: number | string
+  gift_card_id: string | null
+  gift_card_amount: number | string | null
+  refund_quoted_cash: number | string | null
+  refund_quoted_gift: number | string | null
   refund_quoted_amount: number | string | null
   refund_quoted_admin_charge: number | string | null
   currency: string | null
@@ -64,7 +69,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
   // 3) Load the pending request.
   const { data, error } = await svc
     .from('bookings')
-    .select('id, status, refund_state, stripe_payment_id, total_paid, refund_quoted_amount, refund_quoted_admin_charge, currency')
+    .select('id, status, refund_state, stripe_payment_id, total_paid, gift_card_id, gift_card_amount, refund_quoted_amount, refund_quoted_admin_charge, refund_quoted_cash, refund_quoted_gift, currency')
     .eq('id', params.id)
     .maybeSingle()
   if (error) return NextResponse.json({ error: 'lookup_failed' }, { status: 500 })
@@ -101,9 +106,6 @@ export async function POST(req: Request, { params }: { params: { id: string } })
   }
 
   // ── Approve: refund the stored quote. ──
-  if (!booking.stripe_payment_id) {
-    return NextResponse.json({ error: 'no_payment_reference' }, { status: 409 })
-  }
   const quotedAmount = Number(booking.refund_quoted_amount)
   if (!Number.isFinite(quotedAmount) || quotedAmount <= 0) {
     return NextResponse.json(
@@ -112,10 +114,29 @@ export async function POST(req: Request, { params }: { params: { id: string } })
     )
   }
   const refundCents = Math.round(quotedAmount * 100)
+
+  // A refund has two halves: cash back through Stripe, and gift-card value
+  // back onto the card. The stored split is authoritative; older rows quoted
+  // before gift cards existed fall back to "all cash", which is what they were.
+  const giftRefundCents = Math.round(Number(booking.refund_quoted_gift ?? 0) * 100)
+  const cashRefundCents = booking.refund_quoted_cash != null
+    ? Math.round(Number(booking.refund_quoted_cash) * 100)
+    : refundCents - (Number.isFinite(giftRefundCents) ? giftRefundCents : 0)
+
+  // The cap is what Stripe actually CAPTURED, not the cart total. total_paid
+  // includes any gift-funded portion that never touched a payment card, so
+  // capping on it would let us ask Stripe for more than it took.
   const grossCents = Math.round(Number(booking.total_paid) * 100)
-  if (refundCents > grossCents) {
-    // Never pay out more than was captured, whatever the row says.
+  const giftFundedCents = Math.round(Number(booking.gift_card_amount ?? 0) * 100)
+  const cashCapturedCents = Math.max(0, grossCents - (Number.isFinite(giftFundedCents) ? giftFundedCents : 0))
+  if (cashRefundCents > cashCapturedCents) {
     return NextResponse.json({ error: 'quote_exceeds_payment' }, { status: 409 })
+  }
+
+  // Only a refund that owes cash needs a PaymentIntent. A booking paid for
+  // entirely with a gift card legitimately has none.
+  if (cashRefundCents > 0 && !booking.stripe_payment_id) {
+    return NextResponse.json({ error: 'no_payment_reference' }, { status: 409 })
   }
 
   // CLAIM before calling Stripe, same pattern as the rest of the money code:
@@ -144,26 +165,38 @@ export async function POST(req: Request, { params }: { params: { id: string } })
   }
 
   try {
-    const refund = await stripe.refunds.create(
-      {
-        payment_intent: booking.stripe_payment_id,
-        amount: refundCents,
-        reason: 'requested_by_customer',
-        metadata: {
-          booking_id: booking.id,
-          approved_by: user.id,
-          policy: 'flexible-48h-of-booking-less-20pct',
+    let refundId: string | null = null
+    if (cashRefundCents > 0) {
+      const refund = await stripe.refunds.create(
+        {
+          payment_intent: booking.stripe_payment_id!,
+          amount: cashRefundCents,
+          reason: 'requested_by_customer',
+          metadata: {
+            booking_id: booking.id,
+            approved_by: user.id,
+            policy: 'flexible-48h-of-booking-less-20pct',
+          },
         },
-      },
-      { idempotencyKey: `refund:${booking.id}` },
-    )
+        { idempotencyKey: `refund:${booking.id}` },
+      )
+      refundId = refund.id
+    }
+
+    // Put the gift-funded share back on the card. Done AFTER Stripe so a
+    // failed cash refund releases the claim without having already credited.
+    if (giftRefundCents > 0 && booking.gift_card_id) {
+      await refundToGiftCard(svc, booking.gift_card_id as string, booking.id, giftRefundCents / 100)
+    }
 
     const emails = await sendCancellationEmails(booking.id, { source: 'self-serve' })
     return NextResponse.json({
       ok: true,
       state: 'approved',
-      refundId: refund.id,
+      refundId,
       refundCents,
+      cashRefundCents,
+      giftRefundCents,
       currency: booking.currency ?? 'usd',
       emails,
     })

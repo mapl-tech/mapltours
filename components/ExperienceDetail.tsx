@@ -241,12 +241,12 @@ function Reel({ exp, isActive, totalCount, currentIndex }: { exp: Experience; is
         position: 'absolute', right: 12, zIndex: 10,
         display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16,
       }}>
-        {/* Creator avatar, MAPL logo when posted by us, otherwise the
+        {/* Creator avatar, MAPL TOURS logo when posted by us, otherwise the
             creator's initial disk (coloured by handle). No follow badge. */}
         <div style={{ marginBottom: 4 }}>
           {isMaplCreator(exp.creator) ? (
             <div
-              aria-label="MAPL Tours"
+              aria-label="MAPL TOURS"
               style={{
                 width: 44, height: 44, borderRadius: '50%',
                 background: '#FFB300',
@@ -406,7 +406,7 @@ function Reel({ exp, isActive, totalCount, currentIndex }: { exp: Experience; is
         </div>
       )}
 
-      {/* Share toast, MAPL brand: gold accent on ink-black, Syne label */}
+      {/* Share toast, MAPL TOURS brand: gold accent on ink-black, Syne label */}
       {shareToast && (
         <div
           style={{

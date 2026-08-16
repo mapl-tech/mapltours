@@ -18,15 +18,20 @@ export async function claimEmailChannel(
   supabase: ServiceClient,
   bookingId: string,
   column: string,
+  // Gift cards claim their delivery on gift_cards.delivered_at, not on a
+  // booking. This was hardcoded to 'bookings', so the gift claim updated the
+  // wrong table with an id that matched nothing, always returned false, and
+  // the recipient's card was never emailed.
+  table: 'bookings' | 'gift_cards' = 'bookings',
 ): Promise<boolean> {
   const { data, error } = await supabase
-    .from('bookings')
+    .from(table)
     .update({ [column]: new Date().toISOString() })
     .eq('id', bookingId)
     .is(column, null)
     .select('id')
   if (error) {
-    console.error('[email-claim] claim failed', { bookingId, column, error: error.message })
+    console.error('[email-claim] claim failed', { table, bookingId, column, error: error.message })
     return false
   }
   return (data?.length ?? 0) > 0
@@ -37,6 +42,7 @@ export async function releaseEmailChannel(
   supabase: ServiceClient,
   bookingId: string,
   column: string,
+  table: 'bookings' | 'gift_cards' = 'bookings',
 ): Promise<void> {
-  await supabase.from('bookings').update({ [column]: null }).eq('id', bookingId)
+  await supabase.from(table).update({ [column]: null }).eq('id', bookingId)
 }

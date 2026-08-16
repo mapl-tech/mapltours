@@ -40,7 +40,7 @@ interface BookingRow extends RefundableBooking {
 }
 
 const SELECT =
-  'id, user_id, email, status, paid_at, created_at, total_paid, stripe_payment_id, currency, refund_state, booking_items(date, arrival_at, departure_at)'
+  'id, user_id, email, status, paid_at, created_at, total_paid, gift_card_amount, stripe_payment_id, currency, refund_state, booking_items(date, arrival_at, departure_at)'
 
 /**
  * Load the booking only if the caller owns it.
@@ -123,8 +123,11 @@ export async function POST(_req: Request, { params }: { params: { id: string } }
       { status: 409 },
     )
   }
-  if (!booking.stripe_payment_id) {
-    console.error('[cancel] paid booking has no PaymentIntent', booking.id)
+  // A booking paid for entirely with a gift card has no PaymentIntent, and
+  // that is legitimate — the refund goes back onto the card instead of through
+  // Stripe. Only a booking that owes CASH back needs a payment reference.
+  if (quote.cashRefundCents > 0 && !booking.stripe_payment_id) {
+    console.error('[cancel] booking owes a cash refund but has no PaymentIntent', booking.id)
     return NextResponse.json(
       { error: 'no_payment_reference', message: 'We could not locate the payment. Please contact support.' },
       { status: 409 },
@@ -141,6 +144,8 @@ export async function POST(_req: Request, { params }: { params: { id: string } }
       refund_requested_at: new Date().toISOString(),
       refund_quoted_amount: quote.refundCents / 100,
       refund_quoted_admin_charge: quote.adminChargeCents / 100,
+      refund_quoted_cash: quote.cashRefundCents / 100,
+      refund_quoted_gift: quote.giftRefundCents / 100,
     })
     .eq('id', booking.id)
     .eq('status', 'paid')

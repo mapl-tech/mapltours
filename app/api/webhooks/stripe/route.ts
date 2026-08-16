@@ -1,16 +1,15 @@
 import { NextResponse } from 'next/server'
 import Stripe from 'stripe'
 import { createServiceClient } from '@/lib/supabase/service'
-import { sendEmail } from '@/lib/email/send'
 import { sendCancellationEmails } from '@/lib/email/cancellation'
+import { activateGiftCard } from '@/lib/gift-activation'
 import {
-  claimEmailChannel as sharedClaimEmailChannel,
-  releaseEmailChannel as sharedReleaseEmailChannel,
-} from '@/lib/email/claim'
-import BookingConfirmed from '@/emails/BookingConfirmed'
-import OperatorBookingAlert from '@/emails/OperatorBookingAlert'
-import TransferConfirmed from '@/emails/TransferConfirmed'
-import TransferOperatorAlert from '@/emails/TransferOperatorAlert'
+  maybeSendTravelerConfirmation,
+  maybeSendOperatorAlert,
+  type BookingRow,
+  type BookingItemRow,
+} from '@/lib/email/booking'
+import { settleGiftClaim, releaseGiftClaim } from '@/lib/gift-redemption'
 
 /**
  * Stripe webhook, single source of truth for payment status.
@@ -34,49 +33,6 @@ export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!)
-
-interface BookingItemRow {
-  experience_id: number | null
-  title: string
-  destination: string
-  travelers: number
-  date: string
-  price_per_person: number
-  // transfer fields (null for experience items)
-  item_type: 'experience' | 'transfer'
-  airport: string | null
-  hotel: string | null
-  zone: string | null
-  trip_type: 'one_way' | 'round_trip' | null
-  arrival_flight: string | null
-  arrival_at: string | null
-  departure_flight: string | null
-  departure_at: string | null
-  passengers: number | null
-}
-
-interface BookingRow {
-  id: string
-  status: string
-  booking_type: 'tour' | 'transfer'
-  first_name: string | null
-  last_name: string | null
-  email: string | null
-  phone: string | null
-  country: string | null
-  pickup: string | null
-  dropoff: string | null
-  special_requests: string | null
-  total_paid: number
-  subtotal: number | null
-  booking_fee: number | null
-  transport_cost: number | null
-  reward_discount: number | null
-  currency: string
-  stripe_payment_id: string | null
-  confirmation_email_sent_at: string | null
-  operator_email_sent_at: string | null
-}
 
 export async function POST(req: Request) {
   const secret = process.env.STRIPE_WEBHOOK_SECRET
@@ -211,6 +167,13 @@ async function loadBooking(pi: Stripe.PaymentIntent) {
 }
 
 async function handlePaymentSucceeded(pi: Stripe.PaymentIntent) {
+  // Gift-card purchases are not bookings. Branch before loadBooking, which
+  // would otherwise log them as unknown and drop them.
+  if (pi.metadata?.kind === 'gift_card') {
+    await handleGiftPaid(pi)
+    return
+  }
+
   const { supabase, booking, items } = await loadBooking(pi)
   if (!booking) {
     // Truly unknown, neither stripe_payment_id nor metadata.booking_id
@@ -236,6 +199,11 @@ async function handlePaymentSucceeded(pi: Stripe.PaymentIntent) {
     }
     booking.status = 'paid'
   }
+
+  // Turn any gift-card reservation on this cart into a permanent spend. The
+  // balance already came off at checkout — this only closes the ledger row so
+  // the stale sweep can never hand the value back on a booking that was paid.
+  await settleGiftClaim(supabase, booking.id)
 
   // Consume the video-upload reward, if one was applied to this checkout.
   // This is the authoritative consume point: a 3DS/redirect payment never
@@ -301,12 +269,43 @@ async function handlePaymentFailed(pi: Stripe.PaymentIntent) {
         : `[failure: ${errMsg}]`,
     })
     .eq('id', booking.id)
+
+  // Give back any gift-card value this cart was holding. Without this the
+  // balance is debited forever for a payment that never happened — a declined
+  // card would silently destroy the whole applied amount.
+  await releaseGiftClaim(supabase, booking.id)
+}
+
+/**
+ * A gift card was paid for.
+ *
+ * This is the ONLY place a card becomes spendable. The checkout route creates
+ * it 'pending'; if the payment never completes, the row stays inert rather
+ * than becoming free credit.
+ *
+ * The status flip is conditional on still being 'pending', so Stripe's
+ * retries cannot re-activate a card that was later voided, and the delivery
+ * email is claimed the same way the booking emails are, so a redelivered
+ * webhook cannot email the recipient twice.
+ */
+async function handleGiftPaid(pi: Stripe.PaymentIntent) {
+  const giftId = typeof pi.metadata?.gift_card_id === 'string' ? pi.metadata.gift_card_id : null
+  if (!giftId) {
+    console.warn('[stripe-webhook] gift payment with no gift_card_id', pi.id)
+    return
+  }
+  // Shared with the buyer's own return-from-payment path, so a slow or
+  // missing webhook cannot leave a paid card undelivered. Idempotent.
+  await activateGiftCard(giftId, pi.id)
 }
 
 async function handlePaymentCanceled(pi: Stripe.PaymentIntent) {
   const { supabase, booking } = await loadBooking(pi)
   if (!booking || booking.status === 'paid') return
   await supabase.from('bookings').update({ status: 'canceled' }).eq('id', booking.id)
+  // Any gift-card value held against this cart goes back on the card now,
+  // rather than waiting for the stale sweep.
+  await releaseGiftClaim(supabase, booking.id)
 }
 
 /**
@@ -324,9 +323,34 @@ async function handleChargeRefunded(charge: Stripe.Charge) {
   if (!paymentIntentId) return
 
   const supabase = createServiceClient()
+
+  // A refund or chargeback on a GIFT CARD PURCHASE is not a booking refund.
+  // The money has left our account, so the card must stop being spendable —
+  // otherwise the buyer keeps the value they just clawed back.
+  const { data: giftCard } = await supabase
+    .from('gift_cards')
+    .select('id, status, code')
+    .eq('stripe_payment_id', paymentIntentId)
+    .maybeSingle()
+  if (giftCard) {
+    const { data: voided } = await supabase
+      .from('gift_cards')
+      .update({ status: 'void' })
+      .eq('id', giftCard.id)
+      .neq('status', 'void')
+      .select('id')
+      .maybeSingle()
+    if (voided) {
+      console.warn('[stripe-webhook] gift card voided after refund/chargeback', {
+        giftCardId: giftCard.id, code: giftCard.code, paymentIntentId,
+      })
+    }
+    return
+  }
+
   const { data, error } = await supabase
     .from('bookings')
-    .select('id, status, total_paid')
+    .select('id, status, total_paid, gift_card_id, gift_card_amount')
     .eq('stripe_payment_id', paymentIntentId)
     .maybeSingle()
   if (error) throw new Error(`booking lookup failed: ${error.message}`)
@@ -359,237 +383,3 @@ async function handleChargeRefunded(charge: Stripe.Charge) {
   await sendCancellationEmails(data.id, { source: 'dashboard' })
 }
 
-// `retryable` distinguishes a transient send failure (worth having Stripe
-// re-deliver the webhook) from a permanent one (no email on record, no ops
-// address configured) where retrying can never succeed.
-type EmailResult = { ok: true } | { ok: false; reason: string; retryable: boolean }
-
-/**
- * Atomically CLAIM one email channel before sending, so two concurrent /
- * duplicate webhook deliveries can't both pass a check-then-act gate and
- * double-send. The conditional UPDATE ... WHERE <col> IS NULL RETURNING is
- * the lock: exactly one delivery flips NULL->now() and proceeds; the loser
- * gets 0 rows and skips. On a send failure we release the claim so a Stripe
- * retry can try again (see `retryable`).
- */
-async function claimEmailChannel(
-  supabase: ReturnType<typeof createServiceClient>,
-  bookingId: string,
-  column: 'confirmation_email_sent_at' | 'operator_email_sent_at',
-): Promise<boolean> {
-  // Implementation lives in lib/email/claim.ts so the cancellation path
-  // shares it. Signature kept column-typed for the callers below.
-  return sharedClaimEmailChannel(supabase, bookingId, column)
-}
-
-async function releaseEmailChannel(
-  supabase: ReturnType<typeof createServiceClient>,
-  bookingId: string,
-  column: 'confirmation_email_sent_at' | 'operator_email_sent_at',
-): Promise<void> {
-  await sharedReleaseEmailChannel(supabase, bookingId, column)
-}
-
-async function maybeSendTravelerConfirmation(
-  supabase: ReturnType<typeof createServiceClient>,
-  booking: BookingRow,
-  items: BookingItemRow[],
-): Promise<EmailResult> {
-  if (booking.confirmation_email_sent_at) return { ok: true }
-  if (!booking.email) {
-    console.warn('[stripe-webhook] no email on booking', booking.id)
-    return { ok: false, reason: 'no_email_on_record', retryable: false }
-  }
-
-  if (!(await claimEmailChannel(supabase, booking.id, 'confirmation_email_sent_at'))) {
-    return { ok: true }
-  }
-
-  const bookingRef = humanizeId(booking.id)
-  const isTransfer = booking.booking_type === 'transfer'
-
-  const res = isTransfer
-    ? await sendEmail({
-        to: booking.email,
-        subject: `Transfer confirmed, your Jamaica airport ride (${bookingRef})`,
-        react: TransferConfirmed({
-          bookingRef,
-          firstName: booking.first_name,
-          lastName: booking.last_name,
-          email: booking.email,
-          customerPhone: booking.phone,
-          country: booking.country,
-          subtotal: booking.subtotal != null ? Number(booking.subtotal) : null,
-          bookingFee: booking.booking_fee != null ? Number(booking.booking_fee) : null,
-          totalPaid: Number(booking.total_paid),
-          currency: booking.currency.toUpperCase(),
-          paidAt: (booking as { paid_at?: string | null }).paid_at ?? null,
-          specialRequests: booking.special_requests,
-          transfers: items.map((i) => ({
-            destination: i.hotel ?? i.destination,
-            zone: i.zone ?? '',
-            tripType: (i.trip_type ?? 'one_way') as 'one_way' | 'round_trip',
-            passengers: i.passengers ?? i.travelers,
-            priceUsd: Number(i.price_per_person),
-            arrivalFlight: i.arrival_flight,
-            arrivalAt: i.arrival_at,
-            departureFlight: i.departure_flight,
-            departureAt: i.departure_at,
-          })),
-        }),
-        tags: [
-          { name: 'category', value: 'transfer_confirmed' },
-          { name: 'booking_id', value: booking.id },
-        ],
-      })
-    : await sendEmail({
-        to: booking.email,
-        subject: `Booking confirmed, your Jamaica trip with MAPL (${bookingRef})`,
-        react: BookingConfirmed({
-          bookingRef,
-          firstName: booking.first_name,
-          lastName: booking.last_name,
-          email: booking.email,
-          phone: booking.phone,
-          country: booking.country,
-          pickup: booking.pickup,
-          dropoff: booking.dropoff,
-          specialRequests: booking.special_requests,
-          subtotal: booking.subtotal != null ? Number(booking.subtotal) : null,
-          bookingFee: booking.booking_fee != null ? Number(booking.booking_fee) : null,
-          transportCost: booking.transport_cost != null ? Number(booking.transport_cost) : null,
-          rewardDiscount: booking.reward_discount != null ? Number(booking.reward_discount) : null,
-          totalPaid: Number(booking.total_paid),
-          currency: booking.currency.toUpperCase(),
-          paidAt: (booking as { paid_at?: string | null }).paid_at ?? null,
-          items: items.map((i) => ({
-            title: i.title,
-            destination: i.destination,
-            date: i.date,
-            travelers: i.travelers,
-            pricePerPerson: Number(i.price_per_person),
-            linePrice: Number(i.price_per_person) * i.travelers,
-          })),
-        }),
-        tags: [
-          { name: 'category', value: 'booking_confirmed' },
-          { name: 'booking_id', value: booking.id },
-        ],
-      })
-
-  if (res.ok) {
-    return { ok: true } // channel already stamped by claimEmailChannel
-  }
-  await releaseEmailChannel(supabase, booking.id, 'confirmation_email_sent_at')
-  return { ok: false, reason: res.error ?? 'unknown_send_error', retryable: true }
-}
-
-// Operations distribution list. Both addresses receive every operator
-// alert (tour bookings AND transfer bookings). Override via the
-// OPERATIONS_EMAIL env var with a comma-separated list if the recipient
-// set ever changes, empty / unset falls back to this default.
-const OPS_RECIPIENTS_DEFAULT = [
-  'tech@mapltech.com',
-  'collinsadventuretours@gmail.com',
-]
-
-function resolveOpsRecipients(): string[] {
-  // Only OPERATIONS_EMAIL can override, we intentionally do NOT fall back
-  // to EMAIL_SUPPORT here so the public contact inbox can never receive
-  // booking alerts by accident if OPERATIONS_EMAIL is unset on a deploy.
-  const raw = process.env.OPERATIONS_EMAIL
-  if (!raw) return OPS_RECIPIENTS_DEFAULT
-  const parsed = raw
-    .split(',')
-    .map((s) => s.trim())
-    .filter(Boolean)
-  return parsed.length > 0 ? parsed : OPS_RECIPIENTS_DEFAULT
-}
-
-async function maybeSendOperatorAlert(
-  supabase: ReturnType<typeof createServiceClient>,
-  booking: BookingRow,
-  items: BookingItemRow[],
-): Promise<EmailResult> {
-  if (booking.operator_email_sent_at) return { ok: true }
-  const opsRecipients = resolveOpsRecipients()
-  if (opsRecipients.length === 0) return { ok: false, reason: 'no_ops_email_configured', retryable: false }
-
-  if (!(await claimEmailChannel(supabase, booking.id, 'operator_email_sent_at'))) {
-    return { ok: true }
-  }
-
-  const bookingRef = humanizeId(booking.id)
-  const customerName =
-    `${booking.first_name ?? ''} ${booking.last_name ?? ''}`.trim() || 'Guest'
-  const isTransfer = booking.booking_type === 'transfer'
-
-  const res = isTransfer
-    ? await sendEmail({
-        to: opsRecipients,
-        subject: `MAPL Tours · New transfer · ${bookingRef} · ${items.length} ride${items.length !== 1 ? 's' : ''}`,
-        react: TransferOperatorAlert({
-          bookingRef,
-          customerName,
-          customerEmail: booking.email ?? '(no email)',
-          customerPhone: booking.phone,
-          customerCountry: booking.country,
-          specialRequests: booking.special_requests,
-          totalPaid: Number(booking.total_paid),
-          currency: booking.currency.toUpperCase(),
-          transfers: items.map((i) => ({
-            destination: i.hotel ?? i.destination,
-            zone: i.zone ?? '',
-            tripType: (i.trip_type ?? 'one_way') as 'one_way' | 'round_trip',
-            passengers: i.passengers ?? i.travelers,
-            priceUsd: Number(i.price_per_person),
-            arrivalFlight: i.arrival_flight,
-            arrivalAt: i.arrival_at,
-            departureFlight: i.departure_flight,
-            departureAt: i.departure_at,
-          })),
-        }),
-        tags: [
-          { name: 'category', value: 'transfer_operator_alert' },
-          { name: 'booking_id', value: booking.id },
-        ],
-      })
-    : await sendEmail({
-        to: opsRecipients,
-        subject: `MAPL Tours · New booking · ${bookingRef} · ${items.length} experience${items.length !== 1 ? 's' : ''}`,
-        react: OperatorBookingAlert({
-          bookingRef,
-          customerName,
-          customerEmail: booking.email ?? '(no email)',
-          customerPhone: booking.phone,
-          customerCountry: booking.country,
-          pickup: booking.pickup,
-          dropoff: booking.dropoff,
-          specialRequests: booking.special_requests,
-          totalPaid: Number(booking.total_paid),
-          currency: booking.currency.toUpperCase(),
-          items: items.map((i) => ({
-            title: i.title,
-            destination: i.destination,
-            date: i.date,
-            travelers: i.travelers,
-            linePrice: Number(i.price_per_person) * i.travelers,
-          })),
-        }),
-        tags: [
-          { name: 'category', value: 'operator_alert' },
-          { name: 'booking_id', value: booking.id },
-        ],
-      })
-
-  if (res.ok) {
-    return { ok: true }
-  }
-  await releaseEmailChannel(supabase, booking.id, 'operator_email_sent_at')
-  return { ok: false, reason: res.error ?? 'unknown_send_error', retryable: true }
-}
-
-// Short, user-friendly booking reference, first 8 of the uuid, upper-cased.
-function humanizeId(id: string): string {
-  return 'MAPL-' + id.slice(0, 8).toUpperCase()
-}

@@ -70,7 +70,7 @@ export const POSTS_1: BlogPost[] = [
       },
       {
         type: 'p',
-        text: "If you want the climb without any of the planning, MAPL pairs Dunn's River with the hidden Blue Hole an hour inland on a single half-day trip. Browse the Ocho Rios experiences at /explore to see dates and pricing.",
+        text: "If you want the climb without any of the planning, MAPL TOURS pairs Dunn's River with the hidden Blue Hole an hour inland on a single half-day trip. Browse the Ocho Rios experiences at /explore to see dates and pricing.",
       },
     ],
     relatedSlugs: ['reach-falls-vs-dunns-river', 'ocho-rios-complete-guide'],
@@ -137,7 +137,7 @@ export const POSTS_1: BlogPost[] = [
       },
       {
         type: 'p',
-        text: "MAPL's entire catalogue is built around the kind of Jamaica excursions that pass the group-size test. Browse what's running this week at /explore.",
+        text: "MAPL TOURS's entire catalogue is built around the kind of Jamaica excursions that pass the group-size test. Browse what's running this week at /explore.",
       },
     ],
     relatedSlugs: ['beyond-the-resort', 'first-time-jamaica'],
@@ -209,7 +209,7 @@ export const POSTS_1: BlogPost[] = [
       },
       {
         type: 'p',
-        text: "MAPL runs small-group versions of the top picks, the raft, the rum tour, the great-house night. See dates on /explore.",
+        text: "MAPL TOURS runs small-group versions of the top picks, the raft, the rum tour, the great-house night. See dates on /explore.",
       },
     ],
     relatedSlugs: ['montego-bay-beyond-the-strip', 'montego-bay-airport-guide'],
@@ -279,78 +279,10 @@ export const POSTS_1: BlogPost[] = [
       },
       {
         type: 'p',
-        text: "MAPL can arrange the airport transfer to Ocho Rios as part of any experience booking, ask when you check out on /explore.",
+        text: "MAPL TOURS can arrange the airport transfer to Ocho Rios as part of any experience booking, ask when you check out on /explore.",
       },
     ],
     relatedSlugs: ['ocho-rios-complete-guide', 'getting-around-jamaica-guide'],
-  },
-  {
-    slug: 'cannabis-wellness-retreat-jamaica',
-    title: 'Cannabis Wellness Retreats in Jamaica: What to Actually Expect',
-    excerpt:
-      "What a cannabis wellness retreat in Jamaica actually looks like, legalities, daily schedule, prices, and honest notes from inside a Blue Mountains stay.",
-    category: 'Stories',
-    image: BLOG_IMAGES['cannabis-wellness-retreat-jamaica'],
-    readTime: 5,
-    publishedAt: '2025-07-03',
-    author: maya,
-    body: [
-      {
-        type: 'p',
-        text: "The driveway winds up a thousand feet above Irish Town through bamboo and mist, and the retreat house smells like eucalyptus and coffee smoke. I spent four days at a cannabis wellness retreat in Jamaica this spring, a small, licensed operation in the Blue Mountains of St. Andrew, to see what the growing category actually delivers.",
-      },
-      {
-        type: 'p',
-        text: "Short version: it is calmer, more regulated, and a lot more herbal-tea-forward than the Instagram version suggests. The marketing leans into Rastafari iconography. The reality is closer to a yoga retreat with a licensed dispensary attached.",
-      },
-      { type: 'h2', text: "The legal landscape" },
-      {
-        type: 'p',
-        text: "Jamaica decriminalized personal amounts of ganja in 2015. Licensed retailers, called herb houses, began opening the following year. As of 2025 there are roughly 75 licensed dispensaries on the island, and a small cluster of properties are licensed to offer on-site cannabis hospitality. Those are the ones you want.",
-      },
-      {
-        type: 'p',
-        text: "Importantly: even at a licensed cannabis wellness retreat, Jamaica, you cannot fly home with product. Leaving the airport with any amount is still a federal offense under US, UK, and Canadian law, and Jamaican customs is no friendlier. Consume on-property, leave it on-property.",
-      },
-      { type: 'h2', text: "A day in it" },
-      {
-        type: 'p',
-        text: "Mornings start with a guided stretch at 7 on an open-air deck. Breakfast is vegetarian, callaloo, ackee, roasted plantain, Blue Mountain coffee. Around 9 there's a guided session with a cannabis educator; most retreats now structure these like a wine pairing, matching different strains to different intentions (sleep, creative, active, social).",
-      },
-      {
-        type: 'p',
-        text: "Midday tends to be unstructured. Nap, swim, hike a short trail, get a massage. Late afternoon has either a breath-work class, a sound bath, or a guided hike. Dinner is family-style. Nights are quiet, most guests are asleep by 10.",
-      },
-      {
-        type: 'quote',
-        text: "People arrive expecting a party. By day three they are in bed at nine with a book. That is the retreat doing its job.",
-        attribution: 'Akeem, retreat host in the Blue Mountains',
-      },
-      { type: 'h2', text: "Who it suits" },
-      {
-        type: 'list',
-        items: [
-          'Travelers already comfortable with cannabis who want a structured, coach-assisted stay',
-          'People exploring cannabis for sleep, chronic pain, or microdose protocols',
-          'Couples looking for a quieter alternative to the all-inclusive strip',
-          'Writers, artists, or anyone wanting a low-stimulation creative reset',
-        ],
-      },
-      {
-        type: 'p',
-        text: "It is not a good fit for first-time users arriving jet-lagged or anyone hoping for a party scene. The best retreats screen guests on booking. If yours doesn't ask any questions, that's a yellow flag.",
-      },
-      { type: 'h2', text: "What it costs" },
-      {
-        type: 'p',
-        text: "A three-night cannabis wellness retreat in Jamaica runs $1,400–2,600 per person, all-inclusive of room, meals, classes, and educator-led sessions. Product is usually separate, priced per gram at the on-site herb house. Expect $12–18 per gram for premium flower. Airport transfer from Kingston is about $90 each way; from MoBay, $200.",
-      },
-      {
-        type: 'p',
-        text: "If that's too full a commitment, MAPL runs single-day Blue Mountain wellness experiences that pair a coffee-farm hike with a guided tasting at a licensed dispensary. See dates on /explore.",
-      },
-    ],
-    relatedSlugs: ['jamaica-cannabis-culinary-tour', 'blue-mountain-coffee-story'],
   },
   {
     slug: 'kingston-gastronomy-tour',
@@ -416,7 +348,7 @@ export const POSTS_1: BlogPost[] = [
       },
       {
         type: 'p',
-        text: "MAPL runs a small-group Kingston street food and market crawl that hits many of these stops in a single afternoon. See it on /explore.",
+        text: "MAPL TOURS runs a small-group Kingston street food and market crawl that hits many of these stops in a single afternoon. See it on /explore.",
       },
     ],
     relatedSlugs: ['jamaican-jerk-explained', 'kingston-culture-guide'],
@@ -484,79 +416,10 @@ export const POSTS_1: BlogPost[] = [
       },
       {
         type: 'p',
-        text: "MAPL pairs cottage stays with day experiences, cliff-diving at Rick's, snorkeling off Seven Mile, or a food crawl in Savanna-la-Mar. Browse Negril and Westmoreland experiences on /explore.",
+        text: "MAPL TOURS pairs cottage stays with day experiences, cliff-diving at Rick's, snorkeling off Seven Mile, or a food crawl in Savanna-la-Mar. Browse Negril and Westmoreland experiences on /explore.",
       },
     ],
     relatedSlugs: ['negril-guide', 'negril-seven-mile-truth'],
-  },
-  {
-    slug: 'jamaica-cannabis-culinary-tour',
-    title: 'The Jamaica Cannabis Culinary Tour, Explained',
-    excerpt:
-      "A plain-language explainer of the Jamaica cannabis culinary tour, what's on the menu, how dosing works, and where the best licensed experiences happen.",
-    category: 'Food',
-    image: BLOG_IMAGES['jamaica-cannabis-culinary-tour'],
-    readTime: 5,
-    publishedAt: '2025-07-24',
-    author: devon,
-    body: [
-      {
-        type: 'p',
-        text: "A Jamaica cannabis culinary tour looks, on paper, like a novelty. Eight courses, a chef who used to run a Kingston tasting counter, and every dish paired with a licensed strain. In practice, it's one of the most carefully produced food experiences on the island, and the newer chefs treating cannabis as an ingredient (not a mascot) are doing some of the most interesting cooking in the Caribbean.",
-      },
-      {
-        type: 'p',
-        text: "I went to three of them last season. What follows is a plain-language version of what happens at a well-run one, how dosing actually works, and how to choose a tour that knows what it's doing.",
-      },
-      { type: 'h2', text: "Inside a tasting" },
-      {
-        type: 'p',
-        text: "A Jamaica cannabis culinary tour at a licensed venue is structured like a wine dinner. You arrive at around 6pm. There's a welcome course, typically a consommé or small vegetable bite, that is unmedicated. While you eat, the chef and the in-house cannabis educator walk through the evening: which courses contain THC, which courses contain CBD, which are unmedicated, and what the total evening dose will be.",
-      },
-      {
-        type: 'p',
-        text: "A responsible tour caps the full evening at 10–15mg of THC total across 8 courses. That's low by home-dispensary standards, intentionally. The goal is a warm, sociable buzz, not a couch-lock. Strains used in cooking are usually low-THC, high-terpene Jamaican landrace varieties that contribute flavor more than psychoactivity.",
-      },
-      { type: 'h2', text: "What ends up on the plate" },
-      {
-        type: 'p',
-        text: "Menus lean Jamaican. A pepperpot course. Escovitch fish with a scotch-bonnet oil. Jerk pork shoulder with a cannabis-infused pimento butter on the side that you add yourself, drop by drop. A rundown. A Blue Mountain coffee crème that might or might not be infused. Dessert, almost always a rum-and-spice cake or a sorrel granita, is often the dosed finale.",
-      },
-      {
-        type: 'quote',
-        text: "If the chef is using cannabis for the high, they are not cooking. They are catering. We cook with it because the terpenes do things no other herb does.",
-        attribution: 'Kadeem, Kingston chef',
-      },
-      { type: 'h2', text: "How to choose a tour" },
-      {
-        type: 'list',
-        items: [
-          'Confirm the venue is licensed under the Cannabis Licensing Authority',
-          'Ask the total evening THC dose, a good operator will tell you in mg',
-          'Check that there is an on-site educator, not just a chef',
-          'Ask about transportation, you should not drive yourself home',
-          'Avoid any tour that serves alcohol heavily alongside dosed courses',
-        ],
-      },
-      {
-        type: 'p',
-        text: "The best experiences I've had were in the Blue Mountains above Kingston and in a farm-to-table setup in St. Mary. The Negril versions exist, and a few are good, but the scene skews more toward beach bonfire than composed tasting.",
-      },
-      {
-        type: 'p',
-        text: "If you don't smoke, or have never had edibles, ask about a non-dosed seat. Most operators accommodate it. The food is the point; the cannabis is the accent.",
-      },
-      { type: 'h2', text: "What it costs" },
-      {
-        type: 'p',
-        text: "A Jamaica cannabis culinary tour at a licensed venue runs $140–220 per person for an 8-course evening, including the educator segment and a non-alcoholic pairing. Add $30 per person for an alcohol pairing. Return transport from a Kingston or Blue Mountains hotel is $40–90 depending on distance.",
-      },
-      {
-        type: 'p',
-        text: "MAPL doesn't host dosed dinners directly, but pairs Blue Mountain hikes with licensed afternoon tastings that fit into a day trip. See /explore for the current schedule.",
-      },
-    ],
-    relatedSlugs: ['cannabis-wellness-retreat-jamaica', 'blue-mountain-coffee-story'],
   },
   {
     slug: 'cbd-spa-jamaica',
@@ -622,78 +485,9 @@ export const POSTS_1: BlogPost[] = [
       },
       {
         type: 'p',
-        text: "If you want the recovery without the label, a regular deep-tissue massage from a great therapist is often just as good. MAPL lists vetted boutique spa partners as add-ons when you book an experience on /explore.",
+        text: "If you want the recovery without the label, a regular deep-tissue massage from a great therapist is often just as good. MAPL TOURS lists vetted boutique spa partners as add-ons when you book an experience on /explore.",
       },
     ],
-    relatedSlugs: ['cannabis-wellness-retreat-jamaica', 'negril-guide'],
-  },
-  {
-    slug: 'ganja-farm-tour-ocho-rios',
-    title: 'Ganja Farm Tours Near Ocho Rios: What Happens on One',
-    excerpt:
-      'A ganja farm tour Ocho Rios report from the hills of St. Ann, the plants, the history, the harvest, and what a licensed tour actually includes.',
-    category: 'Culture',
-    image: BLOG_IMAGES['ganja-farm-tour-ocho-rios'],
-    readTime: 5,
-    publishedAt: '2025-08-07',
-    author: andre,
-    body: [
-      {
-        type: 'p',
-        text: "About forty minutes inland from Ocho Rios, past Fern Gully and up into the hills of St. Ann, there's a dirt road that cuts through sugar-cane fields and ends at a licensed cannabis farm. A ganja farm tour Ocho Rios, properly run, has been legal here since the 2015 decriminalization and the 2016 licensing framework, and it's a quietly fascinating three hours that most visitors still don't know they can book.",
-      },
-      {
-        type: 'p',
-        text: "I went on one last dry season with eight other guests and a farmer named Lloyd, whose family has been growing in this exact field for three generations. What follows is what the day actually looks like.",
-      },
-      { type: 'h2', text: "The farm" },
-      {
-        type: 'p',
-        text: "Lloyd's is a four-acre farm on a south-facing slope at about 1,800 feet. The micro-climate, warm days, cool nights, consistent trade winds, is specifically why St. Ann produces some of the most sought-after landrace varieties on the island. He grows about twelve cultivars, all heirloom, all cultivated outdoors under sun with no lights and no hydroponic setup.",
-      },
-      {
-        type: 'p',
-        text: "The tour walks the rows in the cool of morning. You'll see seedlings, early-vegetative plants, mid-flower, and at the right time of year, full-harvest plants at 8–10 feet tall. Lloyd talks through his composting, which is mostly sea kelp and pimento-wood ash from the jerk-pit side of the family business.",
-      },
-      { type: 'h2', text: "The history" },
-      {
-        type: 'p',
-        text: "A good tour spends as much time on cultural history as on agronomy. Cannabis arrived in Jamaica with Indian indentured laborers in the 1840s. The word 'ganja' is Hindi. It was criminalized during the colonial era, reshaped by Rastafari sacramental use in the 20th century, and slowly decriminalized between 2015 and 2018. A farm tour tells that story through the people who lived through the criminalized years, which is almost always the family that owns the farm.",
-      },
-      {
-        type: 'quote',
-        text: "My grandfather was arrested twice for growing this exact plant on this exact hill. My grandson will grow it with a license and a web page. That is the whole story, right there.",
-        attribution: 'Lloyd, farmer in St. Ann',
-      },
-      { type: 'h2', text: "What's included" },
-      {
-        type: 'list',
-        items: [
-          'Round-trip transfer from an Ocho Rios hotel (about 40 minutes each way)',
-          'Guided farm walk of 90 minutes with the grower',
-          'Drying-shed and curing-room visit',
-          'A tasting session at the on-site licensed dispensary (for guests 21+)',
-          'A Jamaican lunch, usually ital, cooked on-site',
-        ],
-      },
-      {
-        type: 'p',
-        text: "Tastings at the licensed herb house are structured like a wine flight. Four to six small samples, each with a one-line strain note and a cultivation date. You are not obligated to partake; non-smokers are welcome and the lunch is worth the drive alone.",
-      },
-      {
-        type: 'p',
-        text: "As with every licensed experience, product stays on-property. You cannot leave with any amount, not legally, not safely. Lloyd will tell you this more than once.",
-      },
-      { type: 'h2', text: "What it costs" },
-      {
-        type: 'p',
-        text: "A ganja farm tour Ocho Rios runs $95–140 per person, typically 5 hours door-to-door including transport and lunch. Private tours for 2–4 guests run $220–320 per person. Most farms have a minimum age of 18 for the walk and 21 for the tasting. Book 48 hours ahead, most licensed farms only host three or four groups per week.",
-      },
-      {
-        type: 'p',
-        text: "MAPL partners with two licensed St. Ann farms for small-group visits that pair the farm walk with a Dunn's River or Blue Hole morning. See upcoming dates on /explore.",
-      },
-    ],
-    relatedSlugs: ['dunns-river-falls-tour-guide', 'ocho-rios-complete-guide'],
+    relatedSlugs: ['negril-guide'],
   },
 ]

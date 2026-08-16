@@ -53,7 +53,7 @@ const T: Record<string, Record<string, string>> = {
     'When': 'Cuando', 'Where': 'Donde', 'Who': 'Quien', 'Guests': 'Huespedes', 'Any dates': 'Cualquier fecha',
     'Add a comment...': 'Agregar un comentario...', 'Comments': 'Comentarios', 'Reply': 'Responder',
     'Share': 'Compartir', 'Send': 'Enviar', 'No comments yet. Be the first!': 'Sin comentarios aun. Se el primero!',
-    'Why MAPL Tours': 'Por que MAPL Tours',
+    'Why MAPL TOURS': 'Por que MAPL TOURS',
     'The authenticity of local culture.': 'La autenticidad de la cultura local.',
     'The comfort of a curated trip.': 'La comodidad de un viaje curado.',
     'Only the best experiences': 'Solo las mejores experiencias',
@@ -91,7 +91,7 @@ const T: Record<string, Record<string, string>> = {
     // Checkout - Confirmed
     'Your Jamaican adventure is booked.': 'Tu aventura jamaicana esta reservada.',
     // Concierge section
-    'The MAPL Experience': 'La experiencia MAPL',
+    'The MAPL TOURS Experience': 'La experiencia MAPL TOURS',
     'Build your perfect day in Jamaica.': 'Construye tu dia perfecto en Jamaica.',
     'Pick the experiences you love. We arrange your private transport, guide, and full itinerary from door to door.': 'Elige las experiencias que te gusten. Organizamos tu transporte privado, guia e itinerario completo de puerta a puerta.',
     'Choose what excites you': 'Elige lo que te emociona',
@@ -219,7 +219,7 @@ const T: Record<string, Record<string, string>> = {
     'Booking Confirmed': 'Reservation confirmee',
     'When': 'Quand', 'Where': 'Ou', 'Who': 'Qui', 'Guests': 'Invites', 'Any dates': 'Toutes les dates',
     'Comments': 'Commentaires', 'Reply': 'Repondre', 'Contact Us': 'Contactez-nous',
-    'Why MAPL Tours': 'Pourquoi MAPL Tours',
+    'Why MAPL TOURS': 'Pourquoi MAPL TOURS',
     'The authenticity of local culture.': 'L\'authenticite de la culture locale.',
     'The comfort of a curated trip.': 'Le confort d\'un voyage organise.',
     // Categories

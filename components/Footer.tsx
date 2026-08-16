@@ -31,7 +31,7 @@ export default function Footer() {
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src="/mapl-logo.svg"
-              alt="MAPL Tours Jamaica"
+              alt="MAPL TOURS JAMAICA"
               width={185}
               height={42}
               /* Same 42px as the header lockup, so the mark reads at one

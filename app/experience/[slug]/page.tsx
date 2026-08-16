@@ -26,7 +26,7 @@ export function generateMetadata({ params }: { params: { slug: string } }): Meta
       url,
       title,
       description,
-      siteName: 'MAPL Tours Jamaica',
+      siteName: 'MAPL TOURS JAMAICA',
       images: exp.image ? [{ url: exp.image, alt: exp.title }] : undefined,
     },
     twitter: {

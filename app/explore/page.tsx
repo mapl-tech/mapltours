@@ -3,7 +3,7 @@ import { Suspense } from 'react'
 import ExploreView from '@/components/ExploreView'
 
 export const metadata: Metadata = {
-  title: 'Explore Jamaica Tours & Experiences | MAPL Tours',
+  title: 'Explore Jamaica Tours & Experiences | MAPL TOURS',
   description:
     'Browse and filter authentic Jamaica tours and experiences by category and parish, cliff diving in Negril, reggae sessions in Kingston, coffee treks in the Blue Mountains, and more.',
   alternates: { canonical: 'https://mapltours.com/explore' },

@@ -14,17 +14,21 @@ export function GET() {
     })
     .join('\n')
 
+  // Derived from the catalog so the quoted range cannot drift out of date.
+  const prices = experiences.map((exp) => exp.price)
+  const priceRange = `$${Math.min(...prices)}–$${Math.max(...prices)}`
+
   const blogLines = BLOG_POSTS
     .slice()
     .sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime())
     .map((post) => `- [${post.title}](${baseUrl}/blog/${post.slug}): ${post.excerpt}`)
     .join('\n')
 
-  const body = `# MAPL Tours Jamaica
+  const body = `# MAPL TOURS JAMAICA
 
 > Experiential travel platform for Jamaica. Discover authentic, locally-led tours and cultural experiences, cliff diving in Negril, Blue Mountain coffee treks, reggae studio sessions, jerk cooking classes, and more. Curated and operated by Jamaican creators, not resort concierges.
 
-MAPL Tours connects travelers directly with Jamaican guides, chefs, selectors, and cultural stewards. Every experience is bookable online in USD, with flexible cancellation within 48 hours of booking. The product is built around a vertical-video discovery feed; users build an itinerary and check out like Shopify.
+MAPL TOURS connects travelers directly with Jamaican guides, chefs, selectors, and cultural stewards. Every experience is bookable online in USD, with flexible cancellation within 48 hours of booking. The product is built around a vertical-video discovery feed; users build an itinerary and check out like Shopify.
 
 Tagline: "Discover Jamaica Beyond the Resort."
 
@@ -33,7 +37,7 @@ Tagline: "Discover Jamaica Beyond the Resort."
 - [Home](${baseUrl}/): Video-reel discovery feed of Jamaica experiences.
 - [Explore](${baseUrl}/explore): Filterable catalog by category (Adventure, Nature, Music, Food, Culture, Water) and parish (Kingston, St. Andrew, St. Ann, Westmoreland, Portland, St. Elizabeth).
 - [Airport transfers](${baseUrl}/transfers): Flat-rate private transfers from Sangster International Airport (MBJ) to every major resort in Jamaica. Priced by zone, 1–4 passengers per vehicle.
-- [The MAPL Journal](${baseUrl}/blog): Essays and guides from local writers.
+- [The MAPL TOURS Journal](${baseUrl}/blog): Essays and guides from local writers.
 - [About](${baseUrl}/about): Company background.
 - [Contact](${baseUrl}/contact): Customer support.
 - [Help](${baseUrl}/help): FAQ and booking support.
@@ -54,9 +58,12 @@ ${blogLines}
 
 - Country: Jamaica
 - Currency: USD
-- Cancellation: Flexible within 48 hours of booking, less a 20% administration charge plus taxes (if applicable)
-- Booking fee: 5% added to subtotal at checkout
-- Price range: $55–$145 per person
+- Transport: private door-to-door transport is included in every experience booking, priced per travel day from the traveler's pickup and drop-off locations and itemized at checkout
+- Booking cutoff: bookings close 24 hours before an experience or pickup begins
+- Cancellation: Flexible within 48 hours of booking, requested from the Profile page and reviewed before refund, less a 20% administration charge plus taxes (if applicable). Non-refundable after that window, or once the experience has begun
+- Changes: date and guest changes follow the same 48-hour window, by contacting support
+- Service fee: 20% added to subtotal at checkout
+- Price range: ${priceRange} per person
 - Payments: Stripe
 
 ## For AI agents

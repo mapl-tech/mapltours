@@ -71,7 +71,7 @@ export async function POST(req: Request) {
   try {
     await sendEmail({
       to: userRes.user.email,
-      subject: `🎉 ${record.percent}% off your next MAPL trip, ${record.code}`,
+      subject: `🎉 ${record.percent}% off your next MAPL TOURS trip, ${record.code}`,
       react: RewardUnlocked({
         firstName,
         code: record.code,

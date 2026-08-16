@@ -31,13 +31,13 @@ export default function RewardUnlocked({
     : null
 
   return (
-    <MaplLayout preheader={`🎉 ${percent}% off your next MAPL trip, code ${code}`}>
+    <MaplLayout preheader={`🎉 ${percent}% off your next MAPL TOURS trip, code ${code}`}>
       <Text style={{ ...s.kicker, color: '#00A550' }}>Reward unlocked</Text>
       <Heading style={s.heading}>
         {name}, that&rsquo;s {percent}% off, on us.
       </Heading>
       <Text style={s.body}>
-        You&rsquo;ve shared {milestone} approved clips with the MAPL community{milestone === 5 ? ', the biggest milestone.' : '.'} We saved you <strong style={{ color: '#fff' }}>{percent}% off your next trip</strong> as a thank-you. It&rsquo;s already on your account and will apply automatically at checkout.
+        You&rsquo;ve shared {milestone} approved clips with the MAPL TOURS community{milestone === 5 ? ', the biggest milestone.' : '.'} We saved you <strong style={{ color: '#fff' }}>{percent}% off your next trip</strong> as a thank-you. It&rsquo;s already on your account and will apply automatically at checkout.
       </Text>
 
       {/* Code pill */}
@@ -63,7 +63,7 @@ export default function RewardUnlocked({
       <div style={s.panel}>
         <Text style={s.panelKicker}>How to use it</Text>
         <Text style={s.panelBody}>
-          · Works on any future MAPL booking<br />
+          · Works on any future MAPL TOURS booking<br />
           · Auto-applies at checkout, no code needed<br />
           · One-time use · not stackable with other offers
           {expiresPretty && <><br />· Valid through <strong style={{ color: '#fff' }}>{expiresPretty}</strong></>}

@@ -8,12 +8,14 @@ export const dynamic = 'force-dynamic'
 
 export const metadata: Metadata = {
   title: 'Transfer Confirmation',
-  description: 'Your MAPL Tours Jamaica airport transfer booking confirmation.',
+  description: 'Your MAPL TOURS JAMAICA airport transfer booking confirmation.',
   robots: { index: false, follow: false },
 }
 
 interface SearchParams {
   payment_intent?: string
+  /** Set when a gift card covered the whole fare, so no PaymentIntent exists. */
+  booking_id?: string
   redirect_status?: string
 }
 
@@ -66,8 +68,15 @@ function emptyData(): ConfirmData {
 async function resolveConfirm(
   piId: string | undefined,
   redirectStatus: string | undefined,
+  bookingIdParam?: string,
 ): Promise<ConfirmData> {
   const empty = emptyData()
+
+  // Gift-covered transfer: paid entirely from a card balance, so Stripe never
+  // saw it. The booking row is the authority, and only a row already marked
+  // paid resolves.
+  if (!piId && bookingIdParam) return resolveConfirmFromBooking(bookingIdParam)
+
   if (!piId) return empty
 
   const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!)
@@ -162,6 +171,57 @@ async function resolveConfirm(
   }
 }
 
+/**
+ * Confirmation for a transfer with no card payment, because a gift card
+ * covered the whole fare. Same privacy posture as the PaymentIntent path.
+ */
+async function resolveConfirmFromBooking(bookingId: string): Promise<ConfirmData> {
+  const empty = emptyData()
+  if (!/^[0-9a-f-]{36}$/i.test(bookingId)) return empty
+
+  const supabase = createServiceClient()
+  const { data: booking } = await supabase
+    .from('bookings')
+    .select('id, first_name, subtotal, booking_fee, total_paid, currency, paid_at, status, booking_type')
+    .eq('id', bookingId)
+    .eq('booking_type', 'transfer')
+    .eq('status', 'paid')
+    .maybeSingle()
+
+  if (!booking) return empty
+
+  const { data: items } = await supabase
+    .from('booking_items')
+    .select('destination, hotel, zone, trip_type, passengers, price_per_person, arrival_at, arrival_flight, departure_at, departure_flight')
+    .eq('booking_id', booking.id)
+
+  return {
+    status: 'succeeded',
+    bookingRef: humanizeId(booking.id),
+    paidAt: booking.paid_at ?? null,
+    customerName: (booking.first_name ?? '').trim() || null,
+    email: null,
+    phone: null,
+    country: null,
+    specialRequests: null,
+    subtotal: booking.subtotal != null ? Number(booking.subtotal) : null,
+    bookingFee: booking.booking_fee != null ? Number(booking.booking_fee) : null,
+    totalPaid: booking.total_paid != null ? Number(booking.total_paid) : null,
+    currency: (booking.currency ?? 'usd').toUpperCase(),
+    transfers: (items ?? []).map((i) => ({
+      destination: (i.hotel as string | null) ?? (i.destination as string),
+      zone: (i.zone as string | null) ?? '',
+      tripType: (((i.trip_type as string | null) ?? 'one_way') as 'one_way' | 'round_trip'),
+      passengers: (i.passengers as number | null) ?? 1,
+      priceUsd: Number(i.price_per_person),
+      arrivalAt: i.arrival_at as string | null,
+      arrivalFlight: i.arrival_flight as string | null,
+      departureAt: i.departure_at as string | null,
+      departureFlight: i.departure_flight as string | null,
+    })),
+  }
+}
+
 function humanizeId(id: string): string {
   return 'MAPL-' + id.slice(0, 8).toUpperCase()
 }
@@ -199,7 +259,11 @@ export default async function TransferConfirmPage({
 }: {
   searchParams: SearchParams
 }) {
-  const data = await resolveConfirm(searchParams.payment_intent, searchParams.redirect_status)
+  const data = await resolveConfirm(
+    searchParams.payment_intent,
+    searchParams.redirect_status,
+    searchParams.booking_id,
+  )
 
   return (
     <div
@@ -291,7 +355,7 @@ function Success({ data }: { data: ConfirmData }) {
         {data.email
           ? `Confirmation on its way to ${data.email}.`
           : 'A confirmation email is on the way.'}{' '}
-        MAPL will reach out 24 hours before pickup.
+        MAPL TOURS will reach out 24 hours before pickup.
       </p>
 
       {data.bookingRef && (
@@ -493,7 +557,7 @@ function Success({ data }: { data: ConfirmData }) {
             <li>· Clear immigration and collect your bags.</li>
             <li>
               · Exit the terminal at arrivals, your driver will be holding a
-              MAPL Tours sign with your name.
+              MAPL TOURS sign with your name.
             </li>
             <li>
               · Reach us any time:{' '}
@@ -501,7 +565,7 @@ function Success({ data }: { data: ConfirmData }) {
                 contact@mapltours.com
               </Link>
             </li>
-            <li>· Flexible cancellation within 48 hours of booking. Refunds are less a 20% administration charge plus taxes (if applicable).</li>
+            <li>· Flexible cancellation within 48 hours of booking. Request it from your Profile page, or reply to your confirmation email, and we will review it. Refunds are less a 20% administration charge plus taxes (if applicable).</li>
           </ul>
         </div>
       </Card>

@@ -57,7 +57,7 @@ export default async function DispatchPage({ params }: { params: { id: string } 
   const svc = createServiceClient()
   const { data: adminRow } = await svc.from('admins').select('user_id').eq('user_id', user.id).maybeSingle()
   if (!adminRow) {
-    return <Shell><h1 style={{ fontWeight: 700, fontSize: 22 }}>Not authorised</h1><p style={{ marginTop: 8, color: soft }}>This page is limited to MAPL admins.</p></Shell>
+    return <Shell><h1 style={{ fontWeight: 700, fontSize: 22 }}>Not authorised</h1><p style={{ marginTop: 8, color: soft }}>This page is limited to MAPL TOURS admins.</p></Shell>
   }
 
   const { data: booking } = await svc.from('bookings').select('*, booking_items(*)').eq('id', params.id).maybeSingle()

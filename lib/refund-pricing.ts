@@ -37,6 +37,16 @@ export interface RefundableBooking {
   created_at: string
   total_paid: number | string
   /**
+   * How much of total_paid came off a gift card rather than a payment card.
+   * Null/absent means none.
+   *
+   * This matters because total_paid is the whole cart, while Stripe only ever
+   * captured total_paid - gift_card_amount. Quoting a refund off total_paid
+   * asks Stripe to refund more than it took, which it rejects outright once
+   * the gift covered more than the admin charge.
+   */
+  gift_card_amount?: number | string | null
+  /**
    * When the earliest part of the booking starts (ISO), from
    * earliestServiceStart(). Once that moment passes the booking has been
    * delivered and is no longer refundable, even inside the 48 hours.
@@ -66,7 +76,14 @@ export type RefundQuote =
       /** Cents, so the caller hands Stripe an integer with no float drift. */
       grossCents: number
       adminChargeCents: number
+      /** Total value returned to the traveler: cash + gift credit. */
       refundCents: number
+      /** Of refundCents, how much goes back to the payment card via Stripe. */
+      cashRefundCents: number
+      /** Of refundCents, how much goes back onto the gift card's balance. */
+      giftRefundCents: number
+      /** What Stripe actually captured for this booking. */
+      cashCapturedCents: number
       hoursSinceBooking: number
       /** When the window shuts, for "cancel free until…" copy. */
       deadline: Date
@@ -126,12 +143,26 @@ export function quoteRefund(booking: RefundableBooking, now: Date = new Date()):
     return { refundable: false, reason: 'not_paid', hoursSinceBooking, deadline }
   }
   const adminChargeCents = Math.round(grossCents * ADMIN_CHARGE_RATE)
+  const refundCents = grossCents - adminChargeCents
+
+  // Split the refund by where the money actually came from. The card is made
+  // whole FIRST, up to the refund, and only what is left rides back onto the
+  // gift card as credit — so the admin charge comes out of gift credit before
+  // it touches the traveler's cash. Real money back beats store credit back,
+  // and Stripe can never be asked for more than it captured.
+  const giftCents = Math.round(Number(booking.gift_card_amount ?? 0) * 100)
+  const cashCapturedCents = Math.max(0, grossCents - (Number.isFinite(giftCents) ? giftCents : 0))
+  const cashRefundCents = Math.min(refundCents, cashCapturedCents)
+  const giftRefundCents = refundCents - cashRefundCents
 
   return {
     refundable: true,
     grossCents,
     adminChargeCents,
-    refundCents: grossCents - adminChargeCents,
+    refundCents,
+    cashRefundCents,
+    giftRefundCents,
+    cashCapturedCents,
     hoursSinceBooking,
     deadline,
   }

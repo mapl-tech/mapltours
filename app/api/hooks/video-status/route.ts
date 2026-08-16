@@ -86,7 +86,7 @@ export async function POST(req: Request) {
     if (payload.type === 'INSERT' && record.status === 'pending') {
       await sendEmail({
         to: email,
-        subject: 'Your MAPL clip is in review',
+        subject: 'Your MAPL TOURS clip is in review',
         react: VideoSubmitted({ firstName, experienceTitle }),
         tags: [
           { name: 'category', value: 'video_submitted' },
@@ -117,7 +117,7 @@ export async function POST(req: Request) {
           to: email,
           subject: rewardJustUnlocked
             ? '🎬 Your clip is live, and you just unlocked 5% off'
-            : 'Your MAPL clip is live',
+            : 'Your MAPL TOURS clip is live',
           react: VideoApproved({
             firstName,
             experienceTitle,
@@ -137,7 +137,7 @@ export async function POST(req: Request) {
       if (record.status === 'rejected') {
         await sendEmail({
           to: email,
-          subject: "We couldn't publish your MAPL clip",
+          subject: "We couldn't publish your MAPL TOURS clip",
           react: VideoRejected({
             firstName,
             experienceTitle,

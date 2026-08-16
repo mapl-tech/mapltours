@@ -59,7 +59,7 @@ export default function LeftNav() {
       {/* Logo */}
       <Link
         href="/"
-        aria-label="MAPL Tours, go to the feed"
+        aria-label="MAPL TOURS, go to the feed"
         style={{
           fontFamily: 'var(--font-dm-sans)',
           fontWeight: 800,

@@ -63,6 +63,6 @@ export const TRANSFER_FAQS: TransferFaq[] = [
   },
   {
     q: 'What is your cancellation policy?',
-    a: 'Flexible cancellation within 48 hours of booking, with a refund of the amount paid less an administration charge equivalent to 20% of the total amount of your fees plus taxes (if applicable). After that 48-hour window the fare is non-refundable, your driver is already booked and is turning down other trips. No-shows are charged in full.',
+    a: 'Flexible cancellation within 48 hours of booking. Request it from your Profile page or by replying to your confirmation email, and we review it before refunding, with a refund of the amount paid less an administration charge equivalent to 20% of the total amount of fees paid plus taxes (if applicable). Changes to your pickup run on the same 48-hour window, just contact us. After that window the fare is non-refundable, your driver is already booked and is turning down other trips. No-shows are charged in full.',
   },
 ]

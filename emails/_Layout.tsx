@@ -86,7 +86,7 @@ export function MaplLayout({ preheader, children }: MaplLayoutProps) {
           <Hr style={hr} />
           <Section style={footerPad} className="mapl-pad">
             <Text style={footerLine}>
-              MAPL Tours · Kingston · Negril · Ocho Rios · Portland
+              MAPL TOURS · Kingston · Negril · Ocho Rios · Portland
             </Text>
             <Text style={footerLine}>
               <Link href={siteUrl()} style={footerLink}>
@@ -98,7 +98,7 @@ export function MaplLayout({ preheader, children }: MaplLayoutProps) {
               </Link>
             </Text>
             <Text style={footerLineMuted}>
-              © {new Date().getFullYear()} MAPL Tours. All rights reserved.
+              © {new Date().getFullYear()} MAPL TOURS. All rights reserved.
             </Text>
           </Section>
         </Container>

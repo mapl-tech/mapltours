@@ -3,7 +3,7 @@ import EditorialPage, { Section, ValueCard } from '@/components/EditorialPage'
 
 export const metadata: Metadata = {
   title: 'Accessibility',
-  description: 'MAPL Tours Jamaica is committed to making travel accessible to everyone. Learn about our accessibility features and accommodations.',
+  description: 'MAPL TOURS JAMAICA is committed to making travel accessible to everyone. Learn about our accessibility features and accommodations.',
   alternates: {
     canonical: 'https://mapltours.com/accessibility',
   },
@@ -24,8 +24,7 @@ export default function AccessibilityPage() {
 
       <Section title="Experience Accessibility">
         <ValueCard title="Adaptive Experiences" desc="Many of our experiences can be adapted for travelers with mobility challenges. Contact us before booking and we will work with our creators to ensure you can fully participate." />
-        <ValueCard title="Dietary Accommodations" desc="All food experiences can accommodate dietary restrictions including vegetarian, vegan, halal, kosher, and allergy-specific requirements. Let us know during checkout using the Special Requests field." />
-        <ValueCard title="Communication Support" desc="If you need communication support such as sign language interpretation, we can arrange this for select experiences with advance notice." />
+        <ValueCard title="Dietary Accommodations" desc="All food experiences can accommodate dietary restrictions including vegetarian, vegan, halal, kosher, and allergy-specific requirements." />
       </Section>
 
       <Section title="Feedback">

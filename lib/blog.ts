@@ -256,7 +256,7 @@ const HAND_POSTS: BlogPost[] = [
       { type: 'h2', text: 'Getting around' },
       {
         type: 'p',
-        text: "Don't rent a car on your first trip. The driving is left-side, fast, and mountain roads have no shoulders. Use private drivers (most hotels can arrange them) or the JUTA network. For short hops, route taxis are cheap and completely safe in daylight.",
+        text: "Don't rent a car on your first trip. The driving is left-side, fast, and mountain roads have no shoulders. Use private drivers (most hotels can arrange them) or the JUTA network. For short hops, route taxis are cheap and widely used by locals; most visitors stick to daylight hours and travel with someone who knows the route.",
       },
       { type: 'h2', text: 'Weather' },
       {

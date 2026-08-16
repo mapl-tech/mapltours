@@ -1,5 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Lets a verification build run without clobbering the dev server's .next
+  ...(process.env.NEXT_BUILD_DIST ? { distDir: process.env.NEXT_BUILD_DIST } : {}),
   images: {
     remotePatterns: [
       { protocol: 'https', hostname: 'images.unsplash.com' },

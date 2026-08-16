@@ -6,12 +6,12 @@ const SITE_URL = 'https://mapltours.com'
 const BLOG_URL = `${SITE_URL}/blog`
 
 export const metadata: Metadata = {
-  title: 'The MAPL Journal, Jamaica Travel Stories & Guides',
+  title: 'The MAPL TOURS Journal, Jamaica Travel Stories & Guides',
   description:
     'Stories, guides, and dispatches from the real Jamaica. Essays from pit masters, selectors, and local creators who know the island beyond the resort.',
   alternates: { canonical: BLOG_URL },
   openGraph: {
-    title: 'The MAPL Journal, Jamaica Travel Stories & Guides',
+    title: 'The MAPL TOURS Journal, Jamaica Travel Stories & Guides',
     description: 'Stories, guides, and dispatches from the real Jamaica.',
     type: 'website',
     url: BLOG_URL,
@@ -19,7 +19,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'The MAPL Journal, Jamaica Travel Stories & Guides',
+    title: 'The MAPL TOURS Journal, Jamaica Travel Stories & Guides',
     description: 'Stories, guides, and dispatches from the real Jamaica.',
   },
 }
@@ -34,13 +34,13 @@ export default function BlogPage() {
     '@type': 'Blog',
     '@id': BLOG_URL,
     url: BLOG_URL,
-    name: 'The MAPL Journal',
+    name: 'The MAPL TOURS Journal',
     description:
       'Stories, guides, and dispatches from the real Jamaica. Essays from pit masters, selectors, and local creators.',
     inLanguage: 'en-US',
     publisher: {
       '@type': 'Organization',
-      name: 'MAPL Tours Jamaica',
+      name: 'MAPL TOURS JAMAICA',
       logo: { '@type': 'ImageObject', url: `${SITE_URL}/icon.png` },
     },
     blogPost: sorted.map((p) => ({
@@ -60,7 +60,7 @@ export default function BlogPage() {
     '@type': 'BreadcrumbList',
     itemListElement: [
       { '@type': 'ListItem', position: 1, name: 'Home', item: SITE_URL },
-      { '@type': 'ListItem', position: 2, name: 'The MAPL Journal', item: BLOG_URL },
+      { '@type': 'ListItem', position: 2, name: 'The MAPL TOURS Journal', item: BLOG_URL },
     ],
   }
 

@@ -55,7 +55,7 @@ const POPULAR_ROUTES: Array<{
    used elsewhere on the site. Alt text is descriptive for SEO + a11y. */
 const HERO_IMAGE = {
   src: HERO, // aerial Buff Bay coastal road
-  alt: 'Aerial view of Jamaica’s north-coast road between Montego Bay and Ocho Rios, the route MAPL drivers use for airport transfers.',
+  alt: 'Aerial view of Jamaica’s north-coast road between Montego Bay and Ocho Rios, the route MAPL TOURS drivers use for airport transfers.',
 }
 
 const ZONE_IMAGES: Record<TransferZone, { src: string; alt: string }> = {
@@ -466,7 +466,7 @@ export default function TransfersView({ activity }: { activity?: TransferActivit
         </div>
       </section>
 
-      {/* ───────────── WHY MAPL (value prop) ───────────── */}
+      {/* ───────────── WHY MAPL TOURS (value prop) ───────────── */}
       <section className="xfer-why-section">
         <div className="container" style={{ maxWidth: 1100 }}>
           <div className="xfer-center-head">
@@ -1944,7 +1944,7 @@ function SavingsRow({
         <span className="xfer-saving-mapl">{formatPrice(mapl)}</span>
         <span className="xfer-saving-typical">${typical}</span>
       </span>
-      <span className="xfer-saving-tag">MAPL flat rate</span>
+      <span className="xfer-saving-tag">MAPL TOURS flat rate</span>
     </div>
   )
 }

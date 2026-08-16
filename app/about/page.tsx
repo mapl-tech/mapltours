@@ -1,38 +1,37 @@
 import type { Metadata } from 'next'
 import Image from 'next/image'
-import Link from 'next/link'
 import { DESTINATION_IMAGES } from '@/lib/experiences'
 import Footer from '@/components/Footer'
 
 export const metadata: Metadata = {
-  title: 'About MAPL Tours, Jamaica, Told by Its People',
-  description: 'The story behind MAPL Tours Jamaica: a cultural travel platform connecting travelers with authentic experiences crafted by local creators.',
+  title: 'About MAPL TOURS JAMAICA, Explore the Whole Island',
+  description: 'How MAPL TOURS works: browse Jamaica\u2019s food, culture and experiences, build a day around what you actually want, and let a private driver handle the rest.',
   alternates: { canonical: 'https://mapltours.com/about' },
 }
 
 const VALUES = [
   {
-    title: 'Authenticity, without compromise',
-    body: 'Every experience on MAPL is created and led by a Jamaican. We reject the majority of submissions so only the most honest, most considered work reaches our travelers.',
+    title: 'The whole island, not one theme',
+    body: 'Food, culture, adventure, music, water and nature. Jamaica is not a single category, and a day here rarely is either — most people want a waterfall in the morning and jerk in the afternoon.',
   },
   {
-    title: 'Tourism that uplifts',
-    body: 'The money you spend here flows back to the creators, the parishes, the families. We measure ourselves by what our communities gain, not by what we extract.',
+    title: 'You build the day',
+    body: 'Pick the experiences and the places you actually want, say how long you need at each, and the itinerary shapes itself around you rather than a fixed departure time.',
   },
   {
-    title: 'Cultural stewardship',
-    body: 'We work alongside elders, chefs, musicians, farmers, and fishermen to make sure the Jamaica we share is the Jamaica they recognise.',
+    title: 'We handle the road',
+    body: 'Negril to Ocho Rios is a hundred miles of coast road, and the good stops are rarely next to each other. Private door-to-door transport comes with every itinerary, so there is no rental car and no working out the route yourself.',
   },
   {
-    title: 'A standard we stand behind',
-    body: 'Every experience is personally vetted. Every booking is supported around the clock. Every cancellation is flexible within 48 hours of booking. No problem.',
+    title: 'Honest about what you pay',
+    body: 'You pay MAPL TOURS for the experiences we run and the driving we do. Restaurants and attractions you settle directly at their own price. Cancellations are flexible within 48 hours of booking.',
   },
 ]
 
 const STATS = [
-  { value: '19', label: 'Curated experiences' },
-  { value: '4.9', label: 'Average rating' },
-  { value: '8', label: 'Parishes covered' },
+  { value: '19', label: 'Guided experiences' },
+  { value: '44', label: 'Restaurants & sites' },
+  { value: '10', label: 'Parishes covered' },
 ]
 
 const GOLD = '#A68B3C'
@@ -111,8 +110,8 @@ export default function AboutPage() {
             color: '#fff',
             textWrap: 'balance',
           }}>
-            Jamaica,<br />
-            <span style={{ fontStyle: 'italic', fontWeight: 700, color: GOLD_WARM }}>told by</span> its people.
+            Explore Jamaica,<br />
+            <span style={{ fontStyle: 'italic', fontWeight: 700, color: GOLD_WARM }}>your way</span>.
           </h1>
           <p style={{
             marginTop: 'clamp(18px, 2.5vh, 28px)',
@@ -123,7 +122,7 @@ export default function AboutPage() {
             color: 'rgba(255,255,255,0.82)',
             fontWeight: 400,
           }}>
-            A cultural travel platform built for the Jamaica beyond the resort, one story, one parish, one local creator at a time.
+            For visitors who would rather see the island than the inside of a resort, and would rather not rent a car to do it.
           </p>
         </div>
       </section>
@@ -153,11 +152,11 @@ export default function AboutPage() {
           textWrap: 'balance',
           maxWidth: 940,
         }}>
-          We didn&rsquo;t build MAPL Tours to sell Jamaica. We built it so Jamaica could
+          Pick the food, culture and experiences you want, and
           {' '}
-          <span style={{ fontStyle: 'italic', color: GOLD }}>tell its own story</span>
+          <span style={{ fontStyle: 'italic', color: GOLD }}>we drive you there from your hotel and back</span>.
           {' '}
-         , in its own voice, on its own terms, to travelers who actually want to listen.
+          Airport pickups too, whenever you land.
         </p>
       </section>
 
@@ -196,7 +195,7 @@ export default function AboutPage() {
               fontWeight: 600, textTransform: 'uppercase',
               letterSpacing: '0.24em', color: 'var(--gold-text)', marginBottom: 18,
             }}>
-              Who We Are
+              What we do
             </p>
             <h2 style={{
               fontFamily: 'var(--font-dm-sans)', fontWeight: 700,
@@ -204,16 +203,16 @@ export default function AboutPage() {
               lineHeight: 1.12, letterSpacing: '-0.018em',
               color: INK, marginBottom: 24, textWrap: 'balance',
             }}>
-              A product of MAPL Tech, with a single, stubborn idea.
+              One island, and everything you came for on it.
             </h2>
             <p style={{ fontSize: 16, lineHeight: 1.8, color: 'var(--text-secondary)', fontFamily: 'var(--font-dm-sans)', marginBottom: 20 }}>
-              The best way to experience Jamaica has never been through a lobby key card. It&rsquo;s through Devon&rsquo;s jerk pit in Boston Bay, a sound system in Trench Town, the first cup of coffee poured at 5,000 feet as the Blue Mountains are still waking up.
+              The best of Jamaica is spread across the island, and almost none of it is at your hotel. It&rsquo;s a jerk pit off the coast road, a great house on a hill, a waterfall an hour inland, a fish fry that only happens when the boats come in.
             </p>
             <p style={{ fontSize: 16, lineHeight: 1.8, color: 'var(--text-secondary)', fontFamily: 'var(--font-dm-sans)', marginBottom: 20 }}>
-              MAPL Tours is a cultural travel platform that connects travelers with the people who make Jamaica, Jamaica, creators, chefs, fishermen, musicians, farmers, historians, and pays them properly for the privilege.
+              MAPL TOURS is how you reach all of it. Browse experiences we run with Jamaican guides, add real restaurants and heritage sites you want to see, say how long you want at each, and we build the day around it with a private driver from door to door.
             </p>
             <p style={{ fontSize: 16, lineHeight: 1.8, color: 'var(--text-secondary)', fontFamily: 'var(--font-dm-sans)' }}>
-              We are proudly built by <Link href="https://www.mapltech.com" target="_blank" rel="noopener noreferrer" style={{ color: INK, fontWeight: 600, textDecoration: 'underline', textUnderlineOffset: 3, textDecorationThickness: '1px' }}>MAPL Tech</Link>, a technology company dedicated to products that connect people with authentic cultural experiences around the world.
+              You pay us for the experiences we run and the driving we do. Restaurants and attractions you settle directly, at the door, at their price. We also run flat-rate airport transfers to and from Sangster International, whether or not you book anything else.
             </p>
           </div>
         </div>
@@ -238,7 +237,7 @@ export default function AboutPage() {
                 fontWeight: 600, textTransform: 'uppercase',
                 letterSpacing: '0.24em', color: 'var(--gold-text)', marginBottom: 14,
               }}>
-                Our Values
+                How it works
               </p>
               <h2 style={{
                 fontFamily: 'var(--font-dm-sans)', fontWeight: 700,
@@ -246,7 +245,7 @@ export default function AboutPage() {
                 lineHeight: 1.08, letterSpacing: '-0.02em',
                 color: INK, textWrap: 'balance', maxWidth: 720,
               }}>
-                Four principles, held to uncompromisingly.
+                The whole island, arranged around you, at a price you can see.
               </h2>
             </div>
             <p style={{
@@ -254,7 +253,7 @@ export default function AboutPage() {
               fontWeight: 500, letterSpacing: '0.22em', textTransform: 'uppercase',
               color: 'var(--text-tertiary)',
             }}>
-              I, IV
+              Four things
             </p>
           </div>
 
@@ -387,7 +386,7 @@ export default function AboutPage() {
               fontFamily: 'var(--font-dm-sans)', fontWeight: 700, fontSize: 15,
               color: '#fff', letterSpacing: '-0.005em',
             }}>
-              The MAPL Tours Team
+              The MAPL TOURS Team
             </span>
             <span style={{
               fontFamily: 'var(--font-dm-sans)', fontSize: 11,

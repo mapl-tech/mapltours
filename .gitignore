@@ -53,3 +53,4 @@ scripts/shots.mjs
 # Saved-webpage scrapes (not source assets)
 *_files/
 *Google Search*
+.next-verify

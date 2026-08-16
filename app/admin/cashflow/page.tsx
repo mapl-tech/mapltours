@@ -66,12 +66,12 @@ export default async function CashflowPage() {
   const svc = createServiceClient()
   const { data: adminRow } = await svc.from('admins').select('user_id').eq('user_id', user.id).maybeSingle()
   if (!adminRow) {
-    return <Shell><h1 style={{ fontWeight: 700, fontSize: 22 }}>Not authorised</h1><p style={{ marginTop: 8, color: soft }}>This dashboard is limited to MAPL admins.</p></Shell>
+    return <Shell><h1 style={{ fontWeight: 700, fontSize: 22 }}>Not authorised</h1><p style={{ marginTop: 8, color: soft }}>This dashboard is limited to MAPL TOURS admins.</p></Shell>
   }
 
   const { data: bookings } = await svc
     .from('bookings')
-    .select('id, first_name, last_name, booking_type, subtotal, total_paid, stripe_payment_id, paid_at, created_at')
+    .select('id, first_name, last_name, booking_type, subtotal, total_paid, gift_card_amount, stripe_payment_id, paid_at, created_at')
     .eq('status', 'paid')
     .order('paid_at', { ascending: false, nullsFirst: false })
     .limit(500)
@@ -79,6 +79,11 @@ export default async function CashflowPage() {
   const rows: CashRow[] = await Promise.all(((bookings ?? []) as Row[]).map(async (b) => {
     const { feeUsd, settledCad } = await stripeMoney(b.stripe_payment_id)
     const gross = Number(b.total_paid ?? 0)
+    // Part of `gross` may have been paid with a gift card, which is value we
+    // were paid for at PURCHASE time — counting it again here would book the
+    // same dollar twice. It is carried separately so the cash column reflects
+    // what Stripe actually settled for this booking.
+    const giftFunded = Number(b.gift_card_amount ?? 0) || 0
     // The supplier (transfer driver OR tour operator) is paid the subtotal in
     // full; MAPL's margin is the fee charged on top (10% transfers, 20% tours).
     const supplierCost = supplierPayout(Number(b.subtotal ?? 0))
@@ -89,6 +94,8 @@ export default async function CashflowPage() {
       name: `${b.first_name ?? ''} ${b.last_name ?? ''}`.trim() || '(no name)',
       type: (b.booking_type ?? 'tour') as 'tour' | 'transfer',
       gross,
+      giftFunded,
+      cashCollected: round2(gross - giftFunded),
       stripeFeeUsd: feeUsd,
       supplierPayout: supplierCost,
       netUsd: round2(gross - (feeUsd ?? 0) - supplierCost),

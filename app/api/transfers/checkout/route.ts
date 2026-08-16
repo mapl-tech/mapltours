@@ -10,6 +10,9 @@ import {
 } from '@/lib/airport-transfers'
 import { areTransferLegsBookable, LEAD_TIME_MESSAGE } from '@/lib/booking-window'
 import { assertCheckoutSchema, SchemaNotReadyError } from '@/lib/checkout-schema'
+import { claimGiftCard, releaseGiftClaim } from '@/lib/gift-redemption'
+import { normalizeGiftCode } from '@/lib/gift-cards'
+import { maybeSendTravelerConfirmation, maybeSendOperatorAlert } from '@/lib/email/booking'
 import { rateLimit, getIp } from '@/lib/rate-limit'
 import { sanitizeAttribution } from '@/lib/attribution'
 
@@ -48,6 +51,8 @@ interface TransferItemIn {
 interface CheckoutBody {
   amount: number
   items: TransferItemIn[]
+  /** Gift card code applied at checkout, if any. */
+  giftCode?: string
   attribution?: unknown
   customer?: {
     email?: string
@@ -63,7 +68,7 @@ interface CheckoutBody {
   }
 }
 
-function hashCart(items: TransferItemIn[], amountCents: number, email: string): string {
+function hashCart(items: TransferItemIn[], amountCents: number, email: string, giftCode = ''): string {
   const payload = JSON.stringify({
     items: items
       .map(
@@ -73,6 +78,9 @@ function hashCart(items: TransferItemIn[], amountCents: number, email: string): 
       .sort(),
     cents: amountCents,
     email: (email ?? '').toLowerCase().trim(),
+    // A transfer paid partly by gift card is a different charge from the same
+    // transfer paid in full; it must not reuse the other's PaymentIntent.
+    gift: giftCode,
   })
   return crypto.createHash('sha256').update(payload).digest('hex').slice(0, 32)
 }
@@ -179,7 +187,7 @@ export async function POST(request: NextRequest) {
     const schemaFeatures = await assertCheckoutSchema(supabase)
 
     const c = body.customer ?? {}
-    const cartHash = hashCart(body.items, amountInCents, c.email ?? '')
+    const cartHash = hashCart(body.items, amountInCents, c.email ?? '', normalizeGiftCode(body.giftCode ?? '') ?? '')
 
     const customerFields = {
       first_name: (c.firstName ?? '').slice(0, 80),
@@ -324,12 +332,99 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // 4. Reuse an in-flight PI if possible.
+    // 3b. Gift card. Same rules as the tour checkout: the balance comes off
+    //     here, BEFORE the PaymentIntent is sized, because a card that lowered
+    //     a charge without being debited first is free money. A reused pending
+    //     row keeps its existing claim rather than debiting twice.
     const { data: bookingRow } = await supabase
       .from('bookings')
-      .select('stripe_payment_id')
+      .select('stripe_payment_id, gift_card_id')
       .eq('id', bookingId!)
       .maybeSingle()
+
+    let giftAmountCents = 0
+    let giftCardId: string | null = (bookingRow?.gift_card_id as string | null) ?? null
+
+    if (giftCardId) {
+      const { data: live } = await supabase
+        .from('gift_card_redemptions')
+        .select('amount')
+        .eq('booking_id', bookingId!)
+        .in('status', ['reserved', 'spent'])
+        .maybeSingle()
+      giftAmountCents = live ? Math.round(Number(live.amount) * 100) : 0
+      if (!giftAmountCents) giftCardId = null
+    } else if (body.giftCode) {
+      const claimed = await claimGiftCard(supabase, body.giftCode, amountInCents, bookingId!)
+      if (!claimed.ok) {
+        return NextResponse.json({ error: claimed.message, giftCode: true, requestId: reqId }, { status: 400 })
+      }
+      giftAmountCents = claimed.claim.amountCents
+      giftCardId = claimed.claim.giftCardId
+      const { error: stampErr } = await supabase
+        .from('bookings')
+        .update({ gift_card_id: giftCardId, gift_card_amount: claimed.claim.amount })
+        .eq('id', bookingId!)
+        .select('id')
+        .single()
+      if (stampErr) {
+        console.error('[transfers/checkout]', reqId, 'gift stamp failed', stampErr)
+        await releaseGiftClaim(supabase, bookingId!)
+        return NextResponse.json(
+          { error: 'Could not apply that gift card. Please try again.', requestId: reqId },
+          { status: 500 },
+        )
+      }
+    }
+
+    const chargeCents = Math.max(0, amountInCents - giftAmountCents)
+
+    // 3c. Fully covered: no card payment, so no PaymentIntent and no webhook
+    //     will fire. Settle here using the same confirmation senders.
+    if (giftAmountCents > 0 && chargeCents === 0) {
+      const { error: paidErr } = await supabase
+        .from('bookings')
+        .update({ status: 'paid', paid_at: new Date().toISOString() })
+        .eq('id', bookingId!)
+        .eq('status', 'pending')
+        .select('id')
+        .maybeSingle()
+      if (paidErr) {
+        console.error('[transfers/checkout]', reqId, 'gift-covered mark-paid failed', paidErr)
+        await releaseGiftClaim(supabase, bookingId!)
+        return NextResponse.json(
+          { error: 'Could not complete your booking. Please try again.', requestId: reqId },
+          { status: 500 },
+        )
+      }
+
+      await supabase
+        .from('gift_card_redemptions')
+        .update({ status: 'spent', settled_at: new Date().toISOString() })
+        .eq('booking_id', bookingId!)
+        .eq('status', 'reserved')
+
+      const { data: paidBooking } = await supabase
+        .from('bookings').select('*').eq('id', bookingId!).maybeSingle()
+      const { data: paidItems } = await supabase
+        .from('booking_items')
+        .select('experience_id, title, destination, travelers, date, price_per_person, item_type, airport, hotel, zone, trip_type, arrival_flight, arrival_at, departure_flight, departure_at, passengers')
+        .eq('booking_id', bookingId!)
+
+      if (paidBooking) {
+        await maybeSendTravelerConfirmation(supabase, paidBooking as never, (paidItems ?? []) as never)
+        await maybeSendOperatorAlert(supabase, paidBooking as never, (paidItems ?? []) as never)
+      }
+
+      return NextResponse.json({
+        fullyCoveredByGift: true,
+        bookingId,
+        giftAmount: giftAmountCents / 100,
+        requestId: reqId,
+      })
+    }
+
+    // 4. Reuse an in-flight PI if possible.
 
     if (bookingRow?.stripe_payment_id) {
       try {
@@ -337,7 +432,7 @@ export async function POST(request: NextRequest) {
         if (PI_REUSABLE_STATUSES.includes(existingPi.status)) {
           if (existingPi.amount !== amountInCents) {
             try {
-              await stripe.paymentIntents.update(existingPi.id, { amount: amountInCents })
+              await stripe.paymentIntents.update(existingPi.id, { amount: chargeCents })
             } catch (err) {
               console.warn('[transfers/checkout]', reqId, 'PI update failed', err)
             }
@@ -356,13 +451,14 @@ export async function POST(request: NextRequest) {
     // 5. Create PaymentIntent with cart-hash idempotency.
     const paymentIntent = await stripe.paymentIntents.create(
       {
-        amount: amountInCents,
+        amount: chargeCents,
         currency: 'usd',
         automatic_payment_methods: { enabled: true },
         metadata: {
           booking_id: bookingId!,
           booking_type: 'transfer',
           item_count: String(priced.length),
+          ...(giftAmountCents > 0 ? { gift_card_amount: String(giftAmountCents / 100) } : {}),
           summary: priced
             .map((p) => `${p.destination!.name}|${p.input.tripType}|${p.input.passengers}pax`)
             .join(', ')
@@ -389,6 +485,7 @@ export async function POST(request: NextRequest) {
       } catch {
         /* swallow */
       }
+      await releaseGiftClaim(supabase, bookingId!)
       return NextResponse.json(
         { error: 'Could not attach payment intent', requestId: reqId },
         { status: 500 },

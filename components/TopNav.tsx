@@ -137,7 +137,7 @@ export default function TopNav({ onCartClick }: { onCartClick?: () => void }) {
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={dark ? '/mapl-logo-dark.svg' : '/mapl-logo.svg'}
-            alt="MAPL Tours Jamaica"
+            alt="MAPL TOURS JAMAICA"
             width={176}
             height={42}
             style={{
