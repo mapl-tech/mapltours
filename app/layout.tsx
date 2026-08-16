@@ -133,14 +133,22 @@ function JsonLd() {
     },
     geo: {
       '@type': 'GeoCoordinates',
-      latitude: 18.1096,
-      longitude: -77.2975,
+      // Montego Bay / Sangster (MBJ), where every transfer begins. Was the
+      // Jamaica country centroid, which contradicted the geo meta tags below.
+      latitude: 18.5037,
+      longitude: -77.9134,
     },
+    // Every locality the business actually serves. The transfers schema listed
+    // three (Rose Hall, Lucea, Runaway Bay) that this one omitted, so the two
+    // entities disagreed about the service area.
     areaServed: [
       { '@type': 'Country', name: 'Jamaica' },
-      { '@type': 'City', name: 'Ocho Rios' },
       { '@type': 'City', name: 'Montego Bay' },
+      { '@type': 'City', name: 'Rose Hall' },
       { '@type': 'City', name: 'Falmouth' },
+      { '@type': 'City', name: 'Runaway Bay' },
+      { '@type': 'City', name: 'Ocho Rios' },
+      { '@type': 'City', name: 'Lucea' },
       { '@type': 'City', name: 'Negril' },
       { '@type': 'City', name: 'Nine Mile' },
     ],

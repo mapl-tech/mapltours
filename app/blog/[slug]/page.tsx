@@ -41,7 +41,7 @@ function ArticleJsonLd({ post }: { post: BlogPost }) {
     publisher: {
       '@type': 'Organization',
       name: 'MAPL Tours Jamaica',
-      logo: { '@type': 'ImageObject', url: `${SITE_URL}/icon.png` },
+      logo: { '@type': 'ImageObject', url: `${SITE_URL}/brand/mapl-icon-1024.png` },
     },
     about: {
       '@type': 'Place',

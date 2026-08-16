@@ -1,4 +1,4 @@
-import { experiences, slugify } from '@/lib/experiences'
+import { experiences, slugify, priceUnitLabel } from '@/lib/experiences'
 import { BLOG_POSTS } from '@/lib/blog'
 
 const baseUrl = 'https://mapltours.com'
@@ -9,7 +9,7 @@ export function GET() {
   const experienceLines = experiences
     .map((exp) => {
       const url = `${baseUrl}/experience/${slugify(exp.title)}`
-      const summary = `${exp.destination}, ${exp.parish}. ${exp.category}. ${exp.duration}. $${exp.price}/person. ${exp.description}`
+      const summary = `${exp.destination}, ${exp.parish}. ${exp.category}. ${exp.duration}. $${exp.price} ${priceUnitLabel(exp.pricing)}. ${exp.description}`
       return `- [${exp.title}](${url}): ${summary}`
     })
     .join('\n')

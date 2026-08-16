@@ -59,36 +59,20 @@ export default function ExperiencePage({ params }: { params: { slug: string } })
     '@type': 'TouristTrip',
     name: exp.title,
     description: exp.description,
-    image: exp.image,
+    // Absolute: Google discards relative image URLs in structured data.
+    image: exp.image?.startsWith('http') ? exp.image : `${SITE_URL}${exp.image}`,
     offers: {
       '@type': 'Offer',
       price: exp.price,
       priceCurrency: 'USD',
       availability: 'https://schema.org/InStock',
     },
-    // Only emit a rating when real reviews exist; a 0/0 aggregateRating is
-
-    // invalid schema and gets the rich result dropped.
-
-    ...(exp.reviews > 0
-
-      ? {
-
-          aggregateRating: {
-
-            '@type': 'AggregateRating',
-
-            ratingValue: String(exp.rating),
-
-            reviewCount: String(exp.reviews),
-
-            bestRating: '5',
-
-          },
-
-        }
-
-      : {}),
+    // aggregateRating is deliberately NOT emitted. Google requires review
+    // snippets to reflect genuine reviews that are visible on the page, and
+    // the rating/review counts in the catalog are placeholders with no review
+    // content behind them. Publishing them as structured data risks a
+    // structured-data manual action against the whole domain. Restore this
+    // block, sourced from real reviews rendered on the page, once they exist.
   }
 
   return (

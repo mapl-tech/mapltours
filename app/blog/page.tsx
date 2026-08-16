@@ -41,7 +41,7 @@ export default function BlogPage() {
     publisher: {
       '@type': 'Organization',
       name: 'MAPL Tours Jamaica',
-      logo: { '@type': 'ImageObject', url: `${SITE_URL}/icon.png` },
+      logo: { '@type': 'ImageObject', url: `${SITE_URL}/brand/mapl-icon-1024.png` },
     },
     blogPost: sorted.map((p) => ({
       '@type': 'BlogPosting',

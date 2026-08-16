@@ -92,7 +92,7 @@ function buildStructuredData() {
     name: 'MAPL Tours Jamaica, Private Airport Transfers',
     description:
       'Private flat-rate airport transfers from Sangster International Airport (MBJ) to every major resort destination in Jamaica. Licensed drivers, flight tracking, meet-and-greet at arrivals, flexible cancellation within 48 hours of booking.',
-    image: HERO,
+    image: HERO.startsWith('http') ? HERO : `${SITE_URL}${HERO}`,
     url: PAGE_URL,
     brand: { '@type': 'Brand', name: 'MAPL Tours Jamaica' },
     provider: {
