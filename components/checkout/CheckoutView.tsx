@@ -70,7 +70,7 @@ function StepIndicator({ step }: { step: number }) {
   const { t } = useI18n()
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 0 }}>
-      {['Review', 'Details', 'Payment'].map((rawLabel, i) => {
+      {['Your trip', 'Payment'].map((rawLabel, i) => {
         const label = t(rawLabel)
         const n = i + 1
         const done = step > n
@@ -94,7 +94,7 @@ function StepIndicator({ step }: { step: number }) {
                 {label}
               </span>
             </div>
-            {i < 2 && <div style={{ width: 48, height: 1.5, background: done ? 'var(--accent)' : 'var(--border)', margin: '0 10px', marginBottom: 22, borderRadius: 1 }} />}
+            {i < 1 && <div style={{ width: 48, height: 1.5, background: done ? 'var(--accent)' : 'var(--border)', margin: '0 10px', marginBottom: 22, borderRadius: 1 }} />}
           </div>
         )
       })}
@@ -104,7 +104,7 @@ function StepIndicator({ step }: { step: number }) {
 
 /* ── Review Step ── */
 function ReviewStep() {
-  const { items, removeItem, updateDate } = useCartStore()
+  const { items, removeItem, updateDate, updateTravelers } = useCartStore()
   const { t, formatPrice } = useI18n()
   const [customDates, setCustomDates] = useState(false)
 
@@ -123,6 +123,32 @@ function ReviewStep() {
 
   return (
     <div>
+      {/* Guest count leads the review: it drives every price below it. */}
+      <div style={{
+        borderRadius: 'var(--r-xl)', overflow: 'hidden',
+        border: '1px solid var(--border)', background: '#fff',
+        marginBottom: 24,
+        padding: '18px 22px',
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <Users size={18} color="var(--text-secondary)" />
+          <div>
+            <span style={{ fontSize: 14, fontWeight: 600, fontFamily: 'var(--font-dm-sans)' }}>{t('Number of guests')}</span>
+            <p style={{ fontSize: 12, color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-sans)', marginTop: 1 }}>
+              Applies to all {items.length} experience{items.length !== 1 ? 's' : ''}
+            </p>
+          </div>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center' }}>
+          <button className="btn-outline" style={{ width: 44, height: 44, padding: 0, borderRadius: '10px 0 0 10px', fontSize: 16 }} onClick={() => items.forEach((item) => updateTravelers(item.id, item.travelers - 1))}>−</button>
+          <div style={{ width: 52, height: 44, display: 'flex', alignItems: 'center', justifyContent: 'center', borderTop: '1px solid var(--border)', borderBottom: '1px solid var(--border)', fontSize: 16, fontWeight: 700, fontFamily: 'var(--font-dm-sans)' }}>
+            {items[0]?.travelers || 2}
+          </div>
+          <button className="btn-outline" style={{ width: 44, height: 44, padding: 0, borderRadius: '0 10px 10px 0', fontSize: 16 }} onClick={() => items.forEach((item) => updateTravelers(item.id, item.travelers + 1))}>+</button>
+        </div>
+      </div>
+
       <div className="hide-mobile" style={{ marginBottom: 28 }}>
         <h3 style={{ fontFamily: 'var(--font-dm-sans)', fontWeight: 700, fontSize: 22, letterSpacing: '-0.025em', marginBottom: 6 }}>{t('Review your trip')}</h3>
         <p style={{ fontSize: 14, color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-sans)' }}>
@@ -343,7 +369,7 @@ function DetailsStep({ waiverAccepted, setWaiverAccepted, waiverError, formData,
   setFormData: (d: Record<string, string>) => void
   formErrors: Record<string, boolean>
 }) {
-  const { items, updateTravelers, setPickup, setDropoff } = useCartStore()
+  const { setPickup, setDropoff } = useCartStore()
   const { t } = useI18n()
   const [modalContent, setModalContent] = useState<'waiver' | 'terms' | null>(null)
 
@@ -359,32 +385,6 @@ function DetailsStep({ waiverAccepted, setWaiverAccepted, waiverError, formData,
         <p style={{ fontSize: 14, color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-sans)' }}>
           We&apos;ll use this to confirm your booking
         </p>
-      </div>
-
-      {/* Single guest count for all experiences */}
-      <div style={{
-        borderRadius: 'var(--r-xl)', overflow: 'hidden',
-        border: '1px solid var(--border)', background: '#fff',
-        marginBottom: 24,
-        padding: '18px 22px',
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <Users size={18} color="var(--text-secondary)" />
-          <div>
-            <span style={{ fontSize: 14, fontWeight: 600, fontFamily: 'var(--font-dm-sans)' }}>{t('Number of guests')}</span>
-            <p style={{ fontSize: 12, color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-sans)', marginTop: 1 }}>
-              Applies to all {items.length} experience{items.length !== 1 ? 's' : ''}
-            </p>
-          </div>
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center' }}>
-          <button className="btn-outline" style={{ width: 44, height: 44, padding: 0, borderRadius: '10px 0 0 10px', fontSize: 16 }} onClick={() => items.forEach((item) => updateTravelers(item.id, item.travelers - 1))}>−</button>
-          <div style={{ width: 52, height: 44, display: 'flex', alignItems: 'center', justifyContent: 'center', borderTop: '1px solid var(--border)', borderBottom: '1px solid var(--border)', fontSize: 16, fontWeight: 700, fontFamily: 'var(--font-dm-sans)' }}>
-            {items[0]?.travelers || 2}
-          </div>
-          <button className="btn-outline" style={{ width: 44, height: 44, padding: 0, borderRadius: '0 10px 10px 0', fontSize: 16 }} onClick={() => items.forEach((item) => updateTravelers(item.id, item.travelers + 1))}>+</button>
-        </div>
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
@@ -881,7 +881,7 @@ export default function CheckoutView() {
   // attaches booking_id to the PaymentIntent metadata so the webhook can
   // flip status to 'paid' and dispatch the confirmation email.
   useEffect(() => {
-    if (step === 3 && !clientSecret && items.length > 0) {
+    if (step === 2 && !clientSecret && items.length > 0) {
       fetch('/api/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -946,10 +946,10 @@ export default function CheckoutView() {
     )
   }
 
-  const ctas = [`${t('Continue to details')} →`, `${t('Continue to payment')} →`, `${t('Complete booking')} · ${formatPrice(finalTotal)}`]
+  const ctas = [`${t('Continue to payment')} →`, `${t('Complete booking')} · ${formatPrice(finalTotal)}`]
 
   return (
-    <div className="checkout-wrapper" style={{ minHeight: '100vh', paddingTop: 56, background: step === 3 ? 'var(--bg)' : 'var(--bg-warm)' }}>
+    <div className="checkout-wrapper" style={{ minHeight: '100vh', paddingTop: 56, background: step === 2 ? 'var(--bg)' : 'var(--bg-warm)' }}>
       {/* Top bar */}
       <div style={{ borderBottom: '1px solid var(--border)', background: '#fff' }}>
         <div className="container checkout-top-bar" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 16px', maxWidth: 1100 }}>
@@ -969,17 +969,23 @@ export default function CheckoutView() {
           Step {step} of 3
         </p>
         <h3 style={{ fontFamily: 'var(--font-dm-sans)', fontWeight: 700, fontSize: 22 }}>
-          {step === 1 ? t('Review your trip') : step === 2 ? t('Your details') : 'Payment'}
+          {step === 1 ? t('Your trip and details') : t('Payment')}
         </h3>
       </div>
 
       {/* Body */}
-      <div className={`checkout-body${step === 3 ? ' checkout-step-3' : ''}`}>
+      <div className={`checkout-body${step === 2 ? ' checkout-step-3' : ''}`}>
         {/* Left, form */}
-        <div className={step === 3 ? 'checkout-payment-form' : ''} style={{ flex: 1, maxWidth: 640 }}>
-          {step === 1 && <ReviewStep />}
-          {step === 2 && <DetailsStep waiverAccepted={waiverAccepted} setWaiverAccepted={setWaiverAccepted} waiverError={waiverError} formData={formData} setFormData={setFormData} formErrors={formErrors} />}
-          {step === 3 && (
+        <div className={step === 2 ? 'checkout-payment-form' : ''} style={{ flex: 1, maxWidth: 640 }}>
+          {step === 1 && (
+            <>
+              <ReviewStep />
+              <div style={{ marginTop: 40 }}>
+                <DetailsStep waiverAccepted={waiverAccepted} setWaiverAccepted={setWaiverAccepted} waiverError={waiverError} formData={formData} setFormData={setFormData} formErrors={formErrors} />
+              </div>
+            </>
+          )}
+          {step === 2 && (
             <>
             {clientSecret ? (
               <StripePaymentPanel
@@ -1012,13 +1018,13 @@ export default function CheckoutView() {
             )}
             </>
           )}
-          {step > 1 && step < 3 && (
+          {false && (
             <button className="btn-outline" onClick={() => { setStep(step - 1); window.scrollTo({ top: 0, behavior: 'smooth' }) }} style={{ marginTop: 24, gap: 6 }}>
               <ArrowLeft size={14} /> Previous step
             </button>
           )}
-          {step === 3 && (
-            <button className="btn-outline" onClick={() => { setStep(2); setClientSecret(null); window.scrollTo({ top: 0, behavior: 'smooth' }) }} style={{ marginTop: 24, gap: 6 }}>
+          {step === 2 && (
+            <button className="btn-outline" onClick={() => { setStep(1); setClientSecret(null); window.scrollTo({ top: 0, behavior: 'smooth' }) }} style={{ marginTop: 24, gap: 6 }}>
               <ArrowLeft size={14} /> Previous step
             </button>
           )}
@@ -1110,7 +1116,7 @@ export default function CheckoutView() {
                 </div>
               )}
 
-              {rewardApplied && availableReward && rewardDiscount > 0 && step === 3 && (
+              {rewardApplied && availableReward && rewardDiscount > 0 && step === 2 && (
                 <div style={{
                   display: 'flex', justifyContent: 'space-between',
                   marginTop: 10, fontSize: 13,
@@ -1123,11 +1129,11 @@ export default function CheckoutView() {
               )}
 
               <div style={{ display: 'flex', justifyContent: 'space-between', fontFamily: 'var(--font-dm-sans)', fontWeight: 700, fontSize: 20, marginTop: 10, paddingTop: 12, borderTop: '1px solid var(--border)' }}>
-                <span>{t('Total')}</span><span>{formatPrice(step === 3 ? finalTotal : grandTotal())}</span>
+                <span>{t('Total')}</span><span>{formatPrice(step === 2 ? finalTotal : grandTotal())}</span>
               </div>
             </div>
 
-            {step < 3 && (
+            {step < 2 && (
               <div style={{ padding: '16px 24px' }}>
                 <button className="btn-primary" onClick={() => {
                   // Hard gate: every step must pass the 8-hour daily cap.
@@ -1135,7 +1141,7 @@ export default function CheckoutView() {
                     setLimitModalOpen(true)
                     return
                   }
-                  if (step === 2) {
+                  if (step === 1) {
                     // Validate required fields
                     const required = ['firstName', 'lastName', 'email', 'phone', 'country', 'pickup', 'dropoff']
                     const errors: Record<string, boolean> = {}
