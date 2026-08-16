@@ -132,6 +132,30 @@ export async function POST(request: NextRequest) {
           { status: 400 },
         )
       }
+      // Flight numbers are REQUIRED for every leg the booking has: the
+      // flight tracker, the day-of email's promises, and the driver's
+      // timing all depend on them. Deliberately permissive shape check
+      // (guests type "AA1234", "vs165", or just "521"): non-empty, at
+      // least one digit, at most 10 chars.
+      const flightOk = (v: string | undefined | null) => {
+        const t = (v ?? '').trim()
+        return t.length >= 2 && t.length <= 10 && /\d/.test(t)
+      }
+      const hasArrivalLeg = !!item.arrivalAt
+      const hasDepartureLeg = item.tripType === 'round_trip' || !item.arrivalAt
+      if (hasArrivalLeg && !flightOk(item.arrivalFlight)) {
+        return NextResponse.json(
+          { error: 'Please add your arrival flight number (e.g. AA1234). We use it to track your flight and time your pickup.', requestId: reqId },
+          { status: 400 },
+        )
+      }
+      if (hasDepartureLeg && !flightOk(item.departureFlight)) {
+        return NextResponse.json(
+          { error: 'Please add your departure flight number (e.g. AA4321). We use it to time your hotel pickup.', requestId: reqId },
+          { status: 400 },
+        )
+      }
+
       // Arrival can't be in the past.
       if (item.arrivalAt && item.arrivalAt.slice(0, 10) < earliestAllowed) {
         return NextResponse.json(

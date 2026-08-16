@@ -78,11 +78,19 @@ export default function TransfersCheckoutView() {
       if (!item.arrivalAt) errs[`arrival-${item.id}`] = true
       else if (minDateTime && item.arrivalAt < minDateTime)
         errs[`arrival-${item.id}`] = true
+      // Flight numbers are required: pickup timing and flight tracking
+      // depend on them. Permissive shape, guests type "AA1234" or "521".
+      const flightOk = (v?: string) => {
+        const t = (v ?? '').trim()
+        return t.length >= 2 && t.length <= 10 && /\d/.test(t)
+      }
+      if (!flightOk(item.arrivalFlight)) errs[`arrflight-${item.id}`] = true
       if (item.tripType === 'round_trip') {
         // Departure is required and must be strictly after arrival.
         if (!item.departureAt) errs[`departure-${item.id}`] = true
         else if (item.arrivalAt && item.departureAt <= item.arrivalAt)
           errs[`departure-${item.id}`] = true
+        if (!flightOk(item.departureFlight)) errs[`depflight-${item.id}`] = true
       }
     }
     setFormErrors(errs)
@@ -878,10 +886,12 @@ function TransferCard({
             indicator="emerald"
           />
           <Input
-            label="Arrival flight (optional)"
+            label="Arrival flight"
             value={item.arrivalFlight ?? ''}
             onChange={(v) => onChange({ arrivalFlight: v })}
             placeholder="e.g. AA1234"
+            error={formErrors[`arrflight-${item.id}`]}
+            indicator="emerald"
           />
           {rt && (
             <>
@@ -895,10 +905,12 @@ function TransferCard({
                 indicator="gold"
               />
               <Input
-                label="Departure flight (optional)"
+                label="Departure flight"
                 value={item.departureFlight ?? ''}
                 onChange={(v) => onChange({ departureFlight: v })}
                 placeholder="e.g. AA4321"
+                error={formErrors[`depflight-${item.id}`]}
+                indicator="gold"
               />
             </>
           )}
