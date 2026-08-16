@@ -498,7 +498,7 @@ function DetailsStep({ waiverAccepted, setWaiverAccepted, waiverError, formData,
             />
             {formData['pickup'] && jamaicaLocations.find(l => l.name === formData['pickup']) && (
               <p style={{ fontSize: 12, color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-sans)', marginTop: 6, paddingLeft: 2, display: 'flex', alignItems: 'center', gap: 4 }}>
-                <MapPin size={11} color="var(--text-tertiary)" />
+                <MapPin size={12} color="var(--text-tertiary)" />
                 {jamaicaLocations.find(l => l.name === formData['pickup'])?.address}
               </p>
             )}
@@ -527,7 +527,7 @@ function DetailsStep({ waiverAccepted, setWaiverAccepted, waiverError, formData,
             />
             {formData['dropoff'] && jamaicaLocations.find(l => l.name === formData['dropoff']) && (
               <p style={{ fontSize: 12, color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-sans)', marginTop: 6, paddingLeft: 2, display: 'flex', alignItems: 'center', gap: 4 }}>
-                <MapPin size={11} color="var(--text-tertiary)" />
+                <MapPin size={12} color="var(--text-tertiary)" />
                 {jamaicaLocations.find(l => l.name === formData['dropoff'])?.address}
               </p>
             )}
@@ -1188,7 +1188,7 @@ export default function CheckoutView() {
                   {ctas[step - 1]}
                 </button>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: 12, fontSize: 12, color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-sans)' }}>
-                  <Lock size={11} />
+                  <Lock size={12} />
                   <span>Secure checkout · Free cancellation 48hrs</span>
                 </div>
               </div>

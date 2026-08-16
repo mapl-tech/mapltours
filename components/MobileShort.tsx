@@ -283,14 +283,14 @@ export default memo(function MobileShort({ exp, priority = false }: { exp: Exper
               marginBottom: 14,
             }}>
               <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                <MapPin size={11} /> {exp.destination}
+                <MapPin size={12} /> {exp.destination}
               </span>
               <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                <Clock size={11} /> {exp.duration}
+                <Clock size={12} /> {exp.duration}
               </span>
               {exp.reviews > 0 ? (
                 <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                  <Star size={11} fill="var(--gold-warm)" strokeWidth={0} /> {exp.rating}
+                  <Star size={12} fill="var(--gold-warm)" strokeWidth={0} /> {exp.rating}
                 </span>
               ) : (
                 <span style={{

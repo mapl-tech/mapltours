@@ -346,7 +346,7 @@ export default function HelpCenter() {
                     onClick={() => { setActiveCategory(cat.id); setOpenIndex(0) }}
                     style={{
                       display: 'flex', alignItems: 'center', gap: 8,
-                      padding: '10px 20px',
+                      padding: '10px 20px', minHeight: 44,
                       borderRadius: 9999,
                       border: active ? '1px solid var(--accent)' : '1px solid var(--border)',
                       background: active ? 'var(--accent)' : 'var(--card-bg)',

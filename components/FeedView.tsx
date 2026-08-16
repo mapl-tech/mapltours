@@ -155,7 +155,7 @@ function StepCarousel({ steps, renderCard }: { steps: any[]; renderCard: (s: any
     <div>
       <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginBottom: 14, paddingRight: 4 }}>
         <button onClick={() => scroll('left')} aria-label="Previous step" style={{
-          width: 36, height: 36, borderRadius: '50%', background: 'transparent',
+          width: 44, height: 44, borderRadius: '50%', background: 'transparent',
           border: '1px solid rgba(255,255,255,0.15)', cursor: 'pointer',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           color: 'rgba(255,255,255,0.5)', transition: 'all 0.15s ease',
@@ -163,7 +163,7 @@ function StepCarousel({ steps, renderCard }: { steps: any[]; renderCard: (s: any
           <ChevronLeft size={18} />
         </button>
         <button onClick={() => scroll('right')} aria-label="Next step" style={{
-          width: 36, height: 36, borderRadius: '50%', background: 'var(--gold)',
+          width: 44, height: 44, borderRadius: '50%', background: 'var(--gold)',
           border: 'none', cursor: 'pointer',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           color: '#fff', transition: 'all 0.15s ease',
@@ -317,7 +317,7 @@ function FoodSection() {
                 fontSize: 12, fontWeight: 500, color: 'rgba(255,255,255,0.9)',
                 fontFamily: 'var(--font-dm-sans)',
               }}>
-                <MapPin size={11} strokeWidth={2} /> {r.town}, {r.parish}
+                <MapPin size={12} strokeWidth={2} /> {r.town}, {r.parish}
               </span>
               {/* Free-stop pill, sets expectations honestly */}
               <span style={{
@@ -994,7 +994,7 @@ export default function FeedView() {
                     fontSize: 12, fontWeight: 600, color: 'white',
                     fontFamily: 'var(--font-dm-sans)', marginBottom: 10,
                   }}>
-                    <TrendingUp size={11} /> {viralExperiences[0].reviews.toLocaleString()} reviews
+                    <TrendingUp size={12} /> {viralExperiences[0].reviews.toLocaleString()} reviews
                   </span>
                   <h3 style={{
                     fontFamily: 'var(--font-dm-sans)', fontWeight: 700, fontSize: 22,
@@ -1020,7 +1020,7 @@ export default function FeedView() {
                       fontSize: 12, fontWeight: 600, color: 'var(--gold-warm)',
                       fontFamily: 'var(--font-dm-sans)',
                     }}>
-                      <Star size={11} fill="currentColor" strokeWidth={0} /> {viralExperiences[0].rating}
+                      <Star size={12} fill="currentColor" strokeWidth={0} /> {viralExperiences[0].rating}
                     </span>
                   </div>
                 </div>

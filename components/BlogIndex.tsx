@@ -120,9 +120,9 @@ function Masthead() {
             gap: 8,
           }}
         >
-          <Kicker size={11}>Vol. {vol} · No. {issue}</Kicker>
-          <Kicker size={11}>{dateline}</Kicker>
-          <Kicker size={11}>Kingston · Negril · Portland</Kicker>
+          <Kicker size={12}>Vol. {vol} · No. {issue}</Kicker>
+          <Kicker size={12}>{dateline}</Kicker>
+          <Kicker size={12}>Kingston · Negril · Portland</Kicker>
         </div>
 
         <Rule weight={2} />
@@ -144,7 +144,7 @@ function Masthead() {
             MAPL{' '}
             <span style={{ fontStyle: 'italic', fontWeight: 500 }}>Journal</span>
           </div>
-          <Kicker color="var(--gold-text)" size={11}>
+          <Kicker color="var(--gold-text)" size={12}>
             Dispatches from the real Jamaica · Established MMXXIV
           </Kicker>
         </div>
@@ -213,7 +213,10 @@ function CategoryNav({
               style={{
                 background: 'transparent',
                 border: 'none',
-                padding: '4px 0',
+                padding: '4px 6px',
+                minHeight: 44, minWidth: 44, justifyContent: 'center',
+                display: 'inline-flex',
+                alignItems: 'center',
                 cursor: 'pointer',
                 fontFamily: 'var(--font-dm-sans)',
                 fontWeight: isActive ? 700 : 500,
@@ -274,7 +277,7 @@ function FeaturedLead({ post }: { post: BlogPost }) {
       {/* Copy */}
       <div>
         <div style={{ marginBottom: 16 }}>
-          <Kicker color="var(--gold-text)" size={11}>
+          <Kicker color="var(--gold-text)" size={12}>
             The Lead · {post.category}
           </Kicker>
         </div>
@@ -388,7 +391,7 @@ function PostCard({ post, size = 'md' }: { post: BlogPost; size?: 'md' | 'lg' })
           />
         </div>
         <div style={{ marginBottom: 10 }}>
-          <Kicker color="var(--gold-text)" size={11}>
+          <Kicker color="var(--gold-text)" size={12}>
             {post.category}
           </Kicker>
         </div>
@@ -456,7 +459,7 @@ function Colophon() {
         <div style={{ marginBottom: 20 }}>
           <Ornament />
         </div>
-        <Kicker color="var(--gold-text)" size={11}>
+        <Kicker color="var(--gold-text)" size={12}>
           By invitation
         </Kicker>
         <h2
@@ -615,7 +618,7 @@ export default function BlogIndex({ posts }: { posts: BlogPost[] }) {
               >
                 {active === 'All' ? 'The Edition' : active}
               </h3>
-              <Kicker size={11}>
+              <Kicker size={12}>
                 {filtered.length} {filtered.length === 1 ? 'dispatch' : 'dispatches'}
               </Kicker>
             </div>

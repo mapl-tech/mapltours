@@ -146,7 +146,7 @@ export default function ContactView() {
                     aria-label={`MAPL Tours on ${s.label}`}
                     title={s.label}
                     style={{
-                      width: 40, height: 40, borderRadius: 'var(--r-md)',
+                      width: 44, height: 44, borderRadius: 'var(--r-md)',
                       background: 'var(--surface)', display: 'flex',
                       alignItems: 'center', justifyContent: 'center',
                       color: 'var(--text-secondary)', cursor: 'pointer',

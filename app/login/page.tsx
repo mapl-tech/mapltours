@@ -182,9 +182,9 @@ function LoginContent() {
           .login-shell { grid-template-columns: 1fr; }
           .login-aside { display: none; }
         }
-        @media (max-width: 480px) {
+        @media (max-width: 767px) {
           .login-back-btn {
-            padding: 0; width: 40px; height: 40px; justify-content: center;
+            padding: 0; width: 44px; height: 44px; justify-content: center;
           }
           .login-back-label { display: none; }
         }
@@ -197,7 +197,7 @@ function LoginContent() {
       }}>
         {/* Logo */}
         <div style={{ textAlign: 'center', marginBottom: 36 }}>
-          <Link href="/" style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 10 }}>
+          <Link href="/" style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 10, minHeight: 44 }}>
             <div style={{
               width: 36, height: 36, borderRadius: 10,
               background: 'var(--accent)',
@@ -439,7 +439,10 @@ function LoginContent() {
                   marginTop: -6,
                   background: 'none',
                   border: 'none',
-                  padding: 0,
+                  padding: '0 4px',
+                  minHeight: 44,
+                  display: 'inline-flex',
+                  alignItems: 'center',
                   fontSize: 13,
                   fontWeight: 600,
                   fontFamily: 'var(--font-dm-sans)',

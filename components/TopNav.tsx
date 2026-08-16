@@ -100,7 +100,7 @@ export default function TopNav({ onCartClick }: { onCartClick?: () => void }) {
         }}
       >
         <div className="container" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', gap: 16 }}>
-          <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
+          <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0, minHeight: 44 }}>
             <div style={{ width: 32, height: 32, borderRadius: 8, background: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <Leaf size={16} strokeWidth={2.5} color="#fff" />
             </div>
@@ -157,6 +157,7 @@ export default function TopNav({ onCartClick }: { onCartClick?: () => void }) {
             alignItems: 'center',
             gap: 10,
             flexShrink: 0,
+            minHeight: 44,
             transition: 'all 0.3s ease',
           }}
         >
@@ -474,7 +475,7 @@ export default function TopNav({ onCartClick }: { onCartClick?: () => void }) {
             onClick={() => router.push(`/explore?q=${encodeURIComponent(where)}`)}
             aria-label="Search"
             style={{
-              width: 38, height: 38, borderRadius: '50%',
+              width: 44, height: 44, borderRadius: '50%',
               background: 'var(--accent)', color: '#fff',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               border: 'none', cursor: 'pointer', fontSize: 16,

@@ -518,7 +518,7 @@ export default function BlogPostPage({
       {/* Title block, centered, typographic */}
       <div className="container" style={{ maxWidth: 820, textAlign: 'center', padding: '72px 16px 48px' }}>
         <div style={{ marginBottom: 20 }}>
-          <Kicker color="var(--gold)" size={11}>
+          <Kicker color="var(--gold)" size={12}>
             A Dispatch · {post.readTime} minute read
           </Kicker>
         </div>
@@ -792,7 +792,7 @@ export default function BlogPostPage({
                 marginBottom: 48,
               }}
             >
-              <Kicker color="var(--gold)" size={11}>Further reading</Kicker>
+              <Kicker color="var(--gold)" size={12}>Further reading</Kicker>
               <h3
                 style={{
                   fontFamily: 'var(--font-dm-sans)',

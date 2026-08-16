@@ -20,6 +20,14 @@ export const DESTINATIONS: Record<string, string> = {
   'Falmouth':    '/img/dest/falmouth-martha-brae.jpg',    // Martha Brae bamboo raft, captain poling
   'Negril':      '/img/dest/negril-ricks-cafe.jpg',       // Rick's Cafe on the West End cliffs
   'Nine Mile':   '/img/dest/nine-mile-mausoleum.jpg',     // Bob Marley's mausoleum, rasta-painted arch
+
+  /* Editorial-only. These parishes are NOT bookable destinations (the tiles
+     are derived from the tour catalogue), but the about page and the blog
+     still write about them, so their imagery has to keep resolving. */
+  'Blue Mountains':  '/media/img/9158428.jpg',
+  'Kingston':        '/media/img/36977962.jpg',
+  'Portland':        '/media/img/11820457.jpg',
+  'Treasure Beach':  '/media/img/11820459.jpg',
 }
 
 // Culture section, Jamaica beach sunset

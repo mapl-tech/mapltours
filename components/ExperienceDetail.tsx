@@ -555,7 +555,7 @@ function Reel({ exp, isActive, totalCount, currentIndex, onComments }: { exp: Ex
             fontSize: 13, fontWeight: 600, color: 'white',
             fontFamily: 'var(--font-dm-sans)',
           }}>
-            <MapPin size={11} /> {exp.destination}
+            <MapPin size={12} /> {exp.destination}
           </span>
           <span style={{
             display: 'inline-flex', alignItems: 'center', gap: 4,
@@ -564,7 +564,7 @@ function Reel({ exp, isActive, totalCount, currentIndex, onComments }: { exp: Ex
             fontSize: 13, fontWeight: 600, color: 'white',
             fontFamily: 'var(--font-dm-sans)',
           }}>
-            <Clock size={11} /> {exp.duration}
+            <Clock size={12} /> {exp.duration}
           </span>
           <span style={{
             display: 'inline-flex', alignItems: 'center', gap: 4,
@@ -573,7 +573,7 @@ function Reel({ exp, isActive, totalCount, currentIndex, onComments }: { exp: Ex
             fontSize: 13, fontWeight: 600, color: 'white',
             fontFamily: 'var(--font-dm-sans)',
           }}>
-            {exp.reviews > 0 ? (<><Star size={11} fill="white" strokeWidth={0} /> {exp.rating}</>) : t('New')}
+            {exp.reviews > 0 ? (<><Star size={12} fill="white" strokeWidth={0} /> {exp.rating}</>) : t('New')}
           </span>
         </div>
 

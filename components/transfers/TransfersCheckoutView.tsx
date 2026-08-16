@@ -576,7 +576,7 @@ export default function TransfersCheckoutView() {
               justifyContent: 'center',
             }}
           >
-            <Lock size={11} /> Secure payment via Stripe
+            <Lock size={12} /> Secure payment via Stripe
           </p>
         </aside>
       </div>

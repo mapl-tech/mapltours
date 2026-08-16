@@ -375,17 +375,22 @@ h5, h6 { letter-spacing: -0.01em; }
 
   /* ── Nav, two rows on mobile ── */
   .nav-header {
-    height: 90px !important;
+    height: 98px !important;
     flex-wrap: wrap !important;
-    padding-top: 36px !important;
+    padding-top: 46px !important;
   }
   .nav-header .hide-mobile {
     display: none !important;
   }
   .nav-lang-row {
     background: inherit;
-    padding-top: 6px !important;
+    height: 42px !important;
+    padding-top: 9px !important;
   }
+  /* The header reserves 36px of top padding, which clears the 32px
+     absolutely positioned lang row; the row below it is free to carry a
+     full 44px logo target. */
+  .nav-header .nav-lang-row { z-index: 2; }
 
   /* ── Hero on mobile ── */
   .hero-section {
@@ -728,8 +733,8 @@ h5, h6 { letter-spacing: -0.01em; }
   left: 50%;
   top: 50%;
   transform: translate(-50%, -50%);
-  width: max(100%, 44px);
-  height: max(100%, 44px);
+  width: max(100%, 46px);
+  height: max(100%, 46px);
 }
 
 /* Top-edge variant: a centered 44px zone on a control sitting a few px
@@ -740,10 +745,10 @@ h5, h6 { letter-spacing: -0.01em; }
   content: '';
   position: absolute;
   left: 50%;
-  top: 0;
-  transform: translateX(-50%);
+  top: 50%;
+  transform: translate(-50%, -50%);
   width: max(100%, 44px);
-  height: 44px;
+  height: 46px;
 }
 
 textarea.field-input {
@@ -1243,3 +1248,27 @@ img[alt="Devon House Patty & Ice Cream Tour"] {
 .reveal { animation: sectionRise 0.5s cubic-bezier(0.22, 1, 0.36, 1) both; animation-timeline: view(); animation-range: entry 0% cover 22%; }
 @supports not (animation-timeline: view()) { .reveal { animation: none; opacity: 1; transform: none; } }
 @media (prefers-reduced-motion: reduce) { .reveal { animation: none !important; opacity: 1; transform: none; } }
+
+/* ═══════════════════════════════════════════
+   MOBILE INPUT + TARGET FLOORS
+   iOS Safari zooms the viewport whenever a focused input renders below
+   16px, which yanks the layout mid-form. An audit across ten routes at
+   360/390/430 found every input on the site below that: 13px search,
+   13.33px date and name fields, 14-15px email and password. The floor is
+   enforced once, here, rather than per component.
+   ═══════════════════════════════════════════ */
+@media (max-width: 767px) {
+  input, select, textarea,
+  input[type="text"], input[type="email"], input[type="password"],
+  input[type="search"], input[type="tel"], input[type="date"], input[type="number"] {
+    font-size: 16px !important;
+  }
+  /* Controls the same audit found under the 44px touch floor. */
+  .login-back-btn { min-width: 44px; min-height: 44px; }
+  .skip-link { min-height: 44px; display: inline-flex; align-items: center; }
+}
+
+@media (max-width: 767px) {
+  /* Controls a hit-area scanline found short of the 44px touch floor. */
+  .help-topic-pill, .blog-cat-pill { min-height: 44px !important; min-width: 44px !important; }
+}

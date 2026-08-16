@@ -330,7 +330,7 @@ function VideoStripe({
             color: '#08080A',
             boxShadow: '0 4px 14px rgba(0, 0, 0, 0.4)',
           }}>
-            <Play size={11} fill="currentColor" strokeWidth={0} />
+            <Play size={12} fill="currentColor" strokeWidth={0} />
           </div>
         </button>
       ))}

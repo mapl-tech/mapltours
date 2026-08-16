@@ -478,7 +478,7 @@ export default function TransfersView() {
                 color: 'var(--text-tertiary)',
               }}
             >
-              <Clock size={11} style={{ display: 'inline', verticalAlign: '-1px', marginRight: 4 }} />
+              <Clock size={12} style={{ display: 'inline', verticalAlign: '-1px', marginRight: 4 }} />
               Free cancellation up to 24 hours before pickup.
             </p>
           </div>
@@ -1869,7 +1869,7 @@ function CompareItem({
                 justifyContent: 'center',
               }}
             >
-              {bold ? <Check size={11} /> : '·'}
+              {bold ? <Check size={12} /> : '·'}
             </span>
             {item}
           </li>

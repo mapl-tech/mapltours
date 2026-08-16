@@ -197,7 +197,7 @@ function PaymentStep({
         marginTop: 12, textAlign: 'center',
         fontSize: 12, color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-sans)',
       }}>
-        <ShieldCheck size={11} color="var(--emerald)" style={{ display: 'inline', verticalAlign: '-2px', marginRight: 4 }} />
+        <ShieldCheck size={12} color="var(--emerald)" style={{ display: 'inline', verticalAlign: '-2px', marginRight: 4 }} />
         {t('Encrypted & secure')} · {t('Free cancellation within 48 hrs')}
       </p>
     </div>
