@@ -701,10 +701,10 @@ export default function TransfersView() {
             id="montego-bay-airport-transfer"
             heading="Montego Bay airport transfer to your hotel"
             travel="5–25 minutes for any Rose Hall or Ironshore property."
-            price={getTransferPrice('iberostar-rose-hall', 'round_trip') ?? 0}
-            destinationId="iberostar-rose-hall"
+            price={getTransferPrice('hilton-rose-hall', 'round_trip') ?? 0}
+            destinationId="hilton-rose-hall"
             onSelect={selectRoute}
-            body="If you’re staying anywhere in the Rose Hall corridor, Iberostar, Hyatt Ziva, Hilton, Half Moon, the Sandals MoBay properties, your transfer is the cheapest tier on the island. Round-trips in this corridor are the cheapest on the island. Solo travelers get the same vehicle; the price is per car, not per passenger."
+            body="If you’re staying anywhere in the Rose Hall corridor, Iberostar, Hyatt Ziva, Hilton, Half Moon, the Sandals MoBay properties, your transfer is the cheapest tier on the island. Solo travelers get the same vehicle; the price is per car, not per passenger."
           />
 
           <RouteSection
