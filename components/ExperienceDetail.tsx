@@ -52,7 +52,7 @@ function shuffle<T>(arr: T[], seed: string): T[] {
 }
 
 /* ── Single Reel (Snapchat style) ── */
-function Reel({ exp, isActive, totalCount, currentIndex }: { exp: Experience; isActive: boolean; totalCount: number; currentIndex: number }) {
+function Reel({ exp, isActive, totalCount, currentIndex, onComments }: { exp: Experience; isActive: boolean; totalCount: number; currentIndex: number; onComments: () => void }) {
   const videoRef = useRef<HTMLVideoElement>(null)
   const [paused, setPaused] = useState(false)
   const { addItem, removeItem, isInCart } = useCartStore()
@@ -128,20 +128,36 @@ function Reel({ exp, isActive, totalCount, currentIndex }: { exp: Experience; is
     const video = videoRef.current
     if (!video) return
 
+    // The UI state mirrors the ELEMENT's real state: audit measured 6 of 7
+    // loads sitting paused at t=0 while the UI assumed playing.
+    const onPlay = () => setPaused(false)
+    const onPause = () => setPaused(true)
+    video.addEventListener('play', onPlay)
+    video.addEventListener('pause', onPause)
+
     if (isActive) {
+      // Motion preference wins: poster + explicit Play control, no autoplay.
+      if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        setPaused(true)
+        return () => {
+          video.removeEventListener('play', onPlay)
+          video.removeEventListener('pause', onPause)
+        }
+      }
       video.muted = true
       video.currentTime = 0
       const tryPlay = () => {
-        video.play().then(() => setPaused(false)).catch(() => {
-          setTimeout(() => video.play().then(() => setPaused(false)).catch(() => {}), 300)
+        video.play().catch(() => {
+          setTimeout(() => video.play().catch(() => {}), 300)
         })
       }
       if (video.readyState >= 2) {
         tryPlay()
       } else {
         video.addEventListener('loadeddata', tryPlay, { once: true })
+        // Autoplay can also become possible only at canplay; retry there.
+        video.addEventListener('canplay', tryPlay, { once: true })
       }
-      setPaused(false)
     } else {
       video.pause()
       // Free memory for off-screen videos
@@ -150,7 +166,8 @@ function Reel({ exp, isActive, totalCount, currentIndex }: { exp: Experience; is
     }
 
     return () => {
-      video.removeEventListener('loadeddata', () => {})
+      video.removeEventListener('play', onPlay)
+      video.removeEventListener('pause', onPause)
     }
   }, [isActive])
 
@@ -168,6 +185,13 @@ function Reel({ exp, isActive, totalCount, currentIndex }: { exp: Experience; is
   return (
     <div
       onClick={togglePlay}
+      // Off-screen reels are visually stacked out of view but their buttons
+      // and inputs were still in the tab order; inert removes the whole
+      // subtree from focus and the accessibility tree until it is active.
+      // React 18 passes the attribute through; the prop lands in React 19
+      // types, hence the expect-error.
+      // @ts-expect-error inert is a valid DOM attribute, typed in React 19
+      inert={isActive ? undefined : ''}
       style={{
         height: '100dvh', width: '100%',
         position: 'relative', cursor: 'pointer',
@@ -175,6 +199,25 @@ function Reel({ exp, isActive, totalCount, currentIndex }: { exp: Experience; is
         overflow: 'hidden', background: '#000',
       }}
     >
+      {/* WCAG 2.2.2: a real, keyboard-reachable pause control. Tap-anywhere
+          stays as a bonus, never the only mechanism. */}
+      {isActive && (
+        <button
+          type="button"
+          onClick={(e) => { e.stopPropagation(); togglePlay() }}
+          aria-label={paused ? 'Play video' : 'Pause video'}
+          aria-pressed={paused}
+          style={{
+            position: 'absolute', top: 12, left: 12, zIndex: 30,
+            width: 44, height: 44, borderRadius: 9999,
+            background: 'rgba(0,0,0,0.55)', border: '1px solid rgba(255,255,255,0.3)',
+            color: '#fff', cursor: 'pointer', fontSize: 13,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}
+        >
+          {paused ? '\u25B6' : '\u23F8'}
+        </button>
+      )}
       {exp.youtubeId ? (
         <iframe
           src={`https://www.youtube.com/embed/${exp.youtubeId}?autoplay=1&mute=1&loop=1&controls=0&showinfo=0&modestbranding=1&playlist=${exp.youtubeId}&playsinline=1`}
@@ -290,7 +333,7 @@ function Reel({ exp, isActive, totalCount, currentIndex }: { exp: Experience; is
             // than the client's first paint. Suppress the warning, the
             // client value is the correct one and renders within ms.
             suppressHydrationWarning
-            style={{ fontSize: 12, fontWeight: 700, fontFamily: 'var(--font-dm-sans)', textShadow: '0 1px 3px rgba(0,0,0,0.6)' }}
+            style={{ fontSize: 12.5, fontWeight: 700, fontFamily: 'var(--font-dm-sans)', padding: '1px 8px', borderRadius: 999, background: 'rgba(0,0,0,0.5)' }}
           >
             {(exp.reviews + likeCount).toLocaleString('en-US')}
           </span>
@@ -298,7 +341,7 @@ function Reel({ exp, isActive, totalCount, currentIndex }: { exp: Experience; is
 
         {/* Comments */}
         <button
-          onClick={(e) => e.stopPropagation()}
+          onClick={(e) => { e.stopPropagation(); onComments() }}
           aria-label="View comments"
           style={{
             display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2,
@@ -309,7 +352,7 @@ function Reel({ exp, isActive, totalCount, currentIndex }: { exp: Experience; is
           <span className="reel-action-disc">
             <MessageCircle size={24} strokeWidth={1.8} />
           </span>
-          <span style={{ fontSize: 12, fontWeight: 700, fontFamily: 'var(--font-dm-sans)', textShadow: '0 1px 3px rgba(0,0,0,0.6)' }}>
+          <span style={{ fontSize: 12.5, fontWeight: 700, fontFamily: 'var(--font-dm-sans)', padding: '1px 8px', borderRadius: 999, background: 'rgba(0,0,0,0.5)' }}>
             {exp.comments.length}
           </span>
         </button>
@@ -467,6 +510,15 @@ function Reel({ exp, isActive, totalCount, currentIndex }: { exp: Experience; is
         position: 'absolute', bottom: 0, left: 0, right: 72,
         padding: '0 16px 20px', zIndex: 10,
       }}>
+        {/* The block's own shade: travels with the mobile 96px lift, so the
+            text never depends on the viewport-anchored scrim below it.
+            Uniform 0.55 core, feathered by blur; with the base scrim the
+            title computes >= 4.5:1 over a white frame. */}
+        <div aria-hidden style={{
+          position: 'absolute', inset: '-20px -28px -12px -28px', zIndex: -1,
+          background: 'rgba(0,0,0,0.55)', borderRadius: 32, filter: 'blur(28px)',
+          pointerEvents: 'none',
+        }} />
         {/* Creator name */}
         <p style={{
           fontSize: 14, fontWeight: 700, color: 'white',
@@ -485,8 +537,8 @@ function Reel({ exp, isActive, totalCount, currentIndex }: { exp: Experience; is
 
         {/* Description, 2 line clamp */}
         <p style={{
-          fontSize: 13, color: 'rgba(255,255,255,0.8)',
-          fontFamily: 'var(--font-dm-sans)', lineHeight: 1.4, marginBottom: 10,
+          fontSize: 15, color: '#fff',
+          fontFamily: 'var(--font-dm-sans)', lineHeight: 1.45, marginBottom: 10,
           display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden',
         }}>
           {t(exp.description)}
@@ -498,7 +550,7 @@ function Reel({ exp, isActive, totalCount, currentIndex }: { exp: Experience; is
             display: 'inline-flex', alignItems: 'center', gap: 4,
             padding: '4px 10px', borderRadius: 9999,
             background: 'rgba(255,255,255,0.12)',
-            fontSize: 12, fontWeight: 600, color: 'white',
+            fontSize: 13, fontWeight: 600, color: 'white',
             fontFamily: 'var(--font-dm-sans)',
           }}>
             <MapPin size={11} /> {exp.destination}
@@ -507,7 +559,7 @@ function Reel({ exp, isActive, totalCount, currentIndex }: { exp: Experience; is
             display: 'inline-flex', alignItems: 'center', gap: 4,
             padding: '4px 10px', borderRadius: 9999,
             background: 'rgba(255,255,255,0.12)',
-            fontSize: 12, fontWeight: 600, color: 'white',
+            fontSize: 13, fontWeight: 600, color: 'white',
             fontFamily: 'var(--font-dm-sans)',
           }}>
             <Clock size={11} /> {exp.duration}
@@ -516,10 +568,10 @@ function Reel({ exp, isActive, totalCount, currentIndex }: { exp: Experience; is
             display: 'inline-flex', alignItems: 'center', gap: 4,
             padding: '4px 10px', borderRadius: 9999,
             background: 'rgba(255,255,255,0.12)',
-            fontSize: 12, fontWeight: 600, color: 'white',
+            fontSize: 13, fontWeight: 600, color: 'white',
             fontFamily: 'var(--font-dm-sans)',
           }}>
-            <Star size={11} fill="white" strokeWidth={0} /> {exp.rating}
+            {exp.reviews > 0 ? (<><Star size={11} fill="white" strokeWidth={0} /> {exp.rating}</>) : t('New')}
           </span>
         </div>
 
@@ -528,19 +580,20 @@ function Reel({ exp, isActive, totalCount, currentIndex }: { exp: Experience; is
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         }}>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: 4 }}>
-            <span style={{ fontSize: 12, fontWeight: 500, color: '#cccccc', fontFamily: 'var(--font-dm-sans)' }}>{t('From')}</span>
+            <span style={{ fontSize: 13, fontWeight: 500, color: '#fff', fontFamily: 'var(--font-dm-sans)' }}>{t('From')}</span>
             <span style={{ fontFamily: 'var(--font-dm-sans)', fontWeight: 800, fontSize: 22, color: 'white', letterSpacing: '-0.02em' }}>{formatPrice(exp.price)}</span>
-            <span style={{ fontSize: 12, color: '#cccccc', fontFamily: 'var(--font-dm-sans)' }}>{priceUnitLabel(exp.pricing)}</span>
+            <span style={{ fontSize: 13, color: '#fff', fontFamily: 'var(--font-dm-sans)' }}>{priceUnitLabel(exp.pricing)}</span>
           </div>
           <button
             onClick={(e) => { e.stopPropagation(); toggleCart() }}
             style={{
-              padding: '10px 20px', borderRadius: 9999,
+              minHeight: 48, padding: '0 22px', borderRadius: 9999,
               background: inCart ? 'var(--emerald)' : 'white',
               color: inCart ? 'white' : '#000',
-              fontSize: 13, fontWeight: 700, fontFamily: 'var(--font-dm-sans)',
+              fontSize: 15, fontWeight: 700, fontFamily: 'var(--font-dm-sans)',
               border: 'none', cursor: 'pointer',
               whiteSpace: 'nowrap', flexShrink: 0,
+              display: 'inline-flex', alignItems: 'center',
             }}
           >
             {inCart ? t('✓ In Trip') : t('Add to Trip')}
@@ -847,7 +900,15 @@ export default function ExperienceDetail({ slug }: { slug: string }) {
   // keyboard, or bar-content changes. The CSS var is the *total* offset
   // (bar height + 12px gap), or cleared entirely when the bar is hidden so
   // CSS falls back to the desktop default.
+  const mobileBarCleanup = useRef<(() => void) | null>(null)
   const mobileBarRef = useCallback((el: HTMLDivElement | null) => {
+    // Detach-safe: React calls this with null when the bar leaves the tree,
+    // and that is the ONLY reliable detach signal. Tear down the previous
+    // element's observers here, not in an unmount effect that can no longer
+    // find the node (the old pattern leaked a ResizeObserver + four window
+    // listeners on every bar remount).
+    mobileBarCleanup.current?.()
+    mobileBarCleanup.current = null
     const root = document.documentElement
     if (!el) {
       root.style.removeProperty('--reel-bottom-offset')
@@ -875,20 +936,19 @@ export default function ExperienceDetail({ slug }: { slug: string }) {
     window.addEventListener('orientationchange', update)
     const vv = window.visualViewport
     vv?.addEventListener('resize', update)
-    const cleanup = () => {
+    mobileBarCleanup.current = () => {
       ro.disconnect()
       mql.removeEventListener('change', onMql)
       window.removeEventListener('resize', update)
       window.removeEventListener('orientationchange', update)
       vv?.removeEventListener('resize', update)
+      root.style.removeProperty('--reel-bottom-offset')
     }
-    ;(el as HTMLDivElement & { __cleanup?: () => void }).__cleanup = cleanup
   }, [])
   useEffect(() => {
     return () => {
-      const el = document.querySelector<HTMLDivElement>('[data-mobile-bottom-bar]')
-      ;(el as (HTMLDivElement & { __cleanup?: () => void }) | null)?.__cleanup?.()
-      document.documentElement.style.removeProperty('--reel-bottom-offset')
+      mobileBarCleanup.current?.()
+      mobileBarCleanup.current = null
     }
   }, [])
 
@@ -959,14 +1019,21 @@ export default function ExperienceDetail({ slug }: { slug: string }) {
         height: '100%', position: 'relative',
       }}>
         {/* Top bar: close, large touch target for mobile */}
-        <div
-          onClick={(e) => { e.stopPropagation(); router.back() }}
-          onTouchEnd={(e) => { e.stopPropagation(); e.preventDefault(); router.back() }}
+        <button
+          type="button"
+          aria-label="Close and return to explore"
+          onClick={(e) => {
+            e.stopPropagation()
+            // Direct entries (shared links, search) have no in-app history:
+            // router.back() would land on about:blank. Fall back to /explore.
+            if (window.history.length > 2) router.back()
+            else router.push('/explore')
+          }}
           style={{
             position: 'absolute', top: 10, right: 10, zIndex: 30,
-            width: 48, height: 48,
+            width: 48, height: 48, padding: 0,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            cursor: 'pointer',
+            cursor: 'pointer', background: 'none', border: 'none',
           }}
         >
           <div style={{
@@ -978,7 +1045,7 @@ export default function ExperienceDetail({ slug }: { slug: string }) {
           }}>
             <X size={18} strokeWidth={2.5} />
           </div>
-        </div>
+        </button>
 
         {/* ── Prev / Next arrows, top, beside close button ── */}
         <div style={{
@@ -1019,9 +1086,11 @@ export default function ExperienceDetail({ slug }: { slug: string }) {
           <span style={{
             fontSize: 13, fontWeight: 700, color: 'white',
             fontFamily: 'var(--font-dm-sans)', pointerEvents: 'auto',
+            padding: '6px 12px', borderRadius: 9999,
+            background: 'rgba(0,0,0,0.55)', border: '1px solid rgba(255,255,255,0.18)',
           }}>
             {activeIndex + 1}
-            <span style={{ color: 'rgba(255,255,255,0.6)', fontWeight: 500 }}> / {feedExperiences.length}</span>
+            <span style={{ color: '#fff', fontWeight: 500 }}> / {feedExperiences.length}</span>
           </span>
 
           {activeIndex < feedExperiences.length - 1 ? (
@@ -1064,7 +1133,20 @@ export default function ExperienceDetail({ slug }: { slug: string }) {
           }}
         >
           {feedExperiences.map((exp, i) => (
-            <Reel key={exp.id} exp={exp} isActive={i === activeIndex} totalCount={feedExperiences.length} currentIndex={activeIndex} />
+            <Reel
+              key={exp.id}
+              exp={exp}
+              isActive={i === activeIndex}
+              totalCount={feedExperiences.length}
+              currentIndex={activeIndex}
+              onComments={() => {
+                const mobile = window.matchMedia('(max-width: 767px)').matches
+                if (mobile) { setMobileComments(true); return }
+                const input = document.querySelector<HTMLInputElement>('[data-desktop-comment-input]')
+                input?.focus()
+                input?.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
+              }}
+            />
           ))}
         </div>
       </div>
@@ -1283,11 +1365,16 @@ export default function ExperienceDetail({ slug }: { slug: string }) {
             />
             <input
               type="text"
+              data-desktop-comment-input
               placeholder={isLoggedIn ? (replyingTo ? `Reply to @${replyingTo.user}...` : 'Add a comment...') : 'Sign in to comment...'}
               value={commentText}
               onChange={(e) => setCommentText(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && addComment()}
-              onFocus={() => {
+              readOnly={!isLoggedIn}
+              onClick={() => {
+                // Deliberate activation only: focusing must never change
+                // context (WCAG 3.2.1). A click on the read-only field is an
+                // explicit choice to go sign in.
                 if (!isLoggedIn && activeExp) {
                   window.location.href = `/login?redirect=/experience/${slugify(activeExp.title)}`
                 }

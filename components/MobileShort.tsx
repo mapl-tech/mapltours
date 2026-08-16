@@ -3,7 +3,7 @@
 import { useRef, useEffect, useState, memo } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { Experience, slugify } from '@/lib/experiences'
+import { Experience, slugify, priceUnitLabel } from '@/lib/experiences'
 import { useI18n } from '@/lib/i18n'
 import { useCartStore } from '@/lib/cart'
 import { Plus, Check, Star, MapPin, Clock, Play } from 'lucide-react'
@@ -19,6 +19,16 @@ export default memo(function MobileShort({ exp, priority = false }: { exp: Exper
   const [isVisible, setIsVisible] = useState(false)
   const [videoMounted, setVideoMounted] = useState(false)
   const [isPlaying, setIsPlaying] = useState(false)
+  const [userPaused, setUserPaused] = useState(false)
+
+  const toggleVideo = (e: React.MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    const v = videoRef.current
+    if (!v) return
+    if (v.paused) { v.play().catch(() => {}); setUserPaused(false) }
+    else { v.pause(); setIsPlaying(false); setUserPaused(true) }
+  }
   const playAttempted = useRef(false)
   const retryTimer = useRef<ReturnType<typeof setTimeout>>()
 
@@ -60,6 +70,7 @@ export default memo(function MobileShort({ exp, priority = false }: { exp: Exper
     video.addEventListener('playing', onPlaying)
 
     const attemptPlay = () => {
+      if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
       playAttempted.current = true
       video.muted = true
       video.play()
@@ -163,10 +174,29 @@ export default memo(function MobileShort({ exp, priority = false }: { exp: Exper
             pointerEvents: 'none',
           }} />
 
+          {/* WCAG 2.2.2: looping autoplay needs a user pause control. */}
+          {(isPlaying || userPaused) && (
+            <button
+              type="button"
+              onClick={toggleVideo}
+              aria-label={isPlaying ? 'Pause video' : 'Play video'}
+              aria-pressed={userPaused}
+              style={{
+                position: 'absolute', top: 10, right: 10, zIndex: 4,
+                width: 44, height: 44, borderRadius: 9999,
+                background: 'rgba(0,0,0,0.55)', border: '1px solid rgba(255,255,255,0.35)',
+                color: '#fff', cursor: 'pointer', fontSize: 13,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}
+            >
+              {isPlaying ? '\u23F8' : '\u25B6'}
+            </button>
+          )}
+
           {/* Bottom gradient */}
           <div style={{
             position: 'absolute', bottom: 0, left: 0, right: 0, height: '60%',
-            background: 'linear-gradient(0deg, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.3) 50%, transparent 100%)',
+            background: 'linear-gradient(0deg, rgba(0,0,0,0.88) 0%, rgba(0,0,0,0.72) 45%, rgba(0,0,0,0.35) 72%, transparent 100%)',
             pointerEvents: 'none',
           }} />
 
@@ -217,7 +247,7 @@ export default memo(function MobileShort({ exp, priority = false }: { exp: Exper
             padding: '0 16px 18px', zIndex: 2,
           }}>
             <p style={{
-              fontSize: 12, fontWeight: 600, color: 'rgba(255,255,255,0.6)',
+              fontSize: 12.5, fontWeight: 600, color: '#fff',
               fontFamily: 'var(--font-dm-sans)', marginBottom: 6,
               letterSpacing: '0.02em',
             }}>
@@ -236,7 +266,7 @@ export default memo(function MobileShort({ exp, priority = false }: { exp: Exper
 
             <div style={{
               display: 'flex', alignItems: 'center', gap: 10,
-              fontSize: 12, color: '#cccccc', fontFamily: 'var(--font-dm-sans)',
+              fontSize: 12.5, color: '#fff', fontFamily: 'var(--font-dm-sans)',
               fontWeight: 500,
               marginBottom: 14,
             }}>
@@ -246,9 +276,17 @@ export default memo(function MobileShort({ exp, priority = false }: { exp: Exper
               <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                 <Clock size={11} /> {exp.duration}
               </span>
-              <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                <Star size={11} fill="var(--gold-warm)" strokeWidth={0} /> {exp.rating}
-              </span>
+              {exp.reviews > 0 ? (
+                <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                  <Star size={11} fill="var(--gold-warm)" strokeWidth={0} /> {exp.rating}
+                </span>
+              ) : (
+                <span style={{
+                  padding: '1px 8px', borderRadius: 999,
+                  background: 'rgba(255,255,255,0.18)', color: '#fff',
+                  fontSize: 11, fontWeight: 600,
+                }}>{t('New')}</span>
+              )}
             </div>
 
             <div style={{
@@ -257,7 +295,7 @@ export default memo(function MobileShort({ exp, priority = false }: { exp: Exper
             }}>
               <span style={{
                 fontFamily: 'var(--font-dm-sans)', fontWeight: 500,
-                fontSize: 12, color: '#cccccc',
+                fontSize: 13, color: '#fff',
               }}>{t('From')}</span>
               <span style={{
                 fontFamily: 'var(--font-dm-sans)', fontWeight: 800,
@@ -265,7 +303,7 @@ export default memo(function MobileShort({ exp, priority = false }: { exp: Exper
               }}>
                 {formatPrice(exp.price)}
               </span>
-              <span style={{ fontSize: 12, color: '#cccccc', fontFamily: 'var(--font-dm-sans)' }}>{t('/person')}</span>
+              <span style={{ fontSize: 13, color: '#fff', fontFamily: 'var(--font-dm-sans)' }}>{priceUnitLabel(exp.pricing)}</span>
             </div>
             <button
               onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleCart() }}

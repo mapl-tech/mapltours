@@ -110,6 +110,9 @@ export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
   maximumScale: 5,
+  // Full-bleed reel surfaces extend under the iPhone home indicator; the
+  // safe-area env() insets they rely on are 0 unless the viewport is cover.
+  viewportFit: 'cover',
 }
 
 // JSON-LD structured data for SEO

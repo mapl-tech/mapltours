@@ -2,12 +2,12 @@
 
 import { useState, useMemo, useEffect, useRef } from 'react'
 import { useSearchParams } from 'next/navigation'
-import { Search, Calendar } from 'lucide-react'
 import { experiences } from '@/lib/experiences'
 import { useI18n } from '@/lib/i18n'
 import type { ExperienceCategory } from '@/lib/experiences'
 import ExpCard from './ExpCard'
 import MobileShort from './MobileShort'
+import Footer from './Footer'
 
 // Derived from the live catalog so a filter can never point at a category or
 // parish nothing is tagged with, and no tour can be stranded behind a missing
@@ -27,7 +27,6 @@ const parishes = [
 export default function ExploreView() {
   const searchParams = useSearchParams()
   const [search, setSearch] = useState(searchParams.get('q') || '')
-  const [dateFilter, setDateFilter] = useState('')
   const [activeCat, setActiveCat] = useState<string>('All')
   const [activeParish, setActiveParish] = useState('All Parishes')
   const [filterHidden, setFilterHidden] = useState(false)
@@ -42,7 +41,7 @@ export default function ExploreView() {
   useEffect(() => {
     const onScroll = () => {
       const y = window.scrollY
-      if (y > 150 && y < lastScrollY.current) {
+      if (y > 150 && y > lastScrollY.current) {
         setFilterHidden(true)
       } else {
         setFilterHidden(false)
@@ -89,53 +88,16 @@ export default function ExploreView() {
         <div className="container" style={{ paddingTop: 18, paddingBottom: 16 }}>
           <h1 style={{ fontFamily: 'var(--font-dm-sans)', fontWeight: 500, fontSize: 'clamp(1.75rem, 3vw, 2.5rem)', letterSpacing: '-0.02em', marginBottom: 14 }}>{t('Explore')}</h1>
           <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 14, flexWrap: 'wrap' }}>
-            <div style={{
-              display: 'flex', alignItems: 'center', gap: 10,
-              background: '#fff', border: '1px solid var(--border)',
-              borderRadius: 9999, padding: '10px 18px',
-              flex: 1, maxWidth: 400, minWidth: 180,
-              boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
-            }}>
-              <Search size={16} color="var(--text-tertiary)" strokeWidth={2} />
-              <input
-                type="text" placeholder="Search destinations, activities..."
-                aria-label="Search experiences by destination or activity"
-                value={search} onChange={(e) => setSearch(e.target.value)}
-                style={{ flex: 1, background: 'none', border: 'none', outline: 'none', color: 'var(--text-primary)', fontSize: 14, fontFamily: 'var(--font-dm-sans)', fontWeight: 500 }}
-              />
-              {search && (
-                <button onClick={() => setSearch('')} aria-label="Clear search" style={{ width: 20, height: 20, borderRadius: '50%', background: 'var(--surface)', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, color: 'var(--text-tertiary)' }}>
-                  ×
-                </button>
-              )}
-            </div>
-
-            <div className="hide-mobile" style={{
-              display: 'flex', alignItems: 'center', gap: 8,
-              background: '#fff', border: '1px solid var(--border)',
-              borderRadius: 9999, padding: '10px 16px',
-              boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
-            }}>
-              <Calendar size={15} color="var(--text-tertiary)" strokeWidth={2} />
-              <input
-                type="date" aria-label="Filter experiences by date" value={dateFilter} onChange={(e) => setDateFilter(e.target.value)}
-                style={{ background: 'none', border: 'none', outline: 'none', color: dateFilter ? 'var(--text-primary)' : 'var(--text-tertiary)', fontSize: 13.5, fontFamily: 'var(--font-dm-sans)', fontWeight: 500, cursor: 'pointer' }}
-              />
-              {dateFilter && (
-                <button onClick={() => setDateFilter('')} style={{ width: 20, height: 20, borderRadius: '50%', background: 'var(--surface)', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, color: 'var(--text-tertiary)' }}>
-                  ×
-                </button>
-              )}
-            </div>
           </div>
 
-          <div className="scroll-x" style={{ gap: 6 }}>
+          <div className="scroll-x" style={{ gap: 8 }}>
             {categories.map((c) => (
               <button key={c} onClick={() => setActiveCat(c)}
+                aria-pressed={activeCat === c}
                 onMouseEnter={(e) => { if (activeCat !== c) e.currentTarget.style.background = 'var(--surface-hover)' }}
                 onMouseLeave={(e) => { if (activeCat !== c) e.currentTarget.style.background = 'var(--surface)' }}
                 style={{
-                height: 34, padding: '0 14px', borderRadius: 9999,
+                height: 44, padding: '0 16px', borderRadius: 9999,
                 fontSize: 13, fontWeight: 500, fontFamily: 'var(--font-dm-sans)',
                 border: '1px solid', cursor: 'pointer', transition: 'all 0.15s ease',
                 background: activeCat === c ? 'var(--accent)' : 'var(--surface)',
@@ -146,6 +108,8 @@ export default function ExploreView() {
                 {c}
               </button>
             ))}
+          </div>
+          <div className="scroll-x" style={{ gap: 8, marginTop: 8 }}>
             <span style={{
               alignSelf: 'center', flexShrink: 0, margin: '0 4px',
               fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em',
@@ -155,10 +119,11 @@ export default function ExploreView() {
             </span>
             {parishes.map((p) => (
               <button key={p} onClick={() => setActiveParish(p)}
+                aria-pressed={activeParish === p}
                 onMouseEnter={(e) => { if (activeParish !== p) e.currentTarget.style.background = 'var(--surface-hover)' }}
                 onMouseLeave={(e) => { if (activeParish !== p) e.currentTarget.style.background = 'var(--surface)' }}
                 style={{
-                height: 34, padding: '0 14px', borderRadius: 9999,
+                height: 44, padding: '0 16px', borderRadius: 9999,
                 fontSize: 13, fontWeight: 500, fontFamily: 'var(--font-dm-sans)',
                 border: '1px solid', cursor: 'pointer', transition: 'all 0.15s ease',
                 background: activeParish === p ? 'var(--accent)' : 'var(--surface)',
@@ -174,10 +139,23 @@ export default function ExploreView() {
       </div>
 
       {/* Grid */}
+      <h2 style={{ position: 'absolute', width: 1, height: 1, padding: 0, margin: -1, overflow: 'hidden', clip: 'rect(0 0 0 0)', whiteSpace: 'nowrap', border: 0 }}>
+        All experiences
+      </h2>
       <div className="container" style={{ paddingTop: 28, paddingBottom: 80 }}>
         {filtered.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '80px 0' }}>
             <p style={{ fontSize: 16, fontFamily: 'var(--font-dm-sans)', fontWeight: 700, marginBottom: 6 }}>No experiences found</p>
+            <button
+              onClick={() => { setSearch(''); setActiveCat('All'); setActiveParish('All Parishes') }}
+              style={{
+                marginTop: 10, minHeight: 44, padding: '0 22px', borderRadius: 9999,
+                background: 'var(--accent)', color: '#fff', border: 'none', cursor: 'pointer',
+                fontFamily: 'var(--font-dm-sans)', fontSize: 14, fontWeight: 600,
+              }}
+            >
+              Clear all filters
+            </button>
             <p style={{ fontSize: 13, color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-sans)' }}>Try adjusting your filters</p>
           </div>
         ) : (
@@ -191,6 +169,7 @@ export default function ExploreView() {
           </>
         )}
       </div>
+      <Footer />
     </div>
   )
 }

@@ -152,9 +152,18 @@ export default memo(function ExpCard({ exp }: { exp: Experience }) {
         <h3 style={{ fontFamily: 'var(--font-dm-sans)', fontWeight: 600, fontSize: 17, lineHeight: 1.2, letterSpacing: '-0.01em', marginTop: 3 }}>
           {t(exp.title)}
         </h3>
-        <span style={{ fontSize: 13, fontFamily: 'var(--font-dm-sans)', fontWeight: 500, marginTop: 4, display: 'flex', alignItems: 'center', gap: 3 }}>
-          <Star size={13} fill="currentColor" strokeWidth={0} /> {exp.rating}
-        </span>
+        {exp.reviews > 0 ? (
+          <span style={{ fontSize: 13, fontFamily: 'var(--font-dm-sans)', fontWeight: 500, marginTop: 4, display: 'flex', alignItems: 'center', gap: 3 }}>
+            <Star size={13} fill="currentColor" strokeWidth={0} /> {exp.rating}
+          </span>
+        ) : (
+          <span style={{
+            fontSize: 11, fontFamily: 'var(--font-dm-sans)', fontWeight: 700, marginTop: 4,
+            display: 'inline-flex', alignSelf: 'flex-start', padding: '2px 8px', borderRadius: 999,
+            background: 'var(--gold-dim, rgba(196,164,74,0.15))', color: 'var(--gold-text, #6E5A1C)',
+            letterSpacing: '0.04em', textTransform: 'uppercase',
+          }}>{'New'}</span>
+        )}
         <p style={{ fontSize: 12.5, color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-sans)', marginTop: 3 }}>
           {exp.duration} · @{exp.creator}
         </p>
