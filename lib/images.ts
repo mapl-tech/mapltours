@@ -16,8 +16,8 @@ export const DESTINATIONS: Record<string, string> = {
   // rosehall.com, rickscafejamaica.com), which is both the strongest proof
   // the photo is really that place and the safest licensing position.
   'Ocho Rios':   '/img/dest/ocho-rios-dunns-river.jpg',   // Dunn's River Falls terraces
-  'Montego Bay': '/img/dest/montego-bay-rose-hall.jpg',   // Rose Hall Great House at twilight
-  'Falmouth':    '/img/dest/falmouth-martha-brae-raft.jpg',    // Martha Brae bamboo raft, captain poling
+  'Montego Bay': '/img/dest/montego-bay-beach.jpg',       // banded turquoise water and palm, Pexels
+  'Falmouth':    '/img/dest/falmouth-martha-brae-sunlit.jpg',  // sunlit Martha Brae raft, jamaicarafting.com
   'Negril':      '/img/dest/negril-ricks-cafe.jpg',       // Rick's Cafe on the West End cliffs
   'Nine Mile':   '/tours/nine-mile-trading-post.jpg',     // same photo as the Nine Mile tour card
 
