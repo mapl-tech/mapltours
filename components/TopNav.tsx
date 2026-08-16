@@ -23,6 +23,7 @@ export default function TopNav({ onCartClick }: { onCartClick?: () => void }) {
   const pathname = usePathname()
   const router = useRouter()
   const items = useCartStore((s) => s.items)
+  const stops = useCartStore((s) => s.stops)
   const [scrolled, setScrolled] = useState(false)
   const [hidden, setHidden] = useState(false)
   const [where, setWhere] = useState('')
@@ -647,7 +648,7 @@ export default function TopNav({ onCartClick }: { onCartClick?: () => void }) {
 
           <div className="hide-mobile"><LanguageSwitcher dark={dark} /></div>
 
-          {items.length > 0 && (
+          {(items.length > 0 || stops.length > 0) && (
             <button
               onClick={onCartClick}
               style={{
@@ -671,7 +672,7 @@ export default function TopNav({ onCartClick }: { onCartClick?: () => void }) {
                 display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
                 fontSize: 12, fontWeight: 700,
               }}>
-                {items.length}
+                {items.length + stops.length}
               </span>
             </button>
           )}

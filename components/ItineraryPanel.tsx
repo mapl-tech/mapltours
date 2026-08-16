@@ -12,7 +12,7 @@ import { useAuth } from '@/lib/supabase/auth-context'
 import TripTimeBar from '@/components/TripTimeBar'
 
 export default function ItineraryPanel({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const { items, removeItem, subtotal, grandTotal } = useCartStore()
+  const { items, stops, removeItem, removeStop, subtotal, grandTotal } = useCartStore()
   const { t, formatPrice } = useI18n()
   const { user, loading: authLoading } = useAuth()
 
@@ -64,7 +64,7 @@ export default function ItineraryPanel({ open, onClose }: { open: boolean; onClo
   }, [open, onClose])
 
   const hydrated = useHydrated()
-  if (!hydrated || !open || items.length === 0) return null
+  if (!hydrated || !open || (items.length === 0 && stops.length === 0)) return null
 
   // Checkout requires an account. Surface that on the CTA instead of a
   // silent redirect after the user commits, send them to /login with a
@@ -162,6 +162,47 @@ export default function ItineraryPanel({ open, onClose }: { open: boolean; onClo
               </div>
             </div>
           ))}
+
+          {stops.length > 0 && (
+            <div style={{ marginTop: items.length > 0 ? 4 : 0 }}>
+              <p style={{
+                fontFamily: 'var(--font-dm-sans)', fontSize: 11, fontWeight: 600,
+                letterSpacing: '0.1em', textTransform: 'uppercase',
+                color: 'var(--text-tertiary)', marginBottom: 10,
+              }}>
+                {t('Food stops')} · {t('free')}
+              </p>
+              {stops.map((stop, i) => (
+                <div key={stop.name} style={{
+                  display: 'flex', gap: 12, paddingBottom: 12, marginBottom: 12,
+                  borderBottom: i < stops.length - 1 ? '1px solid var(--border)' : 'none',
+                }}>
+                  <div style={{ width: 44, height: 44, borderRadius: 'var(--r-md)', overflow: 'hidden', flexShrink: 0, position: 'relative' }}>
+                    <Image src={stop.image} alt="" fill sizes="44px" style={{ objectFit: 'cover' }} />
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <p style={{ fontSize: 13, fontWeight: 600, fontFamily: 'var(--font-dm-sans)', marginBottom: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {stop.name}
+                    </p>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <span style={{ fontSize: 12, color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-sans)' }}>
+                        {stop.town} · {stop.knownFor}
+                      </span>
+                      <button onClick={() => removeStop(stop.name)} style={{
+                        background: 'none', border: 'none', color: 'var(--text-tertiary)',
+                        fontSize: 12, fontFamily: 'var(--font-dm-sans)', cursor: 'pointer',
+                        textDecoration: 'underline', textUnderlineOffset: 2,
+                        minHeight: 40, display: 'inline-flex', alignItems: 'center', padding: '0 4px',
+                      }}>{t('Remove')}</button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+              <p style={{ fontSize: 11.5, color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-sans)', marginBottom: 4 }}>
+                {t('Free roadside stops, your driver builds them into your route.')}
+              </p>
+            </div>
+          )}
         </div>
 
         {/* Footer */}

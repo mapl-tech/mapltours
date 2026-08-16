@@ -3,6 +3,9 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import { experiences, HERO_IMAGE, DESTINATION_IMAGES, TOUR_DESTINATIONS, slugify } from '@/lib/experiences'
+import { EATS } from '@/lib/eats'
+import { useCartStore } from '@/lib/cart'
+import { useHydrated } from '@/lib/use-hydrated'
 import { CULTURE_IMAGE, HERO_VIDEO } from '@/lib/images'
 import ExpCard from './ExpCard'
 import MobileShort from './MobileShort'
@@ -11,66 +14,6 @@ import { useI18n } from '@/lib/i18n'
 import { useRef, useState, useEffect } from 'react'
 import { Award, Users, Headphones, ShieldCheck, Star, Heart, UtensilsCrossed, TrendingUp, ChevronLeft, ChevronRight, MapPin } from 'lucide-react'
 
-/**
- * Where to eat along Collins's routes. Every entry is a real, currently
- * operating restaurant verified against active listings and 2025-2026
- * reviews (researched 2026-08); nothing here is bookable through MAPL, so
- * cards carry no prices or ratings, just the honest recommendation and a
- * directions link. Images are dish photography, not venue photos.
- */
-const EATS: {
-  name: string; town: string; parish: string
-  description: string; knownFor: string; image: string; mapsQuery: string
-}[] = [
-  {
-    name: 'Scotchies',
-    town: 'Montego Bay', parish: 'St. James',
-    description: 'The jerk everybody argues is the best on the island, smoked slow over pimento wood under thatch huts.',
-    knownFor: 'Pimento-smoked jerk chicken',
-    image: 'https://images.pexels.com/photos/8444098/pexels-photo-8444098.jpeg?auto=compress&cs=tinysrgb&w=1280&h=960&fit=crop',
-    mapsQuery: 'Scotchies Montego Bay Jamaica',
-  },
-  {
-    name: 'The Pork Pit',
-    town: 'Montego Bay', parish: 'St. James',
-    description: 'A no-frills open-air yard right on the Hip Strip where the ribs fall off the bone and the smoke hut never takes a day off.',
-    knownFor: 'Jerk pork and ribs',
-    image: 'https://images.pexels.com/photos/9903379/pexels-photo-9903379.jpeg?auto=compress&cs=tinysrgb&w=1280&h=960&fit=crop',
-    mapsQuery: 'The Pork Pit Montego Bay Jamaica',
-  },
-  {
-    name: "Miss T's Kitchen",
-    town: 'Ocho Rios', parish: 'St. Ann',
-    description: "Anna-Kay's garden spot in the heart of Ochi, serving oxtail and curry goat that taste like Sunday dinner at your auntie's yard.",
-    knownFor: 'Oxtail and curry goat',
-    image: 'https://images.pexels.com/photos/27556969/pexels-photo-27556969.jpeg?auto=compress&cs=tinysrgb&w=1280&h=960&fit=crop',
-    mapsQuery: "Miss T's Kitchen Ocho Rios Jamaica",
-  },
-  {
-    name: 'Ultimate Jerk Centre',
-    town: 'Discovery Bay', parish: 'St. Ann',
-    description: 'The famous north-coast road stop across from Green Grotto Caves, where drivers plan the whole day around a box of jerk pork.',
-    knownFor: 'Jerk pork and chicken',
-    image: 'https://images.pexels.com/photos/27556962/pexels-photo-27556962.jpeg?auto=compress&cs=tinysrgb&w=1280&h=960&fit=crop',
-    mapsQuery: 'Ultimate Jerk Centre Discovery Bay Jamaica',
-  },
-  {
-    name: 'Pushcart Jerk Center & Rum Bar',
-    town: 'Negril', parish: 'Westmoreland',
-    description: 'Cliffside jerk, rum punch, and live music at Rockhouse, with a front-row seat to the Negril sunset.',
-    knownFor: 'Jerk chicken, rum punch',
-    image: 'https://images.pexels.com/photos/33398985/pexels-photo-33398985.jpeg?auto=compress&cs=tinysrgb&w=1280&h=960&fit=crop',
-    mapsQuery: 'Pushcart Rockhouse Negril Jamaica',
-  },
-  {
-    name: '3 Dives Jerk Centre',
-    town: 'Negril', parish: 'Westmoreland',
-    description: 'Home of the Negril Jerk Festival, where every order cooks fresh on the West End cliffs, so grab a Red Stripe and let the sunset entertain you.',
-    knownFor: 'Jerk chicken and lobster',
-    image: 'https://images.pexels.com/photos/36857725/pexels-photo-36857725.jpeg?auto=compress&cs=tinysrgb&w=1280&h=960&fit=crop',
-    mapsQuery: '3 Dives Jerk Centre Negril Jamaica',
-  },
-]
 
 /* Hero video, lazy loads on fast connections, shows poster on slow/mobile data */
 function HeroVideo({ src, poster }: { src: string; poster: string }) {
@@ -241,6 +184,8 @@ function StepCarousel({ steps, renderCard }: { steps: any[]; renderCard: (s: any
 function FoodSection() {
   const scrollRef = useRef<HTMLDivElement>(null)
   const { t } = useI18n()
+  const { addStop, removeStop, isStopAdded } = useCartStore()
+  const hydrated = useHydrated()
 
   const scroll = (dir: 'left' | 'right') => {
     if (!scrollRef.current) return
@@ -276,7 +221,7 @@ function FoodSection() {
               fontFamily: 'var(--font-dm-sans)', marginTop: 8,
               maxWidth: 440,
             }}>
-              Real spots, no reservations needed: the jerk pits and kitchens Collins swears by along his routes, from Scotchies&apos; pimento smoke to sunset jerk on the Negril cliffs.
+              Real spots, no reservations needed: the jerk pits and kitchens Jamaicans swear by, from Scotchies&apos; pimento smoke to sunset jerk on the Negril cliffs.
             </p>
           </div>
 
@@ -335,15 +280,13 @@ function FoodSection() {
           paddingRight: 16,
         }}
       >
-        {EATS.map((r) => (
-          <a
+        {EATS.map((r) => {
+          const added = hydrated && isStopAdded(r.name)
+          return (
+          <div
             key={r.name}
-            href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(r.mapsQuery)}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            aria-label={`${r.name}, ${r.town}. Open directions in Google Maps`}
             style={{
-              flex: '0 0 310px', display: 'block',
+              flex: '0 0 310px',
               borderRadius: 'var(--r-xl)',
               overflow: 'hidden',
               background: 'var(--bg-dark-warm)',
@@ -375,6 +318,17 @@ function FoodSection() {
               }}>
                 <MapPin size={11} strokeWidth={2} /> {r.town}, {r.parish}
               </span>
+              {/* Free-stop pill, sets expectations honestly */}
+              <span style={{
+                position: 'absolute', top: 12, left: 12,
+                padding: '3px 10px', borderRadius: 9999,
+                background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(8px)',
+                fontSize: 11, fontWeight: 600, color: '#fff',
+                fontFamily: 'var(--font-dm-sans)', letterSpacing: '0.04em',
+                textTransform: 'uppercase',
+              }}>
+                {t('Free stop')}
+              </span>
             </div>
 
             {/* Info */}
@@ -382,35 +336,64 @@ function FoodSection() {
               <h3 style={{
                 fontFamily: 'var(--font-dm-sans)', fontWeight: 600,
                 fontSize: 14.5, color: 'white', lineHeight: 1.3,
-                marginBottom: 6,
+                marginBottom: 4,
               }}>
                 {r.name}
               </h3>
               <p style={{
+                fontSize: 12, color: 'var(--gold-warm)', fontWeight: 600,
+                fontFamily: 'var(--font-dm-sans)', marginBottom: 6,
+              }}>
+                {r.knownFor}
+              </p>
+              <p style={{
                 fontSize: 12.5, color: '#cccccc',
                 fontFamily: 'var(--font-dm-sans)', lineHeight: 1.45,
-                marginBottom: 12,
+                marginBottom: 14,
                 display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden',
               }}>
                 {r.description}
               </p>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
-                <span style={{
-                  padding: '3px 10px', borderRadius: 9999,
-                  background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.1)',
-                  fontSize: 11.5, fontWeight: 500, color: '#e6e6e6',
-                  fontFamily: 'var(--font-dm-sans)', whiteSpace: 'nowrap',
-                  overflow: 'hidden', textOverflow: 'ellipsis',
-                }}>
-                  {r.knownFor}
-                </span>
-                <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--gold-warm)', fontFamily: 'var(--font-dm-sans)', whiteSpace: 'nowrap' }}>
-                  Directions {'\u2197'}
-                </span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <button
+                  onClick={() => (added ? removeStop(r.name) : addStop({
+                    name: r.name, town: r.town, parish: r.parish,
+                    knownFor: r.knownFor, image: r.image, mapsQuery: r.mapsQuery,
+                  }))}
+                  aria-pressed={added}
+                  aria-label={added ? `Remove ${r.name} from your itinerary` : `Add ${r.name} to your itinerary`}
+                  style={{
+                    flex: 1, minHeight: 44, borderRadius: 9999,
+                    background: added ? 'var(--emerald)' : 'var(--gold)',
+                    color: added ? '#fff' : '#1A1508',
+                    border: 'none', cursor: 'pointer',
+                    fontSize: 13, fontWeight: 700,
+                    fontFamily: 'var(--font-dm-sans)',
+                    transition: 'all 0.2s ease',
+                  }}
+                >
+                  {added ? t('\u2713 On your route') : t('+ Add to itinerary')}
+                </button>
+                <a
+                  href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(r.mapsQuery)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label={`Directions to ${r.name} in Google Maps`}
+                  style={{
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    width: 44, height: 44, borderRadius: 9999, flexShrink: 0,
+                    background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)',
+                    color: '#e6e6e6', textDecoration: 'none', fontSize: 15,
+                    transition: 'all 0.2s ease',
+                  }}
+                >
+                  {'\u2197'}
+                </a>
               </div>
             </div>
-          </a>
-        ))}
+          </div>
+          )
+        })}
       </div>
 
       {/* Honest framing: these are recommendations, not MAPL products. */}
@@ -419,7 +402,7 @@ function FoodSection() {
           marginTop: 20, fontSize: 12.5, color: '#999999',
           fontFamily: 'var(--font-dm-sans)',
         }}>
-          Riding with Collins? Ask him to work a stop into your day.
+          Stops you add are free, they ride along with your booking and your driver builds them into your day.
         </p>
       </div>
     </section>

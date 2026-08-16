@@ -859,7 +859,7 @@ export default function CheckoutView() {
   const [formErrors, setFormErrors] = useState<Record<string, boolean>>({})
   const [stripeError, setStripeError] = useState<string | null>(null)
   const [limitModalOpen, setLimitModalOpen] = useState(false)
-  const { items, subtotal, fee, grandTotal, isDayOverLimit, hoursByDate } = useCartStore()
+  const { items, stops, subtotal, fee, grandTotal, isDayOverLimit, hoursByDate } = useCartStore()
   const { t, formatPrice } = useI18n()
 
   // Transport is no longer charged: Collin's tour prices include
@@ -903,7 +903,12 @@ export default function CheckoutView() {
             country: formData['country'],
             pickup: formData['pickup'],
             dropoff: formData['dropoff'],
-            specialRequests: formData['specialRequests'],
+            specialRequests: [
+              formData['specialRequests'],
+              stops.length > 0
+                ? `Requested free food stops: ${stops.map((s) => `${s.name} (${s.town})`).join('; ')}`
+                : '',
+            ].filter(Boolean).join('\n'),
           },
           breakdown: {
             subtotal: subtotal(),

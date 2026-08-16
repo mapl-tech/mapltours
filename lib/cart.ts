@@ -9,6 +9,21 @@ export interface CartItem extends Experience {
 }
 
 /**
+ * A free food stop the guest wants Collins to work into the route. Stops
+ * carry NO price and are deliberately invisible to subtotal(), fee() and
+ * grandTotal(); at checkout they ride along as note text only, so the
+ * money flow cannot be affected by them.
+ */
+export interface FoodStop {
+  name: string
+  town: string
+  parish: string
+  knownFor: string
+  image: string
+  mapsQuery: string
+}
+
+/**
  * Maximum tour hours allowed per single travel day. Beyond this, the user
  * must either remove experiences or move them to a different date.
  */
@@ -23,10 +38,14 @@ export function parseDurationHours(duration: string): number {
 
 interface CartStore {
   items: CartItem[]
+  stops: FoodStop[]
   pickup: string
   dropoff: string
   addItem: (exp: Experience) => void
   removeItem: (id: number) => void
+  addStop: (stop: FoodStop) => void
+  removeStop: (name: string) => void
+  isStopAdded: (name: string) => boolean
   updateTravelers: (id: number, travelers: number) => void
   updateDate: (id: number, date: string) => void
   setPickup: (location: string) => void
@@ -56,8 +75,16 @@ export const useCartStore = create<CartStore>()(
   persist(
     (set, get) => ({
       items: [],
+      stops: [],
       pickup: '',
       dropoff: '',
+      addStop: (stop) => set((state) => (
+        state.stops.some((s) => s.name === stop.name)
+          ? state
+          : { stops: [...state.stops, stop] }
+      )),
+      removeStop: (name) => set((state) => ({ stops: state.stops.filter((s) => s.name !== name) })),
+      isStopAdded: (name) => get().stops.some((s) => s.name === name),
 
       addItem: (exp: Experience) => {
         const { items } = get()
@@ -86,7 +113,7 @@ export const useCartStore = create<CartStore>()(
       setPickup: (location: string) => set({ pickup: location }),
       setDropoff: (location: string) => set({ dropoff: location }),
 
-      clearCart: () => set({ items: [], pickup: '', dropoff: '' }),
+      clearCart: () => set({ items: [], stops: [], pickup: '', dropoff: '' }),
 
       isInCart: (id: number) => get().items.some((i) => i.id === id),
 
@@ -145,9 +172,9 @@ export const useCartStore = create<CartStore>()(
       // to different tours), which would throw inside tourPrice() during
       // render of the cart drawer, i.e. on every page. Re-hydrate each line
       // from the live catalog and drop anything that no longer exists.
-      version: 1,
+      version: 2,
       migrate: (persisted, version) => {
-        const state = persisted as { items?: CartItem[] } | undefined
+        const state = persisted as { items?: CartItem[]; stops?: FoodStop[] } | undefined
         if (!state) return persisted as CartStore
         const items = (state.items ?? []).flatMap((i) => {
           const current = experiences.find((e: Experience) => e.id === i.id)
@@ -155,7 +182,8 @@ export const useCartStore = create<CartStore>()(
           return [{ ...current, travelers: i.travelers ?? 2, date: i.date ?? '' }]
         })
         void version
-        return { ...state, items } as CartStore
+        // v2: food stops joined the cart; older persisted carts have none.
+        return { ...state, items, stops: state.stops ?? [] } as CartStore
       },
     }
   )
