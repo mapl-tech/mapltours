@@ -5,7 +5,7 @@ import Image from 'next/image'
 import { usePathname, useRouter } from 'next/navigation'
 import { useCartStore } from '@/lib/cart'
 import { useState, useEffect, useRef } from 'react'
-import { Search, Leaf, MapPin, ShoppingBag } from 'lucide-react'
+import { Search, Leaf, Lock, MapPin, ShoppingBag } from 'lucide-react'
 import LanguageSwitcher from './LanguageSwitcher'
 import { useI18n } from '@/lib/i18n'
 import { useAuth } from '@/lib/supabase/auth-context'
@@ -45,7 +45,7 @@ export default function TopNav({ onCartClick }: { onCartClick?: () => void }) {
   const [showProfileMenu, setShowProfileMenu] = useState(false)
   const isHome = pathname === '/'
   const isExperience = pathname.startsWith('/experience')
-  const isCheckout = pathname.startsWith('/checkout')
+  const isCheckout = pathname.startsWith('/checkout') || pathname.startsWith('/transfers/checkout')
   const isExplore = pathname.startsWith('/explore')
   const isProfile = pathname.startsWith('/profile')
   const isTransfers = pathname.startsWith('/transfers')
@@ -86,6 +86,43 @@ export default function TopNav({ onCartClick }: { onCartClick?: () => void }) {
   const linkColor = dark ? 'rgba(255,255,255,0.75)' : 'var(--text-secondary)'
 
   if (isExperience) return null
+
+  // ── Checkout: a deliberately minimal header ──
+  // A guest entering card details is the most expensive visitor to lose, so
+  // every navigation link is an exit ramp and search is a distraction. What
+  // stays: the logo (never trap someone mid-checkout) and a secure-checkout
+  // marker where the nav used to be. Fixed at the same 56px the checkout
+  // pages already pad for, and it never hides on scroll.
+  if (isCheckout) {
+    return (
+      <header
+        style={{
+          position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100, height: 56,
+          display: 'flex', alignItems: 'center',
+          background: 'rgba(255,255,255,0.97)',
+          backdropFilter: 'blur(24px) saturate(1.2)',
+          WebkitBackdropFilter: 'blur(24px) saturate(1.2)',
+          borderBottom: '1px solid var(--border)',
+        }}
+      >
+        <div className="container" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', gap: 16 }}>
+          <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
+            <div style={{ width: 32, height: 32, borderRadius: 8, background: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Leaf size={16} strokeWidth={2.5} color="#fff" />
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1 }}>
+              <span style={{ fontFamily: 'var(--font-dm-sans)', fontWeight: 800, fontSize: 15, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--text-primary)' }}>MAPL</span>
+              <span style={{ fontFamily: 'var(--font-dm-sans)', fontWeight: 700, fontSize: 11, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--text-secondary)', marginTop: 1 }}>Tours Jamaica</span>
+            </div>
+          </Link>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 7, fontFamily: 'var(--font-dm-sans)', fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)' }}>
+            <Lock size={13} strokeWidth={2.5} aria-hidden="true" />
+            {t('Secure checkout')}
+          </div>
+        </div>
+      </header>
+    )
+  }
 
   return (
     <header
