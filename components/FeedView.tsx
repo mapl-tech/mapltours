@@ -411,142 +411,184 @@ function FoodSection() {
 }
 
 /**
- * Ready-made package days. Deliberately separate from the reel feed and the
- * build-your-own grids: each package bundles activities that are also sold
- * singly, so listing them together duplicates the catalog and invites a
- * guest to book the same attraction twice. Adding one swaps out any of its
- * components already in the itinerary (see cart.addItem).
+ * Ready-made package days. Kept out of the reel feed and the build-your-own
+ * grids because each one bundles activities that are also sold singly, so
+ * listing them together duplicates the catalog and lets a guest book the
+ * same attraction twice. Adding one swaps out any of its components already
+ * in the itinerary (see cart.addItem).
  *
- * Visually it is the inverse of the food carousel above it: light warm band,
- * a grid rather than a scroller, and the day's running order as the card's
- * main content, because the sequence is what makes a package a package.
+ * A horizontal rail of identical cards, on a light band so it still reads
+ * apart from the dark food rail above it. The day's running order is the
+ * card's main content, because the sequence is what makes a package a
+ * package.
  */
 function PackagesSection() {
+  const railRef = useRef<HTMLDivElement>(null)
   const { t, formatPrice } = useI18n()
   const { addItem, removeItem, isInCart, conflictsInCart } = useCartStore()
   const hydrated = useHydrated()
 
+  const scroll = (dir: 'left' | 'right') => {
+    if (!railRef.current) return
+    railRef.current.scrollBy({ left: dir === 'left' ? -336 : 336, behavior: 'smooth' })
+  }
+
   return (
     <section className="pkg-band">
       <div className="container">
-        <div style={{ maxWidth: 760, marginBottom: 40 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
-            <span aria-hidden style={{ width: 26, height: 2, background: 'var(--gold)', borderRadius: 2 }} />
-            <span style={{
-              fontFamily: 'var(--font-dm-sans)', fontWeight: 600,
-              fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.1em',
-              color: 'var(--gold-text)',
+        <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 24 }}>
+          <div style={{ maxWidth: 620 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+              <span aria-hidden style={{ width: 26, height: 2, background: 'var(--gold)', borderRadius: 2 }} />
+              <span style={{
+                fontFamily: 'var(--font-dm-sans)', fontWeight: 600,
+                fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.1em',
+                color: 'var(--gold-text)',
+              }}>
+                {t('Ready-made days')}
+              </span>
+            </div>
+            <h2 style={{
+              fontFamily: 'var(--font-dm-sans)', fontWeight: 700,
+              fontSize: 'var(--fs-h2)',
+              color: 'var(--text-primary)', lineHeight: 1.1, letterSpacing: '-0.025em',
+              textWrap: 'balance',
             }}>
-              {t('Ready-made days')}
-            </span>
+              {t('Whole days, already planned')}
+            </h2>
+            <p style={{
+              fontSize: 15, color: 'var(--text-secondary)',
+              fontFamily: 'var(--font-dm-sans)', marginTop: 10, lineHeight: 1.5,
+            }}>
+              {t('Two or three experiences run back to back, in the right order, driven door to door.')}
+            </p>
           </div>
-          <h2 style={{
-            fontFamily: 'var(--font-dm-sans)', fontWeight: 700,
-            fontSize: 'var(--fs-h2)',
-            color: 'var(--text-primary)', lineHeight: 1.1, letterSpacing: '-0.025em',
-            textWrap: 'balance',
-          }}>
-            {t('Whole days, already planned')}
-          </h2>
-          <p style={{
-            fontSize: 15, color: 'var(--text-secondary)',
-            fontFamily: 'var(--font-dm-sans)', marginTop: 10, lineHeight: 1.5,
-          }}>
-            {t('Two or three experiences run back to back, in the right order, driven door to door.')}
-          </p>
+
+          <div style={{ display: 'flex', gap: 8, flexShrink: 0, marginBottom: 4 }}>
+            <button onClick={() => scroll('left')} aria-label="Previous packages" style={{
+              width: 44, height: 44, borderRadius: '50%', background: 'transparent',
+              border: '1px solid var(--border-strong)', cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              color: 'var(--text-secondary)', transition: 'all 0.2s ease',
+            }}>
+              <ChevronLeft size={20} />
+            </button>
+            <button onClick={() => scroll('right')} aria-label="Next packages" style={{
+              width: 44, height: 44, borderRadius: '50%', background: 'var(--gold)',
+              border: 'none', cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              color: '#1A1508', transition: 'all 0.2s ease',
+            }}>
+              <ChevronRight size={20} />
+            </button>
+          </div>
         </div>
+      </div>
 
-        <div className="pkg-grid">
-          {packageExperiences.map((pkg) => {
-            const inCart = hydrated && isInCart(pkg.id)
-            const replaces = hydrated ? conflictsInCart(pkg) : []
-            const steps = (pkg.includes ?? [])
-              .map((id) => experiences.find((e) => e.id === id)?.title)
-              .filter(Boolean) as string[]
-            return (
-              <article key={pkg.id} className="pkg-card">
-                <Link
-                  href={`/experience/${slugify(pkg.title)}`}
-                  className="pkg-media"
-                  aria-label={t(pkg.title)}
-                >
-                  <Image
-                    src={pkg.image}
-                    alt=""
-                    fill
-                    sizes="(max-width: 767px) 100vw, (max-width: 1023px) 92vw, 250px"
-                    style={{ objectFit: 'cover' }}
-                  />
-                </Link>
+      <div
+        ref={railRef}
+        className="pkg-rail no-scrollbar"
+        tabIndex={0}
+        role="region"
+        aria-label="Package days, scroll"
+      >
+        {packageExperiences.map((pkg) => {
+          const inCart = hydrated && isInCart(pkg.id)
+          const replaces = hydrated ? conflictsInCart(pkg) : []
+          const steps = (pkg.includes ?? [])
+            .map((id) => experiences.find((e) => e.id === id)?.title)
+            .filter(Boolean) as string[]
+          return (
+            <article key={pkg.id} className="pkg-card">
+              <Link
+                href={`/experience/${slugify(pkg.title)}`}
+                className="pkg-media"
+                aria-label={t(pkg.title)}
+              >
+                <Image
+                  src={pkg.image}
+                  alt=""
+                  fill
+                  sizes="(max-width: 767px) 84vw, 320px"
+                  style={{ objectFit: 'cover' }}
+                />
+                <span style={{
+                  position: 'absolute', top: 12, left: 12,
+                  padding: '4px 11px', borderRadius: 9999,
+                  background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(8px)',
+                  fontSize: 12, fontWeight: 600, color: '#fff',
+                  fontFamily: 'var(--font-dm-sans)', letterSpacing: '0.04em',
+                  textTransform: 'uppercase',
+                }}>
+                  {(pkg.includes ?? []).length} {t('in one day')}
+                </span>
+              </Link>
 
-                <div className="pkg-body">
-                  <p style={{
-                    fontSize: 12, fontWeight: 600, letterSpacing: '0.06em',
-                    textTransform: 'uppercase', color: 'var(--text-tertiary)',
-                    fontFamily: 'var(--font-dm-sans)', marginBottom: 6,
-                  }}>
-                    {t(pkg.duration)} · {pkg.destination}
-                  </p>
-                  <h3 style={{
-                    fontFamily: 'var(--font-dm-sans)', fontWeight: 700,
-                    fontSize: 19, lineHeight: 1.25, letterSpacing: '-0.01em',
-                    color: 'var(--text-primary)', marginBottom: 14,
-                  }}>
-                    <Link
-                      href={`/experience/${slugify(pkg.title)}`}
-                      className="tap-target"
-                      style={{ color: 'inherit', textDecoration: 'none' }}
-                    >
-                      {t(pkg.title)}
-                    </Link>
-                  </h3>
+              <div className="pkg-body">
+                <p style={{
+                  fontSize: 12, fontWeight: 600, letterSpacing: '0.06em',
+                  textTransform: 'uppercase', color: 'var(--text-tertiary)',
+                  fontFamily: 'var(--font-dm-sans)', marginBottom: 6,
+                }}>
+                  {t(pkg.duration)} · {pkg.destination}
+                </p>
+                <h3 style={{
+                  fontFamily: 'var(--font-dm-sans)', fontWeight: 700,
+                  fontSize: 17, lineHeight: 1.25, letterSpacing: '-0.01em',
+                  color: 'var(--text-primary)', marginBottom: 12,
+                  minHeight: 42,
+                }}>
+                  <Link
+                    href={`/experience/${slugify(pkg.title)}`}
+                    className="tap-target"
+                    style={{ color: 'inherit', textDecoration: 'none' }}
+                  >
+                    {t(pkg.title)}
+                  </Link>
+                </h3>
 
-                  <p className="pkg-lede">{t(pkg.description)}</p>
+                <ol className="pkg-steps">
+                  {steps.map((title) => <li key={title}>{t(title)}</li>)}
+                </ol>
 
-                  <ol className="pkg-steps">
-                    {steps.map((title) => <li key={title}>{t(title)}</li>)}
-                  </ol>
-
-                  <div className="pkg-buy" style={{ marginTop: 'auto', display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 12 }}>
-                    <div>
-                      <span style={{
-                        fontFamily: 'var(--font-dm-sans)', fontWeight: 700,
-                        fontSize: 21, color: 'var(--text-primary)', letterSpacing: '-0.01em',
-                      }}>
-                        {formatPrice(pkg.price)}
-                      </span>
-                      <span style={{ fontSize: 12, color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-sans)', marginLeft: 4 }}>
-                        {priceUnitLabel(pkg.pricing)}
-                      </span>
-                    </div>
-                    <button
-                      onClick={() => (inCart ? removeItem(pkg.id) : addItem(pkg))}
-                      aria-pressed={inCart}
-                      aria-label={inCart ? `Remove ${pkg.title} from your itinerary` : `Add ${pkg.title} to your itinerary`}
-                      style={{
-                        minHeight: 44, padding: '0 20px', borderRadius: 9999,
-                        background: inCart ? 'var(--emerald)' : 'var(--gold)',
-                        color: inCart ? '#fff' : '#1A1508',
-                        border: 'none', cursor: 'pointer',
-                        fontSize: 13, fontWeight: 700, fontFamily: 'var(--font-dm-sans)',
-                        whiteSpace: 'nowrap',
-                      }}
-                      onMouseEnter={(e) => { e.currentTarget.style.filter = 'brightness(1.08)' }}
-                      onMouseLeave={(e) => { e.currentTarget.style.filter = '' }}
-                    >
-                      {inCart ? t('\u2713 Added') : t('Add this day')}
-                    </button>
+                <div className="pkg-buy" style={{ marginTop: 'auto', display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  <div>
+                    <span style={{
+                      fontFamily: 'var(--font-dm-sans)', fontWeight: 700,
+                      fontSize: 20, color: 'var(--text-primary)', letterSpacing: '-0.01em',
+                    }}>
+                      {formatPrice(pkg.price)}
+                    </span>
+                    <span style={{ fontSize: 12, color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-sans)', marginLeft: 4 }}>
+                      {priceUnitLabel(pkg.pricing)}
+                    </span>
                   </div>
+                  <button
+                    onClick={() => (inCart ? removeItem(pkg.id) : addItem(pkg))}
+                    aria-pressed={inCart}
+                    aria-label={inCart ? `Remove ${pkg.title} from your itinerary` : `Add ${pkg.title} to your itinerary`}
+                    style={{
+                      width: '100%', minHeight: 44, borderRadius: 9999,
+                      background: inCart ? 'var(--emerald)' : 'var(--gold)',
+                      color: inCart ? '#fff' : '#1A1508',
+                      border: 'none', cursor: 'pointer',
+                      fontSize: 13.5, fontWeight: 700, fontFamily: 'var(--font-dm-sans)',
+                    }}
+                    onMouseEnter={(e) => { e.currentTarget.style.filter = 'brightness(1.08)' }}
+                    onMouseLeave={(e) => { e.currentTarget.style.filter = '' }}
+                  >
+                    {inCart ? t('\u2713 Added') : t('Add this day')}
+                  </button>
                   {replaces.length > 0 && !inCart && (
-                    <p className="pkg-replaces" style={{ fontSize: 12, color: 'var(--gold-text)', fontFamily: 'var(--font-dm-sans)', marginTop: 10 }}>
+                    <p className="pkg-replaces" style={{ fontSize: 12, color: 'var(--gold-text)', fontFamily: 'var(--font-dm-sans)' }}>
                       {t('Replaces')} {replaces.map((r) => t(r.title)).join(', ')}
                     </p>
                   )}
                 </div>
-              </article>
-            )
-          })}
-        </div>
+              </div>
+            </article>
+          )
+        })}
       </div>
     </section>
   )

@@ -1104,11 +1104,10 @@ img[alt="Devon House Patty & Ice Cream Tour"] {
 
 /* ═══════════════════════════════════════════
    PACKAGES, ready-made days
-   Deliberately unlike the dark food carousel directly above it: a light
-   warm band instead of a dark one, a two-column grid instead of a
-   horizontal scroller, and cards that read left to right so the day's
-   RUNNING ORDER is the card's main content. A package is a sequence,
-   so the sequence is the thing the card shows.
+   A horizontal rail like the food section, but on a light warm band so
+   the two still read as separate zones. Every card is the same width and
+   the same height, which is what the earlier grid could not do: uneven
+   card heights (330/244/220/253) made it look ragged.
    ═══════════════════════════════════════════ */
 .pkg-band {
   background: var(--bg-warm);
@@ -1116,40 +1115,44 @@ img[alt="Devon House Patty & Ice Cream Tour"] {
   border-bottom: 1px solid var(--border);
   padding: var(--section-y) 0;
 }
-.pkg-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 24px;
+.pkg-rail {
+  display: flex;
+  gap: 16px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  padding-top: 28px;
+  padding-bottom: 4px;
+  /* Match .container's inset so the first card lines up with the heading,
+     and give scroll-snap the same inset or it snaps the first card flush
+     to the scrollport and undoes the alignment. */
+  padding-left: max(16px, calc((100% - 1832px) / 2 + 16px));
+  padding-right: 16px;
+  scroll-padding-left: max(16px, calc((100% - 1832px) / 2 + 16px));
 }
-/* With an odd count the grid leads with a full-width feature card, so the
-   spanning row reads as emphasis at the top instead of a stretched
-   leftover at the bottom. */
-.pkg-grid > .pkg-card:first-child:nth-last-child(odd) { grid-column: 1 / -1; grid-template-columns: 42% 1fr; }
-.pkg-grid > .pkg-card:first-child:nth-last-child(odd) .pkg-media { min-height: 320px; }
-.pkg-grid > .pkg-card:first-child:nth-last-child(odd) .pkg-body { padding: 32px 36px 34px; justify-content: center; }
-.pkg-grid > .pkg-card:first-child:nth-last-child(odd) h3 { font-size: var(--fs-h3); margin-bottom: 10px; }
-.pkg-grid > .pkg-card:first-child:nth-last-child(odd) .pkg-lede {
-  display: block;
-  font-size: var(--fs-body-lg);
-  line-height: 1.5;
-  color: var(--text-secondary);
-  max-width: 46ch;
-  margin-bottom: 18px;
+@media (min-width: 768px) {
+  .pkg-rail {
+    padding-left: max(24px, calc((100% - 1832px) / 2 + 24px));
+    scroll-padding-left: max(24px, calc((100% - 1832px) / 2 + 24px));
+  }
 }
-/* One quiet marker so the wide row reads as a deliberate lead, not a
-   card that happened to be first. */
-.pkg-grid > .pkg-card:first-child:nth-last-child(odd) .pkg-media::after {
-  content: 'Start here';
-  position: absolute; top: 14px; left: 14px;
-  padding: 5px 12px; border-radius: 9999px;
-  background: var(--gold); color: #1A1508;
-  font-family: var(--font-dm-sans); font-size: var(--fs-label);
-  font-weight: 700; letter-spacing: 0.04em;
+@media (min-width: 1024px) {
+  .pkg-rail {
+    padding-left: max(32px, calc((100% - 1832px) / 2 + 32px));
+    scroll-padding-left: max(32px, calc((100% - 1832px) / 2 + 32px));
+  }
 }
-
+@media (min-width: 1536px) {
+  .pkg-rail {
+    padding-left: max(48px, calc((100% - 1832px) / 2 + 48px));
+    scroll-padding-left: max(48px, calc((100% - 1832px) / 2 + 48px));
+  }
+}
 .pkg-card {
-  display: grid;
-  grid-template-columns: 38% 1fr;
+  flex: 0 0 320px;
+  scroll-snap-align: start;
+  display: flex;
+  flex-direction: column;
   background: var(--card-bg);
   border: 1px solid var(--border);
   border-radius: var(--r-xl);
@@ -1158,20 +1161,20 @@ img[alt="Devon House Patty & Ice Cream Tour"] {
   transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
 }
 .pkg-card:hover {
-  transform: translateY(-2px);
+  transform: translateY(-3px);
   box-shadow: var(--shadow-lg);
   border-color: var(--border-strong);
 }
-.pkg-media { position: relative; min-height: 200px; }
-.pkg-body { padding: 20px 22px 22px; display: flex; flex-direction: column; }
+.pkg-media { position: relative; height: 190px; flex-shrink: 0; }
+.pkg-body { padding: 16px 18px 18px; display: flex; flex-direction: column; flex: 1; }
 .pkg-lede { display: none; }
 
-/* Running order: a numbered timeline, connector drawn between discs. */
-.pkg-steps { list-style: none; margin: 0 0 18px; padding: 0; }
+/* Running order: numbered timeline, connector between the discs. */
+.pkg-steps { list-style: none; margin: 0 0 16px; padding: 0; counter-reset: pkg-step; }
 .pkg-steps li {
   position: relative;
-  padding: 0 0 12px 30px;
-  font-size: 15px;
+  padding: 0 0 10px 28px;
+  font-size: var(--fs-body);
   line-height: 1.35;
   color: var(--text-secondary);
   font-family: var(--font-dm-sans);
@@ -1182,7 +1185,7 @@ img[alt="Devon House Patty & Ice Cream Tour"] {
   counter-increment: pkg-step;
   position: absolute;
   left: 0; top: -1px;
-  width: 21px; height: 21px;
+  width: 20px; height: 20px;
   border-radius: 50%;
   background: rgba(166, 139, 60, 0.14);
   color: var(--gold-text);
@@ -1193,27 +1196,15 @@ img[alt="Devon House Patty & Ice Cream Tour"] {
 .pkg-steps li:not(:last-child)::after {
   content: '';
   position: absolute;
-  left: 10px; top: 23px; bottom: 2px;
+  left: 9.5px; top: 22px; bottom: 2px;
   width: 1px;
   background: var(--border-strong);
 }
-.pkg-steps { counter-reset: pkg-step; }
 
-@media (max-width: 1023px) {
-  .pkg-grid { grid-template-columns: 1fr; }
-}
 @media (max-width: 767px) {
-  .pkg-grid { gap: 16px; }
-  .pkg-card { grid-template-columns: 1fr; }
-  .pkg-grid > .pkg-card:first-child:nth-last-child(odd) { grid-template-columns: 1fr; }
-  .pkg-grid > .pkg-card:first-child:nth-last-child(odd) .pkg-media { min-height: 0; }
-  .pkg-grid > .pkg-card:first-child:nth-last-child(odd) .pkg-body { padding: 18px 18px 20px; }
-  .pkg-media { min-height: 0; aspect-ratio: 16 / 9; }
-  .pkg-body { padding: 18px 18px 20px; }
-  .pkg-steps li { font-size: 15px; }
-  /* Primary action goes full width in the thumb zone. */
-  .pkg-buy { flex-direction: column; align-items: stretch; gap: 12px; }
-  .pkg-buy button { width: 100%; }
+  .pkg-rail { gap: 12px; padding-left: 16px; scroll-padding-left: 16px; }
+  .pkg-card { flex-basis: 84vw; }
+  .pkg-media { height: 170px; }
 }
 @media (prefers-reduced-motion: reduce) {
   .pkg-card { transition: none; }
@@ -1227,6 +1218,7 @@ img[alt="Devon House Patty & Ice Cream Tour"] {
   .pkg-buy button { transition: none; }
   .pkg-replaces { animation: none; }
 }
+
 
 /* ═══════════════════════════════════════════
    SECTION RHYTHM
