@@ -479,7 +479,9 @@ export const experiences: Experience[] = [
     followers: '',
     gradient: 'linear-gradient(170deg, #1A2A00 0%, #3A5A00 52%, #7B9B1A 100%)',
     emoji: '🎵',
-    image: P(14086456),
+    // The real Nine Mile Trading Post (Marley's face on the orange gable),
+    // self-hosted from Collins's TripAdvisor listing so nothing hotlinks.
+    image: '/tours/nine-mile-trading-post.jpg',
     video: VIDEOS.culture,
     description: "Up into the hills of St. Ann to the house where Robert Nesta Marley was born and the mausoleum where he rests, told by guides from the village.",
     tags: ["Bob Marley", "Heritage", "Nine Mile"],
