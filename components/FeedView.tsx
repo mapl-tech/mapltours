@@ -2,8 +2,9 @@
 
 import Image from 'next/image'
 import Link from 'next/link'
-import { experiences, HERO_IMAGE, DESTINATION_IMAGES, TOUR_DESTINATIONS, slugify } from '@/lib/experiences'
+import { experiences, singleExperiences, packageExperiences, HERO_IMAGE, DESTINATION_IMAGES, TOUR_DESTINATIONS, slugify } from '@/lib/experiences'
 import { EATS } from '@/lib/eats'
+import { priceUnitLabel } from '@/lib/experiences'
 import { useCartStore } from '@/lib/cart'
 import { useHydrated } from '@/lib/use-hydrated'
 import { CULTURE_IMAGE, HERO_VIDEO } from '@/lib/images'
@@ -12,7 +13,7 @@ import MobileShort from './MobileShort'
 import Footer from './Footer'
 import { useI18n } from '@/lib/i18n'
 import { useRef, useState, useEffect } from 'react'
-import { Award, Users, Headphones, ShieldCheck, Star, Heart, UtensilsCrossed, TrendingUp, ChevronLeft, ChevronRight, MapPin } from 'lucide-react'
+import { Award, Users, Headphones, ShieldCheck, Star, Heart, UtensilsCrossed, TrendingUp, ChevronLeft, ChevronRight, MapPin, Sparkles, Check } from 'lucide-react'
 
 
 /* Hero video, lazy loads on fast connections, shows poster on slow/mobile data */
@@ -123,7 +124,7 @@ function ResponsiveGrid({ items, cols = 3, priorityFirst = false }: { items: typ
     </>
   )
 }
-const viralExperiences = experiences.filter((e) => e.id >= 11 && e.id <= 15)
+const viralExperiences = singleExperiences.filter((e) => e.id >= 11 && e.id <= 15)
 
 // Only destinations Collins actually serves, straight from the catalog.
 const destinations = TOUR_DESTINATIONS
@@ -409,6 +410,181 @@ function FoodSection() {
   )
 }
 
+/**
+ * Ready-made package days. Deliberately separate from the reel feed and the
+ * build-your-own grids: each package bundles activities that are also sold
+ * singly, so listing them together duplicates the catalog and invites a
+ * guest to book the same attraction twice. Adding one swaps out any of its
+ * components already in the itinerary (see cart.addItem).
+ */
+function PackagesSection() {
+  const scrollRef = useRef<HTMLDivElement>(null)
+  const { t, formatPrice } = useI18n()
+  const { addItem, removeItem, isInCart, conflictsInCart } = useCartStore()
+  const hydrated = useHydrated()
+
+  const scroll = (dir: 'left' | 'right') => {
+    if (!scrollRef.current) return
+    scrollRef.current.scrollBy({ left: dir === 'left' ? -340 : 340, behavior: 'smooth' })
+  }
+
+  return (
+    <section style={{ marginTop: 56, background: 'var(--bg-dark)', padding: '56px 0 64px' }}>
+      <div className="container">
+        <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 8 }}>
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+              <Sparkles size={15} color="var(--gold-warm)" />
+              <span style={{
+                fontFamily: 'var(--font-dm-sans)', fontWeight: 600,
+                fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.08em',
+                color: 'var(--gold-warm)',
+              }}>
+                {t('Ready-made days')}
+              </span>
+            </div>
+            <h2 style={{
+              fontFamily: 'var(--font-dm-sans)', fontWeight: 700,
+              fontSize: 'clamp(1.5rem, 2.5vw, 2rem)',
+              color: 'white', lineHeight: 1.15, letterSpacing: '-0.02em',
+            }}>
+              {t('Packages, planned for you')}
+            </h2>
+            <p style={{
+              fontSize: 14.5, color: '#cccccc',
+              fontFamily: 'var(--font-dm-sans)', marginTop: 8, maxWidth: 460,
+            }}>
+              {t('Two or three experiences in one day, sequenced and driven end to end. Book the whole day in one go instead of building it yourself.')}
+            </p>
+          </div>
+          <div style={{ display: 'flex', gap: 8, flexShrink: 0, marginBottom: 4 }}>
+            <button onClick={() => scroll('left')} aria-label="Previous packages" style={{
+              width: 42, height: 42, borderRadius: '50%', background: 'transparent',
+              border: '1px solid rgba(255,255,255,0.15)', cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              color: '#cccccc', transition: 'all 0.2s ease',
+            }}>
+              <ChevronLeft size={20} />
+            </button>
+            <button onClick={() => scroll('right')} aria-label="Next packages" style={{
+              width: 42, height: 42, borderRadius: '50%', background: 'var(--gold)',
+              border: 'none', cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              color: '#fff', transition: 'all 0.2s ease',
+            }}>
+              <ChevronRight size={20} />
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div
+        ref={scrollRef}
+        className="no-scrollbar"
+        tabIndex={0}
+        role="region"
+        aria-label="Package days, scroll"
+        style={{
+          display: 'flex', gap: 16, overflowX: 'auto', paddingTop: 28,
+          paddingLeft: 'max(16px, calc((100vw - 1832px) / 2 + 48px))', paddingRight: 16,
+        }}
+      >
+        {packageExperiences.map((pkg) => {
+          const inCart = hydrated && isInCart(pkg.id)
+          const replaces = hydrated ? conflictsInCart(pkg) : []
+          const included = (pkg.includes ?? [])
+            .map((id) => experiences.find((e) => e.id === id)?.title)
+            .filter(Boolean) as string[]
+          return (
+            <div key={pkg.id} style={{
+              flex: '0 0 330px', borderRadius: 'var(--r-xl)', overflow: 'hidden',
+              background: 'var(--bg-dark-warm)', border: '1px solid rgba(255,255,255,0.06)',
+              display: 'flex', flexDirection: 'column',
+            }}>
+              <Link href={`/experience/${slugify(pkg.title)}`} style={{ position: 'relative', height: 190, display: 'block' }}>
+                <Image src={pkg.image} alt={pkg.title} fill sizes="(max-width:768px) 88vw, 330px" style={{ objectFit: 'cover' }} />
+                <div style={{
+                  position: 'absolute', inset: 0,
+                  background: 'linear-gradient(0deg, rgba(0,0,0,0.55) 0%, transparent 55%)',
+                  pointerEvents: 'none',
+                }} />
+                <span style={{
+                  position: 'absolute', top: 12, left: 12,
+                  padding: '3px 10px', borderRadius: 9999,
+                  background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(8px)',
+                  fontSize: 11.5, fontWeight: 600, color: '#fff',
+                  fontFamily: 'var(--font-dm-sans)', letterSpacing: '0.04em',
+                  textTransform: 'uppercase',
+                }}>
+                  {(pkg.includes ?? []).length} {t('in one day')}
+                </span>
+                <span style={{
+                  position: 'absolute', bottom: 12, left: 12,
+                  display: 'flex', alignItems: 'center', gap: 4,
+                  fontSize: 12, fontWeight: 500, color: 'rgba(255,255,255,0.92)',
+                  fontFamily: 'var(--font-dm-sans)',
+                }}>
+                  <MapPin size={11} strokeWidth={2} /> {pkg.destination} · {t(pkg.duration)}
+                </span>
+              </Link>
+
+              <div style={{ padding: '16px 18px 18px', display: 'flex', flexDirection: 'column', flex: 1 }}>
+                <h3 style={{
+                  fontFamily: 'var(--font-dm-sans)', fontWeight: 600,
+                  fontSize: 15, color: 'white', lineHeight: 1.3, marginBottom: 8,
+                }}>
+                  {t(pkg.title)}
+                </h3>
+                <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 14px', display: 'flex', flexDirection: 'column', gap: 4 }}>
+                  {included.map((title) => (
+                    <li key={title} style={{
+                      fontSize: 12.5, color: '#cccccc', fontFamily: 'var(--font-dm-sans)',
+                      display: 'flex', alignItems: 'flex-start', gap: 6,
+                    }}>
+                      <Check size={13} color="var(--emerald)" strokeWidth={2.5} style={{ flexShrink: 0, marginTop: 2 }} />
+                      {t(title)}
+                    </li>
+                  ))}
+                </ul>
+                <div style={{ marginTop: 'auto' }}>
+                  <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, marginBottom: 10 }}>
+                    <span style={{ fontFamily: 'var(--font-dm-sans)', fontWeight: 700, fontSize: 19, color: 'white' }}>
+                      {formatPrice(pkg.price)}
+                    </span>
+                    <span style={{ fontSize: 12, color: '#cccccc', fontFamily: 'var(--font-dm-sans)' }}>
+                      {priceUnitLabel(pkg.pricing)}
+                    </span>
+                  </div>
+                  {replaces.length > 0 && !inCart && (
+                    <p style={{ fontSize: 11.5, color: 'var(--gold-warm)', fontFamily: 'var(--font-dm-sans)', marginBottom: 8 }}>
+                      {t('Replaces')} {replaces.map((r) => t(r.title)).join(', ')} {t('in your itinerary')}
+                    </p>
+                  )}
+                  <button
+                    onClick={() => (inCart ? removeItem(pkg.id) : addItem(pkg))}
+                    aria-pressed={inCart}
+                    aria-label={inCart ? `Remove ${pkg.title} from your itinerary` : `Add ${pkg.title} to your itinerary`}
+                    style={{
+                      width: '100%', minHeight: 44, borderRadius: 9999,
+                      background: inCart ? 'var(--emerald)' : 'var(--gold)',
+                      color: inCart ? '#fff' : '#1A1508',
+                      border: 'none', cursor: 'pointer',
+                      fontSize: 13.5, fontWeight: 700, fontFamily: 'var(--font-dm-sans)',
+                      transition: 'all 0.2s ease',
+                    }}
+                  >
+                    {inCart ? t('\u2713 Added to trip') : t('Add this day')}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )
+        })}
+      </div>
+    </section>
+  )
+}
+
 function DestinationsSection() {
   const scrollRef = useRef<HTMLDivElement>(null)
 
@@ -512,9 +688,9 @@ function DestinationsSection() {
 function AllExperiencesSection() {
   const { t } = useI18n()
   const [visibleCount, setVisibleCount] = useState(15)
-  const visible = experiences.slice(0, visibleCount)
-  const hasMore = visibleCount < experiences.length
-  const remaining = experiences.length - visibleCount
+  const visible = singleExperiences.slice(0, visibleCount)
+  const hasMore = visibleCount < singleExperiences.length
+  const remaining = singleExperiences.length - visibleCount
 
   return (
     <section className="container" style={{ paddingTop: 48, paddingBottom: 0 }}>
@@ -794,8 +970,11 @@ export default function FeedView() {
       {/* ═══ FEATURED, 3 col, wide ═══ */}
       <section className="container" style={{ paddingTop: 48, paddingBottom: 0 }}>
         <SectionHeader label="Featured experiences" action={{ text: 'View all', href: '/explore' }} />
-        <ResponsiveGrid items={experiences.slice(0, 3)} cols={3} priorityFirst />
+        <ResponsiveGrid items={singleExperiences.slice(0, 3)} cols={3} priorityFirst />
       </section>
+
+      {/* ═══ PACKAGES, ready-made days ═══ */}
+      <PackagesSection />
 
       {/* ═══ TASTE OF JAMAICA, dark scrollable food section ═══ */}
       <FoodSection />
@@ -803,13 +982,13 @@ export default function FeedView() {
       {/* ═══ CURATED FOR YOU ═══ */}
       <section className="container" style={{ paddingTop: 48, paddingBottom: 0 }}>
         <SectionHeader label="Curated for you" />
-        <ResponsiveGrid items={experiences.slice(0, 6)} cols={6} />
+        <ResponsiveGrid items={singleExperiences.slice(0, 6)} cols={6} />
       </section>
 
       {/* ═══ MORE EXPERIENCES ═══ */}
       <section className="container" style={{ paddingTop: 48, paddingBottom: 0 }}>
         <SectionHeader label="More experiences" action={{ text: 'Explore all', href: '/explore' }} />
-        <ResponsiveGrid items={experiences.slice(4)} cols={5} />
+        <ResponsiveGrid items={singleExperiences.slice(4)} cols={5} />
       </section>
 
       {/* ═══ TRENDING NOW, viral experiences ═══ */}

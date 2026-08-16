@@ -97,6 +97,16 @@ export interface Experience {
   description: string
   tags: string[]
   highlights?: string[]
+  /**
+   * 'package' = a ready-made combo day the operator sells as one product.
+   * Packages are deliberately kept OUT of the reel feed and the build your
+   * own itinerary surfaces: every one is a recombination of activities also
+   * sold singly, so mixing them there produces duplicate reels and lets a
+   * guest book the same attraction twice.
+   */
+  kind: 'single' | 'package'
+  /** For packages: ids of the single experiences this bundles. */
+  includes?: number[]
   comments: Comment[]
 }
 
@@ -189,6 +199,7 @@ export const experiences: Experience[] = [
     video: VIDEOS.waterfall,
     description: "Climb the 600-foot cascading falls hand-in-hand up the terraces, then cool off in the pools at the top. Jamaica's most famous natural attraction, done with a guide who knows the safe line.",
     tags: ["Waterfall", "Climbing", "Ocho Rios"],
+    kind: 'single',
     comments: [],
   },
   {
@@ -210,6 +221,7 @@ export const experiences: Experience[] = [
     video: VIDEOS.blueHole,
     description: "Swim, cliff-jump and rope-swing into turquoise limestone pools hidden in the rainforest. Quieter than Dunn's River and twice as wild.",
     tags: ["Cliff Jumping", "Rope Swing", "Rainforest"],
+    kind: 'single',
     comments: [],
   },
   {
@@ -231,6 +243,7 @@ export const experiences: Experience[] = [
     video: VIDEOS.rafting,
     description: "Float three miles down the Martha Brae on a handcrafted 30-foot bamboo raft, poled by a licensed captain who has run this river for years.",
     tags: ["Rafting", "River", "Slow Travel"],
+    kind: 'single',
     comments: [],
   },
   {
@@ -252,6 +265,7 @@ export const experiences: Experience[] = [
     video: VIDEOS.whiteRiver,
     description: "Bamboo rafting on the White River with reggae drifting from the riverbank. The shorter, sweeter cousin of the Martha Brae run.",
     tags: ["Rafting", "River", "Reggae"],
+    kind: 'single',
     comments: [],
   },
   {
@@ -273,6 +287,7 @@ export const experiences: Experience[] = [
     video: VIDEOS.rastafari,
     description: "Off-road through Jamaican bush on an ATV, then sit with a Rastafari community for ital food, drumming and the history in their own words.",
     tags: ["ATV", "Rastafari", "Culture"],
+    kind: 'single',
     comments: [],
   },
   {
@@ -294,6 +309,7 @@ export const experiences: Experience[] = [
     video: VIDEOS.offRoad,
     description: "Rugged trails, red mud and open throttle through the hills behind Ocho Rios. Helmets, briefing and a guide who lets you actually ride.",
     tags: ["ATV", "Off-Road", "Mud"],
+    kind: 'single',
     comments: [],
   },
   {
@@ -315,6 +331,7 @@ export const experiences: Experience[] = [
     video: VIDEOS.zipline,
     description: "Soar the rainforest canopy on a series of ziplines, with the valley opening under your feet at every platform.",
     tags: ["Zipline", "Canopy", "Rainforest"],
+    kind: 'single',
     comments: [],
   },
   {
@@ -336,6 +353,7 @@ export const experiences: Experience[] = [
     video: VIDEOS.horseback,
     description: "A scenic ride through country trails and along the coast, at a pace that suits first-timers and confident riders alike.",
     tags: ["Horseback", "Trails", "Countryside"],
+    kind: 'single',
     comments: [],
   },
   {
@@ -357,6 +375,7 @@ export const experiences: Experience[] = [
     video: VIDEOS.beachSwim,
     description: "Ride down to the water, then swim your horse bareback through the Caribbean. The photo everyone comes home with.",
     tags: ["Horseback", "Ocean Swim", "Beach"],
+    kind: 'single',
     comments: [],
   },
   {
@@ -378,6 +397,7 @@ export const experiences: Experience[] = [
     video: VIDEOS.jetSki,
     description: "Open water, full throttle. A powerful jet ski and a stretch of Caribbean blue with nothing in your way.",
     tags: ["Jet Ski", "Speed", "Sea"],
+    kind: 'single',
     comments: [],
   },
   {
@@ -399,6 +419,7 @@ export const experiences: Experience[] = [
     video: VIDEOS.parasail,
     description: "Lifted above the turquoise from the deck of the boat, with the whole coastline laid out beneath you.",
     tags: ["Parasailing", "Views", "Sea"],
+    kind: 'single',
     comments: [],
   },
   {
@@ -420,6 +441,7 @@ export const experiences: Experience[] = [
     video: VIDEOS.snorkeling,
     description: "Paddle a crystal-clear kayak straight over the reef and watch the coral and fish move underneath you the whole way out.",
     tags: ["Clear Kayak", "Coral Reef", "Snorkel"],
+    kind: 'single',
     comments: [],
   },
   {
@@ -441,6 +463,7 @@ export const experiences: Experience[] = [
     video: VIDEOS.river,
     description: "Drop into the current on a tube and let the river do the work. Easy, cold, and the best kind of lazy.",
     tags: ["Tubing", "River", "Easy"],
+    kind: 'single',
     comments: [],
   },
   {
@@ -462,6 +485,7 @@ export const experiences: Experience[] = [
     video: VIDEOS.cliffDiving,
     description: "The legendary Negril cliffs: jump if you dare, or hold a drink and watch the divers while the sun drops into the sea.",
     tags: ["Cliff Diving", "Sunset", "Negril"],
+    kind: 'single',
     comments: [],
   },
   {
@@ -485,6 +509,7 @@ export const experiences: Experience[] = [
     video: VIDEOS.culture,
     description: "Up into the hills of St. Ann to the house where Robert Nesta Marley was born and the mausoleum where he rests, told by guides from the village.",
     tags: ["Bob Marley", "Heritage", "Nine Mile"],
+    kind: 'single',
     comments: [],
   },
   {
@@ -506,6 +531,8 @@ export const experiences: Experience[] = [
     video: VIDEOS.tubing,
     description: "A lazy river tube run, then a guided clear-kayak paddle through hidden coves. Two of the calmest ways to see the coast, back to back.",
     tags: ["Combo", "Tubing", "Kayak"],
+    kind: 'package',
+    includes: [13, 12],
     comments: [],
   },
   {
@@ -527,6 +554,8 @@ export const experiences: Experience[] = [
     video: VIDEOS.droneKayak,
     description: "Raft the river, paddle the reef in a clear kayak, and go home with professional drone footage of both.",
     tags: ["Combo", "Rafting", "Drone"],
+    kind: 'package',
+    includes: [3, 12],
     comments: [],
   },
   {
@@ -548,6 +577,8 @@ export const experiences: Experience[] = [
     video: VIDEOS.waterfall2,
     description: "Both of Jamaica's headline waterfalls in one day: climb Dunn's River in the morning, jump the Blue Hole in the afternoon.",
     tags: ["Combo", "Waterfalls", "Best Value"],
+    kind: 'package',
+    includes: [1, 2],
     comments: [],
   },
   {
@@ -569,6 +600,8 @@ export const experiences: Experience[] = [
     video: VIDEOS.offRoad2,
     description: "Fly the canopy on a zipline, then hit the mud trails on an ATV. The full adrenaline day.",
     tags: ["Combo", "Zipline", "ATV"],
+    kind: 'package',
+    includes: [7, 6],
     comments: [],
   },
   {
@@ -590,6 +623,8 @@ export const experiences: Experience[] = [
     video: VIDEOS.rasta2,
     description: "Rastafari cultural safari in the morning, then the slow drift of a bamboo raft in the afternoon. Jamaica at both speeds.",
     tags: ["Combo", "Rastafari", "Rafting"],
+    kind: 'package',
+    includes: [5, 4],
     comments: [],
   },
   {
@@ -611,6 +646,8 @@ export const experiences: Experience[] = [
     video: VIDEOS.raftZip,
     description: "The river first, the canopy after. A full day that starts gentle and ends loud.",
     tags: ["Combo", "Rafting", "Zipline"],
+    kind: 'package',
+    includes: [3, 7],
     comments: [],
   },
   {
@@ -632,6 +669,8 @@ export const experiences: Experience[] = [
     video: VIDEOS.cliffSunset,
     description: "Three of the island's best in one day: ATV trails, rainforest zipline, and sunset at Rick's Cafe.",
     tags: ["Combo", "ATV", "Zipline", "Rick's Cafe"],
+    kind: 'package',
+    includes: [6, 7, 14],
     comments: [],
   },
 ]
@@ -650,3 +689,20 @@ export const TOUR_DESTINATIONS: { name: string; parish: string; count: number }[
   }
   return Array.from(seen.values()).sort((a, b) => b.count - a.count)
 })()
+
+/** Everything a guest can assemble themselves: reels, explore, day builder. */
+export const singleExperiences = experiences.filter((e) => e.kind === 'single')
+
+/** Ready-made combo days, sold whole from their own home-page section. */
+export const packageExperiences = experiences.filter((e) => e.kind === 'package')
+
+/**
+ * Ids that would double-book if these two products shared a cart: a package
+ * against its own components, or a component against a package containing it.
+ */
+export function conflictingIds(exp: Experience): number[] {
+  if (exp.kind === 'package') return exp.includes ?? []
+  return packageExperiences
+    .filter((p) => (p.includes ?? []).includes(exp.id))
+    .map((p) => p.id)
+}

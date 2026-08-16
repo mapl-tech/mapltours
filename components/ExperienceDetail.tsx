@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
-import { experiences, Experience, slugify , priceUnitLabel } from '@/lib/experiences'
+import { singleExperiences, packageExperiences, Experience, slugify , priceUnitLabel } from '@/lib/experiences'
 import { useI18n } from '@/lib/i18n'
 import { useCartStore, DAILY_HOUR_LIMIT } from '@/lib/cart'
 import { useHydrated } from '@/lib/use-hydrated'
@@ -882,13 +882,18 @@ export default function ExperienceDetail({ slug }: { slug: string }) {
   const dayIsFull = maxDailyHours >= DAILY_HOUR_LIMIT
   const cartIdsKey = items.map((i) => i.id).sort((a, b) => a - b).join(',')
   const feedExperiences = useMemo(() => {
-    if (!dayIsFull || items.length === 0) return experiences
+    // A package opened by direct link still has to render, but it never joins
+    // the browsable reel feed: it is shown alone, since every package is a
+    // recombination of singles already in that feed.
+    const openedPackage = packageExperiences.find((e) => slugify(e.title) === slug)
+    if (openedPackage) return [openedPackage]
+    if (!dayIsFull || items.length === 0) return singleExperiences
     const cartIdSet = new Set(items.map((i) => i.id))
-    const cartExps = experiences.filter((e) => cartIdSet.has(e.id))
-    const otherExps = experiences.filter((e) => !cartIdSet.has(e.id))
+    const cartExps = singleExperiences.filter((e) => cartIdSet.has(e.id))
+    const otherExps = singleExperiences.filter((e) => !cartIdSet.has(e.id))
     return [...shuffle(cartExps, cartIdsKey), ...shuffle(otherExps, cartIdsKey)]
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [dayIsFull, cartIdsKey])
+  }, [dayIsFull, cartIdsKey, slug])
 
   const startIdx = feedExperiences.findIndex((e) => slugify(e.title) === slug)
   const [activeIndex, setActiveIndex] = useState(startIdx >= 0 ? startIdx : 0)

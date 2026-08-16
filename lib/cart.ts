@@ -1,4 +1,4 @@
-import { tourPrice, experiences } from './experiences'
+import { tourPrice, experiences, conflictingIds } from './experiences'
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { Experience } from './experiences'
@@ -42,6 +42,7 @@ interface CartStore {
   pickup: string
   dropoff: string
   addItem: (exp: Experience) => void
+  conflictsInCart: (exp: Experience) => CartItem[]
   removeItem: (id: number) => void
   addStop: (stop: FoodStop) => void
   removeStop: (name: string) => void
@@ -89,7 +90,18 @@ export const useCartStore = create<CartStore>()(
       addItem: (exp: Experience) => {
         const { items } = get()
         if (items.some((i) => i.id === exp.id)) return
-        set({ items: [...items, { ...exp, travelers: 2, date: defaultDate() }] })
+        // A package and its own components would charge twice for the same
+        // attraction and put the guest at one place twice in a day. Adding
+        // either side replaces the other rather than stacking with it.
+        const clash = new Set(conflictingIds(exp))
+        const kept = clash.size > 0 ? items.filter((i) => !clash.has(i.id)) : items
+        set({ items: [...kept, { ...exp, travelers: 2, date: defaultDate() }] })
+      },
+
+      /** Cart items this experience would replace if added now. */
+      conflictsInCart: (exp: Experience) => {
+        const clash = new Set(conflictingIds(exp))
+        return get().items.filter((i) => clash.has(i.id))
       },
 
       removeItem: (id: number) => {

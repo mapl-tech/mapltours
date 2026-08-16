@@ -3,7 +3,7 @@
 import { useState, useMemo, useEffect, useRef } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { Search } from 'lucide-react'
-import { experiences } from '@/lib/experiences'
+import { singleExperiences } from '@/lib/experiences'
 import { useI18n } from '@/lib/i18n'
 import type { ExperienceCategory } from '@/lib/experiences'
 import ExpCard from './ExpCard'
@@ -16,12 +16,12 @@ import Footer from './Footer'
 // Trelawny, which hid the Martha Brae rafting tour).
 const categories: ('All' | ExperienceCategory)[] = [
   'All',
-  ...(Array.from(new Set(experiences.map((e) => e.category))).sort() as ExperienceCategory[]),
+  ...(Array.from(new Set(singleExperiences.map((e) => e.category))).sort() as ExperienceCategory[]),
 ]
 const parishes = [
   'All Parishes',
   ...Array.from(
-    new Set(experiences.flatMap((e) => [e.destination, e.parish])),
+    new Set(singleExperiences.flatMap((e) => [e.destination, e.parish])),
   ).sort(),
 ]
 
@@ -64,7 +64,7 @@ export default function ExploreView() {
   }, [])
 
   const filtered = useMemo(() => {
-    return experiences.filter((exp) => {
+    return singleExperiences.filter((exp) => {
       if (activeCat !== 'All' && exp.category !== activeCat) return false
       if (activeParish !== 'All Parishes' && exp.parish !== activeParish && exp.destination !== activeParish) return false
       if (search) {
