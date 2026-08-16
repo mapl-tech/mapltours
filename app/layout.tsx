@@ -222,10 +222,7 @@ export default function RootLayout({
           carries `priority` + `fetchPriority="high"`, which auto-emits a
           preload tag for the OPTIMIZED variant, so we let Next handle it.
         */}
-        <link rel="preconnect" href="https://images.pexels.com" crossOrigin="anonymous" />
-        <link rel="preconnect" href="https://videos.pexels.com" crossOrigin="anonymous" />
         <link rel="prefetch" href="/explore" />
-        <link rel="dns-prefetch" href="https://images.unsplash.com" />
         <link rel="dns-prefetch" href="https://lh3.googleusercontent.com" />
         <link rel="dns-prefetch" href="https://eybeezhvuokziyczkkkl.supabase.co" />
         <link rel="dns-prefetch" href="https://www.googletagmanager.com" />
