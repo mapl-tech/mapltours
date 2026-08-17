@@ -10,6 +10,7 @@ import {
   Plane,
   ShieldCheck,
   Users,
+  MapPin,
 } from 'lucide-react'
 import { leadTimeCutoff } from '@/lib/booking-window'
 import { useTransfersCart, type TransferCartItem } from '@/lib/transfers-cart'
@@ -893,6 +894,21 @@ function TransferCard({
           >
             {item.destinationName}
           </p>
+          {/* Both ends stated plainly. The airport end is fixed (every transfer
+              runs to or from MBJ), so the route reads as a journey rather than
+              a single destination the guest has to infer. */}
+          <p style={{
+            fontFamily: 'var(--font-dm-sans)', fontSize: 12.5, color: 'var(--text-secondary)',
+            display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap', marginBottom: 6,
+          }}>
+            <MapPin size={12} color="var(--gold-text)" />
+            {rt
+              ? <>Sangster International (MBJ) <strong style={{ fontWeight: 600 }}>↔</strong> {item.destinationName}</>
+              : <>Sangster International (MBJ) <strong style={{ fontWeight: 600 }}>→</strong> {item.destinationName}</>}
+            <a href="/transfers" style={{ textDecoration: 'underline', color: 'var(--text-tertiary)' }}>
+              change route
+            </a>
+          </p>
           <p
             style={{
               fontFamily: 'var(--font-dm-sans)',
@@ -904,9 +920,41 @@ function TransferCard({
               flexWrap: 'wrap',
             }}
           >
-            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-              <Users size={12} /> {item.passengers} passenger
-              {item.passengers !== 1 ? 's' : ''}
+            {/* Passengers are editable here: guests routinely realise at the
+                last screen that the count is wrong, and sending them back to
+                the quote box to fix it loses the booking. The fare is per
+                VEHICLE for 1-4, so changing this never changes the price;
+                the clamp matches the server, which rejects anything outside
+                1-4 outright. */}
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+              <Users size={12} />
+              <button
+                type="button"
+                aria-label="One fewer passenger"
+                disabled={item.passengers <= 1}
+                onClick={() => onChange({ passengers: Math.max(1, item.passengers - 1) })}
+                style={{
+                  width: 24, height: 24, borderRadius: 6, cursor: item.passengers <= 1 ? 'not-allowed' : 'pointer',
+                  border: '1px solid var(--border-strong)', background: '#fff',
+                  color: item.passengers <= 1 ? 'var(--text-tertiary)' : 'var(--text-primary)',
+                  lineHeight: 1, fontSize: 14,
+                }}
+              >−</button>
+              <span aria-live="polite" style={{ minWidth: 74, textAlign: 'center', color: 'var(--text-primary)', fontWeight: 600 }}>
+                {item.passengers} passenger{item.passengers !== 1 ? 's' : ''}
+              </span>
+              <button
+                type="button"
+                aria-label="One more passenger"
+                disabled={item.passengers >= 4}
+                onClick={() => onChange({ passengers: Math.min(4, item.passengers + 1) })}
+                style={{
+                  width: 24, height: 24, borderRadius: 6, cursor: item.passengers >= 4 ? 'not-allowed' : 'pointer',
+                  border: '1px solid var(--border-strong)', background: '#fff',
+                  color: item.passengers >= 4 ? 'var(--text-tertiary)' : 'var(--text-primary)',
+                  lineHeight: 1, fontSize: 14,
+                }}
+              >+</button>
             </span>
             <span
               style={{

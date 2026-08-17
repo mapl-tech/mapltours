@@ -13,6 +13,7 @@ import {
   Check,
   Star,
   TrendingUp,
+  PlaneLanding,
 } from 'lucide-react'
 import {
   DESTINATIONS,
@@ -313,15 +314,30 @@ export default function TransfersView() {
 
             <div style={{ marginBottom: 24 }}>
               <h2 className="xfer-quote-h2">
-                Where are you{' '}
+                Your ride,{' '}
                 <span style={{ fontStyle: 'italic', fontWeight: 500 }}>
-                  headed?
+                  priced up front.
                 </span>
               </h2>
               <LiveActivityLine />
             </div>
 
-            <Field label="Destination">
+            {/* Say both ends out loud. "Destination" alone left guests asking
+                "destination from where?", and the airport end was only implied
+                by the page title. */}
+            <div className="xfer-route-ends" style={{ marginBottom: 4 }}>
+              <p style={{
+                fontFamily: 'var(--font-dm-sans)', fontSize: 13, color: 'var(--text-secondary)',
+                display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap',
+              }}>
+                <PlaneLanding size={14} color="var(--gold-text)" />
+                <strong style={{ fontWeight: 600, color: 'var(--text-primary)' }}>
+                  {tripType === 'round_trip' ? 'Airport → hotel → airport' : 'Sangster International (MBJ) → your hotel'}
+                </strong>
+              </p>
+            </div>
+
+            <Field label={tripType === 'round_trip' ? 'Hotel or resort (both directions)' : 'Where are we taking you?'}>
               <select
                 className="field-input"
                 value={destinationId}
@@ -433,7 +449,7 @@ export default function TransfersView() {
             <div className="xfer-quote-readout">
               <div>
                 <p className="xfer-quote-readout-kicker">
-                  {quote ? `Zone ${quote.zone} · ${quote.zoneDuration}` : 'Your quote'}
+                  {quote ? `Zone ${quote.zone} · ${quote.zoneDuration}` : 'Your locked-in price'}
                 </p>
                 <p className="xfer-quote-readout-dest">
                   {quote ? quote.destinationName : 'Pick a destination to see your fare.'}
