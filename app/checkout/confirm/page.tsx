@@ -3,6 +3,7 @@ import Link from 'next/link'
 import Stripe from 'stripe'
 import { createServiceClient } from '@/lib/supabase/service'
 import ConfirmClient from './ConfirmClient'
+import ClaimAccountCard from '@/components/ClaimAccountCard'
 
 /**
  * Post-checkout confirmation page. Lands here from:
@@ -394,6 +395,12 @@ function Success({ data }: { data: ConfirmData }) {
           : 'A confirmation email is on the way.'}{' '}
         Your guide will reach out 24–48 hours before each experience.
       </p>
+
+      {/* Offered AFTER payment, never before it: a signup wall in front of
+          checkout costs bookings. Signing in with the address they booked
+          under adopts this booking automatically, because the profile route
+          matches paid bookings on the caller's verified email. */}
+      <ClaimAccountCard email={data.email} />
 
       {data.bookingRef && (
         <div

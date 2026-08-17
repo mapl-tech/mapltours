@@ -3,6 +3,7 @@ import Link from 'next/link'
 import Stripe from 'stripe'
 import { createServiceClient } from '@/lib/supabase/service'
 import ConfirmClient from './ConfirmClient'
+import ClaimAccountCard from '@/components/ClaimAccountCard'
 
 export const dynamic = 'force-dynamic'
 
@@ -357,6 +358,10 @@ function Success({ data }: { data: ConfirmData }) {
           : 'A confirmation email is on the way.'}{' '}
         MAPL Tours will reach out 24 hours before pickup.
       </p>
+
+
+      <ClaimAccountCard email={data.email} />
+
 
       {data.bookingRef && (
         <div
