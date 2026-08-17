@@ -53,3 +53,8 @@ scripts/shots.mjs
 # Saved-webpage scrapes (not source assets)
 *_files/
 *Google Search*
+
+# Source footage and stills from the operator. These are working files, not
+# site assets: what the site serves lives in public/media, already optimised.
+# Committing the raw folder pushes tens of MB of duplicates through git.
+/Images/

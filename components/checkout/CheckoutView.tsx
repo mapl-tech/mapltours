@@ -422,6 +422,7 @@ function DetailsStep({ waiverAccepted, setWaiverAccepted, waiverError, formData,
               className="field-input"
               type={f.type || 'text'}
               name={f.key}
+              aria-invalid={formErrors[f.key] ? true : undefined}
               autoComplete={f.auto}
               placeholder={f.placeholder}
               value={formData[f.key] || ''}
@@ -439,6 +440,7 @@ function DetailsStep({ waiverAccepted, setWaiverAccepted, waiverError, formData,
             Country {formErrors['country'] && <span style={{ fontWeight: 400 }}>- required</span>}
           </label>
           <select
+            aria-invalid={formErrors['country'] ? true : undefined}
             id="checkout-country"
             className="field-input"
             name="country"
@@ -510,6 +512,7 @@ function DetailsStep({ waiverAccepted, setWaiverAccepted, waiverError, formData,
             <input
               className="field-input"
               placeholder={t('Search hotel, resort, or airport...')}
+              aria-invalid={formErrors['pickup'] ? true : undefined}
               value={formData['pickup'] || ''}
               onChange={(e) => updateField('pickup', e.target.value)}
               list="jamaica-locations-pickup"
@@ -542,6 +545,7 @@ function DetailsStep({ waiverAccepted, setWaiverAccepted, waiverError, formData,
             <input
               className="field-input"
               placeholder={t('Where should we drop you off?')}
+              aria-invalid={formErrors['dropoff'] ? true : undefined}
               value={formData['dropoff'] || ''}
               onChange={(e) => updateField('dropoff', e.target.value)}
               list="jamaica-locations-dropoff"
@@ -885,6 +889,11 @@ export default function CheckoutView() {
   const [waiverError, setWaiverError] = useState(false)
   const [formData, setFormData] = useState<Record<string, string>>({})
   const [formErrors, setFormErrors] = useState<Record<string, boolean>>({})
+  // Announced to assistive tech when validation blocks the step. The red field
+  // labels are the sighted equivalent; without this a screen-reader user got no
+  // announcement, no focus move and no perceptible result, which makes the CTA
+  // indistinguishable from a dead control.
+  const [formAnnouncement, setFormAnnouncement] = useState('')
   const [stripeError, setStripeError] = useState<string | null>(null)
   const [limitModalOpen, setLimitModalOpen] = useState(false)
   const { items, stops, subtotal, fee, grandTotal, isDayOverLimit, hoursByDate } = useCartStore()
@@ -998,6 +1007,9 @@ export default function CheckoutView() {
         </div>
       </div>
 
+      {/* Validation announcements for assistive tech, visually hidden. */}
+      <div role="alert" aria-live="assertive" className="visually-hidden">{formAnnouncement}</div>
+
       {/* Mobile step label */}
       <div className="hide-desktop container" style={{ paddingTop: 16, paddingBottom: 4 }}>
         <p style={{ fontSize: 12, fontWeight: 600, fontFamily: 'var(--font-dm-sans)', textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--gold)', marginBottom: 4 }}>
@@ -1023,24 +1035,21 @@ export default function CheckoutView() {
                   it rather than only in the summary rail off to the side.
                   Delegates to the summary button so validation, the day-limit
                   gate and the step transition all stay in one handler. */}
+              {/* No policy microcopy here: the summary rail already carries
+                  it, and repeating it put two identical "full policy" links
+                  adjacent in the tab order. */}
               <div className="hide-mobile" style={{ marginTop: 24 }}>
                 <button
                   className="btn-primary"
                   onClick={() => {
                     const el = document.querySelector('[data-checkout-cta]') as HTMLButtonElement | null
-                    el?.click()
+                    if (!el || el.disabled) return
+                    el.click()
                   }}
                   style={{ width: '100%', height: 52, fontSize: 15 }}
                 >
                   {ctas[0]}
                 </button>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: 12, fontSize: 12, color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-sans)' }}>
-                  <Lock size={11} />
-                  <span>
-                    Secure checkout · Cancel within 48 hrs of booking, less a 20% admin charge ·{' '}
-                    <a href="/terms" target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'underline', color: 'inherit' }}>full policy</a>
-                  </span>
-                </div>
               </div>
             </>
           )}
@@ -1197,7 +1206,11 @@ export default function CheckoutView() {
             </div>
 
             {step < 2 && (
-              <div style={{ padding: '16px 24px' }}>
+              /* hide-mobile: below 768 the sticky bottom bar is the sole CTA.
+                 The summary rail un-sticks and stacks into the flow there, so
+                 without this the guest saw two identical buttons 145px apart
+                 and hit both as separate tab stops. */
+              <div className="hide-mobile" style={{ padding: '16px 24px' }}>
                 <button className="btn-primary" onClick={() => {
                   // Hard gate: every step must pass the 8-hour daily cap.
                   if (isDayOverLimit()) {
@@ -1235,15 +1248,31 @@ export default function CheckoutView() {
                     }
 
                     if (hasError) {
-                      // Scroll to first error field
+                      const missing = required.filter((k) => errors[k]).length
+                      setFormAnnouncement(
+                        missing > 0
+                          ? `${missing} ${missing === 1 ? 'field needs' : 'fields need'} attention before you can continue.`
+                          : 'Please accept the activity waiver to continue.'
+                      )
+                      // Move FOCUS to the first invalid control rather than only
+                      // scrolling to it. Scrolling alone leaves focus on whichever
+                      // CTA was pressed, and the inline one sits in normal flow near
+                      // the page bottom, so focus ends up hundreds of pixels below
+                      // the fold with no visible ring (WCAG 2.4.11).
                       setTimeout(() => {
                         const firstErrorKey = required.find((key) => errors[key])
-                        if (firstErrorKey) {
-                          const el = document.querySelector(`[data-field="${firstErrorKey}"]`) as HTMLElement
-                          if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' })
-                        } else if (!waiverAccepted) {
-                          const waiver = document.querySelector('[data-field="waiver"]') as HTMLElement
-                          if (waiver) waiver.scrollIntoView({ behavior: 'smooth', block: 'center' })
+                        const scope = firstErrorKey
+                          ? document.querySelector(`[data-field="${firstErrorKey}"]`)
+                          : !waiverAccepted
+                            ? document.querySelector('[data-field="waiver"]')
+                            : null
+                        if (!scope) return
+                        const control = scope.querySelector('input, select, textarea') as HTMLElement | null
+                        if (control) {
+                          control.focus({ preventScroll: true })
+                          control.scrollIntoView({ behavior: 'smooth', block: 'center' })
+                        } else {
+                          ;(scope as HTMLElement).scrollIntoView({ behavior: 'smooth', block: 'center' })
                         }
                       }, 100)
                       return
@@ -1251,9 +1280,15 @@ export default function CheckoutView() {
                   }
                   setWaiverError(false)
                   setFormErrors({})
+                  setFormAnnouncement('')
                   setStep(step + 1)
                   window.scrollTo({ top: 0, behavior: 'smooth' })
-                }} data-checkout-cta style={{ width: '100%', height: 48, fontSize: 14 }}>
+                }} data-checkout-cta
+                /* Same action as the inline CTA under the waiver, so the name
+                   says where it is. Two identically-named buttons in the rotor
+                   give a screen-reader user nothing to choose between. */
+                aria-label={step === 1 ? `${t('Continue to payment')}, ${t('order summary')}` : undefined}
+                style={{ width: '100%', height: 48, fontSize: 14 }}>
                   {ctas[step - 1]}
                 </button>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: 12, fontSize: 12, color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-sans)' }}>
