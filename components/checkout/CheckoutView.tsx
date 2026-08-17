@@ -164,11 +164,13 @@ function ReviewStep({ formErrors }: { formErrors: Record<string, boolean> }) {
         </div>
 
         {/* Row 2 — the one trip date, written to every line. */}
-        <div style={{ padding: '18px 22px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, borderBottom: '1px solid var(--border)' }}>
+        <div data-field="tripDate" style={{ padding: '18px 22px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, borderBottom: '1px solid var(--border)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
             <CalendarDays size={18} color="var(--text-secondary)" style={{ flexShrink: 0 }} />
             <div style={{ minWidth: 0 }}>
-              <label htmlFor="trip-date" style={{ fontSize: 14, fontWeight: 600, fontFamily: 'var(--font-dm-sans)', display: 'block' }}>{t('Trip date')}</label>
+              <label htmlFor="trip-date" style={{ fontSize: 14, fontWeight: 600, fontFamily: 'var(--font-dm-sans)', display: 'block', color: formErrors['tripDate'] ? '#c00' : undefined }}>
+                {t('Trip date')} {formErrors['tripDate'] && <span style={{ fontWeight: 400 }}>- pick a bookable date</span>}
+              </label>
               <p style={{ fontSize: 12, color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-sans)', marginTop: 1 }}>
                 Every experience runs on this day
               </p>
@@ -180,8 +182,9 @@ function ReviewStep({ formErrors }: { formErrors: Record<string, boolean> }) {
             className="field-input"
             value={sharedDate}
             min={minDate}
+            aria-invalid={formErrors['tripDate'] ? true : undefined}
             onChange={(e) => setAllDates(e.target.value)}
-            style={{ width: 170, height: 44, flexShrink: 0 }}
+            style={{ width: 170, height: 44, flexShrink: 0, borderColor: formErrors['tripDate'] ? 'rgba(200,0,0,0.4)' : undefined }}
           />
         </div>
 
@@ -1265,6 +1268,17 @@ export default function CheckoutView() {
                       hasError = true
                     }
 
+                    // The trip date is required and must still be bookable.
+                    // Clearing the field wiped the date on every line, rendered
+                    // "Invalid Date" on the cards, and still reached payment
+                    // with date:"" in the payload.
+                    const tripDate = useCartStore.getState().items[0]?.date ?? ''
+                    const earliest = earliestBookableExperienceDate(new Date())
+                    if (!tripDate || tripDate < earliest) {
+                      errors['tripDate'] = true
+                      hasError = true
+                    }
+
                     if (!waiverAccepted) {
                       setWaiverError(true)
                       hasError = true
@@ -1438,7 +1452,7 @@ function DailyLimitModal({ hoursByDate, onClose }: {
           color: 'var(--text-secondary)',
           marginBottom: 20,
         }}>
-          A perfect day tops out at {DAILY_HOUR_LIMIT} hours so every experience lands with full energy. Split your picks across another day, or remove one to continue.
+          A day tops out at {DAILY_HOUR_LIMIT} hours so every experience lands with full energy, and one checkout books one day. Remove an experience below to continue, then book the rest as a second day when you are done.
         </p>
 
         {overDays.length > 0 && (
