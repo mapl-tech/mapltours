@@ -41,8 +41,7 @@ export const POSTS_1: BlogPost[] = [
       },
       {
         type: 'quote',
-        text: "The first cruise ship arrives at 10. The second at 11. Come at 8:30 and you have the whole first tier to yourself. I tell every guest the same thing.",
-        attribution: 'Nicola, Ocho Rios guide',
+        text: "The first cruise ship arrives at 10. The second at 11. Come at 8:30 and you have the whole first tier to yourself. Every guide gives the same advice.",
       },
       { type: 'h2', text: "Timing the crowds" },
       {
@@ -110,7 +109,6 @@ export const POSTS_1: BlogPost[] = [
       {
         type: 'quote',
         text: "If a tour has more than twelve people on it, you are not on a tour. You are on a bus. Book smaller.",
-        attribution: 'Andre, tour operator in St. Ann',
       },
       { type: 'h2', text: "The ones to skip" },
       {
@@ -181,7 +179,6 @@ export const POSTS_1: BlogPost[] = [
       {
         type: 'quote',
         text: "Half the guests who come to Montego Bay never see Montego Bay. They see the shuttle, the gate, and the beach their hotel owns. The town is right there.",
-        attribution: 'Denise, MoBay-based driver',
       },
       { type: 'h2', text: "The skip list" },
       {
@@ -249,8 +246,7 @@ export const POSTS_1: BlogPost[] = [
       },
       {
         type: 'quote',
-        text: "A shared shuttle saves you forty dollars and costs you ninety minutes. Do that math with a toddler and tell me how it goes.",
-        attribution: 'Howard, airport driver based in St. Ann',
+        text: "A shared shuttle saves you forty dollars and costs you ninety minutes. Do that math with a toddler in tow.",
       },
       { type: 'h2', text: "Rental car, only if you're brave" },
       {
@@ -323,8 +319,7 @@ export const POSTS_1: BlogPost[] = [
       },
       {
         type: 'quote',
-        text: "People kept asking me when Jamaica would have fine dining. We have always had it. Our grandmothers invented it. I just put it on a white plate.",
-        attribution: 'Brian, Kingston chef',
+        text: "Jamaica gets asked when it will have fine dining. It always had it. The grandmothers invented it; the restaurants just put it on a white plate.",
       },
       { type: 'h2', text: "The Port Royal finale" },
       {
@@ -388,7 +383,6 @@ export const POSTS_1: BlogPost[] = [
       {
         type: 'quote',
         text: "Guests arrive worrying about the solar. Then on the third morning they realize they have not checked a single battery level. That is when the vacation starts.",
-        attribution: 'Karen, cottage owner in Little London',
       },
       { type: 'h2', text: "What you get that a resort can't sell you" },
       {
@@ -461,7 +455,6 @@ export const POSTS_1: BlogPost[] = [
       {
         type: 'quote',
         text: "If the spa cannot tell you how many milligrams are in your treatment, they are selling you a smell.",
-        attribution: 'Simara, therapist in Negril',
       },
       { type: 'h2', text: "How to pick one" },
       {

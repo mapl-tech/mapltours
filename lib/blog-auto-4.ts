@@ -37,7 +37,6 @@ export const POSTS_4: BlogPost[] = [
       {
         type: 'quote',
         text: "The Royalton gets the boring stuff right. Clean rooms, working AC, decent coffee at 6am. That is harder to find in the Caribbean than you would think.",
-        attribution: "Simone Thompson, Travel Guide",
       },
       { type: 'h2', text: 'Where it falls short' },
       {
@@ -100,7 +99,6 @@ export const POSTS_4: BlogPost[] = [
       {
         type: 'quote',
         text: "Azul is the rare resort where you can bring a two-year-old and still enjoy dinner. That is not nothing.",
-        attribution: "Simone Thompson, Travel Guide",
       },
       { type: 'h2', text: 'Where it falls short' },
       {
@@ -164,7 +162,6 @@ export const POSTS_4: BlogPost[] = [
       {
         type: 'quote',
         text: "Beaches is not where you go to fall in love with Jamaica. It is where you go to make your eight-year-old think vacation is the best week of the year.",
-        attribution: "Simone Thompson, Travel Guide",
       },
       { type: 'h2', text: 'Where it falls short' },
       {
@@ -237,7 +234,6 @@ export const POSTS_4: BlogPost[] = [
       {
         type: 'quote',
         text: "The real secret is the week after Easter. Rates fall, the island exhales, and the Jamaica you came to see is actually there.",
-        attribution: "Andre Bennett, Senior Editor",
       },
       { type: 'h2', text: 'What to see, eat, and know' },
       {
@@ -302,7 +298,6 @@ export const POSTS_4: BlogPost[] = [
       {
         type: 'quote',
         text: "Montego Bay is a city people apologize for. They should not. The food, the market, and the music at night are as Jamaican as anywhere on the island.",
-        attribution: "Simone Thompson, Travel Guide",
       },
       { type: 'h2', text: 'Where to eat and drink' },
       {
@@ -367,7 +362,6 @@ export const POSTS_4: BlogPost[] = [
       {
         type: 'quote',
         text: "You cannot understand Jamaica from Negril. You can understand it from Kingston. The west coast is the marketing; the capital is the argument.",
-        attribution: "Andre Bennett, Senior Editor",
       },
       { type: 'h2', text: 'What to do with the extra days' },
       {
@@ -436,7 +430,6 @@ export const POSTS_4: BlogPost[] = [
       {
         type: 'quote',
         text: "Trelawny is the parish Jamaicans love because outsiders ignore it. The cruise crowd stays in the shopping plaza; the real Trelawny is 15 minutes inland.",
-        attribution: "Maya Clarke, Culture Writer",
       },
       { type: 'h2', text: 'What else is worth the detour' },
       {
@@ -505,7 +498,6 @@ export const POSTS_4: BlogPost[] = [
       {
         type: 'quote',
         text: "Portland is the Jamaica the rest of the island is pretending to be. No strip, no cruise port, no brochure. Just the coast and the rain and the people who stayed.",
-        attribution: "Andre Bennett, Senior Editor",
       },
       { type: 'h2', text: 'Boston Bay and the jerk' },
       {
@@ -574,7 +566,6 @@ export const POSTS_4: BlogPost[] = [
       {
         type: 'quote',
         text: "The best time to visit Jamaica is the first week of November. The rates have dropped, the storms have passed, and the island has its rhythm back.",
-        attribution: "Simone Thompson, Travel Guide",
       },
       { type: 'h2', text: 'Low season: June through October' },
       {
@@ -658,7 +649,6 @@ export const POSTS_4: BlogPost[] = [
       {
         type: 'quote',
         text: "The single biggest Jamaica currency mistake is exchanging at the airport. You will lose $40 on a $500 exchange you could have done better anywhere else.",
-        attribution: "Simone Thompson, Travel Guide",
       },
       {
         type: 'p',

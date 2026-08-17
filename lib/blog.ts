@@ -59,8 +59,7 @@ const HAND_POSTS: BlogPost[] = [
       },
       {
         type: 'quote',
-        text: "We don't cook jerk. We practice it. The pit remembers every chicken that came before.",
-        attribution: 'Devon Wilson, third-generation pit master',
+        text: "At a proper pit, jerk is not so much cooked as practised. The pit remembers every chicken that came before.",
       },
       { type: 'h2', text: 'What makes it real' },
       {
@@ -111,7 +110,6 @@ const HAND_POSTS: BlogPost[] = [
       {
         type: 'quote',
         text: "The mountain teaches patience. You stop looking at your watch about the second hour. After that, you just climb.",
-        attribution: 'Nigel, our guide from Section, St. Andrew',
       },
       { type: 'h2', text: 'The view' },
       {
@@ -152,7 +150,6 @@ const HAND_POSTS: BlogPost[] = [
       {
         type: 'quote',
         text: "A sound is not the equipment. A sound is the reputation. You can have the biggest rig on the island and still not be a sound.",
-        attribution: 'Selector Wasp, Stone Love',
       },
       {
         type: 'p',
@@ -223,8 +220,7 @@ const HAND_POSTS: BlogPost[] = [
       },
       {
         type: 'quote',
-        text: "The resort asked me to run a two-hour cooking class for forty people. I run a four-hour class for six. I make more money, the guests learn more, and I can actually teach.",
-        attribution: 'A Jamaican creator who asked not to be named',
+        text: "The resort model wants a two-hour cooking class for forty people. The independent version is four hours for six: better money for the cook, more learning for the guest, and room to actually teach.",
       },
       {
         type: 'p',

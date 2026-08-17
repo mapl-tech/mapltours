@@ -1048,3 +1048,37 @@ img[alt="Devon House Patty & Ice Cream Tour"] {
   .admin-card-grid { grid-template-columns: 1fr !important; }
   .admin-card-grid > div { border-right: none !important; }
 }
+
+/* ── Partner page ──────────────────────────────────────────────────────
+   Mirrors the About page's split/grid rhythm so the two read as siblings. */
+.partner-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: clamp(24px, 3vw, 40px);
+}
+.partner-split {
+  display: grid;
+  grid-template-columns: 1.15fr 1fr;
+  gap: clamp(32px, 5vw, 72px);
+}
+.partner-apply {
+  display: grid;
+  grid-template-columns: 1fr 1.05fr;
+  gap: clamp(32px, 5vw, 64px);
+  align-items: start;
+}
+.partner-fields {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+@media (max-width: 767px) {
+  .partner-split,
+  .partner-apply,
+  .partner-fields {
+    grid-template-columns: 1fr;
+  }
+  .partner-split { gap: 36px; }
+  .partner-apply { gap: 32px; }
+  .partner-fields { gap: 14px; }
+}

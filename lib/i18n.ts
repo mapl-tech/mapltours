@@ -60,7 +60,7 @@ const T: Record<string, Record<string, string>> = {
     'Real local creators': 'Creadores locales reales',
     '24/7 trip support': 'Soporte de viaje 24/7',
     'Flexible cancellation': 'Cancelacion flexible',
-    '90%+ satisfaction': '90%+ satisfaccion',
+    '98%+ satisfaction': '98%+ satisfaccion',
     'Supports local economy': 'Apoya la economia local',
     'Contact Us': 'Contactanos', 'Get in touch': 'Ponerse en contacto',
     'more': 'mas',

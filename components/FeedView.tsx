@@ -792,9 +792,9 @@ export default function FeedView({ livePlaces = {} }: { livePlaces?: LivePlaces 
               {[
                 { icon: <Award size={18} />, title: 'Only the best experiences', desc: 'Every adventure is vetted. We reject 80% of submissions to keep quality uncompromising.' },
                 { icon: <Users size={18} />, title: 'Real local creators', desc: 'Not tour guides, your Jamaican cousin who knows everywhere worth going.' },
-                { icon: <Headphones size={18} />, title: '24/7 trip support', desc: 'Text us anytime. We handle logistics so you just show up and enjoy.' },
+                { icon: <Headphones size={18} />, title: '24/7 trip support', desc: 'Email us anytime. We handle logistics so you just show up and enjoy.' },
                 { icon: <ShieldCheck size={18} />, title: 'Flexible cancellation', desc: 'Change of plans? Cancel within 48 hours of booking for a refund, less a 20% administration charge. No stress.' },
-                { icon: <Star size={18} />, title: '90%+ satisfaction', desc: 'Our guests consistently rate their experiences 4.8 stars or higher.' },
+                { icon: <Star size={18} />, title: '98%+ satisfaction', desc: 'Our guests consistently rate their experiences 4.8 stars or higher.' },
                 { icon: <Heart size={18} />, title: 'Supports local economy', desc: 'Every dollar goes directly to Jamaican creators and their communities.' },
               ].map((item) => (
                 <div key={item.title}>

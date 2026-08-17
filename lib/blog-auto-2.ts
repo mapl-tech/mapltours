@@ -39,8 +39,7 @@ export const POSTS_2: BlogPost[] = [
       },
       {
         type: 'quote',
-        text: "Visitors always ask me which falls is best. The honest answer is whichever one is least crowded the day you go. Call ahead.",
-        attribution: 'Kemar, licensed Ocho Rios guide',
+        text: "The question is always which falls is best. The honest answer is whichever one is least crowded the day you go. Call ahead.",
       },
       {
         type: 'h2',
@@ -116,7 +115,6 @@ export const POSTS_2: BlogPost[] = [
       {
         type: 'quote',
         text: "Guests who book an all-inclusive then complain they never saw Jamaica, they picked the wrong product. Guests who book a small guesthouse and expect a swim-up bar, same thing. Match the hotel to the trip.",
-        attribution: 'Andrea, concierge manager in Ocho Rios',
       },
       {
         type: 'h2',
@@ -187,8 +185,7 @@ export const POSTS_2: BlogPost[] = [
       },
       {
         type: 'quote',
-        text: "A family of eight at our six-bedroom works out to about 170 dollars per adult per night including food. The same family at an all-inclusive would pay triple and eat from a buffet.",
-        attribution: 'Patricia, villa manager, Tower Isle',
+        text: "A family of eight in a six-bedroom villa works out around 170 US dollars per adult per night including food. The same family at an all-inclusive would usually pay more and eat from a buffet.",
       },
       {
         type: 'h2',
@@ -261,7 +258,6 @@ export const POSTS_2: BlogPost[] = [
       {
         type: 'quote',
         text: "Tourists think Mo Bay ends where the Hip Strip ends. The city goes five miles back into the hills. That is where we live.",
-        attribution: 'Leroy, taxi driver, Montego Bay',
       },
       {
         type: 'h2',
@@ -334,7 +330,6 @@ export const POSTS_2: BlogPost[] = [
       {
         type: 'quote',
         text: "The single biggest arrival mistake is booking a transfer after clearing customs. If you have not pre-arranged your ride, you will wait on the curb with a hundred other people doing the same thing.",
-        attribution: 'Nadine, airport ground operations',
       },
       {
         type: 'h2',
@@ -415,7 +410,6 @@ export const POSTS_2: BlogPost[] = [
       {
         type: 'quote',
         text: "The beach still delivers. You just have to know which mile you are on. The north end near Bloody Bay is wider now. The middle is the tightest. The south end is mixed.",
-        attribution: 'Marcus, dive-shop owner, Negril',
       },
       {
         type: 'h2',
@@ -496,7 +490,6 @@ export const POSTS_2: BlogPost[] = [
       {
         type: 'quote',
         text: "Ask any local where to bring their own family on a Sunday and they will point to the middle. The south is for a night out. The middle is for a day off.",
-        attribution: 'Tanya, longtime Negril Beach vendor',
       },
       {
         type: 'h2',
@@ -568,8 +561,7 @@ export const POSTS_2: BlogPost[] = [
       },
       {
         type: 'quote',
-        text: "We went for our tenth anniversary. The food was better than we expected, the view was the reason we went, and we barely left the property, which for an adults-only is the point.",
-        attribution: 'reported traveler review, October 2024',
+        text: "It suits couples marking something. The view is the reason to come, the food beats expectations, and there is little reason to leave the property, which for an adults-only resort is rather the point.",
       },
       {
         type: 'h2',
@@ -649,8 +641,7 @@ export const POSTS_2: BlogPost[] = [
       },
       {
         type: 'quote',
-        text: "The food range is what made the week, we ate at a different restaurant every night and only repeated one. Rooms are dated in places but the bones are solid.",
-        attribution: 'reported traveler review, November 2024',
+        text: "The food range is what carries a week here: enough restaurants to eat somewhere different most nights. Rooms are dated in places, but the bones are solid.",
       },
       {
         type: 'h2',
@@ -730,8 +721,7 @@ export const POSTS_2: BlogPost[] = [
       },
       {
         type: 'quote',
-        text: "We booked the three-bedroom for eight of us. It was roomier than our house. The family came together on that trip in a way that would not have happened in three separate hotel rooms.",
-        attribution: 'reported traveler review, January 2025',
+        text: "The three-bedroom units comfortably hold eight. For multi-generational trips, one villa tends to keep a family together in a way three separate hotel rooms never manage.",
       },
       {
         type: 'h2',

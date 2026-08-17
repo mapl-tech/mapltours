@@ -35,8 +35,7 @@ export const POSTS_3: BlogPost[] = [
       },
       {
         type: 'quote',
-        text: "When a client asks for the best, I ask what they actually want. Five different families walk into my office and four of them book four different resorts. There is no single best.",
-        attribution: "Marsha, senior Caribbean travel agent",
+        text: "Ask for the best and the real question is what you actually want. Five families comparing the same shortlist will book four different resorts. There is no single best.",
       },
       { type: 'h2', text: 'The tier list' },
       {
@@ -104,7 +103,6 @@ export const POSTS_3: BlogPost[] = [
       {
         type: 'quote',
         text: "Repeat Sandals guests pick their property by food and beach, in that order. First-timers pick by photos. That is why we spend the first call walking through what each property actually feels like at 7 a.m.",
-        attribution: "Leanne, specialist travel agent",
       },
       { type: 'h2', text: 'Quick-match by trip type' },
       {
@@ -163,8 +161,7 @@ export const POSTS_3: BlogPost[] = [
       },
       {
         type: 'quote',
-        text: "Montego Bay is the one I send repeat guests who only have four nights. There is no wasted time. You land, you are there, you are in the water.",
-        attribution: "Brandon, Caribbean specialist",
+        text: "Montego Bay is the pick for a return visit of only four nights. There is no wasted time. You land, you are there, you are in the water.",
       },
       { type: 'h2', text: 'Strengths and weaknesses travelers consistently flag' },
       {
@@ -223,8 +220,7 @@ export const POSTS_3: BlogPost[] = [
       },
       {
         type: 'quote',
-        text: "If the beach is the reason you are flying to Jamaica, this is the property. The transfer is long, but it is the only one I can sell on the strength of the sand alone.",
-        attribution: "Celia, repeat-guest travel agent",
+        text: "If the beach is the reason you are flying to Jamaica, this is the property. The transfer is long, but few resorts can be recommended on the strength of the sand alone.",
       },
       { type: 'h2', text: 'Strengths and weaknesses' },
       {
@@ -284,7 +280,6 @@ export const POSTS_3: BlogPost[] = [
       {
         type: 'quote',
         text: "Ochi is a resort for guests who want options. Sixteen restaurants, two pool complexes, a jungle side and a beach side. It is not for travelers who want everything in one square.",
-        attribution: "Maria, travel-industry reviewer",
       },
       { type: 'h2', text: 'Strengths and weaknesses' },
       {
@@ -343,8 +338,7 @@ export const POSTS_3: BlogPost[] = [
       },
       {
         type: 'quote',
-        text: "Moon Palace is the one I book for families where the parents want a honeymoon-adjacent feel and the kids want a water park. The adult pool at the far end genuinely feels like a separate resort.",
-        attribution: "Danielle, family-travel specialist",
+        text: "Moon Palace suits families where the parents want a honeymoon-adjacent feel and the children want a water park. The adult pool at the far end genuinely feels like a separate resort.",
       },
       { type: 'h2', text: 'Strengths and weaknesses' },
       {
@@ -403,8 +397,7 @@ export const POSTS_3: BlogPost[] = [
       },
       {
         type: 'quote',
-        text: "I send clients to Bahia when the budget is $300 a night and they want something that looks like $500. They come back satisfied if the expectations were set right. Problems start when people compare it to Sandals.",
-        attribution: "Omar, mid-market travel agent",
+        text: "Bahia fits a budget around $300 a night while presenting like more. Guests leave satisfied when expectations were set properly. The trouble starts when it is compared to Sandals.",
       },
       { type: 'h2', text: 'Strengths and weaknesses' },
       {
@@ -465,7 +458,6 @@ export const POSTS_3: BlogPost[] = [
       {
         type: 'quote',
         text: "RIU is honest. It is not pretending to be something else. Clients who understand that come back. Clients who compare it to Sandals do not, and that is a briefing problem not a resort problem.",
-        attribution: "Tina, budget-travel specialist",
       },
       { type: 'h2', text: 'Strengths and weaknesses' },
       {
@@ -525,8 +517,7 @@ export const POSTS_3: BlogPost[] = [
       },
       {
         type: 'quote',
-        text: "Riu Ocho Rios is where I send families who would otherwise go to Punta Cana on budget. It is the best beach at the price point on the north coast. Nothing more, but nothing less either.",
-        attribution: "Carla, family-budget travel agent",
+        text: "Riu Ocho Rios suits families who would otherwise book Punta Cana on a budget. It is the best beach at the price point on the north coast. Nothing more, but nothing less either.",
       },
       { type: 'h2', text: 'Strengths and weaknesses' },
       {
@@ -586,8 +577,7 @@ export const POSTS_3: BlogPost[] = [
       },
       {
         type: 'quote',
-        text: "The beach at this property saves it. If a client tells me they want Seven Mile on a budget, this is the honest answer. They just need to understand they are not getting a design hotel.",
-        attribution: "Priya, budget-travel specialist",
+        text: "The beach saves this property. For Seven Mile on a budget it is the honest answer, so long as you understand you are not getting a design hotel.",
       },
       { type: 'h2', text: 'Strengths and weaknesses' },
       {

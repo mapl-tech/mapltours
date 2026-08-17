@@ -37,7 +37,6 @@ export const POSTS_5: BlogPost[] = [
       {
         type: 'quote',
         text: "People taste Blue Mountain and expect fireworks. It is not that coffee. It is the coffee that disappears gently, and you miss it the moment the cup is empty.",
-        attribution: "Devon, Food Editor",
       },
       { type: 'h2', text: 'How to tell the real thing' },
       {
@@ -97,7 +96,6 @@ export const POSTS_5: BlogPost[] = [
       {
         type: 'quote',
         text: "If the chicken has grill marks, it is not jerk. Jerk has no grill marks. Jerk has bark.",
-        attribution: "Devon, Food Editor",
       },
       { type: 'h2', text: 'The spice paste' },
       {
@@ -166,7 +164,6 @@ export const POSTS_5: BlogPost[] = [
       {
         type: 'quote',
         text: "Dunn's River is a show. Reach Falls is a place. One is something you do, the other is somewhere you go.",
-        attribution: "Simone, Travel Guide",
       },
       { type: 'h2', text: "The verdict, side by side" },
       {
@@ -241,7 +238,6 @@ export const POSTS_5: BlogPost[] = [
       {
         type: 'quote',
         text: "Appleton is not really a rum tour. It is a sugar-estate tour that ends in rum. Go for the valley, stay for the 12-year.",
-        attribution: "Devon, Food Editor",
       },
       { type: 'h2', text: 'The honest verdict' },
       {
@@ -295,7 +291,6 @@ export const POSTS_5: BlogPost[] = [
       {
         type: 'quote',
         text: "People come in curious and leave changed. It is not a museum about a musician. It is a museum about a person who made a choice to keep singing.",
-        attribution: "Ras, a guide at the museum",
       },
       { type: 'h2', text: 'Practical info' },
       {
@@ -360,7 +355,6 @@ export const POSTS_5: BlogPost[] = [
       {
         type: 'quote',
         text: "Kingston is where Bob became Bob. Nine Mile is where he was Nesta. Both matter. Do not pick one.",
-        attribution: "Maya, Culture Writer",
       },
       { type: 'h2', text: 'What it costs and how to go' },
       {
@@ -431,7 +425,6 @@ export const POSTS_5: BlogPost[] = [
       {
         type: 'quote',
         text: "If you dived Jamaica once and thought it was okay, you probably dived Montego Bay at peak season. Try Ocho Rios in shoulder season and you will write a different review.",
-        attribution: "Simone, Travel Guide",
       },
       { type: 'h2', text: "What it costs" },
       {
@@ -498,7 +491,6 @@ export const POSTS_5: BlogPost[] = [
       {
         type: 'quote',
         text: "Book a driver for the long moves. Use route taxis for the short ones. Do not rent. That is the whole rulebook.",
-        attribution: "Simone, Travel Guide",
       },
       { type: 'h2', text: "Domestic flights, for the east end" },
       {
@@ -576,7 +568,6 @@ export const POSTS_5: BlogPost[] = [
       {
         type: 'quote',
         text: "The cheapest week in Jamaica is almost always also the best one. Resort food is fine. Auntie's kitchen is unforgettable.",
-        attribution: "Simone, Travel Guide",
       },
       { type: 'h2', text: "A realistic 7-day budget, per person" },
       {
@@ -640,7 +631,6 @@ export const POSTS_5: BlogPost[] = [
       {
         type: 'quote',
         text: "A Jamaica honeymoon on one beach is a vacation. A Jamaica honeymoon across three regions is the trip you will still be talking about in ten years.",
-        attribution: "Simone, Travel Guide",
       },
       { type: 'h2', text: "Anchor experiences to book" },
       {
