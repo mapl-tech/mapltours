@@ -37,7 +37,7 @@ const T: Record<string, Record<string, string>> = {
     '/person': '/persona', 'From': 'Desde',
     'A Taste of Jamaica': 'Un sabor de Jamaica', 'Food & Culture': 'Comida y cultura',
     'Your Itinerary': 'Tu itinerario', 'experience': 'experiencia', 'experiences': 'experiencias',
-    'Continue to checkout': 'Continuar al pago', 'Flexible cancellation within 48 hrs of booking': 'Cancelacion flexible dentro de 48 horas de la reserva',
+    'Add to your trip to see full details and what to bring.': 'Anade a tu viaje para ver todos los detalles y que llevar.', 'Full details, what to bring and group size are in your itinerary.': 'Los detalles, que llevar y el tamano del grupo estan en tu itinerario.', 'Pickup time': 'Hora de recogida', 'When your driver collects you': 'Cuando te recoge tu conductor', 'Applies to your experience': 'Se aplica a tu experiencia', 'Fewer guests': 'Menos huespedes', 'More guests': 'Mas huespedes', 'Pickup and drop-off': 'Recogida y regreso', 'Select your hotel, resort or airport': 'Elige tu hotel, resort o aeropuerto', 'Airports': 'Aeropuertos', 'Hotels & resorts': 'Hoteles y resorts', 'Cruise ports': 'Puertos de crucero', 'We collect you here and bring you back to the same place.': 'Te recogemos aqui y te devolvemos al mismo lugar.', 'Continue to checkout': 'Continuar al pago', 'Flexible cancellation within 48 hrs of booking': 'Cancelacion flexible dentro de 48 horas de la reserva',
     'Remove': 'Eliminar', 'Subtotal': 'Subtotal', 'Service fee': 'Tarifa de servicio', 'Total': 'Total',
     'Review your trip': 'Revisa tu viaje', 'Your details': 'Tus datos', 'Payment': 'Pago',
     'First Name': 'Nombre', 'Last Name': 'Apellido', 'Email': 'Correo', 'Phone': 'Telefono', 'Country': 'Pais',

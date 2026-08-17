@@ -270,8 +270,10 @@ export default function BookingConfirmed(props: BookingConfirmedProps) {
         </Section>
         <Section style={s.cardBody}>
           <Text style={s.body}>
-            · Your guide will reach out 24–48 hours before each experience to
-            confirm your pickup time and driver.
+            {/* The guest now states a pickup time at checkout, so this
+                confirms it rather than asking for it. */}
+            · Your guide will reach out 24–48 hours before to confirm your
+            driver and your pickup time.
           </Text>
           <Text style={{ ...s.body, marginTop: 6 }}>
             · Bring a valid ID, reef-safe sunscreen, and water.

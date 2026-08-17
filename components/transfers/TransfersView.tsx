@@ -13,6 +13,7 @@ import {
   Check,
   Star,
   TrendingUp,
+  ArrowUpDown,
 } from 'lucide-react'
 import {
   DESTINATIONS,
@@ -92,6 +93,28 @@ function priceRangeLabel(zone: TransferZone, tripType: TransferTripType): string
 // Mercy's branch passed an hourly illustrative activity feed here. This
 // surface renders the real aggregates from /api/transfers/activity instead
 // (LiveActivityLine); fabricated counts were purged by owner instruction.
+/**
+ * The airport end of every transfer. A sentinel rather than a destination id,
+ * because Sangster is not in the rate table — it is the fixed other end that
+ * every fare is priced against.
+ */
+const AIRPORT_ID = '__mbj__'
+const AIRPORT_NAME = 'Sangster International Airport (MBJ)'
+
+/** Shared select chrome; `filled` drives the placeholder-vs-value colour. */
+const SELECT_STYLE = (filled: boolean): React.CSSProperties => ({
+  height: 50,
+  fontSize: 15,
+  fontWeight: 500,
+  color: filled ? 'var(--text-primary)' : 'var(--text-tertiary)',
+  appearance: 'none',
+  WebkitAppearance: 'none',
+  paddingRight: 44,
+  backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%235E5C57' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")`,
+  backgroundRepeat: 'no-repeat',
+  backgroundPosition: 'right 16px center',
+})
+
 export default function TransfersView() {
   const router = useRouter()
   const addQuote = useTransfersCart((s) => s.addQuote)
@@ -109,8 +132,19 @@ export default function TransfersView() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+  /**
+   * Which end of the journey the guest starts at.
+   *
+   * Every fare we sell has Sangster at one end, so this is a direction rather
+   * than a second destination. It used to be INFERRED server-side from whether
+   * arrival details were filled in, which meant a guest booking a hotel to
+   * airport run had no way to say so and hoped the inference agreed with them.
+   * A round-trip always begins at the airport, so the choice only applies to a
+   * one-way.
+   */
+  const [fromAirport, setFromAirport] = useState(true)
   const [tripType, setTripType] = useState<TransferTripType>('round_trip')
-  const [passengers, setPassengers] = useState<number>(2)
+  const [passengers, setPassengers] = useState<number>(1)
 
   const quote = useMemo(
     () => (destinationId ? buildQuote(destinationId, tripType, passengers) : null),
@@ -121,7 +155,21 @@ export default function TransfersView() {
 
   const handleBook = () => {
     if (!quote) return
-    addQuote(quote)
+    // One transfer per cart: this REPLACES anything already there. Warn first
+    // if it is a different ride, so a guest who came back to add a second leg
+    // is not silently swapped out of the one they already had.
+    const existing = useTransfersCart.getState().items[0]
+    const replacing =
+      existing &&
+      (existing.destinationId !== quote.destinationId || existing.tripType !== quote.tripType)
+    if (replacing) {
+      const ok = window.confirm(
+        `Your cart already holds a transfer to ${existing.destinationName}. ` +
+        `We book one transfer at a time, so this will replace it. Continue?`,
+      )
+      if (!ok) return
+    }
+    addQuote(quote, { fromAirport: tripType === 'round_trip' ? true : fromAirport })
     router.push('/transfers/checkout')
   }
 
@@ -260,7 +308,7 @@ export default function TransfersView() {
           </div>
           <div className="xfer-routes-grid">
             {POPULAR_ROUTES.map((r) => {
-              const q = buildQuote(r.destinationId, 'round_trip', 2)
+              const q = buildQuote(r.destinationId, 'round_trip', 1)
               if (!q) return null
               return (
                 <button
@@ -316,34 +364,84 @@ export default function TransfersView() {
               <LiveActivityLine />
             </div>
 
-            <Field label="Destination">
+            {/* Two ends, stated plainly. One is always Sangster, so choosing
+                a hotel on either side sets the other automatically and an
+                impossible pair (two hotels, two airports) cannot be built. */}
+            <Field label="Pickup">
               <select
                 className="field-input"
-                value={destinationId}
-                onChange={(e) => setDestinationId(e.target.value)}
-                style={{
-                  height: 50,
-                  fontSize: 15,
-                  fontWeight: 500,
-                  color: destinationId ? 'var(--text-primary)' : 'var(--text-tertiary)',
-                  appearance: 'none',
-                  WebkitAppearance: 'none',
-                  paddingRight: 44,
-                  backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%235E5C57' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")`,
-                  backgroundRepeat: 'no-repeat',
-                  backgroundPosition: 'right 16px center',
+                aria-label="Pickup location"
+                value={fromAirport ? AIRPORT_ID : destinationId}
+                onChange={(e) => {
+                  const v = e.target.value
+                  if (v === AIRPORT_ID) { setFromAirport(true) }
+                  else { setFromAirport(false); setDestinationId(v) }
                 }}
+                style={SELECT_STYLE(fromAirport || !!destinationId)}
               >
-                <option value="">Pick a hotel or landmark…</option>
-                {zones.map(({ zone, items }) => (
-                  <optgroup key={zone.code} label={`Zone ${zone.code}, ${zone.label}`}>
-                    {items.map((d) => (
+                <option value="">Pick your starting point…</option>
+                <optgroup label="Airport">
+                  <option value={AIRPORT_ID}>{AIRPORT_NAME}</option>
+                </optgroup>
+                <optgroup label="Hotels &amp; resorts">
+                  {zones.map(({ zone, items }) =>
+                    items.map((d) => (
                       <option key={d.id} value={d.id}>
-                        {d.name}
+                        {d.name} &middot; Zone {zone.code}
                       </option>
-                    ))}
-                  </optgroup>
-                ))}
+                    )),
+                  )}
+                </optgroup>
+              </select>
+            </Field>
+
+            {/* Swap. Round-trips always begin at the airport, so it only
+                applies to a one-way. */}
+            {tripType === 'one_way' && (
+              <div style={{ display: 'flex', justifyContent: 'center', margin: '-6px 0 6px' }}>
+                <button
+                  type="button"
+                  onClick={() => setFromAirport((v) => !v)}
+                  aria-label="Swap pickup and drop-off"
+                  style={{
+                    display: 'inline-flex', alignItems: 'center', gap: 7,
+                    height: 34, padding: '0 14px', borderRadius: 999,
+                    border: '1px solid var(--border)', background: '#fff',
+                    fontFamily: 'var(--font-dm-sans)', fontSize: 12.5,
+                    fontWeight: 600, color: 'var(--text-secondary)', cursor: 'pointer',
+                  }}
+                >
+                  <ArrowUpDown size={14} />
+                  Swap
+                </button>
+              </div>
+            )}
+
+            <Field label="Drop-off">
+              <select
+                className="field-input"
+                aria-label="Drop-off location"
+                value={fromAirport ? destinationId : AIRPORT_ID}
+                onChange={(e) => {
+                  const v = e.target.value
+                  if (v === AIRPORT_ID) { setFromAirport(false) }
+                  else { setFromAirport(true); setDestinationId(v) }
+                }}
+                style={SELECT_STYLE(!fromAirport || !!destinationId)}
+              >
+                <option value="">Pick where you are going…</option>
+                <optgroup label="Airport">
+                  <option value={AIRPORT_ID}>{AIRPORT_NAME}</option>
+                </optgroup>
+                <optgroup label="Hotels &amp; resorts">
+                  {zones.map(({ zone, items }) =>
+                    items.map((d) => (
+                      <option key={d.id} value={d.id}>
+                        {d.name} &middot; Zone {zone.code}
+                      </option>
+                    )),
+                  )}
+                </optgroup>
               </select>
             </Field>
 
@@ -427,12 +525,19 @@ export default function TransfersView() {
 
             <div className="xfer-quote-readout">
               <div>
-                <p className="xfer-quote-readout-kicker">
-                  {quote ? `Zone ${quote.zone} · ${quote.zoneDuration}` : 'Your quote'}
-                </p>
+                {/* The label stays put once a fare appears. It used to be
+                    replaced by the zone line, which left the number with
+                    nothing naming it. Zone and drive time move below, where
+                    they read as detail about the route rather than a heading. */}
+                <p className="xfer-quote-readout-kicker">Your price</p>
                 <p className="xfer-quote-readout-dest">
                   {quote ? quote.destinationName : 'Pick a destination to see your fare.'}
                 </p>
+                {quote && (
+                  <p className="xfer-quote-readout-meta" style={{ marginTop: 4 }}>
+                    Zone {quote.zone} &middot; {quote.zoneDuration}
+                  </p>
+                )}
               </div>
               <div className="xfer-quote-readout-price-block">
                 <p className="xfer-quote-readout-price">

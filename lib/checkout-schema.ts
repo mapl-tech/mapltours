@@ -21,11 +21,14 @@ interface SchemaHealth {
   /** Migration 010/011. OPTIONAL feature flag, absence must never throw:
    *  attribution is garnish, so routes skip the write instead of failing. */
   has_attribution?: boolean
+  /** Migration 020. Same contract as has_attribution: absence must not throw. */
+  has_pickup_time?: boolean
 }
 
 export interface SchemaFeatures {
   /** True only when bookings.attribution exists, so inserts may include it. */
   hasAttribution: boolean
+  hasPickupTime: boolean
 }
 
 export class SchemaNotReadyError extends Error {
@@ -71,6 +74,12 @@ export async function assertCheckoutSchema(
 
   if (missing.length > 0) throw new SchemaNotReadyError(missing)
 
-  cached = { hasAttribution: data.has_attribution === true }
+  // `=== true` matters: on a deploy that lands before the migration, the view
+  // has no such column, the field is undefined, and the flag must read false
+  // so the optional write is skipped rather than 500ing the checkout.
+  cached = {
+    hasAttribution: data.has_attribution === true,
+    hasPickupTime: data.has_pickup_time === true,
+  }
   return cached
 }

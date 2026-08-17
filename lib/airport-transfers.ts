@@ -88,7 +88,6 @@ export const DESTINATIONS: TransferDestination[] = [
   { id: 'hyatt-ziva-rose-hall', name: 'Hyatt Ziva Rose Hall', parish: 'St. James', zone: 'A', baseRate: 30 },
   { id: 'hyatt-zilara-rose-hall', name: 'Hyatt Zilara Rose Hall', parish: 'St. James', zone: 'A', baseRate: 30 },
   { id: 'hilton-rose-hall', name: 'Hilton Rose Hall Resort', parish: 'St. James', zone: 'A', baseRate: 30 },
-  { id: 'royalton-blue-waters-mb', name: 'Royalton Blue Waters (Falmouth)', parish: 'Trelawny', zone: 'B', baseRate: 60, estimated: true },
   { id: 'sandals-montego-bay', name: 'Sandals Montego Bay', parish: 'St. James', zone: 'A', baseRate: 25 },
   { id: 'sandals-royal-caribbean', name: 'Sandals Royal Caribbean, Montego Bay', parish: 'St. James', zone: 'A', baseRate: 25, estimated: true },
   { id: 'riu-montego-bay', name: 'Riu Montego Bay', parish: 'St. James', zone: 'A', baseRate: 20 },

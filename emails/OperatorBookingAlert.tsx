@@ -9,6 +9,8 @@ export interface OperatorBookingAlertProps {
   customerCountry: string | null
   pickup: string | null
   dropoff: string | null
+  /** Requested start time, 'HH:MM' Jamaica local. */
+  pickupTime?: string | null
   specialRequests: string | null
   totalPaid: number
   currency: string
@@ -39,6 +41,16 @@ function fmtDate(iso: string): string {
  * Internal ops alert for tour bookings. Shopify-style layout, but the
  * "Special requests" card is highlighted to keep dispatch from missing it.
  */
+/** '08:30' -> '8:30 AM'. Falls back to the raw value if it is not HH:MM. */
+function formatTime(hhmm: string): string {
+  const m = /^(\d{2}):(\d{2})$/.exec(hhmm)
+  if (!m) return hhmm
+  const h = Number(m[1])
+  const suffix = h < 12 ? 'AM' : 'PM'
+  const display = h % 12 === 0 ? 12 : h % 12
+  return `${display}:${m[2]} ${suffix}`
+}
+
 export default function OperatorBookingAlert({
   bookingRef,
   customerName,
@@ -47,6 +59,7 @@ export default function OperatorBookingAlert({
   customerCountry,
   pickup,
   dropoff,
+  pickupTime,
   specialRequests,
   totalPaid,
   currency,
@@ -117,14 +130,22 @@ export default function OperatorBookingAlert({
       </Section>
 
       {/* Pickup / drop-off */}
-      {(pickup || dropoff) && (
+      {(pickup || dropoff || pickupTime) && (
         <Section style={s.card}>
           <Section style={s.cardHeader}>
             <Text style={s.cardHeaderText}>Logistics</Text>
           </Section>
           <Section style={s.cardBody}>
-            {pickup && (
+            {/* The time the guest asked for, first: it is what the driver
+                schedules around, and it is the only field here that is a
+                commitment rather than an address. */}
+            {pickupTime && (
               <Text style={s.body}>
+                <strong style={{ fontWeight: 600 }}>Pickup time:</strong> {formatTime(pickupTime)}
+              </Text>
+            )}
+            {pickup && (
+              <Text style={{ ...s.body, marginTop: pickupTime ? 6 : 0 }}>
                 <strong style={{ fontWeight: 600 }}>Pickup:</strong> {pickup}
               </Text>
             )}

@@ -232,7 +232,7 @@ export default function PartnerView() {
           }}>
             MAPL Tours Jamaica is an operator. On the experiences we run, our name is on
             the itinerary, our driver is at the airport, and the guest&rsquo;s whole day is
-            ours from pickup to drop-off. Nineteen experiences and forty-four restaurants
+            ours from pickup to drop-off. Twenty-two experiences and forty-four restaurants
             and sites sit on the site today &mdash; ours and other people&rsquo;s &mdash;
             across ten parishes of road.
           </p>

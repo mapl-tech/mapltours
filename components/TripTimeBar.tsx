@@ -1,6 +1,6 @@
 'use client'
 
-import { DAILY_HOUR_LIMIT, parseDurationHours, useCartStore } from '@/lib/cart'
+import { DAILY_HOUR_LIMIT, STOP_HOURS, parseDurationHours, useCartStore } from '@/lib/cart'
 import { computeDayScore, type DayStage } from '@/lib/day-score'
 
 interface DayBuilderProps {
@@ -15,18 +15,20 @@ interface DayBuilderProps {
  * "Build Your Perfect Day", the evolution of the old 8-hour bar. Shows:
  *  • A stage label (Getting Started → Great Flow → Perfect Day)
  *  • A gold→emerald→coral progress bar tracking hours / 8
- *  • A score out of 100 (variety · balance · efficiency)
  *  • An encouraging action-oriented nudge
  *
- * Designed mobile-first: 12–14px body, touchable breakdown chips, no wraps.
+ * The 0-100 score and its variety/balance/efficiency bars were removed as
+ * clutter; lib/day-score.ts still computes them because the stage label and
+ * nudge above come from the same call.
  * Exported as the default export so existing imports (e.g. `TripTimeBar`) keep
  * working, the filename stays `TripTimeBar.tsx` for non-breaking backwards compat.
  */
 export default function DayBuilder({ compact = false, hideHeading, style }: DayBuilderProps) {
   const items = useCartStore((s) => s.items)
-  const score = computeDayScore(items)
+  const stops = useCartStore((s) => s.stops)
+  const score = computeDayScore(items, stops.length * STOP_HOURS)
 
-  const { hours, stage, stageLabel, nudge, total, isOver, isPerfect } = score
+  const { hours, stage, stageLabel, nudge, isOver, isPerfect } = score
   const pct = Math.min(100, (hours / DAILY_HOUR_LIMIT) * 100)
   const over = Math.max(0, hours - DAILY_HOUR_LIMIT)
   const overflowPct = isOver ? Math.min(40, (over / DAILY_HOUR_LIMIT) * 100) : 0
@@ -203,117 +205,10 @@ export default function DayBuilder({ compact = false, hideHeading, style }: DayB
         {nudge}
       </p>
 
-      {/* ── Score breakdown (hidden in compact mode) ── */}
-      {!compact && items.length > 0 && (
-        <div style={{
-          marginTop: 18,
-          paddingTop: 16,
-          borderTop: '1px solid var(--border-subtle, rgba(255,255,255,0.08))',
-        }}>
-          <div style={{
-            display: 'flex', alignItems: 'baseline', justifyContent: 'space-between',
-            marginBottom: 12,
-          }}>
-            <span style={{
-              fontFamily: 'var(--font-dm-sans)',
-              fontSize: 12,
-              fontWeight: 600,
-              textTransform: 'uppercase',
-              letterSpacing: '0.08em',
-              color: 'var(--text-tertiary, rgba(255,255,255,0.45))',
-            }}>
-              Perfect Day Score
-            </span>
-            <span style={{
-              fontFamily: 'var(--font-dm-sans)',
-              fontWeight: 800,
-              fontSize: 26,
-              letterSpacing: '-0.02em',
-              color: scoreColor(total),
-              lineHeight: 1,
-            }}>
-              {total}
-              <span style={{
-                fontSize: 13,
-                fontWeight: 500,
-                color: 'var(--text-tertiary, rgba(255,255,255,0.4))',
-                fontFamily: 'var(--font-dm-sans)',
-                marginLeft: 2,
-              }}>
-                /100
-              </span>
-            </span>
-          </div>
-
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
-            gap: 10,
-          }}>
-            <Dimension label="Variety"    score={score.variety} />
-            <Dimension label="Balance"    score={score.balance} />
-            <Dimension label="Efficiency" score={score.efficiency} />
-          </div>
-        </div>
-      )}
     </div>
   )
 }
 
-function Dimension({
-  label,
-  score,
-}: {
-  label: string
-  score: { score: number; max: number }
-}) {
-  const pct = score.max === 0 ? 0 : (score.score / score.max) * 100
-  const hot = pct >= 75
-  return (
-    <div style={{ minWidth: 0 }}>
-      <div style={{
-        display: 'flex', justifyContent: 'space-between', alignItems: 'baseline',
-        marginBottom: 5, gap: 6,
-      }}>
-        <span style={{
-          fontFamily: 'var(--font-dm-sans)',
-          fontSize: 12,
-          fontWeight: 600,
-          letterSpacing: '0.06em',
-          textTransform: 'uppercase',
-          color: 'var(--text-tertiary, rgba(255,255,255,0.5))',
-          whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-        }}>
-          {label}
-        </span>
-        <span style={{
-          fontFamily: 'var(--font-dm-sans)',
-          fontWeight: 700,
-          fontSize: 12,
-          color: hot ? 'var(--gold, #FFB300)' : 'var(--text-secondary, rgba(255,255,255,0.7))',
-          whiteSpace: 'nowrap',
-        }}>
-          {Math.round(score.score)}
-        </span>
-      </div>
-      <div style={{
-        width: '100%',
-        height: 4,
-        borderRadius: 9999,
-        background: 'rgba(0,0,0,0.06)',
-        overflow: 'hidden',
-      }}>
-        <div style={{
-          width: `${pct}%`,
-          height: '100%',
-          background: hot ? 'var(--gold, #FFB300)' : 'var(--text-secondary, rgba(255,255,255,0.45))',
-          borderRadius: 9999,
-          transition: 'width 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
-        }} />
-      </div>
-    </div>
-  )
-}
 
 const MILESTONES: { at: number; label: string }[] = [
   { at: 0, label: 'Start' },
@@ -333,11 +228,6 @@ function colorForStage(stage: DayStage): string {
   }
 }
 
-function scoreColor(total: number): string {
-  if (total >= 90) return 'var(--gold, #FFB300)'
-  if (total >= 60) return 'var(--text-primary, white)'
-  return 'var(--text-secondary, rgba(255,255,255,0.7))'
-}
 
 function fmtHours(h: number): string {
   if (h === 0) return '0 hrs'

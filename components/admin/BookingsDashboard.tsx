@@ -201,10 +201,14 @@ function BookingCard({ b, variant, open, onToggle }: { b: Row; variant: 'abandon
             ))}
           </div>
 
-          {(b.pickup || b.dropoff) && (
+          {(b.pickup || b.dropoff || b.pickup_time) && (
             <div style={{ marginTop: 12, paddingTop: 12, borderTop: borderSoft }}>
+              {/* The requested start time leads: it is what dispatch schedules
+                  a driver around, and unlike the addresses it is a commitment
+                  made to the guest at checkout. */}
+              <Field k="Pickup time" v={b.pickup_time ? formatPickupTime(b.pickup_time) : null} />
               <Field k="Pickup" v={b.pickup} />
-              <Field k="Drop-off" v={b.dropoff} />
+              {b.dropoff && b.dropoff !== b.pickup && <Field k="Drop-off" v={b.dropoff} />}
             </div>
           )}
           {b.special_requests && (
@@ -402,4 +406,13 @@ export default function BookingsDashboard({ bookings }: { bookings: Row[] }) {
       </div>
     </div>
   )
+}
+
+/** '08:30' -> '8:30 AM'. Returns the raw value if it is not HH:MM. */
+function formatPickupTime(hhmm: string): string {
+  const m = /^(\d{2}):(\d{2})$/.exec(hhmm)
+  if (!m) return hhmm
+  const h = Number(m[1])
+  const suffix = h < 12 ? 'AM' : 'PM'
+  return `${h % 12 === 0 ? 12 : h % 12}:${m[2]} ${suffix}`
 }

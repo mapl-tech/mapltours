@@ -27,6 +27,20 @@ export interface FoodStop {
  * Maximum tour hours allowed per single travel day. Beyond this, the user
  * must either remove experiences or move them to a different date.
  */
+/**
+ * Time a free food stop takes out of the day.
+ *
+ * A stop costs MAPL nothing and the guest pays the venue directly, but it
+ * absolutely costs the DAY — parking, sitting down, eating, getting back on
+ * the road. Counting it as zero let a guest fill eight hours with tours and
+ * then add three lunches, producing an itinerary no driver could actually run.
+ *
+ * Real stops run one to two hours; the midpoint is banked. Nobody is hurried
+ * out of Scotchies at the sixty-minute mark, and budgeting the full two would
+ * make a day with two stops look impossible when it usually is not.
+ */
+export const STOP_HOURS = 1.5
+
 export const DAILY_HOUR_LIMIT = 8
 
 export function parseDurationHours(duration: string): number {
@@ -41,6 +55,13 @@ interface CartStore {
   stops: FoodStop[]
   pickup: string
   dropoff: string
+  /**
+   * When the day starts, as 'HH:MM'. Dispatch information only — the refund
+   * window deliberately still runs off the midnight-Jamaica assumption in
+   * lib/booking-window.ts, so capturing a real start time cannot quietly
+   * shorten anyone's right to cancel.
+   */
+  pickupTime: string
   addItem: (exp: Experience) => void
   conflictsInCart: (exp: Experience) => CartItem[]
   removeItem: (id: number) => void
@@ -50,6 +71,7 @@ interface CartStore {
   updateTravelers: (id: number, travelers: number) => void
   updateDate: (id: number, date: string) => void
   setPickup: (location: string) => void
+  setPickupTime: (time: string) => void
   setDropoff: (location: string) => void
   clearCart: () => void
   isInCart: (id: number) => boolean
@@ -78,6 +100,7 @@ export const useCartStore = create<CartStore>()(
       items: [],
       stops: [],
       pickup: '',
+      pickupTime: '',
       dropoff: '',
       addStop: (stop) => set((state) => (
         state.stops.some((s) => s.name === stop.name)
@@ -96,7 +119,7 @@ export const useCartStore = create<CartStore>()(
         // sold singly) and makes the day impossible to sequence. Adding
         // either kind therefore clears the other kind.
         const kept = items.filter((i) => i.kind === exp.kind)
-        set({ items: [...kept, { ...exp, travelers: 2, date: defaultDate() }] })
+        set({ items: [...kept, { ...exp, travelers: 1, date: defaultDate() }] })
       },
 
       /** Cart items this experience would replace if added now. */
@@ -121,9 +144,10 @@ export const useCartStore = create<CartStore>()(
       },
 
       setPickup: (location: string) => set({ pickup: location }),
+      setPickupTime: (time: string) => set({ pickupTime: time }),
       setDropoff: (location: string) => set({ dropoff: location }),
 
-      clearCart: () => set({ items: [], stops: [], pickup: '', dropoff: '' }),
+      clearCart: () => set({ items: [], stops: [], pickup: '', dropoff: '', pickupTime: '' }),
 
       isInCart: (id: number) => get().items.some((i) => i.id === id),
 
@@ -143,10 +167,21 @@ export const useCartStore = create<CartStore>()(
       grandTotal: () => get().subtotal(),
 
       hoursByDate: () => {
+        const { items, stops } = get()
         const map: Record<string, number> = {}
-        for (const item of get().items) {
+        for (const item of items) {
           const key = item.date || 'unset'
           map[key] = (map[key] ?? 0) + parseDurationHours(item.duration)
+        }
+        // Food stops have no date of their own — they belong to the day being
+        // built, which is now a single date per checkout. Charge them to the
+        // day that has experiences on it; with an empty cart they land on
+        // 'unset', which is the same bucket the UI already reads.
+        const extra = stops.length * STOP_HOURS
+        if (extra > 0) {
+          const dayKeys = Object.keys(map)
+          const key = dayKeys.length === 1 ? dayKeys[0] : (items[0]?.date || 'unset')
+          map[key] = (map[key] ?? 0) + extra
         }
         return map
       },
@@ -189,7 +224,7 @@ export const useCartStore = create<CartStore>()(
         const items = (state.items ?? []).flatMap((i) => {
           const current = experiences.find((e: Experience) => e.id === i.id)
           if (!current) return []
-          return [{ ...current, travelers: i.travelers ?? 2, date: i.date ?? '' }]
+          return [{ ...current, travelers: i.travelers ?? 1, date: i.date ?? '' }]
         })
         void version
         // v2: food stops joined the cart; older persisted carts have none.

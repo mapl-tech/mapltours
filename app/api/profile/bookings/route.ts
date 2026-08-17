@@ -63,7 +63,15 @@ export async function GET() {
             title: `Airport transfer${i.trip_type === 'round_trip' ? ' (round trip)' : ''}: MBJ to ${i.hotel ?? i.destination ?? 'your hotel'}`,
             destination: i.hotel ?? i.destination ?? 'Jamaica',
             travelers: i.passengers ?? i.travelers ?? 1,
-            date: (i.arrival_at ?? '').slice(0, 10) || null,
+            // A hotel -> airport one-way has no arrival_at. Deriving the date
+            // from it alone left `date: null`, which matched neither the
+            // upcoming (>=) nor the past (<) filter, so the booking vanished
+            // from the customer's profile — taking its cancel button with it.
+            date:
+              (i.arrival_at ?? '').slice(0, 10) ||
+              (i.departure_at ?? '').slice(0, 10) ||
+              i.date ||
+              null,
             experience_id: 0,
           }
         : {

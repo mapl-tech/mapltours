@@ -601,6 +601,20 @@ function Reel({ exp, isActive, totalCount, currentIndex, onComments }: { exp: Ex
             {inCart ? t('✓ In Trip') : t('Add to Trip')}
           </button>
         </div>
+
+        {/* Points at where the detail actually lives. The reel is the
+            browsing surface and stays uncluttered; what to bring, group size
+            and what the price covers sit in checkout, where they change a
+            decision. Wording flips once it is in the trip so it reads as a
+            next step rather than a repeated instruction. */}
+        <p style={{
+          marginTop: 10, fontSize: 12.5, lineHeight: 1.5,
+          color: 'rgba(255,255,255,0.72)', fontFamily: 'var(--font-dm-sans)',
+        }}>
+          {inCart
+            ? t('Full details, what to bring and group size are in your itinerary.')
+            : t('Add to your trip to see full details and what to bring.')}
+        </p>
       </div>
     </div>
   )

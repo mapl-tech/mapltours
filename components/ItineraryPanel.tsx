@@ -9,6 +9,7 @@ import { tourPrice } from '@/lib/experiences'
 import { X } from 'lucide-react'
 import { useI18n } from '@/lib/i18n'
 import TripTimeBar from '@/components/TripTimeBar'
+import DayFlow from '@/components/DayFlow'
 
 export default function ItineraryPanel({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { items, stops, removeItem, removeStop, subtotal, grandTotal } = useCartStore()
@@ -128,6 +129,9 @@ export default function ItineraryPanel({ open, onClose }: { open: boolean; onClo
             Day Builder
           </p>
           <TripTimeBar compact />
+          <div style={{ marginTop: 14 }}>
+            <DayFlow compact />
+          </div>
         </div>
 
         {items[0]?.kind === 'package' && (
@@ -227,10 +231,21 @@ export default function ItineraryPanel({ open, onClose }: { open: boolean; onClo
             <span>{t('Total')}</span>
             <span>{formatPrice(grandTotal())}</span>
           </div>
-          <Link href={checkoutHref} onClick={onClose} style={{ display: 'block', textDecoration: 'none' }}>
-            <button className="btn-primary" style={{ width: '100%', height: 46, fontSize: 14 }}>
-              {t('Continue to checkout')} →
-            </button>
+          {/* One interactive element, not a <button> nested in a <Link>.
+              The nested form is invalid HTML, and closing the panel from the
+              anchor's own onClick could unmount it before the browser acted on
+              the navigation — so the click did nothing. Navigate first, then
+              close on the next tick. */}
+          <Link
+            href={checkoutHref}
+            onClick={() => { setTimeout(onClose, 0) }}
+            className="btn-primary"
+            style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              width: '100%', height: 46, fontSize: 14, textDecoration: 'none',
+            }}
+          >
+            {t('Continue to checkout')} →
           </Link>
           <p style={{ textAlign: 'center', fontSize: 12, color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-sans)', marginTop: 12 }}>
             {t('Flexible cancellation within 48 hrs of booking')}

@@ -32,7 +32,11 @@ const EFFICIENCY_MAX = 25
  * human-readable stage label and upsell nudge. Pure function, no hooks,
  * so it can be called from selectors, components, and tests.
  */
-export function computeDayScore(items: CartItem[]): DayScoreBreakdown {
+export function computeDayScore(items: CartItem[], stopHours = 0): DayScoreBreakdown {
+  // `stopHours` is time the guest spends at free food stops. It is not sold by
+  // MAPL and never priced, but it fills the same day, so the bar here must
+  // agree with the cart's isDayOverLimit() gate — a bar reading 4/8 while
+  // checkout blocks at 6 is worse than no bar.
   if (items.length === 0) {
     return {
       total: 0,
@@ -65,7 +69,7 @@ export function computeDayScore(items: CartItem[]): DayScoreBreakdown {
     [Object.keys(byDate)[0], byDate[Object.keys(byDate)[0]]]
   )
 
-  const hours = topItems.reduce((s, i) => s + parseDurationHours(i.duration), 0)
+  const hours = topItems.reduce((s, i) => s + parseDurationHours(i.duration), 0) + stopHours
   const categories = new Set(topItems.map((i) => i.category))
   const destinations = new Set(topItems.map((i) => i.destination))
   const isOver = hours > DAILY_HOUR_LIMIT

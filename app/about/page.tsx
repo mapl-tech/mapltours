@@ -29,7 +29,7 @@ const VALUES = [
 ]
 
 const STATS = [
-  { value: '19', label: 'Guided experiences' },
+  { value: '22', label: 'Guided experiences' },
   { value: '44', label: 'Restaurants & sites' },
   { value: '10', label: 'Parishes covered' },
 ]

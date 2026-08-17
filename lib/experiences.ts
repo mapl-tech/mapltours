@@ -128,6 +128,29 @@ export interface Experience {
   kind: 'single' | 'package'
   /** For packages: ids of the single experiences this bundles. */
   includes?: number[]
+
+  // ── Detail-page content ────────────────────────────────────────────────
+  // All optional. The detail page renders each block only when it is present,
+  // so an experience with none of these still produces a complete page and
+  // nothing has to be invented to fill a section. Populate per tour as the
+  // real operator information comes in.
+
+  /** Full activity write-up. Falls back to `description` when absent. */
+  about?: string
+  /** e.g. 'Suitable for ages 8 and up'. */
+  ages?: string
+  /** Fitness or mobility notes a guest needs BEFORE booking. */
+  fitness?: string
+  /** What the price covers. */
+  included?: string[]
+  /** What the price does NOT cover, so there are no surprises on the day. */
+  notIncluded?: string[]
+  /** What to bring. */
+  bring?: string[]
+  /** Anything else worth knowing: weather policy, timings, etiquette. */
+  additionalInfo?: string[]
+  /** Where the day starts, when it is not simply hotel pickup. */
+  meetingPoint?: string
   comments: Comment[]
 }
 
@@ -218,6 +241,37 @@ export const experiences: Experience[] = [
     emoji: '💧',
     image: '/media/img/11035880.jpg',
     video: VIDEOS.waterfall,
+    // ── DRAFT DETAIL CONTENT — one tour only, to show the page layout. ──
+    // Written to be practically true of a Dunn's River Falls climb, NOT from
+    // an operator brief. `included` / `notIncluded` / `ages` are commercial
+    // facts only MAPL and the operator can confirm, so verify every line
+    // before this is shown to a customer.
+    ages: 'Suitable for ages 6 and up',
+    fitness: 'A moderate climb over wet limestone terraces, roughly 45 minutes of continuous ascent with rest points. Guests link hands in a chain led by a guide. Not suitable for anyone with limited mobility, a heart condition, or in late pregnancy.',
+    meetingPoint: 'Hotel pickup',
+    included: [
+      'Round-trip private transport from your hotel',
+      'Park entry',
+      'Licensed falls guide',
+    ],
+    notIncluded: [
+      'Water shoe rental at the park',
+      'Locker hire',
+      'Food and drinks',
+      'Gratuities',
+    ],
+    bring: [
+      'Swimwear worn under your clothes',
+      'Water shoes or secure sandals with a strap — flip-flops will not hold on wet rock',
+      'A towel and a change of clothes',
+      'A waterproof phone case or a dry bag',
+      'Sunscreen and a hat',
+    ],
+    additionalInfo: [
+      'The climb runs rain or shine; heavy rainfall can close the falls, in which case you are refunded in full or rescheduled at no cost.',
+      'Lockers are available at the park for a small fee — bring as little as you can.',
+      'Cameras are allowed on the climb, but you will need both hands for parts of it.',
+    ],
     description: "Climb the 600-foot cascading falls hand-in-hand up the terraces, then cool off in the pools at the top. Jamaica's most famous natural attraction, done with a guide who knows the safe line.",
     tags: ["Waterfall", "Climbing", "Ocho Rios"],
     kind: 'single',
@@ -721,6 +775,18 @@ export const packageExperiences = experiences.filter((e) => e.kind === 'package'
  * Ids that would double-book if these two products shared a cart: a package
  * against its own components, or a component against a package containing it.
  */
+/**
+ * Largest party the rate card is written for.
+ *
+ * Derived from pricing rather than stored, so it can never drift from what a
+ * booking actually costs. A group tour is capped at `tierMax`; a per-person
+ * tour has no inherent ceiling in the rate card, so it returns null and the
+ * detail page simply omits the line instead of asserting a limit we do not have.
+ */
+export function maxGroupSize(exp: Experience): number | null {
+  return exp.pricing.mode === 'group' ? exp.pricing.tierMax : null
+}
+
 export function conflictingIds(exp: Experience): number[] {
   if (exp.kind === 'package') return exp.includes ?? []
   return packageExperiences

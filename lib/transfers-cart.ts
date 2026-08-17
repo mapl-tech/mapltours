@@ -1,4 +1,4 @@
-import { getTransferPrice } from '@/lib/airport-transfers'
+import { getTransferPrice, getDestination, ZONES } from '@/lib/airport-transfers'
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import type { TransferQuote, TransferTripType } from './airport-transfers'
@@ -21,6 +21,12 @@ export interface TransferCartItem {
   tripType: TransferTripType
   passengers: number
   priceUsd: number
+  /**
+   * True when the ride starts at Sangster. Optional so carts persisted before
+   * the direction was asked for still load; the server falls back to the old
+   * inference when it is absent.
+   */
+  fromAirport?: boolean
   /** ISO "YYYY-MM-DDTHH:MM" (datetime-local input format). */
   arrivalAt?: string
   arrivalFlight?: string
@@ -28,15 +34,40 @@ export interface TransferCartItem {
   departureFlight?: string
 }
 
-function makeId(destinationId: string, tripType: TransferTripType): string {
-  return `xfer-${destinationId}-${tripType}`
+/**
+ * Direction is part of a one-way's identity. Without it, an airport-to-hotel
+ * ride and the hotel-to-airport ride home share an id, so adding the second
+ * silently overwrites the first and the guest pays for one leg believing they
+ * bought two. A round-trip always starts at the airport, so it needs no suffix.
+ */
+function makeId(destinationId: string, tripType: TransferTripType, fromAirport = true): string {
+  const base = `xfer-${destinationId}-${tripType}`
+  return tripType === 'one_way' && !fromAirport ? `${base}-to-airport` : base
 }
 
 interface TransfersCartStore {
   items: TransferCartItem[]
-  addQuote: (quote: TransferQuote) => void
+  addQuote: (quote: TransferQuote, opts?: { fromAirport?: boolean }) => void
   removeItem: (id: string) => void
   updateItem: (id: string, patch: Partial<TransferCartItem>) => void
+  /**
+   * Change the route, direction or party size of an existing line.
+   *
+   * Separate from updateItem because all three inputs change the FARE and two
+   * of them change the item's id. A plain patch would leave a stale price on
+   * the line, which the server recomputes and rejects as a total mismatch —
+   * the guest would see a correct-looking cart that cannot be paid for.
+   * Flight details already entered are carried across untouched.
+   */
+  reviseItem: (
+    id: string,
+    next: {
+      destinationId?: string
+      fromAirport?: boolean
+      passengers?: number
+      tripType?: TransferTripType
+    },
+  ) => void
   clearCart: () => void
   subtotal: () => number
   fee: () => number
@@ -48,23 +79,19 @@ export const useTransfersCart = create<TransfersCartStore>()(
     (set, get) => ({
       items: [],
 
-      addQuote: (quote) => {
-        const id = makeId(quote.destinationId, quote.tripType)
-        const { items } = get()
-        // Idempotent, if the same destination + trip type already exists,
-        // update the passenger count instead of adding a duplicate.
-        if (items.some((i) => i.id === id)) {
-          // Refresh the PRICE as well as the passenger count: re-adding a line
-          // must never leave a stale fare behind (it would fail checkout).
-          set({
-            items: items.map((i) =>
-              i.id === id
-                ? { ...i, passengers: quote.passengers, priceUsd: quote.priceUsd }
-                : i,
-            ),
-          })
-          return
-        }
+      /**
+       * One transfer at a time. Adding a quote REPLACES whatever was there.
+       *
+       * A transfer books a specific vehicle and driver against a specific
+       * flight. Letting several sit in one cart invited a guest to buy two
+       * rides for the same arrival — and because a round-trip is already a
+       * single line covering both legs, a second line is nearly always a
+       * duplicate rather than a genuine second journey. Someone who truly
+       * needs another ride books it separately, which is also what dispatch
+       * needs: one booking, one vehicle, one driver.
+       */
+      addQuote: (quote, opts) => {
+        const id = makeId(quote.destinationId, quote.tripType, opts?.fromAirport ?? true)
         const item: TransferCartItem = {
           id,
           destinationId: quote.destinationId,
@@ -76,8 +103,63 @@ export const useTransfersCart = create<TransfersCartStore>()(
           tripType: quote.tripType,
           passengers: quote.passengers,
           priceUsd: quote.priceUsd,
+          // A round-trip always begins at the airport; only a one-way can run
+          // the other way, so default rather than leaving it undefined.
+          fromAirport: opts?.fromAirport ?? true,
         }
-        set({ items: [...items, item] })
+        set({ items: [item] })
+      },
+
+      reviseItem: (id, next) => {
+        const { items } = get()
+        const current = items.find((i) => i.id === id)
+        if (!current) return
+
+        const destinationId = next.destinationId ?? current.destinationId
+        const tripType = next.tripType ?? current.tripType
+        // A round-trip always begins at the airport, so switching to one
+        // settles the direction too.
+        const fromAirport =
+          tripType === 'round_trip' ? true : next.fromAirport ?? current.fromAirport ?? true
+        const passengers = Math.max(1, Math.min(4, next.passengers ?? current.passengers))
+
+        const dest = getDestination(destinationId)
+        const priceUsd = getTransferPrice(destinationId, tripType)
+        // An unknown destination or a retired fare must not silently blank the
+        // price; leave the line exactly as it was and let the guest retry.
+        if (!dest || priceUsd === null) return
+
+        const zone = ZONES[dest.zone]
+        set({
+          items: items.map((i) =>
+            i.id === id
+              ? {
+                  ...i,
+                  id: makeId(destinationId, tripType, fromAirport),
+                  tripType,
+                  // Drop the leg that no longer exists. Leaving a stale
+                  // departure time on a one-way out of the airport would fail
+                  // the server's flight-number check on a leg the guest is not
+                  // actually taking.
+                  ...(tripType === 'one_way' && fromAirport
+                    ? { departureAt: undefined, departureFlight: undefined }
+                    : {}),
+                  ...(tripType === 'one_way' && !fromAirport
+                    ? { arrivalAt: undefined, arrivalFlight: undefined }
+                    : {}),
+                  destinationId,
+                  destinationName: dest.name,
+                  parish: dest.parish,
+                  zone: dest.zone,
+                  zoneLabel: zone?.label ?? i.zoneLabel,
+                  zoneDuration: zone?.duration ?? i.zoneDuration,
+                  fromAirport,
+                  passengers,
+                  priceUsd,
+                }
+              : i,
+          ),
+        })
       },
 
       removeItem: (id) => set({ items: get().items.filter((i) => i.id !== id) }),
@@ -111,14 +193,24 @@ export const useTransfersCart = create<TransfersCartStore>()(
       // fares, which the server rejects as a total mismatch and which a
       // reload alone can never clear. Re-derive every line from the live rate
       // table, dropping destinations that no longer exist.
-      version: 5,
+      // v6: removed a duplicate Falmouth destination that differed from the
+      // real one by a single letter. Two ids for one hotel meant a guest could
+      // hold both in a cart and pay twice for the same ride.
+      // v7: one transfer per cart. Carts saved under v6 may hold several, and
+      // those are exactly the double-bookings this is meant to prevent, so the
+      // migration keeps the most recently added and drops the rest.
+      version: 7,
       migrate: (persisted, version) => {
         const state = persisted as { items?: TransferCartItem[] } | undefined
-        if (!state || version >= 5) return state as TransfersCartStore
-        const items = (state.items ?? []).flatMap((i) => {
+        if (!state || version >= 7) return state as TransfersCartStore
+        const repriced = (state.items ?? []).flatMap((i) => {
           const priceUsd = getTransferPrice(i.destinationId, i.tripType)
           return priceUsd === null ? [] : [{ ...i, priceUsd }]
         })
+        // Keep the last one added; it is the one the guest was most recently
+        // looking at, and silently keeping the FIRST would drop the choice
+        // they just made.
+        const items = repriced.slice(-1)
         return { ...state, items } as TransfersCartStore
       },
     },

@@ -59,6 +59,8 @@ interface CheckoutBody {
     country?: string
     pickup?: string
     dropoff?: string
+    /** 'HH:MM' local Jamaica time the day starts. Dispatch only. */
+    pickupTime?: string
     specialRequests?: string
   }
   breakdown?: {
@@ -181,6 +183,13 @@ export async function POST(request: NextRequest) {
       country: c.country ? c.country.slice(0, 80) : null,
       pickup: c.pickup ? c.pickup.slice(0, 200) : null,
       dropoff: c.dropoff ? c.dropoff.slice(0, 200) : null,
+      // Validated shape, not trusted length. Deliberately NOT fed into
+      // earliestServiceStart(): the refund window stays on the midnight
+      // assumption so capturing a start time cannot shorten anyone's right
+      // to cancel.
+      ...(schemaFeatures.hasPickupTime && /^\d{2}:\d{2}$/.test(c.pickupTime ?? '')
+        ? { pickup_time: c.pickupTime }
+        : {}),
       special_requests: c.specialRequests ? c.specialRequests.slice(0, 2000) : null,
     } as const
 

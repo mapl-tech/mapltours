@@ -597,7 +597,7 @@ function Success({ data }: { data: ConfirmData }) {
               lineHeight: 1.7,
             }}
           >
-            <li>· Your guide will reach out 24–48 hours before each experience to confirm your pickup time and driver.</li>
+            <li>· Your guide will reach out 24–48 hours before to confirm your driver and your pickup time.</li>
             <li>· Bring a valid ID, reef-safe sunscreen, and water.</li>
             <li>· Flexible cancellation within 48 hours of booking. Request it from your Profile page, or reply to your confirmation email, and we will review it. Refunds are less a 20% administration charge plus taxes (if applicable).</li>
             <li>
