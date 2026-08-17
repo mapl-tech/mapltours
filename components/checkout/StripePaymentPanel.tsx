@@ -173,6 +173,11 @@ function PaymentStep({
         className="btn-primary"
         onClick={handleSubmit}
         disabled={!stripe || processing}
+        /* The mobile sticky bar delegates its tap to whichever element carries
+           this attribute, so the same submit path serves both. Exactly one is
+           mounted at a time: the step-1 summary CTA, or this. Without it the
+           sticky "Complete booking" on the payment step was inert. */
+        data-checkout-cta
         style={{
           width: '100%', height: 52, fontSize: 15, fontWeight: 700, marginTop: 18,
           opacity: processing ? 0.6 : 1,

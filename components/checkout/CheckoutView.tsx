@@ -1018,6 +1018,30 @@ export default function CheckoutView() {
               <div style={{ marginTop: 40 }}>
                 <DetailsStep waiverAccepted={waiverAccepted} setWaiverAccepted={setWaiverAccepted} waiverError={waiverError} formData={formData} setFormData={setFormData} formErrors={formErrors} />
               </div>
+              {/* Desktop CTA in the reading column. The waiver is the last thing
+                  a guest completes, so the way forward belongs directly under
+                  it rather than only in the summary rail off to the side.
+                  Delegates to the summary button so validation, the day-limit
+                  gate and the step transition all stay in one handler. */}
+              <div className="hide-mobile" style={{ marginTop: 24 }}>
+                <button
+                  className="btn-primary"
+                  onClick={() => {
+                    const el = document.querySelector('[data-checkout-cta]') as HTMLButtonElement | null
+                    el?.click()
+                  }}
+                  style={{ width: '100%', height: 52, fontSize: 15 }}
+                >
+                  {ctas[0]}
+                </button>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: 12, fontSize: 12, color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-sans)' }}>
+                  <Lock size={11} />
+                  <span>
+                    Secure checkout · Cancel within 48 hrs of booking, less a 20% admin charge ·{' '}
+                    <a href="/terms" target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'underline', color: 'inherit' }}>full policy</a>
+                  </span>
+                </div>
+              </div>
             </>
           )}
           {step === 2 && (
@@ -1260,8 +1284,13 @@ export default function CheckoutView() {
         <button
           className="btn-primary"
           onClick={() => {
+            // Delegates to whichever CTA is mounted: the step-1 summary button
+            // or the step-2 payment submit. If neither is present (payment
+            // panel still initialising) do nothing rather than lie.
             const el = document.querySelector('[data-checkout-cta]') as HTMLButtonElement | null
-            if (el) { el.scrollIntoView({ behavior: 'smooth', block: 'center' }); el.click() }
+            if (!el || el.disabled) return
+            el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+            el.click()
           }}
         >
           {ctas[step - 1]}
