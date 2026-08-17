@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server'
 import Stripe from 'stripe'
 import { createServiceClient } from '@/lib/supabase/service'
 import { DEFAULT_DRIVER } from '@/lib/dispatch'
+import { activateGiftCard } from '@/lib/gift-activation'
+import { settleGiftClaim, releaseGiftClaim } from '@/lib/gift-redemption'
 import { sendEmail, opsBcc } from '@/lib/email/send'
 import { sendCancellationEmails } from '@/lib/email/cancellation'
 import {
@@ -215,6 +217,13 @@ async function loadBooking(pi: Stripe.PaymentIntent) {
 }
 
 async function handlePaymentSucceeded(pi: Stripe.PaymentIntent) {
+  // Gift-card purchases are not bookings. Branch before loadBooking, which
+  // would otherwise log them as unknown and drop them.
+  if (pi.metadata?.kind === 'gift_card') {
+    await handleGiftPaid(pi)
+    return
+  }
+
   const { supabase, booking, items } = await loadBooking(pi)
   if (!booking) {
     // Truly unknown, neither stripe_payment_id nor metadata.booking_id
@@ -282,6 +291,11 @@ async function handlePaymentSucceeded(pi: Stripe.PaymentIntent) {
     }
   }
 
+  // Turn any gift-card reservation on this cart into a permanent spend. The
+  // balance already came off at checkout — this only closes the ledger row so
+  // the stale sweep can never hand the value back on a booking that was paid.
+  await settleGiftClaim(supabase, booking.id)
+
   // Consume the video-upload reward, if one was applied to this checkout.
   // This is the authoritative consume point: a 3DS/redirect payment never
   // runs the client-side consumeReward(), so without this a reward could be
@@ -333,6 +347,11 @@ async function handlePaymentFailed(pi: Stripe.PaymentIntent) {
   // late-delivered failure from an earlier attempt must not scrub either.
   // In-memory check plus a status predicate on the write for the race.
   if (!booking || booking.status === 'paid' || booking.status === 'refunded') return
+
+  // Give back any gift-card value this cart was holding. Without this the
+  // balance is debited forever for a payment that never happened — a declined
+  // card would silently destroy the whole applied amount.
+  await releaseGiftClaim(supabase, booking.id)
 
   const errMsg =
     pi.last_payment_error?.message ??
@@ -390,7 +409,7 @@ async function claimEmailChannel(
   // shares it. The paid-status guard is NON-NEGOTIABLE here: without it a
   // refund racing the handler lets a confirmation email escape for a
   // booking that is no longer paid.
-  return sharedClaimEmailChannel(supabase, bookingId, column, { requireStatus: 'paid' })
+  return sharedClaimEmailChannel(supabase, bookingId, column, 'bookings', { requireStatus: 'paid' })
 }
 
 async function releaseEmailChannel(
@@ -623,6 +642,29 @@ function humanizeId(id: string): string {
  * event finds zero rows and does nothing. A DB error throws so Stripe
  * retries, the same healing path the paid transition uses.
  */
+/**
+ * A gift card was paid for.
+ *
+ * This is the ONLY place a card becomes spendable. The checkout route creates
+ * it 'pending'; if the payment never completes, the row stays inert rather
+ * than becoming free credit.
+ *
+ * The status flip is conditional on still being 'pending', so Stripe's
+ * retries cannot re-activate a card that was later voided, and the delivery
+ * email is claimed the same way the booking emails are, so a redelivered
+ * webhook cannot email the recipient twice.
+ */
+async function handleGiftPaid(pi: Stripe.PaymentIntent) {
+  const giftId = typeof pi.metadata?.gift_card_id === 'string' ? pi.metadata.gift_card_id : null
+  if (!giftId) {
+    console.warn('[stripe-webhook] gift payment with no gift_card_id', pi.id)
+    return
+  }
+  // Shared with the buyer's own return-from-payment path, so a slow or
+  // missing webhook cannot leave a paid card undelivered. Idempotent.
+  await activateGiftCard(giftId, pi.id)
+}
+
 async function handleChargeRefunded(charge: Stripe.Charge) {
   if (!charge.refunded) return
   const piId = typeof charge.payment_intent === 'string' ? charge.payment_intent : charge.payment_intent?.id

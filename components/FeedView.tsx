@@ -850,7 +850,7 @@ export default function FeedView() {
               textTransform: 'uppercase', letterSpacing: '0.14em',
               color: 'var(--gold-warm)', marginBottom: 16, display: 'block',
             }}>
-              The MAPL Experience
+              The MAPL Tours Experience
             </span>
             <h2 style={{
               fontFamily: 'var(--font-dm-sans)', fontWeight: 800,
@@ -858,7 +858,7 @@ export default function FeedView() {
               letterSpacing: '-0.025em', lineHeight: 1.1,
               marginBottom: 14, color: '#fff',
             }}>
-              Two ways to travel with MAPL.
+              Two ways to travel with MAPL Tours.
             </h2>
             <p className="concierge-body" style={{
               fontSize: 15, color: '#cccccc',
@@ -1149,7 +1149,7 @@ export default function FeedView() {
       {/* ═══ ALL EXPERIENCES, 5 col, load more ═══ */}
       <AllExperiencesSection />
 
-      {/* ═══ THE MAPL DIFFERENCE ═══ */}
+      {/* ═══ THE MAPL Tours DIFFERENCE ═══ */}
       <section style={{ marginTop: 80, background: 'var(--bg-dark)', position: 'relative', overflow: 'hidden' }}>
         <div className="mapl-diff">
           {/* Left: Large image with gradient overlay */}
@@ -1195,9 +1195,9 @@ export default function FeedView() {
               {[
                 { icon: <Award size={18} />, title: 'Only the best experiences', desc: 'Every adventure is vetted. We reject 80% of submissions to keep quality uncompromising.' },
                 { icon: <Users size={18} />, title: 'Real local creators', desc: 'Not tour guides, your Jamaican cousin who knows everywhere worth going.' },
-                { icon: <Headphones size={18} />, title: '24/7 trip support', desc: 'Text us anytime. We handle logistics so you just show up and enjoy.' },
+                { icon: <Headphones size={18} />, title: '24/7 trip support', desc: 'Email us anytime. We handle logistics so you just show up and enjoy.' },
                 { icon: <ShieldCheck size={18} />, title: 'Flexible cancellation', desc: 'Change of plans? Cancel within 48 hours of booking for a refund, less a 20% administration charge. No stress.' },
-                { icon: <Star size={18} />, title: '90%+ satisfaction', desc: 'Our guests consistently rate their experiences 4.8 stars or higher.' },
+                { icon: <Star size={18} />, title: '98%+ satisfaction', desc: 'Our guests consistently rate their experiences 4.8 stars or higher.' },
                 { icon: <Heart size={18} />, title: 'Supports local economy', desc: 'Every dollar goes directly to Jamaican creators and their communities.' },
               ].map((item) => (
                 <div key={item.title}>

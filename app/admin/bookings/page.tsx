@@ -52,7 +52,7 @@ export default async function AdminBookingsPage() {
     return (
       <Shell>
         <h1 style={{ fontFamily: dm, fontWeight: 700, fontSize: 24, letterSpacing: '-0.02em' }}>Not authorised</h1>
-        <p style={{ marginTop: 10, color: soft }}>This dashboard is limited to MAPL admins.</p>
+        <p style={{ marginTop: 10, color: soft }}>This dashboard is limited to MAPL Tours admins.</p>
       </Shell>
     )
   }

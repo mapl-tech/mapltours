@@ -117,13 +117,13 @@ export default function DispatchConsole({ booking, stripeFee, driverEmailConfigu
 
   // Calendar links
   const arrivalCal = leg.arrivalAt ? gcalLink({
-    title: `MAPL pickup: ${name} (${ref})`,
+    title: `MAPL Tours pickup: ${name} (${ref})`,
     startIso: leg.arrivalAt, durationMin: 60,
     location: `${AIRPORT}, Montego Bay`,
     details: `Drop-off: ${leg.hotel}. Passengers: ${leg.passengers}. Customer: ${b.phone ?? ''}. Driver pay: ${money(m.driverPerLeg)}${m.isRoundTrip ? ' (leg 1 of 2)' : ''}.`,
   }) : null
   const departureCal = m.isRoundTrip && leg.departureAt ? gcalLink({
-    title: `MAPL departure pickup: ${name} (${ref})`,
+    title: `MAPL Tours departure pickup: ${name} (${ref})`,
     startIso: leg.departureAt, durationMin: 90,
     location: leg.hotel,
     details: `Drop at ${AIRPORT}. Hotel pickup ${jaTime(leg.departureAt)} Jamaica time (time requested by the guest)${leg.departureFlight ? `, flight ${leg.departureFlight}` : ''}. Driver pay: ${money(m.driverPerLeg)} (leg 2 of 2).`,

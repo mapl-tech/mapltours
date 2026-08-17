@@ -7,7 +7,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "test:unit": "vitest run"
+    "test:unit": "vitest run",
+    "verify:places": "node scripts/verify-google-places.mjs",
+    "sync:places": "node scripts/sync-google-places.mjs"
   },
   "dependencies": {
     "@react-email/components": "^1.0.12",
@@ -23,6 +25,7 @@
     "react": "^18",
     "react-dom": "^18",
     "resend": "^6.11.0",
+    "server-only": "^0.0.1",
     "stripe": "^22.0.1",
     "zustand": "^4.5.7"
   },

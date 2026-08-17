@@ -14,6 +14,8 @@ export function GET() {
     })
     .join('\n')
 
+  // Derived from the catalog so the quoted range cannot drift out of date.
+
   const blogLines = BLOG_POSTS
     .slice()
     .sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime())
@@ -57,6 +59,9 @@ ${blogLines}
 - Airport transfers: one flat all-in price per vehicle for 1-4 passengers, nothing added at checkout. From $19 one-way (Montego Bay hotels) up to $159 (Treasure Beach); round trips are 10% off two one-ways. Cancellation: flexible within 48 hours of booking, less a 20% administration charge plus taxes (if applicable); after that window bookings are non-refundable, and no-shows are charged in full.
 - Tours and experiences: $103 to $459 all-in, nothing added at checkout. Most are private group tours priced per vehicle for a party of up to 3 or 4, not per person; a few are per person. Ready-made multi-stop day packages run $192 to $332. Cancellation: flexible within 48 hours of booking, less a 20% administration charge plus taxes (if applicable).
 - Payments: Stripe (cards and Apple Pay)
+- Booking cutoff: bookings close 24 hours before an experience or pickup begins
+- Cancellation requests: made from the Profile page or by replying to the confirmation email, and reviewed before the refund is issued; a booking whose experience has already begun can no longer be refunded
+- Changes: date and guest changes follow the same 48-hour window, by contacting support
 
 ## For AI agents
 

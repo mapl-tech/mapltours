@@ -29,6 +29,8 @@ interface SearchParams {
   payment_intent?: string
   payment_intent_client_secret?: string
   redirect_status?: string
+  /** Set when a gift card covered the whole total, so no PaymentIntent exists. */
+  booking_id?: string
 }
 
 interface ConfirmedItem {
@@ -85,8 +87,17 @@ function emptyData(): ConfirmData {
 async function resolveConfirm(
   piId: string | undefined,
   redirectStatus: string | undefined,
+  bookingIdParam?: string,
 ): Promise<ConfirmData> {
   const empty = emptyData()
+
+  // Gift-covered booking: paid in full from a card balance, so Stripe never
+  // saw it and there is no PaymentIntent to read the status from. The booking
+  // row itself is the authority, and only a row already marked paid resolves.
+  if (!piId && bookingIdParam) {
+    return resolveConfirmFromBooking(bookingIdParam)
+  }
+
   if (!piId) return empty
 
   const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!)
@@ -189,6 +200,70 @@ async function resolveConfirm(
   }
 }
 
+/**
+ * Confirmation for a booking that had no card payment, because a gift card
+ * covered the whole total. Same privacy posture as the PaymentIntent path:
+ * first name and the experiences booked, never contact details.
+ *
+ * Only a row already marked 'paid' resolves, so a booking id that leaked from
+ * a half-finished checkout cannot render as a confirmed trip.
+ */
+async function resolveConfirmFromBooking(bookingId: string): Promise<ConfirmData> {
+  const empty = emptyData()
+  // Reject anything that isn't a uuid before it reaches Postgres, so a
+  // malformed param is a blank page rather than a query error.
+  if (!/^[0-9a-f-]{36}$/i.test(bookingId)) return empty
+
+  const supabase = createServiceClient()
+  const { data: booking } = await supabase
+    .from('bookings')
+    .select(
+      'id, first_name, subtotal, booking_fee, transport_cost, reward_discount, total_paid, currency, paid_at, status, booking_type, gift_card_amount',
+    )
+    .eq('id', bookingId)
+    .eq('booking_type', 'tour')
+    .eq('status', 'paid')
+    .maybeSingle()
+
+  if (!booking) return empty
+
+  const { data: items } = await supabase
+    .from('booking_items')
+    .select('title, destination, date, travelers, price_per_person')
+    .eq('booking_id', booking.id)
+    .eq('item_type', 'experience')
+
+  return {
+    status: 'succeeded',
+    bookingRef: humanizeId(booking.id),
+    paidAt: booking.paid_at ?? null,
+    customerName: (booking.first_name ?? '').trim() || null,
+    email: null,
+    phone: null,
+    country: null,
+    pickup: null,
+    dropoff: null,
+    specialRequests: null,
+    subtotal: booking.subtotal != null ? Number(booking.subtotal) : null,
+    bookingFee: booking.booking_fee != null ? Number(booking.booking_fee) : null,
+    transportCost: booking.transport_cost != null ? Number(booking.transport_cost) : null,
+    rewardDiscount: booking.reward_discount != null ? Number(booking.reward_discount) : null,
+    totalPaid: booking.total_paid != null ? Number(booking.total_paid) : null,
+    currency: (booking.currency ?? 'usd').toUpperCase(),
+    items: (items ?? []).map((i) => {
+      const pricePerPerson = Number(i.price_per_person)
+      return {
+        title: i.title,
+        destination: i.destination,
+        date: i.date,
+        travelers: i.travelers,
+        pricePerPerson,
+        lineTotal: pricePerPerson * i.travelers,
+      }
+    }),
+  }
+}
+
 function humanizeId(id: string): string {
   return 'MAPL-' + id.slice(0, 8).toUpperCase()
 }
@@ -225,7 +300,11 @@ export default async function ConfirmPage({
 }: {
   searchParams: SearchParams
 }) {
-  const data = await resolveConfirm(searchParams.payment_intent, searchParams.redirect_status)
+  const data = await resolveConfirm(
+    searchParams.payment_intent,
+    searchParams.redirect_status,
+    searchParams.booking_id,
+  )
 
   return (
     <div
@@ -518,9 +597,9 @@ function Success({ data }: { data: ConfirmData }) {
               lineHeight: 1.7,
             }}
           >
-            <li>· Your guide will reach out 24–48 hours before each experience with the meeting point.</li>
+            <li>· Your guide will reach out 24–48 hours before each experience to confirm your pickup time and driver.</li>
             <li>· Bring a valid ID, reef-safe sunscreen, and water.</li>
-            <li>· Flexible cancellation within 48 hours of booking, just reply to your confirmation email. Refunds are less a 20% administration charge plus taxes (if applicable).</li>
+            <li>· Flexible cancellation within 48 hours of booking. Request it from your Profile page, or reply to your confirmation email, and we will review it. Refunds are less a 20% administration charge plus taxes (if applicable).</li>
             <li>
               · Questions? Email{' '}
               <Link href="mailto:contact@mapltours.com" style={{ color: 'var(--text-primary)', textDecoration: 'underline' }}>

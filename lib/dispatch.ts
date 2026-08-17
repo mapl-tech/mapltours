@@ -207,7 +207,7 @@ export function msgDriverRequest(b: Bk, m: MoneyBlock): string {
   const leg = firstLeg(b)!
   const name = `${b.first_name ?? ''} ${b.last_name ?? ''}`.trim()
   const lines = [
-    'MAPL TOURS JAMAICA - NEW TRANSFER REQUEST',
+    'MAPL Tours Jamaica - NEW TRANSFER REQUEST',
     '',
     `Booking #: ${bookingRef(b.id)}`,
     `Customer: ${name}`,
@@ -286,7 +286,7 @@ export function msgDriverReminder(b: Bk, leg: 'arrival' | 'departure'): string {
   const isArr = leg === 'arrival'
   const at = isArr ? l.arrivalAt : l.departureAt
   return [
-    'MAPL TOURS JAMAICA - TRANSFER REMINDER',
+    'MAPL Tours Jamaica - TRANSFER REMINDER',
     '',
     `Booking #: ${bookingRef(b.id)}`,
     `Customer: ${`${b.first_name ?? ''} ${b.last_name ?? ''}`.trim()}`,

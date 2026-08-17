@@ -20,7 +20,7 @@ export default function SafetyPage() {
         <ValueCard title="Creator Vetting" desc="Every creator on our platform goes through a rigorous vetting process. We verify their identity, certifications, insurance, and track record. We personally visit and test every experience before it goes live." />
         <ValueCard title="Activity Safety Standards" desc="All experiences involving water sports, hiking, or physical activities follow established safety protocols. Creators are required to provide safety briefings, appropriate equipment, and maintain current first aid certifications." />
         <ValueCard title="Small Group Sizes" desc="We cap group sizes to ensure every traveler receives personal attention and safety oversight. Most experiences are limited to 12 guests to maintain an intimate, safe environment." />
-        <ValueCard title="24/7 Emergency Support" desc="Our support team is available around the clock. In case of any emergency during your experience, our local team can be reached immediately by phone." />
+        <ValueCard title="24/7 Emergency Support" desc="Our support team is available around the clock. In case of any emergency during your experience, our team can be reached immediately by email." />
         <ValueCard title="Insurance Coverage" desc="All creators on our platform are required to maintain comprehensive liability insurance. Additionally, we recommend all travelers carry personal travel insurance for their trip." />
         <ValueCard title="Community Feedback" desc="After every experience, travelers provide feedback and ratings. Creators who fall below our safety or quality standards are immediately reviewed and may be removed from the platform." />
       </Section>

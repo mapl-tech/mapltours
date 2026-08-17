@@ -55,7 +55,9 @@ function AccordionItem({ q, a, open, onToggle }: {
         </span>
       </button>
       <div style={{
-        maxHeight: open ? 300 : 0,
+        // Generous enough for the longest policy answer wrapped on a phone;
+        // a fixed number rather than 'none' so the open/close still animates.
+        maxHeight: open ? 640 : 0,
         overflow: 'hidden',
         transition: 'max-height 0.3s ease, opacity 0.25s ease',
         opacity: open ? 1 : 0,
@@ -304,7 +306,7 @@ export default function HelpCenter() {
                   fontSize: 15, color: 'var(--text-tertiary)',
                   fontFamily: 'var(--font-dm-sans)',
                 }}>
-                  Our Jamaica-based support team is available 24/7.
+                  Our support team is available 24/7.
                 </p>
               </div>
 
@@ -358,7 +360,7 @@ export default function HelpCenter() {
                     fontSize: 12, color: 'var(--text-tertiary)',
                     fontFamily: 'var(--font-dm-sans)', marginTop: 6,
                   }}>
-                    Response within 2 hours
+                    Response within 24 hours
                   </p>
                 </a>
               </div>

@@ -270,16 +270,17 @@ export default function BookingConfirmed(props: BookingConfirmedProps) {
         </Section>
         <Section style={s.cardBody}>
           <Text style={s.body}>
-            · Your guide will reach out 24–48 hours before each experience with
-            the meeting point.
+            · Your guide will reach out 24–48 hours before each experience to
+            confirm your pickup time and driver.
           </Text>
           <Text style={{ ...s.body, marginTop: 6 }}>
             · Bring a valid ID, reef-safe sunscreen, and water.
           </Text>
           <Text style={{ ...s.body, marginTop: 6 }}>
-            · Flexible cancellation within 48 hours of booking. Just reply to
-            this email. Refunds are less an administration charge equivalent to
-            20% of the total amount of your fees plus taxes (if applicable).
+            · Flexible cancellation within 48 hours of booking. Request it from
+            your Profile page, or reply to this email, and we will review it.
+            Refunds are less an administration charge equivalent to 20% of the
+            total amount of fees paid plus taxes (if applicable).
           </Text>
           <Text style={s.note}>
             Questions? Reply to this email any time. Our team on the ground

@@ -67,7 +67,7 @@ export default function UserTourVideos({ experienceId, experienceTitle }: Props)
           color: '#FFB300',
           marginBottom: 8,
         }}>
-          The MAPL Feed · Guest Clips
+          The MAPL Tours Feed · Guest Clips
         </p>
         <h2 style={{
           fontFamily: 'var(--font-dm-sans)',
@@ -168,7 +168,7 @@ function RewardProgressBand({ onStart }: { onStart: () => void }) {
     return (
       <div style={baseCard}>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <p style={kicker}>MAPL Reward</p>
+          <p style={kicker}>MAPL Tours Reward</p>
           <p style={title}>Upload 5 tour videos, get 5% off your next trip</p>
         </div>
         <button onClick={onStart} style={ghostCtaStyle}>Sign in</button>
@@ -180,7 +180,7 @@ function RewardProgressBand({ onStart }: { onStart: () => void }) {
     return (
       <div style={{ ...baseCard, opacity: 0.55 }}>
         <div style={{ flex: 1 }}>
-          <p style={kicker}>MAPL Reward</p>
+          <p style={kicker}>MAPL Tours Reward</p>
           <p style={title}>Loading your progress…</p>
         </div>
       </div>
@@ -196,7 +196,7 @@ function RewardProgressBand({ onStart }: { onStart: () => void }) {
       {/* Left: textual progress */}
       <div style={{ flex: 1, minWidth: 0 }}>
         <p style={kicker}>
-          {hasReward ? 'Reward unlocked' : 'MAPL Reward'}
+          {hasReward ? 'Reward unlocked' : 'MAPL Tours Reward'}
         </p>
         <p style={title}>
           {hasReward

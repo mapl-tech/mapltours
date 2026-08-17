@@ -741,13 +741,13 @@ function DetailsStep({ waiverAccepted, setWaiverAccepted, waiverError, formData,
                   <p style={{ marginBottom: 16 }}>MAPL Tours Jamaica is a product of MAPL Tech. We operate an online platform that connects travelers with curated, locally-created experiences across Jamaica. We act as an intermediary between you (the &ldquo;Guest&rdquo;) and independent local experience creators (the &ldquo;Creators&rdquo;). MAPL Tours Jamaica does not directly provide the experiences listed on our platform.</p>
 
                   <p style={{ fontWeight: 600, color: 'var(--text-primary)', marginBottom: 6 }}>2. Booking & Payment</p>
-                  <p style={{ marginBottom: 16 }}>All prices are listed in USD. A service fee is applied to all transactions to cover your tour guide, platform costs, and customer support. Payment is processed securely through Stripe. Your card will be charged at the time of booking. You will receive a confirmation email with your booking details, meeting point, and creator contact information within 24 hours.</p>
+                  <p style={{ marginBottom: 16 }}>All prices are listed in USD. A service fee is applied to all transactions to cover your tour guide, platform costs, and customer support. Payment is processed securely through Stripe. Your card will be charged at the time of booking. Bookings close 24 hours before an experience or pickup begins; anything inside that window must be arranged with us directly and is subject to availability. Private door-to-door transport is included in every booking and is itemized in your total; you provide the pickup and drop-off locations at checkout. You will receive a confirmation email with your booking details and pickup arrangements within 24 hours. MAPL Tours Jamaica is your single point of contact for everything to do with a booking; questions and changes go to contact@mapltours.com rather than to the Creator directly.</p>
 
-                  <p style={{ fontWeight: 600, color: 'var(--text-primary)', marginBottom: 6 }}>3. Cancellation & Refunds</p>
-                  <p style={{ marginBottom: 16 }}>Flexible cancellation is available within 48 hours of booking. If you cancel within that window, you will receive a refund of the amount paid, less an administration charge equivalent to 20% of the total amount of your fees plus taxes (if applicable). Cancellations made more than 48 hours after booking are non-refundable. If you do not arrive for your experience, the booking is charged in full. If a Creator cancels an experience, you will receive a full refund or the option to rebook. Weather-related cancellations will be rescheduled at no additional cost.</p>
+                  <p style={{ fontWeight: 600, color: 'var(--text-primary)', marginBottom: 6 }}>3. Cancellation, Changes & Refunds</p>
+                  <p style={{ marginBottom: 16 }}>Flexible cancellation is available within 48 hours of booking. Cancellations are requested from your Profile page and reviewed by us; your booking remains confirmed until the request is approved. If approved within that window, you will receive a refund of the amount paid, less an administration charge equivalent to 20% of the total amount of fees paid plus taxes (if applicable). Changes to your date or number of guests may be requested within the same 48 hours by contacting us, subject to availability. Cancellations and changes requested more than 48 hours after booking cannot be accepted and the booking is non-refundable. Once an experience or pickup has begun it has been delivered and is no longer refundable or changeable. If you do not arrive for your experience, the booking is charged in full. If a Creator cancels an experience, you will receive a full refund or the option to rebook. Where weather or safety conditions force a cancellation, the booking will be rescheduled at no additional cost, to another date or an experience of equivalent value; a full refund is given only where no reschedule is possible within your time in Jamaica.</p>
 
                   <p style={{ fontWeight: 600, color: 'var(--text-primary)', marginBottom: 6 }}>4. Guest Responsibilities</p>
-                  <p style={{ marginBottom: 16 }}>Guests must arrive at the designated meeting point on time. Guests must follow all safety instructions provided by the Creator or guide. Guests must be of legal drinking age to participate in experiences involving alcohol. Guests are responsible for their own travel insurance and personal belongings. Guests must treat Creators, local communities, and the natural environment with respect.</p>
+                  <p style={{ marginBottom: 16 }}>Guests must be ready at the agreed pickup location at the agreed time. Guests must follow all safety instructions provided by the Creator or guide. Guests must be of legal drinking age to participate in experiences involving alcohol. Guests are responsible for their own travel insurance and personal belongings. Guests must treat Creators, local communities, and the natural environment with respect.</p>
 
                   <p style={{ fontWeight: 600, color: 'var(--text-primary)', marginBottom: 6 }}>5. Creator Responsibilities</p>
                   <p style={{ marginBottom: 16 }}>All Creators on the MAPL Tours Jamaica platform are vetted and approved by our team. Creators are required to maintain valid insurance, certifications, and licenses where applicable. Creators are responsible for providing the experience as described on the platform. MAPL Tours Jamaica reserves the right to remove any Creator who fails to meet our quality standards.</p>
@@ -885,6 +885,13 @@ export default function CheckoutView() {
   const [step, setStep] = useState(1)
   const [confirmed] = useState(false)
   const [clientSecret, setClientSecret] = useState<string | null>(null)
+
+  // Gift card. The code is only ever *checked* here; the balance is taken
+  // server-side at /api/checkout, so nothing in this component can move money.
+  const [giftCodeInput, setGiftCodeInput] = useState('')
+  const [giftCard, setGiftCard] = useState<{ code: string; balanceCents: number } | null>(null)
+  const [giftChecking, setGiftChecking] = useState(false)
+  const [giftError, setGiftError] = useState<string | null>(null)
   const [waiverAccepted, setWaiverAccepted] = useState(false)
   const [waiverError, setWaiverError] = useState(false)
   const [formData, setFormData] = useState<Record<string, string>>({})
@@ -911,7 +918,10 @@ export default function CheckoutView() {
   const rewardDiscount = activeReward
     ? Math.round(baseTotal * (activeReward.percent / 100))
     : 0
-  const finalTotal = Math.max(0, baseTotal - rewardDiscount)
+  const afterReward = Math.max(0, baseTotal - rewardDiscount)
+  // A card worth more than the cart only spends what the cart costs.
+  const giftPreview = giftCard ? Math.min(giftCard.balanceCents / 100, afterReward) : 0
+  const finalTotal = Math.max(0, afterReward - giftPreview)
 
   // Create PaymentIntent when moving to step 3. The server inserts a pending
   // `bookings` row (plus line items), hashes the cart for idempotency, and
@@ -923,7 +933,11 @@ export default function CheckoutView() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          amount: finalTotal,
+          // The PRE-gift total. The server prices the cart with no knowledge
+          // of gift cards and compares against this; sending the post-gift
+          // figure fails assertAmountMatches and 400s before redemption is
+          // ever reached. The gift comes off server-side, after pricing.
+          amount: afterReward,
           items: items.map((i) => ({
             id: i.id,
             title: i.title,
@@ -952,6 +966,7 @@ export default function CheckoutView() {
             fee: fee(),
             rewardDiscount: rewardDiscount,
           },
+          giftCode: giftCard?.code,
           attribution: getStoredAttribution(),
         }),
       })
@@ -959,6 +974,19 @@ export default function CheckoutView() {
         .then((data) => {
           if (data.error) {
             setStripeError(data.error)
+            // The card was rejected server-side (spent elsewhere, expired).
+            // Drop it so the summary stops promising a discount we can't give.
+            if (data.giftCode) {
+              setGiftCard(null)
+              setGiftError(data.error)
+            }
+          } else if (data.fullyCoveredByGift) {
+            // Nothing left to charge, so there is no card payment step and no
+            // PaymentIntent. The server already marked the booking paid and
+            // sent the confirmation email; go straight to the same
+            // confirmation page the card flow lands on, keyed by booking id.
+            if (activeReward) void consumeReward(activeReward.id).catch(() => {})
+            window.location.href = `/checkout/confirm?booking_id=${data.bookingId}`
           } else {
             setClientSecret(data.clientSecret)
           }
@@ -967,6 +995,34 @@ export default function CheckoutView() {
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [step, clientSecret, items, grandTotal])
+
+  async function applyGiftCode() {
+    const code = giftCodeInput.trim()
+    if (!code) return
+    setGiftChecking(true)
+    setGiftError(null)
+    try {
+      const res = await fetch('/api/gifts/validate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code }),
+      })
+      const data = await res.json()
+      if (!data.valid) {
+        setGiftError(data.message ?? 'That code could not be used.')
+        return
+      }
+      setGiftCard({ code: data.code, balanceCents: data.balanceCents })
+      // Any PaymentIntent already created was sized without the gift, so it
+      // has to be rebuilt for the smaller charge.
+      setClientSecret(null)
+      setStripeError(null)
+    } catch {
+      setGiftError('Could not check that code. Please try again.')
+    } finally {
+      setGiftChecking(false)
+    }
+  }
 
   if (confirmed) return <ConfirmedView />
 
@@ -1162,7 +1218,7 @@ export default function CheckoutView() {
                       fontFamily: 'var(--font-dm-sans)', fontWeight: 700, fontSize: 13,
                       color: 'var(--text-primary)', letterSpacing: '-0.005em',
                     }}>
-                      {availableReward.percent}% MAPL reward
+                      {availableReward.percent}% MAPL Tours reward
                     </p>
                     <p style={{
                       fontFamily: 'var(--font-dm-sans)', fontSize: 12,
@@ -1198,6 +1254,69 @@ export default function CheckoutView() {
                   <span>Reward discount</span>
                   <span>−{formatPrice(rewardDiscount)}</span>
                 </div>
+              )}
+
+              {/* ── Gift card ── */}
+              {step === 3 && (
+                giftCard ? (
+                  <div style={{
+                    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                    marginTop: 10, fontSize: 13.5,
+                    fontFamily: 'var(--font-dm-sans)', fontWeight: 600,
+                    color: 'var(--emerald, #00A550)',
+                  }}>
+                    <span>
+                      Gift card {giftCard.code}
+                      <button
+                        onClick={() => { setGiftCard(null); setGiftCodeInput(''); setClientSecret(null); setStripeError(null) }}
+                        style={{
+                          marginLeft: 8, background: 'none', border: 'none', padding: 0,
+                          fontSize: 12, color: 'var(--text-tertiary)', cursor: 'pointer',
+                          textDecoration: 'underline', fontFamily: 'inherit',
+                        }}
+                      >
+                        remove
+                      </button>
+                    </span>
+                    <span>&minus;{formatPrice(giftPreview)}</span>
+                  </div>
+                ) : (
+                  <div style={{ marginTop: 12 }}>
+                    <div style={{ display: 'flex', gap: 8 }}>
+                      <input
+                        value={giftCodeInput}
+                        onChange={(e) => { setGiftCodeInput(e.target.value); setGiftError(null) }}
+                        placeholder="Gift card code"
+                        aria-label="Gift card code"
+                        style={{
+                          flex: 1, minWidth: 0, height: 38, borderRadius: 'var(--r-sm)',
+                          border: '1px solid var(--border-strong)', padding: '0 12px',
+                          fontSize: 13.5, fontFamily: 'var(--font-dm-sans)',
+                          color: 'var(--text-primary)', background: 'var(--bg)',
+                          outline: 'none', boxSizing: 'border-box',
+                          textTransform: 'uppercase',
+                        }}
+                      />
+                      <button
+                        onClick={applyGiftCode}
+                        disabled={giftChecking || giftCodeInput.trim().length < 4}
+                        className="btn-outline"
+                        style={{
+                          height: 38, padding: '0 16px', fontSize: 13, fontWeight: 600,
+                          borderRadius: 'var(--r-sm)', whiteSpace: 'nowrap',
+                          opacity: giftChecking || giftCodeInput.trim().length < 4 ? 0.5 : 1,
+                        }}
+                      >
+                        {giftChecking ? 'Checking…' : 'Apply'}
+                      </button>
+                    </div>
+                    {giftError && (
+                      <p style={{ marginTop: 6, fontSize: 12.5, color: '#c00', fontFamily: 'var(--font-dm-sans)' }}>
+                        {giftError}
+                      </p>
+                    )}
+                  </div>
+                )
               )}
 
               <div style={{ display: 'flex', justifyContent: 'space-between', fontFamily: 'var(--font-dm-sans)', fontWeight: 700, fontSize: 20, marginTop: 10, paddingTop: 12, borderTop: '1px solid var(--border)' }}>

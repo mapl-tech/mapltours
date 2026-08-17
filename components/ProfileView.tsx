@@ -897,14 +897,14 @@ export default function ProfileView() {
 
             <div style={{ height: 1, background: 'var(--border)', marginBottom: 48 }} />
 
-            {/* ── MAPL Rewards (tour-video uploads) ── */}
+            {/* ── MAPL Tours Rewards (tour-video uploads) ── */}
             <section style={{ marginBottom: 48 }}>
               <h2 style={{
                 fontFamily: 'var(--font-dm-sans)', fontWeight: 800, fontSize: 22,
                 marginBottom: 20, color: 'var(--text-primary)',
                 letterSpacing: '-0.02em',
               }}>
-                MAPL Rewards
+                MAPL Tours Rewards
               </h2>
               <MaplRewardsCard />
             </section>
@@ -994,7 +994,7 @@ export default function ProfileView() {
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   MAPL Rewards card, mirrors the band shown on the experience page but in
+   MAPL Tours Rewards card, mirrors the band shown on the experience page but in
    a richer profile-context variant (shows history of unlocked / used codes).
    ═══════════════════════════════════════════════════════════════════════════ */
 function MaplRewardsCard() {

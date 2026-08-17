@@ -74,7 +74,7 @@ export const metadata: Metadata = {
     'night diving Jamaica',
   ],
   authors: [{ name: 'MAPL Tours Jamaica', url: siteUrl }],
-  creator: 'MAPL Tech',
+  creator: 'MAPL Tours Jamaica',
   publisher: 'MAPL Tours Jamaica',
   openGraph: {
     type: 'website',
@@ -217,7 +217,7 @@ export default function RootLayout({
       <head>
         <JsonLd />
         <meta name="google-site-verification" content="NfZAf4Mh4YPVRIeaJT6pHB57jI10V5fTXOgX2WT4k3U" />
-        {/* Geo targeting: MAPL operates in Jamaica, anchored on Montego Bay /
+        {/* Geo targeting: MAPL Tours operates in Jamaica, anchored on Montego Bay /
             Sangster (MBJ), where every airport transfer begins. */}
         <meta name="geo.region" content="JM" />
         <meta name="geo.placename" content="Montego Bay, Jamaica" />

@@ -157,15 +157,15 @@ function FlightRow({ flightRaw, dateIso, mbjRole }: {
               {isDeparture && lead != null && (
                 <span style={{ display: 'block', fontSize: 13, color: warn ? red : faint, marginTop: 3 }}>
                   {lead <= 0
-                    ? `The ${booked} pickup is at or after the flight time. Contact MAPL before driving.`
+                    ? `The ${booked} pickup is at or after the flight time. Contact MAPL Tours before driving.`
                     : lead < MIN_PICKUP_LEAD_MIN
-                      ? `Pickup at ${booked} leaves only ${leadLabel} before the flight. Confirm with MAPL.`
+                      ? `Pickup at ${booked} leaves only ${leadLabel} before the flight. Confirm with MAPL Tours.`
                       : `Pickup at ${booked} leaves ${leadLabel} before the flight.`}
                 </span>
               )}
               {!isDeparture && warn && (
                 <span style={{ display: 'block', fontSize: 13, color: red, marginTop: 3 }}>
-                  Differs from the booked {booked}. Confirm with MAPL before driving.
+                  Differs from the booked {booked}. Confirm with MAPL Tours before driving.
                 </span>
               )}
             </div>
@@ -233,13 +233,13 @@ function TripCard({ t, open, onToggle }: { t: DriverTrip; open: boolean; onToggl
   const ref = useScrollOnOpen(open)
   const isRT = t.tripType === 'round_trip'
   const arrCal = t.arrivalAt ? gcalLink({
-    title: `MAPL pickup: ${t.guestName} (${t.ref})`,
+    title: `MAPL Tours pickup: ${t.guestName} (${t.ref})`,
     startIso: t.arrivalAt, durationMin: 60,
     location: `${t.airport}, Montego Bay`,
     details: `Drop-off: ${t.hotel}. Passengers: ${t.passengers}. Guest: ${t.guestPhone ?? ''}. Your pay: ${money(t.payoutLegs[0].amount)}${isRT ? ' (leg 1 of 2)' : ''}.`,
   }) : null
   const depCal = isRT && t.departureAt ? gcalLink({
-    title: `MAPL departure pickup: ${t.guestName} (${t.ref})`,
+    title: `MAPL Tours departure pickup: ${t.guestName} (${t.ref})`,
     startIso: t.departureAt, durationMin: 90,
     location: t.hotel,
     details: `Drop at ${t.airport}. Hotel pickup ${jaTime(t.departureAt)} Jamaica time (time the guest requested)${t.departureFlight ? `, flight ${t.departureFlight}` : ''}. Your pay: ${money(t.payoutLegs[1]?.amount ?? 0)} (leg 2 of 2).`,

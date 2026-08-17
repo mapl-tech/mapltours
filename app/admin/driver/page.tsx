@@ -44,8 +44,8 @@ export default async function AdminDriverPreviewPage() {
     return (
       <Shell>
         <h1 style={{ fontWeight: 700, fontSize: 22 }}>Not authorised</h1>
-        <p style={{ marginTop: 8, color: soft }}>This page is limited to MAPL admins.</p>
-        <p style={{ marginTop: 6, color: soft }}>Driving for MAPL? Your portal is at <Link href="/driver" style={{ color: ink, fontWeight: 600 }}>mapltours.com/driver</Link>.</p>
+        <p style={{ marginTop: 8, color: soft }}>This page is limited to MAPL Tours admins.</p>
+        <p style={{ marginTop: 6, color: soft }}>Driving for MAPL Tours? Your portal is at <Link href="/driver" style={{ color: ink, fontWeight: 600 }}>mapltours.com/driver</Link>.</p>
       </Shell>
     )
   }

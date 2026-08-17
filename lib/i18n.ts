@@ -60,7 +60,7 @@ const T: Record<string, Record<string, string>> = {
     'Real local creators': 'Creadores locales reales',
     '24/7 trip support': 'Soporte de viaje 24/7',
     'Flexible cancellation': 'Cancelacion flexible',
-    '90%+ satisfaction': '90%+ satisfaccion',
+    '98%+ satisfaction': '98%+ satisfaccion',
     'Supports local economy': 'Apoya la economia local',
     'Contact Us': 'Contactanos', 'Get in touch': 'Ponerse en contacto',
     'more': 'mas',
@@ -91,7 +91,7 @@ const T: Record<string, Record<string, string>> = {
     // Checkout - Confirmed
     'Your Jamaican adventure is booked.': 'Tu aventura jamaicana esta reservada.',
     // Concierge section
-    'The MAPL Experience': 'La experiencia MAPL',
+    'The MAPL Tours Experience': 'La experiencia MAPL Tours',
     'Build your perfect day in Jamaica.': 'Construye tu dia perfecto en Jamaica.',
     'Pick the experiences you love. We arrange your private transport, guide, and full itinerary from door to door.': 'Elige las experiencias que te gusten. Organizamos tu transporte privado, guia e itinerario completo de puerta a puerta.',
     'Choose what excites you': 'Elige lo que te emociona',

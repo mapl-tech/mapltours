@@ -9,6 +9,7 @@ import ScrollReveal from './ScrollReveal'
 import { AuthProvider } from '@/lib/supabase/auth-context'
 import { useCartStore } from '@/lib/cart'
 import { useI18nStore } from '@/lib/i18n'
+import { usePlacesCart } from '@/lib/places-cart'
 import { captureAttribution } from '@/lib/attribution'
 
 export default function LayoutShell({ children }: { children: React.ReactNode }) {
@@ -28,6 +29,7 @@ export default function LayoutShell({ children }: { children: React.ReactNode })
   useEffect(() => {
     useCartStore.persist.rehydrate()
     useI18nStore.persist.rehydrate()
+    usePlacesCart.persist.rehydrate()
     // Record where this visit came from (referrer/UTM); never throws.
     captureAttribution()
   }, [])

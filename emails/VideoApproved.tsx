@@ -37,8 +37,8 @@ export default function VideoApproved({
       : `${remainingForReward} more approved clips unlock 5% off your next trip.`
 
   return (
-    <MaplLayout preheader={`Your clip is live on MAPL.${experienceTitle ? ` ${experienceTitle}.` : ''}`}>
-      <Text style={s.kicker}>Live on MAPL</Text>
+    <MaplLayout preheader={`Your clip is live on MAPL Tours.${experienceTitle ? ` ${experienceTitle}.` : ''}`}>
+      <Text style={s.kicker}>Live on MAPL Tours</Text>
       <Heading style={s.heading}>
         Your clip is on the wall, {name}.
       </Heading>
@@ -75,7 +75,7 @@ export default function VideoApproved({
       </div>
 
       <Text style={s.footnote}>
-        Keep sharing, the best MAPL moments always come from travellers in the thick of it.
+        Keep sharing, the best MAPL Tours moments always come from travellers in the thick of it.
       </Text>
     </MaplLayout>
   )

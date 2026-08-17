@@ -82,6 +82,7 @@ export default function Footer() {
               { label: 'About', href: '/about' },
               { label: 'Contact us', href: '/contact' },
               { label: 'Careers', href: '/careers' },
+              { label: 'Partner with us', href: '/partner' },
               { label: 'Press', href: '/press' },
               { label: 'Blog', href: '/blog' },
             ]},
@@ -141,7 +142,7 @@ export default function Footer() {
           fontSize: 12, color: 'var(--text-on-dark-3)',
           fontFamily: 'var(--font-dm-sans)', flexWrap: 'wrap', gap: 16,
         }}>
-          <p>© 2026 MAPL TOURS JAMAICA. {t('All rights reserved.')}</p>
+          <p>© 2026 MAPL Tours Jamaica. {t('All rights reserved.')}</p>
           <div className="footer-legal" style={{ display: 'flex', gap: 20, flexWrap: 'wrap' }}>
             {[
               { label: 'Privacy Policy', href: '/privacy' },

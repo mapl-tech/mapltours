@@ -51,7 +51,7 @@ export const TRANSFER_FAQS: TransferFaq[] = [
   },
   {
     q: 'How do I find my driver at MBJ?',
-    a: 'After you clear immigration and customs, walk through the arrivals doors. Your driver will be holding a MAPL TOURS JAMAICA sign with your name. If you do not see them within ten minutes, contact us using the details in your confirmation email.',
+    a: 'After you clear immigration and customs, walk through the arrivals doors. Your driver will be holding a MAPL Tours Jamaica sign with your name. If you do not see them within ten minutes, contact us using the details in your confirmation email.',
   },
   {
     q: 'Can I pay in cash?',
@@ -63,6 +63,6 @@ export const TRANSFER_FAQS: TransferFaq[] = [
   },
   {
     q: 'What is your cancellation policy?',
-    a: 'Cancel within 48 hours of booking for a refund, no questions asked. Refunds are subject to an administration charge equivalent to 20% of the total amount of your fees plus taxes (if applicable), which is deducted from every refund. After that 48-hour window, bookings are non-refundable, and no-shows are charged in full.',
+    a: 'Flexible cancellation within 48 hours of booking. Request it from your Profile page or by replying to your confirmation email, and we review it before refunding, with a refund of the amount paid less an administration charge equivalent to 20% of the total amount of fees paid plus taxes (if applicable). Changes to your pickup run on the same 48-hour window, just contact us. After that window the fare is non-refundable, your driver is already booked and is turning down other trips. No-shows are charged in full.',
   },
 ]

@@ -27,12 +27,10 @@ export default function CareersPage() {
       <Section title="Why Work With Us">
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginTop: 8 }}>
           {[
-            'Work from anywhere in Jamaica or remotely',
-            'Unlimited access to all MAPL Tours experiences',
-            'Competitive salary with equity options',
-            'Annual team retreat across Jamaica',
-            'Health and wellness benefits',
-            'Professional development budget',
+            'Flexible hours, from anywhere in Jamaica or remotely',
+            'A small team where your work is visible and yours to own',
+            'A fun, inclusive atmosphere where every voice counts',
+            'A seat on our tours when we have space',
           ].map((perk) => (
             <div key={perk} style={{
               padding: '16px 18px', borderRadius: 'var(--r-lg)',
@@ -45,7 +43,7 @@ export default function CareersPage() {
       </Section>
 
       <Section title="How to Apply">
-        <p>Send your resume and a note about why you are excited about MAPL Tours to <span style={{ color: 'var(--accent)', fontWeight: 600 }}>contact@mapltours.com</span>. We read every application and respond within 5 business days.</p>
+        <p>Send your resume and a note about why you are excited about MAPL Tours to <span style={{ color: 'var(--accent)', fontWeight: 600 }}>contact@mapltours.com</span>. We review every application and will be in touch with applicants we would like to take further.</p>
       </Section>
     </EditorialPage>
   )

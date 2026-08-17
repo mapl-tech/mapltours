@@ -251,10 +251,10 @@ export default function TransferConfirmed(props: TransferConfirmedProps) {
             </Link>
           </Text>
           <Text style={s.note}>
-            Flexible cancellation within 48 hours of booking. Just reply to this
-            email. Refunds are less an administration charge equivalent to 20%
-            of the total amount of your fees plus taxes (if applicable). Safe
-            travels.
+            Flexible cancellation within 48 hours of booking. Request it from
+            your Profile page, or reply to this email, and we will review it.
+            Refunds are less an administration charge equivalent to 20% of the
+            total amount of fees paid plus taxes (if applicable). Safe travels.
           </Text>
         </Section>
       </Section>

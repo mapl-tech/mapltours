@@ -13,8 +13,8 @@ export default function PressPage() {
   return (
     <EditorialPage slug="press" label="Media" title="Press & Media">
       <Section title="About MAPL Tours Jamaica">
-        <p>MAPL Tours Jamaica is a cultural travel platform connecting travelers with authentic Jamaican experiences. Founded as a product of MAPL Tech, we curate experiences created and led by local Jamaicans - from cliff diving in Negril to reggae studio sessions in Kingston.</p>
-        <p style={{ marginTop: 16 }}>Our platform features 19+ handpicked experiences across 8 parishes, with a 4.9-star average rating from thousands of travelers.</p>
+        <p>MAPL Tours Jamaica is a cultural travel platform connecting travelers with authentic Jamaican experiences. We curate experiences created and led by local Jamaicans - from cliff diving in Negril to reggae studio sessions in Kingston - and get travelers to them by private transport.</p>
+        <p style={{ marginTop: 16 }}>The platform covers 19 guided experiences and 44 restaurants and heritage sites across 10 parishes, alongside flat-rate airport transfers from Sangster International.</p>
       </Section>
 
       <Section title="In the News">
@@ -26,10 +26,9 @@ export default function PressPage() {
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginTop: 8 }}>
           {[
             { label: 'Founded', value: '2024' },
-            { label: 'Headquarters', value: 'Kingston, Jamaica' },
-            { label: 'Parent Company', value: 'MAPL Tech' },
-            { label: 'Experiences', value: '19+' },
-            { label: 'Parishes Covered', value: '8' },
+            { label: 'Guided experiences', value: '19' },
+            { label: 'Restaurants & sites', value: '44' },
+            { label: 'Parishes covered', value: '10' },
             { label: 'Average Rating', value: '4.9/5.0' },
           ].map((item) => (
             <div key={item.label} style={{

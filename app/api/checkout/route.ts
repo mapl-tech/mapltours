@@ -7,7 +7,11 @@ import { priceTourCart, assertAmountMatches, PricingError } from '@/lib/checkout
 import { isExperienceDateBookable, LEAD_TIME_MESSAGE } from '@/lib/booking-window'
 import { assertCheckoutSchema, SchemaNotReadyError } from '@/lib/checkout-schema'
 import { rateLimit, getIp } from '@/lib/rate-limit'
+import { DEFAULT_DRIVER } from '@/lib/dispatch'
 import { sanitizeAttribution } from '@/lib/attribution'
+import { claimGiftCard, releaseGiftClaim } from '@/lib/gift-redemption'
+import { normalizeGiftCode } from '@/lib/gift-cards'
+import { maybeSendTravelerConfirmation, maybeSendOperatorAlert } from '@/lib/email/booking'
 
 /**
  * Tour checkout, creates (or atomically reuses) a pending booking row
@@ -44,6 +48,8 @@ interface CartItemIn {
 interface CheckoutBody {
   amount: number
   items: CartItemIn[]
+  /** Gift card code the traveler typed at checkout, if any. */
+  giftCode?: string
   attribution?: unknown
   customer?: {
     email?: string
@@ -74,6 +80,10 @@ function hashCart(body: CheckoutBody, serverTotalCents: number): string {
       .sort(),
     cents: serverTotalCents,
     email: (body.customer?.email ?? '').toLowerCase().trim(),
+    // A cart paid partly by gift card is a different charge from the same
+    // cart paid in full, and must not collide with it on the pending-booking
+    // index or reuse its PaymentIntent.
+    gift: normalizeGiftCode(body.giftCode ?? '') ?? '',
   })
   return crypto.createHash('sha256').update(payload).digest('hex').slice(0, 32)
 }
@@ -280,21 +290,146 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // 5. Reuse an in-flight PaymentIntent if there is one and it's reusable.
-    const { data: bookingRow } = await supabase
+    // 4b. Gift card. The balance comes off HERE, before the PaymentIntent is
+    //     sized, because the charge is the total minus the gift — a card that
+    //     lowered a charge without being debited first is free money.
+    //
+    //     A reused pending row may already hold a claim from an earlier
+    //     attempt at the same cart; that claim is reused rather than taken
+    //     again, so a double-submit debits the card once.
+    const { data: giftState } = await supabase
       .from('bookings')
-      .select('stripe_payment_id')
+      .select('gift_card_id, gift_card_amount, stripe_payment_id')
       .eq('id', bookingId!)
       .maybeSingle()
+
+    let giftAmountCents = 0
+    let giftCardId: string | null = (giftState?.gift_card_id as string | null) ?? null
+
+    if (giftCardId) {
+      // Existing claim on this cart. Trust the ledger, not the request.
+      const { data: live } = await supabase
+        .from('gift_card_redemptions')
+        .select('amount')
+        .eq('booking_id', bookingId!)
+        .in('status', ['reserved', 'spent'])
+        .maybeSingle()
+      giftAmountCents = live ? Math.round(Number(live.amount) * 100) : 0
+      if (!giftAmountCents) giftCardId = null
+    } else if (body.giftCode) {
+      const claimed = await claimGiftCard(supabase, body.giftCode, amountInCents, bookingId!)
+      if (!claimed.ok) {
+        // Not a server error — the traveler mistyped or the card is spent.
+        // Fail the checkout rather than silently charging them full price.
+        return NextResponse.json({ error: claimed.message, giftCode: true, requestId: reqId }, { status: 400 })
+      }
+      giftAmountCents = claimed.claim.amountCents
+      giftCardId = claimed.claim.giftCardId
+      const { error: stampErr } = await supabase
+        .from('bookings')
+        .update({ gift_card_id: giftCardId, gift_card_amount: claimed.claim.amount })
+        .eq('id', bookingId!)
+        .select('id')
+        .single()
+      if (stampErr) {
+        // The booking can't record what the card paid, so nothing downstream
+        // (confirmation, refund, reconciliation) would know. Give it back.
+        console.error('[checkout]', reqId, 'gift stamp failed', stampErr)
+        await releaseGiftClaim(supabase, bookingId!)
+        return NextResponse.json(
+          { error: 'Could not apply that gift card. Please try again.', requestId: reqId },
+          { status: 500 },
+        )
+      }
+    }
+
+    const chargeCents = Math.max(0, amountInCents - giftAmountCents)
+
+    // 4c. Fully covered by the gift card: there is no card payment to take,
+    //     so no PaymentIntent exists and no Stripe webhook will ever fire for
+    //     this booking. Settle it here instead, using the same confirmation
+    //     senders the webhook uses.
+    if (giftAmountCents > 0 && chargeCents === 0) {
+      const { error: paidErr } = await supabase
+        .from('bookings')
+        .update({ status: 'paid', paid_at: new Date().toISOString() })
+        .eq('id', bookingId!)
+        .eq('status', 'pending')
+        .select('id')
+        .maybeSingle()
+      if (paidErr) {
+        console.error('[checkout]', reqId, 'gift-covered mark-paid failed', paidErr)
+        await releaseGiftClaim(supabase, bookingId!)
+        return NextResponse.json(
+          { error: 'Could not complete your booking. Please try again.', requestId: reqId },
+          { status: 500 },
+        )
+      }
+
+      await supabase
+        .from('gift_card_redemptions')
+        .update({ status: 'spent', settled_at: new Date().toISOString() })
+        .eq('booking_id', bookingId!)
+        .eq('status', 'reserved')
+
+      // Consume the reward here too — the webhook normally does this.
+      if (rewardId && pricing.rewardDiscount > 0) {
+        await supabase
+          .from('user_rewards')
+          .update({ status: 'used', used_on_booking_id: bookingId, used_at: new Date().toISOString() })
+          .eq('id', rewardId)
+          .eq('status', 'available')
+      }
+
+      const { data: paidBooking } = await supabase
+        .from('bookings').select('*').eq('id', bookingId!).maybeSingle()
+      const { data: paidItems } = await supabase
+        .from('booking_items')
+        .select('experience_id, title, destination, travelers, date, price_per_person, item_type, airport, hotel, zone, trip_type, arrival_flight, arrival_at, departure_flight, departure_at, passengers')
+        .eq('booking_id', bookingId!)
+
+      // A gift-covered booking never reaches the webhook, so the default-driver
+      // assignment that lives there would never run for it. Mirror it here, with
+      // the same null-and-paid predicates, or a transfer paid entirely by gift
+      // card reaches dispatch with no driver.
+      if (paidBooking && paidBooking.booking_type === 'transfer' && !paidBooking.driver_name && !paidBooking.driver_phone) {
+        const { error: drvErr } = await supabase
+          .from('bookings')
+          .update(DEFAULT_DRIVER)
+          .eq('id', bookingId!)
+          .is('driver_name', null)
+          .is('driver_phone', null)
+          .eq('status', 'paid')
+        if (drvErr) console.warn('[checkout]', reqId, 'default driver assign failed', drvErr.message)
+        else Object.assign(paidBooking, DEFAULT_DRIVER)
+      }
+
+      if (paidBooking) {
+        // Best-effort: the booking is already paid for, so an email failure
+        // must not fail the request and send them back to pay again.
+        await maybeSendTravelerConfirmation(supabase, paidBooking as never, (paidItems ?? []) as never)
+        await maybeSendOperatorAlert(supabase, paidBooking as never, (paidItems ?? []) as never)
+      }
+
+      return NextResponse.json({
+        fullyCoveredByGift: true,
+        bookingId,
+        giftAmount: giftAmountCents / 100,
+        requestId: reqId,
+      })
+    }
+
+    // 5. Reuse an in-flight PaymentIntent if there is one and it's reusable.
+    const bookingRow = giftState
 
     if (bookingRow?.stripe_payment_id) {
       try {
         const existingPi = await stripe.paymentIntents.retrieve(bookingRow.stripe_payment_id)
         if (PI_REUSABLE_STATUSES.includes(existingPi.status)) {
           // If the amount changed (cart edited mid-session), update the PI in place.
-          if (existingPi.amount !== amountInCents) {
+          if (existingPi.amount !== chargeCents) {
             try {
-              await stripe.paymentIntents.update(existingPi.id, { amount: amountInCents })
+              await stripe.paymentIntents.update(existingPi.id, { amount: chargeCents })
             } catch (err) {
               console.warn('[checkout]', reqId, 'PI update failed, falling through to new PI', err)
             }
@@ -314,13 +449,14 @@ export async function POST(request: NextRequest) {
     //    so a double-clicked identical request will receive the same PI.
     const paymentIntent = await stripe.paymentIntents.create(
       {
-        amount: amountInCents,
+        amount: chargeCents,
         currency: 'usd',
         automatic_payment_methods: { enabled: true },
         metadata: {
           booking_id: bookingId!,
           booking_type: 'tour',
           item_count: String(pricing.lines.length),
+          ...(giftAmountCents > 0 ? { gift_card_amount: String(giftAmountCents / 100) } : {}),
           // The webhook flips this reward to 'used' on payment success
           // (idempotent), so a 3DS/redirect flow that never runs the
           // client-side consume still can't double-spend the reward.
@@ -355,6 +491,7 @@ export async function POST(request: NextRequest) {
       } catch {
         /* swallow, best-effort cleanup */
       }
+      await releaseGiftClaim(supabase, bookingId!)
       return NextResponse.json(
         { error: 'Could not attach payment intent', requestId: reqId },
         { status: 500 },
@@ -364,6 +501,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       clientSecret: paymentIntent.client_secret,
       bookingId,
+      giftAmount: giftAmountCents / 100,
+      amountDue: chargeCents / 100,
       requestId: reqId,
     })
   } catch (err) {

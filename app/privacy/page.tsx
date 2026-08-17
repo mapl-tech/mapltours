@@ -35,6 +35,7 @@ export default function PrivacyPage() {
           <li><strong>Payment information</strong>, handled directly by Stripe. We never see or store your full card number; we only receive a token plus the last four digits and card brand for receipt display.</li>
           <li><strong>Usage data</strong>, pages you view, experiences you save, and basic device information (browser, OS, screen size) collected through analytics cookies.</li>
           <li><strong>Communication</strong>, anything you send us through the contact form, email, or support chat.</li>
+          <li><strong>Photographs and video</strong>, images and recordings captured during experiences and transfers, which may include you. See the photography section of our <a href="/terms" style={{ color: 'var(--text-primary)', textDecoration: 'underline' }}>Terms of Service</a> for how these are used.</li>
         </ul>
       </Section>
 
@@ -45,6 +46,7 @@ export default function PrivacyPage() {
           <li>Provide customer support and respond to your questions.</li>
           <li>Improve the platform, understand which experiences travelers love, fix bugs, and tune the user experience.</li>
           <li>Detect, prevent, and address fraud or abuse on the platform.</li>
+          <li>Promote MAPL Tours Jamaica, including using photographs, video and reviews from experiences in our marketing.</li>
           <li>Comply with applicable law, including tax and accounting obligations.</li>
         </ul>
       </Section>

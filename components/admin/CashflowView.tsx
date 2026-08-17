@@ -10,6 +10,10 @@ export interface CashRow {
   name: string
   type: 'tour' | 'transfer'
   gross: number
+  /** Share of `gross` paid with a gift card, i.e. money collected earlier. */
+  giftFunded: number
+  /** What Stripe actually settled for this booking: gross minus giftFunded. */
+  cashCollected: number
   stripeFeeUsd: number | null
   supplierPayout: number
   remitlyEstUsd: number

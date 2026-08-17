@@ -30,11 +30,11 @@ export const HELP_CATEGORIES: HelpCategory[] = [
       },
       {
         q: 'How far in advance should I book?',
-        a: 'We recommend booking at least 48 hours in advance to guarantee availability. Popular experiences like the Bob Marley Nine Mile Pilgrimage and Rick\'s Cafe Cliff Diving can sell out a week ahead during peak season (December-March).',
+        a: 'Bookings close 24 hours before an experience or pickup begins, and experience days are counted from midnight in Jamaica, so in practice you need one to two days\' notice. Book earlier where you can: popular experiences like the Bob Marley Heritage Pilgrimage and Rick\'s Cafe Cliff Diving can sell out a week ahead during peak season (December-March).',
       },
       {
         q: 'Can I modify my booking after checkout?',
-        a: 'Yes. Email contact@mapltours.com with your booking reference and what you need changed, the date, the number of guests, your hotel, and we will sort it out. Your upcoming bookings are listed on your Profile page.',
+        a: 'Changes run on the same window as cancellations: within 48 hours of booking, and before the experience has started. Contact our support team with the date or guest count you need and we\'ll sort it out with your creator. Once that 48-hour window closes the booking is locked in, the same point at which it stops being refundable.',
       },
     ],
   },
@@ -44,15 +44,15 @@ export const HELP_CATEGORIES: HelpCategory[] = [
     faqs: [
       {
         q: 'Can I cancel my booking?',
-        a: 'Yes. Cancel within 48 hours of booking for a refund, no questions asked. One thing to note: refunds are subject to an administration charge equivalent to 20% of the total amount of your fees plus taxes (if applicable), which is deducted from every refund. After that 48-hour window, bookings are non-refundable, and no-shows are charged in full.',
+        a: 'Yes, within 48 hours of booking. Request the cancellation from your Profile page, where we quote you the exact refund before you confirm, and our team reviews it. Your booking stays confirmed until we approve the request. Refunds are the amount you paid less an administration charge equivalent to 20% of the total amount of fees paid plus taxes (if applicable). After the 48-hour window bookings are non-refundable, a booking whose experience has already started can no longer be refunded, and no-shows are charged in full.',
       },
       {
         q: 'What if the creator cancels my experience?',
-        a: 'If we cancel, you receive your money back in full, with no administration charge, or you can rebook at no additional cost. The 20% administration charge applies only when you cancel; it is never applied to a cancellation on our side. We\'ll notify you immediately and help arrange an alternative experience if you prefer.',
+        a: 'If a creator cancels, you receive a full refund with no administration charge, or you can choose to rebook at no additional cost. We\'ll notify you as soon as we know and help arrange an alternative experience if you prefer.',
       },
       {
         q: 'How long do refunds take to process?',
-        a: 'Refunds are initiated within 24 hours and typically appear in your account within 5-10 business days, depending on your bank or card issuer.',
+        a: 'Once your request is approved we send the refund to Stripe straight away, usually within 24 hours of the request. It then typically appears in your account within 5-10 business days, depending on your bank or card issuer.',
       },
     ],
   },
@@ -62,19 +62,19 @@ export const HELP_CATEGORIES: HelpCategory[] = [
     faqs: [
       {
         q: 'What should I bring?',
-        a: 'Each experience has specific recommendations in its description. Generally: comfortable shoes, sunscreen, a water bottle, and a sense of adventure. Your creator will send detailed prep instructions 24 hours before your experience.',
+        a: 'Each experience has specific recommendations in its description. Generally: comfortable shoes, sunscreen, a water bottle, and a sense of adventure. We\'ll send detailed prep instructions 24 hours before your experience, and anything you\'re unsure about goes to contact@mapltours.com.',
       },
       {
         q: 'Is transportation included?',
-        a: 'Some experiences include hotel pickup, check the experience details for specifics. When transportation isn\'t included, your creator will provide clear meeting point instructions with GPS coordinates and directions.',
+        a: 'Always. Every trip comes with private door-to-door transport: we collect you from your hotel, villa, or the airport, drive you between every stop on your itinerary, and bring you back. You give us the pickup and drop-off at checkout, and the transport is priced into your total and itemized there, so there is no rental car, no taxis between stops, and nothing to arrange on the day.',
       },
       {
         q: 'What happens if it rains?',
-        a: 'Jamaica gets brief tropical showers, most experiences run rain or shine (it\'s part of the adventure). If severe weather forces a cancellation, we\'ll reschedule at no cost or return your money in full, with no administration charge, because the cancellation is on our side.',
+        a: 'Jamaica gets brief tropical showers, most experiences run rain or shine (it\'s part of the adventure). If severe weather forces a cancellation, we reschedule you at no cost, to another day or another experience of the same value. A full refund is issued only where no reschedule works, for example if you are leaving the island before the next available date.',
       },
       {
         q: 'Are experiences suitable for children?',
-        a: 'Many are family-friendly, look for the age recommendations in each experience\'s details. Adventures like cliff diving have minimum age requirements. When in doubt, message the creator through the experience page.',
+        a: 'Many are family-friendly, look for the age recommendations in each experience\'s details. Adventures like cliff diving have minimum age requirements. When in doubt, email contact@mapltours.com with your children\'s ages and we\'ll confirm with the creator for you.',
       },
     ],
   },
@@ -85,10 +85,6 @@ export const HELP_CATEGORIES: HelpCategory[] = [
       {
         q: 'What currencies and payment methods do you accept?',
         a: 'We accept all major credit and debit cards, Apple Pay, and Google Pay. Prices are listed in USD, but you can view converted amounts in your local currency using the language switcher in the header.',
-      },
-      {
-        q: 'Are there any hidden fees?',
-        a: 'No hidden fees. The price you see includes the experience cost and a transparent service fee that covers platform costs, creator support, and your booking guarantee. Everything is itemized at checkout.',
       },
       {
         q: 'Is my payment information secure?',

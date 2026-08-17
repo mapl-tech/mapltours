@@ -56,7 +56,7 @@ const POPULAR_ROUTES: Array<{
    used elsewhere on the site. Alt text is descriptive for SEO + a11y. */
 const HERO_IMAGE = {
   src: HERO, // aerial Buff Bay coastal road
-  alt: 'Aerial view of Jamaica’s north-coast road between Montego Bay and Ocho Rios, the route MAPL drivers use for airport transfers.',
+  alt: 'Aerial view of Jamaica’s north-coast road between Montego Bay and Ocho Rios, the route MAPL Tours drivers use for airport transfers.',
 }
 
 const ZONE_IMAGES: Record<TransferZone, { src: string; alt: string }> = {
@@ -217,7 +217,7 @@ export default function TransfersView() {
               <TrustItem
                 icon={<MapPin size={17} />}
                 title="Meet-and-greet"
-                body="MAPL TOURS JAMAICA sign at arrivals, bags handled."
+                body="MAPL Tours Jamaica sign at arrivals, bags handled."
               />
               <TrustItem
                 icon={<ShieldCheck size={17} />}
@@ -479,7 +479,7 @@ export default function TransfersView() {
         </div>
       </section>
 
-      {/* ───────────── WHY MAPL (value prop) ───────────── */}
+      {/* ───────────── WHY MAPL Tours (value prop) ───────────── */}
       <section className="xfer-why-section">
         <div className="container" style={{ maxWidth: 1100 }}>
           <div className="xfer-center-head">
@@ -494,7 +494,7 @@ export default function TransfersView() {
           <div className="xfer-compare-grid">
             <CompareItem
               bold
-              title="MAPL TOURS private transfer"
+              title="MAPL Tours private transfer"
               items={[
                 'Fixed zone price, paid up front',
                 'Driver waits with your name at arrivals',
@@ -1995,7 +1995,7 @@ function SavingsRow({
         <span className="xfer-saving-mapl">{formatPrice(mapl)}</span>
         <span className="xfer-saving-typical">taxi quotes ${typical}</span>
       </span>
-      <span className="xfer-saving-tag">MAPL flat rate</span>
+      <span className="xfer-saving-tag">MAPL Tours flat rate</span>
     </div>
   )
 }
