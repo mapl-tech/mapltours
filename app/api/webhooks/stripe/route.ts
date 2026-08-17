@@ -374,6 +374,12 @@ async function handlePaymentFailed(pi: Stripe.PaymentIntent) {
 async function handlePaymentCanceled(pi: Stripe.PaymentIntent) {
   const { supabase, booking } = await loadBooking(pi)
   if (!booking || booking.status === 'paid' || booking.status === 'refunded') return
+
+  // Mirror handlePaymentFailed: a cancelled intent must hand the reserved
+  // gift-card value back, or the balance stays debited for a booking that
+  // will never be paid until the stale sweep catches it.
+  await releaseGiftClaim(supabase, booking.id)
+
   await supabase.from('bookings').update({ status: 'canceled' }).eq('id', booking.id)
     .not('status', 'in', '("paid","refunded")')
 }
@@ -695,15 +701,15 @@ async function handleChargeRefunded(charge: Stripe.Charge) {
   }
   const refundByPi = () => supabase
     .from('bookings').update(refundFields).neq('status', 'refunded')
-    .eq('stripe_payment_id', piId!).select('id, dispatch, total_paid')
+    .eq('stripe_payment_id', piId!).select('id, dispatch, total_paid, gift_card_amount')
   const refundByMeta = () => supabase
     .from('bookings').update(refundFields).neq('status', 'refunded')
-    .eq('id', metaBookingId!).select('id, dispatch, total_paid')
+    .eq('id', metaBookingId!).select('id, dispatch, total_paid, gift_card_amount')
 
   // Two-step lookup, mirroring loadBooking: an orphan booking whose
   // stripe_payment_id was never healed matches zero rows by PI, and the
   // refund must then resolve through metadata rather than being consumed.
-  let data: { id: string; dispatch: unknown; total_paid: number | null }[] | null = null
+  let data: { id: string; dispatch: unknown; total_paid: number | null; gift_card_amount: number | null }[] | null = null
   let error: { message: string } | null = null
   if (piId) ({ data, error } = await refundByPi())
   if (!error && (!data || data.length === 0) && metaBookingId) ({ data, error } = await refundByMeta())
@@ -729,10 +735,17 @@ async function handleChargeRefunded(charge: Stripe.Charge) {
     }
     // What we kept, from Stripe's own figure against the row's gross.
     for (const row of data) {
+      // What MAPL kept is measured against what STRIPE actually captured, not
+      // against the whole cart. When a gift card funded part of the booking,
+      // Stripe only ever took total_paid minus the gift share, so subtracting
+      // the refund from the gross billed the gift-funded portion back to the
+      // guest as though it were an administration fee.
       const grossCents = Math.round(Number(row.total_paid ?? 0) * 100)
+      const giftCents = Math.round(Number(row.gift_card_amount ?? 0) * 100)
+      const capturedCents = Math.max(0, grossCents - giftCents)
       const { error: chargeErr } = await supabase
         .from('bookings')
-        .update({ admin_charge: Math.max(0, grossCents - refundedCents) / 100 })
+        .update({ admin_charge: Math.max(0, capturedCents - refundedCents) / 100 })
         .eq('id', row.id)
       if (chargeErr) console.error('[stripe-webhook] admin_charge stamp failed', { booking: row.id, error: chargeErr.message })
     }

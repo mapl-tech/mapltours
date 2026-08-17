@@ -14,6 +14,7 @@ import { claimGiftCard, releaseGiftClaim } from '@/lib/gift-redemption'
 import { normalizeGiftCode } from '@/lib/gift-cards'
 import { maybeSendTravelerConfirmation, maybeSendOperatorAlert } from '@/lib/email/booking'
 import { rateLimit, getIp } from '@/lib/rate-limit'
+import { DEFAULT_DRIVER } from '@/lib/dispatch'
 import { sanitizeAttribution } from '@/lib/attribution'
 
 /**
@@ -434,6 +435,25 @@ export async function POST(request: NextRequest) {
         .from('booking_items')
         .select('experience_id, title, destination, travelers, date, price_per_person, item_type, airport, hotel, zone, trip_type, arrival_flight, arrival_at, departure_flight, departure_at, passengers')
         .eq('booking_id', bookingId!)
+
+      // A gift-covered booking makes no Stripe charge, so no
+      // payment_intent.succeeded ever fires and the webhook's default-driver
+      // assignment never runs for it. Every booking on this route IS a
+      // transfer, so without this the guest reaches dispatch with no driver:
+      // the day-of email has no name, plate or WhatsApp to promise, and the
+      // board shows an unassigned ride. Same null-and-paid predicates as the
+      // webhook, so a real assignment is never overwritten.
+      if (paidBooking && !paidBooking.driver_name && !paidBooking.driver_phone) {
+        const { error: drvErr } = await supabase
+          .from('bookings')
+          .update(DEFAULT_DRIVER)
+          .eq('id', bookingId!)
+          .is('driver_name', null)
+          .is('driver_phone', null)
+          .eq('status', 'paid')
+        if (drvErr) console.warn('[transfers-checkout]', reqId, 'default driver assign failed', drvErr.message)
+        else Object.assign(paidBooking, DEFAULT_DRIVER)
+      }
 
       if (paidBooking) {
         await maybeSendTravelerConfirmation(supabase, paidBooking as never, (paidItems ?? []) as never)
