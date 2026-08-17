@@ -1,6 +1,7 @@
 'use client'
 
 import { DAILY_HOUR_LIMIT, parseDurationHours, useCartStore } from '@/lib/cart'
+import { MapPin, Car, UtensilsCrossed, Coffee, Home, Plus, X } from 'lucide-react'
 import { computeDayScore, type DayStage } from '@/lib/day-score'
 
 interface DayBuilderProps {
@@ -8,6 +9,8 @@ interface DayBuilderProps {
   compact?: boolean
   /** Hide the top heading row (use when embedded inside another titled card) */
   hideHeading?: boolean
+  /** Render the ordered run of the day (pickup -> stops -> drop-off). */
+  showItinerary?: boolean
   style?: React.CSSProperties
 }
 
@@ -22,8 +25,13 @@ interface DayBuilderProps {
  * Exported as the default export so existing imports (e.g. `TripTimeBar`) keep
  * working, the filename stays `TripTimeBar.tsx` for non-breaking backwards compat.
  */
-export default function DayBuilder({ compact = false, hideHeading, style }: DayBuilderProps) {
+export default function DayBuilder({ compact = false, hideHeading, style, showItinerary = false }: DayBuilderProps) {
   const items = useCartStore((s) => s.items)
+  const stops = useCartStore((s) => s.stops)
+  const pickup = useCartStore((s) => s.pickup)
+  const pickupTime = useCartStore((s) => s.pickupTime)
+  const breaks = useCartStore((s) => s.breaks)
+  const setBreak = useCartStore((s) => s.setBreak)
   const score = computeDayScore(items)
 
   const { hours, stage, stageLabel, nudge, total, isOver, isPerfect } = score
@@ -256,7 +264,128 @@ export default function DayBuilder({ compact = false, hideHeading, style }: DayB
           </div>
         </div>
       )}
+
+      {showItinerary && items.length > 0 && (
+        <Itinerary
+          items={items}
+          stops={stops}
+          pickup={pickup}
+          pickupTime={pickupTime}
+          breaks={breaks}
+          setBreak={setBreak}
+        />
+      )}
     </div>
+  )
+}
+
+/**
+ * The day as a run, in the order it actually happens: collected from the hotel,
+ * each experience, any food stops, then dropped back where we started. Times per
+ * stop are deliberately absent — the driver sequences the day on the ground and
+ * a printed time would read as a promise we cannot keep in Jamaican traffic.
+ * Only the pickup time is fixed, because that is the one the guest must be ready for.
+ */
+function Itinerary({ items, stops, pickup, pickupTime, breaks, setBreak }: {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  items: any[]
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  stops: any[]
+  pickup: string
+  pickupTime: string
+  breaks: Record<number, number>
+  setBreak: (afterItemId: number, minutes: number) => void
+}) {
+  const where = pickup?.trim() || 'your hotel'
+  const ink = 'var(--text-primary, #fff)'
+  const soft = 'var(--text-tertiary, rgba(255,255,255,0.55))'
+
+  const Row = ({ icon, title, sub, tone, children }: {
+    icon: React.ReactNode; title: string; sub?: string; tone?: string; children?: React.ReactNode
+  }) => (
+    <li style={{ position: 'relative', paddingLeft: 30, paddingBottom: 14 }}>
+      <span aria-hidden style={{
+        position: 'absolute', left: 0, top: 1, width: 20, height: 20, borderRadius: '50%',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        background: tone ?? 'var(--surface, rgba(255,255,255,0.10))',
+        color: tone ? '#fff' : 'var(--text-secondary, rgba(255,255,255,0.75))',
+      }}>{icon}</span>
+      <p style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 13.5, fontWeight: 600, color: ink, lineHeight: 1.3 }}>{title}</p>
+      {sub && <p style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 12, color: soft, marginTop: 1 }}>{sub}</p>}
+      {children}
+    </li>
+  )
+
+  return (
+    <div style={{ marginTop: 18, paddingTop: 16, borderTop: '1px solid var(--border, rgba(255,255,255,0.10))' }}>
+      <p style={{
+        fontFamily: 'var(--font-dm-sans)', fontSize: 12, fontWeight: 700,
+        textTransform: 'uppercase', letterSpacing: '0.09em', color: soft, marginBottom: 12,
+      }}>
+        Your day, in order
+      </p>
+      <ol style={{ listStyle: 'none', margin: 0, padding: 0, position: 'relative' }}>
+        <span aria-hidden style={{
+          position: 'absolute', left: 9.5, top: 14, bottom: 14, width: 1,
+          background: 'var(--border, rgba(255,255,255,0.14))',
+        }} />
+
+        <Row icon={<Car size={11} />} tone="var(--accent, #171614)"
+             title={`Pickup from ${where}`} sub={pickupTime ? `We collect you at ${pickupTime}` : 'We collect you to start the day'} />
+
+        {items.map((item, i) => (
+          <Row key={item.id} icon={<MapPin size={11} />}
+               title={item.title}
+               sub={`${item.destination} · ${item.duration}`}>
+            <BreakControl
+              minutes={breaks[item.id] ?? 0}
+              onChange={(m) => setBreak(item.id, m)}
+              last={i === items.length - 1 && stops.length === 0}
+            />
+          </Row>
+        ))}
+
+        {stops.map((stop) => (
+          <Row key={`stop-${stop.id ?? stop.name}`} icon={<UtensilsCrossed size={11} />}
+               title={stop.name} sub={`${stop.area ?? stop.destination ?? 'Jamaica'} · you settle your own bill`} />
+        ))}
+
+        <Row icon={<Home size={11} />} tone="var(--emerald, #1D7A50)"
+             title={`Drop-off at ${where}`} sub="Back where we collected you" />
+      </ol>
+    </div>
+  )
+}
+
+/** Add or clear a rest gap after a stop. Minutes only, never a clock time. */
+function BreakControl({ minutes, onChange, last }: { minutes: number; onChange: (m: number) => void; last: boolean }) {
+  const soft = 'var(--text-tertiary, rgba(255,255,255,0.55))'
+  if (last) return null
+  if (minutes > 0) {
+    return (
+      <span style={{
+        display: 'inline-flex', alignItems: 'center', gap: 6, marginTop: 6,
+        padding: '4px 8px 4px 10px', borderRadius: 9999,
+        background: 'var(--surface, rgba(255,255,255,0.08))',
+        fontFamily: 'var(--font-dm-sans)', fontSize: 12, color: soft,
+      }}>
+        <Coffee size={11} /> {minutes} min break
+        <button onClick={() => onChange(0)} aria-label="Remove break"
+          style={{ display: 'inline-flex', background: 'none', border: 'none', cursor: 'pointer', color: 'inherit', padding: 2 }}>
+          <X size={11} />
+        </button>
+      </span>
+    )
+  }
+  return (
+    <button onClick={() => onChange(45)}
+      style={{
+        display: 'inline-flex', alignItems: 'center', gap: 5, marginTop: 6,
+        background: 'none', border: 'none', cursor: 'pointer', padding: '2px 0',
+        fontFamily: 'var(--font-dm-sans)', fontSize: 12, color: soft, textDecoration: 'underline',
+      }}>
+      <Plus size={11} /> Add a break here
+    </button>
   )
 }
 

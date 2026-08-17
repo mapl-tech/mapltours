@@ -42,6 +42,14 @@ interface CartStore {
   pickup: string
   /** Local time the day starts, 'HH:MM'. One per checkout, like the date. */
   pickupTime: string
+  /**
+   * Rest gaps a guest inserts between stops, in minutes, keyed by the id of the
+   * item they follow. Purely a scheduling concept: breaks carry NO price and are
+   * deliberately invisible to subtotal(), fee() and grandTotal(), exactly like
+   * food stops. They do count toward the day's hours, because a day with two
+   * hours of breaks really is two hours longer.
+   */
+  breaks: Record<number, number>
   dropoff: string
   addItem: (exp: Experience) => void
   conflictsInCart: (exp: Experience) => CartItem[]
@@ -53,6 +61,7 @@ interface CartStore {
   updateDate: (id: number, date: string) => void
   setPickup: (location: string) => void
   setPickupTime: (time: string) => void
+  setBreak: (afterItemId: number, minutes: number) => void
   setDropoff: (location: string) => void
   clearCart: () => void
   isInCart: (id: number) => boolean
@@ -82,6 +91,7 @@ export const useCartStore = create<CartStore>()(
       stops: [],
       pickup: '',
       pickupTime: '08:00',
+      breaks: {},
       dropoff: '',
       addStop: (stop) => set((state) => (
         state.stops.some((s) => s.name === stop.name)
@@ -129,6 +139,13 @@ export const useCartStore = create<CartStore>()(
 
       setPickup: (location: string) => set({ pickup: location }),
       setPickupTime: (time: string) => set({ pickupTime: time }),
+      setBreak: (afterItemId: number, minutes: number) =>
+        set((state) => {
+          const next = { ...state.breaks }
+          if (minutes > 0) next[afterItemId] = minutes
+          else delete next[afterItemId]
+          return { breaks: next }
+        }),
       setDropoff: (location: string) => set({ dropoff: location }),
 
       clearCart: () => set({ items: [], stops: [], pickup: '', dropoff: '' }),

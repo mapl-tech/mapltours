@@ -283,7 +283,7 @@ function ReviewStep({ formErrors }: { formErrors: Record<string, boolean> }) {
               </h3>
             </div>
           </div>
-          <TripTimeBar />
+          <TripTimeBar showItinerary />
         </div>
       )}
 
