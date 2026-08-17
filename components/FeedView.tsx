@@ -545,7 +545,7 @@ function PackagesSection() {
                         onMouseEnter={(e) => { e.currentTarget.style.filter = 'brightness(1.08)' }}
                         onMouseLeave={(e) => { e.currentTarget.style.filter = '' }}
                       >
-                        {t('\u2713 Added')} \u00b7 {t('Checkout')} <ArrowRight size={15} />
+                        {t('\u2713 Added')} · {t('Checkout')} <ArrowRight size={15} />
                       </Link>
                       <button
                         onClick={() => removeItem(pkg.id)}
