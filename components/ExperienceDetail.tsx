@@ -12,6 +12,7 @@ import { Heart, MessageCircle, Play, ChevronLeft, ChevronRight, X, ThumbsUp, Sen
 import { useExperienceLike, useComments, DisplayComment } from '@/lib/supabase/hooks'
 import { useAuth } from '@/lib/supabase/auth-context'
 import Avatar from '@/components/Avatar'
+import TourDetailsSheet from './TourDetailsSheet'
 
 // Heavy, only-used-on-demand surfaces, code-split so they never ship with
 // the main reel bundle. `ssr: false` because they are all client-interaction
@@ -66,6 +67,7 @@ function Reel({ exp, isActive, totalCount, currentIndex, onComments }: { exp: Ex
   // heading; off-screen reels keep <h2> so we never render multiple h1s.
   const TitleTag = isActive ? 'h1' : 'h2'
   const [shareToast, setShareToast] = useState<string | null>(null)
+  const [detailsFor, setDetailsFor] = useState<Experience | null>(null)
   const [clipsOpen, setClipsOpen] = useState(false)
 
   // Robust copy-to-clipboard with a fallback for non-secure contexts
@@ -546,6 +548,21 @@ function Reel({ exp, isActive, totalCount, currentIndex, onComments }: { exp: Ex
           {t(exp.description)}
         </p>
 
+        {/* The reel sells the feeling; this answers the questions that decide a
+            purchase (transport, entrance fees, minimum age, what to wear). */}
+        <button
+          onClick={() => setDetailsFor(exp)}
+          style={{
+            display: 'inline-flex', alignItems: 'center', gap: 6,
+            minHeight: 34, padding: '0 2px', marginBottom: 10,
+            background: 'none', border: 'none', cursor: 'pointer',
+            fontFamily: 'var(--font-dm-sans)', fontSize: 13.5, fontWeight: 600,
+            color: '#fff', textDecoration: 'underline', textUnderlineOffset: 3,
+          }}
+        >
+          What&apos;s included, ages and what to bring
+        </button>
+
         {/* Info chips row */}
         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 12 }}>
           <span style={{
@@ -602,6 +619,7 @@ function Reel({ exp, isActive, totalCount, currentIndex, onComments }: { exp: Ex
           </button>
         </div>
       </div>
+      {detailsFor && <TourDetailsSheet exp={detailsFor} onClose={() => setDetailsFor(null)} />}
     </div>
   )
 }

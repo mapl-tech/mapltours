@@ -105,6 +105,21 @@ function ReviewStep({ formErrors }: { formErrors: Record<string, boolean> }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [items])
 
+  // The SAME hazard for party size, and it is worse than the date one because
+  // it is a money and manifest bug. A guest who added a tour on the old build
+  // (default 2) and another on the new one (default 1) holds a cart of 2 and 1.
+  // The counter shows only items[0], and the +/- steppers move each line from
+  // its own value, so 2 and 1 never converge: the screen says "2 guests" while
+  // the second tour is priced and dispatched for 1, and the driver meets a
+  // party of two. Collapse onto the first line, exactly like the date.
+  useEffect(() => {
+    if (items.length < 2) return
+    const first = items[0].travelers
+    if (items.every((i) => i.travelers === first)) return
+    items.forEach((item) => updateTravelers(item.id, first))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [items])
+
   return (
     <div>
       {/* ── Trip basics: who, when, what time, and where from ──────────────
@@ -1133,7 +1148,12 @@ export default function CheckoutView() {
               )}
 
               {/* ── Gift card ── */}
-              {step === 3 && (
+              {/* The payment step. This read `step === 3` from before the
+                  checkout became two steps, so the gift-code field was
+                  unreachable and a guest holding a balance was charged the full
+                  total. applyGiftCode clears clientSecret, so the PaymentIntent
+                  is re-sized after a code is applied. */}
+              {step === 2 && (
                 giftCard ? (
                   <div style={{
                     display: 'flex', justifyContent: 'space-between', alignItems: 'center',
