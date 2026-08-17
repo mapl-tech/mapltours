@@ -110,7 +110,9 @@ export default function TransfersView() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
   const [tripType, setTripType] = useState<TransferTripType>('round_trip')
-  const [passengers, setPassengers] = useState<number>(2)
+  // Starts at 1, matching the tour cart. Transfer fares are per VEHICLE for
+  // 1-4 passengers, so this changes what is pre-filled, never the price quoted.
+  const [passengers, setPassengers] = useState<number>(1)
 
   const quote = useMemo(
     () => (destinationId ? buildQuote(destinationId, tripType, passengers) : null),
@@ -137,7 +139,10 @@ export default function TransfersView() {
   const selectRoute = (destId: string) => {
     setDestinationId(destId)
     setTripType('round_trip')
-    setPassengers((p) => p)
+    // Reset to the site default alongside the trip type. This read
+    // `setPassengers((p) => p)`, a no-op that looked like a reset and left the
+    // previous tile's passenger count attached to the newly picked route.
+    setPassengers(1)
     setTimeout(scrollToQuote, 60)
   }
 

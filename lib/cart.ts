@@ -40,6 +40,8 @@ interface CartStore {
   items: CartItem[]
   stops: FoodStop[]
   pickup: string
+  /** Local time the day starts, 'HH:MM'. One per checkout, like the date. */
+  pickupTime: string
   dropoff: string
   addItem: (exp: Experience) => void
   conflictsInCart: (exp: Experience) => CartItem[]
@@ -50,6 +52,7 @@ interface CartStore {
   updateTravelers: (id: number, travelers: number) => void
   updateDate: (id: number, date: string) => void
   setPickup: (location: string) => void
+  setPickupTime: (time: string) => void
   setDropoff: (location: string) => void
   clearCart: () => void
   isInCart: (id: number) => boolean
@@ -78,6 +81,7 @@ export const useCartStore = create<CartStore>()(
       items: [],
       stops: [],
       pickup: '',
+      pickupTime: '08:00',
       dropoff: '',
       addStop: (stop) => set((state) => (
         state.stops.some((s) => s.name === stop.name)
@@ -96,7 +100,10 @@ export const useCartStore = create<CartStore>()(
         // sold singly) and makes the day impossible to sequence. Adding
         // either kind therefore clears the other kind.
         const kept = items.filter((i) => i.kind === exp.kind)
-        set({ items: [...kept, { ...exp, travelers: 2, date: defaultDate() }] })
+        // Party size starts at 1: a solo traveller is the commonest first
+        // touch, and the counter is one tap away. Starting at 2 quietly quoted
+        // double for anyone travelling alone.
+        set({ items: [...kept, { ...exp, travelers: 1, date: defaultDate() }] })
       },
 
       /** Cart items this experience would replace if added now. */
@@ -121,6 +128,7 @@ export const useCartStore = create<CartStore>()(
       },
 
       setPickup: (location: string) => set({ pickup: location }),
+      setPickupTime: (time: string) => set({ pickupTime: time }),
       setDropoff: (location: string) => set({ dropoff: location }),
 
       clearCart: () => set({ items: [], stops: [], pickup: '', dropoff: '' }),
@@ -189,7 +197,9 @@ export const useCartStore = create<CartStore>()(
         const items = (state.items ?? []).flatMap((i) => {
           const current = experiences.find((e: Experience) => e.id === i.id)
           if (!current) return []
-          return [{ ...current, travelers: i.travelers ?? 2, date: i.date ?? '' }]
+          // ?? 1 matches the new default. This only fires for a persisted line
+          // with no traveller count at all; a saved cart that carries one keeps it.
+          return [{ ...current, travelers: i.travelers ?? 1, date: i.date ?? '' }]
         })
         void version
         // v2: food stops joined the cart; older persisted carts have none.

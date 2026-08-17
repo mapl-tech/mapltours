@@ -5,10 +5,11 @@ import dynamic from 'next/dynamic'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
-import { ArrowLeft, Check, MapPin, Users, Calendar, Leaf, Lock, ShieldCheck } from 'lucide-react'
+import { ArrowLeft, Check, MapPin, Users, Calendar, Leaf, Lock, ShieldCheck, CalendarDays, Clock } from 'lucide-react'
 import { earliestBookableExperienceDate } from '@/lib/booking-window'
 import { useCartStore, DAILY_HOUR_LIMIT } from '@/lib/cart'
 import { tourPrice, perTravelerPrice } from '@/lib/experiences'
+import { groupedPickupLocations, findPickupLocation } from '@/lib/pickup-locations'
 import { getStoredAttribution } from '@/lib/attribution'
 import TripTimeBar from '@/components/TripTimeBar'
 import { useAvailableReward, consumeReward } from '@/lib/tour-videos'
@@ -32,39 +33,6 @@ const StripePaymentPanel = dynamic(
 )
 
 /* ── Jamaica Locations with Addresses ── */
-const jamaicaLocations = [
-  { name: 'Sandals Negril Beach Resort', address: 'Norman Manley Blvd, Negril, Westmoreland' },
-  { name: 'Sandals Royal Caribbean, Montego Bay', address: 'Mahoe Bay, Montego Bay, St. James' },
-  { name: 'Sandals Ochi Beach Resort, Ocho Rios', address: 'Main St, Ocho Rios, St. Ann' },
-  { name: 'Riu Negril', address: 'Norman Manley Blvd, Negril, Westmoreland' },
-  { name: 'Riu Montego Bay', address: 'Mahoe Bay, Ironshore, Montego Bay, St. James' },
-  { name: 'Hyatt Ziva Rose Hall, Montego Bay', address: 'Rose Hall Rd, Montego Bay, St. James' },
-  { name: 'Hilton Rose Hall Resort, Montego Bay', address: 'Rose Hall, Montego Bay, St. James' },
-  { name: 'Grand Palladium Jamaica, Lucea', address: 'Point, Lucea, Hanover' },
-  { name: 'Royalton Blue Waters, Montego Bay', address: 'Seawind Dr, Montego Bay, St. James' },
-  { name: 'Royalton Negril', address: 'Norman Manley Blvd, Negril, Westmoreland' },
-  { name: 'Secrets Wild Orchid, Montego Bay', address: 'Freeport Peninsula, Montego Bay, St. James' },
-  { name: 'Secrets St. James, Montego Bay', address: 'Freeport Peninsula, Montego Bay, St. James' },
-  { name: 'Breathless Montego Bay', address: 'Freeport Peninsula, Montego Bay, St. James' },
-  { name: 'Moon Palace Jamaica, Ocho Rios', address: 'Main St, Ocho Rios, St. Ann' },
-  { name: 'Jamaica Inn, Ocho Rios', address: 'Main St, Ocho Rios, St. Ann' },
-  { name: 'Strawberry Hill, Blue Mountains', address: 'Irish Town, St. Andrew' },
-  { name: 'GoldenEye, Oracabessa', address: 'Oracabessa Bay, St. Mary' },
-  { name: 'Round Hill Hotel, Montego Bay', address: 'John Pringle Dr, Hopewell, Hanover' },
-  { name: 'Rockhouse Hotel, Negril', address: 'West End Rd, Negril, Westmoreland' },
-  { name: 'The Cliff Hotel, Negril', address: 'West End Rd, Negril, Westmoreland' },
-  { name: 'Geejam Hotel, Port Antonio', address: 'San San, Port Antonio, Portland' },
-  { name: 'Trident Hotel, Port Antonio', address: 'Anchovy, Port Antonio, Portland' },
-  { name: 'Jakes Hotel, Treasure Beach', address: 'Calabash Bay, Treasure Beach, St. Elizabeth' },
-  { name: 'Spanish Court Hotel, Kingston', address: '1 St Lucia Ave, Kingston 5' },
-  { name: 'Terra Nova All Suite Hotel, Kingston', address: '17 Waterloo Rd, Kingston 10' },
-  { name: 'Courtleigh Hotel, Kingston', address: '85 Knutsford Blvd, Kingston 5' },
-  { name: 'Norman Manley International Airport (KIN)', address: 'Palisadoes, Kingston' },
-  { name: 'Sangster International Airport (MBJ)', address: 'Sunset Dr, Montego Bay, St. James' },
-  { name: 'Kingston Cruise Terminal', address: 'Port Royal St, Kingston' },
-  { name: 'Falmouth Cruise Port', address: 'Falmouth, Trelawny' },
-  { name: 'Ocho Rios Cruise Port', address: 'Turtle Beach Rd, Ocho Rios, St. Ann' },
-]
 
 /* ── Step Indicator ── */
 function StepIndicator({ step }: { step: number }) {
@@ -104,10 +72,11 @@ function StepIndicator({ step }: { step: number }) {
 }
 
 /* ── Review Step ── */
-function ReviewStep() {
-  const { items, removeItem, updateDate, updateTravelers } = useCartStore()
+function ReviewStep({ formErrors }: { formErrors: Record<string, boolean> }) {
+  const { items, removeItem, updateDate, updateTravelers, pickup, setPickup, setDropoff, pickupTime, setPickupTime } = useCartStore()
   const { t, formatPrice } = useI18n()
-  const [customDates, setCustomDates] = useState(false)
+  // No per-tour dates: a checkout is ONE day, so the single trip date in the
+  // card above is written to every line.
 
   // Earliest selectable date honours the 24-hour lead time, so a date that
   // checkout would reject cannot be picked (also validated server-side).
@@ -122,31 +91,143 @@ function ReviewStep() {
     items.forEach((item) => updateDate(item.id, date))
   }
 
+  // A checkout is ONE day, but the cart persists in localStorage and an earlier
+  // build let guests pick a date per tour. A returning guest can therefore still
+  // hold a mixed-date cart that no control on this page can fix and that would
+  // otherwise be sent to the API as-is. Collapse stragglers onto the first
+  // line's date. Idempotent, and a no-op for every cart built since.
+  useEffect(() => {
+    if (items.length < 2) return
+    const first = items[0].date
+    if (items.every((i) => i.date === first)) return
+    items.forEach((item) => updateDate(item.id, first))
+    // updateDate is a stable zustand action; items is the value we react to.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [items])
+
   return (
     <div>
-      {/* Guest count leads the review: it drives every price below it. */}
+      {/* ── Trip basics: who, when, what time, and where from ──────────────
+          One card, in the order a guest actually decides: how many of us,
+          which day, what time we are collected, and where we are collected
+          from. The date sits directly under the guest counter; it used to be
+          further down, past the day builder, where guests missed it.
+
+          There is exactly ONE date and ONE time for the whole checkout: every
+          experience in the cart runs on that day, and a second day is a second
+          trip through checkout. */}
       <div style={{
         borderRadius: 'var(--r-xl)', overflow: 'hidden',
         border: '1px solid var(--border)', background: '#fff',
         marginBottom: 24,
-        padding: '18px 22px',
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <Users size={18} color="var(--text-secondary)" />
-          <div>
-            <span style={{ fontSize: 14, fontWeight: 600, fontFamily: 'var(--font-dm-sans)' }}>{t('Number of guests')}</span>
-            <p style={{ fontSize: 12, color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-sans)', marginTop: 1 }}>
-              Applies to all {items.length} experience{items.length !== 1 ? 's' : ''}
-            </p>
+        {/* Row 1 — guests. Drives every price below it, so it leads. */}
+        <div style={{
+          padding: '18px 22px', display: 'flex', alignItems: 'center',
+          justifyContent: 'space-between', gap: 12, borderBottom: '1px solid var(--border)',
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
+            <Users size={18} color="var(--text-secondary)" style={{ flexShrink: 0 }} />
+            <div style={{ minWidth: 0 }}>
+              <span style={{ fontSize: 14, fontWeight: 600, fontFamily: 'var(--font-dm-sans)', display: 'block' }}>{t('Number of guests')}</span>
+              <p style={{ fontSize: 12, color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-sans)', marginTop: 1 }}>
+                Applies to all {items.length} experience{items.length !== 1 ? 's' : ''}
+              </p>
+            </div>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', flexShrink: 0 }}>
+            <button className="btn-outline" aria-label="One fewer guest"
+              style={{ width: 44, height: 44, padding: 0, borderRadius: '10px 0 0 10px', fontSize: 16 }}
+              onClick={() => items.forEach((item) => updateTravelers(item.id, item.travelers - 1))}>−</button>
+            <div aria-live="polite" style={{ width: 52, height: 44, display: 'flex', alignItems: 'center', justifyContent: 'center', borderTop: '1px solid var(--border)', borderBottom: '1px solid var(--border)', fontSize: 16, fontWeight: 700, fontFamily: 'var(--font-dm-sans)' }}>
+              {items[0]?.travelers ?? 1}
+            </div>
+            <button className="btn-outline" aria-label="One more guest"
+              style={{ width: 44, height: 44, padding: 0, borderRadius: '0 10px 10px 0', fontSize: 16 }}
+              onClick={() => items.forEach((item) => updateTravelers(item.id, item.travelers + 1))}>+</button>
           </div>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center' }}>
-          <button className="btn-outline" style={{ width: 44, height: 44, padding: 0, borderRadius: '10px 0 0 10px', fontSize: 16 }} onClick={() => items.forEach((item) => updateTravelers(item.id, item.travelers - 1))}>−</button>
-          <div style={{ width: 52, height: 44, display: 'flex', alignItems: 'center', justifyContent: 'center', borderTop: '1px solid var(--border)', borderBottom: '1px solid var(--border)', fontSize: 16, fontWeight: 700, fontFamily: 'var(--font-dm-sans)' }}>
-            {items[0]?.travelers || 2}
+
+        {/* Row 2 — the one trip date, written to every line. */}
+        <div style={{ padding: '18px 22px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, borderBottom: '1px solid var(--border)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
+            <CalendarDays size={18} color="var(--text-secondary)" style={{ flexShrink: 0 }} />
+            <div style={{ minWidth: 0 }}>
+              <label htmlFor="trip-date" style={{ fontSize: 14, fontWeight: 600, fontFamily: 'var(--font-dm-sans)', display: 'block' }}>{t('Trip date')}</label>
+              <p style={{ fontSize: 12, color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-sans)', marginTop: 1 }}>
+                Every experience runs on this day
+              </p>
+            </div>
           </div>
-          <button className="btn-outline" style={{ width: 44, height: 44, padding: 0, borderRadius: '0 10px 10px 0', fontSize: 16 }} onClick={() => items.forEach((item) => updateTravelers(item.id, item.travelers + 1))}>+</button>
+          <input
+            id="trip-date"
+            type="date"
+            className="field-input"
+            value={sharedDate}
+            min={minDate}
+            onChange={(e) => setAllDates(e.target.value)}
+            style={{ width: 170, height: 44, flexShrink: 0 }}
+          />
+        </div>
+
+        {/* Row 3 — pickup time. The day is built from here. */}
+        <div style={{ padding: '18px 22px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, borderBottom: '1px solid var(--border)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
+            <Clock size={18} color="var(--text-secondary)" style={{ flexShrink: 0 }} />
+            <div style={{ minWidth: 0 }}>
+              <label htmlFor="trip-time" style={{ fontSize: 14, fontWeight: 600, fontFamily: 'var(--font-dm-sans)', display: 'block' }}>{t('Pickup time')}</label>
+              <p style={{ fontSize: 12, color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-sans)', marginTop: 1 }}>
+                When we collect you to start the day
+              </p>
+            </div>
+          </div>
+          <input
+            id="trip-time"
+            type="time"
+            className="field-input"
+            value={pickupTime}
+            onChange={(e) => setPickupTime(e.target.value)}
+            style={{ width: 170, height: 44, flexShrink: 0 }}
+          />
+        </div>
+
+        {/* Row 4 — one location. On a tour day the driver returns you to the
+            same place they collected you from, so asking twice is friction.
+            Airport transfers are the separate product where the two ends
+            genuinely differ. */}
+        <div data-field="pickup" style={{ padding: '18px 22px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
+            <MapPin size={18} color="var(--text-secondary)" style={{ flexShrink: 0 }} />
+            <div>
+              <label htmlFor="trip-pickup" style={{ fontSize: 14, fontWeight: 600, fontFamily: 'var(--font-dm-sans)', display: 'block' }}>
+                {t('Pickup and drop-off')} {formErrors['pickup'] && <span style={{ fontWeight: 400, color: '#c00' }}>- required</span>}
+              </label>
+              <p style={{ fontSize: 12, color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-sans)', marginTop: 1 }}>
+                We collect you here and bring you back here
+              </p>
+            </div>
+          </div>
+          <select
+            id="trip-pickup"
+            className="field-input"
+            value={pickup}
+            aria-invalid={formErrors['pickup'] ? true : undefined}
+            onChange={(e) => { setPickup(e.target.value); setDropoff(e.target.value) }}
+            style={{ width: '100%', height: 48, fontSize: 15, background: '#fff', borderColor: formErrors['pickup'] ? 'rgba(200,0,0,0.4)' : undefined }}
+          >
+            <option value="">Select your hotel, resort or airport</option>
+            {groupedPickupLocations().map((g) => (
+              <optgroup key={g.label} label={g.label}>
+                {g.options.map((l) => <option key={l.name} value={l.name}>{l.name}</option>)}
+              </optgroup>
+            ))}
+            <option value="Other, I will confirm by email">Other, I will confirm by email</option>
+          </select>
+          {findPickupLocation(pickup) && (
+            <p style={{ fontSize: 12, color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-sans)', marginTop: 6, display: 'flex', alignItems: 'center', gap: 4 }}>
+              <MapPin size={12} /> {findPickupLocation(pickup)?.address}
+            </p>
+          )}
         </div>
       </div>
 
@@ -205,96 +286,6 @@ function ReviewStep() {
           <TripTimeBar />
         </div>
       )}
-
-      {/* ── Trip date selector ── */}
-      <div style={{
-        borderRadius: 'var(--r-xl)', overflow: 'hidden',
-        border: '1px solid var(--border)', background: '#fff',
-        marginBottom: 24,
-      }}>
-        <div style={{
-          padding: '18px 22px',
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          borderBottom: customDates ? '1px solid var(--border)' : 'none',
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <Calendar size={18} color="var(--text-secondary)" />
-            <div>
-              <span style={{ fontSize: 14, fontWeight: 600, fontFamily: 'var(--font-dm-sans)' }}>
-                {customDates ? t('Choose different dates for each tour') : t('Trip date')}
-              </span>
-              <p style={{ fontSize: 12, color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-sans)', marginTop: 1 }}>
-                {customDates ? t('Each experience can be on a different day') : t('All experiences on the same day')}
-              </p>
-            </div>
-          </div>
-          {!customDates && (
-            <input
-              type="date"
-              value={sharedDate}
-              min={minDate}
-              onChange={(e) => setAllDates(e.target.value)}
-              className="field-input"
-              style={{ maxWidth: 160, height: 40, fontSize: 13 }}
-            />
-          )}
-        </div>
-
-        {/* Individual dates when custom mode is on */}
-        {customDates && items.map((item, i) => (
-          <div key={item.id} style={{
-            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-            padding: '14px 22px',
-            borderBottom: i < items.length - 1 ? '1px solid var(--border)' : 'none',
-          }}>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <p style={{ fontSize: 13, fontWeight: 600, fontFamily: 'var(--font-dm-sans)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t(item.title)}</p>
-              <p style={{ fontSize: 12, color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-sans)', marginTop: 1 }}>
-                {item.destination} · {item.duration}
-              </p>
-            </div>
-            <input
-              type="date"
-              value={item.date}
-              min={minDate}
-              onChange={(e) => updateDate(item.id, e.target.value)}
-              className="field-input"
-              style={{ maxWidth: 155, height: 38, fontSize: 13, flexShrink: 0, marginLeft: 16 }}
-            />
-          </div>
-        ))}
-
-        {/* Toggle */}
-        <div style={{
-          padding: '12px 22px',
-          borderTop: '1px solid var(--border)',
-          background: 'var(--bg-warm)',
-        }}>
-          <button
-            onClick={() => {
-              if (customDates) {
-                setAllDates(items[0]?.date || sharedDate)
-              }
-              setCustomDates(!customDates)
-            }}
-            style={{
-              width: '100%',
-              padding: '12px 18px',
-              borderRadius: 'var(--r-md)',
-              background: customDates ? 'var(--accent)' : 'var(--surface)',
-              border: customDates ? 'none' : '1px solid var(--border)',
-              cursor: 'pointer',
-              fontSize: 13, fontWeight: 600, fontFamily: 'var(--font-dm-sans)',
-              color: customDates ? 'white' : 'var(--accent)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-              transition: 'all 0.2s ease',
-            }}
-          >
-            <Calendar size={14} />
-            {customDates ? t('Use same date for all tours') : t('Choose different dates for each tour')}
-          </button>
-        </div>
-      </div>
 
       {/* ── Experience cards ── */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
@@ -372,29 +363,11 @@ function DetailsStep({ waiverAccepted, setWaiverAccepted, waiverError, formData,
   setFormData: (d: Record<string, string>) => void
   formErrors: Record<string, boolean>
 }) {
-  const { setPickup, setDropoff } = useCartStore()
   const { t } = useI18n()
   const [modalContent, setModalContent] = useState<'waiver' | 'terms' | null>(null)
 
-  // Almost every guest is dropped back where they were collected, so drop-off
-  // mirrors pickup as it is typed and stops the moment the guest edits it
-  // themselves. Without this, drop-off is a required field they must retype
-  // their own hotel into, which is the most common stall in this form.
-  const [dropoffEdited, setDropoffEdited] = useState(false)
-
   const updateField = (key: string, value: string) => {
     const next = { ...formData, [key]: value }
-    if (key === 'pickup') {
-      setPickup(value)
-      if (!dropoffEdited) {
-        next.dropoff = value
-        setDropoff(value)
-      }
-    }
-    if (key === 'dropoff') {
-      setDropoffEdited(true)
-      setDropoff(value)
-    }
     setFormData(next)
   }
   return (
@@ -474,103 +447,6 @@ function DetailsStep({ waiverAccepted, setWaiverAccepted, waiverError, formData,
             ))}
           </select>
         </div>
-        {/* ── Pickup & Drop-off, Prominent Section ── */}
-        <div style={{
-          gridColumn: 'span 2',
-          marginTop: 8,
-          padding: '20px',
-          borderRadius: 'var(--r-lg)',
-          background: 'var(--bg-warm)',
-          border: '1px solid var(--border)',
-        }}>
-          <div style={{
-            display: 'flex', alignItems: 'center', gap: 10, marginBottom: 18,
-          }}>
-            <div style={{
-              width: 36, height: 36, borderRadius: 10,
-              background: 'var(--accent)', display: 'flex',
-              alignItems: 'center', justifyContent: 'center',
-            }}>
-              <MapPin size={18} color="#fff" />
-            </div>
-            <div>
-              <p style={{ fontSize: 14, fontWeight: 700, fontFamily: 'var(--font-dm-sans)', color: 'var(--text-primary)' }}>
-                {t('Transportation Details')}
-              </p>
-              <p style={{ fontSize: 12, color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-sans)', marginTop: 1 }}>
-                {t('We\'ll arrange your pickup and return')}
-              </p>
-            </div>
-          </div>
-
-          {/* Pickup */}
-          <div data-field="pickup" style={{ marginBottom: 16 }}>
-            <label style={{ fontSize: 12, color: formErrors['pickup'] ? '#c00' : 'var(--text-secondary)', fontFamily: 'var(--font-dm-sans)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
-              <span style={{ width: 8, height: 8, borderRadius: '50%', background: formErrors['pickup'] ? '#c00' : 'var(--emerald)', flexShrink: 0 }} />
-              {t('Pickup Location')} {formErrors['pickup'] && <span style={{ fontWeight: 400 }}>- required</span>}
-            </label>
-            <input
-              className="field-input"
-              placeholder={t('Search hotel, resort, or airport...')}
-              aria-invalid={formErrors['pickup'] ? true : undefined}
-              value={formData['pickup'] || ''}
-              onChange={(e) => updateField('pickup', e.target.value)}
-              list="jamaica-locations-pickup"
-              style={{ height: 50, fontSize: 15, background: '#fff', fontWeight: 500, borderColor: formErrors['pickup'] ? 'rgba(200,0,0,0.4)' : undefined }}
-            />
-            {formData['pickup'] && jamaicaLocations.find(l => l.name === formData['pickup']) && (
-              <p style={{ fontSize: 12, color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-sans)', marginTop: 6, paddingLeft: 2, display: 'flex', alignItems: 'center', gap: 4 }}>
-                <MapPin size={12} color="var(--text-tertiary)" />
-                {jamaicaLocations.find(l => l.name === formData['pickup'])?.address}
-              </p>
-            )}
-          </div>
-
-          {/* Visual connector */}
-          <div style={{
-            display: 'flex', alignItems: 'center', gap: 8, margin: '0 0 16px 3px',
-          }}>
-            <div style={{ width: 2, height: 20, background: 'var(--border-strong)', borderRadius: 1, marginLeft: 3 }} />
-          </div>
-
-          {/* Drop-off */}
-          <div data-field="dropoff">
-            <label style={{ fontSize: 12, color: formErrors['dropoff'] ? '#c00' : 'var(--text-secondary)', fontFamily: 'var(--font-dm-sans)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
-              <span style={{ width: 8, height: 8, borderRadius: '50%', background: formErrors['dropoff'] ? '#c00' : 'var(--gold)', flexShrink: 0 }} />
-              {t('Drop-off Location')} {formErrors['dropoff'] && <span style={{ fontWeight: 400 }}>- required</span>}
-              {!formErrors['dropoff'] && formData['dropoff'] && formData['dropoff'] === formData['pickup'] && (
-                <span style={{ fontWeight: 400, color: 'var(--text-tertiary)' }}>· same as pickup</span>
-              )}
-            </label>
-            <input
-              className="field-input"
-              placeholder={t('Where should we drop you off?')}
-              aria-invalid={formErrors['dropoff'] ? true : undefined}
-              value={formData['dropoff'] || ''}
-              onChange={(e) => updateField('dropoff', e.target.value)}
-              list="jamaica-locations-dropoff"
-              style={{ height: 50, fontSize: 15, background: '#fff', fontWeight: 500, borderColor: formErrors['dropoff'] ? 'rgba(200,0,0,0.4)' : undefined }}
-            />
-            {formData['dropoff'] && jamaicaLocations.find(l => l.name === formData['dropoff']) && (
-              <p style={{ fontSize: 12, color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-sans)', marginTop: 6, paddingLeft: 2, display: 'flex', alignItems: 'center', gap: 4 }}>
-                <MapPin size={12} color="var(--text-tertiary)" />
-                {jamaicaLocations.find(l => l.name === formData['dropoff'])?.address}
-              </p>
-            )}
-          </div>
-        </div>
-
-        {/* Autofill datalists for Jamaica locations */}
-        <datalist id="jamaica-locations-pickup">
-          {jamaicaLocations.map((loc) => (
-            <option key={loc.name} value={loc.name}>{loc.address}</option>
-          ))}
-        </datalist>
-        <datalist id="jamaica-locations-dropoff">
-          {jamaicaLocations.map((loc) => (
-            <option key={loc.name} value={loc.name}>{loc.address}</option>
-          ))}
-        </datalist>
 
         <div style={{ gridColumn: 'span 2' }}>
           <label htmlFor="checkout-special-requests" style={{ fontSize: 12, color: 'var(--text-secondary)', fontFamily: 'var(--font-dm-sans)', fontWeight: 600, display: 'block', marginBottom: 6 }}>Special Requests</label>
@@ -1082,7 +958,7 @@ export default function CheckoutView() {
         <div className={step === 2 ? 'checkout-payment-form' : ''} style={{ flex: 1, maxWidth: 640 }}>
           {step === 1 && (
             <>
-              <ReviewStep />
+              <ReviewStep formErrors={formErrors} />
               <div style={{ marginTop: 40 }}>
                 <DetailsStep waiverAccepted={waiverAccepted} setWaiverAccepted={setWaiverAccepted} waiverError={waiverError} formData={formData} setFormData={setFormData} formErrors={formErrors} />
               </div>
@@ -1338,7 +1214,10 @@ export default function CheckoutView() {
                   }
                   if (step === 1) {
                     // Validate required fields
-                    const required = ['firstName', 'lastName', 'email', 'phone', 'country', 'pickup', 'dropoff']
+                    // pickup/dropoff are no longer form fields: a tour day is
+                    // collected from and returned to ONE place, chosen in the trip
+                    // card, and validated separately below.
+                    const required = ['firstName', 'lastName', 'email', 'phone', 'country']
                     const errors: Record<string, boolean> = {}
                     let hasError = false
                     required.forEach((key) => {
@@ -1358,6 +1237,13 @@ export default function CheckoutView() {
                       hasError = true
                     }
                     setFormErrors(errors)
+
+                    // The single pickup location is required, and it lives in
+                    // the trip card rather than the details form.
+                    if (!useCartStore.getState().pickup?.trim()) {
+                      errors['pickup'] = true
+                      hasError = true
+                    }
 
                     if (!waiverAccepted) {
                       setWaiverError(true)
