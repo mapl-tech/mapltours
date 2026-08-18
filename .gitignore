@@ -59,3 +59,9 @@ scripts/shots.mjs
 # Committing the raw folder pushes tens of MB of duplicates through git.
 /Images/
 .next-verify
+
+# Local DB backups — contain customer PII, never commit
+.backup-*.json
+
+# Customer correspondence drafts — contain real email addresses
+emails/drafts/
