@@ -93,12 +93,28 @@ function priceRangeLabel(zone: TransferZone, tripType: TransferTripType): string
 // Mercy's branch passed an hourly illustrative activity feed here. This
 // surface renders the real aggregates from /api/transfers/activity instead
 // (LiveActivityLine); fabricated counts were purged by owner instruction.
+/* The <select> needs a value for "my hotel isn't listed", but that value must
+   never become a destinationId — destinationId feeds buildQuote, the cart and
+   the checkout POST. It is tracked in its own boolean below instead, so the
+   sentinel is structurally incapable of reaching a pricing path. */
+const NOT_LISTED = '__not-listed__'
+
 export default function TransfersView() {
   const router = useRouter()
   const addQuote = useTransfersCart((s) => s.addQuote)
   const { formatPrice } = useI18n()
 
   const [destinationId, setDestinationId] = useState<string>('')
+
+  // "My hotel isn't listed". Held apart from destinationId on purpose: an
+  // unlisted property has no zone and therefore no price, so it must never
+  // produce a quote. This only ever opens a request form.
+  const [notListed, setNotListed] = useState(false)
+  const [askForm, setAskForm] = useState({ hotel: '', email: '' })
+  const [askState, setAskState] = useState<'idle' | 'sending' | 'sent'>('idle')
+  const [askError, setAskError] = useState<string | null>(null)
+  // Honeypot, matching /api/contact's contract. Real people never fill it.
+  const [askWebsite, setAskWebsite] = useState('')
 
   // Deep links (blog resort reviews, ads) preselect the route via ?to=<id>.
   // Read client-side from location so the page stays fully static; runs once
@@ -137,8 +153,65 @@ export default function TransfersView() {
   // Prefill the calculator from a popular-route tile, then scroll the user
   // to the booking card. Two taps from cold land to checkout: tile, then
   // "Book for $X →".
+  /* Put the enquiry form back to a blank slate.
+     Without this the panel is one-shot: askForm/askState live here rather than
+     in the panel, so unmounting the panel preserves them and re-opening the
+     unlisted branch renders a success message about a hotel the visitor is no
+     longer asking about, with no form to submit a second one. */
+  const resetAsk = () => {
+    setAskForm({ hotel: '', email: '' })
+    setAskState('idle')
+    setAskError(null)
+  }
+
+  /* Ask us to price an unlisted property.
+     Reuses /api/contact exactly as the partner form does: it already carries
+     the honeypot, the rate limit, the ops alert and the visitor auto-reply.
+     Nothing here creates a booking, a quote or a PaymentIntent. */
+  const submitHotelRequest = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (askState === 'sending') return
+    setAskError(null)
+    setAskState('sending')
+    try {
+      const res = await fetch('/api/contact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: askForm.email.split('@')[0] || 'Transfer enquiry',
+          email: askForm.email,
+          subject: `Unlisted hotel · ${askForm.hotel}`,
+          message:
+            `A visitor could not find their hotel in the transfers picker.\n\n` +
+            `Hotel or address: ${askForm.hotel}\n` +
+            `Trip type: ${tripType === 'round_trip' ? 'Round-trip' : 'One-way'}\n` +
+            `Passengers: ${passengers}\n\n` +
+            `Reply with a flat quote, and add the property to DESTINATIONS if we serve it.`,
+          website: askWebsite,
+        }),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        setAskError(
+          data.error ||
+            'We could not send that. Please email contact@mapltours.com and we will price it.',
+        )
+        setAskState('idle')
+        return
+      }
+      setAskState('sent')
+    } catch {
+      setAskError('Network error. Please check your connection and try again.')
+      setAskState('idle')
+    }
+  }
+
   const selectRoute = (destId: string) => {
     setDestinationId(destId)
+    // A popular-route tile is a real destination, so leave the unlisted-hotel
+    // branch behind or the picker would show one thing and price another.
+    setNotListed(false)
+    resetAsk()
     setTripType('round_trip')
     // Reset to the site default alongside the trip type. This read
     // `setPassengers((p) => p)`, a no-op that looked like a reset and left the
@@ -340,13 +413,26 @@ export default function TransfersView() {
             <Field label={tripType === 'round_trip' ? 'Hotel or resort (both directions)' : 'Where are we taking you?'}>
               <select
                 className="field-input"
-                value={destinationId}
-                onChange={(e) => setDestinationId(e.target.value)}
+                value={notListed ? NOT_LISTED : destinationId}
+                onChange={(e) => {
+                  const value = e.target.value
+                  if (value === NOT_LISTED) {
+                    // Sentinel stops here. destinationId stays empty, so the
+                    // quote memo yields null and the Book button stays inert.
+                    setNotListed(true)
+                    setDestinationId('')
+                    resetAsk()
+                    return
+                  }
+                  setNotListed(false)
+                  setDestinationId(value)
+                  resetAsk()
+                }}
                 style={{
                   height: 50,
-                  fontSize: 15,
+                  fontSize: 16,
                   fontWeight: 500,
-                  color: destinationId ? 'var(--text-primary)' : 'var(--text-tertiary)',
+                  color: destinationId || notListed ? 'var(--text-primary)' : 'var(--text-tertiary)',
                   appearance: 'none',
                   WebkitAppearance: 'none',
                   paddingRight: 44,
@@ -365,8 +451,35 @@ export default function TransfersView() {
                     ))}
                   </optgroup>
                 ))}
+                {/* Last, in its own group, so it reads as an escape hatch and
+                    never sits among the bookable properties. */}
+                <optgroup label="Somewhere else">
+                  <option value={NOT_LISTED}>I don&rsquo;t see my hotel</option>
+                </optgroup>
               </select>
             </Field>
+
+            {/* Mounted at all times, deliberately. A live region that appears
+                in the same commit as its text is not announced, because there
+                is no mutation for assistive tech to observe (WCAG 2.2 SC
+                4.1.3). Keeping it here means the success message is written
+                into a region that already exists. */}
+            <div role="status" aria-live="polite" className="visually-hidden">
+              {askState === 'sent'
+                ? `Request sent. We will email a price for ${askForm.hotel} to ${askForm.email}.`
+                : ''}
+            </div>
+
+            {notListed && <UnlistedHotelPanel
+              form={askForm}
+              setForm={setAskForm}
+              state={askState}
+              error={askError}
+              website={askWebsite}
+              setWebsite={setAskWebsite}
+              onSubmit={submitHotelRequest}
+              onReset={resetAsk}
+            />}
 
             <Field label="Trip type">
               <div className="xfer-trip-toggles">
@@ -1655,6 +1768,191 @@ function Kicker({
       {children}
     </p>
   )
+}
+
+/**
+ * Shown when a visitor picks "I don't see my hotel".
+ *
+ * Deliberately NOT a booking. An unlisted property has no zone, so it has no
+ * price, and inventing one would either undercharge the driver or overcharge
+ * the guest. This asks two questions and hands the enquiry to a human via the
+ * existing /api/contact route — no quote, no cart write, no PaymentIntent.
+ */
+function UnlistedHotelPanel({
+  form, setForm, state, error, website, setWebsite, onSubmit, onReset,
+}: {
+  form: { hotel: string; email: string }
+  setForm: (f: { hotel: string; email: string }) => void
+  state: 'idle' | 'sending' | 'sent'
+  error: string | null
+  website: string
+  setWebsite: (v: string) => void
+  onSubmit: (e: React.FormEvent) => void
+  onReset: () => void
+}) {
+  const hotelId = useId()
+  const emailId = useId()
+
+  const panelStyle: React.CSSProperties = {
+    marginBottom: 18,
+    padding: 16,
+    borderRadius: 'var(--r-md)',
+    background: 'var(--bg-warm)',
+    border: '1px solid var(--border)',
+  }
+
+  // No live-region role on this branch: the announcement is made by the
+  // always-mounted region in the parent, which assistive tech can observe.
+  if (state === 'sent') {
+    return (
+      <div className="animate-fade-up" style={panelStyle}>
+        <p style={{
+          fontFamily: 'var(--font-dm-sans)', fontSize: 14, fontWeight: 600,
+          color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6,
+        }}>
+          <Check size={16} color="var(--gold-text)" aria-hidden="true" />
+          Got it, we&rsquo;re on it
+        </p>
+        <p style={{
+          fontFamily: 'var(--font-dm-sans)', fontSize: 13, lineHeight: 1.55,
+          color: 'var(--text-secondary)', margin: 0,
+        }}>
+          We&rsquo;ll work out the flat price for {form.hotel || 'your hotel'} and email{' '}
+          {form.email} within a day. Nothing has been booked or charged.
+        </p>
+        {/* Without this the success screen is terminal: a guest with two
+            properties to price would have to reload the page. */}
+        <button
+          type="button"
+          onClick={onReset}
+          style={{
+            marginTop: 12,
+            minHeight: 44,
+            padding: '0 2px',
+            background: 'none',
+            border: 'none',
+            cursor: 'pointer',
+            fontFamily: 'var(--font-dm-sans)',
+            fontSize: 13,
+            fontWeight: 600,
+            color: 'var(--gold-text)',
+            textDecoration: 'underline',
+            textUnderlineOffset: 3,
+          }}
+        >
+          Ask about another hotel
+        </button>
+      </div>
+    )
+  }
+
+  return (
+    <form className="animate-fade-up" style={panelStyle} onSubmit={onSubmit} noValidate={false}>
+      <p style={{
+        fontFamily: 'var(--font-dm-sans)', fontSize: 14, fontWeight: 600,
+        color: 'var(--text-primary)', marginBottom: 4,
+      }}>
+        Tell us where you&rsquo;re staying
+      </p>
+      <p style={{
+        fontFamily: 'var(--font-dm-sans)', fontSize: 13, lineHeight: 1.55,
+        color: 'var(--text-secondary)', marginBottom: 14,
+      }}>
+        We drive the whole island. If it&rsquo;s not in the list we&rsquo;ll price it by
+        hand and email you a flat rate, usually the same day.
+      </p>
+
+      <label htmlFor={hotelId} style={labelStyle}>Hotel, villa or address</label>
+      <input
+        id={hotelId}
+        className="field-input"
+        type="text"
+        required
+        autoComplete="off"
+        value={form.hotel}
+        onChange={(e) => setForm({ ...form, hotel: e.target.value })}
+        placeholder="e.g. Samsara Cliff Resort, West End Road"
+        style={askInputStyle}
+      />
+
+      <label htmlFor={emailId} style={{ ...labelStyle, marginTop: 12 }}>
+        Where we send the price
+      </label>
+      <input
+        id={emailId}
+        className="field-input"
+        type="email"
+        required
+        autoComplete="email"
+        inputMode="email"
+        value={form.email}
+        onChange={(e) => setForm({ ...form, email: e.target.value })}
+        placeholder="you@email.com"
+        style={askInputStyle}
+      />
+
+      {/* Honeypot: hidden from people, irresistible to bots. */}
+      <input
+        type="text" name="website" tabIndex={-1} autoComplete="off"
+        value={website} onChange={(e) => setWebsite(e.target.value)}
+        aria-hidden="true"
+        style={{ position: 'absolute', left: '-9999px', width: 1, height: 1, opacity: 0 }}
+      />
+
+      {error && (
+        <p role="alert" style={{
+          fontFamily: 'var(--font-dm-sans)', fontSize: 13, lineHeight: 1.5,
+          // Matches the error red already used in the email templates.
+          // 6.25:1 on --bg-warm (#FAF9F7), comfortably past WCAG AA.
+          color: '#B42318', marginTop: 12, marginBottom: 0,
+        }}>
+          {error}
+        </p>
+      )}
+
+      <button
+        type="submit"
+        className="btn-primary"
+        disabled={state === 'sending'}
+        style={{
+          marginTop: 14,
+          width: '100%',
+          minHeight: 46,
+          fontSize: 15,
+          opacity: state === 'sending' ? 0.65 : 1,
+          cursor: state === 'sending' ? 'progress' : 'pointer',
+        }}
+      >
+        {state === 'sending' ? 'Sending…' : 'Ask for a price'}
+      </button>
+    </form>
+  )
+}
+
+const labelStyle: React.CSSProperties = {
+  display: 'block',
+  fontFamily: 'var(--font-dm-sans)',
+  fontSize: 12,
+  fontWeight: 600,
+  color: 'var(--text-secondary)',
+  marginBottom: 6,
+}
+
+// 16px keeps iOS Safari from zooming the viewport on focus.
+//
+// The fill and border are both overridden on purpose. `.field-input` is warm
+// (--bg-warm) so it reads as a recess against the white quote card, but this
+// panel is itself warm, so the default field dissolves into it: the fills are
+// identical and the only boundary left is a --border hairline at 1.23:1.
+// White fill alone does not fix that (1.05:1 against the panel), so the
+// boundary is carried by an explicit border instead: #8B8A88 measures 3.28:1
+// against the panel and 3.45:1 against the fill, clearing WCAG 2.2 SC 1.4.11.
+// Focus still reads distinctly through .field-input:focus's accent ring.
+const askInputStyle: React.CSSProperties = {
+  height: 46,
+  fontSize: 16,
+  background: '#fff',
+  border: '1px solid #8B8A88',
 }
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {

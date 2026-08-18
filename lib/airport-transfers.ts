@@ -121,6 +121,21 @@ export const DESTINATIONS: TransferDestination[] = [
   { id: 'azul-beach-negril', name: 'Azul Beach Resort Negril', parish: 'Westmoreland', zone: 'D', baseRate: 90, estimated: true },
   { id: 'rockhouse-negril', name: 'Rockhouse Hotel, Negril', parish: 'Westmoreland', zone: 'D', baseRate: 90, estimated: true },
   { id: 'the-cliff-negril', name: 'The Cliff Hotel, Negril', parish: 'Westmoreland', zone: 'D', baseRate: 90, estimated: true },
+  // West End (Negril cliffs). Same drive as the Norman Manley Blvd resorts
+  // already listed above, so they carry the same Zone D rate. Added after a
+  // contact-form enquiry for Samsara showed an unlisted property is a dead end
+  // in the booking flow. Marked estimated: the rate is inferred from the
+  // neighbouring cliff hotels, not quoted per-property by the operator.
+  { id: 'samsara-cliff-negril', name: 'Samsara Cliff Resort, Negril', parish: 'Westmoreland', zone: 'D', baseRate: 90, estimated: true },
+  { id: 'tensing-pen-negril', name: 'Tensing Pen Resort, Negril', parish: 'Westmoreland', zone: 'D', baseRate: 90, estimated: true },
+  { id: 'the-caves-negril', name: 'The Caves, Negril', parish: 'Westmoreland', zone: 'D', baseRate: 90, estimated: true },
+  { id: 'catcha-falling-star-negril', name: 'Catcha Falling Star, Negril', parish: 'Westmoreland', zone: 'D', baseRate: 90, estimated: true },
+  { id: 'xtabi-negril', name: 'Xtabi Resort, Negril', parish: 'Westmoreland', zone: 'D', baseRate: 90, estimated: true },
+  { id: 'negril-escape-negril', name: 'Negril Escape Resort & Spa', parish: 'Westmoreland', zone: 'D', baseRate: 90, estimated: true },
+  { id: 'banana-shout-negril', name: 'Banana Shout Resort, Negril', parish: 'Westmoreland', zone: 'D', baseRate: 90, estimated: true },
+  { id: 'blue-cave-castle-negril', name: 'Blue Cave Castle, Negril', parish: 'Westmoreland', zone: 'D', baseRate: 90, estimated: true },
+  { id: 'westender-inn-negril', name: 'Westender Inn, Negril', parish: 'Westmoreland', zone: 'D', baseRate: 90, estimated: true },
+  { id: 'home-sweet-home-negril', name: 'Home Sweet Home Resort, Negril', parish: 'Westmoreland', zone: 'D', baseRate: 90, estimated: true },
   { id: 'couples-swept-away', name: 'Couples Swept Away, Negril', parish: 'Westmoreland', zone: 'D', baseRate: 90 },
   { id: 'couples-negril', name: 'Couples Negril', parish: 'Westmoreland', zone: 'D', baseRate: 90 },
   { id: 'hedonism-ii', name: 'Hedonism II, Negril', parish: 'Westmoreland', zone: 'D', baseRate: 90 },
