@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo, useEffect, useRef } from 'react'
+import { useState, useMemo, useEffect, useRef, useId } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { Search } from 'lucide-react'
 import { singleExperiences } from '@/lib/experiences'
@@ -33,6 +33,7 @@ export default function ExploreView() {
   const [filterHidden, setFilterHidden] = useState(false)
   const { t } = useI18n()
   const lastScrollY = useRef(0)
+  const parishId = useId()
   // null until hydration = render both grids exactly like the server did.
   const [isMobileVp, setIsMobileVp] = useState<boolean | null>(null)
 
@@ -76,7 +77,7 @@ export default function ExploreView() {
           !exp.category.toLowerCase().includes(q) &&
           !exp.creator.toLowerCase().includes(q) &&
           !exp.description.toLowerCase().includes(q) &&
-          !exp.tags.some((t) => t.toLowerCase().includes(q))
+          !exp.tags.some((tag) => tag.toLowerCase().includes(q))
         ) {
           return false
         }
@@ -85,22 +86,45 @@ export default function ExploreView() {
     })
   }, [search, activeCat, activeParish])
 
+  const filtering = activeCat !== 'All' || activeParish !== 'All Parishes' || search.trim() !== ''
+  const clearAll = () => { setSearch(''); setActiveCat('All'); setActiveParish('All Parishes') }
+
   return (
     <div className="page-top-mobile" style={{ minHeight: '100vh', paddingTop: 'var(--nav-h)' }}>
-      {/* Sticky filters */}
+      {/* Title sits ABOVE the sticky bar, not inside it. Previously the bar
+          carried the h1 and two pill rows, so the thing pinned to the top of
+          every scroll was ~180px tall and ate a third of the viewport on a
+          phone. The bar now holds only controls. */}
+      <div className="container explore-head">
+        <p style={{
+          fontFamily: 'var(--font-dm-sans)', fontSize: 12, fontWeight: 600,
+          letterSpacing: '0.14em', textTransform: 'uppercase',
+          color: 'var(--gold-text)', marginBottom: 8,
+        }}>
+          {t('Jamaica, beyond the resort')}
+        </p>
+        <h1 style={{
+          fontFamily: 'var(--font-dm-sans)', fontWeight: 500,
+          fontSize: 'var(--fs-h1)', letterSpacing: '-0.025em', lineHeight: 1.04,
+          textWrap: 'balance',
+        }}>
+          {t('Explore')}
+        </h1>
+      </div>
+
+      {/* Sticky controls */}
       <div className="explore-sticky-bar" style={{
         position: 'sticky', top: 'var(--nav-h)', zIndex: 20,
-        background: 'rgba(255,255,255,0.97)',
+        background: 'rgba(250,249,247,0.94)',
         backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)',
         borderBottom: '1px solid var(--border)',
         transition: 'transform 0.35s cubic-bezier(0.22,1,0.36,1)',
         transform: filterHidden ? 'translateY(-100%)' : 'translateY(0)',
       }}>
-        <div className="container" style={{ paddingTop: 18, paddingBottom: 16 }}>
-          <h1 style={{ fontFamily: 'var(--font-dm-sans)', fontWeight: 500, fontSize: 'var(--fs-h2)', letterSpacing: '-0.02em', marginBottom: 14 }}>{t('Explore')}</h1>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 14, flexWrap: 'wrap' }}>
+        <div className="container" style={{ paddingTop: 14, paddingBottom: 14 }}>
+          <div className="explore-controls" style={{ marginBottom: 12 }}>
             <div style={{
-              flex: '1 1 260px', maxWidth: 420, position: 'relative',
+              flex: '1 1 320px', maxWidth: 460, position: 'relative',
               display: 'flex', alignItems: 'center',
             }}>
               <Search size={16} strokeWidth={2} style={{
@@ -132,84 +156,97 @@ export default function ExploreView() {
                     color: 'var(--text-secondary)', fontSize: 16, borderRadius: 9999,
                   }}
                 >
-                  {'\u2715'}
+                  {'✕'}
                 </button>
               )}
             </div>
+
+            {/* Nine parishes is a menu, not a pill row. This also gets the
+                native wheel picker on iOS and Android. */}
+            <label htmlFor={parishId} className="visually-hidden">Filter by parish</label>
+            <select
+              id={parishId}
+              className="explore-select"
+              value={activeParish}
+              data-active={activeParish !== 'All Parishes'}
+              onChange={(e) => setActiveParish(e.target.value)}
+            >
+              {parishes.map((p) => <option key={p} value={p}>{p}</option>)}
+            </select>
           </div>
 
-          <div className="scroll-x" style={{ gap: 8 }}>
+          <div className="explore-chips" role="group" aria-label="Filter by category">
             {categories.map((c) => (
-              <button key={c} onClick={() => setActiveCat(c)}
+              <button
+                key={c}
+                type="button"
+                className="explore-chip"
+                onClick={() => setActiveCat(c)}
                 aria-pressed={activeCat === c}
-                onMouseEnter={(e) => { if (activeCat !== c) e.currentTarget.style.background = 'var(--surface-hover)' }}
-                onMouseLeave={(e) => { if (activeCat !== c) e.currentTarget.style.background = 'var(--surface)' }}
-                style={{
-                height: 44, padding: '0 16px', borderRadius: 9999,
-                fontSize: 13, fontWeight: 500, fontFamily: 'var(--font-dm-sans)',
-                border: '1px solid', cursor: 'pointer', transition: 'all 0.15s ease',
-                background: activeCat === c ? 'var(--accent)' : 'var(--surface)',
-                color: activeCat === c ? '#fff' : 'var(--text-secondary)',
-                borderColor: activeCat === c ? 'var(--accent)' : 'var(--border)',
-                whiteSpace: 'nowrap',
-              }}>
+              >
                 {c}
-              </button>
-            ))}
-          </div>
-          <div className="scroll-x" style={{ gap: 8, marginTop: 8 }}>
-            <span style={{
-              alignSelf: 'center', flexShrink: 0, margin: '0 4px',
-              fontSize: 12, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em',
-              color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-sans)',
-            }}>
-              Parish
-            </span>
-            {parishes.map((p) => (
-              <button key={p} onClick={() => setActiveParish(p)}
-                aria-pressed={activeParish === p}
-                onMouseEnter={(e) => { if (activeParish !== p) e.currentTarget.style.background = 'var(--surface-hover)' }}
-                onMouseLeave={(e) => { if (activeParish !== p) e.currentTarget.style.background = 'var(--surface)' }}
-                style={{
-                height: 44, padding: '0 16px', borderRadius: 9999,
-                fontSize: 13, fontWeight: 500, fontFamily: 'var(--font-dm-sans)',
-                border: '1px solid', cursor: 'pointer', transition: 'all 0.15s ease',
-                background: activeParish === p ? 'var(--accent)' : 'var(--surface)',
-                color: activeParish === p ? '#fff' : 'var(--text-secondary)',
-                borderColor: activeParish === p ? 'var(--accent)' : 'var(--border)',
-                whiteSpace: 'nowrap',
-              }}>
-                {p}
               </button>
             ))}
           </div>
         </div>
       </div>
 
-      {/* Grid */}
-      <h2 style={{ position: 'absolute', width: 1, height: 1, padding: 0, margin: -1, overflow: 'hidden', clip: 'rect(0 0 0 0)', whiteSpace: 'nowrap', border: 0 }}>
-        All experiences
-      </h2>
-      <div className="container" style={{ paddingTop: 28, paddingBottom: 80 }}>
-        {filtered.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '80px 0' }}>
-            <p style={{ fontSize: 16, fontFamily: 'var(--font-dm-sans)', fontWeight: 700, marginBottom: 6 }}>No experiences found</p>
+      <h2 className="visually-hidden">All experiences</h2>
+
+      <div className="container" style={{ paddingTop: 20, paddingBottom: 80 }}>
+        {/* Result count. Filters that change nothing visible feel broken, and
+            a live region means the change is announced rather than only seen. */}
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap',
+          marginBottom: 16, minHeight: 32,
+        }}>
+          <p aria-live="polite" style={{
+            fontFamily: 'var(--font-dm-sans)', fontSize: 13.5,
+            color: 'var(--text-tertiary)', margin: 0,
+          }}>
+            {filtering
+              ? `${filtered.length} of ${singleExperiences.length} experiences`
+              : `${singleExperiences.length} experiences`}
+          </p>
+          {filtering && (
             <button
-              onClick={() => { setSearch(''); setActiveCat('All'); setActiveParish('All Parishes') }}
+              type="button"
+              onClick={clearAll}
               style={{
-                marginTop: 10, minHeight: 44, padding: '0 22px', borderRadius: 9999,
-                background: 'var(--accent)', color: '#fff', border: 'none', cursor: 'pointer',
-                fontFamily: 'var(--font-dm-sans)', fontSize: 14, fontWeight: 600,
+                minHeight: 32, padding: '0 12px', borderRadius: 9999,
+                border: '1px solid var(--border)', background: 'transparent',
+                cursor: 'pointer', fontFamily: 'var(--font-dm-sans)',
+                fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)',
               }}
             >
-              Clear all filters
+              {t('Clear filters')}
             </button>
-            <p style={{ fontSize: 13, color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-sans)' }}>Try adjusting your filters</p>
+          )}
+        </div>
+
+        {filtered.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: '72px 0' }}>
+            <p style={{ fontSize: 22, fontFamily: 'var(--font-dm-sans)', fontWeight: 500, letterSpacing: '-0.02em', marginBottom: 8 }}>
+              Nothing matches that yet
+            </p>
+            <p style={{ fontSize: 15, color: 'var(--text-secondary)', fontFamily: 'var(--font-dm-sans)', marginBottom: 20 }}>
+              Try a wider parish, or clear the filters and browse the whole island.
+            </p>
+            <button
+              onClick={clearAll}
+              style={{
+                minHeight: 46, padding: '0 24px', borderRadius: 9999,
+                background: 'var(--accent)', color: '#fff', border: 'none', cursor: 'pointer',
+                fontFamily: 'var(--font-dm-sans)', fontSize: 15, fontWeight: 600,
+              }}
+            >
+              {t('Clear filters')}
+            </button>
           </div>
         ) : (
           <>
             {isMobileVp !== true && (
-              <div className="hide-mobile" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 20 }}>
+              <div className="hide-mobile explore-grid">
                 {filtered.map((exp) => <ExpCard key={exp.id} exp={exp} />)}
               </div>
             )}
