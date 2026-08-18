@@ -601,7 +601,27 @@ export function useI18n() {
     [mounted, storeFormatPrice],
   )
 
-  return { ...store, t, formatPrice }
+  /**
+   * Money that is ACTUALLY CHARGED. Always USD, always cents.
+   *
+   * `formatPrice` converts by a hardcoded rate and swaps the currency symbol,
+   * which is fine for browsing an indicative catalogue price. It is wrong for
+   * anything on a payment screen: Stripe is created with `currency: 'usd'`
+   * and charges USD regardless of the site language, so rendering a payable
+   * total as "€182" told the buyer they were paying euros at a rate MAPL
+   * invented, and the card was then debited a different number in a different
+   * currency. Every figure that forms part of the charge uses this.
+   */
+  const formatUsd = useCallback(
+    (usd: number) =>
+      `$${(Number.isFinite(usd) ? usd : 0).toLocaleString('en-US', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      })}`,
+    [],
+  )
+
+  return { ...store, t, formatPrice, formatUsd }
 }
 
 // Detect from browser language

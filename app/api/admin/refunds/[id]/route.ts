@@ -128,9 +128,39 @@ export async function POST(req: Request, { params }: { params: { id: string } })
   // capping on it would let us ask Stripe for more than it took.
   const grossCents = Math.round(Number(booking.total_paid) * 100)
   const giftFundedCents = Math.round(Number(booking.gift_card_amount ?? 0) * 100)
-  const cashCapturedCents = Math.max(0, grossCents - (Number.isFinite(giftFundedCents) ? giftFundedCents : 0))
-  if (cashRefundCents > cashCapturedCents) {
-    return NextResponse.json({ error: 'quote_exceeds_payment' }, { status: 409 })
+  const storedCapturedCents = Math.max(0, grossCents - (Number.isFinite(giftFundedCents) ? giftFundedCents : 0))
+
+  // Ask STRIPE what is still refundable rather than trusting stored columns.
+  // A goodwill refund issued by hand in the Dashboard never reduces any
+  // column here, so capping on stored values alone let the full policy
+  // refund go out on top of it and paid out more than was ever captured.
+  let refundableCents = storedCapturedCents
+  if (booking.stripe_payment_id) {
+    try {
+      const pi = await stripe.paymentIntents.retrieve(booking.stripe_payment_id, { expand: ['latest_charge'] })
+      const charge = pi.latest_charge as Stripe.Charge | null
+      if (charge && typeof charge === 'object') {
+        refundableCents = Math.max(0, (charge.amount_captured ?? 0) - (charge.amount_refunded ?? 0))
+      }
+    } catch (err) {
+      // Cannot prove what is refundable, so refuse rather than guess: an
+      // over-refund is unrecoverable, a retry is free.
+      console.error('[admin-refund] could not read live charge state', booking.id, err instanceof Error ? err.message : err)
+      return NextResponse.json(
+        { error: 'charge_state_unavailable', message: 'Could not confirm the refundable amount with Stripe. Try again.' },
+        { status: 503 },
+      )
+    }
+  }
+
+  if (cashRefundCents > Math.min(storedCapturedCents, refundableCents)) {
+    return NextResponse.json(
+      {
+        error: 'quote_exceeds_payment',
+        message: `Only ${(Math.min(storedCapturedCents, refundableCents) / 100).toFixed(2)} is still refundable on this charge (a manual refund may already have been issued).`,
+      },
+      { status: 409 },
+    )
   }
 
   // Only a refund that owes cash needs a PaymentIntent. A booking paid for
@@ -186,7 +216,29 @@ export async function POST(req: Request, { params }: { params: { id: string } })
     // Put the gift-funded share back on the card. Done AFTER Stripe so a
     // failed cash refund releases the claim without having already credited.
     if (giftRefundCents > 0 && booking.gift_card_id) {
-      await refundToGiftCard(svc, booking.gift_card_id as string, booking.id, giftRefundCents / 100)
+      const credited = await refundToGiftCard(svc, booking.gift_card_id as string, booking.id, giftRefundCents / 100)
+      if (!credited) {
+        // The cash half already left Stripe, so the booking stays refunded —
+        // rolling back here would strand a refunded charge as 'paid'. But the
+        // traveler is owed store credit that never landed, and reporting
+        // success would bury that forever. refundToGiftCard leaves the
+        // redemption row at 'spent', which IS the durable marker that credit
+        // is still owed; surface it loudly so ops credits by hand.
+        console.error('[admin-refund] CRITICAL: gift credit failed after cash refund', {
+          booking: booking.id, gift_card: booking.gift_card_id, owed: giftRefundCents / 100,
+        })
+        await sendCancellationEmails(booking.id, { source: 'self-serve' })
+        return NextResponse.json(
+          {
+            error: 'gift_credit_failed',
+            message: `Cash refund of $${(cashRefundCents / 100).toFixed(2)} succeeded, but $${(giftRefundCents / 100).toFixed(2)} of gift-card credit did NOT land. Credit it manually on card ${booking.gift_card_id}.`,
+            cashRefunded: true,
+            refundId,
+            giftCreditOwedCents: giftRefundCents,
+          },
+          { status: 500 },
+        )
+      }
     }
 
     const emails = await sendCancellationEmails(booking.id, { source: 'self-serve' })
@@ -201,10 +253,46 @@ export async function POST(req: Request, { params }: { params: { id: string } })
       emails,
     })
   } catch (err) {
-    // RELEASE: Stripe never took the money, so put the request back in the
-    // queue rather than stranding a trip as cancelled-but-unrefunded.
     const msg = err instanceof Error ? err.message : 'refund_failed'
-    console.error('[admin-refund] stripe refund failed, releasing claim', booking.id, msg)
+
+    // Before releasing, PROVE the refund did not happen. A network timeout or
+    // a lost response looks identical to a refusal here, and releasing on the
+    // ambiguous case resurrected the booking to 'paid' while the money had
+    // already gone: MAPL pays the refund AND still delivers the trip.
+    if (booking.stripe_payment_id) {
+      try {
+        const existing = await stripe.refunds.list({ payment_intent: booking.stripe_payment_id, limit: 10 })
+        const landed = existing.data.some(
+          (r) => r.status !== 'failed' && r.status !== 'canceled' && r.metadata?.booking_id === booking.id,
+        )
+        if (landed) {
+          console.error('[admin-refund] stripe threw but the refund EXISTS — keeping booking refunded', booking.id, msg)
+          await sendCancellationEmails(booking.id, { source: 'self-serve' })
+          return NextResponse.json(
+            {
+              error: 'refund_uncertain_but_landed',
+              message: 'Stripe returned an error, but the refund is present on the charge. The booking has been left refunded. Verify in the Stripe Dashboard.',
+            },
+            { status: 502 },
+          )
+        }
+      } catch (probeErr) {
+        // Cannot prove either way. Fail CLOSED: leave the booking refunded
+        // rather than resurrecting a trip whose money may already be gone.
+        console.error('[admin-refund] refund state unprovable, leaving booking refunded', booking.id, probeErr instanceof Error ? probeErr.message : probeErr)
+        return NextResponse.json(
+          {
+            error: 'refund_state_unknown',
+            message: 'Could not confirm with Stripe whether the refund went through. The booking has been left cancelled. Check the Stripe Dashboard before retrying.',
+          },
+          { status: 502 },
+        )
+      }
+    }
+
+    // RELEASE: proven that Stripe never took the money, so put the request
+    // back in the queue rather than stranding a trip as cancelled-unrefunded.
+    console.error('[admin-refund] stripe refund provably failed, releasing claim', booking.id, msg)
     await svc
       .from('bookings')
       .update({

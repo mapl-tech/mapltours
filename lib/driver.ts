@@ -1,4 +1,4 @@
-import { firstLeg, bookingRef, supplierPayout, round2, type Bk } from '@/lib/dispatch'
+import { firstLeg, bookingRef, supplierPayout, round2, legInstantMs, type Bk } from '@/lib/dispatch'
 
 /**
  * Driver-portal data model. The single job of this module is the PRIVACY
@@ -129,12 +129,17 @@ export function driverTour(b: Bk): DriverTour | null {
   }
 }
 
-/** Sort key: the next thing the driver has to do (soonest upcoming leg first). */
+/** Sort key: the next thing the driver has to do (soonest upcoming leg first).
+ *
+ * Leg stamps are Jamaica wall-clock, so they must go through legInstantMs to
+ * become real instants before any comparison with Date.now(). Comparing raw
+ * put every leg 5 hours early: a trip dropped out of the driver's upcoming
+ * list, and off the top of his sort, 5 hours before it was actually due. */
 export function nextActionAt(t: DriverTrip): number {
   const now = Date.now()
   const times = [t.arrivalAt, t.departureAt]
     .filter(Boolean)
-    .map((iso) => new Date(iso as string).getTime())
+    .map((iso) => legInstantMs(iso as string))
   const upcoming = times.filter((ms) => ms >= now - 12 * 3600_000) // still active within 12h
   if (upcoming.length) return Math.min(...upcoming)
   // everything in the past: sort those after upcoming trips, most recent first

@@ -50,6 +50,12 @@ interface CheckoutBody {
   items: CartItemIn[]
   /** Gift card code the traveler typed at checkout, if any. */
   giftCode?: string
+  /**
+   * Whether the traveler kept their video-upload reward. The PERCENT is never
+   * taken from the client, only this yes/no. Omitted (older clients) means
+   * "apply if available", preserving the previous behaviour.
+   */
+  applyReward?: boolean
   attribution?: unknown
   customer?: {
     email?: string
@@ -134,6 +140,15 @@ export async function POST(request: NextRequest) {
           rewardPercent = Number(reward.percent)
           rewardId = reward.id
         }
+      }
+      // Honour a DECLINED reward. The discount is the traveler's to refuse,
+      // and force-applying it made the server price a cart the client had
+      // quoted at full price: assertAmountMatches then rejected every attempt
+      // and checkout 400'd with no way out but rediscovering the tickbox. The
+      // percent stays server-verified; only the yes/no comes from the request.
+      if (body.applyReward === false) {
+        rewardPercent = 0
+        rewardId = null
       }
     } catch (err) {
       // Reward lookup is best-effort, never block a paid checkout over it.
@@ -276,6 +291,10 @@ export async function POST(request: NextRequest) {
       travelers: l.travelers,
       date: l.date,
       price_per_person: l.pricePerPerson,
+      // Authoritative. price_per_person is a rounded per-head derivation and
+      // an indivisible party price does not multiply back to what was
+      // charged; receipts read this instead.
+      line_total: l.lineTotal,
     }))
     const { error: itemsErr } = await supabase.from('booking_items').insert(itemRows)
     if (itemsErr) {
@@ -315,8 +334,28 @@ export async function POST(request: NextRequest) {
         .in('status', ['reserved', 'spent'])
         .maybeSingle()
       giftAmountCents = live ? Math.round(Number(live.amount) * 100) : 0
-      if (!giftAmountCents) giftCardId = null
-    } else if (body.giftCode) {
+      if (!giftAmountCents) {
+        // The claim was released (stale sweep, failed attempt) but the stamp
+        // survived. Left in place, the guest is charged FULL price while the
+        // row still testifies a gift paid part of it — and a later refund
+        // would then re-credit gift value that was already handed back.
+        // Clear the stamp so row and ledger agree, then let a giftCode on
+        // this request claim afresh below.
+        giftCardId = null
+        const { error: unstampErr } = await supabase
+          .from('bookings')
+          .update({ gift_card_id: null, gift_card_amount: null })
+          .eq('id', bookingId!)
+        if (unstampErr) {
+          console.error('[checkout]', reqId, 'stale gift stamp clear failed', unstampErr)
+          return NextResponse.json(
+            { error: 'Could not refresh your gift card. Please try again.', requestId: reqId },
+            { status: 500 },
+          )
+        }
+      }
+    }
+    if (!giftCardId && body.giftCode) {
       const claimed = await claimGiftCard(supabase, body.giftCode, amountInCents, bookingId!)
       if (!claimed.ok) {
         // Not a server error — the traveler mistyped or the card is spent.
@@ -343,7 +382,17 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const chargeCents = Math.max(0, amountInCents - giftAmountCents)
+    let chargeCents = Math.max(0, amountInCents - giftAmountCents)
+
+    // Stripe's minimum charge is $0.50. A card whose balance covers all but
+    // a few cents would otherwise hand Stripe an unchargeable amount and
+    // dead-end the checkout with the balance still reserved. MAPL absorbs
+    // the remainder (at most 49 cents) and the booking completes as fully
+    // covered.
+    if (giftAmountCents > 0 && chargeCents > 0 && chargeCents < 50) {
+      console.warn('[checkout]', reqId, 'absorbing sub-minimum gift remainder', { chargeCents })
+      chargeCents = 0
+    }
 
     // 4c. Fully covered by the gift card: there is no card payment to take,
     //     so no PaymentIntent exists and no Stripe webhook will ever fire for
@@ -385,7 +434,7 @@ export async function POST(request: NextRequest) {
         .from('bookings').select('*').eq('id', bookingId!).maybeSingle()
       const { data: paidItems } = await supabase
         .from('booking_items')
-        .select('experience_id, title, destination, travelers, date, price_per_person, item_type, airport, hotel, zone, trip_type, arrival_flight, arrival_at, departure_flight, departure_at, passengers')
+        .select('experience_id, title, destination, travelers, date, price_per_person, line_total, item_type, airport, hotel, zone, trip_type, arrival_flight, arrival_at, departure_flight, departure_at, passengers')
         .eq('booking_id', bookingId!)
 
       // A gift-covered booking never reaches the webhook, so the default-driver
@@ -405,10 +454,26 @@ export async function POST(request: NextRequest) {
       }
 
       if (paidBooking) {
-        // Best-effort: the booking is already paid for, so an email failure
-        // must not fail the request and send them back to pay again.
-        await maybeSendTravelerConfirmation(supabase, paidBooking as never, (paidItems ?? []) as never)
-        await maybeSendOperatorAlert(supabase, paidBooking as never, (paidItems ?? []) as never)
+        // A gift-covered booking never reaches the webhook, so there is no
+        // Stripe re-delivery to heal a transient email failure — this request
+        // is the only chance either message gets. Retry retryable failures
+        // in-process; a booking left paid-but-unannounced means MAPL keeps
+        // the full gift value for a trip no operator was ever told to run.
+        for (let attempt = 0; attempt < 3; attempt++) {
+          const traveler = await maybeSendTravelerConfirmation(supabase, paidBooking as never, (paidItems ?? []) as never)
+          const operator = await maybeSendOperatorAlert(supabase, paidBooking as never, (paidItems ?? []) as never)
+          if (traveler.ok && operator.ok) break
+          const retryable = (!traveler.ok && traveler.retryable) || (!operator.ok && operator.retryable)
+          if (!retryable || attempt === 2) {
+            console.error('[checkout]', reqId, 'CRITICAL: gift-covered booking emails undelivered', {
+              booking: bookingId,
+              traveler: traveler.ok ? 'sent' : traveler.reason,
+              operator: operator.ok ? 'sent' : operator.reason,
+            })
+            break
+          }
+          await new Promise((r) => setTimeout(r, 1200 * (attempt + 1)))
+        }
       }
 
       return NextResponse.json({
@@ -471,7 +536,14 @@ export async function POST(request: NextRequest) {
         // BookingConfirmed template (sent from the webhook) is the only
         // confirmation we want them to get.
       },
-      { idempotencyKey: cartHash },
+      // Keyed per booking row and per PI generation, NOT per cart. The old
+      // cart-hash key outlived the PaymentIntent it created: once that PI
+      // was canceled, Stripe served the same dead PI back for 24 hours and
+      // the cart became unpurchasable — every declined-then-canceled retry
+      // and every second identical booking simply could not pay. Concurrent
+      // double-submits still dedupe: same row + same prior generation =
+      // same key = one PI.
+      { idempotencyKey: `pi:${bookingId}:${giftState?.stripe_payment_id ?? 'v1'}` },
     )
 
     // 7. Verified attach. If we can't persist the PI id back to the row,
@@ -496,6 +568,16 @@ export async function POST(request: NextRequest) {
         { error: 'Could not attach payment intent', requestId: reqId },
         { status: 500 },
       )
+    }
+
+    // A replaced PaymentIntent must not stay payable: two live intents for
+    // one booking means two tabs can each complete a different charge for the
+    // same trip. Best-effort — an already-canceled intent throws, harmlessly.
+    const replacedPi = giftState?.stripe_payment_id
+    if (replacedPi && replacedPi !== paymentIntent.id) {
+      try {
+        await stripe.paymentIntents.cancel(replacedPi, { cancellation_reason: 'duplicate' })
+      } catch { /* already terminal, or gone — either is fine */ }
     }
 
     return NextResponse.json({

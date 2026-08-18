@@ -30,6 +30,8 @@ export interface BookingItemRow {
   travelers: number
   date: string
   price_per_person: number
+  /** Exact amount charged for this line. Null on rows written before 020. */
+  line_total?: number | null
   // transfer fields (null for experience items)
   item_type: 'experience' | 'transfer'
   airport: string | null
@@ -181,7 +183,9 @@ export async function maybeSendTravelerConfirmation(
             date: i.date,
             travelers: i.travelers,
             pricePerPerson: Number(i.price_per_person),
-            linePrice: Number(i.price_per_person) * i.travelers,
+            // Stored total when we have it; the old product for rows written
+            // before line_total existed.
+            linePrice: i.line_total != null ? Number(i.line_total) : Number(i.price_per_person) * i.travelers,
           })),
         }),
         tags: [
@@ -286,7 +290,9 @@ export async function maybeSendOperatorAlert(
             destination: i.destination,
             date: i.date,
             travelers: i.travelers,
-            linePrice: Number(i.price_per_person) * i.travelers,
+            // Stored total when we have it; the old product for rows written
+            // before line_total existed.
+            linePrice: i.line_total != null ? Number(i.line_total) : Number(i.price_per_person) * i.travelers,
           })),
         }),
         tags: [

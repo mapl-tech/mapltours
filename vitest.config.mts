@@ -19,6 +19,10 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('.', import.meta.url)),
+      // Server-only modules (gift redemption, dispatch) guard themselves with
+      // this import. It has no meaning outside a React Server Component, so
+      // point it at a no-op rather than leaving money code untestable.
+      'server-only': fileURLToPath(new URL('./tests/stubs/server-only.ts', import.meta.url)),
     },
   },
   test: {

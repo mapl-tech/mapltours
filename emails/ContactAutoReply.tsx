@@ -27,7 +27,7 @@ export default function ContactAutoReply({
       <Heading style={s.heading}>Thanks, {name}, we got it.</Heading>
       <Text style={s.heroLead}>
         Your message just landed in our inbox. A real person on the MAPL Tours
-        Tours team reads every contact form submission, and we&rsquo;ll get
+        Jamaica team reads every contact form submission, and we&rsquo;ll get
         back to you within <strong>one business day</strong> (often much
         sooner).
       </Text>

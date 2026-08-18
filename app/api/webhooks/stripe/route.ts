@@ -3,7 +3,7 @@ import Stripe from 'stripe'
 import { createServiceClient } from '@/lib/supabase/service'
 import { DEFAULT_DRIVER } from '@/lib/dispatch'
 import { activateGiftCard } from '@/lib/gift-activation'
-import { settleGiftClaim, releaseGiftClaim } from '@/lib/gift-redemption'
+import { settleGiftClaim, releaseGiftClaim, refundToGiftCard } from '@/lib/gift-redemption'
 import { sendEmail, opsBcc } from '@/lib/email/send'
 import { sendCancellationEmails } from '@/lib/email/cancellation'
 import {
@@ -45,6 +45,7 @@ interface BookingItemRow {
   travelers: number
   date: string
   price_per_person: number
+  line_total: number | null
   // transfer fields (null for experience items)
   item_type: 'experience' | 'transfer'
   airport: string | null
@@ -204,7 +205,7 @@ async function loadBooking(pi: Stripe.PaymentIntent) {
   const { data: items, error: itemsErr } = await supabase
     .from('booking_items')
     .select(
-      'experience_id, title, destination, travelers, date, price_per_person, item_type, airport, hotel, zone, trip_type, arrival_flight, arrival_at, departure_flight, departure_at, passengers',
+      'experience_id, title, destination, travelers, date, price_per_person, line_total, item_type, airport, hotel, zone, trip_type, arrival_flight, arrival_at, departure_flight, departure_at, passengers',
     )
     .eq('booking_id', booking.id)
 
@@ -294,7 +295,9 @@ async function handlePaymentSucceeded(pi: Stripe.PaymentIntent) {
   // Turn any gift-card reservation on this cart into a permanent spend. The
   // balance already came off at checkout — this only closes the ledger row so
   // the stale sweep can never hand the value back on a booking that was paid.
-  await settleGiftClaim(supabase, booking.id)
+  // amount_received is the arbiter: if Stripe took the FULL total, the charge
+  // never carried the discount and the claim is released, not settled.
+  await settleGiftClaim(supabase, booking.id, pi.amount_received)
 
   // Consume the video-upload reward, if one was applied to this checkout.
   // This is the authoritative consume point: a 3DS/redirect payment never
@@ -348,24 +351,31 @@ async function handlePaymentFailed(pi: Stripe.PaymentIntent) {
   // In-memory check plus a status predicate on the write for the race.
   if (!booking || booking.status === 'paid' || booking.status === 'refunded') return
 
-  // Give back any gift-card value this cart was holding. Without this the
-  // balance is debited forever for a payment that never happened — a declined
-  // card would silently destroy the whole applied amount.
-  await releaseGiftClaim(supabase, booking.id)
+  // DELIBERATELY no releaseGiftClaim here. payment_failed fires on every
+  // decline while the PaymentIntent is STILL PAYABLE — Stripe Elements
+  // retries on the same intent, and that retry regularly succeeds. Releasing
+  // on failure returned the balance while the discounted charge could still
+  // complete, so one card could fund a second cart and then have the first
+  // succeed: two discounts from one balance. The value comes back on
+  // payment_intent.canceled (terminal, released below in
+  // handlePaymentCanceled) or via the stale-reservation sweep, which cancels
+  // the PaymentIntent FIRST and only then releases.
 
+  // The decline reason is logged, never written to the booking. It used to be
+  // appended to special_requests, and when the retry on the same intent
+  // succeeded, the confirmation email and the driver's trip sheet both
+  // carried "[failure: Your card was declined.]" into the guest's inbox.
   const errMsg =
     pi.last_payment_error?.message ??
     pi.last_payment_error?.code ??
     'payment_failed'
+  console.log('[stripe-webhook] payment failed', { booking_id: booking.id, reason: errMsg })
 
   await supabase
     .from('bookings')
     .update({
       status: 'failed',
       failed_at: new Date().toISOString(),
-      special_requests: booking.special_requests
-        ? `${booking.special_requests}\n[failure: ${errMsg}]`
-        : `[failure: ${errMsg}]`,
     })
     .eq('id', booking.id)
     .not('status', 'in', '("paid","refunded")')
@@ -701,15 +711,15 @@ async function handleChargeRefunded(charge: Stripe.Charge) {
   }
   const refundByPi = () => supabase
     .from('bookings').update(refundFields).neq('status', 'refunded')
-    .eq('stripe_payment_id', piId!).select('id, dispatch, total_paid, gift_card_amount')
+    .eq('stripe_payment_id', piId!).select('id, dispatch, total_paid, gift_card_amount, gift_card_id, refund_quoted_gift')
   const refundByMeta = () => supabase
     .from('bookings').update(refundFields).neq('status', 'refunded')
-    .eq('id', metaBookingId!).select('id, dispatch, total_paid, gift_card_amount')
+    .eq('id', metaBookingId!).select('id, dispatch, total_paid, gift_card_amount, gift_card_id, refund_quoted_gift')
 
   // Two-step lookup, mirroring loadBooking: an orphan booking whose
   // stripe_payment_id was never healed matches zero rows by PI, and the
   // refund must then resolve through metadata rather than being consumed.
-  let data: { id: string; dispatch: unknown; total_paid: number | null; gift_card_amount: number | null }[] | null = null
+  let data: { id: string; dispatch: unknown; total_paid: number | null; gift_card_amount: number | null; gift_card_id: string | null; refund_quoted_gift: number | null }[] | null = null
   let error: { message: string } | null = null
   if (piId) ({ data, error } = await refundByPi())
   if (!error && (!data || data.length === 0) && metaBookingId) ({ data, error } = await refundByMeta())
@@ -748,6 +758,65 @@ async function handleChargeRefunded(charge: Stripe.Charge) {
         .update({ admin_charge: Math.max(0, capturedCents - refundedCents) / 100 })
         .eq('id', row.id)
       if (chargeErr) console.error('[stripe-webhook] admin_charge stamp failed', { booking: row.id, error: chargeErr.message })
+    }
+    // Return the gift-funded share. Stripe's refund only ever covers the CASH
+    // it captured; the gift portion never touched Stripe, so without this a
+    // Dashboard refund silently destroys it — the guest loses the whole gift
+    // share of the booking, and no sweep ever repairs it, because the
+    // redemption row sits at 'spent' on a 'refunded' booking forever.
+    //
+    // Amount owed, in order of authority:
+    //   1. refund_quoted_gift — a lodged cancellation request stored the
+    //      policy split (cash made whole first, admin charge out of gift).
+    //   2. No quote (pure Dashboard refund): a FULL cash refund reads as ops
+    //      making the guest whole, so the full gift share returns; a partial
+    //      refund returns the gift share pro-rata.
+    //
+    // Idempotent by construction: this loop only runs for rows the
+    // conditional status flip actually matched (first processing), and
+    // refundToGiftCard claims the 'spent' ledger row before crediting, so
+    // the admin approval route racing this webhook can never double-credit.
+    for (const row of data) {
+      const giftCents = Math.round(Number(row.gift_card_amount ?? 0) * 100)
+      if (!row.gift_card_id || giftCents <= 0) continue
+
+      const { data: ledger } = await supabase
+        .from('gift_card_redemptions')
+        .select('status')
+        .eq('booking_id', row.id)
+        .in('status', ['reserved', 'spent'])
+        .maybeSingle()
+
+      if (ledger?.status === 'reserved') {
+        // Out-of-order delivery: the refund landed before payment_intent
+        // .succeeded ever settled the claim. The succeeded handler returns
+        // early on refunded bookings, so nothing else will ever release
+        // this reservation. Hand the whole claim back now.
+        await releaseGiftClaim(supabase, row.id)
+        continue
+      }
+      if (ledger?.status !== 'spent') continue // nothing held, nothing owed
+
+      const grossCents = Math.round(Number(row.total_paid ?? 0) * 100)
+      const capturedCents = Math.max(0, grossCents - giftCents)
+      const quotedGiftCents = row.refund_quoted_gift != null
+        ? Math.round(Number(row.refund_quoted_gift) * 100)
+        : null
+      const owedCents = quotedGiftCents != null
+        ? quotedGiftCents
+        : capturedCents > 0 && refundedCents < capturedCents
+          ? Math.round(giftCents * (refundedCents / capturedCents))
+          : giftCents
+
+      if (owedCents <= 0) continue
+      const credited = await refundToGiftCard(supabase, row.gift_card_id, row.id, owedCents / 100)
+      if (!credited) {
+        // refundToGiftCard reverted the ledger row to 'spent', which is the
+        // durable marker that this credit is still owed. Scream for a human.
+        console.error('[stripe-webhook] CRITICAL: gift share of refund NOT credited', {
+          booking: row.id, gift_card: row.gift_card_id, owed: owedCents / 100,
+        })
+      }
     }
     // Notify on BOTH paths. A self-serve cancellation already sent these and
     // the claimed columns make this a no-op; for a Dashboard refund this is

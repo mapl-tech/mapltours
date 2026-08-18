@@ -78,14 +78,27 @@ describe('earliestBookableExperienceDate', () => {
 })
 
 describe('transfers, exact because pickups carry a real time', () => {
+  // Leg timestamps are Jamaica WALL-CLOCK with a Z suffix (lib/dispatch
+  // convention): '…T12:00:00Z' means noon in Jamaica, whose real instant is
+  // 17:00 UTC. `now` below is a true instant — 12:00 UTC = 07:00 in Jamaica.
   const now = at('2026-08-15T12:00:00Z')
 
   test('exactly 24 hours ahead is allowed', () => {
-    expect(isPickupBookable('2026-08-16T12:00:00Z', now)).toBe(true)
+    // Jamaica 07:00 tomorrow = 12:00 UTC tomorrow = now + exactly 24h.
+    expect(isPickupBookable('2026-08-16T07:00:00Z', now)).toBe(true)
   })
 
   test('one minute inside the window is refused', () => {
-    expect(isPickupBookable('2026-08-16T11:59:00Z', now)).toBe(false)
+    expect(isPickupBookable('2026-08-16T06:59:00Z', now)).toBe(false)
+  })
+
+  test('the 24h window is measured in real hours, not a 29h phantom', () => {
+    // Regression: raw Date.parse read the wall-clock as UTC, landing 5 hours
+    // early, so a pickup 26 real hours out was refused. Jamaica 09:00
+    // tomorrow = 14:00 UTC tomorrow = 26 real hours from `now`. Must book.
+    expect(isPickupBookable('2026-08-16T09:00:00Z', now)).toBe(true)
+    // And 23 real hours out must still be refused: Jamaica 06:00 tomorrow.
+    expect(isPickupBookable('2026-08-16T06:00:00Z', now)).toBe(false)
   })
 
   test('comfortably ahead is allowed, past is refused', () => {

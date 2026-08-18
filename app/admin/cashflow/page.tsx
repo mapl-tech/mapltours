@@ -71,7 +71,7 @@ export default async function CashflowPage() {
 
   const { data: bookings } = await svc
     .from('bookings')
-    .select('id, first_name, last_name, booking_type, subtotal, total_paid, gift_card_amount, stripe_payment_id, paid_at, created_at')
+    .select('id, first_name, last_name, booking_type, subtotal, total_paid, gift_card_amount, stripe_payment_id, paid_at, created_at, booking_items(trip_type)')
     .eq('status', 'paid')
     .order('paid_at', { ascending: false, nullsFirst: false })
     .limit(500)

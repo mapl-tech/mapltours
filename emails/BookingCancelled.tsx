@@ -6,6 +6,10 @@ export interface BookingCancelledProps {
   firstName: string | null
   /** What the traveler originally paid. */
   totalPaid: number
+  /** Cash returned through Stripe. Null on older rows with no stored split. */
+  cashRefund?: number | null
+  /** Store credit returned to a gift card. Null when none was used. */
+  giftRefund?: number | null
   /** What we are sending back. */
   refundAmount: number
   /** What we retained, per the published 20% administration charge. */
@@ -49,11 +53,20 @@ export default function BookingCancelled({
   totalPaid,
   refundAmount,
   adminCharge,
+  cashRefund,
+  giftRefund,
   currency,
   isTransfer = false,
   items,
 }: BookingCancelledProps) {
   const noun = isTransfer ? 'transfer' : 'booking'
+
+  // A refund paid partly in store credit must say so. Quoting one number and
+  // calling it "back to your card" is what produces "my bank never got it"
+  // support tickets, and chargebacks, on every gift-funded cancellation.
+  const cashPart = Number(cashRefund ?? 0)
+  const giftPart = Number(giftRefund ?? 0)
+  const hasSplit = giftPart > 0 && cashPart + giftPart > 0
 
   return (
     <MaplLayout
@@ -66,8 +79,12 @@ export default function BookingCancelled({
       </Heading>
       <Text style={s.heroLead}>
         {firstName ? `${firstName}, we` : 'We'}&rsquo;ve cancelled {bookingRef} and sent{' '}
-        {fmtMoney(refundAmount, currency)} back to the card you paid with. Refunds
-        usually appear within 5&ndash;10 business days, depending on your bank.
+        {hasSplit
+          ? <>{fmtMoney(cashPart, currency)} back to the card you paid with and{' '}
+              {fmtMoney(giftPart, currency)} back onto your gift card</>
+          : <>{fmtMoney(refundAmount, currency)} back to the card you paid with</>}
+        . Card refunds usually appear within 5&ndash;10 business days, depending on
+        your bank; gift-card credit is available straight away.
       </Text>
 
       <Section style={s.card} className="mapl-card">
@@ -83,8 +100,20 @@ export default function BookingCancelled({
             <Column><Text style={s.rowLabel}>Administration charge (20%)</Text></Column>
             <Column align="right"><Text style={s.rowValue}>&minus;{fmtMoney(adminCharge, currency)}</Text></Column>
           </Row>
+          {hasSplit ? (
+            <>
+              <Row style={s.rowFlex}>
+                <Column><Text style={s.rowLabel}>Back to your card</Text></Column>
+                <Column align="right"><Text style={s.rowValue}>{fmtMoney(cashPart, currency)}</Text></Column>
+              </Row>
+              <Row style={s.rowFlex}>
+                <Column><Text style={s.rowLabel}>Back to your gift card</Text></Column>
+                <Column align="right"><Text style={s.rowValue}>{fmtMoney(giftPart, currency)}</Text></Column>
+              </Row>
+            </>
+          ) : null}
           <Row style={s.totalRow}>
-            <Column><Text style={s.totalLabel}>Refunded to your card</Text></Column>
+            <Column><Text style={s.totalLabel}>{hasSplit ? 'Total refunded' : 'Refunded to your card'}</Text></Column>
             <Column align="right"><Text style={s.totalValue}>{fmtMoney(refundAmount, currency)}</Text></Column>
           </Row>
         </Section>

@@ -156,7 +156,7 @@ async function resolveConfirm(
   const { data: items } = booking
     ? await supabase
         .from('booking_items')
-        .select('title, destination, date, travelers, price_per_person')
+        .select('title, destination, date, travelers, price_per_person, line_total')
         .eq('booking_id', booking.id)
         .eq('item_type', 'experience')
     : { data: null }
@@ -195,7 +195,7 @@ async function resolveConfirm(
         date: i.date,
         travelers: i.travelers,
         pricePerPerson,
-        lineTotal: pricePerPerson * i.travelers,
+        lineTotal: i.line_total != null ? Number(i.line_total) : pricePerPerson * i.travelers,
       }
     }),
   }
@@ -230,7 +230,7 @@ async function resolveConfirmFromBooking(bookingId: string): Promise<ConfirmData
 
   const { data: items } = await supabase
     .from('booking_items')
-    .select('title, destination, date, travelers, price_per_person')
+    .select('title, destination, date, travelers, price_per_person, line_total')
     .eq('booking_id', booking.id)
     .eq('item_type', 'experience')
 
@@ -259,7 +259,7 @@ async function resolveConfirmFromBooking(bookingId: string): Promise<ConfirmData
         date: i.date,
         travelers: i.travelers,
         pricePerPerson,
-        lineTotal: pricePerPerson * i.travelers,
+        lineTotal: i.line_total != null ? Number(i.line_total) : pricePerPerson * i.travelers,
       }
     }),
   }

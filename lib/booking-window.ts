@@ -78,11 +78,20 @@ export function earliestBookableExperienceDate(now: Date = new Date()): string {
  *
  * `pickup` is an ISO datetime (the flight arrival, or the departure pickup).
  * Exact, because transfers actually store the time.
+ *
+ * CONVENTION: leg timestamps are stored as Jamaica WALL-CLOCK with a Z
+ * suffix (see lib/dispatch.ts). Date.parse alone therefore lands 5 hours
+ * EARLY — Jamaica 15:40 parses as 15:40 UTC, which is 10:40 in Jamaica —
+ * and the "24-hour" cutoff silently behaved as a 29-hour one, refusing
+ * legitimate last-minute bookings that the client's picker had accepted.
+ * Shift by the fixed offset (no DST in Jamaica) to get the real instant,
+ * exactly as legInstantMs does in lib/dispatch.
  */
 export function isPickupBookable(pickup: string, now: Date = new Date()): boolean {
-  const ms = Date.parse(pickup)
-  if (Number.isNaN(ms)) return false
-  return ms >= leadTimeCutoff(now).getTime()
+  const wallClockMs = Date.parse(pickup)
+  if (Number.isNaN(wallClockMs)) return false
+  const instantMs = wallClockMs - JAMAICA_UTC_OFFSET_HOURS * MS_PER_HOUR
+  return instantMs >= leadTimeCutoff(now).getTime()
 }
 
 /**

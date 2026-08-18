@@ -123,7 +123,13 @@ export default function TopNav({ onCartClick }: { onCartClick?: () => void }) {
           borderBottom: '1px solid var(--border)',
         }}
       >
-        <div className="container" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', gap: 16 }}>
+        {/* maxWidth matches the checkout body (both CheckoutView and
+            TransfersCheckoutView constrain to 1100), so the logo and the
+            secure-checkout marker sit on the same left and right edges as the
+            Back link, the title and the step indicator below them. The bare
+            .container is 1832px, which pushed both to the viewport edges and
+            left the header visibly unrelated to the page under it. */}
+        <div className="container" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', gap: 16, maxWidth: 1100, paddingLeft: 16, paddingRight: 16 }}>
           <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0, minHeight: 44 }}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/mapl-logo.svg" alt="MAPL Tours Jamaica" width={160} height={38} style={{ height: 38, width: 'auto', display: 'block' }} />

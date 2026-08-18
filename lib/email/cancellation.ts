@@ -94,7 +94,7 @@ export async function sendCancellationEmails(
     const { data, error } = await supabase
       .from('bookings')
       .select(
-        'id, email, first_name, last_name, phone, currency, booking_type, total_paid, refund_amount, admin_charge, cancellation_email_sent_at, ops_cancellation_email_sent_at, booking_items(*)',
+        'id, email, first_name, last_name, phone, currency, booking_type, total_paid, refund_amount, admin_charge, refund_quoted_cash, refund_quoted_gift, gift_card_amount, cancellation_email_sent_at, ops_cancellation_email_sent_at, booking_items(*)',
       )
       .eq('id', bookingId)
       .maybeSingle()
@@ -118,6 +118,17 @@ export async function sendCancellationEmails(
       ? Number(booking.admin_charge)
       : Math.max(0, totalPaid - refundAmount)
 
+    // Where the refund actually went. The stored quote is authoritative; a
+    // Dashboard refund with no quote is all cash unless a gift funded part of
+    // the booking, in which case the cash half is capped at what Stripe could
+    // ever have captured and the remainder is store credit.
+    const quotedCash = booking.refund_quoted_cash != null ? Number(booking.refund_quoted_cash) : null
+    const quotedGift = booking.refund_quoted_gift != null ? Number(booking.refund_quoted_gift) : null
+    const giftFunded = Number(booking.gift_card_amount ?? 0)
+    const cashCaptured = Math.max(0, totalPaid - giftFunded)
+    const cashRefund = quotedCash ?? Math.min(refundAmount, cashCaptured)
+    const giftRefund = quotedGift ?? Math.max(0, refundAmount - cashRefund)
+
     const firstName = booking.first_name ?? null
     const customerName = [booking.first_name, booking.last_name].filter(Boolean).join(' ') || 'Traveler'
 
@@ -133,6 +144,7 @@ export async function sendCancellationEmails(
         subject: `Cancelled: ${bookingRef} · ${currency === 'USD' ? '$' : ''}${refundAmount.toFixed(2)} refunded`,
         react: BookingCancelled({
           bookingRef, firstName, totalPaid, refundAmount, adminCharge, currency, isTransfer, items,
+          cashRefund, giftRefund,
         }),
         tags: [{ name: 'type', value: 'booking-cancelled' }],
       })

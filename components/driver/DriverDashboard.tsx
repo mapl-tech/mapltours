@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { PlaneLanding, PlaneTakeoff, MapPin, CalendarPlus, Phone, MessageCircle, Radar } from 'lucide-react'
 import type { DriverTrip, DriverTour } from '@/lib/driver'
-import { jaDate, jaTime, gcalLink, waLink, MIN_PICKUP_LEAD_MIN } from '@/lib/dispatch'
+import { jaDate, jaTime, gcalLink, waLink, legInstantMs, MIN_PICKUP_LEAD_MIN } from '@/lib/dispatch'
 import { flightLinks, flightDate, type FlightStatus } from '@/lib/flight'
 
 /**
@@ -54,7 +54,9 @@ function paidStamp(iso: string | null): string {
 }
 /** "in 3 days" / "in 5 hrs" / "today" for the hero countdown. */
 function countdown(iso: string): string {
-  const ms = new Date(iso).getTime() - Date.now()
+  // Jamaica wall-clock -> real instant. Raw parsing ran the countdown 5 hours
+  // fast, so the driver was told "in 2 hrs" for a pickup 7 hours away.
+  const ms = legInstantMs(iso) - Date.now()
   if (ms <= 0) return 'now'
   const h = Math.round(ms / 3600_000)
   if (h < 1) return 'under an hour'
@@ -461,9 +463,9 @@ function nextPickup(trips: DriverTrip[]): { t: DriverTrip; iso: string; role: 'a
     const legs: Array<['arrival' | 'departure', string | null]> = [['arrival', t.arrivalAt], ['departure', t.departureAt]]
     for (const [role, iso] of legs) {
       if (!iso) continue
-      const ms = new Date(iso).getTime()
+      const ms = legInstantMs(iso)
       if (ms < now - 2 * 3600_000) continue // already driven
-      if (!best || ms < new Date(best.iso).getTime()) best = { t, iso, role }
+      if (!best || ms < legInstantMs(best.iso)) best = { t, iso, role }
     }
   }
   return best

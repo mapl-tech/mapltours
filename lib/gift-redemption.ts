@@ -295,9 +295,61 @@ export async function claimGiftCard(
  * webhook once the remaining balance actually cleared.
  *
  * Idempotent: the webhook retries, and a second call finds no reserved row.
+ *
+ * `capturedCents` is what Stripe actually took (pi.amount_received). When
+ * provided, it is the arbiter of whether the charge really carried the gift
+ * discount: a PaymentIntent created before the card was applied charges the
+ * FULL price, and settling (or re-debiting) the claim on top of a full-price
+ * charge makes the guest pay twice — once in cash, once in destroyed balance.
+ * In that case the claim is released, and the booking's gift stamp cleared so
+ * a later refund doesn't treat part of the cash as gift-funded.
  */
-export async function settleGiftClaim(supabase: DB, bookingId: string): Promise<void> {
+export async function settleGiftClaim(
+  supabase: DB,
+  bookingId: string,
+  capturedCents?: number | null,
+): Promise<void> {
   try {
+    // Is there a gift claim on this booking at all? Almost every booking has
+    // none, and without this the full-price comparison below is true for all
+    // of them (captured == gross when no discount applied), which would log a
+    // false alarm and write to the row on every single payment.
+    const { data: anyClaim } = await supabase
+      .from('gift_card_redemptions')
+      .select('id')
+      .eq('booking_id', bookingId)
+      .in('status', ['reserved', 'spent', 'released'])
+      .maybeSingle()
+    if (!anyClaim) return
+
+    // A claim exists. Did the charge actually carry the discount?
+    let chargedFullPrice = false
+    if (capturedCents != null && Number.isFinite(capturedCents)) {
+      const { data: bk } = await supabase
+        .from('bookings')
+        .select('total_paid')
+        .eq('id', bookingId)
+        .maybeSingle()
+      const grossCents = Math.round(Number(bk?.total_paid ?? 0) * 100)
+      chargedFullPrice = grossCents > 0 && capturedCents >= grossCents
+    }
+
+    if (chargedFullPrice) {
+      // The guest paid the whole total in cash. Any claim held against this
+      // booking is value they never received as a discount: hand it back and
+      // erase the stamp that says a gift card part-funded the booking.
+      console.error(
+        '[gift-redemption] charge took FULL price despite a gift claim — releasing instead of settling',
+        { bookingId, capturedCents },
+      )
+      await releaseGiftClaim(supabase, bookingId)
+      await supabase
+        .from('bookings')
+        .update({ gift_card_id: null, gift_card_amount: null })
+        .eq('id', bookingId)
+      return
+    }
+
     const { data: settled } = await supabase
       .from('gift_card_redemptions')
       .update({ status: 'spent', settled_at: new Date().toISOString() })
@@ -323,7 +375,17 @@ export async function settleGiftClaim(supabase: DB, bookingId: string): Promise<
     if (row.status === 'released') {
       // The sweep handed this value back, but the booking it discounted has
       // now been paid. The traveler got the discount AND the card kept the
-      // balance, so take it off again.
+      // balance, so take it off again — but ONLY when the charge provably
+      // carried the discount. Re-debiting against a full-price charge would
+      // destroy value the guest never received, so absent proof we keep the
+      // balance and flag it for a human instead.
+      if (capturedCents == null || !Number.isFinite(capturedCents)) {
+        console.error(
+          '[gift-redemption] released claim on a paid booking, but captured amount unknown — NOT re-debiting',
+          { bookingId, amount: row.amount },
+        )
+        return
+      }
       console.warn('[gift-redemption] settling a released claim, re-debiting', { bookingId, amount: row.amount })
 
       const { data: reclaimed } = await supabase
@@ -408,9 +470,16 @@ export async function releaseGiftClaim(supabase: DB, bookingId: string): Promise
  * cancelled: the gift-funded share cannot go back through Stripe, because
  * Stripe never took it, so it goes back onto the balance instead.
  *
- * Recorded as its own negative-direction ledger entry rather than by mutating
- * the original spend, so the card's history still shows what was redeemed and
- * what was returned.
+ * The LEDGER ROW IS CLAIMED FIRST, then the balance credited. Two callers can
+ * reach this for the same booking — the admin approval route, and the
+ * charge.refunded webhook racing it — and the old order (credit first, close
+ * the row after) let both credit before either closed the row, minting the
+ * refund twice. Claiming the 'spent' row is the mutual exclusion: whoever
+ * wins the conditional update credits; the loser finds no row and no-ops.
+ *
+ * Partial refunds reduce the row's amount in place rather than releasing it,
+ * so the ledger keeps reconciling: sum of live 'spent' amounts is always the
+ * value still held against bookings.
  */
 export async function refundToGiftCard(
   supabase: DB,
@@ -420,17 +489,62 @@ export async function refundToGiftCard(
 ): Promise<boolean> {
   if (!(amount > 0)) return true
   try {
-    const credited = await creditBalance(supabase, giftCardId, amount)
-    if (!credited) {
-      console.error('[gift-redemption] REFUND CREDIT LOST', { giftCardId, bookingId, amount })
-      return false
-    }
-    // Close out the original spend so the ledger nets to zero for this booking.
-    await supabase
+    const { data: row } = await supabase
       .from('gift_card_redemptions')
-      .update({ status: 'released', settled_at: new Date().toISOString() })
+      .select('id, amount, status')
       .eq('booking_id', bookingId)
       .eq('status', 'spent')
+      .maybeSingle()
+
+    if (!row) {
+      // Already processed by the other caller, or nothing was ever spent.
+      // Either way there is no debit left to return; report success so the
+      // caller does not alarm on an idempotent replay.
+      console.warn('[gift-redemption] refund found no spent row (already processed?)', { bookingId, amount })
+      return true
+    }
+
+    // Never credit more than this booking actually debited.
+    const rowAmount = Number(row.amount)
+    const credited = Math.min(amount, rowAmount)
+    const fullReturn = credited >= rowAmount
+
+    const claim = supabase
+      .from('gift_card_redemptions')
+      .update(
+        fullReturn
+          ? { status: 'released', settled_at: new Date().toISOString() }
+          : { amount: Number((rowAmount - credited).toFixed(2)) },
+      )
+      .eq('id', row.id)
+      .eq('status', 'spent')
+      // CAS on the amount too, so a concurrent partial refund cannot both
+      // read 100, both subtract, and land on the wrong remainder.
+      .eq('amount', row.amount)
+      .select('id')
+      .maybeSingle()
+    const { data: claimed } = await claim
+    if (!claimed) {
+      // A concurrent caller won the row; theirs is the credit that counts.
+      return true
+    }
+
+    const ok = await creditBalance(supabase, giftCardId, credited)
+    if (!ok) {
+      // Put the row back so the debt stays visible and a retry can heal it.
+      // A 'spent' row on a refunded booking IS the persistent marker that
+      // credit is still owed.
+      await supabase
+        .from('gift_card_redemptions')
+        .update(
+          fullReturn
+            ? { status: 'spent', settled_at: null }
+            : { amount: row.amount },
+        )
+        .eq('id', row.id)
+      console.error('[gift-redemption] REFUND CREDIT LOST — retry owed', { giftCardId, bookingId, amount: credited })
+      return false
+    }
     return true
   } catch (err) {
     console.error('[gift-redemption] refund to card threw', bookingId, err instanceof Error ? err.message : err)

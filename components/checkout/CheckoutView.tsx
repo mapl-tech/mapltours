@@ -74,7 +74,7 @@ function StepIndicator({ step }: { step: number }) {
 /* ── Review Step ── */
 function ReviewStep({ formErrors }: { formErrors: Record<string, boolean> }) {
   const { items, removeItem, updateDate, updateTravelers, pickup, setPickup, setDropoff, pickupTime, setPickupTime } = useCartStore()
-  const { t, formatPrice } = useI18n()
+  const { t, formatUsd } = useI18n()
   // No per-tour dates: a checkout is ONE day, so the single trip date in the
   // card above is written to every line.
 
@@ -356,12 +356,12 @@ function ReviewStep({ formErrors }: { formErrors: Record<string, boolean> }) {
               </div>
               <div style={{ textAlign: 'right' }}>
                 <span style={{ fontFamily: 'var(--font-dm-sans)', fontWeight: 700, fontSize: 18 }}>
-                  {formatPrice(tourPrice(item.pricing, item.travelers))}
+                  {formatUsd(tourPrice(item.pricing, item.travelers))}
                 </span>
                 <p style={{ fontSize: 12, color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-sans)', marginTop: 1 }}>
                   {perTravelerPrice(item.pricing, item.travelers) === null
                     ? `${item.travelers} ${item.travelers === 1 ? t('guest') : t('guests')} · ${item.pricing.mode === 'group' && item.travelers <= item.pricing.tierMax ? t('private tour, one price') : t('all-in')}`
-                    : `${item.travelers} × ${formatPrice(perTravelerPrice(item.pricing, item.travelers)!)}`}
+                    : `${item.travelers} × ${formatUsd(perTravelerPrice(item.pricing, item.travelers)!)}`}
                 </p>
               </div>
             </div>
@@ -688,7 +688,7 @@ function DetailsStep({ waiverAccepted, setWaiverAccepted, waiverError, formData,
 /* ── Confirmed ── */
 function ConfirmedView() {
   const { items, grandTotal, clearCart } = useCartStore()
-  const { t, formatPrice } = useI18n()
+  const { t, formatUsd } = useI18n()
   const router = useRouter()
   const total = grandTotal()
   const confirmedItems = [...items]
@@ -744,7 +744,7 @@ function ConfirmedView() {
                 </p>
               </div>
               <span style={{ fontSize: 14, fontWeight: 700, fontFamily: 'var(--font-dm-sans)', flexShrink: 0 }}>
-                {formatPrice(tourPrice(item.pricing, item.travelers))}
+                {formatUsd(tourPrice(item.pricing, item.travelers))}
               </span>
             </div>
           ))}
@@ -757,7 +757,7 @@ function ConfirmedView() {
           display: 'flex', justifyContent: 'space-between', alignItems: 'center',
         }}>
           <span style={{ fontSize: 14, fontFamily: 'var(--font-dm-sans)', fontWeight: 600, color: 'var(--text-secondary)' }}>Total Paid</span>
-          <span style={{ fontFamily: 'var(--font-dm-sans)', fontWeight: 700, fontSize: 22 }}>{formatPrice(total)}</span>
+          <span style={{ fontFamily: 'var(--font-dm-sans)', fontWeight: 700, fontSize: 22 }}>{formatUsd(total)}</span>
         </div>
       </div>
 
@@ -798,7 +798,7 @@ export default function CheckoutView() {
   const [stripeError, setStripeError] = useState<string | null>(null)
   const [limitModalOpen, setLimitModalOpen] = useState(false)
   const { items, stops, subtotal, fee, grandTotal, isDayOverLimit, hoursByDate } = useCartStore()
-  const { t, formatPrice } = useI18n()
+  const { t, formatUsd } = useI18n()
 
   // Transport is no longer charged: Collin's tour prices include
   // transportation and entrance fees (his confirmation, Aug 2026), so the
@@ -813,9 +813,26 @@ export default function CheckoutView() {
     ? Math.round(baseTotal * (activeReward.percent / 100))
     : 0
   const afterReward = Math.max(0, baseTotal - rewardDiscount)
-  // A card worth more than the cart only spends what the cart costs.
-  const giftPreview = giftCard ? Math.min(giftCard.balanceCents / 100, afterReward) : 0
-  const finalTotal = Math.max(0, afterReward - giftPreview)
+  // A card worth more than the cart only spends what the cart costs. This is
+  // only a PREVIEW, computed from a balance the client cached when the code
+  // was validated; the card may have been partly spent elsewhere since.
+  const giftPreviewLocal = giftCard ? Math.min(giftCard.balanceCents / 100, afterReward) : 0
+  // What the server actually claimed, once /api/checkout has answered. The
+  // server is authoritative: it re-reads the live balance and debits it.
+  // Showing the local preview after that point stated a discount the buyer
+  // was not getting, and the card was charged the larger real amount.
+  const [serverGift, setServerGift] = useState<number | null>(null)
+  const [serverDue, setServerDue] = useState<number | null>(null)
+  const giftPreview = serverGift ?? giftPreviewLocal
+  const finalTotal = serverDue ?? Math.max(0, afterReward - giftPreview)
+
+  // Any change to what is being bought invalidates the server's last answer.
+  // Without this, editing the cart after a gift was applied left the old
+  // server figures on screen while a fresh PaymentIntent was created.
+  useEffect(() => {
+    setServerGift(null)
+    setServerDue(null)
+  }, [items, rewardApplied, giftCard])
 
   // Create PaymentIntent when moving to step 3. The server inserts a pending
   // `bookings` row (plus line items), hashes the cart for idempotency, and
@@ -860,6 +877,12 @@ export default function CheckoutView() {
             fee: fee(),
             rewardDiscount: rewardDiscount,
           },
+          // Whether the traveler kept the discount. The server verifies the
+          // PERCENT itself (never trusted from here) but must honour a
+          // decline: it used to force-apply any available reward, so a
+          // traveler who unticked the box sent a full-price amount the server
+          // then discounted, failed its own amount check, and 400'd forever.
+          applyReward: rewardApplied,
           giftCode: giftCard?.code,
           attribution: getStoredAttribution(),
         }),
@@ -882,6 +905,10 @@ export default function CheckoutView() {
             if (activeReward) void consumeReward(activeReward.id).catch(() => {})
             window.location.href = `/checkout/confirm?booking_id=${data.bookingId}`
           } else {
+            // Adopt the server's arithmetic before the card form renders, so
+            // the total on the pay button is the amount Stripe will take.
+            if (typeof data.giftAmount === 'number') setServerGift(data.giftAmount)
+            if (typeof data.amountDue === 'number') setServerDue(data.amountDue)
             setClientSecret(data.clientSecret)
           }
         })
@@ -938,7 +965,7 @@ export default function CheckoutView() {
     )
   }
 
-  const ctas = [`${t('Continue to payment')} →`, `${t('Complete booking')} · ${formatPrice(finalTotal)}`]
+  const ctas = [`${t('Continue to payment')} →`, `${t('Complete booking')} · ${formatUsd(finalTotal)}`]
 
   return (
     <div className="checkout-wrapper" style={{ minHeight: '100vh', paddingTop: 'var(--nav-h, 56px)', background: step === 2 ? 'var(--bg)' : 'var(--bg-warm)' }}>
@@ -1070,11 +1097,11 @@ export default function CheckoutView() {
                     <p style={{ fontSize: 12, color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-sans)' }}>
                       {perTravelerPrice(item.pricing, item.travelers) === null
                         ? `${item.travelers} ${item.travelers === 1 ? t('guest') : t('guests')}`
-                        : `${item.travelers} × ${formatPrice(perTravelerPrice(item.pricing, item.travelers)!)}`}
+                        : `${item.travelers} × ${formatUsd(perTravelerPrice(item.pricing, item.travelers)!)}`}
                     </p>
                   </div>
                   <span style={{ fontSize: 13, fontWeight: 700, fontFamily: 'var(--font-dm-sans)', flexShrink: 0 }}>
-                    {formatPrice(tourPrice(item.pricing, item.travelers))}
+                    {formatUsd(tourPrice(item.pricing, item.travelers))}
                   </span>
                 </div>
               ))}
@@ -1083,7 +1110,7 @@ export default function CheckoutView() {
             <div style={{ padding: '16px 24px', background: 'var(--bg-warm)', borderTop: '1px solid var(--border)' }}>
               {([] as { l: string; v: number }[]).map((r) => (
                 <div key={r.l} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, fontFamily: 'var(--font-dm-sans)', color: 'var(--text-secondary)', marginBottom: 6 }}>
-                  <span>{r.l}</span><span>{formatPrice(r.v)}</span>
+                  <span>{r.l}</span><span>{formatUsd(r.v)}</span>
                 </div>
               ))}
 
@@ -1146,7 +1173,7 @@ export default function CheckoutView() {
                   color: 'var(--emerald, #00A550)',
                 }}>
                   <span>Reward discount</span>
-                  <span>−{formatPrice(rewardDiscount)}</span>
+                  <span>−{formatUsd(rewardDiscount)}</span>
                 </div>
               )}
 
@@ -1177,7 +1204,7 @@ export default function CheckoutView() {
                         remove
                       </button>
                     </span>
-                    <span>&minus;{formatPrice(giftPreview)}</span>
+                    <span>&minus;{formatUsd(giftPreview)}</span>
                   </div>
                 ) : (
                   <div style={{ marginTop: 12 }}>
@@ -1219,7 +1246,7 @@ export default function CheckoutView() {
               )}
 
               <div style={{ display: 'flex', justifyContent: 'space-between', fontFamily: 'var(--font-dm-sans)', fontWeight: 700, fontSize: 20, marginTop: 10, paddingTop: 12, borderTop: '1px solid var(--border)' }}>
-                <span>{t('Total')}</span><span>{formatPrice(step === 2 ? finalTotal : grandTotal())}</span>
+                <span>{t('Total')}</span><span>{formatUsd(step === 2 ? finalTotal : grandTotal())}</span>
               </div>
             </div>
 
@@ -1353,7 +1380,7 @@ export default function CheckoutView() {
       <div className="checkout-sticky-cta hide-desktop">
         <div>
           <span className="checkout-sticky-label">{t('Total')}</span>
-          <span className="checkout-sticky-total">{formatPrice(step === 2 ? finalTotal : grandTotal())}</span>
+          <span className="checkout-sticky-total">{formatUsd(step === 2 ? finalTotal : grandTotal())}</span>
         </div>
         <button
           className="btn-primary"
