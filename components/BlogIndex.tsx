@@ -355,8 +355,16 @@ function FeaturedLead({ post }: { post: BlogPost }) {
               textTransform: 'uppercase',
               letterSpacing: '0.18em',
               color: 'var(--text-primary)',
-              borderBottom: '1px solid var(--text-primary)',
-              paddingBottom: 2,
+              // Underline via box-shadow, so the link can carry vertical
+              // padding for a 44px touch target without the rule drifting away
+              // from the text. It measured 146x21 on a phone, under the 24px
+              // WCAG 2.2 target-size minimum.
+              boxShadow: 'inset 0 -1px 0 0 var(--text-primary)',
+              minHeight: 44,
+              display: 'inline-flex',
+              alignItems: 'center',
+              paddingTop: 12,
+              paddingBottom: 10,
             }}
           >
             Read the essay →

@@ -1516,18 +1516,34 @@ export default function TransfersView() {
           line-height: 1.65;
           margin-bottom: 14px;
         }
+        /* The underline is drawn with ::after rather than border-bottom so the
+           button can carry vertical padding for a 44px touch target without
+           pushing the rule away from the text. It measured 125x22 on a phone,
+           under the 24px WCAG 2.2 target-size minimum, and well under a
+           comfortable thumb. */
         .xfer-route-block-cta {
+          position: relative;
           background: none;
           border: none;
-          padding: 0;
+          padding: 12px 0 10px;
+          min-height: 44px;
+          display: inline-flex;
+          align-items: center;
           font-family: var(--font-dm-sans);
           font-size: 12.5px;
           font-weight: 700;
           letter-spacing: 0.04em;
           color: var(--text-primary);
           cursor: pointer;
-          border-bottom: 1px solid var(--text-primary);
-          padding-bottom: 2px;
+        }
+        .xfer-route-block-cta::after {
+          content: '';
+          position: absolute;
+          left: 0;
+          right: 0;
+          bottom: 8px;
+          height: 1px;
+          background: currentColor;
         }
         .xfer-routes-content-foot {
           margin-top: 32px;
