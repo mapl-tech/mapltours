@@ -1,4 +1,5 @@
 import { tourPrice, experiences } from './experiences'
+import { trackAddToCart } from './analytics'
 import { bestInsertIndex, bestSlotForStop, canMoveItem, fitStopAfter, fitTourToDay, movedOrder } from './day-route'
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
@@ -236,6 +237,22 @@ export const useCartStore = create<CartStore>()(
         const next = [...kept]
         next.splice(at, 0, line)
         set({ items: next, droppedStops: [] })
+        // Reported from the store, not from a button, because five surfaces
+        // add tours (the reel, explore, the detail page, package cards and
+        // the day builder) and instrumenting each one is five chances to miss
+        // one. Deliberately after the fit checks above, so a refused add is
+        // not counted as an add.
+        trackAddToCart({
+          value: tourPrice(line.pricing, line.travelers),
+          currency: 'USD',
+          items: [{
+            id: String(line.id),
+            name: line.title,
+            category: line.kind === 'package' ? 'tour package' : 'tour',
+            price: tourPrice(line.pricing, line.travelers),
+            quantity: 1,
+          }],
+        })
       },
 
       /**

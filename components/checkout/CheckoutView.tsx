@@ -11,6 +11,7 @@ import { earliestBookableExperienceDate } from '@/lib/booking-window'
 import { useCartStore, DAILY_HOUR_LIMIT, type CartItem } from '@/lib/cart'
 import { tourPrice, perTravelerPrice, maxGroupSize } from '@/lib/experiences'
 import { getStoredAttribution } from '@/lib/attribution'
+import { trackBeginCheckout } from '@/lib/analytics'
 import TripTimeBar from '@/components/TripTimeBar'
 import { CANCELLATION_SUMMARY } from '@/lib/refund-pricing'
 import LegalModal from './LegalModal'
@@ -926,6 +927,23 @@ export default function CheckoutView() {
             if (typeof data.giftAmount === 'number') setServerGift(data.giftAmount)
             if (typeof data.amountDue === 'number') setServerDue(data.amountDue)
             setClientSecret(data.clientSecret)
+            // Reported here rather than on step change, because this is the
+            // point the server has priced the cart and Stripe has an intent:
+            // before this, "began checkout" would count people who bounced off
+            // the form. Keyed on the booking id so a re-render, a retry or a
+            // second tab cannot count the same attempt twice.
+            trackBeginCheckout({
+              key: String(data.bookingId ?? ''),
+              value: typeof data.amountDue === 'number' ? data.amountDue : baseTotal,
+              currency: 'USD',
+              items: items.map((i) => ({
+                id: String(i.id),
+                name: i.title,
+                category: 'tour',
+                price: tourPrice(i.pricing, i.travelers),
+                quantity: 1,
+              })),
+            })
           }
         })
         .catch(() => setStripeError('Failed to initialize payment. Please try again.'))

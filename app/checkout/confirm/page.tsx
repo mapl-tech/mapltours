@@ -342,7 +342,23 @@ export default async function ConfirmPage({
         </div>
       </div>
 
-      {data.status === 'succeeded' && <ConfirmClient />}
+      {data.status === 'succeeded' && (
+        <ConfirmClient
+          bookingRef={data.bookingRef}
+          totalPaid={data.totalPaid}
+          currency={data.currency}
+          items={data.items.map((i) => ({
+            id: i.title,
+            name: i.title,
+            category: 'tour',
+            // The LINE total, not the per-head price: GA multiplies price by
+            // quantity, so sending the per-person figure with a quantity of
+            // three would report a group tour at three times what was charged.
+            price: i.lineTotal,
+            quantity: 1,
+          }))}
+        />
+      )}
     </div>
   )
 }

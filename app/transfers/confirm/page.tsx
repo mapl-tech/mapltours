@@ -304,7 +304,23 @@ export default async function TransferConfirmPage({
         </div>
       </div>
 
-      {data.status === 'succeeded' && <ConfirmClient />}
+      {data.status === 'succeeded' && (
+        <ConfirmClient
+          bookingRef={data.bookingRef}
+          totalPaid={data.totalPaid}
+          currency={data.currency}
+          items={data.transfers.map((t) => ({
+            id: t.destination,
+            name: `Airport transfer, ${t.destination}`,
+            category: t.tripType === 'round_trip' ? 'transfer round trip' : 'transfer one way',
+            // Per vehicle, and a booking is one vehicle: quantity is 1, never
+            // the passenger count, or GA would report a 4-passenger ride at
+            // four times the fare.
+            price: t.priceUsd,
+            quantity: 1,
+          }))}
+        />
+      )}
     </div>
   )
 }

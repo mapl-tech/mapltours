@@ -16,6 +16,7 @@ import { leadTimeCutoff } from '@/lib/booking-window'
 import { useTransfersCart, type TransferCartItem } from '@/lib/transfers-cart'
 import { groupDestinationsByZone } from '@/lib/airport-transfers'
 import { getStoredAttribution } from '@/lib/attribution'
+import { trackBeginCheckout } from '@/lib/analytics'
 import { CANCELLATION_SUMMARY } from '@/lib/refund-pricing'
 import LegalModal from '@/components/checkout/LegalModal'
 
@@ -204,6 +205,20 @@ export default function TransfersCheckoutView() {
           window.location.href = `/transfers/confirm?booking_id=${data.bookingId}`
         } else {
           setClientSecret(data.clientSecret)
+          // Same rule as the tour checkout: counted when the server has
+          // priced it and an intent exists, keyed on the booking id.
+          trackBeginCheckout({
+            key: String(data.bookingId ?? ''),
+            value: grandTotal(),
+            currency: 'USD',
+            items: items.map((i) => ({
+              id: i.destinationId,
+              name: `Airport transfer, ${i.destinationName}`,
+              category: i.tripType === 'round_trip' ? 'transfer round trip' : 'transfer one way',
+              price: i.priceUsd,
+              quantity: 1,
+            })),
+          })
         }
       })
       .catch(() =>

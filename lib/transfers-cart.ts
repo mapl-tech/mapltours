@@ -1,4 +1,5 @@
 import { getTransferPrice, getDestination, ZONES } from '@/lib/airport-transfers'
+import { trackAddToCart } from './analytics'
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import type { TransferQuote, TransferTripType } from './airport-transfers'
@@ -108,6 +109,17 @@ export const useTransfersCart = create<TransfersCartStore>()(
           fromAirport: opts?.fromAirport ?? true,
         }
         set({ items: [item] })
+        trackAddToCart({
+          value: item.priceUsd,
+          currency: 'USD',
+          items: [{
+            id: item.destinationId,
+            name: `Airport transfer, ${item.destinationName}`,
+            category: item.tripType === 'round_trip' ? 'transfer round trip' : 'transfer one way',
+            price: item.priceUsd,
+            quantity: 1,
+          }],
+        })
       },
 
       reviseItem: (id, next) => {
