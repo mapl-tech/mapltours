@@ -178,6 +178,74 @@ export function driverNotifyEmail(): string | null {
   return allowed.length === 1 ? allowed[0] : null
 }
 
+/**
+ * A real address, not merely a string with an @ in it.
+ *
+ * Stricter than the pattern normalizeAddress uses, deliberately: the domain is
+ * dot-separated labels rather than "anything containing dots", so `a@b..com`
+ * and `a@b` are both rejected. This guards a send whose OTHER recipient is the
+ * operations inbox, and Resend fails the whole send on one bad address.
+ */
+const VALID_EMAIL = /^[A-Z0-9._%+-]+@(?:[A-Z0-9](?:[A-Z0-9-]*[A-Z0-9])?\.)+[A-Z]{2,}$/i
+
+/**
+ * Who gets a "new booking" or "new transfer" alert: operations, and the driver
+ * who has to run it.
+ *
+ * The driver is the point of this. Everything he used to receive was a BCC of
+ * mail addressed to someone else, so his inbox was a pile of other people's
+ * receipts; this is the first message actually addressed to him, arriving the
+ * moment a booking lands, with the pickup, the drop-off and the guest's
+ * requested collection time laid out for the person driving rather than the
+ * person travelling.
+ *
+ * On disclosure: the alert shows the total paid and the per-line prices, and
+ * nothing else financial. Both guest templates suppress the subtotal and the
+ * booking fee outright (TransferConfirmed sets showBreakdown to false), so no
+ * number here reveals a margin the driver could not already derive from the
+ * total and his own agreed rate.
+ *
+ * Driver resolution is deliberately the same rule used everywhere else, via
+ * driverNotifyEmail(): with several drivers on the allowlist and no explicit
+ * notify address it returns null and nobody is added, because mailing every
+ * driver every guest's details is worse than mailing none.
+ *
+ * The address is validated properly rather than checked for an '@'. Resend
+ * rejects a whole send if ANY recipient is malformed, so a fat-fingered
+ * DRIVER_NOTIFY_EMAIL would otherwise take the operations alert down with it,
+ * turning a driver's typo into a booking nobody is told about.
+ */
+export function operatorAlertRecipients(ops: string[]): string[] {
+  const driver = driverNotifyEmail()
+  return Array.from(
+    new Set(
+      [...ops, driver]
+        .filter((e): e is string => !!e && VALID_EMAIL.test(e.trim()))
+        .map((e) => e.trim().toLowerCase()),
+    ),
+  )
+}
+
+/**
+ * BCC for the guest's own CONFIRMATION: operations, and nobody else.
+ *
+ * The driver is deliberately absent. He used to be copied here, which meant
+ * every booking reached him twice, once as a blind copy of a letter addressed
+ * to someone else. He gets the operator alert instead, which is addressed to
+ * him, arrives at the same moment, and is written for the person running the
+ * trip rather than for the person taking it. Owner's decision, 2026-08-19.
+ *
+ * Note this is only the CONFIRMATION. The day-of mail and the manual dispatch
+ * send still use opsBcc() and still copy him, because those are the messages
+ * about the run itself: the day-of email is largely his own name, vehicle and
+ * number, and he should see exactly what the guest was told.
+ */
+export function confirmationBcc(guestEmail?: string | null): string[] {
+  const ops = list(process.env.OPERATIONS_EMAIL ?? 'contact@mapltours.com')
+  const guest = (guestEmail ?? '').toLowerCase()
+  return Array.from(new Set(ops.map((e) => e.toLowerCase()))).filter((e) => e !== guest)
+}
+
 export function opsBcc(guestEmail?: string | null, extra?: (string | null | undefined)[]): string[] {
   const ops = list(process.env.OPERATIONS_EMAIL ?? 'contact@mapltours.com')
 

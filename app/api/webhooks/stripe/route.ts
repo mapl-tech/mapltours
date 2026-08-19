@@ -4,7 +4,7 @@ import { createServiceClient } from '@/lib/supabase/service'
 import { DEFAULT_DRIVER } from '@/lib/dispatch'
 import { activateGiftCard } from '@/lib/gift-activation'
 import { settleGiftClaim, releaseGiftClaim, refundToGiftCard } from '@/lib/gift-redemption'
-import { sendEmail, opsBcc } from '@/lib/email/send'
+import { sendEmail, operatorAlertRecipients, confirmationBcc } from '@/lib/email/send'
 import { sendCancellationEmails } from '@/lib/email/cancellation'
 import {
   claimEmailChannel as sharedClaimEmailChannel,
@@ -460,7 +460,7 @@ async function maybeSendTravelerConfirmation(
     ? await sendEmail({
         to: booking.email,
         // Operations and the driver hold exactly what the guest holds.
-        bcc: opsBcc(booking.email),
+        bcc: confirmationBcc(booking.email),
         subject: `Transfer confirmed, your Jamaica airport ride (${bookingRef})`,
         react: TransferConfirmed({
           bookingRef,
@@ -495,7 +495,7 @@ async function maybeSendTravelerConfirmation(
     : await sendEmail({
         to: booking.email,
         // Operations and the driver hold exactly what the guest holds.
-        bcc: opsBcc(booking.email),
+        bcc: confirmationBcc(booking.email),
         subject: `Booking confirmed, your Jamaica trip with MAPL (${bookingRef})`,
         react: BookingConfirmed({
           bookingRef,
@@ -572,7 +572,10 @@ async function maybeSendOperatorAlert(
   items: BookingItemRow[],
 ): Promise<EmailResult> {
   if (booking.operator_email_sent_at) return { ok: true }
-  const opsRecipients = resolveOpsRecipients()
+  // Operations AND the driver. See operatorAlertRecipients: Collins runs the
+  // trip, so the alert that announces it has to reach him, not just the inbox
+  // that files it.
+  const opsRecipients = operatorAlertRecipients(resolveOpsRecipients())
   if (opsRecipients.length === 0) return { ok: false, reason: 'no_ops_email_configured', retryable: false }
 
   if (!(await claimEmailChannel(supabase, booking.id, 'operator_email_sent_at'))) {
