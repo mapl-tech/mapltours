@@ -105,28 +105,29 @@ export default function ReviewRequest({
 
   return (
     <MaplLayout preheader="Two minutes on Tripadvisor, if you have them. And a real reply line if anything fell short.">
-      <Text style={s.sectionLabel}>A small ask</Text>
+      <Text style={s.sectionLabel}>One thing</Text>
 
       <Heading as="h1" style={heroTight} className="mapl-h1">
         {headline}
       </Heading>
 
       <Text style={lead}>
-        {tripSentence} Your trip finished yesterday. The bag is probably still
-        open on the floor with sand in it.
+        {tripSentence} We hope it went smoothly and that you got home easily.
+        The bag is probably still open on the floor with sand in it.
       </Text>
 
       <Text style={para}>
-        We&rsquo;re a small Jamaican outfit and our Tripadvisor page is new, so
-        the next family choosing between us and a big bus company has almost
-        nothing to go on. Yours is the one they read. {prompts}
+        If you have two minutes, we&rsquo;d be glad if you told people how it
+        went. The person booking next is standing in a different airport, on a
+        phone, working out whether someone will really be there when they land.
+        Nothing we write answers that. You can. {prompts}
       </Text>
 
       <Text style={para}>
-        Write it straight. A middling review that is true is worth more to us
-        than a glowing one that isn&rsquo;t. There is nothing in it for you, no
-        discount and no prize draw, and nothing about your booking changes
-        either way.
+        Say it however you found it. An honest middling review is more use to
+        the next traveller than a glowing one that isn&rsquo;t true. There is
+        nothing in it for you, no discount and no prize draw, and nothing about
+        your booking changes either way.
       </Text>
 
       <Section style={s.ctaWrap}>

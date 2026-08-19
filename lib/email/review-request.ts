@@ -72,7 +72,14 @@ export async function sendReviewRequest(
 
   const res = await sendEmail({
     to: booking.email as string,
-    subject: 'We have zero reviews. You were there.',
+    // Subject names the trip and asks a question. The previous line ("We
+    // have zero reviews. You were there.") announced MAPL's inexperience in
+    // the inbox, before the guest had even opened it.
+    subject: isTransfer
+      ? (booking.first_name?.trim()
+          ? `How was the ride, ${booking.first_name.trim()}?`
+          : 'How was the ride?')
+      : `How was ${tripLabel}?`,
     react: ReviewRequest({
       bookingRef: bookingRef(booking.id),
       firstName: booking.first_name ?? null,
