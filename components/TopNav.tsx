@@ -5,11 +5,12 @@ import Image from 'next/image'
 import { usePathname, useRouter } from 'next/navigation'
 import { useCartStore } from '@/lib/cart'
 import { useState, useEffect, useRef } from 'react'
-import { Search, Lock, MapPin, ShoppingBag, Car, Menu, X } from 'lucide-react'
+import { Search, Lock, MapPin, ShoppingBag, Car, Menu, X, Heart } from 'lucide-react'
 import { DESTINATIONS as TRANSFER_DESTINATIONS } from '@/lib/airport-transfers'
 import { TOUR_DESTINATIONS } from '@/lib/experiences'
 import LanguageSwitcher from './LanguageSwitcher'
 import { useI18n } from '@/lib/i18n'
+import { useSaved } from '@/lib/supabase/saved'
 import { useAuth } from '@/lib/supabase/auth-context'
 import { createClient } from '@/lib/supabase/client'
 
@@ -34,6 +35,7 @@ export default function TopNav({ onCartClick }: { onCartClick?: () => void }) {
   const lastScrollY = useRef(0)
   const { t } = useI18n()
   const { user } = useAuth()
+  const { savedIds } = useSaved()
   const [showProfileMenu, setShowProfileMenu] = useState(false)
   const [showMenu, setShowMenu] = useState(false)
   const isHome = pathname === '/'
@@ -42,6 +44,7 @@ export default function TopNav({ onCartClick }: { onCartClick?: () => void }) {
   const isExplore = pathname.startsWith('/explore')
   const isProfile = pathname.startsWith('/profile')
   const isTransfers = pathname.startsWith('/transfers')
+  const isSaved = pathname.startsWith('/saved')
 
   useEffect(() => {
     const onScroll = () => {
@@ -195,7 +198,7 @@ export default function TopNav({ onCartClick }: { onCartClick?: () => void }) {
               colours. `dark` is true over the hero video. */}
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            className="nav-logo-img"
+            className={`nav-logo-img${dark ? ' logo-on-dark' : ''}`}
             src={dark ? '/mapl-logo-dark.svg' : '/mapl-logo.svg'}
             alt="MAPL Tours Jamaica"
             width={176}
@@ -204,7 +207,11 @@ export default function TopNav({ onCartClick }: { onCartClick?: () => void }) {
               height: 42,
               width: 'auto',
               display: 'block',
-              transition: 'opacity 0.3s ease',
+              // Depth on dark ground comes from `.logo-on-dark` (globals.css),
+              // a cast shadow rather than the white bloom that used to sit
+              // here. Not baked into the SVG — the light header uses the same
+              // element, where a shadow that heavy would look grubby.
+              transition: 'opacity 0.3s ease, filter 0.3s ease',
             }}
           />
         </Link>
@@ -500,6 +507,56 @@ export default function TopNav({ onCartClick }: { onCartClick?: () => void }) {
             </Link>
           )}
 
+          {/* Saved sits with Explore because both are ways back into the
+              catalog. A heart rather than the word: it is the same mark as
+              the one tapped on every card, so the header says where those
+              taps went without spending a word on it. Shown signed out too —
+              /saved explains saving and offers a sign-in, which is the whole
+              funnel into an account. */}
+          <Link
+            href="/saved"
+            className="tap-target hide-mobile"
+            aria-current={isSaved ? 'page' : undefined}
+            aria-label={
+              savedIds.length > 0
+                ? `${t('Saved')}, ${savedIds.length} ${savedIds.length === 1 ? 'tour' : 'tours'}`
+                : t('Saved')
+            }
+            title={t('Saved')}
+            style={{
+              position: 'relative',
+              display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+              width: 38, height: 38, borderRadius: 9999,
+              color: isSaved ? (dark ? '#fff' : 'var(--accent)') : linkColor,
+              transition: 'color 0.15s ease',
+            }}
+          >
+            <Heart
+              size={19}
+              strokeWidth={2}
+              // Filled only on the page itself. A permanently filled heart
+              // would read as "you have saves" on an empty account.
+              fill={isSaved ? 'currentColor' : 'none'}
+            />
+            {savedIds.length > 0 && (
+              <span
+                aria-hidden
+                style={{
+                  position: 'absolute', top: 1, right: 0,
+                  minWidth: 16, height: 16, padding: '0 4px',
+                  borderRadius: 9999,
+                  display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                  fontSize: 10, fontWeight: 700, lineHeight: 1,
+                  fontFamily: 'var(--font-dm-sans)',
+                  background: dark ? '#fff' : 'var(--accent)',
+                  color: dark ? 'var(--accent)' : '#fff',
+                }}
+              >
+                {savedIds.length}
+              </span>
+            )}
+          </Link>
+
           {/* The gold Transfers CTA disappears on the transfers page itself:
               a primary CTA pointing at the page you are on is dead weight. */}
           {!isTransfers && (
@@ -632,6 +689,7 @@ export default function TopNav({ onCartClick }: { onCartClick?: () => void }) {
                 {/* Menu items */}
                 {[
                   { label: 'Profile', href: '/profile' },
+                  { label: 'Saved tours', href: '/saved' },
                   { label: 'Help Center', href: '/help' },
                 ].map((item) => (
                   <Link
@@ -901,6 +959,11 @@ export default function TopNav({ onCartClick }: { onCartClick?: () => void }) {
           )}
           {[
             { label: t('Explore'), href: '/explore', current: isExplore },
+            {
+              label: savedIds.length > 0 ? `${t('Saved')} (${savedIds.length})` : t('Saved'),
+              href: '/saved',
+              current: isSaved,
+            },
             { label: t('Transfers'), href: '/transfers', current: isTransfers },
             { label: t('Help Center'), href: '/help', current: false },
           ].map((item) => (

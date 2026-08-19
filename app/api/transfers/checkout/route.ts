@@ -43,6 +43,8 @@ interface TransferItemIn {
   destinationId: string
   tripType: TransferTripType
   passengers: number
+  /** True when the ride starts at Sangster. Absent on pre-existing carts. */
+  fromAirport?: boolean
   arrivalAt?: string
   arrivalFlight?: string
   departureAt?: string
@@ -74,7 +76,10 @@ function hashCart(items: TransferItemIn[], amountCents: number, email: string, g
     items: items
       .map(
         (i) =>
-          `${i.destinationId}:${i.tripType}:${i.passengers}:${i.arrivalAt ?? ''}:${i.departureAt ?? ''}`,
+          // Direction is part of the cart's identity: two one-ways between
+          // the same pair differ only by it, and without it they would share
+          // an idempotency key and a pending-booking row.
+          `${i.destinationId}:${i.tripType}:${i.fromAirport === false ? 'to-mbj' : 'from-mbj'}:${i.passengers}:${i.arrivalAt ?? ''}:${i.departureAt ?? ''}`,
       )
       .sort(),
     cents: amountCents,
@@ -108,6 +113,16 @@ export async function POST(request: NextRequest) {
     if (!body.items?.length) {
       return NextResponse.json({ error: 'No transfers selected' }, { status: 400 })
     }
+    // One transfer per booking. The client enforces this too, but a transfer
+    // reserves a specific vehicle and driver against a specific flight, so a
+    // multi-line cart reaching here would dispatch one booking for two rides.
+    // Fail closed rather than half-fulfil it.
+    if (body.items.length > 1) {
+      return NextResponse.json(
+        { error: 'We book one transfer at a time. Please book the second separately.' },
+        { status: 400 },
+      )
+    }
 
     // 1. Server-side pricing: validate every line and rebuild the total.
     let subtotal = 0
@@ -119,6 +134,18 @@ export async function POST(request: NextRequest) {
     }
     const priced: PricedRow[] = []
     for (const item of body.items) {
+      // Exactly one end of a transfer is Sangster, and `destinationId` names
+      // the OTHER end — always a hotel. The UI derives one side from the
+      // other so a resort-to-resort or airport-to-airport pair cannot be
+      // built, and this is the model-level backstop for the same rule.
+      // Checked before the generic lookup so the guest gets a sentence rather
+      // than "Unknown destination: __mbj__".
+      if (item.destinationId.startsWith('__')) {
+        return NextResponse.json(
+          { error: 'A transfer runs between the airport and a hotel. Please pick one of each.', requestId: reqId },
+          { status: 400 },
+        )
+      }
       const dest = getDestination(item.destinationId)
       const price = getTransferPrice(item.destinationId, item.tripType)
       if (!dest || price === null) {
@@ -143,8 +170,15 @@ export async function POST(request: NextRequest) {
         const t = (v ?? '').trim()
         return t.length >= 2 && t.length <= 10 && /\d/.test(t)
       }
-      const hasArrivalLeg = !!item.arrivalAt
-      const hasDepartureLeg = item.tripType === 'round_trip' || !item.arrivalAt
+      // Which legs this booking actually has. A round-trip has both. A
+      // one-way has exactly one, decided by the direction the guest stated —
+      // this used to be inferred from whether arrivalAt happened to be filled
+      // in, which asked for a departure flight on an arrival-only ride.
+      const oneWayToAirport = item.tripType === 'one_way' && item.fromAirport === false
+      const hasArrivalLeg = item.tripType === 'round_trip' || (!oneWayToAirport && !!item.arrivalAt)
+      const hasDepartureLeg =
+        item.tripType === 'round_trip' ||
+        (item.fromAirport === undefined ? !item.arrivalAt : oneWayToAirport)
       if (hasArrivalLeg && !flightOk(item.arrivalFlight)) {
         return NextResponse.json(
           { error: 'Please add your arrival flight number (e.g. AA1234). We use it to track your flight and time your pickup.', requestId: reqId },
@@ -260,8 +294,14 @@ export async function POST(request: NextRequest) {
       }
       const p = priced[0]
       const hotel = p.destination!.name
+      // The guest now states the direction at quote time. Fall back to the
+      // old inference (a one-way with no arrival details must be a departure)
+      // only for carts persisted before the field existed.
+      const stated = (p.input as { fromAirport?: boolean }).fromAirport
       const departureOnly =
-        p.input.tripType === 'one_way' && !p.input.arrivalAt && !p.input.arrivalFlight
+        stated === undefined
+          ? p.input.tripType === 'one_way' && !p.input.arrivalAt && !p.input.arrivalFlight
+          : p.input.tripType === 'one_way' && stated === false
       return departureOnly
         ? { pickup: hotel, dropoff: AIRPORT_LABEL }
         : { pickup: AIRPORT_LABEL, dropoff: hotel }

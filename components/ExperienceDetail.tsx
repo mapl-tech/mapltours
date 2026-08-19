@@ -6,6 +6,7 @@ import { singleExperiences, packageExperiences, Experience, slugify , priceUnitL
 import { useI18n } from '@/lib/i18n'
 import { useCartStore, DAILY_HOUR_LIMIT } from '@/lib/cart'
 import { useHydrated } from '@/lib/use-hydrated'
+import { useTourFit } from '@/lib/use-tour-fit'
 import Link from 'next/link'
 import dynamic from 'next/dynamic'
 import { Heart, MessageCircle, Play, ChevronLeft, ChevronRight, X, ThumbsUp, Send, MapPin, Star, Clock, ShoppingBag, Film } from 'lucide-react'
@@ -62,7 +63,12 @@ function Reel({ exp, isActive, totalCount, currentIndex, onComments }: { exp: Ex
   const { liked, likeCount, toggleLike } = useExperienceLike(exp.id, isActive)
   const hydrated = useHydrated()
   const inCart = hydrated && isInCart(exp.id)
-  const toggleCart = () => { if (inCart) { removeItem(exp.id) } else { addItem(exp) } }
+  const tourFit = useTourFit(exp)
+  const blocked = !inCart && !tourFit.allowed
+  const toggleCart = () => {
+    if (inCart) removeItem(exp.id)
+    else if (tourFit.allowed) addItem(exp)
+  }
   // Give the page exactly one <h1>: the active reel's title carries the primary
   // heading; off-screen reels keep <h2> so we never render multiple h1s.
   const TitleTag = isActive ? 'h1' : 'h2'
@@ -320,7 +326,7 @@ function Reel({ exp, isActive, totalCount, currentIndex, onComments }: { exp: Ex
         {/* Like */}
         <button
           onClick={(e) => { e.stopPropagation(); toggleLike() }}
-          aria-label={liked ? 'Unlike this experience' : 'Like this experience'}
+          aria-label={liked ? 'Remove this experience from your saved tours' : 'Save this experience for later'}
           aria-pressed={liked}
           style={{
             display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2,
@@ -605,19 +611,39 @@ function Reel({ exp, isActive, totalCount, currentIndex, onComments }: { exp: Ex
           </div>
           <button
             onClick={(e) => { e.stopPropagation(); toggleCart() }}
+            disabled={blocked}
+            title={tourFit.reason ?? undefined}
             style={{
               minHeight: 48, padding: '0 22px', borderRadius: 9999,
-              background: inCart ? 'var(--emerald)' : 'white',
-              color: inCart ? 'white' : '#000',
+              // Spent, not merely inert: a white CTA that does nothing when
+              // pressed reads as a broken page.
+              background: inCart ? 'var(--emerald)' : blocked ? 'rgba(255,255,255,0.18)' : 'white',
+              color: inCart ? 'white' : blocked ? 'rgba(255,255,255,0.75)' : '#000',
               fontSize: 15, fontWeight: 700, fontFamily: 'var(--font-dm-sans)',
-              border: 'none', cursor: 'pointer',
+              border: 'none', cursor: blocked ? 'not-allowed' : 'pointer',
               whiteSpace: 'nowrap', flexShrink: 0,
               display: 'inline-flex', alignItems: 'center',
             }}
           >
-            {inCart ? t('✓ In Trip') : t('Add to Trip')}
+            {inCart ? t('✓ In Trip') : blocked ? t('Another day') : t('Add to Trip')}
           </button>
         </div>
+
+        {/* Points at where the detail actually lives. The reel is the
+            browsing surface and stays uncluttered; what to bring, group size
+            and what the price covers sit in checkout, where they change a
+            decision. Wording flips once it is in the trip so it reads as a
+            next step rather than a repeated instruction. */}
+        <p style={{
+          marginTop: 10, fontSize: 12.5, lineHeight: 1.5,
+          color: 'rgba(255,255,255,0.72)', fontFamily: 'var(--font-dm-sans)',
+        }}>
+          {blocked
+            ? tourFit.reason
+            : inCart
+              ? t('Full details, what to bring and group size are in your itinerary.')
+              : t('Add to your trip to see full details and what to bring.')}
+        </p>
       </div>
       {detailsFor && <TourDetailsSheet exp={detailsFor} onClose={() => setDetailsFor(null)} />}
     </div>

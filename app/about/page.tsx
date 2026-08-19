@@ -12,7 +12,7 @@ export const metadata: Metadata = {
 const VALUES = [
   {
     title: 'The whole island, not one theme',
-    body: 'Food, culture, adventure, music, water and nature. Jamaica is not a single category, and a day here rarely is either — most people want a waterfall in the morning and jerk in the afternoon.',
+    body: 'Food, culture, adventure, music, water and nature. Jamaica is not a single category, and a day here rarely is either, most people want a waterfall in the morning and jerk in the afternoon.',
   },
   {
     title: 'You build the day',
@@ -29,7 +29,7 @@ const VALUES = [
 ]
 
 const STATS = [
-  { value: '19', label: 'Guided experiences' },
+  { value: '22', label: 'Guided experiences' },
   { value: '44', label: 'Restaurants & sites' },
   { value: '10', label: 'Parishes covered' },
 ]

@@ -13,13 +13,12 @@ import {
   Check,
   Star,
   TrendingUp,
-  PlaneLanding,
+  ArrowUpDown,
 } from 'lucide-react'
 import {
   DESTINATIONS,
   ZONES,
   buildQuote,
-  groupDestinationsByZone,
   type TransferTripType,
   type TransferZone,
   zoneFromPrice,
@@ -31,6 +30,7 @@ import {
 import { useTransfersCart } from '@/lib/transfers-cart'
 import { useI18n } from '@/lib/i18n'
 import { HERO, DESTINATIONS as DESTINATION_IMAGES } from '@/lib/images'
+import PlacePicker, { AIRPORT_ID } from './PlacePicker'
 import {
   TRANSFER_REVIEWS as REVIEWS,
   TRANSFER_FAQS as FAQS,
@@ -93,11 +93,6 @@ function priceRangeLabel(zone: TransferZone, tripType: TransferTripType): string
 // Mercy's branch passed an hourly illustrative activity feed here. This
 // surface renders the real aggregates from /api/transfers/activity instead
 // (LiveActivityLine); fabricated counts were purged by owner instruction.
-/* The <select> needs a value for "my hotel isn't listed", but that value must
-   never become a destinationId — destinationId feeds buildQuote, the cart and
-   the checkout POST. It is tracked in its own boolean below instead, so the
-   sentinel is structurally incapable of reaching a pricing path. */
-const NOT_LISTED = '__not-listed__'
 
 export default function TransfersView() {
   const router = useRouter()
@@ -126,6 +121,17 @@ export default function TransfersView() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+  /**
+   * Which end of the journey the guest starts at.
+   *
+   * Every fare we sell has Sangster at one end, so this is a direction rather
+   * than a second destination. It used to be INFERRED server-side from whether
+   * arrival details were filled in, which meant a guest booking a hotel to
+   * airport run had no way to say so and hoped the inference agreed with them.
+   * A round-trip always begins at the airport, so the choice only applies to a
+   * one-way.
+   */
+  const [fromAirport, setFromAirport] = useState(true)
   const [tripType, setTripType] = useState<TransferTripType>('round_trip')
   // Starts at 1, matching the tour cart. Transfer fares are per VEHICLE for
   // 1-4 passengers, so this changes what is pre-filled, never the price quoted.
@@ -136,11 +142,23 @@ export default function TransfersView() {
     [destinationId, tripType, passengers],
   )
 
-  const zones = useMemo(() => groupDestinationsByZone(), [])
-
   const handleBook = () => {
     if (!quote) return
-    addQuote(quote)
+    // One transfer per cart: this REPLACES anything already there. Warn first
+    // if it is a different ride, so a guest who came back to add a second leg
+    // is not silently swapped out of the one they already had.
+    const existing = useTransfersCart.getState().items[0]
+    const replacing =
+      existing &&
+      (existing.destinationId !== quote.destinationId || existing.tripType !== quote.tripType)
+    if (replacing) {
+      const ok = window.confirm(
+        `Your cart already holds a transfer to ${existing.destinationName}. ` +
+        `We book one transfer at a time, so this will replace it. Continue?`,
+      )
+      if (!ok) return
+    }
+    addQuote(quote, { fromAirport: tripType === 'round_trip' ? true : fromAirport })
     router.push('/transfers/checkout')
   }
 
@@ -339,7 +357,7 @@ export default function TransfersView() {
           </div>
           <div className="xfer-routes-grid">
             {POPULAR_ROUTES.map((r) => {
-              const q = buildQuote(r.destinationId, 'round_trip', 2)
+              const q = buildQuote(r.destinationId, 'round_trip', 1)
               if (!q) return null
               return (
                 <button
@@ -395,69 +413,78 @@ export default function TransfersView() {
               <LiveActivityLine />
             </div>
 
-            {/* Say both ends out loud. "Destination" alone left guests asking
-                "destination from where?", and the airport end was only implied
-                by the page title. */}
-            <div className="xfer-route-ends" style={{ marginBottom: 4 }}>
-              <p style={{
-                fontFamily: 'var(--font-dm-sans)', fontSize: 13, color: 'var(--text-secondary)',
-                display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap',
-              }}>
-                <PlaneLanding size={14} color="var(--gold-text)" />
-                <strong style={{ fontWeight: 600, color: 'var(--text-primary)' }}>
-                  {tripType === 'round_trip' ? 'Airport → hotel → airport' : 'Sangster International (MBJ) → your hotel'}
-                </strong>
-              </p>
-            </div>
-
-            <Field label={tripType === 'round_trip' ? 'Hotel or resort (both directions)' : 'Where are we taking you?'}>
-              <select
-                className="field-input"
-                value={notListed ? NOT_LISTED : destinationId}
-                onChange={(e) => {
-                  const value = e.target.value
-                  if (value === NOT_LISTED) {
-                    // Sentinel stops here. destinationId stays empty, so the
-                    // quote memo yields null and the Book button stays inert.
-                    setNotListed(true)
-                    setDestinationId('')
-                    resetAsk()
-                    return
-                  }
-                  setNotListed(false)
-                  setDestinationId(value)
-                  resetAsk()
+            {/* Two ends, stated plainly. One is always Sangster, so choosing
+                a hotel on either side sets the other automatically and an
+                impossible pair (two hotels, two airports) cannot be built. */}
+            <Field label="Pickup">
+              <PlacePicker
+                label="Pickup location"
+                placeholder="Airport, or start typing your hotel…"
+                value={fromAirport ? AIRPORT_ID : destinationId}
+                onChange={(v) => {
+                  if (v === AIRPORT_ID) { setFromAirport(true) }
+                  else if (v === '') { setDestinationId('') }
+                  else { setFromAirport(false); setDestinationId(v) }
                 }}
+              />
+            </Field>
+
+            {/* Swap. Round-trips always begin at the airport, so it only
+                applies to a one-way. */}
+            {tripType === 'one_way' && (
+              <div style={{ display: 'flex', justifyContent: 'center', margin: '-6px 0 6px' }}>
+                <button
+                  type="button"
+                  onClick={() => setFromAirport((v) => !v)}
+                  aria-label="Swap pickup and drop-off"
+                  style={{
+                    display: 'inline-flex', alignItems: 'center', gap: 7,
+                    height: 34, padding: '0 14px', borderRadius: 999,
+                    border: '1px solid var(--border)', background: '#fff',
+                    fontFamily: 'var(--font-dm-sans)', fontSize: 12.5,
+                    fontWeight: 600, color: 'var(--text-secondary)', cursor: 'pointer',
+                  }}
+                >
+                  <ArrowUpDown size={14} />
+                  Swap
+                </button>
+              </div>
+            )}
+
+            <Field label="Drop-off">
+              <PlacePicker
+                label="Drop-off location"
+                placeholder="Airport, or start typing your hotel…"
+                value={fromAirport ? destinationId : AIRPORT_ID}
+                onChange={(v) => {
+                  if (v === AIRPORT_ID) { setFromAirport(false) }
+                  else if (v === '') { setDestinationId('') }
+                  else { setFromAirport(true); setDestinationId(v) }
+                }}
+              />
+            </Field>
+
+            {/* Out-of-zone escape hatch. Every AREA we drive has an "Other
+                hotel or villa" row in the picker, so this is not for a missing
+                hotel inside a served zone, it is for Port Antonio, Kingston
+                and anywhere else priced by custom quote. Toggling it does not
+                touch destinationId, so it can never reach buildQuote, the cart
+                or the checkout POST. */}
+            {!notListed && (
+              <button
+                type="button"
+                onClick={() => { setNotListed(true); resetAsk() }}
                 style={{
-                  height: 50,
-                  fontSize: 16,
-                  fontWeight: 500,
-                  color: destinationId || notListed ? 'var(--text-primary)' : 'var(--text-tertiary)',
-                  appearance: 'none',
-                  WebkitAppearance: 'none',
-                  paddingRight: 44,
-                  backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%235E5C57' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")`,
-                  backgroundRepeat: 'no-repeat',
-                  backgroundPosition: 'right 16px center',
+                  alignSelf: 'flex-start', background: 'none', border: 'none',
+                  padding: '10px 0', minHeight: 44, cursor: 'pointer',
+                  fontFamily: 'var(--font-dm-sans)', fontSize: 13, fontWeight: 600,
+                  color: 'var(--text-secondary)', textDecoration: 'underline',
+                  textUnderlineOffset: 3,
                 }}
               >
-                <option value="">Pick a hotel or landmark…</option>
-                {zones.map(({ zone, items }) => (
-                  <optgroup key={zone.code} label={`Zone ${zone.code}, ${zone.label}`}>
-                    {items.map((d) => (
-                      <option key={d.id} value={d.id}>
-                        {d.name}
-                      </option>
-                    ))}
-                  </optgroup>
-                ))}
-                {/* Last, in its own group, so it reads as an escape hatch and
-                    never sits among the bookable properties. */}
-                <optgroup label="Somewhere else">
-                  <option value={NOT_LISTED}>I don&rsquo;t see my hotel</option>
-                </optgroup>
-              </select>
-            </Field>
+                I don&rsquo;t see my hotel
+              </button>
+            )}
 
             {/* Mounted at all times, deliberately. A live region that appears
                 in the same commit as its text is not announced, because there
@@ -561,12 +588,19 @@ export default function TransfersView() {
 
             <div className="xfer-quote-readout">
               <div>
-                <p className="xfer-quote-readout-kicker">
-                  {quote ? `Zone ${quote.zone} · ${quote.zoneDuration}` : 'Your locked-in price'}
-                </p>
+                {/* The label stays put once a fare appears. It used to be
+                    replaced by the zone line, which left the number with
+                    nothing naming it. Zone and drive time move below, where
+                    they read as detail about the route rather than a heading. */}
+                <p className="xfer-quote-readout-kicker">Your price</p>
                 <p className="xfer-quote-readout-dest">
                   {quote ? quote.destinationName : 'Pick a destination to see your fare.'}
                 </p>
+                {quote && (
+                  <p className="xfer-quote-readout-meta" style={{ marginTop: 4 }}>
+                    Zone {quote.zone} &middot; {quote.zoneDuration}
+                  </p>
+                )}
               </div>
               <div className="xfer-quote-readout-price-block">
                 <p className="xfer-quote-readout-price">

@@ -3,7 +3,7 @@
 @tailwind utilities;
 
 /* ═══════════════════════════════════════════
-   MAPL TOURS, "Caribbean Editorial" System
+   MAPL Tours, "Caribbean Editorial" System
    Inspired by Wander.com, Condé Nast Traveler
    ═══════════════════════════════════════════ */
 
@@ -174,6 +174,23 @@ video {
 .nav-header {
   will-change: transform;
   transform: translateZ(0);
+}
+
+/* Brand lockup sitting on dark ground (hero video, footer, driver shell).
+   The dark variant's own white outline is gone, so separation is done with
+   light instead of an edge: a warm bloom in the brand's gold, tight enough to
+   lift the mark and wide enough to fall off before it reads as a ring, with a
+   very faint white halo underneath it to carry the last of the falloff. On a
+   near-black page a black shadow does nothing at all, which is why the dark
+   pass here is only the small offset one — it is there for the hero video,
+   where the ground behind the logo can be bright. Ordered dark-first: each
+   drop-shadow filters the result of the last, so blooming a small tight
+   shadow keeps it tight, where shadowing a bloom would smear it. */
+.logo-on-dark {
+  filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.5))
+          drop-shadow(0 0 14px rgba(255, 199, 90, 0.45))
+          drop-shadow(0 0 40px rgba(255, 199, 90, 0.26))
+          drop-shadow(0 0 90px rgba(255, 255, 255, 0.12));
 }
 
 /* Desktop search bar: flows between logo and actions on smaller desktops,

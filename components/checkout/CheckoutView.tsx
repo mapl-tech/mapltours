@@ -5,13 +5,14 @@ import dynamic from 'next/dynamic'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
-import { ArrowLeft, Check, MapPin, Users, Calendar, Leaf, Lock, ShieldCheck, CalendarDays, Clock } from 'lucide-react'
+import { ArrowLeft, Check, MapPin, Users, Calendar, Clock, Leaf, Lock, ShieldCheck, CalendarDays, ChevronDown } from 'lucide-react'
 import { earliestBookableExperienceDate } from '@/lib/booking-window'
-import { useCartStore, DAILY_HOUR_LIMIT } from '@/lib/cart'
-import { tourPrice, perTravelerPrice } from '@/lib/experiences'
-import { groupedPickupLocations, findPickupLocation } from '@/lib/pickup-locations'
+import { useCartStore, DAILY_HOUR_LIMIT, type CartItem } from '@/lib/cart'
+import { tourPrice, perTravelerPrice, maxGroupSize } from '@/lib/experiences'
 import { getStoredAttribution } from '@/lib/attribution'
 import TripTimeBar from '@/components/TripTimeBar'
+import DayFlow from '@/components/DayFlow'
+import { planDay } from '@/lib/day-route'
 import { useAvailableReward, consumeReward } from '@/lib/tour-videos'
 import { Award } from 'lucide-react'
 import { useI18n } from '@/lib/i18n'
@@ -33,6 +34,50 @@ const StripePaymentPanel = dynamic(
 )
 
 /* ── Jamaica Locations with Addresses ── */
+type LocationKind = 'airport' | 'cruise' | 'hotel'
+
+/**
+ * Grouped so a guest scanning a long list finds their resort quickly. The
+ * airport comes first because that is the single most common pickup, and the
+ * cruise ports are kept separate from hotels because they behave differently
+ * on the day (a ship sailing time is a hard deadline, a hotel is not).
+ *
+ * Sangster (MBJ) is the ONLY airport offered. Norman Manley (KIN) is on the
+ * far side of the island — roughly three hours from the north-coast resorts
+ * these tours run from — and listing it invited bookings we do not serve.
+ */
+const jamaicaLocations: { name: string; address: string; kind?: LocationKind }[] = [
+  { name: 'Sandals Negril Beach Resort', address: 'Norman Manley Blvd, Negril, Westmoreland' },
+  { name: 'Sandals Royal Caribbean, Montego Bay', address: 'Mahoe Bay, Montego Bay, St. James' },
+  { name: 'Sandals Ochi Beach Resort, Ocho Rios', address: 'Main St, Ocho Rios, St. Ann' },
+  { name: 'Riu Negril', address: 'Norman Manley Blvd, Negril, Westmoreland' },
+  { name: 'Riu Montego Bay', address: 'Mahoe Bay, Ironshore, Montego Bay, St. James' },
+  { name: 'Hyatt Ziva Rose Hall, Montego Bay', address: 'Rose Hall Rd, Montego Bay, St. James' },
+  { name: 'Hilton Rose Hall Resort, Montego Bay', address: 'Rose Hall, Montego Bay, St. James' },
+  { name: 'Grand Palladium Jamaica, Lucea', address: 'Point, Lucea, Hanover' },
+  { name: 'Royalton Blue Waters, Montego Bay', address: 'Seawind Dr, Montego Bay, St. James' },
+  { name: 'Royalton Negril', address: 'Norman Manley Blvd, Negril, Westmoreland' },
+  { name: 'Secrets Wild Orchid, Montego Bay', address: 'Freeport Peninsula, Montego Bay, St. James' },
+  { name: 'Secrets St. James, Montego Bay', address: 'Freeport Peninsula, Montego Bay, St. James' },
+  { name: 'Breathless Montego Bay', address: 'Freeport Peninsula, Montego Bay, St. James' },
+  { name: 'Moon Palace Jamaica, Ocho Rios', address: 'Main St, Ocho Rios, St. Ann' },
+  { name: 'Jamaica Inn, Ocho Rios', address: 'Main St, Ocho Rios, St. Ann' },
+  { name: 'Strawberry Hill, Blue Mountains', address: 'Irish Town, St. Andrew' },
+  { name: 'GoldenEye, Oracabessa', address: 'Oracabessa Bay, St. Mary' },
+  { name: 'Round Hill Hotel, Montego Bay', address: 'John Pringle Dr, Hopewell, Hanover' },
+  { name: 'Rockhouse Hotel, Negril', address: 'West End Rd, Negril, Westmoreland' },
+  { name: 'The Cliff Hotel, Negril', address: 'West End Rd, Negril, Westmoreland' },
+  { name: 'Geejam Hotel, Port Antonio', address: 'San San, Port Antonio, Portland' },
+  { name: 'Trident Hotel, Port Antonio', address: 'Anchovy, Port Antonio, Portland' },
+  { name: 'Jakes Hotel, Treasure Beach', address: 'Calabash Bay, Treasure Beach, St. Elizabeth' },
+  { name: 'Spanish Court Hotel, Kingston', address: '1 St Lucia Ave, Kingston 5' },
+  { name: 'Terra Nova All Suite Hotel, Kingston', address: '17 Waterloo Rd, Kingston 10' },
+  { name: 'Courtleigh Hotel, Kingston', address: '85 Knutsford Blvd, Kingston 5' },
+  { kind: 'airport', name: 'Sangster International Airport (MBJ)', address: 'Sunset Dr, Montego Bay, St. James' },
+  { kind: 'cruise', name: 'Kingston Cruise Terminal', address: 'Port Royal St, Kingston' },
+  { kind: 'cruise', name: 'Falmouth Cruise Port', address: 'Falmouth, Trelawny' },
+  { kind: 'cruise', name: 'Ocho Rios Cruise Port', address: 'Turtle Beach Rd, Ocho Rios, St. Ann' },
+]
 
 /* ── Step Indicator ── */
 function StepIndicator({ step }: { step: number }) {
@@ -72,9 +117,51 @@ function StepIndicator({ step }: { step: number }) {
 }
 
 /* ── Review Step ── */
-function ReviewStep({ formErrors }: { formErrors: Record<string, boolean> }) {
-  const { items, removeItem, updateDate, updateTravelers, pickup, setPickup, setDropoff, pickupTime, setPickupTime } = useCartStore()
+function ReviewStep({ formData, setFormData, formErrors }: {
+  formData: Record<string, string>
+  setFormData: (v: Record<string, string>) => void
+  formErrors: Record<string, boolean>
+}) {
+  const { items, removeItem, updateDate, updateTravelers, pickupTime, setPickupTime, setPickup, setDropoff } = useCartStore()
+
+  /**
+   * One control writes both ends of the journey. Tours return the guest to
+   * where they were collected, so drop-off is mirrored rather than asked for,
+   * but it must still be populated, because admin, dispatch and the operator
+   * alert all read that column and a NULL there reads as "no return leg".
+   *
+   * BOTH stores are written on purpose. The POST body reads formData, while
+   * the day builder and the step-1 gate read the cart store. Writing only the
+   * cart store is how a paid booking reached the driver with pickup: null.
+   */
+  const setLocation = (value: string) => {
+    setFormData({ ...formData, pickup: value, dropoff: value })
+    setPickup(value)
+    setDropoff(value)
+  }
+
+  /**
+   * Seed the form from the cart on a fresh mount.
+   *
+   * The cart store persists to localStorage; formData does not. A guest who
+   * chose their hotel yesterday came back to a blank picker sitting above a
+   * day builder that still named the place, and had to pick it again for a
+   * value the app already had. Runs once, and only into an empty field, so it
+   * can never overwrite a choice made in this session.
+   */
+  const storedPickup = useCartStore((s) => s.pickup)
+  useEffect(() => {
+    if (!storedPickup || formData['pickup']) return
+    setFormData({ ...formData, pickup: storedPickup, dropoff: storedPickup })
+    // Intentionally keyed on the stored value alone: re-running as the guest
+    // types elsewhere would be a no-op anyway, since pickup is then set.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [storedPickup])
+  // formatUsd, not formatPrice: every figure on this screen is part of the
+  // charge, and Stripe is created with currency 'usd' whatever the site
+  // language. formatPrice would render a payable total as a converted "EUR182".
   const { t, formatUsd } = useI18n()
+
   // No per-tour dates: a checkout is ONE day, so the single trip date in the
   // card above is written to every line.
 
@@ -146,7 +233,9 @@ function ReviewStep({ formErrors }: { formErrors: Record<string, boolean> }) {
             <div style={{ minWidth: 0 }}>
               <span style={{ fontSize: 14, fontWeight: 600, fontFamily: 'var(--font-dm-sans)', display: 'block' }}>{t('Number of guests')}</span>
               <p style={{ fontSize: 12, color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-sans)', marginTop: 1 }}>
-                Applies to all {items.length} experience{items.length !== 1 ? 's' : ''}
+                {items.length === 1
+                  ? t('Applies to your experience')
+                  : `${t('Applies to all')} ${items.length} ${t('experiences')}`}
               </p>
             </div>
           </div>
@@ -172,7 +261,7 @@ function ReviewStep({ formErrors }: { formErrors: Record<string, boolean> }) {
                 {t('Trip date')} {formErrors['tripDate'] && <span style={{ fontWeight: 400 }}>- pick a bookable date</span>}
               </label>
               <p style={{ fontSize: 12, color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-sans)', marginTop: 1 }}>
-                Every experience runs on this day
+                {t('All experiences on the same day')}
               </p>
             </div>
           </div>
@@ -195,7 +284,7 @@ function ReviewStep({ formErrors }: { formErrors: Record<string, boolean> }) {
             <div style={{ minWidth: 0 }}>
               <label htmlFor="trip-time" style={{ fontSize: 14, fontWeight: 600, fontFamily: 'var(--font-dm-sans)', display: 'block' }}>{t('Pickup time')}</label>
               <p style={{ fontSize: 12, color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-sans)', marginTop: 1 }}>
-                When we collect you to start the day
+                {t('When your driver collects you')}
               </p>
             </div>
           </div>
@@ -209,41 +298,46 @@ function ReviewStep({ formErrors }: { formErrors: Record<string, boolean> }) {
           />
         </div>
 
-        {/* Row 4 — one location. On a tour day the driver returns you to the
-            same place they collected you from, so asking twice is friction.
-            Airport transfers are the separate product where the two ends
-            genuinely differ. */}
-        <div data-field="pickup" style={{ padding: '18px 22px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
-            <MapPin size={18} color="var(--text-secondary)" style={{ flexShrink: 0 }} />
-            <div>
-              <label htmlFor="trip-pickup" style={{ fontSize: 14, fontWeight: 600, fontFamily: 'var(--font-dm-sans)', display: 'block' }}>
-                {t('Pickup and drop-off')} {formErrors['pickup'] && <span style={{ fontWeight: 400, color: '#c00' }}>- required</span>}
-              </label>
-              <p style={{ fontSize: 12, color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-sans)', marginTop: 1 }}>
-                We collect you here and bring you back here
-              </p>
-            </div>
-          </div>
+        {/* Where the day starts and ends. Sits with guests, date and time
+            because all four describe the same trip; the form below is about
+            the person, not the trip. */}
+        <div data-field="pickup" style={{ padding: '18px 22px', borderTop: '1px solid var(--border)' }}>
+          <label htmlFor="tour-location" style={{ fontSize: 14, fontWeight: 600, fontFamily: 'var(--font-dm-sans)', display: 'flex', alignItems: 'center', gap: 8, marginBottom: 2, color: formErrors['pickup'] ? '#c00' : undefined }}>
+            <MapPin size={17} color={formErrors['pickup'] ? '#c00' : 'var(--text-secondary)'} />
+            {t('Pickup and drop-off')} {formErrors['pickup'] && <span style={{ fontWeight: 400, fontSize: 12 }}>- required</span>}
+          </label>
+          <p style={{ fontSize: 12, color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-sans)', margin: '0 0 10px 25px' }}>
+            {t('We collect you here and bring you back to the same place.')}
+          </p>
           <select
-            id="trip-pickup"
+            id="tour-location"
             className="field-input"
-            value={pickup}
             aria-invalid={formErrors['pickup'] ? true : undefined}
-            onChange={(e) => { setPickup(e.target.value); setDropoff(e.target.value) }}
-            style={{ width: '100%', height: 48, fontSize: 15, background: '#fff', borderColor: formErrors['pickup'] ? 'rgba(200,0,0,0.4)' : undefined }}
+            value={formData['pickup'] || ''}
+            onChange={(e) => setLocation(e.target.value)}
+            style={{ height: 48, fontSize: 15, background: '#fff', fontWeight: 500, borderColor: formErrors['pickup'] ? 'rgba(200,0,0,0.4)' : undefined }}
           >
-            <option value="">Select your hotel, resort or airport</option>
-            {groupedPickupLocations().map((g) => (
-              <optgroup key={g.label} label={g.label}>
-                {g.options.map((l) => <option key={l.name} value={l.name}>{l.name}</option>)}
-              </optgroup>
-            ))}
-            <option value="Other, I will confirm by email">Other, I will confirm by email</option>
+            <option value="">{t('Select your hotel, resort or airport')}</option>
+            <optgroup label={t('Airports')}>
+              {jamaicaLocations.filter((l) => l.kind === 'airport').map((l) => (
+                <option key={l.name} value={l.name}>{l.name}</option>
+              ))}
+            </optgroup>
+            <optgroup label={t('Hotels & resorts')}>
+              {jamaicaLocations.filter((l) => !l.kind).map((l) => (
+                <option key={l.name} value={l.name}>{l.name}</option>
+              ))}
+            </optgroup>
+            <optgroup label={t('Cruise ports')}>
+              {jamaicaLocations.filter((l) => l.kind === 'cruise').map((l) => (
+                <option key={l.name} value={l.name}>{l.name}</option>
+              ))}
+            </optgroup>
           </select>
-          {findPickupLocation(pickup) && (
-            <p style={{ fontSize: 12, color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-sans)', marginTop: 6, display: 'flex', alignItems: 'center', gap: 4 }}>
-              <MapPin size={12} /> {findPickupLocation(pickup)?.address}
+          {formData['pickup'] && jamaicaLocations.find((l) => l.name === formData['pickup']) && (
+            <p style={{ fontSize: 12, color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-sans)', marginTop: 8, display: 'flex', alignItems: 'center', gap: 4 }}>
+              <MapPin size={12} color="var(--text-tertiary)" />
+              {jamaicaLocations.find((l) => l.name === formData['pickup'])?.address}
             </p>
           )}
         </div>
@@ -301,7 +395,13 @@ function ReviewStep({ formErrors }: { formErrors: Record<string, boolean> }) {
               </h3>
             </div>
           </div>
-          <TripTimeBar showItinerary />
+          <TripTimeBar />
+
+          {/* The itinerary itself, under the score. The score says how good
+              the day is; this says what the day IS. */}
+          <div style={{ marginTop: 22, paddingTop: 20, borderTop: '1px solid var(--border)' }}>
+            <DayFlow />
+          </div>
         </div>
       )}
 
@@ -342,6 +442,12 @@ function ReviewStep({ formErrors }: { formErrors: Record<string, boolean> }) {
                 </div>
               </div>
             </div>
+
+            {/* Tour details. Collapsed by default so the review stays
+                scannable, and rendered only for the fields this experience
+                actually has — a tour with no `bring` list simply has no
+                "What to bring" heading rather than an empty one. */}
+            <TourDetails exp={item} />
 
             {/* Footer, date + price */}
             <div style={{
@@ -384,9 +490,11 @@ function DetailsStep({ waiverAccepted, setWaiverAccepted, waiverError, formData,
   const { t } = useI18n()
   const [modalContent, setModalContent] = useState<'waiver' | 'terms' | null>(null)
 
+  // Pickup and drop-off moved up into the trip card with guests, date and
+  // time, so this form is purely about the person. It handles no location
+  // fields and needs no mirroring.
   const updateField = (key: string, value: string) => {
-    const next = { ...formData, [key]: value }
-    setFormData(next)
+    setFormData({ ...formData, [key]: value })
   }
   return (
     <div>
@@ -465,7 +573,6 @@ function DetailsStep({ waiverAccepted, setWaiverAccepted, waiverError, formData,
             ))}
           </select>
         </div>
-
         <div style={{ gridColumn: 'span 2' }}>
           <label htmlFor="checkout-special-requests" style={{ fontSize: 12, color: 'var(--text-secondary)', fontFamily: 'var(--font-dm-sans)', fontWeight: 600, display: 'block', marginBottom: 6 }}>Special Requests</label>
           <textarea
@@ -797,7 +904,7 @@ export default function CheckoutView() {
   const [formAnnouncement, setFormAnnouncement] = useState('')
   const [stripeError, setStripeError] = useState<string | null>(null)
   const [limitModalOpen, setLimitModalOpen] = useState(false)
-  const { items, stops, subtotal, fee, grandTotal, isDayOverLimit, hoursByDate } = useCartStore()
+  const { items, stops, subtotal, fee, grandTotal, isDayOverLimit, hoursByDate, pickupTime } = useCartStore()
   const { t, formatUsd } = useI18n()
 
   // Transport is no longer charged: Collin's tour prices include
@@ -864,11 +971,26 @@ export default function CheckoutView() {
             phone: formData['phone'],
             country: formData['country'],
             pickup: formData['pickup'],
-            dropoff: formData['dropoff'],
+            // Tours return to the pickup point, so dropoff is mirrored rather
+            // than asked for. It stays populated because admin, dispatch and
+            // the operator alert all read the column.
+            dropoff: formData['pickup'],
+            pickupTime,
             specialRequests: [
               formData['specialRequests'],
+              // In DAY order, and each one named against the tour it follows.
+              // The driver reads this as a route instruction, so "after X" is
+              // the part that matters; cart order is the order things were
+              // tapped and would tell them nothing.
               stops.length > 0
-                ? `Requested free food stops: ${stops.map((s) => `${s.name} (${s.town})`).join('; ')}`
+                ? `Requested free food stops: ${planDay({ items, stops })
+                    .nodes.flatMap((n, i, all) =>
+                      n.kind === 'stop'
+                        ? [`${n.stop.name} (${n.stop.town}) after ${
+                            [...all.slice(0, i)].reverse().find((p) => p.kind === 'experience')?.title ?? 'your tour'
+                          }`]
+                        : []
+                    ).join('; ')}`
                 : '',
             ].filter(Boolean).join('\n'),
           },
@@ -1008,7 +1130,7 @@ export default function CheckoutView() {
         <div className={step === 2 ? 'checkout-payment-form' : ''} style={{ flex: 1, maxWidth: 640 }}>
           {step === 1 && (
             <>
-              <ReviewStep formErrors={formErrors} />
+              <ReviewStep formData={formData} setFormData={setFormData} formErrors={formErrors} />
               <div style={{ marginTop: 40 }}>
                 <DetailsStep waiverAccepted={waiverAccepted} setWaiverAccepted={setWaiverAccepted} waiverError={waiverError} formData={formData} setFormData={setFormData} formErrors={formErrors} />
               </div>
@@ -1269,10 +1391,7 @@ export default function CheckoutView() {
                   }
                   if (step === 1) {
                     // Validate required fields
-                    // pickup/dropoff are no longer form fields: a tour day is
-                    // collected from and returned to ONE place, chosen in the trip
-                    // card, and validated separately below.
-                    const required = ['firstName', 'lastName', 'email', 'phone', 'country']
+                    const required = ['firstName', 'lastName', 'email', 'phone', 'country', 'pickup']
                     const errors: Record<string, boolean> = {}
                     let hasError = false
                     required.forEach((key) => {
@@ -1291,8 +1410,6 @@ export default function CheckoutView() {
                       errors['phone'] = true
                       hasError = true
                     }
-                    setFormErrors(errors)
-
                     // The single pickup location is required, and it lives in
                     // the trip card rather than the details form.
                     if (!useCartStore.getState().pickup?.trim()) {
@@ -1311,6 +1428,12 @@ export default function CheckoutView() {
                       hasError = true
                     }
 
+                    // Published once, after every check. Set earlier it shipped
+                    // a half-filled object, and the pickup and date errors only
+                    // reached the screen because they mutated the same object
+                    // React was already holding.
+                    setFormErrors(errors)
+
                     if (!waiverAccepted) {
                       setWaiverError(true)
                       hasError = true
@@ -1319,7 +1442,10 @@ export default function CheckoutView() {
                     }
 
                     if (hasError) {
-                      const missing = required.filter((k) => errors[k]).length
+                      // Counted from the errors themselves. `required` does
+                      // not carry tripDate, so a bad date alone counted zero
+                      // and announced the waiver message instead.
+                      const missing = Object.keys(errors).filter((k) => errors[k]).length
                       setFormAnnouncement(
                         missing > 0
                           ? `${missing} ${missing === 1 ? 'field needs' : 'fields need'} attention before you can continue.`
@@ -1331,7 +1457,7 @@ export default function CheckoutView() {
                       // the page bottom, so focus ends up hundreds of pixels below
                       // the fold with no visible ring (WCAG 2.4.11).
                       setTimeout(() => {
-                        const firstErrorKey = required.find((key) => errors[key])
+                        const firstErrorKey = [...required, 'tripDate'].find((key) => errors[key])
                         const scope = firstErrorKey
                           ? document.querySelector(`[data-field="${firstErrorKey}"]`)
                           : !waiverAccepted
@@ -1362,13 +1488,16 @@ export default function CheckoutView() {
                 style={{ width: '100%', height: 48, fontSize: 14 }}>
                   {ctas[step - 1]}
                 </button>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: 12, fontSize: 12, color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-sans)' }}>
-                  <Lock size={11} />
-                  <span>
-                    Secure checkout · Cancel within 48 hrs of booking, less a 20% admin charge ·{' '}
-                    <a href="/terms" target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'underline', color: 'inherit' }}>full policy</a>
-                  </span>
-                </div>
+                {/* Flow, not flex. As a centered flex row the padlock was
+                    vertically centred against three wrapped lines of text and
+                    floated in the middle of the block. Inline text wraps the
+                    way a sentence should, and the icon sits on the first line
+                    where it reads as part of the first word. */}
+                <p style={{ marginTop: 12, fontSize: 12, lineHeight: 1.5, textAlign: 'center', color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-sans)' }}>
+                  <Lock size={11} style={{ display: 'inline', verticalAlign: -1, marginRight: 5 }} />
+                  Secure checkout · Cancel within 48 hrs of booking, less a 20% admin charge ·{' '}
+                  <a href="/terms" target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'underline', color: 'inherit' }}>full policy</a>
+                </p>
               </div>
             )}
           </div>
@@ -1542,6 +1671,152 @@ function DailyLimitModal({ hoursByDate, onClose }: {
           Adjust my trip
         </button>
       </div>
+    </div>
+  )
+}
+
+/**
+ * What a guest needs to know about a tour, on the page where they are about
+ * to pay for it.
+ *
+ * This lives in checkout rather than on a standalone tour page: the reel is
+ * the browsing surface and stays uncluttered, and the detail is put in front
+ * of someone at the moment it actually changes a decision — before paying,
+ * and in time to pack for it.
+ */
+function TourDetails({ exp }: { exp: CartItem }) {
+  const [open, setOpen] = useState(false)
+
+  const groupMax = maxGroupSize(exp)
+  const sections: { title: string; items: string[] }[] = [
+    { title: 'Included', items: exp.included ?? [] },
+    { title: 'Not included', items: exp.notIncluded ?? [] },
+    { title: 'What to bring', items: exp.bring ?? [] },
+    { title: 'Good to know', items: exp.additionalInfo ?? [] },
+  ].filter((sec) => sec.items.length > 0)
+
+  const hasFacts = !!(groupMax || exp.ages || exp.fitness || exp.about)
+  if (!hasFacts && sections.length === 0) return null
+
+  // What the guest would find inside, named from the blocks this tour
+  // actually has. A bare "Tour details" row was being scrolled straight
+  // past, because nothing on it said whether opening it was worth the tap.
+  // Capped at three: the point is to prove there is substance underneath,
+  // and a full table of contents is just another wall to skim.
+  const preview = [
+    exp.about ? "what you'll do" : null,
+    exp.included?.length ? "what's included" : null,
+    exp.bring?.length ? 'what to pack' : null,
+    exp.ages || exp.fitness ? 'who it suits' : null,
+    exp.additionalInfo?.length ? 'good to know' : null,
+  ].filter(Boolean).slice(0, 3) as string[]
+  const previewLine = preview.join(', ').replace(/^./, (c) => c.toUpperCase())
+
+  return (
+    <div style={{ borderTop: '1px solid var(--border)' }}>
+      <button
+        onClick={() => setOpen((o) => !o)}
+        aria-expanded={open}
+        style={{
+          width: '100%', display: 'flex', alignItems: 'center', gap: 12,
+          padding: '13px 22px', border: 'none', cursor: 'pointer',
+          background: 'var(--bg-warm)',
+          fontFamily: 'var(--font-dm-sans)', textAlign: 'left',
+          transition: 'background 0.15s ease',
+        }}
+        onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--surface-hover)' }}
+        onMouseLeave={(e) => { e.currentTarget.style.background = 'var(--bg-warm)' }}
+      >
+        <span style={{ flex: 1, minWidth: 0 }}>
+          <span style={{
+            display: 'block', fontSize: 14, fontWeight: 700,
+            color: 'var(--text-primary)', marginBottom: 2,
+          }}>
+            Tour details
+          </span>
+          <span style={{
+            display: 'block', fontSize: 12, color: 'var(--text-tertiary)',
+            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+          }}>
+            {open ? 'Tap to collapse' : previewLine}
+          </span>
+        </span>
+        <span
+          aria-hidden
+          style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            width: 28, height: 28, borderRadius: '50%', flexShrink: 0,
+            border: '1px solid var(--border-strong)', background: 'var(--card-bg)',
+            color: 'var(--text-primary)',
+            transform: open ? 'rotate(180deg)' : 'none',
+            transition: 'transform 0.18s ease',
+          }}
+        >
+          <ChevronDown size={15} />
+        </span>
+      </button>
+
+      {open && (
+        <div style={{ padding: '4px 22px 18px', background: 'var(--bg-warm)' }}>
+          {exp.about && (
+            <p style={{ fontSize: 14, lineHeight: 1.7, color: 'var(--text-secondary)', fontFamily: 'var(--font-dm-sans)', marginBottom: 14 }}>
+              {exp.about}
+            </p>
+          )}
+
+          {(groupMax || exp.ages) && (
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px 24px', marginBottom: 14 }}>
+              {groupMax && <DetailFact label="Group size" value={`Up to ${groupMax} people`} />}
+              {exp.ages && <DetailFact label="Ages" value={exp.ages} />}
+            </div>
+          )}
+
+          {exp.fitness && (
+            <p style={{ fontSize: 13.5, lineHeight: 1.65, color: 'var(--text-secondary)', fontFamily: 'var(--font-dm-sans)', marginBottom: 14 }}>
+              {exp.fitness}
+            </p>
+          )}
+
+          {sections.map((sec) => (
+            <div key={sec.title} style={{ marginBottom: 14 }}>
+              <p style={{
+                fontSize: 11, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase',
+                color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-sans)', marginBottom: 6,
+              }}>
+                {sec.title}
+              </p>
+              <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                {sec.items.map((line) => (
+                  <li key={line} style={{
+                    position: 'relative', paddingLeft: 16, fontSize: 13.5, lineHeight: 1.6,
+                    color: 'var(--text-secondary)', fontFamily: 'var(--font-dm-sans)',
+                  }}>
+                    <span aria-hidden style={{
+                      position: 'absolute', left: 0, top: 8, width: 5, height: 5,
+                      borderRadius: '50%', background: 'var(--gold-text)',
+                    }} />
+                    {line}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function DetailFact({ label, value }: { label: string; value: string }) {
+  return (
+    <div>
+      <p style={{
+        fontSize: 10.5, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase',
+        color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-sans)', marginBottom: 2,
+      }}>
+        {label}
+      </p>
+      <p style={{ fontSize: 13.5, fontWeight: 600, fontFamily: 'var(--font-dm-sans)' }}>{value}</p>
     </div>
   )
 }

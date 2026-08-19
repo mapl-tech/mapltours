@@ -128,7 +128,7 @@ export default function PlacesSection({
           fontFamily: 'var(--font-dm-sans)',
         }}>
           Added to your itinerary so we can route your driver. You pay these
-          venues directly — nothing here is charged by MAPL Tours.
+          venues directly, nothing here is charged by MAPL Tours.
           {Object.keys(live).length > 0 && (
             /* Required wherever Google ratings or photos are displayed. */
             <> Ratings and photos powered by Google.</>

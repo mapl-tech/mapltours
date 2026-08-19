@@ -24,7 +24,7 @@ const WHO = [
   {
     kicker: '01',
     title: 'Guides and creators',
-    body: 'You run something worth travelling for — a jerk pit, a river trip, a studio session, a hike you know better than anyone. You want guests without living inside a booking inbox.',
+    body: 'You run something worth travelling for: a jerk pit, a river trip, a studio session, a hike you know better than anyone. You want guests without living inside a booking inbox.',
   },
   {
     kicker: '02',
@@ -52,17 +52,17 @@ const STEPS = [
   {
     n: '2',
     title: 'We come and do it',
-    body: 'Someone from MAPL Tours books it like a guest would and goes. No clipboard, no inspection — we want to see the day a traveller would actually get.',
+    body: 'Someone from MAPL Tours books it like a guest would and goes. No clipboard, no inspection. We want to see the day a traveller would actually get.',
   },
   {
     n: '3',
     title: 'We build the listing',
-    body: 'Photography, the write-up, pricing and the booking flow are ours to build. You approve it before it goes live, and it stays yours — your name on it, not a white label.',
+    body: 'Photography, the write-up, pricing and the booking flow are ours to build. You approve it before it goes live, and it stays yours: your name on it, not a white label.',
   },
   {
     n: '4',
     title: 'Guests arrive',
-    body: 'Bookings land with the details you need — names, numbers, dates, dietary notes, pickup point. You deliver the experience. We handle everything around it.',
+    body: 'Bookings land with the details you need: names, numbers, dates, dietary notes, pickup point. You deliver the experience. We handle everything around it.',
   },
 ]
 
@@ -93,7 +93,7 @@ const STANDARDS = [
   },
   {
     title: 'It has to be Jamaican',
-    body: 'Owned and run by people from here, us included. The whole point of MAPL Tours is that the island is not a backdrop — it is the people who know it.',
+    body: 'Owned and run by people from here, us included. The whole point of MAPL Tours is that the island is not a backdrop, it is the people who know it.',
   },
   {
     title: 'It has to be dependable',
@@ -232,7 +232,7 @@ export default function PartnerView() {
           }}>
             MAPL Tours Jamaica is an operator. On the experiences we run, our name is on
             the itinerary, our driver is at the airport, and the guest&rsquo;s whole day is
-            ours from pickup to drop-off. Nineteen experiences and forty-four restaurants
+            ours from pickup to drop-off. Twenty-two experiences and forty-four restaurants
             and sites sit on the site today &mdash; ours and other people&rsquo;s &mdash;
             across ten parishes of road.
           </p>

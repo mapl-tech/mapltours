@@ -43,7 +43,7 @@ function DriverLoginContent() {
       <header style={{ position: 'relative', zIndex: 2, padding: 'max(18px, env(safe-area-inset-top)) clamp(16px, 2.5vw, 28px) 0' }}>
         <span style={{ display: 'inline-flex', alignItems: 'center', gap: 12 }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/mapl-logo-dark.svg" alt="MAPL Tours Jamaica" style={{ height: 48, width: 'auto', display: 'block', margin: '-8px 0' }} />
+          <img className="logo-on-dark" src="/mapl-logo-dark.svg" alt="MAPL Tours Jamaica" style={{ height: 48, width: 'auto', display: 'block', margin: '-8px 0' }} />
           <span style={{
             fontSize: 12, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: goldWarm,
             padding: '5px 12px', borderRadius: 9999, border: '1px solid rgba(196,164,74,0.45)', whiteSpace: 'nowrap',

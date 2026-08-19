@@ -9,6 +9,7 @@ import { tourPrice } from '@/lib/experiences'
 import { X } from 'lucide-react'
 import { useI18n } from '@/lib/i18n'
 import TripTimeBar from '@/components/TripTimeBar'
+import DayFlow from '@/components/DayFlow'
 
 export default function ItineraryPanel({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { items, stops, removeItem, removeStop, subtotal, grandTotal } = useCartStore()
@@ -88,11 +89,12 @@ export default function ItineraryPanel({ open, onClose }: { open: boolean; onClo
         display: 'flex', flexDirection: 'column',
         boxShadow: '-12px 0 48px rgba(0,0,0,0.08)',
       }}>
-        {/* Header */}
+        {/* Header — pinned, the body below it scrolls. */}
         <div style={{
           padding: '22px 24px 18px',
           borderBottom: '1px solid var(--border)',
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          flexShrink: 0,
         }}>
           <div>
             <h3 className="text-headline" style={{ fontSize: 18, marginBottom: 2 }}>{t('Your Itinerary')}</h3>
@@ -111,6 +113,14 @@ export default function ItineraryPanel({ open, onClose }: { open: boolean; onClo
           }}><X size={16} /></button>
         </div>
 
+        {/* Scrolling body. Everything between the pinned header and the
+            pinned totals scrolls as one region: with the day builder as its
+            own flex child, a long day (many stops) grew the block past the
+            viewport and pushed the totals and the checkout CTA off-screen,
+            with no way to reach them. minHeight:0 is what lets a flex child
+            shrink below its content and actually scroll. */}
+        <div className="no-scrollbar" style={{ flex: 1, minHeight: 0, overflowY: 'auto', overscrollBehavior: 'contain' }}>
+
         {/* Day Builder */}
         <div style={{
           padding: '16px 24px 18px',
@@ -128,6 +138,9 @@ export default function ItineraryPanel({ open, onClose }: { open: boolean; onClo
             Day Builder
           </p>
           <TripTimeBar compact />
+          <div style={{ marginTop: 14 }}>
+            <DayFlow compact />
+          </div>
         </div>
 
         {items[0]?.kind === 'package' && (
@@ -135,12 +148,12 @@ export default function ItineraryPanel({ open, onClose }: { open: boolean; onClo
             padding: '10px 24px 0', fontSize: 12.5, color: 'var(--text-tertiary)',
             fontFamily: 'var(--font-dm-sans)', lineHeight: 1.45,
           }}>
-            {t('This is a ready-made day. Adding a single experience will replace it.')}
+            {t('Keep this day, or add individual tours as you like.')}
           </p>
         )}
 
         {/* Items */}
-        <div className="no-scrollbar" style={{ flex: 1, overflowY: 'auto', padding: '14px 24px' }}>
+        <div style={{ padding: '14px 24px' }}>
           {items.map((item, i) => (
             <div key={item.id} style={{
               display: 'flex', gap: 12, paddingBottom: 16, marginBottom: 16,
@@ -206,15 +219,22 @@ export default function ItineraryPanel({ open, onClose }: { open: boolean; onClo
                   </div>
                 </div>
               ))}
-              <p style={{ fontSize: 12, color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-sans)', marginBottom: 4 }}>
-                {t('Free roadside stops, your driver builds them into your route.')}
+              {/* Why these are free and why they are tied to the tours: a
+                  stop is something the day passes, not something the day is
+                  built around. Said here as well as at the point of adding,
+                  because this is where a guest reviews what they picked. */}
+              <p style={{ fontSize: 12, color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-sans)', marginBottom: 4, lineHeight: 1.45 }}>
+                {t('Free roadside stops, your driver builds them into your route. They ride along your tours and stay near them, so no stop adds a drive to the day.')}
               </p>
             </div>
           )}
         </div>
 
-        {/* Footer */}
-        <div style={{ borderTop: '1px solid var(--border)', padding: '18px 24px 24px' }}>
+        </div>
+
+        {/* Footer — pinned, so the total and the CTA stay reachable however
+            long the day gets. */}
+        <div style={{ borderTop: '1px solid var(--border)', padding: '18px 24px 24px', flexShrink: 0 }}>
           {[
             { label: t('Subtotal'), value: subtotal() },
           ].map((row) => (
@@ -227,10 +247,21 @@ export default function ItineraryPanel({ open, onClose }: { open: boolean; onClo
             <span>{t('Total')}</span>
             <span>{formatPrice(grandTotal())}</span>
           </div>
-          <Link href={checkoutHref} onClick={onClose} style={{ display: 'block', textDecoration: 'none' }}>
-            <button className="btn-primary" style={{ width: '100%', height: 46, fontSize: 14 }}>
-              {t('Continue to checkout')} →
-            </button>
+          {/* One interactive element, not a <button> nested in a <Link>.
+              The nested form is invalid HTML, and closing the panel from the
+              anchor's own onClick could unmount it before the browser acted on
+              the navigation — so the click did nothing. Navigate first, then
+              close on the next tick. */}
+          <Link
+            href={checkoutHref}
+            onClick={() => { setTimeout(onClose, 0) }}
+            className="btn-primary"
+            style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              width: '100%', height: 46, fontSize: 14, textDecoration: 'none',
+            }}
+          >
+            {t('Continue to checkout')} →
           </Link>
           <p style={{ textAlign: 'center', fontSize: 12, color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-sans)', marginTop: 12 }}>
             {t('Flexible cancellation within 48 hrs of booking')}

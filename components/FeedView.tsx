@@ -6,6 +6,7 @@ import { experiences, singleExperiences, packageExperiences, HERO_IMAGE, DESTINA
 import { EATS } from '@/lib/eats'
 import { priceUnitLabel } from '@/lib/experiences'
 import { useCartStore } from '@/lib/cart'
+import { fitCandidateStop, MAX_STOP_GAP_MIN } from '@/lib/day-route'
 import { useHydrated } from '@/lib/use-hydrated'
 import { CULTURE_IMAGE, HERO_VIDEO } from '@/lib/images'
 import ExpCard from './ExpCard'
@@ -150,7 +151,13 @@ function FoodSection() {
   const scrollRef = useRef<HTMLDivElement>(null)
   const { t } = useI18n()
   const { addStop, removeStop, isStopAdded } = useCartStore()
+  const items = useCartStore((s) => s.items)
+  const cartStops = useCartStore((s) => s.stops)
   const hydrated = useHydrated()
+  // Pre-hydration the cart is empty on both sides of the render, so judge
+  // against nothing rather than against a cart we have not loaded yet.
+  const tours = hydrated ? items : []
+  const ctx = { items: tours, stops: hydrated ? cartStops : [] }
 
   const scroll = (dir: 'left' | 'right') => {
     if (!scrollRef.current) return
@@ -188,6 +195,23 @@ function FoodSection() {
             }}>
               Real spots, no reservations needed: the jerk pits and kitchens Jamaicans swear by, from Scotchies&apos; pimento smoke to sunset jerk on the Negril cliffs.
             </p>
+            {/* Only the empty state gets a line of explanation, because only
+                the empty state is inexplicable: every card is unaddable and
+                nothing on screen says why. Once there are tours, each card
+                carries its own status and the rule explains itself in place —
+                repeating it up here was telling people something the buttons
+                had already told them. */}
+            {tours.length === 0 && (
+              <p style={{
+                fontSize: 13, color: 'var(--gold-warm)',
+                fontFamily: 'var(--font-dm-sans)', marginTop: 10,
+                maxWidth: 460, lineHeight: 1.5,
+              }}>
+                Food stops ride along a tour day. They are free, and your driver
+                works them into the route. Add a tour first, then the spots near it
+                open up.
+              </p>
+            )}
           </div>
 
           {/* Arrows */}
@@ -247,6 +271,7 @@ function FoodSection() {
       >
         {EATS.map((r) => {
           const added = hydrated && isStopAdded(r.name)
+          const fit = fitCandidateStop(r, ctx)
           return (
           <div
             key={r.name}
@@ -319,7 +344,64 @@ function FoodSection() {
               }}>
                 {r.description}
               </p>
+              {/* Where this spot sits relative to the day being built. Kept
+                  above the button so the answer arrives before the tap, not
+                  after it. */}
+              <p style={{
+                fontSize: 11.5, fontFamily: 'var(--font-dm-sans)', marginBottom: 8,
+                lineHeight: 1.4, minHeight: 16,
+                color: added
+                  ? 'var(--emerald)'
+                  : fit.allowed ? 'var(--gold-warm)' : 'rgba(255,255,255,0.45)',
+              }}>
+                {added
+                  ? fit.label
+                  : fit.verdict === 'no-tours'
+                    ? 'Free with any tour day'
+                    : fit.verdict === 'stranded'
+                      ? `Nothing in your day comes within ${MAX_STOP_GAP_MIN} min of it`
+                      : fit.label}
+              </p>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                {/* Three states, three different answers. Two of them are
+                    about tours rather than about this restaurant — no tours
+                    yet, or no tour left without a stop — and both are fixed
+                    by booking one, so the control becomes the way to do that
+                    instead of a dead button. Only distance is a genuine
+                    refusal: adding a spot that far out would quietly lengthen
+                    the drive for everything else in the day. */}
+                {!added && fit.verdict === 'no-tours' ? (
+                  <Link
+                    href="/explore"
+                    style={{
+                      flex: 1, minHeight: 44, borderRadius: 9999,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      background: 'rgba(255,255,255,0.08)',
+                      border: '1px solid rgba(255,255,255,0.16)',
+                      color: '#fff', textDecoration: 'none',
+                      fontSize: 13, fontWeight: 700,
+                      fontFamily: 'var(--font-dm-sans)',
+                    }}
+                  >
+                    {t('Add a tour first')}
+                  </Link>
+                ) : !added && !fit.allowed ? (
+                  <button
+                    disabled
+                    title={fit.reason ?? undefined}
+                    style={{
+                      flex: 1, minHeight: 44, borderRadius: 9999,
+                      background: 'rgba(255,255,255,0.05)',
+                      border: '1px solid rgba(255,255,255,0.10)',
+                      color: 'rgba(255,255,255,0.42)',
+                      cursor: 'not-allowed',
+                      fontSize: 13, fontWeight: 700,
+                      fontFamily: 'var(--font-dm-sans)',
+                    }}
+                  >
+                    {t('Off your route')}
+                  </button>
+                ) : (
                 <button
                   onClick={() => (added ? removeStop(r.name) : addStop({
                     name: r.name, town: r.town, parish: r.parish,
@@ -339,6 +421,7 @@ function FoodSection() {
                 >
                   {added ? t('\u2713 On your route') : t('+ Add to itinerary')}
                 </button>
+                )}
                 <a
                   href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(r.mapsQuery)}`}
                   target="_blank"
@@ -424,7 +507,7 @@ function PackagesSection() {
               fontSize: 15, color: 'var(--text-secondary)',
               fontFamily: 'var(--font-dm-sans)', marginTop: 10, lineHeight: 1.5,
             }}>
-              {t('Two or three experiences run back to back, in the right order, driven door to door. Book a ready-made day or build your own, not both.')}
+              {t('Two or three experiences run back to back, in the right order, driven door to door. Book a ready-made day or build your own, you decide.')}
             </p>
           </div>
 
@@ -575,9 +658,16 @@ function PackagesSection() {
                       {t('Add this day')}
                     </button>
                   )}
+                  {/* Two ways to buy, said as an invitation rather than as an
+                      accounting note. The old line ("Replaces the 1 experience
+                      in your itinerary") read like a warning about something
+                      being taken away, when the choice underneath is really
+                      ours-or-yours and either makes a good day. Shown only
+                      when there are singles in the cart to swap, which is
+                      exactly when the question is live. */}
                   {replaces.length > 0 && !inCart && (
-                    <p className="pkg-replaces" style={{ fontSize: 12, color: 'var(--gold-text)', fontFamily: 'var(--font-dm-sans)' }}>
-                      {t('Replaces the')} {replaces.length} {replaces.length === 1 ? t('experience') : t('experiences')} {t('in your itinerary')}
+                    <p className="pkg-replaces" style={{ fontSize: 12, color: 'var(--gold-text)', fontFamily: 'var(--font-dm-sans)', lineHeight: 1.45 }}>
+                      {t('Choose this day, or add individual tours as you like.')}
                     </p>
                   )}
                 </div>
@@ -1193,7 +1283,7 @@ export default function FeedView() {
 
             <div className="grid-features">
               {[
-                { icon: <Award size={18} />, title: 'Only the best experiences', desc: 'Every adventure is vetted. We reject 80% of submissions to keep quality uncompromising.' },
+                { icon: <Award size={18} />, title: 'Only the best experiences', desc: 'Every adventure is vetted. If it is not a day we would put our own family on, it does not make the site.' },
                 { icon: <Users size={18} />, title: 'Real local creators', desc: 'Not tour guides, your Jamaican cousin who knows everywhere worth going.' },
                 { icon: <Headphones size={18} />, title: '24/7 trip support', desc: 'Email us anytime. We handle logistics so you just show up and enjoy.' },
                 { icon: <ShieldCheck size={18} />, title: 'Flexible cancellation', desc: 'Change of plans? Cancel within 48 hours of booking for a refund, less a 20% administration charge. No stress.' },

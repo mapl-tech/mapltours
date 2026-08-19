@@ -5,8 +5,10 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { Experience, slugify, priceUnitLabel } from '@/lib/experiences'
 import { useI18n } from '@/lib/i18n'
+import SaveButton from './SaveButton'
 import { useCartStore } from '@/lib/cart'
 import { useHydrated } from '@/lib/use-hydrated'
+import { useTourFit } from '@/lib/use-tour-fit'
 import { Plus, Check, Star, MapPin, Clock, Play } from 'lucide-react'
 
 export default memo(function MobileShort({ exp, priority = false }: { exp: Experience; priority?: boolean }) {
@@ -14,7 +16,15 @@ export default memo(function MobileShort({ exp, priority = false }: { exp: Exper
   const { t, formatPrice } = useI18n()
   const hydrated = useHydrated()
   const inCart = hydrated && isInCart(exp.id)
-  const toggleCart = () => { if (inCart) { removeItem(exp.id) } else { addItem(exp) } }
+  // A day's tours have to be drivable between each other, so a tour on the
+  // far side of the island cannot join this cart. Refused here with the
+  // reason rather than swallowed by the store.
+  const tourFit = useTourFit(exp)
+  const blocked = !inCart && !tourFit.allowed
+  const toggleCart = () => {
+    if (inCart) removeItem(exp.id)
+    else if (tourFit.allowed) addItem(exp)
+  }
 
   const containerRef = useRef<HTMLDivElement>(null)
   const videoRef = useRef<HTMLVideoElement>(null)
@@ -208,14 +218,28 @@ export default memo(function MobileShort({ exp, priority = false }: { exp: Exper
             {t(exp.category)}
           </span>
 
+          {/* Save for later, matching the add button it sits beside. */}
+          <div style={{ position: 'absolute', top: 12, right: 64, zIndex: 3 }}>
+            <SaveButton experienceId={exp.id} title={exp.title} variant="dark" size={44} />
+          </div>
+
           {/* Add button top-right */}
           <button
             onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleCart() }}
-            aria-label={inCart ? `Remove ${exp.title} from your trip` : `Add ${exp.title} to your trip`}
+            disabled={blocked}
+            title={tourFit.reason ?? undefined}
+            aria-label={
+              inCart
+                ? `Remove ${exp.title} from your trip`
+                : blocked
+                  ? `${exp.title} is too far from the day you are building`
+                  : `Add ${exp.title} to your trip`
+            }
             style={{
               position: 'absolute', top: 12, right: 12, zIndex: 3,
               width: 44, height: 44, borderRadius: '50%',
-              background: inCart ? 'var(--emerald)' : 'rgba(0,0,0,0.4)',
+              background: inCart ? 'var(--emerald)' : blocked ? 'rgba(0,0,0,0.22)' : 'rgba(0,0,0,0.4)',
+              opacity: blocked ? 0.65 : 1,
               backdropFilter: 'blur(8px)', border: 'none', cursor: 'pointer',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               color: '#fff',
@@ -291,18 +315,20 @@ export default memo(function MobileShort({ exp, priority = false }: { exp: Exper
             </div>
             <button
               onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleCart() }}
+            disabled={blocked}
+            title={tourFit.reason ?? undefined}
               style={{
                 pointerEvents: 'auto',
                 width: '100%', marginTop: 10,
                 padding: '12px 0', borderRadius: 14,
-                background: inCart ? 'var(--emerald)' : 'white',
-                color: inCart ? 'white' : '#000',
+                background: inCart ? 'var(--emerald)' : blocked ? 'rgba(255,255,255,0.22)' : 'white',
+                color: inCart ? 'white' : blocked ? 'rgba(255,255,255,0.7)' : '#000',
                 fontSize: 14, fontWeight: 700, fontFamily: 'var(--font-dm-sans)',
-                border: 'none', cursor: 'pointer',
+                border: 'none', cursor: blocked ? 'not-allowed' : 'pointer',
                 textAlign: 'center',
               }}
             >
-              {inCart ? t('✓ Added') : t('Add to Trip')}
+              {inCart ? t('✓ Added') : blocked ? t('Another day') : t('Add to Trip')}
             </button>
           </div>
         </div>

@@ -56,6 +56,17 @@ const LOCATIONS: Record<string, { lat: number; lng: number }> = {
   'Manchioneal':    { lat: 18.1300, lng: -76.2700 },
   'Port Royal':     { lat: 17.9361, lng: -76.8417 },
 
+  // North-coast towns that carry no tour of their own but do carry food
+  // stops. lib/day-route.ts measures a stop against the day's tours, and an
+  // unresolvable town there means "no opinion" — it would wave every stop
+  // through. Named towns only; the parenthetical variants in lib/eats.ts
+  // ('Falmouth (Rock)', 'Negril (West End)') resolve through getCoords's
+  // substring pass.
+  'Discovery Bay':  { lat: 18.4667, lng: -77.4000 },
+  'Runaway Bay':    { lat: 18.4600, lng: -77.3300 },
+  "St. Ann's Bay":  { lat: 18.4353, lng: -77.2011 },
+  'Greenwood':      { lat: 18.4844, lng: -77.7614 },
+
   // Hotels & resorts, mapped to nearest major location
   'Sandals Negril Beach Resort':        { lat: 18.2850, lng: -78.3550 },
   'Sandals Royal Caribbean, Montego Bay': { lat: 18.4900, lng: -77.9250 },
@@ -92,23 +103,29 @@ const LOCATIONS: Record<string, { lat: number; lng: number }> = {
   'Ocho Rios Cruise Port':                      { lat: 18.4080, lng: -77.1080 },
 }
 
-/**
- * Calculate road distance between two points using Haversine + Jamaica road factor.
- * Jamaica roads are winding (especially mountains), so we apply a 1.45x correction.
- */
-function haversineKm(a: { lat: number; lng: number }, b: { lat: number; lng: number }): number {
+/** Jamaica road correction factor (winding mountain & coastal roads). */
+export const JAMAICA_ROAD_FACTOR = 1.45
+
+/** Great-circle km, no road correction. */
+export function straightLineKm(a: { lat: number; lng: number }, b: { lat: number; lng: number }): number {
   const R = 6371
   const dLat = (b.lat - a.lat) * Math.PI / 180
   const dLng = (b.lng - a.lng) * Math.PI / 180
   const x = Math.sin(dLat / 2) ** 2 +
     Math.cos(a.lat * Math.PI / 180) * Math.cos(b.lat * Math.PI / 180) *
     Math.sin(dLng / 2) ** 2
-  const straightLine = R * 2 * Math.atan2(Math.sqrt(x), Math.sqrt(1 - x))
-  // Jamaica road correction factor (winding mountain & coastal roads)
-  return straightLine * 1.45
+  return R * 2 * Math.atan2(Math.sqrt(x), Math.sqrt(1 - x))
 }
 
-function getCoords(location: string): { lat: number; lng: number } | null {
+/**
+ * Calculate road distance between two points using Haversine + Jamaica road factor.
+ * Jamaica roads are winding (especially mountains), so we apply a 1.45x correction.
+ */
+export function haversineKm(a: { lat: number; lng: number }, b: { lat: number; lng: number }): number {
+  return straightLineKm(a, b) * JAMAICA_ROAD_FACTOR
+}
+
+export function getCoords(location: string): { lat: number; lng: number } | null {
   // Exact match
   if (LOCATIONS[location]) return LOCATIONS[location]
   // Fuzzy: check if any key is contained in the location string
@@ -117,6 +134,31 @@ function getCoords(location: string): { lat: number; lng: number } | null {
     k.toLowerCase().includes(location.toLowerCase())
   )
   return key ? LOCATIONS[key] : null
+}
+
+/**
+ * Road-corrected kilometres between two named places, or null when either
+ * name is not in the table. Same numbers the fuel estimate runs on.
+ */
+export function roadDistanceKm(from: string, to: string): number | null {
+  const a = getCoords(from)
+  const b = getCoords(to)
+  if (!a || !b) return null
+  return haversineKm(a, b)
+}
+
+/**
+ * Great-circle km between two named places, before any road correction.
+ * lib/day-route estimates drive TIME from this rather than from the corrected
+ * figure: the 1.45x factor is tuned to make fuel estimates safe (it rounds
+ * every leg up), and a distance that is deliberately pessimistic turns into a
+ * drive time that wrongly refuses lunch twenty minutes up the coast.
+ */
+export function directDistanceKm(from: string, to: string): number | null {
+  const a = getCoords(from)
+  const b = getCoords(to)
+  if (!a || !b) return null
+  return straightLineKm(a, b)
 }
 
 export interface DayBreakdown {

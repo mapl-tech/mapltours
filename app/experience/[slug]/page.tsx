@@ -45,7 +45,7 @@ export function generateMetadata({ params }: { params: { slug: string } }): Meta
   }
 }
 
-export default function ExperiencePage({ params }: { params: { slug: string } }) {
+export default function ExperienceRoute({ params }: { params: { slug: string } }) {
   // 404 unknown slugs so they don't render an empty shell and so Google
   // doesn't index junk URLs.
   const exp = getExperienceBySlug(params.slug)

@@ -1,12 +1,14 @@
 'use client'
 
 import Image from 'next/image'
+import Link from 'next/link'
 // Cart store no longer used on profile, upcoming trips come from confirmed bookings
 import { experiences } from '@/lib/experiences'
 import { useI18n } from '@/lib/i18n'
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useAuth } from '@/lib/supabase/auth-context'
+import { useSaved } from '@/lib/supabase/saved'
 import { useSwrCache } from '@/lib/swr-cache'
 import { useMyVideoProgress, VIDEO_REWARD_MILESTONE } from '@/lib/tour-videos'
 import { Award, UserRound } from 'lucide-react'
@@ -32,10 +34,6 @@ interface PastBooking {
     date: string
     experience_id: number
   }[]
-}
-
-interface SavedCreator {
-  creator_handle: string
 }
 
 interface Badge {
@@ -315,7 +313,6 @@ function CancelBooking({ booking, onCancelled }: { booking: PastBooking; onCance
 interface ProfileBundle {
   profile: ProfileData
   pastBookings: PastBooking[]
-  savedCreators: SavedCreator[]
   badges: Badge[]
   likedCount: number
 }
@@ -323,7 +320,6 @@ interface ProfileBundle {
 const EMPTY_BUNDLE: ProfileBundle = {
   profile: { name: null, avatar_url: null, location: null },
   pastBookings: [],
-  savedCreators: [],
   badges: [],
   likedCount: 0,
 }
@@ -333,7 +329,6 @@ export default function ProfileView() {
   const { user: authUser } = useAuth()
   const user: User | null = authUser
   const [phone, setPhone] = useState('')
-  const [identity, setIdentity] = useState('')
 
   // Single SWR-cached fetch of everything the profile needs. localStorage key
   // is scoped per-user so switching accounts shows the right data instantly.
@@ -343,21 +338,19 @@ export default function ProfileView() {
     async () => {
       if (!user) return EMPTY_BUNDLE
       try {
-        const [profileRes, bookingsRes, creatorsRes, badgesRes, likesRes] = await Promise.all([
+        const [profileRes, bookingsRes, badgesRes, likesRes] = await Promise.all([
           supabase.from('users').select('name, avatar_url, location').eq('id', user.id).single(),
           // Server route: matches bookings by user_id OR verified email, so
           // guest checkouts appear too (and get claimed onto this account).
           fetch('/api/profile/bookings')
             .then(async (r) => ({ data: r.ok ? (await r.json()).data : [] }))
             .catch(() => ({ data: [] })),
-          supabase.from('saved_creators').select('creator_handle').eq('user_id', user.id),
           supabase.from('user_badges').select('badge_name, earned_at').eq('user_id', user.id),
           supabase.from('experience_likes').select('id', { count: 'exact', head: true }).eq('user_id', user.id),
         ])
         return {
           profile: (profileRes.data as ProfileData) ?? EMPTY_BUNDLE.profile,
           pastBookings: (bookingsRes.data as PastBooking[]) ?? [],
-          savedCreators: (creatorsRes.data as SavedCreator[]) ?? [],
           badges: (badgesRes.data as Badge[]) ?? [],
           likedCount: likesRes.count ?? 0,
         }
@@ -371,16 +364,17 @@ export default function ProfileView() {
 
   const profile = bundle?.profile ?? EMPTY_BUNDLE.profile
   const pastBookings = bundle?.pastBookings ?? []
-  const savedCreators = bundle?.savedCreators ?? []
   const badges = bundle?.badges ?? []
-  const likedCount = bundle?.likedCount ?? 0
+  // The shared saved set is the live number; the bundle's count is the
+  // fallback for the moment before it loads.
+  const { savedIds } = useSaved()
+  const likedCount = savedIds.length || (bundle?.likedCount ?? 0)
   // Only block on a full-screen loader the very first time (no cache at all).
   const loading = !user ? false : initialLoading
 
   useEffect(() => {
     if (user) {
       setPhone(user.user_metadata?.phone || '')
-      setIdentity(user.user_metadata?.identity_number || '')
     }
   }, [user])
 
@@ -410,11 +404,6 @@ export default function ProfileView() {
     return experiences.find(e => e.id === experienceId)?.image || experiences[0].image
   }
 
-  function getCreatorInfo(handle: string) {
-    const exp = experiences.find(e => e.creator === handle)
-    return { image: exp?.image || experiences[0].image, followers: exp?.followers || '-' }
-  }
-
   async function updateEmail(newEmail: string) {
     await supabase.auth.updateUser({ email: newEmail })
   }
@@ -422,11 +411,6 @@ export default function ProfileView() {
   async function updatePhone(newPhone: string) {
     setPhone(newPhone)
     await supabase.auth.updateUser({ data: { phone: newPhone } })
-  }
-
-  async function updateIdentity(newId: string) {
-    setIdentity(newId)
-    await supabase.auth.updateUser({ data: { identity_number: newId } })
   }
 
   async function updateName(newName: string) {
@@ -546,26 +530,37 @@ export default function ProfileView() {
                 {[
                   { value: tripsCompleted, label: 'Trips' },
                   { value: parishesExplored, label: 'Parishes' },
-                  { value: likedCount, label: 'Saved' },
-                ].map((s, i) => (
-                  <div key={s.label} style={{
-                    textAlign: 'center',
-                    borderRight: i < 2 ? '1px solid var(--border)' : 'none',
-                  }}>
-                    <p style={{
-                      fontFamily: 'var(--font-dm-sans)', fontWeight: 800, fontSize: 24,
-                      color: 'var(--text-primary)', lineHeight: 1, marginBottom: 4,
+                  { value: likedCount, label: 'Saved', href: '/saved' },
+                ].map((s, i) => {
+                  const body = (
+                    <>
+                      <p style={{
+                        fontFamily: 'var(--font-dm-sans)', fontWeight: 800, fontSize: 24,
+                        color: 'var(--text-primary)', lineHeight: 1, marginBottom: 4,
+                      }}>
+                        {s.value}
+                      </p>
+                      <p style={{
+                        fontSize: 12, color: 'var(--text-tertiary)',
+                        fontFamily: 'var(--font-dm-sans)', fontWeight: 500,
+                      }}>
+                        {s.label}
+                      </p>
+                    </>
+                  )
+                  return (
+                    <div key={s.label} style={{
+                      textAlign: 'center',
+                      borderRight: i < 2 ? '1px solid var(--border)' : 'none',
                     }}>
-                      {s.value}
-                    </p>
-                    <p style={{
-                      fontSize: 12, color: 'var(--text-tertiary)',
-                      fontFamily: 'var(--font-dm-sans)', fontWeight: 500,
-                    }}>
-                      {s.label}
-                    </p>
-                  </div>
-                ))}
+                      {/* The saved count was a dead number: it counted rows
+                          nobody could reach. It now opens the list. */}
+                      {s.href
+                        ? <Link href={s.href} style={{ display: 'block' }}>{body}</Link>
+                        : body}
+                    </div>
+                  )
+                })}
               </div>
             </div>
 
@@ -595,7 +590,6 @@ export default function ProfileView() {
                 {[
                   { text: 'Email address', done: !!email },
                   { text: 'Phone number', done: !!phone },
-                  { text: 'Government ID', done: !!identity },
                 ].map((item) => (
                   <div key={item.text} style={{
                     display: 'flex', alignItems: 'center', gap: 12,
@@ -689,7 +683,11 @@ export default function ProfileView() {
                 placeholder="you@example.com"
                 type="email"
                 onSave={updateEmail}
-                verified={!!email}
+                // Supabase actually confirms this one, and two server routes
+                // already trust email_confirmed_at to decide which bookings
+                // belong to this account. The badge now says the same thing
+                // they do, instead of "this box is not empty".
+                verified={!!user?.email_confirmed_at}
               />
               <EditableField
                 label="Phone number"
@@ -697,14 +695,11 @@ export default function ProfileView() {
                 placeholder="+1 (876) 000-0000"
                 type="tel"
                 onSave={updatePhone}
-                verified={!!phone}
-              />
-              <EditableField
-                label="Government ID"
-                value={identity}
-                placeholder="Passport or driver's license number"
-                onSave={updateIdentity}
-                verified={!!identity}
+                // No badge: nothing verifies this. It is a self-typed string
+                // in user_metadata, not Supabase's native phone field, so
+                // there is no phone_confirmed_at to point at. Claiming
+                // "Verified" for a number the guest typed themselves is worse
+                // than showing no badge at all.
               />
               <EditableField
                 label="Location"
@@ -909,68 +904,6 @@ export default function ProfileView() {
               <MaplRewardsCard />
             </section>
 
-            <div style={{ height: 1, background: 'var(--border)', marginBottom: 48 }} />
-
-            {/* ── Saved Creators ── */}
-            <section style={{ marginBottom: 48 }}>
-              <h2 style={{
-                fontFamily: 'var(--font-dm-sans)', fontWeight: 800, fontSize: 22,
-                marginBottom: 20, color: 'var(--text-primary)',
-                letterSpacing: '-0.02em',
-              }}>
-                {t('Saved creators')}
-              </h2>
-
-              {savedCreators.length === 0 ? (
-                <p style={{
-                  fontSize: 14, color: 'var(--text-tertiary)',
-                  fontFamily: 'var(--font-dm-sans)', lineHeight: 1.5,
-                }}>
-                  Follow your favorite experience creators and they will show up here.
-                </p>
-              ) : (
-                <div style={{ display: 'flex', flexDirection: 'column' }}>
-                  {savedCreators.map((c, i) => {
-                    const info = getCreatorInfo(c.creator_handle)
-                    return (
-                      <div key={c.creator_handle} style={{
-                        display: 'flex', alignItems: 'center', gap: 16,
-                        padding: '18px 0',
-                        borderBottom: i < savedCreators.length - 1 ? '1px solid var(--border)' : 'none',
-                      }}>
-                        <div style={{
-                          width: 52, height: 52, borderRadius: '50%',
-                          overflow: 'hidden', flexShrink: 0, position: 'relative',
-                          boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
-                        }}>
-                          <Image src={info.image} alt={c.creator_handle} fill sizes="52px" style={{ objectFit: 'cover' }} />
-                        </div>
-                        <div style={{ flex: 1 }}>
-                          <p style={{
-                            fontSize: 15, fontWeight: 600, fontFamily: 'var(--font-dm-sans)',
-                            color: 'var(--text-primary)', marginBottom: 2,
-                          }}>
-                            @{c.creator_handle}
-                          </p>
-                          <p style={{
-                            fontSize: 13, color: 'var(--text-tertiary)',
-                            fontFamily: 'var(--font-dm-sans)',
-                          }}>
-                            {info.followers} followers
-                          </p>
-                        </div>
-                        <button className="btn-outline" style={{
-                          height: 36, padding: '0 20px', fontSize: 13, fontWeight: 600,
-                          borderRadius: 'var(--r-sm)',
-                        }}>
-                          Following
-                        </button>
-                      </div>
-                    )
-                  })}
-                </div>
-              )}
-            </section>
           </div>
         </div>
       </div>

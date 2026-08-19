@@ -23,6 +23,13 @@ export interface DayScoreBreakdown {
   isOver: boolean
 }
 
+/**
+ * The shortest tour in the catalog. Below this much room left, no tour can
+ * be added to the day at all, which is what separates "nearly full" from
+ * "full" in buildNudge.
+ */
+const SHORTEST_TOUR_HOURS = 1
+
 const VARIETY_MAX = 35
 const BALANCE_MAX = 40
 const EFFICIENCY_MAX = 25
@@ -32,7 +39,11 @@ const EFFICIENCY_MAX = 25
  * human-readable stage label and upsell nudge. Pure function, no hooks,
  * so it can be called from selectors, components, and tests.
  */
-export function computeDayScore(items: CartItem[]): DayScoreBreakdown {
+export function computeDayScore(items: CartItem[], stopHours = 0): DayScoreBreakdown {
+  // `stopHours` is time the guest spends at free food stops. It is not sold by
+  // MAPL and never priced, but it fills the same day, so the bar here must
+  // agree with the cart's isDayOverLimit() gate — a bar reading 4/8 while
+  // checkout blocks at 6 is worse than no bar.
   if (items.length === 0) {
     return {
       total: 0,
@@ -65,7 +76,7 @@ export function computeDayScore(items: CartItem[]): DayScoreBreakdown {
     [Object.keys(byDate)[0], byDate[Object.keys(byDate)[0]]]
   )
 
-  const hours = topItems.reduce((s, i) => s + parseDurationHours(i.duration), 0)
+  const hours = topItems.reduce((s, i) => s + parseDurationHours(i.duration), 0) + stopHours
   const categories = new Set(topItems.map((i) => i.category))
   const destinations = new Set(topItems.map((i) => i.destination))
   const isOver = hours > DAILY_HOUR_LIMIT
@@ -145,9 +156,22 @@ function buildNudge({
     const hrStr = over === 1 ? 'hour' : 'hours'
     return `Remove ${fmtHours(over)} ${hrStr} to get back on track`
   }
-  if (total >= 95) return 'You’ve built a perfect day ✨'
 
   const remaining = DAILY_HOUR_LIMIT - hours
+
+  // Nothing else fits. Every nudge below this line asks for another tour, and
+  // asking for one against a bar that reads 8/8 is advice the checkout gate
+  // would refuse to honour — so when the day is full the only honest moves
+  // are a swap or a second day.
+  if (remaining < SHORTEST_TOUR_HOURS) {
+    if (total >= 95) return 'You’ve built a perfect day ✨'
+    if (distinctCategories < 3) return 'Your day is full, swap a tour for a different category to mix it up'
+    if (distinctDestinations >= 4) return 'Your day is full, tours closer together would cut the driving'
+    return 'Your day is full, a perfect eight hours'
+  }
+
+  if (total >= 95) return 'You’ve built a perfect day ✨'
+
   if (hours < 3.5) {
     return `Add ${fmtHours(remaining)} more to hit a great flow`
   }

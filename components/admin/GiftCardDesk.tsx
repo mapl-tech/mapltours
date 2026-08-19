@@ -93,7 +93,7 @@ export default function GiftCardDesk() {
       setNote(
         action === 'resend' ? 'Card re-sent.'
         : action === 'correct_email' ? `Address corrected to ${data.recipientEmail}, card re-sent.`
-        : action === 'void' ? 'Card voided — it can no longer be spent.'
+        : action === 'void' ? 'Card voided. It can no longer be spent.'
         : 'Card reactivated.',
       )
       setEditing(null)
@@ -194,7 +194,7 @@ export default function GiftCardDesk() {
               <div>
                 Delivered {when(c.delivered_at)}
                 {!c.delivered_at && c.status === 'active' && (
-                  <strong style={{ color: '#B3261E' }}> — never sent</strong>
+                  <strong style={{ color: '#B3261E' }}>, never sent</strong>
                 )}
               </div>
               <div>Expires {when(c.expires_at)}</div>

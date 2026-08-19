@@ -2,6 +2,7 @@
 
 import { Experience, CATEGORY_COLORS , priceUnitLabel } from '@/lib/experiences'
 import { useCartStore } from '@/lib/cart'
+import { useTourFit } from '@/lib/use-tour-fit'
 import { useHydrated } from '@/lib/use-hydrated'
 import { useI18n } from '@/lib/i18n'
 import { useState } from 'react'
@@ -75,6 +76,9 @@ export default function ReelCard({
   onToggleLike,
 }: ReelCardProps) {
   const { addItem, isInCart } = useCartStore()
+  // A day's tours have to be drivable between each other, so a tour on the
+  // far side of the island cannot join this cart.
+  const tourFit = useTourFit(exp)
   const { t, formatPrice } = useI18n()
   const hydrated = useHydrated()
   const inCart = hydrated && isInCart(exp.id)
@@ -252,9 +256,9 @@ export default function ReelCard({
           />
         </div>
         <ActionButton
-          icon={inCart ? '✅' : '➕'}
-          label={inCart ? 'Added' : 'Add'}
-          onClick={() => addItem(exp)}
+          icon={inCart ? '✅' : tourFit.allowed ? '➕' : '🚫'}
+          label={inCart ? 'Added' : tourFit.allowed ? 'Add' : 'Other day'}
+          onClick={() => { if (tourFit.allowed) addItem(exp) }}
         />
         <ActionButton icon="↗" label="Share" />
       </div>
@@ -395,19 +399,23 @@ export default function ReelCard({
           <div style={{ flex: 1 }} />
           <button
             className="btn-primary"
-            onClick={() => addItem(exp)}
+            onClick={() => { if (tourFit.allowed) addItem(exp) }}
+            disabled={!inCart && !tourFit.allowed}
+            title={tourFit.reason ?? undefined}
             style={{
               alignSelf: 'stretch',
               padding: '0 20px',
               fontSize: 13,
               fontFamily: 'var(--font-dm-sans)',
-              background: inCart ? 'var(--green)' : 'var(--gold)',
+              background: inCart ? 'var(--green)' : tourFit.allowed ? 'var(--gold)' : 'rgba(255,255,255,0.18)',
+              color: inCart || tourFit.allowed ? undefined : 'rgba(255,255,255,0.75)',
+              cursor: inCart || tourFit.allowed ? 'pointer' : 'not-allowed',
               display: 'inline-flex',
               alignItems: 'center',
               justifyContent: 'center',
             }}
           >
-            {inCart ? t('✓ Added') : t('Add to Trip')}
+            {inCart ? t('✓ Added') : tourFit.allowed ? t('Add to Trip') : t('Another day')}
           </button>
         </div>
       </div>

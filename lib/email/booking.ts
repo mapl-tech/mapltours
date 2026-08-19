@@ -63,6 +63,7 @@ export interface BookingRow {
   reward_discount: number | null
   currency: string
   stripe_payment_id: string | null
+  pickup_time: string | null
   confirmation_email_sent_at: string | null
   operator_email_sent_at: string | null
 }
@@ -285,6 +286,7 @@ export async function maybeSendOperatorAlert(
           customerCountry: booking.country,
           pickup: booking.pickup,
           dropoff: booking.dropoff,
+          pickupTime: booking.pickup_time,
           specialRequests: booking.special_requests,
           totalPaid: Number(booking.total_paid),
           currency: booking.currency.toUpperCase(),

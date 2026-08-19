@@ -205,7 +205,7 @@ export default function GiftCardsView() {
             fontFamily: 'var(--font-dm-sans)', lineHeight: 1.6,
             maxWidth: 460, margin: '0 auto',
           }}>
-            Spend it on anything we run — experiences, a day out, an airport transfer.
+            Spend it on anything we run: experiences, a day out, an airport transfer.
             Across as many bookings as it takes to use it up.
           </p>
         </div>

@@ -2,7 +2,7 @@ import { type NextRequest, NextResponse } from 'next/server'
 import { updateSession } from '@/lib/supabase/middleware'
 
 // Routes that need auth session refresh
-const AUTH_ROUTES = ['/profile', '/checkout', '/login', '/auth', '/driver']
+const AUTH_ROUTES = ['/profile', '/saved', '/checkout', '/login', '/auth', '/driver']
 
 export async function middleware(request: NextRequest) {
   const path = request.nextUrl.pathname

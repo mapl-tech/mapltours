@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useId, useState } from 'react'
+import { useEffect, useId, useMemo, useState } from 'react'
 import Link from 'next/link'
 import dynamic from 'next/dynamic'
 import {
@@ -14,6 +14,7 @@ import {
 } from 'lucide-react'
 import { leadTimeCutoff } from '@/lib/booking-window'
 import { useTransfersCart, type TransferCartItem } from '@/lib/transfers-cart'
+import { groupDestinationsByZone } from '@/lib/airport-transfers'
 import { getStoredAttribution } from '@/lib/attribution'
 
 const StripePaymentPanel = dynamic(
@@ -46,7 +47,7 @@ const StripePaymentPanel = dynamic(
  * builder. Validation runs before we call /api/transfers/checkout.
  */
 export default function TransfersCheckoutView() {
-  const { items, removeItem, updateItem, subtotal, fee, grandTotal } =
+  const { items, removeItem, updateItem, reviseItem, subtotal, fee, grandTotal } =
     useTransfersCart()
 
   const [form, setForm] = useState<Record<string, string>>({})
@@ -82,22 +83,33 @@ export default function TransfersCheckoutView() {
       errs['email'] = true
     if (!form['phone']?.trim()) errs['phone'] = true
     for (const item of items) {
-      // Arrival must be present and not in the past (fixed-width datetime-local
-      // strings compare lexicographically against the local "now").
-      if (!item.arrivalAt) errs[`arrival-${item.id}`] = true
-      else if (minDateTime && item.arrivalAt < minDateTime)
-        errs[`arrival-${item.id}`] = true
       // Flight numbers are required: pickup timing and flight tracking
       // depend on them. Permissive shape, guests type "AA1234" or "521".
       const flightOk = (v?: string) => {
         const t = (v ?? '').trim()
         return t.length >= 2 && t.length <= 10 && /\d/.test(t)
       }
-      if (!flightOk(item.arrivalFlight)) errs[`arrflight-${item.id}`] = true
-      if (item.tripType === 'round_trip') {
-        // Departure is required and must be strictly after arrival.
+      // Which leg this booking actually has. A one-way TO the airport has a
+      // departure and no arrival, so validating an arrival on it demanded a
+      // flight the guest is not taking.
+      const toAirport = item.tripType === 'one_way' && item.fromAirport === false
+      const needsArrival = item.tripType === 'round_trip' || !toAirport
+      const needsDeparture = item.tripType === 'round_trip' || toAirport
+
+      if (needsArrival) {
+        // Must be present and not in the past (fixed-width datetime-local
+        // strings compare lexicographically against the local "now").
+        if (!item.arrivalAt) errs[`arrival-${item.id}`] = true
+        else if (minDateTime && item.arrivalAt < minDateTime)
+          errs[`arrival-${item.id}`] = true
+        if (!flightOk(item.arrivalFlight)) errs[`arrflight-${item.id}`] = true
+      }
+      if (needsDeparture) {
         if (!item.departureAt) errs[`departure-${item.id}`] = true
-        else if (item.arrivalAt && item.departureAt <= item.arrivalAt)
+        else if (minDateTime && item.departureAt < minDateTime)
+          errs[`departure-${item.id}`] = true
+        // On a round-trip the return must come strictly after the arrival.
+        else if (item.tripType === 'round_trip' && item.arrivalAt && item.departureAt <= item.arrivalAt)
           errs[`departure-${item.id}`] = true
         if (!flightOk(item.departureFlight)) errs[`depflight-${item.id}`] = true
       }
@@ -128,6 +140,7 @@ export default function TransfersCheckoutView() {
         items: items.map((i) => ({
           destinationId: i.destinationId,
           tripType: i.tripType,
+          fromAirport: i.fromAirport,
           passengers: i.passengers,
           arrivalAt: i.arrivalAt,
           arrivalFlight: i.arrivalFlight,
@@ -311,6 +324,7 @@ export default function TransfersCheckoutView() {
                     formErrors={formErrors}
                     minDateTime={minDateTime}
                     onChange={(patch) => updateItem(item.id, patch)}
+                    onRevise={(next) => reviseItem(item.id, next)}
                     onRemove={() => removeItem(item.id)}
                   />
                 ))}
@@ -404,19 +418,25 @@ export default function TransfersCheckoutView() {
                 Continue to payment · ${dueNow.toFixed(2)} →
               </button>
 
+              {/* Flow, not flex. Each run of text between the two icons was
+                  its own flex item on a single unwrapped line, so at 390px the
+                  row shrank every item at once: the padlock and shield were
+                  squeezed to slivers and the sentence broke mid-word. As
+                  ordinary inline content it wraps like a sentence and the
+                  icons keep their size. */}
               <p
                 style={{
                   marginTop: 14,
                   fontSize: 12,
+                  lineHeight: 1.6,
                   color: 'var(--text-tertiary)',
                   fontFamily: 'var(--font-dm-sans)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 6,
                 }}
               >
-                <Lock size={12} /> Encrypted end-to-end ·{' '}
-                <ShieldCheck size={12} /> Cancel within 48 hrs of booking, less a 20% admin charge ·{' '}
+                <Lock size={12} style={{ display: 'inline', verticalAlign: -2, marginRight: 5 }} />
+                Encrypted end-to-end ·{' '}
+                <ShieldCheck size={12} style={{ display: 'inline', verticalAlign: -2, margin: '0 5px 0 1px' }} />
+                Cancel within 48 hrs of booking, less a 20% admin charge ·{' '}
                 <a href="/terms" target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'underline', color: 'inherit' }}>full policy</a>
               </p>
             </>
@@ -839,15 +859,26 @@ function TransferCard({
   formErrors,
   minDateTime,
   onChange,
+  onRevise,
   onRemove,
 }: {
   item: TransferCartItem
   formErrors: Record<string, boolean>
   minDateTime: string
   onChange: (patch: Partial<TransferCartItem>) => void
+  onRevise: (next: {
+    destinationId?: string
+    fromAirport?: boolean
+    passengers?: number
+    tripType?: TransferCartItem['tripType']
+  }) => void
   onRemove: () => void
 }) {
   const rt = item.tripType === 'round_trip'
+  const [editing, setEditing] = useState(false)
+  const zones = useMemo(() => groupDestinationsByZone(), [])
+  const fromAirport = item.fromAirport ?? true
+  const toAirport = item.tripType === 'one_way' && !fromAirport
   return (
     <div
       style={{
@@ -882,8 +913,11 @@ function TransferCard({
               marginBottom: 6,
             }}
           >
-            Zone {item.zone} · {rt ? 'Round-trip' : 'One-way'} · MBJ
+            Zone {item.zone} · {rt ? 'Round-trip' : 'One-way'}
           </p>
+          {/* The actual journey, in the order it happens. Previously the card
+              showed only the hotel and "MBJ", leaving the guest to work out
+              which way round it ran. */}
           <p
             style={{
               fontFamily: 'var(--font-dm-sans)',
@@ -894,7 +928,10 @@ function TransferCard({
               marginBottom: 6,
             }}
           >
-            {item.destinationName}
+            {rt || fromAirport
+              ? `Sangster (MBJ) → ${item.destinationName}`
+              : `${item.destinationName} → Sangster (MBJ)`}
+            {rt && <span style={{ fontWeight: 500, color: 'var(--text-tertiary)' }}> and back</span>}
           </p>
           {/* Both ends stated plainly. The airport end is fixed (every transfer
               runs to or from MBJ), so the route reads as a journey rather than
@@ -970,6 +1007,18 @@ function TransferCard({
             </span>
           </p>
         </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 14, flexShrink: 0 }}>
+        <button
+          type="button"
+          onClick={() => setEditing((v) => !v)}
+          style={{
+            background: 'transparent', border: 'none', cursor: 'pointer',
+            color: 'var(--text-secondary)', fontFamily: 'var(--font-dm-sans)',
+            fontSize: 12, textDecoration: 'underline', padding: 0,
+          }}
+        >
+          {editing ? 'Done' : 'Edit'}
+        </button>
         <button
           type="button"
           onClick={onRemove}
@@ -988,7 +1037,130 @@ function TransferCard({
         >
           Remove
         </button>
+        </div>
       </div>
+
+      {/* ── Edit route and passengers ──
+          Every control here changes the FARE, so each goes through reviseItem,
+          which reprices from the live rate table. Patching the line directly
+          would leave a stale price that the server recomputes and rejects. */}
+      {editing && (
+        <div style={{ padding: '18px 24px', borderBottom: '1px solid var(--border)', background: 'var(--bg-warm)' }}>
+          <EditRow label="Trip type">
+            <div style={{ display: 'flex', gap: 8 }}>
+              {([
+                { v: 'round_trip' as const, label: 'Round-trip', note: 'Both ways · 10% off' },
+                { v: 'one_way' as const, label: 'One-way', note: 'Single ride' },
+              ]).map((o) => {
+                const active = item.tripType === o.v
+                return (
+                  <button
+                    key={o.v}
+                    type="button"
+                    onClick={() => onRevise({ tripType: o.v })}
+                    aria-pressed={active}
+                    style={{
+                      flex: 1, minHeight: 46, padding: '6px 12px', borderRadius: 'var(--r-md)',
+                      border: active ? '1px solid var(--accent)' : '1px solid var(--border)',
+                      background: active ? 'var(--surface)' : '#fff',
+                      cursor: 'pointer', textAlign: 'left',
+                      fontFamily: 'var(--font-dm-sans)',
+                    }}
+                  >
+                    <span style={{ display: 'block', fontSize: 13.5, fontWeight: 700, color: 'var(--text-primary)' }}>{o.label}</span>
+                    <span style={{ display: 'block', fontSize: 11.5, color: 'var(--text-tertiary)' }}>{o.note}</span>
+                  </button>
+                )
+              })}
+            </div>
+          </EditRow>
+
+          {rt && (
+            <p style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 12, color: 'var(--text-tertiary)', margin: '-4px 0 12px' }}>
+              A round-trip starts at the airport and returns there, so pick your hotel on
+              the drop-off line. Switch to one-way to travel the other way.
+            </p>
+          )}
+
+          <EditRow label="Pickup">
+            <select
+              className="field-input"
+              aria-label="Pickup location"
+              value={fromAirport ? '__mbj__' : item.destinationId}
+              disabled={rt}
+              onChange={(e) => {
+                const v = e.target.value
+                if (v === '__mbj__') onRevise({ fromAirport: true })
+                else onRevise({ fromAirport: false, destinationId: v })
+              }}
+              style={{ height: 44, fontSize: 14, opacity: rt ? 0.65 : 1 }}
+            >
+              <optgroup label="Airport">
+                <option value="__mbj__">Sangster International Airport (MBJ)</option>
+              </optgroup>
+              <optgroup label="Hotels &amp; resorts">
+                {zones.map(({ zone, items: ds }) =>
+                  ds.map((d) => (
+                    <option key={d.id} value={d.id}>{d.name} &middot; Zone {zone.code}</option>
+                  )),
+                )}
+              </optgroup>
+            </select>
+          </EditRow>
+
+          <EditRow label="Drop-off">
+            <select
+              className="field-input"
+              aria-label="Drop-off location"
+              value={fromAirport ? item.destinationId : '__mbj__'}
+              onChange={(e) => {
+                const v = e.target.value
+                if (v === '__mbj__') onRevise({ fromAirport: false })
+                else onRevise({ fromAirport: true, destinationId: v })
+              }}
+              style={{ height: 44, fontSize: 14 }}
+            >
+              <optgroup label="Airport">
+                <option value="__mbj__">Sangster International Airport (MBJ)</option>
+              </optgroup>
+              <optgroup label="Hotels &amp; resorts">
+                {zones.map(({ zone, items: ds }) =>
+                  ds.map((d) => (
+                    <option key={d.id} value={d.id}>{d.name} &middot; Zone {zone.code}</option>
+                  )),
+                )}
+              </optgroup>
+            </select>
+          </EditRow>
+
+          <EditRow label="Passengers">
+            <div style={{ display: 'flex', alignItems: 'center', gap: 0 }}>
+              <button
+                type="button" className="btn-outline" aria-label="Fewer passengers"
+                onClick={() => onRevise({ passengers: item.passengers - 1 })}
+                disabled={item.passengers <= 1}
+                style={{ width: 42, height: 42, padding: 0, borderRadius: '10px 0 0 10px', opacity: item.passengers <= 1 ? 0.45 : 1 }}
+              >−</button>
+              <div style={{
+                width: 52, height: 42, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                borderTop: '1px solid var(--border)', borderBottom: '1px solid var(--border)',
+                fontFamily: 'var(--font-dm-sans)', fontWeight: 700, fontSize: 15, background: '#fff',
+              }}>{item.passengers}</div>
+              <button
+                type="button" className="btn-outline" aria-label="More passengers"
+                onClick={() => onRevise({ passengers: item.passengers + 1 })}
+                disabled={item.passengers >= 4}
+                style={{ width: 42, height: 42, padding: 0, borderRadius: '0 10px 10px 0', opacity: item.passengers >= 4 ? 0.45 : 1 }}
+              >+</button>
+            </div>
+          </EditRow>
+
+          <p style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 12, color: 'var(--text-tertiary)', marginTop: 4 }}>
+            One vehicle, flat for 1 to 4 passengers, so the fare does not change with
+            party size. Switching between round-trip and one-way does change it.
+          </p>
+        </div>
+      )}
 
       {/* Flight details */}
       <div
@@ -1037,6 +1209,32 @@ function TransferCard({
         </div>
 
         <div className="xfer-co-flight-grid">
+          {/* A one-way OUT of the airport is an arrival; a one-way TO it is a
+              departure. The single pair used to be hard-wired to arrival and
+              labelled as such, so a guest booking a ride to their flight home
+              was asked for the flight they came in on. */}
+          {toAirport ? (
+            <>
+              <Input
+                label="Pickup date & time"
+                type="datetime-local"
+                min={minDateTime}
+                value={item.departureAt ?? ''}
+                onChange={(v) => onChange({ departureAt: v })}
+                error={formErrors[`departure-${item.id}`]}
+                indicator="gold"
+              />
+              <Input
+                label="Departure flight"
+                value={item.departureFlight ?? ''}
+                onChange={(v) => onChange({ departureFlight: v })}
+                placeholder="e.g. AA4321"
+                error={formErrors[`depflight-${item.id}`]}
+                indicator="gold"
+              />
+            </>
+          ) : (
+            <>
           <Input
             label={rt ? 'Arrival date & time' : 'Pickup date & time'}
             type="datetime-local"
@@ -1073,6 +1271,8 @@ function TransferCard({
                 error={formErrors[`depflight-${item.id}`]}
                 indicator="gold"
               />
+            </>
+          )}
             </>
           )}
         </div>
@@ -1370,6 +1570,22 @@ function ConfirmedInline({
           Add tours to your trip →
         </Link>
       </div>
+    </div>
+  )
+}
+
+/** Label + control row inside the transfer edit panel. */
+function EditRow({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div style={{ marginBottom: 14 }}>
+      <label style={{
+        display: 'block', fontFamily: 'var(--font-dm-sans)', fontSize: 11,
+        fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase',
+        color: 'var(--text-tertiary)', marginBottom: 6,
+      }}>
+        {label}
+      </label>
+      {children}
     </div>
   )
 }

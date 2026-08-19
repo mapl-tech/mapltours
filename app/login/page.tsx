@@ -39,7 +39,7 @@ function LoginContent() {
     setMessage('')
 
     if (mode === 'signup') {
-      const { error } = await supabase.auth.signUp({
+      const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
@@ -49,6 +49,21 @@ function LoginContent() {
       })
       if (error) {
         setError(error.message)
+      } else if (data.session) {
+        // Email confirmation is switched off for this project, so signUp
+        // already returned a session and no mail was sent. Telling this
+        // person to check an inbox that will never receive anything — while
+        // they are, in fact, signed in — is how "I never got the email" gets
+        // reported for a working account.
+        router.push(redirect)
+        router.refresh()
+      } else if (data.user && data.user.identities?.length === 0) {
+        // Supabase deliberately does not confirm whether an address is
+        // already registered, and sends nothing in that case. Say the one
+        // true thing that covers both outcomes.
+        setMessage(
+          'If that address is new, a confirmation link is on its way. If you already have an account, sign in instead.'
+        )
       } else {
         setMessage('Check your email for a confirmation link.')
       }

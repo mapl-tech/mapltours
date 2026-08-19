@@ -67,7 +67,7 @@ export default function GiftCardReceipt({
 
       <Text style={s.note}>
         Keep this email. If the address above is wrong, or the gift never
-        arrives, reply here with the code and we will send it on — the code is
+        arrives, reply here with the code and we will send it on. The code is
         the card, so nothing is lost.
         {expiresAt ? ` Valid until ${fmtDate(expiresAt)}.` : ''} Gift card
         purchases are non-refundable.
