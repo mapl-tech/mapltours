@@ -897,6 +897,11 @@ export default function CheckoutView() {
               setGiftCard(null)
               setGiftError(data.error)
             }
+          } else if (data.alreadyPaid) {
+            // Settled while we were re-entering checkout (the guest paid and
+            // then refreshed). Go to the confirmation they already earned;
+            // creating another PaymentIntent here would charge them twice.
+            window.location.href = `/checkout/confirm?booking_id=${data.bookingId}`
           } else if (data.fullyCoveredByGift) {
             // Nothing left to charge, so there is no card payment step and no
             // PaymentIntent. The server already marked the booking paid and

@@ -385,7 +385,7 @@ export async function POST(request: NextRequest) {
     //     row keeps its existing claim rather than debiting twice.
     const { data: bookingRow } = await supabase
       .from('bookings')
-      .select('stripe_payment_id, gift_card_id')
+      .select('stripe_payment_id, gift_card_id, status')
       .eq('id', bookingId!)
       .maybeSingle()
 
@@ -536,6 +536,29 @@ export async function POST(request: NextRequest) {
         giftAmount: giftAmountCents / 100,
         requestId: reqId,
       })
+    }
+
+    // Never issue a second PaymentIntent for a booking that is already paid.
+    // The row is selected as 'pending', but the webhook can flip it to 'paid'
+    // in the window between that select and this point — a guest who pays and
+    // then refreshes the checkout step is the ordinary way in. Without this
+    // the route would mint a fresh intent against a settled booking and a
+    // second confirmation would charge them twice for one trip. Send them to
+    // the confirmation they have already earned instead.
+    if (bookingRow?.status && bookingRow.status !== 'pending') {
+      const settled = bookingRow.status === 'paid'
+      console.warn('[transfers/checkout]', reqId, 'checkout re-entered on a non-pending booking', {
+        booking: bookingId, status: bookingRow.status,
+      })
+      return NextResponse.json(
+        settled
+          ? { alreadyPaid: true, bookingId, requestId: reqId }
+          : {
+              error: 'This booking can no longer be paid for. Please start a new one.',
+              requestId: reqId,
+            },
+        { status: settled ? 200 : 409 },
+      )
     }
 
     // 4. Reuse an in-flight PI if possible.

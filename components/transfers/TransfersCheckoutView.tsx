@@ -152,9 +152,11 @@ export default function TransfersCheckoutView() {
         if (data.error) {
           setStripeError(data.error)
           if (data.giftCode) { setGiftCard(null); setGiftError(data.error) }
-        } else if (data.fullyCoveredByGift) {
-          // The gift covered the whole fare, so there is no card payment and
-          // no webhook. The server already marked it paid and emailed.
+        } else if (data.fullyCoveredByGift || data.alreadyPaid) {
+          // Either the gift covered the whole fare (no card payment, no
+          // webhook, already marked paid and emailed), or this booking was
+          // settled while we were re-entering checkout. Both end at the
+          // confirmation rather than a second charge.
           window.location.href = `/transfers/confirm?booking_id=${data.bookingId}`
         } else {
           setClientSecret(data.clientSecret)
