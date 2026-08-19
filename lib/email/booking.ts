@@ -206,14 +206,17 @@ export async function maybeSendTravelerConfirmation(
 // OPERATIONS_EMAIL env var with a comma-separated list if the recipient
 // set ever changes, empty / unset falls back to this default.
 const OPS_RECIPIENTS_DEFAULT = [
-  'tech@mapltech.com',
+  'contact@mapltours.com',
   'collinsadventuretours@gmail.com',
 ]
 
 function resolveOpsRecipients(): string[] {
-  // Only OPERATIONS_EMAIL can override, we intentionally do NOT fall back
-  // to EMAIL_SUPPORT here so the public contact inbox can never receive
-  // booking alerts by accident if OPERATIONS_EMAIL is unset on a deploy.
+  // Only OPERATIONS_EMAIL can override. The default is now the same address
+  // as EMAIL_SUPPORT by the owner's decision (operator alerts and customer
+  // enquiries share one inbox), but it stays written out literally rather
+  // than reading EMAIL_SUPPORT: these are different concerns that happen to
+  // share a value today, and coupling them means changing the public reply-to
+  // would silently redirect every booking alert.
   const raw = process.env.OPERATIONS_EMAIL
   if (!raw) return OPS_RECIPIENTS_DEFAULT
   const parsed = raw

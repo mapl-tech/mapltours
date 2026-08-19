@@ -179,7 +179,7 @@ export function driverNotifyEmail(): string | null {
 }
 
 export function opsBcc(guestEmail?: string | null, extra?: (string | null | undefined)[]): string[] {
-  const ops = list(process.env.OPERATIONS_EMAIL ?? 'tech@mapltech.com')
+  const ops = list(process.env.OPERATIONS_EMAIL ?? 'contact@mapltours.com')
 
   const notify = list(process.env.DRIVER_NOTIFY_EMAIL)
   const allowed = list(process.env.DRIVER_ALLOWED_EMAILS)

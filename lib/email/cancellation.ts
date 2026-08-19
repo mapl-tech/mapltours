@@ -28,7 +28,7 @@ const OPS_CHANNEL = 'ops_cancellation_email_sent_at'
 
 // Same distribution list as booking alerts. Kept in sync deliberately: ops
 // needs cancellations at the same addresses that receive the bookings.
-const OPS_RECIPIENTS_DEFAULT = ['tech@mapltech.com', 'collinsadventuretours@gmail.com']
+const OPS_RECIPIENTS_DEFAULT = ['contact@mapltours.com', 'collinsadventuretours@gmail.com']
 
 function resolveOpsRecipients(): string[] {
   const raw = process.env.OPERATIONS_EMAIL
