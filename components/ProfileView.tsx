@@ -644,7 +644,7 @@ export default function ProfileView() {
                       padding: '8px 12px', borderRadius: 'var(--r-sm)',
                       background: 'var(--surface)',
                     }}>
-                      <span style={{ fontSize: 16, color: 'var(--gold)' }}>★</span>
+                      <span style={{ fontSize: 16, color: 'var(--gold-text)' }}>★</span>
                       <span style={{
                         fontSize: 13, fontFamily: 'var(--font-dm-sans)',
                         fontWeight: 500, color: 'var(--text-primary)',
@@ -1003,7 +1003,7 @@ function MaplRewardsCard() {
             fontFamily: 'var(--font-dm-sans)',
             fontSize: 12, fontWeight: 600,
             letterSpacing: '0.1em', textTransform: 'uppercase',
-            color: hasActive ? 'var(--emerald)' : 'var(--gold)',
+            color: hasActive ? 'var(--emerald)' : 'var(--gold-text)',
             marginBottom: 4,
           }}>
             {hasActive ? 'Reward unlocked' : 'Video reward'}

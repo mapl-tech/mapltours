@@ -60,6 +60,10 @@ export default function TransfersCheckoutView() {
   const [giftChecking, setGiftChecking] = useState(false)
   const [giftError, setGiftError] = useState<string | null>(null)
   const [stripeError, setStripeError] = useState<string | null>(null)
+  // Mounted at all times and written to on a failed submit. A live region that
+  // appears in the same commit as its text is not announced, because there is
+  // no mutation for assistive tech to observe (WCAG 2.2 SC 4.1.3).
+  const [formAnnouncement, setFormAnnouncement] = useState('')
   const [confirmed] = useState(false)
   const [intentKey, setIntentKey] = useState(0)
   // Earliest bookable pickup as a datetime-local value (YYYY-MM-DDTHH:mm):
@@ -80,7 +84,8 @@ export default function TransfersCheckoutView() {
     setMinDateTime(new Date(cutoff.getTime() - 5 * 3_600_000).toISOString().slice(0, 16))
   }, [])
 
-  const validate = (): boolean => {
+  /** Every field that fails, keyed the way the Field components read it. */
+  const collectErrors = (): Record<string, boolean> => {
     const errs: Record<string, boolean> = {}
     if (!form['firstName']?.trim()) errs['firstName'] = true
     if (!form['lastName']?.trim()) errs['lastName'] = true
@@ -119,19 +124,36 @@ export default function TransfersCheckoutView() {
         if (!flightOk(item.departureFlight)) errs[`depflight-${item.id}`] = true
       }
     }
-    setFormErrors(errs)
-    return Object.keys(errs).length === 0
+    return errs
   }
 
   const startPayment = () => {
     setStripeError(null)
-    if (!validate()) {
+    const errs = collectErrors()
+    setFormErrors(errs)
+    if (Object.keys(errs).length > 0) {
+      // Say what happened, then go there. Scrolling alone left focus on the
+      // Continue button, hundreds of pixels from the problem, and announced
+      // nothing at all: pressing pay simply appeared to do nothing. The tour
+      // checkout has done this since its own review; this is the same pattern.
+      const missing = Object.keys(errs).length
+      setFormAnnouncement(
+        `${missing} ${missing === 1 ? 'field needs' : 'fields need'} attention before you can continue.`,
+      )
       setTimeout(() => {
-        const firstError = document.querySelector('[data-field-error]')
-        firstError?.scrollIntoView({ behavior: 'smooth', block: 'center' })
-      }, 50)
+        const scope = document.querySelector('[data-field-error]')
+        if (!scope) return
+        const control = scope.querySelector('input, select, textarea') as HTMLElement | null
+        if (control) {
+          control.focus({ preventScroll: true })
+          control.scrollIntoView({ behavior: 'smooth', block: 'center' })
+        } else {
+          ;(scope as HTMLElement).scrollIntoView({ behavior: 'smooth', block: 'center' })
+        }
+      }, 60)
       return
     }
+    setFormAnnouncement('')
     setIntentKey((k) => k + 1)
   }
 
@@ -239,6 +261,9 @@ export default function TransfersCheckoutView() {
         color: 'var(--text-primary)',
       }}
     >
+      {/* Always in the DOM, written to only when a submit fails. */}
+      <div role="alert" aria-live="assertive" className="visually-hidden">{formAnnouncement}</div>
+
       {/* ── Top bar (mirrors tours checkout) ── */}
       <div
         style={{
@@ -1362,6 +1387,10 @@ function Input({
         className="field-input"
         type={type}
         min={min}
+        // The red label and the red dot are the sighted half of this. Without
+        // aria-invalid the failure is conveyed by colour alone (SC 1.4.1) and
+        // is invisible to a screen reader (SC 3.3.1).
+        aria-invalid={error ? true : undefined}
         autoComplete={autoComplete}
         placeholder={placeholder}
         value={value}

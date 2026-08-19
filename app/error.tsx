@@ -42,7 +42,7 @@ export default function ErrorBoundary({
             fontWeight: 600,
             letterSpacing: '0.18em',
             textTransform: 'uppercase',
-            color: 'var(--gold, #C39A48)',
+            color: 'var(--gold-text, #6E5A1C)',
             margin: 0,
             fontFamily: 'var(--font-dm-sans)',
           }}

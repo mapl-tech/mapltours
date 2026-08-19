@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
+import { useFocusTrap } from '@/lib/use-focus-trap'
 import dynamic from 'next/dynamic'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
@@ -1124,7 +1125,7 @@ export default function CheckoutView() {
 
       {/* Mobile step label */}
       <div className="hide-desktop container" style={{ paddingTop: 16, paddingBottom: 4 }}>
-        <p style={{ fontSize: 12, fontWeight: 600, fontFamily: 'var(--font-dm-sans)', textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--gold)', marginBottom: 4 }}>
+        <p style={{ fontSize: 12, fontWeight: 600, fontFamily: 'var(--font-dm-sans)', textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--gold-text)', marginBottom: 4 }}>
           Step {step} of 2
         </p>
         <h3 style={{ fontFamily: 'var(--font-dm-sans)', fontWeight: 700, fontSize: 22 }}>
@@ -1562,11 +1563,17 @@ function DailyLimitModal({ hoursByDate, onClose }: {
     .filter(([, hrs]) => hrs > DAILY_HOUR_LIMIT)
     .sort((a, b) => b[1] - a[1])
 
+  // Same promise, same obligation: aria-modal without a trap tells a screen
+  // reader the page behind does not exist, then lets Tab walk into it.
+  const panelRef = useRef<HTMLDivElement>(null)
+  useFocusTrap(panelRef, onClose)
+
   return (
     <div
       onClick={onClose}
       role="dialog"
       aria-modal="true"
+      aria-label="Day is over the hour limit"
       style={{
         position: 'fixed', inset: 0, zIndex: 1000,
         background: 'rgba(8, 8, 10, 0.72)',
@@ -1578,6 +1585,8 @@ function DailyLimitModal({ hoursByDate, onClose }: {
       }}
     >
       <div
+        ref={panelRef}
+        tabIndex={-1}
         onClick={(e) => e.stopPropagation()}
         style={{
           width: '100%', maxWidth: 440,

@@ -592,6 +592,18 @@ export default function TransfersView() {
               </div>
             </Field>
 
+            {/* The fare is the answer to everything the guest just typed, and
+                it appeared in complete silence: choosing a hotel repaints the
+                number with no announcement, so a screen-reader user had to go
+                hunting to find out what a transfer costs (SC 4.1.3). Mounted
+                unconditionally, because a live region introduced in the same
+                commit as its text is never announced. */}
+            <div role="status" aria-live="polite" className="visually-hidden">
+              {quote
+                ? `${formatUsd(quote.priceUsd)} ${quote.tripType === 'round_trip' ? 'round trip' : 'one way'} to ${quote.destinationName}, zone ${quote.zone}, ${quote.zoneDuration}. Price is per vehicle for 1 to 4 passengers.`
+                : ''}
+            </div>
+
             <div className="xfer-quote-readout">
               <div>
                 {/* The label stays put once a fare appears. It used to be
@@ -2273,7 +2285,7 @@ function StatBlock({
           borderRadius: '50%',
           background: 'var(--bg-warm)',
           border: '1px solid var(--border)',
-          color: 'var(--gold)',
+          color: 'var(--gold-text)',
           marginBottom: 10,
         }}
       >

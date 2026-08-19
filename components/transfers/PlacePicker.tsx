@@ -124,7 +124,19 @@ export default function PlacePicker({
   }
 
   return (
-    <div ref={wrapRef} style={{ position: 'relative' }}>
+    <div
+      ref={wrapRef}
+      // Tabbing out has to close the list too. With only the mousedown
+      // click-away handler, moving to the drop-off field by keyboard left the
+      // pickup list open and floating over the control that now had focus.
+      onBlur={(e) => {
+        if (!wrapRef.current?.contains(e.relatedTarget as Node | null)) {
+          setOpen(false)
+          setQuery('')
+        }
+      }}
+      style={{ position: 'relative' }}
+    >
       <div style={{ position: 'relative' }}>
         <Search
           size={16}
@@ -141,6 +153,11 @@ export default function PlacePicker({
           aria-controls={listId}
           aria-autocomplete="list"
           aria-label={label}
+          // Names the highlighted row for a screen reader. Without it the
+          // arrow keys moved a purely visual highlight and nothing was
+          // announced, so the list could be opened and stepped through
+          // without ever learning what was under the cursor.
+          aria-activedescendant={open && rows[active] ? `${listId}-opt-${active}` : undefined}
           autoComplete="off"
           value={open ? query : chosenLabel}
           placeholder={placeholder}
@@ -194,7 +211,7 @@ export default function PlacePicker({
           }}
         >
           {rows.length === 0 && (
-            <li style={{
+            <li role="presentation" style={{
               padding: '12px 12px 14px', fontSize: 13.5, lineHeight: 1.5,
               color: 'var(--text-secondary)', fontFamily: 'var(--font-dm-sans)',
             }}>
@@ -203,28 +220,34 @@ export default function PlacePicker({
               The fare is set by zone, so it will be the right price.
             </li>
           )}
+          {/* role="option" sits on the li itself. It used to sit on a button
+              nested inside a bare li, which is not a structure the listbox
+              role permits: the li was an unlabelled child of the listbox and
+              the button was an option with no owning list, so a screen reader
+              announced neither the number of hotels nor which one was
+              highlighted. The row is not a button any more either, because an
+              option is not a button; the combobox input keeps the keyboard
+              and the click handler stays for the mouse. */}
           {rows.map((row, i) => (
-            <li key={row.id}>
-              <button
-                type="button"
-                role="option"
-                aria-selected={i === active}
-                onMouseEnter={() => setActive(i)}
-                onClick={() => pick(row.id)}
-                style={{
-                  width: '100%', textAlign: 'left', border: 'none', borderRadius: 8,
-                  padding: '9px 11px', cursor: 'pointer',
-                  background: i === active ? 'var(--surface)' : 'none',
-                  fontFamily: 'var(--font-dm-sans)',
-                }}
-              >
-                <span style={{ display: 'block', fontSize: 14, fontWeight: 600, color: 'var(--text-primary)' }}>
-                  {row.name}
-                </span>
-                <span style={{ display: 'block', fontSize: 12, color: 'var(--text-tertiary)', marginTop: 1 }}>
-                  {row.hint}
-                </span>
-              </button>
+            <li
+              key={row.id}
+              id={`${listId}-opt-${i}`}
+              role="option"
+              aria-selected={i === active}
+              onMouseEnter={() => setActive(i)}
+              onMouseDown={(e) => { e.preventDefault(); pick(row.id) }}
+              style={{
+                borderRadius: 8, padding: '9px 11px', cursor: 'pointer',
+                background: i === active ? 'var(--surface)' : 'none',
+                fontFamily: 'var(--font-dm-sans)',
+              }}
+            >
+              <span style={{ display: 'block', fontSize: 14, fontWeight: 600, color: 'var(--text-primary)' }}>
+                {row.name}
+              </span>
+              <span style={{ display: 'block', fontSize: 12, color: 'var(--text-tertiary)', marginTop: 1 }}>
+                {row.hint}
+              </span>
             </li>
           ))}
         </ul>

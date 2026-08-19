@@ -35,6 +35,8 @@ const STATS = [
 ]
 
 const GOLD = '#A68B3C'
+/** AA-compliant gold for text on a light surface, mirrors --gold-text. */
+const GOLD_TEXT = '#6E5A1C'
 const GOLD_WARM = '#C4A44A'
 const INK = '#171614'
 const INK_WARM = '#1A1917'
@@ -271,7 +273,7 @@ export default function AboutPage() {
                   fontFamily: 'var(--font-dm-sans)', fontWeight: 700,
                   fontSize: 'clamp(1.1rem, 1.5vw, 1.35rem)',
                   letterSpacing: '0.08em',
-                  color: GOLD,
+                  color: GOLD_TEXT,
                 }}>
                   {toRoman(i + 1)}.
                 </span>

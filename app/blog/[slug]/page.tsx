@@ -149,7 +149,7 @@ function Ornament({ label }: { label?: string }) {
         justifyContent: 'center',
         gap: 16,
         margin: '48px auto',
-        color: 'var(--gold)',
+        color: 'var(--gold-text)',
         fontFamily: 'var(--font-dm-sans)',
         fontSize: label ? 11 : 14,
         letterSpacing: '0.2em',
@@ -158,7 +158,7 @@ function Ornament({ label }: { label?: string }) {
       }}
     >
       <span style={{ flex: 1, height: 1, background: 'var(--border-strong)' }} />
-      <span style={{ color: 'var(--gold)' }}>{label ?? '✦'}</span>
+      <span style={{ color: 'var(--gold-text)' }}>{label ?? '✦'}</span>
       <span style={{ flex: 1, height: 1, background: 'var(--border-strong)' }} />
     </div>
   )
@@ -171,7 +171,7 @@ function AuthorMonogram({ initials, size = 44 }: { initials: string; size?: numb
         width: size, height: size, borderRadius: '50%',
         display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
         border: '1px solid var(--gold)',
-        color: 'var(--gold)',
+        color: 'var(--gold-text)',
         fontFamily: 'var(--font-dm-sans)',
         fontWeight: 700,
         fontSize: size * 0.38,
@@ -390,7 +390,7 @@ function Block({ block, isFirst }: { block: BlogBlock; isFirst: boolean }) {
                   fontFamily: 'var(--font-dm-sans)',
                   fontWeight: 700,
                   fontStyle: 'italic',
-                  color: 'var(--gold)',
+                  color: 'var(--gold-text)',
                   fontSize: 15,
                 }}
               >
@@ -427,7 +427,7 @@ function RelatedCard({ post }: { post: BlogPost }) {
         />
       </div>
       <div style={{ marginBottom: 10 }}>
-        <Kicker color="var(--gold)" size={10.5}>
+        <Kicker color="var(--gold-text)" size={10.5}>
           {post.category}
         </Kicker>
       </div>
@@ -518,7 +518,7 @@ export default function BlogPostPage({
       {/* Title block, centered, typographic */}
       <div className="container" style={{ maxWidth: 820, textAlign: 'center', padding: '72px 16px 48px' }}>
         <div style={{ marginBottom: 20 }}>
-          <Kicker color="var(--gold)" size={12}>
+          <Kicker color="var(--gold-text)" size={12}>
             A Dispatch · {post.readTime} minute read
           </Kicker>
         </div>
@@ -824,7 +824,7 @@ export default function BlogPostPage({
                 marginBottom: 48,
               }}
             >
-              <Kicker color="var(--gold)" size={12}>Further reading</Kicker>
+              <Kicker color="var(--gold-text)" size={12}>Further reading</Kicker>
               <h3
                 style={{
                   fontFamily: 'var(--font-dm-sans)',

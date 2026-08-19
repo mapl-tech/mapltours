@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react'
+import { useFocusTrap } from '@/lib/use-focus-trap'
 import { useRouter } from 'next/navigation'
 import { singleExperiences, packageExperiences, Experience, slugify , priceUnitLabel } from '@/lib/experiences'
 import { useI18n } from '@/lib/i18n'
@@ -75,6 +76,11 @@ function Reel({ exp, isActive, totalCount, currentIndex, onComments }: { exp: Ex
   const [shareToast, setShareToast] = useState<string | null>(null)
   const [detailsFor, setDetailsFor] = useState<Experience | null>(null)
   const [clipsOpen, setClipsOpen] = useState(false)
+  // aria-modal promises the page behind is unreachable, so keep that
+  // promise: this overlay had neither a focus trap nor an Escape key.
+  const clipsRef = useRef<HTMLDivElement>(null)
+  const closeClips = useCallback(() => setClipsOpen(false), [])
+  useFocusTrap(clipsRef, closeClips, clipsOpen)
 
   // Robust copy-to-clipboard with a fallback for non-secure contexts
   // (navigator.clipboard only exists on HTTPS / localhost).
@@ -410,6 +416,7 @@ function Reel({ exp, isActive, totalCount, currentIndex, onComments }: { exp: Ex
         <div
           onClick={() => setClipsOpen(false)}
           role="dialog" aria-modal="true"
+          aria-label="Guest clips"
           style={{
             position: 'fixed', inset: 0, zIndex: 1200,
             background: 'rgba(8, 8, 10, 0.88)',
@@ -419,6 +426,8 @@ function Reel({ exp, isActive, totalCount, currentIndex, onComments }: { exp: Ex
           }}
         >
           <div
+            ref={clipsRef}
+            tabIndex={-1}
             onClick={(e) => e.stopPropagation()}
             style={{
               width: '100%', maxWidth: 680,

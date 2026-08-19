@@ -21,7 +21,7 @@ function Ornament() {
         alignItems: 'center',
         justifyContent: 'center',
         gap: 14,
-        color: 'var(--gold)',
+        color: 'var(--gold-text)',
         fontFamily: 'var(--font-dm-sans)',
         fontSize: 14,
         letterSpacing: '0.2em',

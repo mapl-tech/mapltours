@@ -1,6 +1,7 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
+import { useFocusTrap } from '@/lib/use-focus-trap'
 import { X, Check, Backpack, Users, Activity, Info, MapPin, Clock } from 'lucide-react'
 import { getTourDetail } from '@/lib/tour-details'
 import type { Experience } from '@/lib/experiences'
@@ -23,13 +24,17 @@ export default function TourDetailsSheet({ exp, onClose }: { exp: Experience; on
   const { t, formatPrice } = useI18n()
   const detail = getTourDetail(exp.id)
 
+  // aria-modal below tells assistive tech nothing outside this sheet exists.
+  // Escape alone did not keep that promise: Tab walked straight out into the
+  // reel behind, onto controls a screen reader was no longer announcing.
+  const panelRef = useRef<HTMLDivElement>(null)
+  useFocusTrap(panelRef, onClose)
+
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
-    document.addEventListener('keydown', onKey)
     const prev = document.body.style.overflow
     document.body.style.overflow = 'hidden'
-    return () => { document.removeEventListener('keydown', onKey); document.body.style.overflow = prev }
-  }, [onClose])
+    return () => { document.body.style.overflow = prev }
+  }, [])
 
   const Section = ({ icon, title, children }: { icon: React.ReactNode; title: string; children: React.ReactNode }) => (
     <section style={{ marginTop: 22 }}>
@@ -74,6 +79,8 @@ export default function TourDetailsSheet({ exp, onClose }: { exp: Experience; on
       }}
     >
       <div
+        ref={panelRef}
+        tabIndex={-1}
         onClick={(e) => e.stopPropagation()}
         className="tour-sheet"
         style={{
