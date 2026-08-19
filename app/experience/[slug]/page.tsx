@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import ExperienceDetail from '@/components/ExperienceDetail'
+import TourFacts from '@/components/TourFacts'
 import { getExperienceBySlug } from '@/lib/experiences'
 
 const SITE_URL = 'https://mapltours.com'
@@ -117,6 +118,10 @@ export default function ExperienceRoute({ params }: { params: { slug: string } }
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
       <ExperienceDetail slug={params.slug} />
+      {/* Rendered on the SERVER, below the reel. Everything in it was already
+          written and already in lib/experiences.ts; none of it was on any
+          page. See components/TourFacts.tsx. */}
+      <TourFacts exp={exp} />
     </>
   )
 }

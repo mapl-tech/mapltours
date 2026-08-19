@@ -1068,8 +1068,18 @@ export default function ExperienceDetail({ slug }: { slug: string }) {
   }
 
   return (
+    // In flow, not fixed.
+    //
+    // As `position: fixed; inset: 0` this overlay covered the whole document,
+    // so anything the route rendered after it sat underneath, present in the
+    // HTML and invisible on screen. That is the definition of cloaking, and it
+    // is also why the tour's own inclusions, what to bring and meeting point
+    // had nowhere to live. One viewport of immersive reel, then the page
+    // continues: the internal scroll-snap feed is unaffected because it sizes
+    // against this box, which is still exactly one viewport tall.
     <div style={{
-      position: 'fixed', inset: 0, zIndex: 300,
+      position: 'relative', zIndex: 1,
+      height: '100dvh', width: '100%',
       background: '#000', display: 'flex',
     }}>
       {/* ── LEFT: Scrollable reels ── */}
