@@ -1,55 +1,75 @@
-import { Heading, Text, Section, Row, Column, Link, Button, Hr } from '@react-email/components'
+import {
+  Button,
+  Column,
+  Heading,
+  Hr,
+  Link,
+  Row,
+  Section,
+  Text,
+} from '@react-email/components'
 import { MaplLayout, maplStyles as s } from './_Layout'
-
-/**
- * Post-trip review request, sent one day after the trip finishes.
- *
- * Shape of the email: RECAP FIRST, ASK SECOND. The card at the top reflects
- * the guest's actual trip back at them (where, when, which service) so the ask
- * lands after a beat of "yes, that was my holiday" rather than arriving cold.
- * The recap earns the ask.
- *
- * Two hard constraints are baked into the copy, not bolted on:
- *
- * 1. Tripadvisor prohibits incentivised reviews. Nothing is offered in return,
- *    and the email says so out loud ("there is nothing in it for you"). There
- *    is no deadline, no reminder threat, no second ask.
- *
- * 2. The ask is UNCONDITIONAL. We do not say "if you enjoyed it, review us,
- *    otherwise reply" because that is review gating, which is the same
- *    violation wearing a polite face. Everyone is asked for an honest review,
- *    good or bad, and the private reply route is offered on top of it, never
- *    instead of it.
- *
- * The private route still gets real visual weight (its own card, gold rule,
- * two full sentences) because the listing has zero other reviews: until there
- * is a body of them, a single bad review IS the public rating, so an unhappy
- * guest must have somewhere to put that which is not fine print.
- */
 
 export interface ReviewRequestProps {
   bookingRef: string
   firstName: string | null
-  /** Transfer wording vs day-tour wording. */
+  /** Transfer vs tour wording. Changes the verbs and the writing prompts. */
   isTransfer: boolean
-  /** Resort for a transfer, tour or area for a tour. e.g. "Azul Beach Resort Negril". */
+  /** Resort for a transfer, tour name for a tour. e.g. "Azul Beach Resort Negril" */
   tripLabel: string
-  /** Already formatted by the caller. e.g. "15 to 25 August". */
+  /** Already formatted by the caller. e.g. "15 to 25 August" */
   tripDates: string
-  /** The Tripadvisor write-a-review link. */
+  /** Tripadvisor write-a-review deep link. */
   reviewUrl: string
   supportEmail: string
 }
 
-/* Palette mirrored from _Layout, which keeps these module-private. */
-const INK = '#1A1714'
-const INK_SOFT = '#57534C'
-const BORDER_SOFT = '#F1ECE3'
-const GOLD = '#B7873A'
-/* Matches the shell exactly: most clients will not load a web font. */
-const SANS =
-  "'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif"
-
+/**
+ * Sent once, the day after a trip finishes, asking for a Tripadvisor review.
+ *
+ * SHAPE: a quiet letter. One headline, three short paragraphs, one button, and
+ * a single tinted block for the private route. No recap card, because a
+ * booking-reference table at the top of a favour reads as a receipt and trains
+ * the eye to skim. The trip is named in the lead sentence instead, which does
+ * the recall job in nine words and costs no surface. Booking reference is
+ * stamped at the foot where an admin aid belongs.
+ *
+ * COMPLIANCE, built into the copy rather than bolted on:
+ *
+ * 1. Tripadvisor prohibits incentivised reviews. Nothing is offered in return,
+ *    and the email says so out loud ("nothing in it for you, no discount and
+ *    no prize draw"), which is also the artefact to show if the listing is
+ *    ever queried. No deadline, no reminder sequence, no second ask.
+ *
+ * 2. The ask is UNCONDITIONAL. It never says "if you enjoyed it, review us",
+ *    which is review gating wearing a polite face, and it never routes people
+ *    by sentiment. Everyone is asked, and the text invites the honest middling
+ *    review by name.
+ *
+ * 3. The private route is offered ON TOP of the review, never instead of it,
+ *    and says so explicitly. It gets real weight (16px copy, one step above
+ *    body, plus a tinted block and a gold edge) because the listing has almost
+ *    no reviews yet: until there is a body of them, one bad review IS the
+ *    public rating, so an unhappy guest needs a human door they can actually
+ *    see. The mailto is prefilled with the booking reference so a complaint
+ *    arrives threaded and identifiable.
+ *
+ * HOUSE RULES OBSERVED:
+ *  - No em dashes anywhere in the copy. Comma, full stop, or restructure.
+ *  - Gold is spent ONCE in the body, on the edge of the escape block. The
+ *    shell's letterhead already carries the 34x2 brandRule, so repeating that
+ *    rule here reads as a stutter and doubles the ornament budget.
+ *  - The escape block deliberately does NOT carry className="mapl-card": the
+ *    shell's own media query sets border-left-width: 0 !important under 480px,
+ *    which would delete the one piece of colour in the body on phones, where
+ *    most of this mail is opened.
+ *  - The Tripadvisor deep link is never printed as visible link text. Those
+ *    URLs run 80 to 120 characters and will either wrap over three lines or,
+ *    in the Outlook Word engine (no word-break support), force horizontal
+ *    overflow.
+ *  - No images beyond the shell logo, so the email is 100 percent readable
+ *    with images blocked.
+ */
 export default function ReviewRequest({
   bookingRef,
   firstName,
@@ -59,77 +79,54 @@ export default function ReviewRequest({
   reviewUrl,
   supportEmail,
 }: ReviewRequestProps) {
-  const name = firstName?.trim() || null
-  const serviceLabel = isTransfer
-    ? 'Private airport transfer'
-    : 'Locally led day tour'
+  const name = firstName?.trim()
 
-  // Reply-to is the intended route, but plenty of clients bury it and some
-  // send-domains rewrite it, so the address is always spelled out as a link.
+  // Built as one string, not adjacent JSX nodes: a newline between nodes
+  // renders as a space, which would print "with us , Sanjay."
+  const headline =
+    (isTransfer
+      ? 'Thanks for riding with us'
+      : 'Thanks for spending the day with us') + (name ? `, ${name}.` : '.')
+
+  // Names the trip in the lead instead of in a card.
+  const tripSentence = isTransfer
+    ? `We drove you to and from ${tripLabel}, ${tripDates}.`
+    : `We took you out to ${tripLabel}, ${tripDates}.`
+
+  // Writing prompts are the conversion mechanism. Blank-page paralysis kills
+  // more reviews than apathy does.
+  const prompts = isTransfer
+    ? 'Whether the driver was standing there when you walked out of arrivals. Whether the van was cold. Whether you got to the resort without drama.'
+    : 'Where we actually took you. What you ate. Whether the day was worth what you paid.'
+
   const mailto = `mailto:${supportEmail}?subject=${encodeURIComponent(
     `${bookingRef}: something fell short`,
   )}`
 
   return (
-    <MaplLayout
-      preheader={`${tripLabel}, ${tripDates}. Would you write down how it went?`}
-    >
-      <Text style={s.eyebrow}>Trip complete</Text>
+    <MaplLayout preheader="Two minutes on Tripadvisor, if you have them. And a real reply line if anything fell short.">
+      <Text style={s.sectionLabel}>A small ask</Text>
 
-      <Heading as="h1" style={s.hero} className="mapl-h1">
-        {name ? `Welcome home, ${name}.` : 'Welcome home.'}
+      <Heading as="h1" style={heroTight} className="mapl-h1">
+        {headline}
       </Heading>
 
-      <Text style={s.heroLead}>
-        {isTransfer
-          ? 'The run from Sangster up to the coast. We hope your driver was standing there when you walked out of arrivals, and the road was easy.'
-          : 'A day out with somebody who actually lives here. We hope it was worth the early start.'}{' '}
-        Here is what we ran for you, and one thing we would like to ask.
+      <Text style={lead}>
+        {tripSentence} Your trip finished yesterday. The bag is probably still
+        open on the floor with sand in it.
       </Text>
 
-      {/* ── The recap. Reflect the trip back before asking for anything. ── */}
-      <Section style={s.card} className="mapl-card">
-        <Section style={s.cardHeader}>
-          <Text style={s.cardHeaderText}>Your trip</Text>
-        </Section>
-        <Section style={s.cardBodyLg} className="mapl-pad">
-          <Text style={{ ...s.sectionLabel, fontSize: 12 }}>{serviceLabel}</Text>
-          <Text style={tripName}>{tripLabel}</Text>
-          <Text style={{ ...s.body, margin: '6px 0 0', color: INK_SOFT }}>
-            {tripDates}
-          </Text>
-
-          <Hr style={cardRule} />
-
-          <Row>
-            <Column valign="top">
-              <Text style={{ ...s.rowLabel, fontSize: 13 }}>Booking reference</Text>
-            </Column>
-            <Column valign="top" align="right">
-              <Text style={{ ...s.rowValue, fontSize: 13, fontWeight: 600, letterSpacing: '0.05em' }}>
-                {bookingRef}
-              </Text>
-            </Column>
-          </Row>
-        </Section>
-      </Section>
-
-      {/* ── The ask. Unconditional, uncompensated, once. ── */}
-      <Heading as="h2" style={askHeading}>
-        Would you write down what happened?
-      </Heading>
-
-      <Text style={{ ...s.body, margin: '12px 0 0', fontSize: 15, lineHeight: 1.62, color: INK_SOFT }}>
-        We are new on Tripadvisor. Zero reviews, not one. For a small
-        Jamaican-run outfit that page is the whole shop window, because people
-        read it before they trust a stranger to drive them across the island at
-        night.
+      <Text style={para}>
+        We&rsquo;re a small Jamaican outfit and our Tripadvisor page is new, so
+        the next family choosing between us and a big bus company has almost
+        nothing to go on. Yours is the one they read. {prompts}
       </Text>
 
-      <Text style={{ ...s.body, margin: '14px 0 0', fontSize: 15, lineHeight: 1.62, color: INK_SOFT }}>
-        So if you have two minutes, say what you found. Good, mixed or bad, we
-        want the honest version. There is nothing in it for you, no discount and
-        no prize draw, and we would not want you writing a word you do not mean.
+      <Text style={para}>
+        Write it straight. A middling review that is true is worth more to us
+        than a glowing one that isn&rsquo;t. There is nothing in it for you, no
+        discount and no prize draw, and nothing about your booking changes
+        either way.
       </Text>
 
       <Section style={s.ctaWrap}>
@@ -138,82 +135,101 @@ export default function ReviewRequest({
         </Button>
       </Section>
 
-      <Text style={{ ...s.bodyMuted, margin: '14px 0 0' }}>
-        Stuck for what to say? Whether we turned up on time, who drove you, and
-        how the trip actually went is plenty.
-      </Text>
-
-      <Text style={{ ...s.bodyMuted, margin: '8px 0 0', wordBreak: 'break-word' }}>
-        If the button does not open, use{' '}
+      <Text style={micro}>
+        About two minutes to write. Tripadvisor will ask you to sign in or make
+        an account first, which is the slow part, not the writing. If the button
+        doesn&rsquo;t work,{' '}
         <Link href={reviewUrl} style={inlineLink}>
-          {reviewUrl}
-        </Link>
+          this link
+        </Link>{' '}
+        goes to the same place.
       </Text>
 
-      {/* ── The other route. Weighted, not buried. ── */}
-      <Section style={fallbackCard} className="mapl-card">
-        <Section style={s.cardHeader}>
-          <Text style={s.cardHeaderText}>If anything fell short</Text>
-        </Section>
-        <Section style={s.cardBody} className="mapl-pad">
-          <Text style={{ ...s.body, fontSize: 15, lineHeight: 1.62 }}>
-            Tell us as well. Reply to this email, or write to{' '}
-            <Link href={mailto} style={inlineLink}>
-              {supportEmail}
-            </Link>
-            , and it reaches the people who ran your trip. Not a queue, not a
-            form.
-          </Text>
-          <Text style={{ ...s.body, margin: '12px 0 0', fontSize: 15, lineHeight: 1.62, color: INK_SOFT }}>
-            We will answer you ourselves and put right what we can. Write your
-            review honestly either way. We would far rather hear the bad thing
-            from you than never hear it at all.
-          </Text>
-        </Section>
+      <Hr style={divider} />
+
+      <Text style={s.sectionLabel}>If anything fell short</Text>
+
+      {/* The one place colour is spent in the body. No mapl-card class, or the
+          shell's mobile rule would strip the gold edge on phones. */}
+      <Section style={escapeBlock}>
+        <Text style={escapeCopy}>
+          Reply to this email and tell us. It lands in our inbox in Montego Bay,
+          a person reads it, and we&rsquo;d rather hear it from you and put it
+          right. You can also write to{' '}
+          <Link href={mailto} style={inlineLink}>
+            {supportEmail}
+          </Link>
+          {'.'}
+        </Text>
+
+        <Text style={escapeNote}>
+          That isn&rsquo;t us steering you away from the listing. Leave the
+          review as well, and say the same thing in it.
+        </Text>
       </Section>
 
-      <Text style={{ ...s.body, margin: '26px 0 0' }}>
-        Thanks for going with a Jamaican-run outfit. Walk good.
+      <Text style={signoff}>
+        Thanks for coming. Walk good.
+        <br />
+        MAPL Tours, Montego Bay
       </Text>
-      <Text style={{ ...s.bodyMuted, margin: '4px 0 0' }}>The MAPL Tours team</Text>
+
+      <Hr style={metaDivider} />
+
+      <Row>
+        <Column style={metaLeftCol}>
+          <Text style={metaText}>{tripLabel}</Text>
+        </Column>
+        <Column style={metaRightCol} align="right">
+          <Text style={metaTextRight}>{bookingRef}</Text>
+        </Column>
+      </Row>
 
       <Text style={s.footnote}>
-        You get this once, the day after your trip. We will not chase you
-        about it.
+        You get this once, the day after your trip. We will not chase you about
+        it.
       </Text>
     </MaplLayout>
   )
 }
 
-/* ───────────────── Local styles ───────────────── */
+/* ───────────────── Local styles ─────────────────
+   _Layout keeps its colour constants module-private and exports only
+   maplStyles, so the four values used here are mirrored, not invented.
+   If _Layout ever exports its palette, delete these and import them. */
 
-/** The line that should make them go "yes, that was my holiday". */
-const tripName: React.CSSProperties = {
-  margin: '6px 0 0',
-  fontFamily: SANS,
-  fontSize: 20,
-  fontWeight: 700,
-  lineHeight: 1.25,
-  letterSpacing: '-0.015em',
+const INK = '#1A1714'
+const INK_SOFT = '#57534C'
+const MUTED = '#6E6A62'
+const GOLD = '#B7873A'
+const BORDER = '#E7E1D6'
+const BORDER_SOFT = '#F1ECE3'
+const FOOTER_BG = '#FAF8F3'
+
+/* No maxWidth: the Outlook Word engine ignores it on a heading, so relying on
+   it for the line break would give two different headlines across clients. */
+const heroTight: React.CSSProperties = {
+  ...s.hero,
+  margin: '10px 0 0',
+}
+
+const lead: React.CSSProperties = {
+  ...s.heroLead,
+  margin: '20px 0 0',
+  fontSize: 16,
+  lineHeight: 1.62,
+  color: INK_SOFT,
+}
+
+const para: React.CSSProperties = {
+  ...s.body,
+  margin: '18px 0 0',
+  fontSize: 15,
+  lineHeight: 1.68,
   color: INK,
 }
 
-const cardRule: React.CSSProperties = {
-  borderColor: BORDER_SOFT,
-  margin: '16px 0',
-}
-
-const askHeading: React.CSSProperties = {
-  margin: '30px 0 0',
-  fontFamily: SANS,
-  fontSize: 21,
-  fontWeight: 700,
-  lineHeight: 1.2,
-  letterSpacing: '-0.018em',
-  color: INK,
-}
-
-/** Primary action. 16px vertical padding keeps the tap target above 48px. */
+/* 16px vertical padding keeps the tap target above 48px on a phone. */
 const reviewCta: React.CSSProperties = {
   ...s.cta,
   padding: '16px 30px',
@@ -221,19 +237,83 @@ const reviewCta: React.CSSProperties = {
   color: '#FFFFFF',
 }
 
-/**
- * The private route reads as its own thing: a gold rule down the left edge,
- * the one place in this email that colour is used to say "this matters too".
- */
-const fallbackCard: React.CSSProperties = {
-  ...s.card,
-  margin: '26px 0 0',
-  borderLeft: `3px solid ${GOLD}`,
+const micro: React.CSSProperties = {
+  ...s.bodyMuted,
+  margin: '14px 0 0',
+  color: MUTED,
 }
 
-/** Links always carry an explicit colour, several clients default to blue. */
+/* Explicit colour on every link. Several clients default anchors to blue. */
 const inlineLink: React.CSSProperties = {
   color: INK,
   textDecoration: 'underline',
-  fontWeight: 600,
+  fontWeight: 500,
+}
+
+const divider: React.CSSProperties = {
+  borderColor: BORDER_SOFT,
+  margin: '34px 0 22px',
+}
+
+const escapeBlock: React.CSSProperties = {
+  margin: '12px 0 0',
+  padding: '18px 20px',
+  background: FOOTER_BG,
+  border: `1px solid ${BORDER}`,
+  borderLeft: `3px solid ${GOLD}`,
+  borderRadius: 12,
+}
+
+/* One step larger than body copy: the private route carries real weight. */
+const escapeCopy: React.CSSProperties = {
+  ...s.body,
+  margin: 0,
+  fontSize: 16,
+  lineHeight: 1.62,
+  color: INK,
+}
+
+const escapeNote: React.CSSProperties = {
+  ...s.bodyMuted,
+  margin: '12px 0 0',
+  color: MUTED,
+}
+
+const signoff: React.CSSProperties = {
+  ...s.body,
+  margin: '30px 0 0',
+  fontSize: 15,
+  lineHeight: 1.7,
+  color: INK,
+}
+
+const metaDivider: React.CSSProperties = {
+  borderColor: BORDER_SOFT,
+  margin: '28px 0 14px',
+}
+
+const metaLeftCol: React.CSSProperties = {
+  width: '58%',
+  verticalAlign: 'top',
+}
+
+const metaRightCol: React.CSSProperties = {
+  width: '42%',
+  verticalAlign: 'top',
+}
+
+const metaText: React.CSSProperties = {
+  ...s.bodyMuted,
+  margin: 0,
+  fontSize: 12,
+  color: MUTED,
+}
+
+const metaTextRight: React.CSSProperties = {
+  ...s.bodyMuted,
+  margin: 0,
+  fontSize: 12,
+  color: MUTED,
+  textAlign: 'right' as const,
+  letterSpacing: '0.04em',
 }
