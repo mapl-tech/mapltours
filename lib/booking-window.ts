@@ -134,13 +134,36 @@ export function earliestServiceStart(
 ): Date | null {
   const candidates: number[] = []
   for (const item of items ?? []) {
-    const start = startOfDayJamaicaMs(item.date ?? '')
-    if (start != null) candidates.push(start)
+    // A leg time is the precise moment this item begins, so when one exists it
+    // REPLACES the date rather than competing with it. Both used to be pushed
+    // as candidates and the minimum won, which meant a transfer's service was
+    // deemed to start at midnight Jamaica on the travel day. A guest flying in
+    // at 9 PM was therefore refused a refund from midnight that morning, 21
+    // hours before a car was due, while the terms they agreed to say a booking
+    // is delivered only "once an experience or pickup has begun".
+    const legs: number[] = []
     for (const stamp of [item.arrival_at, item.departure_at]) {
       if (!stamp) continue
-      const ms = Date.parse(stamp)
-      if (!Number.isNaN(ms)) candidates.push(ms)
+      const wallClockMs = Date.parse(stamp)
+      if (Number.isNaN(wallClockMs)) continue
+      // Leg times are the guest's Jamaica wall-clock carrying a Z, the same
+      // convention lib/dispatch.ts reads them back under. Parsed raw they land
+      // five hours early, so the gate closed five hours before the pickup even
+      // once the midnight problem above is set aside.
+      legs.push(wallClockMs - JAMAICA_UTC_OFFSET_HOURS * MS_PER_HOUR)
     }
+
+    if (legs.length > 0) {
+      candidates.push(Math.min(...legs))
+      continue
+    }
+
+    // Tours carry a date and nothing finer. Midnight Jamaica stays the
+    // convention for them: bookings.pickup_time exists now, but feeding it in
+    // here would move a refund boundary on the strength of a field the guest
+    // filled in for dispatch, so it is deliberately not read.
+    const start = startOfDayJamaicaMs(item.date ?? '')
+    if (start != null) candidates.push(start)
   }
   if (candidates.length === 0) return null
   return new Date(Math.min(...candidates))

@@ -315,6 +315,13 @@ interface ProfileBundle {
   pastBookings: PastBooking[]
   badges: Badge[]
   likedCount: number
+  /**
+   * True when the bookings request FAILED, as distinct from succeeding with
+   * nothing. Telling a guest who has paid for a trip that they have no trips
+   * is the worst possible reading of an outage, and it is the one the page
+   * gave for as long as the refund columns were missing from the database.
+   */
+  bookingsFailed?: boolean
 }
 
 const EMPTY_BUNDLE: ProfileBundle = {
@@ -343,14 +350,15 @@ export default function ProfileView() {
           // Server route: matches bookings by user_id OR verified email, so
           // guest checkouts appear too (and get claimed onto this account).
           fetch('/api/profile/bookings')
-            .then(async (r) => ({ data: r.ok ? (await r.json()).data : [] }))
-            .catch(() => ({ data: [] })),
+            .then(async (r) => (r.ok ? { data: (await r.json()).data, failed: false } : { data: [], failed: true }))
+            .catch(() => ({ data: [], failed: true })),
           supabase.from('user_badges').select('badge_name, earned_at').eq('user_id', user.id),
           supabase.from('experience_likes').select('id', { count: 'exact', head: true }).eq('user_id', user.id),
         ])
         return {
           profile: (profileRes.data as ProfileData) ?? EMPTY_BUNDLE.profile,
           pastBookings: (bookingsRes.data as PastBooking[]) ?? [],
+          bookingsFailed: bookingsRes.failed === true,
           badges: (badgesRes.data as Badge[]) ?? [],
           likedCount: likesRes.count ?? 0,
         }
@@ -364,6 +372,7 @@ export default function ProfileView() {
 
   const profile = bundle?.profile ?? EMPTY_BUNDLE.profile
   const pastBookings = bundle?.pastBookings ?? []
+  const bookingsFailed = bundle?.bookingsFailed === true
   const badges = bundle?.badges ?? []
   // The shared saved set is the live number; the bundle's count is the
   // fallback for the moment before it loads.
@@ -809,7 +818,22 @@ export default function ProfileView() {
                 {t('Past trips')}
               </h2>
 
-              {completedBookings.length === 0 ? (
+              {bookingsFailed ? (
+                // Never say "no trips" when we simply could not read them.
+                <p role="alert" style={{
+                  fontSize: 14, color: 'var(--text-secondary)',
+                  fontFamily: 'var(--font-dm-sans)', lineHeight: 1.6,
+                  padding: '14px 16px', borderRadius: 'var(--r-lg)',
+                  border: '1px solid var(--border)', background: 'var(--bg-warm)',
+                }}>
+                  We could not load your trips just now. Please refresh the page. If they are
+                  still missing, email{' '}
+                  <a href="mailto:contact@mapltours.com" style={{ color: 'inherit', fontWeight: 600 }}>
+                    contact@mapltours.com
+                  </a>{' '}
+                  and we will pull up your booking by hand.
+                </p>
+              ) : completedBookings.length === 0 ? (
                 <p style={{
                   fontSize: 14, color: 'var(--text-tertiary)',
                   fontFamily: 'var(--font-dm-sans)', lineHeight: 1.5,

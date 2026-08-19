@@ -152,11 +152,29 @@ describe('earliestServiceStart', () => {
     expect(start?.toISOString()).toBe('2026-09-14T05:00:00.000Z')
   })
 
-  test('uses real timestamps for transfer legs', () => {
+  // These two used to assert that a leg timestamp is a real instant. It is
+  // not. The transfers checkout stores `new Date(<datetime-local>).toISOString()`,
+  // and a datetime-local value carries no zone, so what lands in the column is
+  // the guest's typed Jamaica wall-clock wearing a Z. lib/dispatch.ts reads it
+  // back that way (legInstantMs adds five hours) and so does isPickupBookable
+  // in this very file; earliestServiceStart was the one place that did not,
+  // which closed the refund gate five hours early on every transfer.
+  test('reads a transfer leg as Jamaica wall-clock, five hours before the real instant', () => {
     const start = earliestServiceStart([
       { arrival_at: '2026-09-14T18:30:00.000Z', departure_at: '2026-09-21T09:00:00.000Z' },
     ])
-    expect(start?.toISOString()).toBe('2026-09-14T18:30:00.000Z')
+    // 6:30 PM in Negril is 11:30 PM UTC.
+    expect(start?.toISOString()).toBe('2026-09-14T23:30:00.000Z')
+  })
+
+  test('a leg time replaces the item date rather than competing with it', () => {
+    // Both fields are set on every transfer row, the date being a
+    // denormalized copy of the arrival day. Taking the minimum let midnight
+    // win, so a 9 PM pickup counted as delivered from midnight that morning.
+    const start = earliestServiceStart([
+      { date: '2026-09-14', arrival_at: '2026-09-14T21:00:00.000Z' },
+    ])
+    expect(start?.toISOString()).toBe('2026-09-15T02:00:00.000Z')
   })
 
   test('takes the earliest across mixed shapes', () => {
@@ -164,7 +182,8 @@ describe('earliestServiceStart', () => {
       { date: '2026-09-20' },
       { arrival_at: '2026-09-15T02:00:00.000Z' },
     ])
-    expect(start?.toISOString()).toBe('2026-09-15T02:00:00.000Z')
+    // The transfer leg, 2 AM Jamaica on the 15th, is 7 AM UTC.
+    expect(start?.toISOString()).toBe('2026-09-15T07:00:00.000Z')
   })
 
   test('null when nothing has a usable time', () => {

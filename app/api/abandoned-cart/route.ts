@@ -35,7 +35,24 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!)
 
 const GRACE_MINUTES = 30 // give people time to finish before we nudge
 const MAX_AGE_DAYS = 7 // don't chase stale carts
-const BATCH = 50
+
+/**
+ * How many carts one run will look at, and how long it may spend doing it.
+ *
+ * Each candidate costs a Stripe round trip (~130 ms) before we know whether to
+ * mail it, and each mail costs a render plus a Resend call. A synchronous
+ * Netlify function is cut off at 10 seconds, so a batch of 50 could not finish:
+ * runs were dying partway through and only ever reaching the newest few rows.
+ * With a backlog sitting in the table that is invisible, the sweep looks like
+ * it is working while carts behind the backlog are never contacted at all.
+ *
+ * The batch is now sized to fit, and the deadline is the real guarantee: the
+ * loop stops on its own and reports what it left, rather than being killed
+ * mid-send. It runs hourly and carts become eligible at 30 minutes, so this is
+ * far more headroom than real volume needs.
+ */
+const BATCH = 12
+const DEADLINE_MS = 7_000
 
 function humanizeId(id: string): string {
   return 'MAPL-' + id.slice(0, 8).toUpperCase()
@@ -107,9 +124,22 @@ async function handle(request: NextRequest) {
   const graceMs = GRACE_MINUTES * 60 * 1000
   const maxAgeMs = MAX_AGE_DAYS * 24 * 60 * 60 * 1000
 
-  const summary = { scanned: rows?.length ?? 0, emailed: 0, skipped: [] as string[] }
+  const startedAt = Date.now()
+  const summary = {
+    scanned: rows?.length ?? 0,
+    emailed: 0,
+    skipped: [] as string[],
+    /** Rows this run never reached. Non-zero means a backlog is building. */
+    deferred: 0,
+  }
 
   for (const b of (rows ?? []) as Row[]) {
+    // Stop before the platform stops us, so the run ends with a summary
+    // instead of a truncated log and a silent backlog.
+    if (Date.now() - startedAt > DEADLINE_MS) {
+      summary.deferred += 1
+      continue
+    }
     const ref = humanizeId(b.id)
 
     // Basic viability.

@@ -56,10 +56,19 @@ export async function releaseStaleGiftClaims(supabase: DB, giftCardId: string): 
     const bookingIds = stale.map((r) => r.booking_id).filter(Boolean) as string[]
     const bookings = new Map<string, { status: string; stripe_payment_id: string | null }>()
     if (bookingIds.length) {
-      const { data: rows } = await supabase
+      const { data: rows, error: bkErr } = await supabase
         .from('bookings')
         .select('id, status, stripe_payment_id')
         .in('id', bookingIds)
+      // Fail closed. An unread error left `bookings` empty, which reads
+      // downstream as "no such booking", and every stale reservation was then
+      // credited back as if its checkout had vanished, including the ones
+      // whose payment was mid-flight. A sweep that cannot classify its rows
+      // must do nothing at all.
+      if (bkErr) {
+        console.error('[gift-redemption] stale sweep could not load bookings, skipping', bkErr)
+        return
+      }
       for (const b of rows ?? []) {
         bookings.set(b.id as string, {
           status: b.status as string,
@@ -87,14 +96,22 @@ export async function releaseStaleGiftClaims(supabase: DB, giftCardId: string): 
       // payment permanently unable to succeed; only then is the value ours to
       // return. If the cancel fails because it already succeeded, we leave the
       // reservation alone and let the webhook settle it.
-      if (booking?.status === 'pending' && booking.stripe_payment_id) {
+      // 'failed' belongs here too. A failed PaymentIntent is not a dead one:
+      // Stripe leaves it at requires_payment_method, so the guest can retry
+      // the card and succeed minutes later. Releasing the balance on the
+      // strength of the status alone let the same gift value fund the retry
+      // AND sit back on the card, spendable a second time.
+      if (
+        (booking?.status === 'pending' || booking?.status === 'failed') &&
+        booking.stripe_payment_id
+      ) {
         const killed = await cancelPaymentIntent(booking.stripe_payment_id)
         if (!killed) continue
         await supabase
           .from('bookings')
           .update({ status: 'canceled' })
           .eq('id', row.booking_id as string)
-          .eq('status', 'pending')
+          .in('status', ['pending', 'failed'])
       }
 
       // Claim the release. If another request already released this row, the
@@ -314,13 +331,21 @@ export async function settleGiftClaim(
     // none, and without this the full-price comparison below is true for all
     // of them (captured == gross when no discount applied), which would log a
     // false alarm and write to the row on every single payment.
-    const { data: anyClaim } = await supabase
+    //
+    // A list with a limit, never maybeSingle(). One booking legitimately
+    // accumulates several redemption rows: a released claim from an abandoned
+    // attempt sits alongside the live one from the attempt that paid.
+    // maybeSingle() treats more than one row as an error and hands back null,
+    // which read here as "no claim at all" and returned early, so the spend
+    // stayed 'reserved' forever and a later refund had no settled amount to
+    // credit back.
+    const { data: claims } = await supabase
       .from('gift_card_redemptions')
       .select('id')
       .eq('booking_id', bookingId)
       .in('status', ['reserved', 'spent', 'released'])
-      .maybeSingle()
-    if (!anyClaim) return
+      .limit(1)
+    if (!claims?.length) return
 
     // A claim exists. Did the charge actually carry the discount?
     let chargedFullPrice = false
@@ -363,14 +388,23 @@ export async function settleGiftClaim(
     if (settled) return
 
     // Nothing was reserved. Three possibilities, and only one is a problem.
-    const { data: row } = await supabase
+    //
+    // Read the rows as a list. A booking accumulates redemption rows: a
+    // released claim from an abandoned attempt can sit beside the one that
+    // matters. maybeSingle() calls that an error and returns null, which read
+    // as "no gift on this booking" and skipped the repair below entirely, so a
+    // released claim on a booking that then paid was never re-debited: the
+    // guest kept both the discount and the balance.
+    const { data: rows } = await supabase
       .from('gift_card_redemptions')
-      .select('id, gift_card_id, amount, status')
+      .select('id, gift_card_id, amount, status, created_at')
       .eq('booking_id', bookingId)
-      .maybeSingle()
+      .order('created_at', { ascending: false })
 
-    if (!row) return                    // no gift on this booking at all
-    if (row.status === 'spent') return  // already settled by an earlier delivery
+    if (!rows?.length) return           // no gift on this booking at all
+    // A settled row anywhere means an earlier delivery already did this work.
+    if (rows.some((r) => r.status === 'spent')) return
+    const row = rows[0]
 
     if (row.status === 'released') {
       // The sweep handed this value back, but the booking it discounted has

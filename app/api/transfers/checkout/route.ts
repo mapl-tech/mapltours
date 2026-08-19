@@ -606,6 +606,34 @@ export async function POST(request: NextRequest) {
     if (bookingRow?.stripe_payment_id) {
       try {
         const existingPi = await stripe.paymentIntents.retrieve(bookingRow.stripe_payment_id)
+
+        // Stripe is the arbiter here, not the booking row.
+        //
+        // The alreadyPaid guard above reads bookings.status, which only the
+        // webhook flips. Between the guest confirming payment and that webhook
+        // landing, the row still says 'pending' while the intent is already
+        // `processing` or `succeeded`. A refresh in that window fell straight
+        // past the reuse test (those statuses are deliberately not reusable)
+        // and minted a SECOND intent against the same booking, which the guest
+        // could then pay: one trip, charged twice.
+        if (existingPi.status === 'succeeded' || existingPi.status === 'requires_capture') {
+          console.warn('[checkout]', reqId, 'existing PI is already settled, refusing a second intent', {
+            booking: bookingId, pi: existingPi.id, status: existingPi.status,
+          })
+          return NextResponse.json({ alreadyPaid: true, bookingId, requestId: reqId })
+        }
+        if (existingPi.status === 'processing') {
+          return NextResponse.json(
+            {
+              paymentProcessing: true,
+              bookingId,
+              error: 'Your payment is still being confirmed. Give it a moment, we will email your confirmation as soon as it clears.',
+              requestId: reqId,
+            },
+            { status: 409 },
+          )
+        }
+
         if (PI_REUSABLE_STATUSES.includes(existingPi.status)) {
           // Compare against what we intend to CHARGE (gross minus gift), not
           // the gross. Comparing to amountInCents let a gift card applied on

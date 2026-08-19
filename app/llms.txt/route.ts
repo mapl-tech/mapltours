@@ -34,7 +34,7 @@ Tagline: "Discover Jamaica Beyond the Resort."
 
 - [Home](${baseUrl}/): Video-reel discovery feed of Jamaica experiences.
 - [Explore](${baseUrl}/explore): Filterable catalog by category (Adventure, Nature, Music, Food, Culture, Water) and parish (Kingston, St. Andrew, St. Ann, Westmoreland, Portland, St. Elizabeth).
-- [Airport transfers](${baseUrl}/transfers): Flat-rate private transfers from Sangster International Airport (MBJ) to 50+ resorts: Montego Bay, Rose Hall, Falmouth, Runaway Bay, Ocho Rios, and Negril. One all-in price per vehicle (1-4 passengers), from $19 one-way; round trips are 10% cheaper than two one-ways. Includes meet and greet with a name sign just outside arrivals, live flight tracking, and a day-of email with the driver's name, vehicle, plate, and WhatsApp. Book online with card or Apple Pay, no account needed.
+- [Airport transfers](${baseUrl}/transfers): Flat-rate private transfers from Sangster International Airport (MBJ) to 50+ resorts: Montego Bay, Rose Hall, Falmouth, Runaway Bay, Ocho Rios, and Negril. One all-in price per vehicle (1-4 passengers), from $22 one-way; round trips are 10% cheaper than two one-ways. Includes meet and greet with a name sign just outside arrivals, live flight tracking, and a day-of email with the driver's name, vehicle, plate, and WhatsApp. Book online with card or Apple Pay, no account needed.
 - [The MAPL Journal](${baseUrl}/blog): Essays and guides from local writers.
 - [About](${baseUrl}/about): Company background.
 - [Contact](${baseUrl}/contact): Customer support.
@@ -56,7 +56,7 @@ ${blogLines}
 
 - Country: Jamaica
 - Currency: USD
-- Airport transfers: one flat all-in price per vehicle for 1-4 passengers, nothing added at checkout. From $19 one-way (Montego Bay hotels) up to $159 (Treasure Beach); round trips are 10% off two one-ways. Cancellation: flexible within 48 hours of booking, less a 20% administration charge plus taxes (if applicable); after that window bookings are non-refundable, and no-shows are charged in full.
+- Airport transfers: one flat all-in price per vehicle for 1-4 passengers, nothing added at checkout. From $22 one-way (Montego Bay hotels) up to $158 (Treasure Beach); round trips are 10% off two one-ways. Cancellation: flexible within 48 hours of booking, less a 20% administration charge plus taxes (if applicable); after that window bookings are non-refundable, and no-shows are charged in full.
 - Tours and experiences: $103 to $459 all-in, nothing added at checkout. Most are private group tours priced per vehicle for a party of up to 3 or 4, not per person; a few are per person. Ready-made multi-stop day packages run $192 to $332. Cancellation: flexible within 48 hours of booking, less a 20% administration charge plus taxes (if applicable).
 - Payments: Stripe (cards and Apple Pay)
 - Booking cutoff: bookings close 24 hours before an experience or pickup begins

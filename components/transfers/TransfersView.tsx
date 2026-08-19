@@ -97,7 +97,13 @@ function priceRangeLabel(zone: TransferZone, tripType: TransferTripType): string
 export default function TransfersView() {
   const router = useRouter()
   const addQuote = useTransfersCart((s) => s.addQuote)
-  const { formatPrice } = useI18n()
+  // Two formatters on purpose. formatPrice converts by a hardcoded rate and
+  // swaps the symbol, which is right for the indicative "from" prices a
+  // visitor browses. formatUsd is the amount Stripe will actually take: the
+  // PaymentIntent is created with currency 'usd' whatever the site language,
+  // so a quote or a Book button reading "EUR182" promised a currency and a
+  // rate MAPL does not charge in.
+  const { formatPrice, formatUsd } = useI18n()
 
   const [destinationId, setDestinationId] = useState<string>('')
 
@@ -604,7 +610,7 @@ export default function TransfersView() {
               </div>
               <div className="xfer-quote-readout-price-block">
                 <p className="xfer-quote-readout-price">
-                  {quote ? formatPrice(quote.priceUsd) : '-'}
+                  {quote ? formatUsd(quote.priceUsd) : '-'}
                 </p>
                 <p className="xfer-quote-readout-meta">
                   {tripType === 'round_trip' ? 'Round-trip' : 'One-way'} · per vehicle
@@ -628,7 +634,7 @@ export default function TransfersView() {
                 cursor: quote ? 'pointer' : 'not-allowed',
               }}
             >
-              {quote ? `Book for ${formatPrice(quote.priceUsd)} →` : 'Select a destination to continue'}
+              {quote ? `Book for ${formatUsd(quote.priceUsd)} →` : 'Select a destination to continue'}
             </button>
 
             <p
@@ -992,7 +998,7 @@ export default function TransfersView() {
               onClick={handleBook}
               style={{ height: 46, padding: '0 20px', fontSize: 14, whiteSpace: 'nowrap' }}
             >
-              Book · {formatPrice(quote.priceUsd)}
+              Book · {formatUsd(quote.priceUsd)}
             </button>
           </>
         ) : (

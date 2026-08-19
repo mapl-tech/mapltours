@@ -10,7 +10,7 @@ const PAGE_URL = `${SITE_URL}/transfers`
 export const metadata: Metadata = {
   title: 'Jamaica Airport Transfers from MBJ',
   description:
-    'Private transfers from Sangster (MBJ) to Negril, Ocho Rios, Falmouth and every resort. Flat rates from $19 per vehicle, meet-and-greet, flight tracking.',
+    'Private transfers from Sangster (MBJ) to Negril, Ocho Rios, Falmouth and every resort. Flat rates from $22 per vehicle, meet-and-greet, flight tracking.',
   keywords: [
     'Jamaica airport transfer',
     'Montego Bay airport transfer',

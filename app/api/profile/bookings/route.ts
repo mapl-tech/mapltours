@@ -37,7 +37,19 @@ export async function GET() {
   const { data, error } = email
     ? await query.or(`user_id.eq.${user.id},email.ilike.${email}`)
     : await query.eq('user_id', user.id)
-  if (error) return NextResponse.json({ data: [] })
+  // A failed query and an empty result set are different facts, and
+  // collapsing them hid a real outage: the select above names refund_amount
+  // and refund_state, which were missing from production for months, so every
+  // signed-in guest saw "no trips yet" on a page that was actually erroring,
+  // and the cancellation flow that the confirmation email points them to was
+  // simply unreachable. Say so instead, and let the client show a retry.
+  if (error) {
+    console.error('[profile-bookings] query failed', { userId: user.id, error })
+    return NextResponse.json(
+      { error: 'Could not load your bookings. Please refresh, and email contact@mapltours.com if this persists.' },
+      { status: 500 },
+    )
+  }
 
   const rows = (data ?? []) as Row[]
 

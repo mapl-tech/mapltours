@@ -3,6 +3,7 @@ import {
   areaFromPrice,
   getTransferPrice,
   getDestination,
+  driverCost,
   buildQuote,
   DESTINATIONS,
 } from '../../lib/airport-transfers'
@@ -42,9 +43,13 @@ describe('advertised "from" prices', () => {
   test('the strip shows the current rate card', () => {
     // Documents today's numbers. If the rate table moves, this fails loudly
     // rather than the hero quietly advertising something stale.
-    expect(areaFromPrice('Rose Hall', 'one_way')).toBe(37)
-    expect(areaFromPrice('Negril', 'one_way')).toBe(110)
-    expect(areaFromPrice('Ocho Rios', 'one_way')).toBe(110)
+    // Moved 2026-08-19 when the Remitly cost stopped being modelled as a flat
+    // 5% and became what it is: CAD 3.99 per send plus FX, charged twice on a
+    // round trip. Seven of the cheapest points had been selling below fully
+    // loaded cost.
+    expect(areaFromPrice('Rose Hall', 'one_way')).toBe(39)
+    expect(areaFromPrice('Negril', 'one_way')).toBe(111)
+    expect(areaFromPrice('Ocho Rios', 'one_way')).toBe(111)
   })
 
   test('round-trip is dearer than one-way for every area', () => {
@@ -104,11 +109,14 @@ describe('Negril West End additions', () => {
     }
   })
 
-  test('Samsara quotes the figure the enquiry was answered with', () => {
-    // $198 round-trip, flat for 1-4 passengers. If this moves, the reply we
-    // sent the customer is no longer the price the site would charge them.
-    expect(getTransferPrice('samsara-cliff-negril', 'round_trip')).toBe(198)
-    expect(getTransferPrice('samsara-cliff-negril', 'one_way')).toBe(110)
+  test('Samsara quotes the current rate card', () => {
+    // Was $198 round-trip when the enquiry was answered on 2026-08-18, and is
+    // $199 since the payout cost stopped being modelled as a flat 5% on
+    // 2026-08-19. The enquirer was quoted the older figure, so honour $198 by
+    // hand if they book; a dollar is not worth special-casing the rate table
+    // for, but it is worth someone knowing about.
+    expect(getTransferPrice('samsara-cliff-negril', 'round_trip')).toBe(199)
+    expect(getTransferPrice('samsara-cliff-negril', 'one_way')).toBe(111)
   })
 
   test('a round trip still beats two one-ways', () => {
@@ -154,5 +162,40 @@ describe('unlisted-hotel sentinel cannot produce a price', () => {
   test('the empty string behaves the same way', () => {
     expect(getTransferPrice('', 'one_way')).toBeNull()
     expect(buildQuote('', 'one_way', 1)).toBeNull()
+  })
+})
+
+describe('no transfer sells below fully loaded cost', () => {
+  // The payout fee is FLAT per send, and a round trip is two sends. Modelled
+  // as a flat percentage it under-covered exactly the fares least able to
+  // absorb it: a Deja Resort round trip took $34 against $34.53 of driver
+  // payout, Remitly and card fees. Measured 2026-08-15.
+  const REMITLY_FLAT = 2.91
+  const REMITLY_FX = 0.0205
+  const CARD_RATE = 0.057
+  const CARD_FIXED = 0.22
+
+  test('every destination, both directions, nets a positive margin', () => {
+    for (const d of DESTINATIONS) {
+      for (const tripType of ['one_way', 'round_trip'] as const) {
+        const price = getTransferPrice(d.id, tripType)
+        const cost = driverCost(d.id, tripType)
+        expect(price).not.toBeNull()
+        expect(cost).not.toBeNull()
+        const sends = tripType === 'round_trip' ? 2 : 1
+        const payout = cost! + sends * REMITLY_FLAT + cost! * REMITLY_FX
+        const card = price! * CARD_RATE + CARD_FIXED
+        const net = price! - payout - card
+        expect(net, `${d.id} ${tripType} nets ${net.toFixed(2)}`).toBeGreaterThan(0)
+      }
+    }
+  })
+
+  test('a round trip still beats two one-ways for the guest', () => {
+    for (const d of DESTINATIONS) {
+      const single = getTransferPrice(d.id, 'one_way')!
+      const round = getTransferPrice(d.id, 'round_trip')!
+      expect(round, d.id).toBeLessThan(single * 2)
+    }
   })
 })

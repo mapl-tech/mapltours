@@ -68,11 +68,16 @@ export default function TransfersCheckoutView() {
   // browser then constrains the pickers. The server re-checks regardless.
   const [minDateTime, setMinDateTime] = useState('')
   useEffect(() => {
+    // Rendered in JAMAICA wall-clock, because that is what the guest is
+    // typing. The field's value is stored verbatim and checked by
+    // isPickupBookable, which reads it as Jamaica local. Formatting the cutoff
+    // with getHours() put it in the BROWSER's zone instead, so the same
+    // booking behaved differently depending on where the guest sat: from
+    // London the picker blocked pickups the server would have accepted, and
+    // from Los Angeles it offered pickups the server then rejected with a 400
+    // at the end of checkout. Jamaica is UTC-5 all year, no DST.
     const cutoff = leadTimeCutoff(new Date())
-    const pad = (n: number) => String(n).padStart(2, '0')
-    setMinDateTime(
-      `${cutoff.getFullYear()}-${pad(cutoff.getMonth() + 1)}-${pad(cutoff.getDate())}T${pad(cutoff.getHours())}:${pad(cutoff.getMinutes())}`,
-    )
+    setMinDateTime(new Date(cutoff.getTime() - 5 * 3_600_000).toISOString().slice(0, 16))
   }, [])
 
   const validate = (): boolean => {

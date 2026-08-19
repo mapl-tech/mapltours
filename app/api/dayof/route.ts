@@ -51,11 +51,43 @@ export async function GET(request: NextRequest) {
   const from = nowMs - 24 * 3_600_000
   const to = nowMs + HORIZON_DAYS * 24 * 3_600_000
 
+  // Push the window into the query instead of only applying it in the loop.
+  //
+  // This used to pull `.limit(500)` paid transfers with no filter and no
+  // ORDER BY, then discard the ones outside the window in JavaScript. With
+  // fewer than 500 paid transfers on the books that is merely wasteful; past
+  // 500 it silently stops being correct, because Postgres is free to return
+  // any 500 rows and a guest travelling tomorrow can simply not be among
+  // them. Nothing would report an error: the run would look healthy and the
+  // driver details would never arrive.
+  //
+  // Leg times are Jamaica wall-clock carrying a Z, so the stored text is the
+  // real instant minus five hours. The window is shifted by the same amount
+  // to compare like with like. `isDue` still makes the real decision.
+  const wall = (ms: number) => new Date(ms - 5 * 3_600_000).toISOString()
+  const legIds = new Set<string>()
+  for (const col of ['arrival_at', 'departure_at'] as const) {
+    const { data: legs } = await svc
+      .from('booking_items')
+      .select('booking_id')
+      .eq('item_type', 'transfer')
+      .gte(col, wall(from))
+      .lte(col, wall(to))
+      .limit(2000)
+    for (const l of legs ?? []) if (l.booking_id) legIds.add(l.booking_id as string)
+  }
+
+  if (legIds.size === 0) {
+    return NextResponse.json({ ok: true, considered: [], sent: 0, failed: 0, results: [] })
+  }
+
   const { data: rows, error } = await svc
     .from('bookings')
     .select('id, email, first_name, status, dispatch, driver_name, driver_phone, driver_vehicle, driver_plate, booking_items(*)')
     .eq('status', 'paid')
     .eq('booking_type', 'transfer')
+    .in('id', Array.from(legIds))
+    .order('created_at', { ascending: false })
     .limit(500)
 
   if (error) {

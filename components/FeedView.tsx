@@ -925,7 +925,7 @@ export default function FeedView() {
             fontFamily: 'var(--font-dm-sans)', fontSize: 13, fontWeight: 500,
             color: '#fff', marginTop: 16, textShadow: '0 1px 6px rgba(0,0,0,0.5)',
           }}>
-            From $19 · Flexible cancellation within 48 hours of booking
+            From $22 · Flexible cancellation within 48 hours of booking
           </p>
         </div>
       </section>

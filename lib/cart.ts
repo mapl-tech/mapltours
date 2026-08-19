@@ -197,8 +197,34 @@ export const useCartStore = create<CartStore>()(
         // double-books attractions (every package bundles activities also
         // sold singly) and makes the day impossible to sequence. Adding
         // either kind therefore clears the other kind.
-        const kept = items.filter((i) => i.kind === exp.kind)
-        const line = { ...exp, travelers: 1, date: defaultDate() }
+        //
+        // Two PACKAGES can also collide with each other, which the kind test
+        // alone never caught: five pairs in the current catalogue bundle the
+        // same activity (Zipline + ATV and Triple Pack share both the zipline
+        // and the ATV). Holding both charged the guest twice for one ride and
+        // sent the operator a day with the same attraction on it twice, so an
+        // incoming item also evicts anything it overlaps with.
+        const incoming = new Set<number>([exp.id, ...(exp.includes ?? [])])
+        const kept = items.filter(
+          (i) =>
+            i.kind === exp.kind &&
+            ![i.id, ...(i.includes ?? [])].some((id) => incoming.has(id)),
+        )
+        // Join the day that already exists rather than resetting it.
+        //
+        // A checkout is ONE day with ONE party size, and the review step
+        // enforces that by collapsing every line onto items[0]. Seeding a new
+        // line from constants therefore did not just give that line the
+        // defaults, it imposed them on the whole cart: bestInsertIndex often
+        // places the new tour first, so a guest who set four travelers on
+        // 1 October and then added a second tour had their cart silently
+        // rewritten to one traveler on the default date, and was quoted and
+        // dispatched for one person.
+        const line = {
+          ...exp,
+          travelers: kept[0]?.travelers ?? 1,
+          date: kept[0]?.date || defaultDate(),
+        }
         // A day's tours have to be drivable between — see MAX_TOUR_GAP_MIN.
         // Every surface that offers a tour asks fitTourToDay() first and says
         // so on the button, and this is the floor under that.
@@ -212,8 +238,21 @@ export const useCartStore = create<CartStore>()(
         set({ items: next, droppedStops: [] })
       },
 
-      /** Cart items this experience would replace if added now. */
-      conflictsInCart: (exp: Experience) => get().items.filter((i) => i.kind !== exp.kind),
+      /**
+       * Cart items this experience would replace if added now.
+       *
+       * Must agree with addItem's own filter, or the confirmation dialog
+       * promises to keep a package that addItem is about to drop.
+       */
+      conflictsInCart: (exp: Experience) => {
+        const incoming = new Set<number>([exp.id, ...(exp.includes ?? [])])
+        return get().items.filter(
+          (i) =>
+            i.id !== exp.id &&
+            (i.kind !== exp.kind ||
+              [i.id, ...(i.includes ?? [])].some((id) => incoming.has(id))),
+        )
+      },
 
       removeItem: (id: number) => {
         const state = get()

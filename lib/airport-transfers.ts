@@ -383,13 +383,25 @@ export function getZoneForDestination(id: string): ZoneInfo | undefined {
 /** MAPL's margin on top of the driver's cost. */
 export const TRANSFER_MARGIN = 0.10
 /**
- * Cover for paying the driver via Remitly from Canada, measured live
- * 2026-08-15: CAD 3.99 flat per send (and a round trip is TWO sends, one per
- * half) plus a ~2.1% FX spread on CAD to JMD. At MAPL's ticket sizes the
- * blended cost runs 3 to 6.7% of the payout; 5% covers every send of $140+
- * and the average across the range. Remeasure if the payout rail changes.
+ * Cost of paying the driver via Remitly from Canada, charged the way it is
+ * actually incurred rather than as a flat percentage.
+ *
+ * Measured live 2026-08-15: CAD 3.99 FLAT per send plus a ~2.05% FX spread on
+ * CAD to JMD. The flat half is the part a percentage cannot model. A single
+ * 5% cover works out at $7 on a $140 payout, which is generous, and at $0.75
+ * on a $15 payout, which does not even reach the CAD 3.99. MAPL pays each
+ * round trip in two halves, so the flat fee lands twice on the trips least
+ * able to absorb it, and seven of the cheapest price points were selling
+ * below fully loaded cost: a Deja Resort round trip took $34 and cost $34.53
+ * once the payout and the card fee were paid.
+ *
+ * Splitting it into a flat component and a rate component moves most prices
+ * by a dollar, makes sixteen of them a dollar CHEAPER, and lifts the short
+ * Montego Bay hops by $3 to $5, which is the difference between a small
+ * margin and a loss. Remeasure both numbers if the payout rail changes.
  */
-export const REMITLY_COVER = 0.05
+export const REMITLY_FLAT = 2.91
+export const REMITLY_FX = 0.0205
 /**
  * Card processing, built INTO the displayed price so the customer sees a
  * single all-in number and the margin survives intact. Stripe on this account:
@@ -424,9 +436,13 @@ export function driverCost(
 }
 
 /**
- * The all-in price the customer pays: driver cost plus MAPL's margin, grossed
- * up so card processing does not eat that margin. Rounded UP to the dollar so
- * a booking can never come in under cost.
+ * The all-in price the customer pays: driver cost, plus MAPL's margin, plus
+ * the real payout cost, all grossed up so card processing does not eat the
+ * margin. Rounded UP to the dollar so a booking can never come in under cost.
+ *
+ * `sends` is why this is not a single percentage: a round trip is paid to the
+ * driver in two halves, so the flat Remitly fee is incurred twice regardless
+ * of how small the fare is.
  */
 export function getTransferPrice(
   destinationId: string,
@@ -434,7 +450,9 @@ export function getTransferPrice(
 ): number | null {
   const cost = driverCost(destinationId, tripType)
   if (cost === null) return null
-  return Math.ceil((cost * (1 + TRANSFER_MARGIN + REMITLY_COVER) + CARD_FIXED) / (1 - CARD_RATE))
+  const sends = tripType === 'round_trip' ? 2 : 1
+  const payout = cost * (1 + TRANSFER_MARGIN + REMITLY_FX) + sends * REMITLY_FLAT
+  return Math.ceil((payout + CARD_FIXED) / (1 - CARD_RATE))
 }
 
 /** Cheapest and dearest all-in price in a zone. Prices are set per resort, so

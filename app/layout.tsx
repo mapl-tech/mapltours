@@ -152,7 +152,7 @@ function JsonLd() {
       { '@type': 'City', name: 'Negril' },
       { '@type': 'City', name: 'Nine Mile' },
     ],
-    priceRange: '$19 - $459',
+    priceRange: '$22 - $459',
     // Note: aggregateRating intentionally omitted from the site-wide entity.
     // Google rejects "self-serving" reviews, ratings/reviews belong on the
     // specific thing reviewed (Product / Service / TouristTrip), not on the

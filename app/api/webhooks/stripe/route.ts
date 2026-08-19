@@ -73,6 +73,8 @@ interface BookingRow {
   country: string | null
   pickup: string | null
   dropoff: string | null
+  /** 'HH:MM' Jamaica local, dispatch information only. */
+  pickup_time: string | null
   special_requests: string | null
   total_paid: number
   subtotal: number | null
@@ -518,7 +520,12 @@ async function maybeSendTravelerConfirmation(
             date: i.date,
             travelers: i.travelers,
             pricePerPerson: Number(i.price_per_person),
-            linePrice: Number(i.price_per_person) * i.travelers,
+            // Stored total when we have it, the old product for rows written
+            // before line_total existed. Multiplying a rounded per-head price
+            // back up is what put "$102.99" on a line beside a "$103.00"
+            // total; lib/email/booking.ts has read it this way since the
+            // column landed, and this duplicate had not caught up.
+            linePrice: i.line_total != null ? Number(i.line_total) : Number(i.price_per_person) * i.travelers,
           })),
         }),
         tags: [
@@ -618,6 +625,12 @@ async function maybeSendOperatorAlert(
           customerCountry: booking.country,
           pickup: booking.pickup,
           dropoff: booking.dropoff,
+          // The time the guest asked to be collected. It reached the operator
+          // only on the gift-covered path, which calls lib/email/booking.ts;
+          // every card booking, meaning almost all of them, came through this
+          // duplicate and dropped it, so the driver never saw a time the guest
+          // had explicitly chosen at checkout.
+          pickupTime: booking.pickup_time,
           specialRequests: booking.special_requests,
           totalPaid: Number(booking.total_paid),
           currency: booking.currency.toUpperCase(),
@@ -626,7 +639,12 @@ async function maybeSendOperatorAlert(
             destination: i.destination,
             date: i.date,
             travelers: i.travelers,
-            linePrice: Number(i.price_per_person) * i.travelers,
+            // Stored total when we have it, the old product for rows written
+            // before line_total existed. Multiplying a rounded per-head price
+            // back up is what put "$102.99" on a line beside a "$103.00"
+            // total; lib/email/booking.ts has read it this way since the
+            // column landed, and this duplicate had not caught up.
+            linePrice: i.line_total != null ? Number(i.line_total) : Number(i.price_per_person) * i.travelers,
           })),
         }),
         tags: [
@@ -690,6 +708,44 @@ async function handleChargeRefunded(charge: Stripe.Charge) {
   const metaBookingId = typeof charge.metadata?.booking_id === 'string' ? charge.metadata.booking_id : null
   if (!piId && !metaBookingId) return
   const supabase = createServiceClient()
+
+  // A refunded gift-card PURCHASE, which is not a booking and would otherwise
+  // fall straight through: the update below matches on bookings, finds
+  // nothing, and the card is left active with its full balance. The buyer
+  // gets their money back and the recipient can still spend the card, so the
+  // same value leaves twice. handlePaymentSucceeded branches on this metadata
+  // for exactly the same reason; this is the other half of that pair.
+  if (piId) {
+    const { data: card } = await supabase
+      .from('gift_cards')
+      .select('id, code, status, initial_amount, balance')
+      .eq('stripe_payment_id', piId)
+      .maybeSingle()
+    if (card) {
+      const spent = Number(card.initial_amount) - Number(card.balance)
+      const { data: voided } = await supabase
+        .from('gift_cards')
+        .update({ status: 'void', balance: 0 })
+        .eq('id', card.id)
+        .neq('status', 'void')
+        .select('id')
+        .maybeSingle()
+      if (voided) {
+        console.warn('[stripe-webhook] gift card voided after its purchase was refunded', {
+          giftCardId: card.id, code: card.code, pi: piId,
+        })
+      }
+      // Value already redeemed cannot be clawed back from the bookings it
+      // discounted, so say so loudly rather than quietly zeroing it.
+      if (spent > 0) {
+        console.error(
+          '[stripe-webhook] CRITICAL: refunded gift card had already been spent, manual reconciliation required',
+          { giftCardId: card.id, code: card.code, spent, refunded: (charge.amount_refunded ?? 0) / 100 },
+        )
+      }
+      return
+    }
+  }
 
   // Matches EVERY status except 'refunded' itself. Stripe guarantees neither
   // event order nor single delivery, and a refund consumed as a 200 no-op is

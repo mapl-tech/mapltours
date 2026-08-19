@@ -933,12 +933,20 @@ export default function CheckoutView() {
   const giftPreview = serverGift ?? giftPreviewLocal
   const finalTotal = serverDue ?? Math.max(0, afterReward - giftPreview)
 
-  // Any change to what is being bought invalidates the server's last answer.
-  // Without this, editing the cart after a gift was applied left the old
-  // server figures on screen while a fresh PaymentIntent was created.
+  // Any change to what is being bought invalidates the server's last answer,
+  // AND the PaymentIntent that was sized against it.
+  //
+  // Dropping only the server figures left the intent behind: the effect below
+  // re-creates one only when clientSecret is null, so a guest who reached the
+  // payment step and then unticked the video reward saw the total go up on
+  // screen while Stripe still held the discounted intent, and paid the amount
+  // that was no longer displayed. Clearing the secret sends the cart back for
+  // re-pricing, and the server resizes the same intent in place rather than
+  // minting a second one.
   useEffect(() => {
     setServerGift(null)
     setServerDue(null)
+    setClientSecret(null)
   }, [items, rewardApplied, giftCard])
 
   // Create PaymentIntent when moving to step 3. The server inserts a pending
