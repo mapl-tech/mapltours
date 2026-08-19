@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useMemo, useEffect, useRef, useId } from 'react'
-import { useSearchParams } from 'next/navigation'
 import { Search } from 'lucide-react'
 import { singleExperiences } from '@/lib/experiences'
 import { useI18n } from '@/lib/i18n'
@@ -34,9 +33,10 @@ const parishes = [
   ...Array.from(new Set(singleExperiences.map((e) => e.parish))).sort(),
 ]
 
-export default function ExploreView() {
-  const searchParams = useSearchParams()
-  const [search, setSearch] = useState(searchParams.get('q') || '')
+export default function ExploreView({ initialQuery = '' }: { initialQuery?: string }) {
+  // Handed down by the server route rather than read with useSearchParams,
+  // which bailed this whole page out of prerendering. See app/explore/page.tsx.
+  const [search, setSearch] = useState(initialQuery)
   const [activeCat, setActiveCat] = useState<string>('All')
   const [activeParish, setActiveParish] = useState('All Parishes')
   const [filterHidden, setFilterHidden] = useState(false)
@@ -54,10 +54,11 @@ export default function ExploreView() {
     return () => mql.removeEventListener('change', update)
   }, [])
 
+  // Follow the server's query when it changes, e.g. a nav search that pushes
+  // /explore?q=negril while this component is already mounted.
   useEffect(() => {
-    const q = searchParams.get('q')
-    if (q) setSearch(q)
-  }, [searchParams])
+    if (initialQuery) setSearch(initialQuery)
+  }, [initialQuery])
 
   useEffect(() => {
     const onScroll = () => {
@@ -121,8 +122,17 @@ export default function ExploreView() {
           fontSize: 'var(--fs-h1)', letterSpacing: '-0.025em', lineHeight: 1.04,
           textWrap: 'balance',
         }}>
-          {t('Explore')}
+          {t('Jamaica tours and day trips')}
         </h1>
+        {/* One line of indexable text saying what the catalogue IS. The page
+            carried a single word, "Explore", as its only heading, which tells
+            a reader arriving from a search nothing and tells a crawler less. */}
+        <p style={{
+          fontFamily: 'var(--font-dm-sans)', fontSize: 15, lineHeight: 1.6,
+          color: 'var(--text-secondary)', marginTop: 10, maxWidth: '52ch',
+        }}>
+          {t('Every tour we run, with private door-to-door transport from your hotel included in the price. Filter by what you feel like doing or by where you are staying.')}
+        </p>
       </div>
 
       {/* Sticky controls */}

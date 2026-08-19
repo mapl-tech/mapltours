@@ -1,4 +1,5 @@
 import { experiences, slugify, priceUnitLabel } from '@/lib/experiences'
+import { DESTINATIONS } from '@/lib/airport-transfers'
 import { BLOG_POSTS } from '@/lib/blog'
 
 const baseUrl = 'https://mapltours.com'
@@ -6,6 +7,22 @@ const baseUrl = 'https://mapltours.com'
 export const dynamic = 'force-static'
 
 export function GET() {
+  // Everything factual below is DERIVED, never typed in. The prose used to
+  // name cliff diving in Negril, Blue Mountain coffee treks and reggae studio
+  // sessions, and to list Kingston, St. Andrew, Portland and St. Elizabeth as
+  // parishes covered. None of those are sold any more. This file exists to be
+  // read verbatim by answer engines, so a stale sentence here is not a stale
+  // sentence, it is a model confidently offering a traveller a tour that does
+  // not exist and a parish nobody will drive them to.
+  const parishes = Array.from(new Set(experiences.map((e) => e.parish))).sort()
+  const categories = Array.from(new Set(experiences.map((e) => e.category))).sort()
+  const destinations = Array.from(new Set(experiences.map((e) => e.destination))).sort()
+  const list = (xs: string[]) =>
+    xs.length > 1 ? `${xs.slice(0, -1).join(', ')} and ${xs[xs.length - 1]}` : xs[0] ?? ''
+  const singleCount = experiences.filter((e) => e.kind !== 'package').length
+  const packageCount = experiences.length - singleCount
+  const transferCount = DESTINATIONS.length
+
   const experienceLines = experiences
     .map((exp) => {
       const url = `${baseUrl}/experience/${slugify(exp.title)}`
@@ -24,17 +41,17 @@ export function GET() {
 
   const body = `# MAPL Tours Jamaica
 
-> Experiential travel platform for Jamaica. Discover authentic, locally-led tours and cultural experiences, cliff diving in Negril, Blue Mountain coffee treks, reggae studio sessions, jerk cooking classes, and more. Curated and operated by Jamaican creators, not resort concierges.
+> Jamaica tour operator and private airport transfer service on the north coast. ${singleCount} guided tours and ${packageCount} multi-stop day packages around ${list(destinations)}, all run with private door-to-door transport from your hotel. Locally owned and locally driven, not a resort concierge desk and not a reseller.
 
-MAPL Tours runs flat-rate private airport transfers from Sangster International (MBJ) to 50+ resorts across Jamaica's north coast, and connects travelers with locally-led tours and cultural experiences. Everything is bookable online in USD.
+MAPL Tours runs flat-rate private airport transfers from Sangster International Airport (MBJ) to ${transferCount} hotels, resorts and villas, and sells its own guided tours across ${parishes.length} parishes: ${list(parishes)}. Every price is per vehicle or per party as stated, in USD, bookable online without an account.
 
 Tagline: "Discover Jamaica Beyond the Resort."
 
 ## Core pages
 
 - [Home](${baseUrl}/): Video-reel discovery feed of Jamaica experiences.
-- [Explore](${baseUrl}/explore): Filterable catalog by category (Adventure, Nature, Music, Food, Culture, Water) and parish (Kingston, St. Andrew, St. Ann, Westmoreland, Portland, St. Elizabeth).
-- [Airport transfers](${baseUrl}/transfers): Flat-rate private transfers from Sangster International Airport (MBJ) to 50+ resorts: Montego Bay, Rose Hall, Falmouth, Runaway Bay, Ocho Rios, and Negril. One all-in price per vehicle (1-4 passengers), from $22 one-way; round trips are 10% cheaper than two one-ways. Includes meet and greet with a name sign just outside arrivals, live flight tracking, and a day-of email with the driver's name, vehicle, plate, and WhatsApp. Book online with card or Apple Pay, no account needed.
+- [Explore](${baseUrl}/explore): The full catalogue of ${experiences.length} tours and packages, filterable by category (${list(categories)}) and parish (${list(parishes)}).
+- [Airport transfers](${baseUrl}/transfers): Flat-rate private transfers from Sangster International Airport (MBJ) to ${transferCount} properties across Montego Bay, Rose Hall, Falmouth, Runaway Bay, Ocho Rios, and Negril. One all-in price per vehicle (1-4 passengers), from $22 one-way; round trips are 10% cheaper than two one-ways. Includes meet and greet with a name sign just outside arrivals, live flight tracking, and a day-of email with the driver's name, vehicle, plate, and WhatsApp. Book online with card or Apple Pay, no account needed.
 - [The MAPL Journal](${baseUrl}/blog): Essays and guides from local writers.
 - [About](${baseUrl}/about): Company background.
 - [Contact](${baseUrl}/contact): Customer support.

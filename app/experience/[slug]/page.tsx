@@ -63,9 +63,44 @@ export default function ExperienceRoute({ params }: { params: { slug: string } }
     image: exp.image?.startsWith('http') ? exp.image : `${SITE_URL}${exp.image}`,
     offers: {
       '@type': 'Offer',
+      url: `${SITE_URL}/experience/${params.slug}`,
       price: exp.price,
       priceCurrency: 'USD',
       availability: 'https://schema.org/InStock',
+      // The UNIT, which a bare `price` cannot carry.
+      //
+      // Two thirds of the catalogue is priced for a party, not a head: Dunn's
+      // River is $351 for up to three people. Published as a bare number, every
+      // shopping surface and every answer engine reads that as $351 per person
+      // and quotes a family of three $1,053 for a tour that costs $351. The
+      // error runs against us, so it is a booking lost to markup rather than to
+      // price. referenceQuantity says what the figure buys; eligibleQuantity
+      // says how many that covers.
+      priceSpecification: {
+        '@type': 'UnitPriceSpecification',
+        price: exp.price,
+        priceCurrency: 'USD',
+        referenceQuantity: {
+          '@type': 'QuantitativeValue',
+          value: exp.pricing.mode === 'group' ? exp.pricing.tierMax : 1,
+          unitCode: 'IE', // UN/CEFACT: "person"
+          unitText: 'person',
+        },
+        ...(exp.pricing.mode === 'group'
+          ? { description: `Private tour, flat price for up to ${exp.pricing.tierMax} people` }
+          : { description: 'Price per person' }),
+      },
+      ...(exp.pricing.mode === 'group'
+        ? {
+            eligibleQuantity: {
+              '@type': 'QuantitativeValue',
+              minValue: 1,
+              maxValue: exp.pricing.tierMax,
+              unitCode: 'IE',
+              unitText: 'person',
+            },
+          }
+        : {}),
     },
     // aggregateRating is deliberately NOT emitted. Google requires review
     // snippets to reflect genuine reviews that are visible on the page, and
