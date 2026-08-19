@@ -150,7 +150,12 @@ export default function TransferConfirmed(props: TransferConfirmedProps) {
               </Section>
             )}
 
-            {t.tripType === 'round_trip' && t.departureAt && (
+            {/* Gated on the timestamp alone, exactly like the arrival block above.
+                Requiring round_trip meant a ONE-WAY hotel-to-airport transfer
+                rendered neither leg: the guest was told what they had paid and
+                where they were going, with no date, no time and no flight
+                anywhere in the email, and the operator alert dropped it too. */}
+            {t.departureAt && (
               <Section style={{ marginTop: 8, paddingLeft: 12, borderLeft: '2px solid #e7e7e7' }}>
                 <Text style={s.sectionLabel}>Departure · hotel → MBJ</Text>
                 <Text style={{ ...s.body, marginTop: 2 }}>

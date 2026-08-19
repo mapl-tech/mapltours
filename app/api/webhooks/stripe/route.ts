@@ -699,7 +699,16 @@ async function handleGiftPaid(pi: Stripe.PaymentIntent) {
   }
   // Shared with the buyer's own return-from-payment path, so a slow or
   // missing webhook cannot leave a paid card undelivered. Idempotent.
-  await activateGiftCard(giftId, pi.id)
+  const { delivered } = await activateGiftCard(giftId, pi.id)
+
+  // Fail the event when the code did not reach the recipient. The card is
+  // already active and the flip is conditional, so Stripe's retry re-runs a
+  // no-op activation and one more delivery attempt. Answering 200 here meant a
+  // transient mail failure was final: money taken, card live, and nobody ever
+  // told the recipient what their code was.
+  if (!delivered) {
+    throw new Error(`gift card ${giftId} activated but delivery email failed`)
+  }
 }
 
 async function handleChargeRefunded(charge: Stripe.Charge) {

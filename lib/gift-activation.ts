@@ -18,7 +18,7 @@ import { sendGiftCardEmails } from '@/lib/email/gift-card'
 export async function activateGiftCard(
   giftCardId: string,
   paymentIntentId: string,
-): Promise<{ activated: boolean; alreadyActive: boolean }> {
+): Promise<{ activated: boolean; alreadyActive: boolean; delivered: boolean }> {
   const supabase = createServiceClient()
 
   const { data, error } = await supabase
@@ -34,7 +34,20 @@ export async function activateGiftCard(
 
   // Attempt delivery either way: if a previous run activated the card but the
   // email failed, the claim column is still NULL and this retry sends it.
-  await sendGiftCardEmails(giftCardId)
+  //
+  // The RESULT is now returned rather than dropped. "This retry sends it" was
+  // only true if something called this function again, and nothing did: the
+  // webhook calls it once and answers Stripe 200, which means the event is
+  // never redelivered. A single transient Resend failure therefore lost the
+  // delivery permanently, and the recipient of a paid gift card simply never
+  // received their code. The caller decides what to do about it; the webhook
+  // now fails the event so Stripe retries, exactly as the booking
+  // confirmation path already does.
+  const email = await sendGiftCardEmails(giftCardId)
 
-  return { activated: !alreadyActive, alreadyActive }
+  return {
+    activated: !alreadyActive,
+    alreadyActive,
+    delivered: email.recipient !== 'failed',
+  }
 }
