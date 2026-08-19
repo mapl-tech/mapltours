@@ -18,11 +18,20 @@ const categories: ('All' | ExperienceCategory)[] = [
   'All',
   ...(Array.from(new Set(singleExperiences.map((e) => e.category))).sort() as ExperienceCategory[]),
 ]
+// Parishes ONLY, and only ones something is actually tagged with.
+//
+// This list used to be `[...destinations, ...parishes]` flattened together, so
+// a control labelled "Parish" offered Falmouth, Montego Bay, Negril, Nine Mile
+// and Ocho Rios (towns) alongside St. Ann, St. James, Trelawny and Westmoreland
+// (parishes). Nine options, four of which were the same places counted twice:
+// picking "Ocho Rios" and picking "St. Ann" filtered to overlapping sets, and
+// the label was wrong for five of the nine.
+//
+// Towns are not lost from discovery: the search box already matches
+// destination, so typing "Ocho Rios" still finds everything there.
 const parishes = [
   'All Parishes',
-  ...Array.from(
-    new Set(singleExperiences.flatMap((e) => [e.destination, e.parish])),
-  ).sort(),
+  ...Array.from(new Set(singleExperiences.map((e) => e.parish))).sort(),
 ]
 
 export default function ExploreView() {
@@ -67,7 +76,11 @@ export default function ExploreView() {
   const filtered = useMemo(() => {
     return singleExperiences.filter((exp) => {
       if (activeCat !== 'All' && exp.category !== activeCat) return false
-      if (activeParish !== 'All Parishes' && exp.parish !== activeParish && exp.destination !== activeParish) return false
+      // Parish only. The old clause also matched `destination`, which was
+      // needed while towns were mixed into this control; now that it offers
+      // parishes exclusively, matching destination too would let a town name
+      // that happens to equal a parish name pull in the wrong rows.
+      if (activeParish !== 'All Parishes' && exp.parish !== activeParish) return false
       if (search) {
         const q = search.toLowerCase()
         if (

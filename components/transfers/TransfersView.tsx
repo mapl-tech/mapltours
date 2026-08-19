@@ -281,7 +281,7 @@ export default function TransfersView() {
                   ))}
                 </div>
                 <span className="xfer-hero-rating-text">
-                  4.9 · 340+ transfers booked
+                  Flat rate per vehicle, up to 4 passengers
                 </span>
               </div>
             </div>
@@ -755,9 +755,15 @@ export default function TransfersView() {
         </div>
       </section>
 
-      {/* ───────────── TESTIMONIALS ───────────── */}
+      {/* ───────────── TESTIMONIALS ─────────────
+          The heading is inside the guard on purpose. "What travelers say"
+          sitting above an empty grid advertises reviews that do not exist,
+          which is the same claim the invented quotes were making, just with
+          nothing underneath it. The operating-promise stats below stand on
+          their own until real reviews arrive. */}
       <section className="xfer-reviews-section">
         <div className="container" style={{ maxWidth: 1100 }}>
+          {REVIEWS.length > 0 && (
           <div className="xfer-center-head">
             <Kicker centered>What travelers say</Kicker>
             <h2 className="xfer-section-h2">
@@ -765,7 +771,10 @@ export default function TransfersView() {
               <span style={{ fontStyle: 'italic', fontWeight: 500 }}>land.</span>
             </h2>
           </div>
+          )}
 
+          {/* Renders nothing while REVIEWS is empty, which it is until real
+              guests have written some. */}
           <div className="xfer-reviews-grid">
             {REVIEWS.map((r, i) => (
               <blockquote key={i} className="xfer-review">
@@ -788,21 +797,25 @@ export default function TransfersView() {
             ))}
           </div>
 
+          {/* The three statistics that stood here (342 transfers in 30 days,
+              4.9/5 average rating, 98.6% on-time) were invented. What replaces
+              them is the operating promise, which is verifiable from the
+              product itself rather than from numbers nobody measured. */}
           <div className="xfer-review-stats">
             <StatBlock
               icon={<TrendingUp size={16} />}
-              label="Transfers booked in the last 30 days"
-              value="342"
-            />
-            <StatBlock
-              icon={<Star size={16} fill="var(--gold)" stroke="var(--gold)" />}
-              label="Average rating from verified trips"
-              value="4.9 / 5"
+              label="One price per vehicle"
+              value="1 to 4 passengers"
             />
             <StatBlock
               icon={<Check size={16} />}
-              label="On-time arrival rate"
-              value="98.6%"
+              label="Met at arrivals with a name sign"
+              value="Every transfer"
+            />
+            <StatBlock
+              icon={<Check size={16} />}
+              label="Driver name, plate and WhatsApp"
+              value="Day before travel"
             />
           </div>
         </div>

@@ -331,7 +331,14 @@ export default function ReelCard({
             color: 'rgba(255,255,255,0.7)',
           }}
         >
-          <span>⭐ {exp.rating} ({exp.reviews.toLocaleString()})</span>
+          {/* Only shown once real reviews exist. Ratings used to be hardcoded
+              in the catalog and displayed here regardless, which invented a
+              rating for a tour nobody had reviewed. */}
+          {exp.reviews > 0 ? (
+            <span>⭐ {exp.rating} ({exp.reviews.toLocaleString()})</span>
+          ) : (
+            <span>{t('New')}</span>
+          )}
           <span>🕐 {t(exp.duration)}</span>
         </div>
 

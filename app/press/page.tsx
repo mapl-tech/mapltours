@@ -1,5 +1,7 @@
 import type { Metadata } from 'next'
-import EditorialPage, { Section, ValueCard } from '@/components/EditorialPage'
+import EditorialPage, { Section } from '@/components/EditorialPage'
+import { experiences, singleExperiences } from '@/lib/experiences'
+import { PLACES } from '@/lib/places'
 
 export const metadata: Metadata = {
   title: 'Press',
@@ -13,23 +15,37 @@ export default function PressPage() {
   return (
     <EditorialPage slug="press" label="Media" title="Press & Media">
       <Section title="About MAPL Tours Jamaica">
-        <p>MAPL Tours Jamaica is a cultural travel platform connecting travelers with authentic Jamaican experiences. We curate experiences created and led by local Jamaicans - from cliff diving in Negril to reggae studio sessions in Kingston - and get travelers to them by private transport.</p>
-        <p style={{ marginTop: 16 }}>The platform covers 19 guided experiences and 44 restaurants and heritage sites across 10 parishes, alongside flat-rate airport transfers from Sangster International.</p>
+        {/* "Reggae studio sessions in Kingston" described the old catalogue.
+            Kingston, the Blue Mountains and Port Royal are no longer sold, so
+            the examples now name tours that actually exist. */}
+        <p>MAPL Tours Jamaica is a cultural travel platform connecting travelers with authentic Jamaican experiences. We curate experiences created and led by local Jamaicans, from climbing Dunn&rsquo;s River Falls in Ocho Rios to sunset at Rick&rsquo;s Cafe in Negril and the pilgrimage to Bob Marley&rsquo;s birthplace at Nine Mile, and get travelers to them by private transport.</p>
+        <p style={{ marginTop: 16 }}>The platform covers {singleExperiences.length} guided experiences and {PLACES.length} restaurants and heritage sites across {new Set(experiences.map((e) => e.parish)).size} parishes, alongside flat-rate airport transfers from Sangster International to more than 50 north-coast resorts.</p>
       </Section>
 
-      <Section title="In the News">
-        <ValueCard title="Featured on TripAdvisor" desc="Rated 4.9 Excellent with consistent praise for authenticity and local connection. Recommended as a top cultural experience platform for Jamaica." />
-        <ValueCard title="Travel Industry Recognition" desc="Recognized for our commitment to supporting local economies through tourism, with 100% of experience revenue going directly to Jamaican creators." />
-      </Section>
+      {/* "In the News" is deliberately absent.
+          It carried two claims that were not true: a 4.9 Excellent Tripadvisor
+          rating with "consistent praise" (the listing has no reviews and no
+          rating), and unattributed "Travel Industry Recognition" from nobody
+          in particular. A press page inventing its own press is the single
+          least defensible thing on a site, and journalists check. Restore this
+          section when there is real coverage, and name the publication and the
+          date so it can be verified. */}
 
       <Section title="Key Facts">
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginTop: 8 }}>
           {[
+            // Counted from the live catalog, not typed in. Every hardcoded
+            // figure here had drifted from reality: 19 guided experiences
+            // against an actual 16, and 10 parishes covered against an actual
+            // 4. A press page is the one page a journalist will check.
             { label: 'Founded', value: '2024' },
-            { label: 'Guided experiences', value: '19' },
-            { label: 'Restaurants & sites', value: '44' },
-            { label: 'Parishes covered', value: '10' },
-            { label: 'Average Rating', value: '4.9/5.0' },
+            { label: 'Guided experiences', value: String(singleExperiences.length) },
+            { label: 'Multi-stop packages', value: String(experiences.length - singleExperiences.length) },
+            { label: 'Restaurants & sites', value: String(PLACES.length) },
+            { label: 'Parishes covered', value: String(new Set(experiences.map((e) => e.parish)).size) },
+            // "Average Rating 4.9/5.0" removed. MAPL has no reviews yet, so
+            // there is no average to quote. Add it back only from a real
+            // aggregate, and say what it is an average of.
           ].map((item) => (
             <div key={item.label} style={{
               padding: '18px 20px', borderRadius: 'var(--r-lg)',

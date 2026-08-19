@@ -11,30 +11,20 @@ export interface TransferReview {
   rating: 5
 }
 
-export const TRANSFER_REVIEWS: TransferReview[] = [
-  {
-    quote:
-      'Driver texted me the moment my flight cleared customs and had my luggage on the trolley before I could find the exit. Exactly what you want after nine hours in the air.',
-    name: 'Meredith R.',
-    route: 'MBJ → Negril · round-trip',
-    rating: 5,
-  },
-  {
-    quote:
-      'I booked the RIU Negril transfer at 2am the night before travel, confirmed by 5am, driver was there with a chilled Ting. No haggling, no mystery fees.',
-    name: 'Daniel K.',
-    route: 'MBJ → Negril · one-way',
-    rating: 5,
-  },
-  {
-    quote:
-      'Price was the same as the resort shuttle but we had the car to ourselves and the driver stopped at Scotchies on the way to Ocho Rios. Little things.',
-    name: 'Priya S.',
-    route: 'MBJ → Ocho Rios · round-trip',
-    rating: 5,
-  },
-]
-
+/**
+ * Guest reviews shown on the transfers page.
+ *
+ * EMPTY, and it must stay empty until these are real. This array previously
+ * held three invented five-star reviews attributed to invented people, which
+ * is unlawful in MAPL's main markets (FTC Act s5, Canada's Competition Act,
+ * the UK DMCC Act 2024) quite apart from being untrue. The section renders
+ * nothing at all when this is empty, which is the honest state for a business
+ * whose real review count is currently zero.
+ *
+ * Add entries here ONLY by copying what a real guest actually wrote, with
+ * their permission.
+ */
+export const TRANSFER_REVIEWS: TransferReview[] = []
 export interface TransferFaq {
   q: string
   a: string

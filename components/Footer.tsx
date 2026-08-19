@@ -1,7 +1,6 @@
 'use client'
 
 import Link from 'next/link'
-import { Star } from 'lucide-react'
 import LanguageSwitcher from './LanguageSwitcher'
 import { useI18n } from '@/lib/i18n'
 
@@ -41,16 +40,26 @@ export default function Footer() {
           <LanguageSwitcher variant="footer" />
         </div>
 
-        {/* TripAdvisor badge */}
+        {/* Tripadvisor link.
+            This block used to read "Recommended on [Tripadvisor] ★ 4.9
+            Excellent" and pointed at tripadvisor.com generally. MAPL's actual
+            listing has zero reviews and no rating at all, so the badge
+            asserted a rating from a named third party that did not exist,
+            using their trademark to do it. That is unlawful in MAPL's main
+            markets (FTC Act s5, Canada's Competition Act, the UK DMCC Act
+            2024) and is grounds for Tripadvisor to suspend the listing.
+            What remains is a plain link to the real listing, with no rating
+            claimed. Add a rating here only when Tripadvisor shows one, and
+            only the number they actually show. */}
         <div className="footer-trust" style={{
           paddingBottom: 36, marginBottom: 36,
           borderBottom: '1px solid var(--border-on-dark)',
           display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap',
         }}>
           <span style={{ fontSize: 12, color: 'var(--text-on-dark-3)', fontFamily: 'var(--font-dm-sans)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-            {t('Recommended on')}
+            {t('Find us on')}
           </span>
-          <a href="https://www.tripadvisor.com" target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', gap: 8, opacity: 0.8 }}>
+          <a href="https://www.tripadvisor.ca/Attraction_Review-g147311-d34605425-Reviews-MAPL_Tours_Jamaica-Montego_Bay_Saint_James_Parish_Jamaica.html" target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', gap: 8, opacity: 0.8 }}>
             <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
               <circle cx="12" cy="12" r="12" fill="#34E0A1" />
               <circle cx="8.5" cy="13" r="2.5" stroke="white" strokeWidth="1.5" fill="none" />
@@ -61,16 +70,6 @@ export default function Footer() {
             </svg>
             <span style={{ fontFamily: 'var(--font-dm-sans)', fontWeight: 700, fontSize: 15, color: 'white' }}>Tripadvisor</span>
           </a>
-          <span style={{
-            padding: '5px 12px', borderRadius: 9999,
-            background: 'rgba(52,224,161,0.12)',
-            border: '1px solid rgba(52,224,161,0.2)',
-            fontSize: 12, fontWeight: 600, color: '#34E0A1',
-            fontFamily: 'var(--font-dm-sans)',
-            display: 'flex', alignItems: 'center', gap: 4,
-          }}>
-            <Star size={10} fill="#34E0A1" strokeWidth={0} /> 4.9 {t('Excellent')}
-          </span>
         </div>
 
         {/* Link columns */}

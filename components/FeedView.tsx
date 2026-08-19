@@ -1092,7 +1092,7 @@ export default function FeedView() {
                       fontSize: 12, fontWeight: 600, color: 'var(--gold-warm)',
                       fontFamily: 'var(--font-dm-sans)',
                     }}>
-                      <Star size={12} fill="currentColor" strokeWidth={0} /> {viralExperiences[0].rating}
+                      {viralExperiences[0].reviews > 0 ? <><Star size={12} fill="currentColor" strokeWidth={0} /> {viralExperiences[0].rating}</> : 'New'}
                     </span>
                   </div>
                 </div>
@@ -1130,7 +1130,7 @@ export default function FeedView() {
                       fontSize: 12, fontWeight: 600, color: 'var(--gold-warm)',
                       fontFamily: 'var(--font-dm-sans)',
                     }}>
-                      <Star size={10} fill="currentColor" strokeWidth={0} /> {exp.rating}
+                      {exp.reviews > 0 ? <><Star size={10} fill="currentColor" strokeWidth={0} /> {exp.rating}</> : 'New'}
                     </span>
                   </div>
                 </div>
