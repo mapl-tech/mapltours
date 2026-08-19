@@ -1585,3 +1585,32 @@ img[alt="Devon House Patty & Ice Cream Tour"] {
 
 .explore-controls { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 @media (max-width: 767px) { .explore-controls { gap: 8px; } .explore-controls > * { flex: 1 1 100%; } }
+
+/* ── Legal dialog (cancellation policy / activity waiver) ──────────────────
+   Two shapes, one component: a bottom sheet under 640px where the thumb is,
+   and a centred dialog above it. The entrance is deliberately small, 200ms
+   and 12px of travel, because this opens over a payment form and anything
+   showier reads as an interruption rather than an answer. */
+@keyframes legalSheetIn {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes legalDialogIn {
+  from { opacity: 0; transform: translate(-50%, -50%) scale(0.98); }
+  to   { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+}
+.legal-sheet  { animation: legalSheetIn 0.2s cubic-bezier(0.22, 1, 0.36, 1); }
+.legal-dialog { animation: legalDialogIn 0.2s cubic-bezier(0.22, 1, 0.36, 1); }
+
+/* The panel is the only thing on screen that matters while it is open, so a
+   keyboard user must be able to see where they are inside it. */
+.legal-sheet :focus-visible,
+.legal-dialog :focus-visible {
+  outline: 2px solid var(--gold-text);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .legal-sheet, .legal-dialog { animation: none; }
+}

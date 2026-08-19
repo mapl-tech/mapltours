@@ -16,6 +16,8 @@ import { leadTimeCutoff } from '@/lib/booking-window'
 import { useTransfersCart, type TransferCartItem } from '@/lib/transfers-cart'
 import { groupDestinationsByZone } from '@/lib/airport-transfers'
 import { getStoredAttribution } from '@/lib/attribution'
+import { CANCELLATION_SUMMARY } from '@/lib/refund-pricing'
+import LegalModal from '@/components/checkout/LegalModal'
 
 const StripePaymentPanel = dynamic(
   () => import('@/components/checkout/StripePaymentPanel'),
@@ -64,6 +66,8 @@ export default function TransfersCheckoutView() {
   // appears in the same commit as its text is not announced, because there is
   // no mutation for assistive tech to observe (WCAG 2.2 SC 4.1.3).
   const [formAnnouncement, setFormAnnouncement] = useState('')
+  // The cancellation policy, opened from the line under the pay button.
+  const [legalOpen, setLegalOpen] = useState(false)
   const [confirmed] = useState(false)
   const [intentKey, setIntentKey] = useState(0)
   // Earliest bookable pickup as a datetime-local value (YYYY-MM-DDTHH:mm):
@@ -263,6 +267,8 @@ export default function TransfersCheckoutView() {
     >
       {/* Always in the DOM, written to only when a submit fails. */}
       <div role="alert" aria-live="assertive" className="visually-hidden">{formAnnouncement}</div>
+
+      {legalOpen && <LegalModal kind="terms" answer="cancellation" onClose={() => setLegalOpen(false)} />}
 
       {/* ── Top bar (mirrors tours checkout) ── */}
       <div
@@ -466,8 +472,22 @@ export default function TransfersCheckoutView() {
                 <Lock size={12} style={{ display: 'inline', verticalAlign: -2, marginRight: 5 }} />
                 Encrypted end-to-end ·{' '}
                 <ShieldCheck size={12} style={{ display: 'inline', verticalAlign: -2, margin: '0 5px 0 1px' }} />
-                Cancel within 48 hrs of booking, less a 20% admin charge ·{' '}
-                <a href="/terms" target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'underline', color: 'inherit' }}>full policy</a>
+                {CANCELLATION_SUMMARY.short} ·{' '}
+                {/* Opens in place rather than in a new tab. See the same line
+                    on the tour checkout: a guest reading the cancellation terms
+                    is deciding whether to pay, and that is the worst possible
+                    moment to move them off the page. */}
+                <button
+                  type="button"
+                  onClick={() => setLegalOpen(true)}
+                  style={{
+                    background: 'none', border: 'none', padding: 0,
+                    font: 'inherit', color: 'inherit', cursor: 'pointer',
+                    textDecoration: 'underline', textUnderlineOffset: 2,
+                  }}
+                >
+                  full policy
+                </button>
               </p>
             </>
           ) : (

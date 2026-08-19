@@ -26,6 +26,26 @@ export const ADMIN_CHARGE_RATE = 0.20
 /** Hours from booking during which a cancellation is refundable. */
 export const CANCELLATION_WINDOW_HOURS = 48
 
+/**
+ * The cancellation promise, in the guest's words, derived from the numbers
+ * above so the microcopy and the rule can never disagree.
+ *
+ * Four surfaces state this: the line under each of the two pay buttons, the
+ * line under the Stripe panel, and the summary pinned at the top of the policy
+ * dialog those lines open. They were four hand-typed sentences, which is three
+ * chances for one of them to keep saying 48 hours after the rule moves.
+ */
+export const CANCELLATION_SUMMARY = {
+  /** One clause, for a trust line beside other microcopy. */
+  short: `Cancel within ${CANCELLATION_WINDOW_HOURS} hrs of booking, less a ${Math.round(ADMIN_CHARGE_RATE * 100)}% admin charge`,
+  /** The headline answer, for the top of the policy dialog. */
+  lead: `Free to cancel within ${CANCELLATION_WINDOW_HOURS} hours of booking.`,
+  /** What it costs and when it stops, immediately under the headline. */
+  detail:
+    `You get the amount paid back, less a ${Math.round(ADMIN_CHARGE_RATE * 100)}% administration charge plus taxes where they apply. ` +
+    `After that window, and once a tour or pickup has begun, the booking is non-refundable.`,
+} as const
+
 const MS_PER_HOUR = 3_600_000
 
 /** The booking fields the quote depends on. Deliberately minimal. */

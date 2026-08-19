@@ -12,6 +12,8 @@ import { useCartStore, DAILY_HOUR_LIMIT, type CartItem } from '@/lib/cart'
 import { tourPrice, perTravelerPrice, maxGroupSize } from '@/lib/experiences'
 import { getStoredAttribution } from '@/lib/attribution'
 import TripTimeBar from '@/components/TripTimeBar'
+import { CANCELLATION_SUMMARY } from '@/lib/refund-pricing'
+import LegalModal from './LegalModal'
 import DayFlow from '@/components/DayFlow'
 import { planDay } from '@/lib/day-route'
 import { useAvailableReward, consumeReward } from '@/lib/tour-videos'
@@ -662,132 +664,8 @@ function DetailsStep({ waiverAccepted, setWaiverAccepted, waiverError, formData,
         </p>
       )}
 
-      {/* ── Legal Modal ── */}
       {modalContent && (
-        <>
-          <div
-            onClick={() => setModalContent(null)}
-            style={{
-              position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)',
-              zIndex: 1000, animation: 'fadeIn 0.2s ease',
-            }}
-          />
-          <div style={{
-            position: 'fixed', top: '50%', left: '50%',
-            transform: 'translate(-50%, -50%)',
-            width: '90%', maxWidth: 600, maxHeight: '80vh',
-            background: '#fff', borderRadius: 'var(--r-xl)',
-            boxShadow: '0 24px 64px rgba(0,0,0,0.2)',
-            zIndex: 1001, display: 'flex', flexDirection: 'column',
-            overflow: 'hidden',
-          }}>
-            {/* Modal header */}
-            <div style={{
-              padding: '20px 24px', borderBottom: '1px solid var(--border)',
-              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-              flexShrink: 0,
-            }}>
-              <h3 style={{ fontFamily: 'var(--font-dm-sans)', fontWeight: 700, fontSize: 18 }}>
-                {modalContent === 'waiver' ? 'Activity Waiver & Release of Liability' : 'Terms of Service'}
-              </h3>
-              <button
-                onClick={() => setModalContent(null)}
-                style={{
-                  width: 34, height: 34, borderRadius: '50%',
-                  border: '1px solid var(--border)', background: '#fff',
-                  cursor: 'pointer', display: 'flex',
-                  alignItems: 'center', justifyContent: 'center',
-                  color: 'var(--text-secondary)', fontSize: 18,
-                }}
-              >×</button>
-            </div>
-
-            {/* Modal body */}
-            <div className="no-scrollbar" style={{
-              padding: '24px', overflowY: 'auto', flex: 1,
-              fontSize: 13, fontFamily: 'var(--font-dm-sans)',
-              color: 'var(--text-secondary)', lineHeight: 1.7,
-            }}>
-              {modalContent === 'waiver' ? (
-                <>
-                  <p style={{ fontWeight: 600, color: 'var(--text-primary)', marginBottom: 12 }}>MAPL Tours Jamaica - Activity Waiver & Release of Liability</p>
-                  <p style={{ marginBottom: 12 }}>Effective Date: January 1, 2025</p>
-
-                  <p style={{ fontWeight: 600, color: 'var(--text-primary)', marginBottom: 6 }}>1. Acknowledgment of Risk</p>
-                  <p style={{ marginBottom: 16 }}>I understand that the experiences offered through MAPL Tours Jamaica involve physical activities that carry inherent risks, including but not limited to: cliff diving, waterfall climbing, bamboo rafting, snorkeling, hiking through mountainous terrain, swimming in natural bodies of water, and participation in cultural activities. I acknowledge that these activities may result in injury, illness, or in rare cases, death.</p>
-
-                  <p style={{ fontWeight: 600, color: 'var(--text-primary)', marginBottom: 6 }}>2. Assumption of Risk</p>
-                  <p style={{ marginBottom: 16 }}>I voluntarily assume all risks associated with participating in any experience booked through MAPL Tours Jamaica, including risks arising from the negligence of MAPL Tours Jamaica, its partners, guides, affiliates, and local experience creators. I understand that natural environments in Jamaica may present hazards including uneven terrain, strong currents, wildlife, weather changes, and remote locations with limited medical access.</p>
-
-                  <p style={{ fontWeight: 600, color: 'var(--text-primary)', marginBottom: 6 }}>3. Release of Liability</p>
-                  <p style={{ marginBottom: 16 }}>I hereby release, discharge, and hold harmless MAPL Tours Jamaica, MAPL Tech, its officers, employees, agents, partners, and local experience creators from any and all claims, demands, or causes of action arising out of or related to any loss, damage, or injury sustained during or as a result of participation in any booked experience.</p>
-
-                  <p style={{ fontWeight: 600, color: 'var(--text-primary)', marginBottom: 6 }}>4. Medical Fitness</p>
-                  <p style={{ marginBottom: 16 }}>I certify that I am physically fit and have no medical conditions that would prevent my participation in the booked activities. I agree to inform my experience guide of any medical conditions, allergies, or physical limitations prior to the start of any activity. If I am booking on behalf of minors, I certify that they are also fit to participate and I accept responsibility for their safety.</p>
-
-                  <p style={{ fontWeight: 600, color: 'var(--text-primary)', marginBottom: 6 }}>5. Photo & Video Consent</p>
-                  <p style={{ marginBottom: 16 }}>I grant MAPL Tours Jamaica permission to use photographs and video recordings taken during my experience for promotional purposes, including social media, website content, and marketing materials, unless I notify my guide in writing before the activity begins.</p>
-
-                  <p style={{ fontWeight: 600, color: 'var(--text-primary)', marginBottom: 6 }}>6. Governing Law</p>
-                  <p style={{ marginBottom: 16 }}>This waiver shall be governed by the laws of Jamaica. Any disputes arising from this agreement shall be resolved in the courts of Kingston, Jamaica.</p>
-
-                  <p style={{ fontWeight: 600, color: 'var(--text-primary)', marginBottom: 6 }}>7. Severability</p>
-                  <p>If any provision of this waiver is found to be unenforceable, the remaining provisions shall continue in full force and effect. By checking the waiver box during checkout, you acknowledge that you have read, understood, and agree to be bound by the terms of this Activity Waiver & Release of Liability.</p>
-                </>
-              ) : (
-                <>
-                  <p style={{ fontWeight: 600, color: 'var(--text-primary)', marginBottom: 12 }}>MAPL Tours Jamaica - Terms of Service</p>
-                  <p style={{ marginBottom: 12 }}>Effective Date: January 1, 2025</p>
-
-                  <p style={{ fontWeight: 600, color: 'var(--text-primary)', marginBottom: 6 }}>1. About MAPL Tours Jamaica</p>
-                  <p style={{ marginBottom: 16 }}>MAPL Tours Jamaica is a product of MAPL Tech. We operate an online platform that connects travelers with curated, locally-created experiences across Jamaica. We act as an intermediary between you (the &ldquo;Guest&rdquo;) and independent local experience creators (the &ldquo;Creators&rdquo;). MAPL Tours Jamaica does not directly provide the experiences listed on our platform.</p>
-
-                  <p style={{ fontWeight: 600, color: 'var(--text-primary)', marginBottom: 6 }}>2. Booking & Payment</p>
-                  <p style={{ marginBottom: 16 }}>All prices are listed in USD. A service fee is applied to all transactions to cover your tour guide, platform costs, and customer support. Payment is processed securely through Stripe. Your card will be charged at the time of booking. Bookings close 24 hours before an experience or pickup begins; anything inside that window must be arranged with us directly and is subject to availability. Private door-to-door transport is included in every booking and is itemized in your total; you provide the pickup and drop-off locations at checkout. You will receive a confirmation email with your booking details and pickup arrangements within 24 hours. MAPL Tours Jamaica is your single point of contact for everything to do with a booking; questions and changes go to contact@mapltours.com rather than to the Creator directly.</p>
-
-                  <p style={{ fontWeight: 600, color: 'var(--text-primary)', marginBottom: 6 }}>3. Cancellation, Changes & Refunds</p>
-                  <p style={{ marginBottom: 16 }}>Flexible cancellation is available within 48 hours of booking. Cancellations are requested from your Profile page and reviewed by us; your booking remains confirmed until the request is approved. If approved within that window, you will receive a refund of the amount paid, less an administration charge equivalent to 20% of the total amount of fees paid plus taxes (if applicable). Changes to your date or number of guests may be requested within the same 48 hours by contacting us, subject to availability. Cancellations and changes requested more than 48 hours after booking cannot be accepted and the booking is non-refundable. Once an experience or pickup has begun it has been delivered and is no longer refundable or changeable. If you do not arrive for your experience, the booking is charged in full. If a Creator cancels an experience, you will receive a full refund or the option to rebook. Where weather or safety conditions force a cancellation, the booking will be rescheduled at no additional cost, to another date or an experience of equivalent value; a full refund is given only where no reschedule is possible within your time in Jamaica.</p>
-
-                  <p style={{ fontWeight: 600, color: 'var(--text-primary)', marginBottom: 6 }}>4. Guest Responsibilities</p>
-                  <p style={{ marginBottom: 16 }}>Guests must be ready at the agreed pickup location at the agreed time. Guests must follow all safety instructions provided by the Creator or guide. Guests must be of legal drinking age to participate in experiences involving alcohol. Guests are responsible for their own travel insurance and personal belongings. Guests must treat Creators, local communities, and the natural environment with respect.</p>
-
-                  <p style={{ fontWeight: 600, color: 'var(--text-primary)', marginBottom: 6 }}>5. Creator Responsibilities</p>
-                  <p style={{ marginBottom: 16 }}>All Creators on the MAPL Tours Jamaica platform are vetted and approved by our team. Creators are required to maintain valid insurance, certifications, and licenses where applicable. Creators are responsible for providing the experience as described on the platform. MAPL Tours Jamaica reserves the right to remove any Creator who fails to meet our quality standards.</p>
-
-                  <p style={{ fontWeight: 600, color: 'var(--text-primary)', marginBottom: 6 }}>6. Intellectual Property</p>
-                  <p style={{ marginBottom: 16 }}>All content on the MAPL Tours Jamaica platform, including text, images, videos, logos, and design elements, is the property of MAPL Tech and is protected by copyright law. User-generated content, including reviews and comments, grants MAPL Tours Jamaica a non-exclusive, royalty-free license to use, display, and distribute such content.</p>
-
-                  <p style={{ fontWeight: 600, color: 'var(--text-primary)', marginBottom: 6 }}>7. Limitation of Liability</p>
-                  <p style={{ marginBottom: 16 }}>MAPL Tours Jamaica shall not be liable for any indirect, incidental, special, or consequential damages arising from the use of our platform or participation in any experience. Our total liability shall not exceed the amount paid for the specific experience in question.</p>
-
-                  <p style={{ fontWeight: 600, color: 'var(--text-primary)', marginBottom: 6 }}>8. Privacy</p>
-                  <p style={{ marginBottom: 16 }}>We collect and process personal data in accordance with our Privacy Policy. By using our platform, you consent to the collection and processing of your data as described therein. We do not sell your personal data to third parties.</p>
-
-                  <p style={{ fontWeight: 600, color: 'var(--text-primary)', marginBottom: 6 }}>9. Governing Law</p>
-                  <p style={{ marginBottom: 16 }}>These Terms of Service shall be governed by the laws of Jamaica. Any disputes shall be resolved in the courts of Kingston, Jamaica.</p>
-
-                  <p style={{ fontWeight: 600, color: 'var(--text-primary)', marginBottom: 6 }}>10. Changes to Terms</p>
-                  <p>MAPL Tours Jamaica reserves the right to modify these Terms of Service at any time. Continued use of the platform after changes constitutes acceptance of the updated terms. Users will be notified of material changes via email.</p>
-                </>
-              )}
-            </div>
-
-            {/* Modal footer */}
-            <div style={{
-              padding: '16px 24px', borderTop: '1px solid var(--border)',
-              display: 'flex', justifyContent: 'flex-end',
-              flexShrink: 0,
-            }}>
-              <button
-                className="btn-primary"
-                onClick={() => setModalContent(null)}
-                style={{ height: 40, padding: '0 24px', fontSize: 13 }}
-              >
-                I understand
-              </button>
-            </div>
-          </div>
-        </>
+        <LegalModal kind={modalContent} onClose={() => setModalContent(null)} />
       )}
     </div>
   )
@@ -905,6 +783,8 @@ export default function CheckoutView() {
   const [formAnnouncement, setFormAnnouncement] = useState('')
   const [stripeError, setStripeError] = useState<string | null>(null)
   const [limitModalOpen, setLimitModalOpen] = useState(false)
+  // The cancellation policy, opened from the line under the pay button.
+  const [legalOpen, setLegalOpen] = useState(false)
   const { items, stops, subtotal, fee, grandTotal, isDayOverLimit, hoursByDate, pickupTime } = useCartStore()
   const { t, formatUsd } = useI18n()
 
@@ -1504,8 +1384,23 @@ export default function CheckoutView() {
                     where it reads as part of the first word. */}
                 <p style={{ marginTop: 12, fontSize: 12, lineHeight: 1.5, textAlign: 'center', color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-sans)' }}>
                   <Lock size={11} style={{ display: 'inline', verticalAlign: -1, marginRight: 5 }} />
-                  Secure checkout · Cancel within 48 hrs of booking, less a 20% admin charge ·{' '}
-                  <a href="/terms" target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'underline', color: 'inherit' }}>full policy</a>
+                  Secure checkout · {CANCELLATION_SUMMARY.short} ·{' '}
+                  {/* Opens in place. This was an anchor to /terms with
+                      target="_blank", which is still leaving: a guest reading
+                      the cancellation line at the moment they decide to pay
+                      ended up in a second tab, and the one thing a payment page
+                      should never do is send someone away from it. */}
+                  <button
+                    type="button"
+                    onClick={() => setLegalOpen(true)}
+                    style={{
+                      background: 'none', border: 'none', padding: 0,
+                      font: 'inherit', color: 'inherit', cursor: 'pointer',
+                      textDecoration: 'underline', textUnderlineOffset: 2,
+                    }}
+                  >
+                    full policy
+                  </button>
                 </p>
               </div>
             )}
@@ -1548,6 +1443,9 @@ export default function CheckoutView() {
           onClose={() => setLimitModalOpen(false)}
         />
       )}
+
+      {/* ── Cancellation policy, from the line under the pay button ── */}
+      {legalOpen && <LegalModal kind="terms" answer="cancellation" onClose={() => setLegalOpen(false)} />}
     </div>
   )
 }

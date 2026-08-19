@@ -5,6 +5,8 @@ import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-
 import { CreditCard, Lock, ShieldCheck } from 'lucide-react'
 import { getStripe } from '@/lib/stripe'
 import { useI18n } from '@/lib/i18n'
+import LegalModal from './LegalModal'
+import { CANCELLATION_SUMMARY } from '@/lib/refund-pricing'
 
 /**
  * Stripe payment UI, extracted into its own chunk so the ~80 KB gz
@@ -73,6 +75,7 @@ function PaymentStep({
   const { t } = useI18n()
   const [error, setError] = useState<string | null>(null)
   const [processing, setProcessing] = useState(false)
+  const [legalOpen, setLegalOpen] = useState(false)
 
   const handleSubmit = async () => {
     if (!stripe || !elements) return
@@ -203,11 +206,29 @@ function PaymentStep({
         fontSize: 12, color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-sans)',
       }}>
         <ShieldCheck size={11} color="var(--emerald)" style={{ display: 'inline', verticalAlign: '-2px', marginRight: 4 }} />
-        {t('Encrypted & secure')} · {t('Cancel within 48 hrs of booking')}, {t('less a 20% admin charge')} ·{' '}
-        <a href="/terms" target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'underline', color: 'inherit' }}>
+        {/* The cancellation half comes from the rule rather than from two
+            translation keys that were never actually translated (neither
+            string exists in lib/i18n.ts), so the numbers here cannot drift
+            from lib/refund-pricing.ts the way four hand-typed copies could. */}
+        {t('Encrypted & secure')} · {CANCELLATION_SUMMARY.short} ·{' '}
+        {/* The most important of the three: this line sits directly under the
+            pay button, so it is read at the exact moment someone decides to
+            hand over a card. Opening a second tab there is the worst place on
+            the site to lose someone. */}
+        <button
+          type="button"
+          onClick={() => setLegalOpen(true)}
+          style={{
+            background: 'none', border: 'none', padding: 0,
+            font: 'inherit', color: 'inherit', cursor: 'pointer',
+            textDecoration: 'underline', textUnderlineOffset: 2,
+          }}
+        >
           {t('full policy')}
-        </a>
+        </button>
       </p>
+
+      {legalOpen && <LegalModal kind="terms" answer="cancellation" onClose={() => setLegalOpen(false)} />}
     </div>
   )
 }
