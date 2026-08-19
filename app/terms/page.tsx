@@ -4,7 +4,7 @@ import EditorialPage, { Section } from '@/components/EditorialPage'
 export const metadata: Metadata = {
   title: 'Terms of Service',
   description:
-    'The terms that govern your use of MAPL Tours Jamaica, bookings, cancellations, liability, and your responsibilities as a traveler.',
+    'The terms that govern your use of MAPL TOURS JAMAICA, bookings, cancellations, liability, and your responsibilities as a traveler.',
   alternates: {
     canonical: 'https://mapltours.com/terms',
   },
@@ -19,7 +19,7 @@ export default function TermsPage() {
 
       <Section title="Agreement to terms">
         <p>
-          By accessing or using MAPL Tours Jamaica (mapltours.com), you agree to be bound by these Terms of Service.
+          By accessing or using MAPL TOURS JAMAICA (mapltours.com), you agree to be bound by these Terms of Service.
           If you do not agree to these Terms, please do not use the service. We may update these Terms from time to
           time and your continued use of the platform after changes are posted constitutes acceptance of the revised Terms.
         </p>
@@ -27,12 +27,12 @@ export default function TermsPage() {
 
       <Section title="Who we are">
         <p>
-          MAPL Tours Jamaica sells and operates travel services in Jamaica. We run our own tours, itineraries and
+          MAPL TOURS JAMAICA sells and operates travel services in Jamaica. We run our own tours, itineraries and
           airport transfers, and we also list experiences delivered by independent Jamaican creators, hosts and
           guides. Each experience page identifies who delivers it.
         </p>
         <p style={{ marginTop: 12 }}>
-          Where an experience is operated by MAPL Tours Jamaica, we are the operator and these Terms apply to us
+          Where an experience is operated by MAPL TOURS JAMAICA, we are the operator and these Terms apply to us
           directly. Where it is delivered by an independent creator, we facilitate the booking and payment and the
           creator delivers the experience. Restaurants, attractions and other third-party venues suggested on the
           site are not operated by us and are paid for directly by you.
@@ -87,7 +87,7 @@ export default function TermsPage() {
 
       <Section title="Creator responsibilities">
         <p>
-          Creators on the platform are independent operators who have agreed to MAPL Tours&rsquo; quality and safety
+          Creators on the platform are independent operators who have agreed to MAPL TOURS&rsquo; quality and safety
           standards. Creators are responsible for delivering the experience as listed, maintaining required insurance
           and certifications, and providing appropriate equipment and safety briefings.
         </p>
@@ -95,7 +95,7 @@ export default function TermsPage() {
 
       <Section title="Liability">
         <p>
-          Where MAPL Tours Jamaica operates an experience or transfer, we are responsible for delivering it with
+          Where MAPL TOURS JAMAICA operates an experience or transfer, we are responsible for delivering it with
           reasonable care and skill. Where an experience is delivered by an independent creator, that creator is
           responsible for its delivery and we act as the booking and payment facilitator.
         </p>
@@ -111,7 +111,7 @@ export default function TermsPage() {
 
       <Section title="Photography, video and your likeness">
         <p>
-          We photograph and film our experiences and transfers. By taking part, you agree that MAPL Tours Jamaica may
+          We photograph and film our experiences and transfers. By taking part, you agree that MAPL TOURS JAMAICA may
           record you and may use those photographs, video, audio and any comments or reviews you give us in our
           marketing. That includes our website, social media, advertising, printed material and press.
         </p>
@@ -125,8 +125,8 @@ export default function TermsPage() {
 
       <Section title="Intellectual property">
         <p>
-          All content on mapltours.com, including text, imagery, video, the MAPL Tours name and logo, and the
-          underlying software, is owned by MAPL Tours or licensed to us. You may not copy, reproduce, or commercially
+          All content on mapltours.com, including text, imagery, video, the MAPL TOURS name and logo, and the
+          underlying software, is owned by MAPL TOURS or licensed to us. You may not copy, reproduce, or commercially
           exploit any part of the platform without our written permission.
         </p>
       </Section>

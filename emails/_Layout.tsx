@@ -75,7 +75,7 @@ export function MaplLayout({ preheader, children }: MaplLayoutProps) {
           <Section style={brandBand} className="mapl-pad">
             <Img
               src={`${siteUrl()}/mapl-logo-email.png`}
-              alt="MAPL Tours Jamaica"
+              alt="MAPL TOURS JAMAICA"
               width="128"
               height="47"
               style={brandLogo}
@@ -93,7 +93,7 @@ export function MaplLayout({ preheader, children }: MaplLayoutProps) {
           <Hr style={hr} />
           <Section style={footerPad} className="mapl-pad">
             <Text style={footerLine}>
-              MAPL Tours · Montego Bay · Falmouth · Ocho Rios · Negril
+              MAPL TOURS · Montego Bay · Falmouth · Ocho Rios · Negril
             </Text>
             <Text style={footerLine}>
               <Link href={siteUrl()} style={footerLink}>
@@ -105,7 +105,7 @@ export function MaplLayout({ preheader, children }: MaplLayoutProps) {
               </Link>
             </Text>
             <Text style={footerLineMuted}>
-              © {new Date().getFullYear()} MAPL Tours. All rights reserved.
+              © {new Date().getFullYear()} MAPL TOURS. All rights reserved.
             </Text>
           </Section>
         </Container>

@@ -158,7 +158,7 @@ export async function maybeSendTravelerConfirmation(
         to: booking.email,
         // Operations and the driver hold exactly what the guest holds.
         bcc: opsBcc(booking.email),
-        subject: `Booking confirmed, your Jamaica trip with MAPL Tours (${bookingRef})`,
+        subject: `Booking confirmed, your Jamaica trip with MAPL TOURS (${bookingRef})`,
         react: BookingConfirmed({
           bookingRef,
           firstName: booking.first_name,
@@ -241,7 +241,7 @@ export async function maybeSendOperatorAlert(
   const res = isTransfer
     ? await sendEmail({
         to: opsRecipients,
-        subject: `MAPL Tours · New transfer · ${bookingRef} · ${items.length} ride${items.length !== 1 ? 's' : ''}`,
+        subject: `MAPL TOURS · New transfer · ${bookingRef} · ${items.length} ride${items.length !== 1 ? 's' : ''}`,
         react: TransferOperatorAlert({
           bookingRef,
           customerName,
@@ -270,7 +270,7 @@ export async function maybeSendOperatorAlert(
       })
     : await sendEmail({
         to: opsRecipients,
-        subject: `MAPL Tours · New booking · ${bookingRef} · ${items.length} experience${items.length !== 1 ? 's' : ''}`,
+        subject: `MAPL TOURS · New booking · ${bookingRef} · ${items.length} experience${items.length !== 1 ? 's' : ''}`,
         react: OperatorBookingAlert({
           bookingRef,
           customerName,

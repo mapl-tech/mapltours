@@ -8,7 +8,7 @@ export const dynamic = 'force-dynamic'
 
 export const metadata: Metadata = {
   title: 'Transfer Confirmation',
-  description: 'Your MAPL Tours Jamaica airport transfer booking confirmation.',
+  description: 'Your MAPL TOURS JAMAICA airport transfer booking confirmation.',
   robots: { index: false, follow: false },
 }
 
@@ -355,7 +355,7 @@ function Success({ data }: { data: ConfirmData }) {
         {data.email
           ? `Confirmation on its way to ${data.email}.`
           : 'A confirmation email is on the way.'}{' '}
-        MAPL Tours will reach out 24 hours before pickup.
+        MAPL TOURS will reach out 24 hours before pickup.
       </p>
 
       {data.bookingRef && (
@@ -557,7 +557,7 @@ function Success({ data }: { data: ConfirmData }) {
             <li>· Clear immigration and collect your bags.</li>
             <li>
               · Exit the terminal at arrivals, your driver will be holding a
-              MAPL Tours sign with your name.
+              MAPL TOURS sign with your name.
             </li>
             <li>
               · Reach us any time:{' '}

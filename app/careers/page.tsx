@@ -3,7 +3,7 @@ import EditorialPage, { Section, ValueCard } from '@/components/EditorialPage'
 
 export const metadata: Metadata = {
   title: 'Careers',
-  description: 'Join MAPL Tours Jamaica. We are building the future of cultural travel. See open positions.',
+  description: 'Join MAPL TOURS JAMAICA. We are building the future of cultural travel. See open positions.',
   alternates: {
     canonical: 'https://mapltours.com/careers',
   },
@@ -11,10 +11,10 @@ export const metadata: Metadata = {
 
 export default function CareersPage() {
   return (
-    <EditorialPage slug="careers" label="Join Us" title="Careers at MAPL Tours">
+    <EditorialPage slug="careers" label="Join Us" title="Careers at MAPL TOURS">
       <Section title="Build the Future of Travel">
         <p>We are a small, passionate team on a mission to change how the world experiences Jamaica. We are looking for people who care deeply about culture, community, and creating exceptional products.</p>
-        <p style={{ marginTop: 16 }}>At MAPL Tours, you will work at the intersection of technology and culture, helping local Jamaican creators share their stories with the world.</p>
+        <p style={{ marginTop: 16 }}>At MAPL TOURS, you will work at the intersection of technology and culture, helping local Jamaican creators share their stories with the world.</p>
       </Section>
 
       <Section title="Open Positions">
@@ -43,7 +43,7 @@ export default function CareersPage() {
       </Section>
 
       <Section title="How to Apply">
-        <p>Send your resume and a note about why you are excited about MAPL Tours to <span style={{ color: 'var(--accent)', fontWeight: 600 }}>contact@mapltours.com</span>. We review every application and will be in touch with applicants we would like to take further.</p>
+        <p>Send your resume and a note about why you are excited about MAPL TOURS to <span style={{ color: 'var(--accent)', fontWeight: 600 }}>contact@mapltours.com</span>. We review every application and will be in touch with applicants we would like to take further.</p>
       </Section>
     </EditorialPage>
   )

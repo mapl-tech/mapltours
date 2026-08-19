@@ -21,8 +21,9 @@ export default function Footer() {
           <div style={{ display: 'inline-block', marginBottom: 16 }}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
+              className="logo-on-dark"
               src="/mapl-logo-dark.svg"
-              alt="MAPL Tours Jamaica"
+              alt="MAPL TOURS JAMAICA"
               width={185}
               height={42}
               style={{ height: 42, width: 'auto', display: 'block' }}
@@ -142,7 +143,7 @@ export default function Footer() {
           fontSize: 12, color: 'var(--text-on-dark-3)',
           fontFamily: 'var(--font-dm-sans)', flexWrap: 'wrap', gap: 16,
         }}>
-          <p>© 2026 MAPL Tours Jamaica. {t('All rights reserved.')}</p>
+          <p>© 2026 MAPL TOURS JAMAICA. {t('All rights reserved.')}</p>
           <div className="footer-legal" style={{ display: 'flex', gap: 20, flexWrap: 'wrap' }}>
             {[
               { label: 'Privacy Policy', href: '/privacy' },

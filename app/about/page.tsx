@@ -4,8 +4,8 @@ import { DESTINATION_IMAGES } from '@/lib/experiences'
 import Footer from '@/components/Footer'
 
 export const metadata: Metadata = {
-  title: 'About MAPL Tours',
-  description: 'The story behind MAPL Tours Jamaica: a cultural travel platform connecting travelers with authentic experiences crafted by local creators.',
+  title: 'About MAPL TOURS',
+  description: 'The story behind MAPL TOURS JAMAICA: a cultural travel platform connecting travelers with authentic experiences crafted by local creators.',
   alternates: { canonical: 'https://mapltours.com/about' },
 }
 
@@ -24,7 +24,7 @@ const VALUES = [
   },
   {
     title: 'Honest about what you pay',
-    body: 'You pay MAPL Tours for the experiences we run and the driving we do. Restaurants and attractions you settle directly at their own price. Cancellations are flexible within 48 hours of booking.',
+    body: 'You pay MAPL TOURS for the experiences we run and the driving we do. Restaurants and attractions you settle directly at their own price. Cancellations are flexible within 48 hours of booking.',
   },
 ]
 
@@ -209,7 +209,7 @@ export default function AboutPage() {
               The best of Jamaica is spread across the island, and almost none of it is at your hotel. It&rsquo;s a jerk pit off the coast road, a great house on a hill, a waterfall an hour inland, a fish fry that only happens when the boats come in.
             </p>
             <p style={{ fontSize: 16, lineHeight: 1.8, color: 'var(--text-secondary)', fontFamily: 'var(--font-dm-sans)', marginBottom: 20 }}>
-              MAPL Tours is how you reach all of it. Browse experiences we run with Jamaican guides, add real restaurants and heritage sites you want to see, say how long you want at each, and we build the day around it with a private driver from door to door.
+              MAPL TOURS is how you reach all of it. Browse experiences we run with Jamaican guides, add real restaurants and heritage sites you want to see, say how long you want at each, and we build the day around it with a private driver from door to door.
             </p>
             <p style={{ fontSize: 16, lineHeight: 1.8, color: 'var(--text-secondary)', fontFamily: 'var(--font-dm-sans)' }}>
               You pay us for the experiences we run and the driving we do. Restaurants and attractions you settle directly, at the door, at their price. We also run flat-rate airport transfers to and from Sangster International, whether or not you book anything else.
@@ -386,7 +386,7 @@ export default function AboutPage() {
               fontFamily: 'var(--font-dm-sans)', fontWeight: 700, fontSize: 15,
               color: '#fff', letterSpacing: '-0.005em',
             }}>
-              The MAPL Tours Team
+              The MAPL TOURS Team
             </span>
             <span style={{
               fontFamily: 'var(--font-dm-sans)', fontSize: 12,

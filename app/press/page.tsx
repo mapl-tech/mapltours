@@ -3,7 +3,7 @@ import EditorialPage, { Section, ValueCard } from '@/components/EditorialPage'
 
 export const metadata: Metadata = {
   title: 'Press',
-  description: 'Press kit for MAPL Tours Jamaica: company facts, founder background, brand assets, logo files, and media contact for journalists covering Caribbean travel.',
+  description: 'Press kit for MAPL TOURS JAMAICA: company facts, founder background, brand assets, logo files, and media contact for journalists covering Caribbean travel.',
   alternates: {
     canonical: 'https://mapltours.com/press',
   },
@@ -12,8 +12,8 @@ export const metadata: Metadata = {
 export default function PressPage() {
   return (
     <EditorialPage slug="press" label="Media" title="Press & Media">
-      <Section title="About MAPL Tours Jamaica">
-        <p>MAPL Tours Jamaica is a cultural travel platform connecting travelers with authentic Jamaican experiences. We curate experiences created and led by local Jamaicans - from cliff diving in Negril to reggae studio sessions in Kingston - and get travelers to them by private transport.</p>
+      <Section title="About MAPL TOURS JAMAICA">
+        <p>MAPL TOURS JAMAICA is a cultural travel platform connecting travelers with authentic Jamaican experiences. We curate experiences created and led by local Jamaicans - from cliff diving in Negril to reggae studio sessions in Kingston - and get travelers to them by private transport.</p>
         <p style={{ marginTop: 16 }}>The platform covers 19 guided experiences and 44 restaurants and heritage sites across 10 parishes, alongside flat-rate airport transfers from Sangster International.</p>
       </Section>
 

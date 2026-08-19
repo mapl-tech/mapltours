@@ -64,8 +64,8 @@ export async function sendGiftCardEmails(giftCardId: string): Promise<GiftEmailR
       const res = await sendEmail({
         to: card.recipient_email,
         subject: card.purchaser_name
-          ? `${card.purchaser_name} sent you a MAPL Tours Jamaica gift card`
-          : 'You have a MAPL Tours Jamaica gift card',
+          ? `${card.purchaser_name} sent you a MAPL TOURS JAMAICA gift card`
+          : 'You have a MAPL TOURS JAMAICA gift card',
         react: GiftCardDelivered({
           code: card.code,
           amount,

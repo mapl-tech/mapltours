@@ -89,7 +89,7 @@ export default function AbandonedCart(props: AbandonedCartProps) {
       {/* Reassurance */}
       <Section style={s.card}>
         <Section style={s.cardHeader}>
-          <Text style={s.cardHeaderText}>Why book with MAPL Tours</Text>
+          <Text style={s.cardHeaderText}>Why book with MAPL TOURS</Text>
         </Section>
         <Section style={s.cardBody}>
           <Text style={s.body}>· Local guides who actually know the island.</Text>

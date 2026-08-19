@@ -34,7 +34,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src="/mapl-logo.svg"
-          alt="MAPL Tours Jamaica"
+          alt="MAPL TOURS JAMAICA"
           width={134}
           height={32}
           style={{ height: 32, width: 'auto', display: 'block' }}

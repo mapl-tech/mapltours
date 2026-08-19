@@ -1,4 +1,5 @@
 import { tourPrice, experiences } from './experiences'
+import { bestInsertIndex, bestSlotForStop, canMoveItem, fitStopAfter, fitTourToDay, movedOrder } from './day-route'
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { Experience } from './experiences'
@@ -21,6 +22,14 @@ export interface FoodStop {
   knownFor: string
   image: string
   mapsQuery: string
+  /**
+   * Where the stop sits: after the cart item with this id, or before the first
+   * tour of the day when null. A stop is never free-floating — it hangs off
+   * the tour order — which is what keeps a cart of nothing but restaurants
+   * from being bookable. See lib/day-route.ts for the rules this field exists
+   * to make expressible.
+   */
+  afterId: number | null
 }
 
 /**
@@ -65,9 +74,14 @@ interface CartStore {
   addItem: (exp: Experience) => void
   conflictsInCart: (exp: Experience) => CartItem[]
   removeItem: (id: number) => void
-  addStop: (stop: FoodStop) => void
+  addStop: (stop: Omit<FoodStop, 'afterId'> & { afterId?: number | null }) => void
   removeStop: (name: string) => void
   isStopAdded: (name: string) => boolean
+  /** Move one tour a single place earlier or later in the day. */
+  moveItem: (id: number, direction: -1 | 1) => void
+  /** Names of stops dropped because the tour they sat with was removed. */
+  droppedStops: string[]
+  clearDroppedStops: () => void
   updateTravelers: (id: number, travelers: number) => void
   updateDate: (id: number, date: string) => void
   setPickup: (location: string) => void
@@ -88,6 +102,33 @@ interface CartStore {
   remainingHoursToday: () => number
 }
 
+/**
+ * Give every stored stop a tour to sit behind, and drop the ones that cannot
+ * have one.
+ *
+ * Stops predate the rule that ties them to a tour, so a cart saved a week ago
+ * holds stops with no `afterId` at all; a cart saved this morning can hold one
+ * whose tour has since left the catalog. Rehydrating either as-is would
+ * restore a day the store itself would refuse to build — one that opens with
+ * lunch, or stacks two stops in a row.
+ */
+function rehomeStops(items: CartItem[], stops: FoodStop[] | undefined): FoodStop[] {
+  if (items.length === 0 || !stops?.length) return []
+  const kept: FoodStop[] = []
+  for (const stop of stops) {
+    const ctx = { items, stops: kept }
+    const slotExists =
+      stop.afterId === null || items.some((i) => i.id === stop.afterId)
+    if (slotExists && stop.afterId !== undefined && fitStopAfter(stop, stop.afterId, ctx).allowed) {
+      kept.push(stop)
+      continue
+    }
+    const slot = bestSlotForStop(stop, ctx)
+    if (slot) kept.push({ ...stop, afterId: slot.afterId })
+  }
+  return kept
+}
+
 function defaultDate(): string {
   const d = new Date()
   d.setDate(d.getDate() + 14)
@@ -102,12 +143,50 @@ export const useCartStore = create<CartStore>()(
       pickup: '',
       pickupTime: '',
       dropoff: '',
-      addStop: (stop) => set((state) => (
-        state.stops.some((s) => s.name === stop.name)
-          ? state
-          : { stops: [...state.stops, stop] }
-      )),
+      /**
+       * A food stop rides along a tour day; it is never the day itself. It
+       * joins by attaching to one tour — the caller may name it, otherwise
+       * the best legal host is chosen — and the attachment is what enforces
+       * the shape of a day: it cannot land before the first tour, it cannot
+       * land beside another stop (one host, one stop), and it cannot land
+       * more than half an hour from what it would sit between. All three are
+       * checked here so no caller can route around them; see lib/day-route.
+       *
+       * Refusal is silent by design — every surface that offers a stop asks
+       * fitCandidateStop() first and explains the rule in place, so a refusal
+       * here means something got past the UI, not that a guest is ignored.
+       */
+      addStop: (stop) => set((state) => {
+        if (state.stops.some((s) => s.name === stop.name)) return state
+        const ctx = { items: state.items, stops: state.stops }
+        const slot = stop.afterId !== undefined
+          ? { afterId: stop.afterId, fit: fitStopAfter(stop, stop.afterId, ctx) }
+          : bestSlotForStop(stop, ctx)
+        if (!slot || !slot.fit.allowed) return state
+        return {
+          stops: [...state.stops, { ...stop, afterId: slot.afterId }],
+          droppedStops: [],
+        }
+      }),
       removeStop: (name) => set((state) => ({ stops: state.stops.filter((s) => s.name !== name) })),
+
+      /**
+       * Reorder the day by hand, one place at a time.
+       *
+       * Refused when the new order would strand a food stop — the guest owns
+       * the order, but only among orders a driver could actually run. The UI
+       * disables the arrow and says which stop would break, so this guard is
+       * the floor rather than the explanation.
+       */
+      moveItem: (id, direction) => set((state) => {
+        const ctx = { items: state.items, stops: state.stops }
+        if (!canMoveItem(ctx, id, direction).ok) return state
+        const next = movedOrder(state.items, id, direction)
+        return next ? { items: next } : state
+      }),
+
+      droppedStops: [],
+      clearDroppedStops: () => set({ droppedStops: [] }),
       isStopAdded: (name) => get().stops.some((s) => s.name === name),
 
       addItem: (exp: Experience) => {
@@ -119,14 +198,52 @@ export const useCartStore = create<CartStore>()(
         // sold singly) and makes the day impossible to sequence. Adding
         // either kind therefore clears the other kind.
         const kept = items.filter((i) => i.kind === exp.kind)
-        set({ items: [...kept, { ...exp, travelers: 1, date: defaultDate() }] })
+        const line = { ...exp, travelers: 1, date: defaultDate() }
+        // A day's tours have to be drivable between — see MAX_TOUR_GAP_MIN.
+        // Every surface that offers a tour asks fitTourToDay() first and says
+        // so on the button, and this is the floor under that.
+        if (!fitTourToDay(line, { items: kept, stops: get().stops }).allowed) return
+        // Slot it where it adds the least driving rather than at the end. Tap
+        // order has nothing to do with geography, and the day is read top to
+        // bottom as a route; the guest can still move it at checkout.
+        const at = bestInsertIndex(kept, line)
+        const next = [...kept]
+        next.splice(at, 0, line)
+        set({ items: next, droppedStops: [] })
       },
 
       /** Cart items this experience would replace if added now. */
       conflictsInCart: (exp: Experience) => get().items.filter((i) => i.kind !== exp.kind),
 
       removeItem: (id: number) => {
-        set({ items: get().items.filter((i) => i.id !== id) })
+        const state = get()
+        const items = state.items.filter((i) => i.id !== id)
+
+        // Losing the last tour dissolves the day, and free food stops cannot
+        // outlive it: nothing is sold, nothing is charged, and no driver is
+        // dispatched for lunch alone.
+        if (items.length === 0) {
+          set({ items, stops: [], droppedStops: state.stops.map((s) => s.name) })
+          return
+        }
+
+        // A stop whose host tour just left needs a new one. Re-home it to the
+        // best tour that can legally take it; if no tour can, the stop goes,
+        // because the alternative is an itinerary that breaks its own rules.
+        // Either way the names are recorded so the UI can say what happened
+        // rather than letting a chosen stop quietly disappear.
+        const dropped: string[] = []
+        const stops: FoodStop[] = []
+        for (const stop of state.stops) {
+          if (stop.afterId !== id) {
+            stops.push(stop)
+            continue
+          }
+          const slot = bestSlotForStop(stop, { items, stops })
+          if (slot) stops.push({ ...stop, afterId: slot.afterId })
+          else dropped.push(stop.name)
+        }
+        set({ items, stops, droppedStops: dropped })
       },
 
       updateTravelers: (id: number, travelers: number) => {
@@ -147,7 +264,7 @@ export const useCartStore = create<CartStore>()(
       setPickupTime: (time: string) => set({ pickupTime: time }),
       setDropoff: (location: string) => set({ dropoff: location }),
 
-      clearCart: () => set({ items: [], stops: [], pickup: '', dropoff: '', pickupTime: '' }),
+      clearCart: () => set({ items: [], stops: [], pickup: '', dropoff: '', pickupTime: '', droppedStops: [] }),
 
       isInCart: (id: number) => get().items.some((i) => i.id === id),
 
@@ -217,7 +334,7 @@ export const useCartStore = create<CartStore>()(
       // to different tours), which would throw inside tourPrice() during
       // render of the cart drawer, i.e. on every page. Re-hydrate each line
       // from the live catalog and drop anything that no longer exists.
-      version: 2,
+      version: 3,
       migrate: (persisted, version) => {
         const state = persisted as { items?: CartItem[]; stops?: FoodStop[] } | undefined
         if (!state) return persisted as CartStore
@@ -228,7 +345,26 @@ export const useCartStore = create<CartStore>()(
         })
         void version
         // v2: food stops joined the cart; older persisted carts have none.
-        return { ...state, items, stops: state.stops ?? [] } as CartStore
+        // v3: a stop now names the tour it follows.
+        return { ...state, items, stops: rehomeStops(items, state.stops) } as CartStore
+      },
+      // A cart line is a REFERENCE to a tour, not a copy of it. addItem spreads
+      // the whole Experience into the cart, so the saved line is a snapshot of
+      // the catalog as it stood the day it was added — an edit to a price, a
+      // description or the what-to-bring list never reached anyone holding a
+      // cart, because migrate only re-runs on a version bump. Rebuilding every
+      // line from the live catalog on each rehydration means the only thing
+      // localStorage genuinely owns is what the GUEST chose: which tour, how
+      // many travelers, which date. Tours pulled from the catalog drop out.
+      merge: (persisted, current) => {
+        const state = (persisted ?? {}) as Partial<CartStore>
+        const items = (state.items ?? []).flatMap((i) => {
+          const live = experiences.find((e: Experience) => e.id === i.id)
+          if (!live) return []
+          return [{ ...live, travelers: i.travelers ?? 1, date: i.date ?? '' }]
+        })
+        const stops = rehomeStops(items, state.stops)
+        return { ...current, ...state, items, stops, droppedStops: [] }
       },
     }
   )

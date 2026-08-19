@@ -1,6 +1,6 @@
 import type { FoodStop } from './cart'
 
-export interface Eat extends FoodStop {
+export interface Eat extends Omit<FoodStop, 'afterId'> {
   description: string
 }
 

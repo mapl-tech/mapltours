@@ -4,7 +4,7 @@ import { HELP_CATEGORIES } from '@/lib/help-faqs'
 
 export const metadata: Metadata = {
   title: 'Help Center',
-  description: 'Get help with your MAPL Tours Jamaica booking. FAQs on cancellations, refunds, what to bring, payments, and how to reach support.',
+  description: 'Get help with your MAPL TOURS JAMAICA booking. FAQs on cancellations, refunds, what to bring, payments, and how to reach support.',
   alternates: {
     canonical: 'https://mapltours.com/help',
   },

@@ -102,7 +102,7 @@ export const HELP_CATEGORIES: HelpCategory[] = [
       },
       {
         q: 'Can I update my personal information?',
-        a: 'Yes. Head to your Profile page where you can edit your name, email, phone number, government ID, and location. Changes save instantly.',
+        a: 'Yes. Head to your Profile page where you can edit your name, email, phone number, and location. Changes save instantly.',
       },
       {
         q: 'How do I delete my account?',

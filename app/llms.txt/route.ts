@@ -22,11 +22,11 @@ export function GET() {
     .map((post) => `- [${post.title}](${baseUrl}/blog/${post.slug}): ${post.excerpt}`)
     .join('\n')
 
-  const body = `# MAPL Tours Jamaica
+  const body = `# MAPL TOURS JAMAICA
 
 > Experiential travel platform for Jamaica. Discover authentic, locally-led tours and cultural experiences, cliff diving in Negril, Blue Mountain coffee treks, reggae studio sessions, jerk cooking classes, and more. Curated and operated by Jamaican creators, not resort concierges.
 
-MAPL Tours runs flat-rate private airport transfers from Sangster International (MBJ) to 50+ resorts across Jamaica's north coast, and connects travelers with locally-led tours and cultural experiences. Everything is bookable online in USD.
+MAPL TOURS runs flat-rate private airport transfers from Sangster International (MBJ) to 50+ resorts across Jamaica's north coast, and connects travelers with locally-led tours and cultural experiences. Everything is bookable online in USD.
 
 Tagline: "Discover Jamaica Beyond the Resort."
 

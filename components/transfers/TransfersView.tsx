@@ -19,7 +19,6 @@ import {
   DESTINATIONS,
   ZONES,
   buildQuote,
-  groupDestinationsByZone,
   type TransferTripType,
   type TransferZone,
   zoneFromPrice,
@@ -31,6 +30,7 @@ import {
 import { useTransfersCart } from '@/lib/transfers-cart'
 import { useI18n } from '@/lib/i18n'
 import { HERO, DESTINATIONS as DESTINATION_IMAGES } from '@/lib/images'
+import PlacePicker, { AIRPORT_ID } from './PlacePicker'
 import {
   TRANSFER_REVIEWS as REVIEWS,
   TRANSFER_FAQS as FAQS,
@@ -57,7 +57,7 @@ const POPULAR_ROUTES: Array<{
    used elsewhere on the site. Alt text is descriptive for SEO + a11y. */
 const HERO_IMAGE = {
   src: HERO, // aerial Buff Bay coastal road
-  alt: 'Aerial view of Jamaica’s north-coast road between Montego Bay and Ocho Rios, the route MAPL Tours drivers use for airport transfers.',
+  alt: 'Aerial view of Jamaica’s north-coast road between Montego Bay and Ocho Rios, the route MAPL TOURS drivers use for airport transfers.',
 }
 
 const ZONE_IMAGES: Record<TransferZone, { src: string; alt: string }> = {
@@ -93,27 +93,6 @@ function priceRangeLabel(zone: TransferZone, tripType: TransferTripType): string
 // Mercy's branch passed an hourly illustrative activity feed here. This
 // surface renders the real aggregates from /api/transfers/activity instead
 // (LiveActivityLine); fabricated counts were purged by owner instruction.
-/**
- * The airport end of every transfer. A sentinel rather than a destination id,
- * because Sangster is not in the rate table — it is the fixed other end that
- * every fare is priced against.
- */
-const AIRPORT_ID = '__mbj__'
-const AIRPORT_NAME = 'Sangster International Airport (MBJ)'
-
-/** Shared select chrome; `filled` drives the placeholder-vs-value colour. */
-const SELECT_STYLE = (filled: boolean): React.CSSProperties => ({
-  height: 50,
-  fontSize: 15,
-  fontWeight: 500,
-  color: filled ? 'var(--text-primary)' : 'var(--text-tertiary)',
-  appearance: 'none',
-  WebkitAppearance: 'none',
-  paddingRight: 44,
-  backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%235E5C57' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")`,
-  backgroundRepeat: 'no-repeat',
-  backgroundPosition: 'right 16px center',
-})
 
 export default function TransfersView() {
   const router = useRouter()
@@ -150,8 +129,6 @@ export default function TransfersView() {
     () => (destinationId ? buildQuote(destinationId, tripType, passengers) : null),
     [destinationId, tripType, passengers],
   )
-
-  const zones = useMemo(() => groupDestinationsByZone(), [])
 
   const handleBook = () => {
     if (!quote) return
@@ -265,7 +242,7 @@ export default function TransfersView() {
               <TrustItem
                 icon={<MapPin size={17} />}
                 title="Meet-and-greet"
-                body="MAPL Tours Jamaica sign at arrivals, bags handled."
+                body="MAPL TOURS JAMAICA sign at arrivals, bags handled."
               />
               <TrustItem
                 icon={<ShieldCheck size={17} />}
@@ -368,31 +345,16 @@ export default function TransfersView() {
                 a hotel on either side sets the other automatically and an
                 impossible pair (two hotels, two airports) cannot be built. */}
             <Field label="Pickup">
-              <select
-                className="field-input"
-                aria-label="Pickup location"
+              <PlacePicker
+                label="Pickup location"
+                placeholder="Airport, or start typing your hotel…"
                 value={fromAirport ? AIRPORT_ID : destinationId}
-                onChange={(e) => {
-                  const v = e.target.value
+                onChange={(v) => {
                   if (v === AIRPORT_ID) { setFromAirport(true) }
+                  else if (v === '') { setDestinationId('') }
                   else { setFromAirport(false); setDestinationId(v) }
                 }}
-                style={SELECT_STYLE(fromAirport || !!destinationId)}
-              >
-                <option value="">Pick your starting point…</option>
-                <optgroup label="Airport">
-                  <option value={AIRPORT_ID}>{AIRPORT_NAME}</option>
-                </optgroup>
-                <optgroup label="Hotels &amp; resorts">
-                  {zones.map(({ zone, items }) =>
-                    items.map((d) => (
-                      <option key={d.id} value={d.id}>
-                        {d.name} &middot; Zone {zone.code}
-                      </option>
-                    )),
-                  )}
-                </optgroup>
-              </select>
+              />
             </Field>
 
             {/* Swap. Round-trips always begin at the airport, so it only
@@ -418,31 +380,16 @@ export default function TransfersView() {
             )}
 
             <Field label="Drop-off">
-              <select
-                className="field-input"
-                aria-label="Drop-off location"
+              <PlacePicker
+                label="Drop-off location"
+                placeholder="Airport, or start typing your hotel…"
                 value={fromAirport ? destinationId : AIRPORT_ID}
-                onChange={(e) => {
-                  const v = e.target.value
+                onChange={(v) => {
                   if (v === AIRPORT_ID) { setFromAirport(false) }
+                  else if (v === '') { setDestinationId('') }
                   else { setFromAirport(true); setDestinationId(v) }
                 }}
-                style={SELECT_STYLE(!fromAirport || !!destinationId)}
-              >
-                <option value="">Pick where you are going…</option>
-                <optgroup label="Airport">
-                  <option value={AIRPORT_ID}>{AIRPORT_NAME}</option>
-                </optgroup>
-                <optgroup label="Hotels &amp; resorts">
-                  {zones.map(({ zone, items }) =>
-                    items.map((d) => (
-                      <option key={d.id} value={d.id}>
-                        {d.name} &middot; Zone {zone.code}
-                      </option>
-                    )),
-                  )}
-                </optgroup>
-              </select>
+              />
             </Field>
 
             <Field label="Trip type">
@@ -584,7 +531,7 @@ export default function TransfersView() {
         </div>
       </section>
 
-      {/* ───────────── WHY MAPL Tours (value prop) ───────────── */}
+      {/* ───────────── WHY MAPL TOURS (value prop) ───────────── */}
       <section className="xfer-why-section">
         <div className="container" style={{ maxWidth: 1100 }}>
           <div className="xfer-center-head">
@@ -599,7 +546,7 @@ export default function TransfersView() {
           <div className="xfer-compare-grid">
             <CompareItem
               bold
-              title="MAPL Tours private transfer"
+              title="MAPL TOURS private transfer"
               items={[
                 'Fixed zone price, paid up front',
                 'Driver waits with your name at arrivals',
@@ -2100,7 +2047,7 @@ function SavingsRow({
         <span className="xfer-saving-mapl">{formatPrice(mapl)}</span>
         <span className="xfer-saving-typical">taxi quotes ${typical}</span>
       </span>
-      <span className="xfer-saving-tag">MAPL Tours flat rate</span>
+      <span className="xfer-saving-tag">MAPL TOURS flat rate</span>
     </div>
   )
 }

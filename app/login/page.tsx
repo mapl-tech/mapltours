@@ -39,7 +39,7 @@ function LoginContent() {
     setMessage('')
 
     if (mode === 'signup') {
-      const { error } = await supabase.auth.signUp({
+      const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
@@ -49,6 +49,21 @@ function LoginContent() {
       })
       if (error) {
         setError(error.message)
+      } else if (data.session) {
+        // Email confirmation is switched off for this project, so signUp
+        // already returned a session and no mail was sent. Telling this
+        // person to check an inbox that will never receive anything — while
+        // they are, in fact, signed in — is how "I never got the email" gets
+        // reported for a working account.
+        router.push(redirect)
+        router.refresh()
+      } else if (data.user && data.user.identities?.length === 0) {
+        // Supabase deliberately does not confirm whether an address is
+        // already registered, and sends nothing in that case. Say the one
+        // true thing that covers both outcomes.
+        setMessage(
+          'If that address is new, a confirmation link is on its way. If you already have an account, sign in instead.'
+        )
       } else {
         setMessage('Check your email for a confirmation link.')
       }
@@ -127,7 +142,7 @@ function LoginContent() {
             letterSpacing: '0.22em', textTransform: 'uppercase', color: '#E8CB7A',
             textShadow: '0 1px 10px rgba(0,0,0,0.55)',
           }}>
-            MAPL Tours · Jamaica
+            MAPL TOURS · Jamaica
           </span>
           <h2 style={{
             fontFamily: 'var(--font-dm-sans)', fontStyle: 'italic', fontWeight: 500,
@@ -192,7 +207,7 @@ function LoginContent() {
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src="/mapl-logo.svg"
-              alt="MAPL Tours Jamaica"
+              alt="MAPL TOURS JAMAICA"
               width={185}
               height={44}
               style={{ height: 44, width: 'auto', display: 'block' }}

@@ -252,7 +252,7 @@ export default function GiftCardsView() {
                       fontFamily: 'var(--font-dm-sans)', fontWeight: 800,
                       fontSize: 18, color: 'white', letterSpacing: '0.04em',
                     }}>
-                      MAPL Tours
+                      MAPL TOURS
                     </p>
                     <p style={{
                       fontSize: 12, fontWeight: 700, color: 'rgba(255,255,255,0.5)',

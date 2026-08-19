@@ -8,6 +8,8 @@ import { useCartStore } from '@/lib/cart'
 import { useHydrated } from '@/lib/use-hydrated'
 import { Plus, Check, Play, MapPin, Star } from 'lucide-react'
 import { useI18n } from '@/lib/i18n'
+import SaveButton from './SaveButton'
+import { useTourFit } from '@/lib/use-tour-fit'
 
 export default memo(function ExpCard({ exp }: { exp: Experience }) {
   const { addItem, removeItem, isInCart } = useCartStore()
@@ -16,7 +18,15 @@ export default memo(function ExpCard({ exp }: { exp: Experience }) {
   // Cart-derived markup must render the SSR (empty-cart) state during the
   // hydration pass, see useHydrated.
   const inCart = hydrated && isInCart(exp.id)
-  const toggleCart = () => { if (inCart) { removeItem(exp.id) } else { addItem(exp) } }
+  // A day's tours have to be drivable between each other, so a tour on the
+  // far side of the island cannot join this cart. Refused here with the
+  // reason rather than swallowed by the store.
+  const tourFit = useTourFit(exp)
+  const blocked = !inCart && !tourFit.allowed
+  const toggleCart = () => {
+    if (inCart) removeItem(exp.id)
+    else if (tourFit.allowed) addItem(exp)
+  }
   const videoRef = useRef<HTMLVideoElement>(null)
   const [hovering, setHovering] = useState(false)
 
@@ -118,26 +128,58 @@ export default memo(function ExpCard({ exp }: { exp: Experience }) {
             </div>
           )}
 
+          {/* Save for later. Sits beside add-to-trip because they are the two
+              things you can want from a card you are not ready to book. */}
+          <div style={{ position: 'absolute', top: 12, right: 56, zIndex: 3 }}>
+            <SaveButton experienceId={exp.id} title={exp.title} />
+          </div>
+
           {/* Add button */}
           <button
             onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleCart() }}
-            aria-label={inCart ? `Remove ${exp.title} from your trip` : `Add ${exp.title} to your trip`}
-            onMouseEnter={(e) => { e.currentTarget.style.transform = 'scale(1.08)' }}
+            disabled={blocked}
+            title={tourFit.reason ?? undefined}
+            aria-label={
+              inCart
+                ? `Remove ${exp.title} from your trip`
+                : blocked
+                  ? `${exp.title} is too far from the day you are building`
+                  : `Add ${exp.title} to your trip`
+            }
+            onMouseEnter={(e) => { if (!blocked) e.currentTarget.style.transform = 'scale(1.08)' }}
             onMouseLeave={(e) => { e.currentTarget.style.transform = 'scale(1)' }}
             style={{
               position: 'absolute', top: 12, right: 12, zIndex: 3,
               width: 36, height: 36, borderRadius: '50%',
-              background: inCart ? 'var(--emerald)' : 'rgba(255,255,255,0.92)',
+              // Greyed, not merely inert. A control that looks live and does
+              // nothing reads as a bug; this one has to look spent.
+              background: inCart ? 'var(--emerald)' : blocked ? 'rgba(255,255,255,0.35)' : 'rgba(255,255,255,0.92)',
               backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)',
-              border: 'none', cursor: 'pointer',
+              border: 'none', cursor: blocked ? 'not-allowed' : 'pointer',
+              opacity: blocked ? 0.75 : 1,
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              color: inCart ? '#fff' : 'var(--accent)',
-              boxShadow: '0 2px 8px rgba(0,0,0,0.18)',
+              color: inCart ? '#fff' : blocked ? 'rgba(23,22,20,0.45)' : 'var(--accent)',
+              boxShadow: blocked ? 'none' : '0 2px 8px rgba(0,0,0,0.18)',
               transition: 'all 0.2s ease',
             }}
           >
             {inCart ? <Check size={15} strokeWidth={2.5} /> : <Plus size={15} strokeWidth={2.5} />}
           </button>
+
+          {/* Why the button is spent, on the card rather than in a tooltip.
+              "Unavailable" would be a lie — the tour is bookable, just not on
+              the day being built — so it says which day it belongs to. */}
+          {blocked && (
+            <span style={{
+              position: 'absolute', top: 12, left: 12, zIndex: 3, pointerEvents: 'none',
+              padding: '4px 10px', borderRadius: 9999,
+              background: 'rgba(0,0,0,0.62)', backdropFilter: 'blur(8px)',
+              fontSize: 11.5, fontWeight: 600, color: 'rgba(255,255,255,0.92)',
+              fontFamily: 'var(--font-dm-sans)',
+            }}>
+              {t('Another day')}
+            </span>
+          )}
 
           {/* Location */}
           <span style={{

@@ -117,13 +117,13 @@ export default function DispatchConsole({ booking, stripeFee, driverEmailConfigu
 
   // Calendar links
   const arrivalCal = leg.arrivalAt ? gcalLink({
-    title: `MAPL Tours pickup: ${name} (${ref})`,
+    title: `MAPL TOURS pickup: ${name} (${ref})`,
     startIso: leg.arrivalAt, durationMin: 60,
     location: `${AIRPORT}, Montego Bay`,
     details: `Drop-off: ${leg.hotel}. Passengers: ${leg.passengers}. Customer: ${b.phone ?? ''}. Driver pay: ${money(m.driverPerLeg)}${m.isRoundTrip ? ' (leg 1 of 2)' : ''}.`,
   }) : null
   const departureCal = m.isRoundTrip && leg.departureAt ? gcalLink({
-    title: `MAPL Tours departure pickup: ${name} (${ref})`,
+    title: `MAPL TOURS departure pickup: ${name} (${ref})`,
     startIso: leg.departureAt, durationMin: 90,
     location: leg.hotel,
     details: `Drop at ${AIRPORT}. Hotel pickup ${jaTime(leg.departureAt)} Jamaica time (time requested by the guest)${leg.departureFlight ? `, flight ${leg.departureFlight}` : ''}. Driver pay: ${money(m.driverPerLeg)} (leg 2 of 2).`,
@@ -162,7 +162,7 @@ export default function DispatchConsole({ booking, stripeFee, driverEmailConfigu
           <div style={{ ...subLabel, marginTop: 16 }}>Where it goes</div>
           <MRow k={m.isRoundTrip ? `Driver payout (${money(m.driverPerLeg)} x2)` : 'Driver payout'} v={`- ${money(m.driverTotal)}`} />
           <MRow k="Stripe fee (USD)" v={m.stripeFee != null ? `- ${money(m.stripeFee)}` : 'pending'} />
-          <MRow k="MAPL Tours keeps" v={m.maplKeeps != null ? money(m.maplKeeps) : 'n/a'} em big />
+          <MRow k="MAPL TOURS keeps" v={m.maplKeeps != null ? money(m.maplKeeps) : 'n/a'} em big />
         </Card>
 
         {/* Trip */}

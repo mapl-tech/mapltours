@@ -384,7 +384,7 @@ export default function HelpCenter() {
                 {[
                   { label: 'Explore experiences', href: '/explore' },
                   { label: 'Your profile', href: '/profile' },
-                  { label: 'About MAPL Tours', href: '/about' },
+                  { label: 'About MAPL TOURS', href: '/about' },
                   { label: 'Safety guidelines', href: '/safety' },
                   { label: 'Accessibility', href: '/accessibility' },
                   { label: 'Terms of service', href: '/terms' },

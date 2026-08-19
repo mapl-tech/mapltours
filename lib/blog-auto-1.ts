@@ -69,7 +69,7 @@ export const POSTS_1: BlogPost[] = [
       },
       {
         type: 'p',
-        text: "If you want the climb without any of the planning, MAPL Tours pairs Dunn's River with the hidden Blue Hole an hour inland on a single half-day trip. Browse the Ocho Rios experiences at /explore to see dates and pricing.",
+        text: "If you want the climb without any of the planning, MAPL TOURS pairs Dunn's River with the hidden Blue Hole an hour inland on a single half-day trip. Browse the Ocho Rios experiences at /explore to see dates and pricing.",
       },
     ],
     relatedSlugs: ['reach-falls-vs-dunns-river', 'ocho-rios-complete-guide'],
@@ -135,7 +135,7 @@ export const POSTS_1: BlogPost[] = [
       },
       {
         type: 'p',
-        text: "MAPL Tours's entire catalogue is built around the kind of Jamaica excursions that pass the group-size test. Browse what's running this week at /explore.",
+        text: "MAPL TOURS's entire catalogue is built around the kind of Jamaica excursions that pass the group-size test. Browse what's running this week at /explore.",
       },
     ],
     relatedSlugs: ['beyond-the-resort', 'first-time-jamaica'],
@@ -206,7 +206,7 @@ export const POSTS_1: BlogPost[] = [
       },
       {
         type: 'p',
-        text: "MAPL Tours runs small-group versions of the top picks, the raft, the rum tour, the great-house night. See dates on /explore.",
+        text: "MAPL TOURS runs small-group versions of the top picks, the raft, the rum tour, the great-house night. See dates on /explore.",
       },
     ],
     relatedSlugs: ['montego-bay-beyond-the-strip', 'montego-bay-airport-guide'],
@@ -275,7 +275,7 @@ export const POSTS_1: BlogPost[] = [
       },
       {
         type: 'p',
-        text: "MAPL Tours can arrange the airport transfer to Ocho Rios as part of any experience booking, ask when you check out on /explore.",
+        text: "MAPL TOURS can arrange the airport transfer to Ocho Rios as part of any experience booking, ask when you check out on /explore.",
       },
     ],
     relatedSlugs: ['ocho-rios-complete-guide', 'getting-around-jamaica-guide'],
@@ -343,7 +343,7 @@ export const POSTS_1: BlogPost[] = [
       },
       {
         type: 'p',
-        text: "MAPL Tours runs a small-group Kingston street food and market crawl that hits many of these stops in a single afternoon. See it on /explore.",
+        text: "MAPL TOURS runs a small-group Kingston street food and market crawl that hits many of these stops in a single afternoon. See it on /explore.",
       },
     ],
     relatedSlugs: ['jamaican-jerk-explained', 'kingston-culture-guide'],
@@ -410,7 +410,7 @@ export const POSTS_1: BlogPost[] = [
       },
       {
         type: 'p',
-        text: "MAPL Tours pairs cottage stays with day experiences, cliff-diving at Rick's, snorkeling off Seven Mile, or a food crawl in Savanna-la-Mar. Browse Negril and Westmoreland experiences on /explore.",
+        text: "MAPL TOURS pairs cottage stays with day experiences, cliff-diving at Rick's, snorkeling off Seven Mile, or a food crawl in Savanna-la-Mar. Browse Negril and Westmoreland experiences on /explore.",
       },
     ],
     relatedSlugs: ['negril-guide', 'negril-seven-mile-truth'],
@@ -478,7 +478,7 @@ export const POSTS_1: BlogPost[] = [
       },
       {
         type: 'p',
-        text: "If you want the recovery without the label, a regular deep-tissue massage from a great therapist is often just as good. MAPL Tours lists vetted boutique spa partners as add-ons when you book an experience on /explore.",
+        text: "If you want the recovery without the label, a regular deep-tissue massage from a great therapist is often just as good. MAPL TOURS lists vetted boutique spa partners as add-ons when you book an experience on /explore.",
       },
     ],
     relatedSlugs: ['negril-guide'],

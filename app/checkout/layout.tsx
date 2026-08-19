@@ -5,7 +5,7 @@ import type { Metadata } from 'next'
 // queries. Noindex also keeps abandoned-cart URLs out of the SERPs.
 export const metadata: Metadata = {
   title: 'Secure checkout',
-  description: 'Complete your MAPL Tours Jamaica booking.',
+  description: 'Complete your MAPL TOURS JAMAICA booking.',
   robots: { index: false, follow: false, googleBot: { index: false, follow: false } },
 }
 

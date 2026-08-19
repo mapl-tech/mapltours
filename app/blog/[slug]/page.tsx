@@ -40,7 +40,7 @@ function ArticleJsonLd({ post }: { post: BlogPost }) {
     },
     publisher: {
       '@type': 'Organization',
-      name: 'MAPL Tours Jamaica',
+      name: 'MAPL TOURS JAMAICA',
       logo: { '@type': 'ImageObject', url: `${SITE_URL}/brand/mapl-icon-1024.png` },
     },
     about: {
@@ -55,7 +55,7 @@ function ArticleJsonLd({ post }: { post: BlogPost }) {
     '@type': 'BreadcrumbList',
     itemListElement: [
       { '@type': 'ListItem', position: 1, name: 'Home', item: SITE_URL },
-      { '@type': 'ListItem', position: 2, name: 'The MAPL Tours Journal', item: `${SITE_URL}/blog` },
+      { '@type': 'ListItem', position: 2, name: 'The MAPL TOURS Journal', item: `${SITE_URL}/blog` },
       { '@type': 'ListItem', position: 3, name: post.title, item: url },
     ],
   }
@@ -506,7 +506,7 @@ export default function BlogPostPage({
                 color: 'var(--text-primary)',
               }}
             >
-              ← The MAPL Tours Journal
+              ← The MAPL TOURS Journal
             </Link>
             <Kicker size={10}>
               {post.category} · {formatPostDate(post.publishedAt)}
@@ -682,7 +682,7 @@ export default function BlogPostPage({
                 lineHeight: 1.6,
               }}
             >
-              {post.author.role} at MAPL Tours Journal. Writes about travel, culture, and the parts
+              {post.author.role} at MAPL TOURS Journal. Writes about travel, culture, and the parts
               of Jamaica that don&rsquo;t fit on a postcard.
             </div>
           </div>
@@ -756,7 +756,7 @@ export default function BlogPostPage({
             writing and reading, and several are inherently seasonal. Stating
             that plainly, next to the content rather than buried in the
             footer, is what stops an out-of-date figure reading as a promise
-            MAPL Tours made. It costs nothing in search terms: the body copy,
+            MAPL TOURS made. It costs nothing in search terms: the body copy,
             headings and keywords are untouched. */}
         <aside
           style={{
@@ -775,7 +775,7 @@ export default function BlogPostPage({
             Prices, opening hours and access at the places mentioned here are
             what we understood them to be at the time of writing, and they
             change. Independent businesses set their own rates and are not
-            operated by MAPL Tours. Please confirm anything you are relying on
+            operated by MAPL TOURS. Please confirm anything you are relying on
             before you travel, and check official advice for weather, road and
             safety conditions.
           </p>

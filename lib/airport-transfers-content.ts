@@ -51,7 +51,7 @@ export const TRANSFER_FAQS: TransferFaq[] = [
   },
   {
     q: 'How do I find my driver at MBJ?',
-    a: 'After you clear immigration and customs, walk through the arrivals doors. Your driver will be holding a MAPL Tours Jamaica sign with your name. If you do not see them within ten minutes, contact us using the details in your confirmation email.',
+    a: 'After you clear immigration and customs, walk through the arrivals doors. Your driver will be holding a MAPL TOURS JAMAICA sign with your name. If you do not see them within ten minutes, contact us using the details in your confirmation email.',
   },
   {
     q: 'Can I pay in cash?',

@@ -44,8 +44,8 @@ export default async function AdminDriverPreviewPage() {
     return (
       <Shell>
         <h1 style={{ fontWeight: 700, fontSize: 22 }}>Not authorised</h1>
-        <p style={{ marginTop: 8, color: soft }}>This page is limited to MAPL Tours admins.</p>
-        <p style={{ marginTop: 6, color: soft }}>Driving for MAPL Tours? Your portal is at <Link href="/driver" style={{ color: ink, fontWeight: 600 }}>mapltours.com/driver</Link>.</p>
+        <p style={{ marginTop: 8, color: soft }}>This page is limited to MAPL TOURS admins.</p>
+        <p style={{ marginTop: 6, color: soft }}>Driving for MAPL TOURS? Your portal is at <Link href="/driver" style={{ color: ink, fontWeight: 600 }}>mapltours.com/driver</Link>.</p>
       </Shell>
     )
   }
@@ -83,7 +83,7 @@ export default async function AdminDriverPreviewPage() {
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', marginBottom: 18 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/mapl-logo.svg" alt="MAPL Tours Jamaica" style={{ height: 52, width: 'auto', display: 'block', margin: '-10px 0' }} />
+          <img src="/mapl-logo.svg" alt="MAPL TOURS JAMAICA" style={{ height: 52, width: 'auto', display: 'block', margin: '-10px 0' }} />
           <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, flexWrap: 'wrap' }}>
             <h1 style={{ fontWeight: 800, fontSize: 22, letterSpacing: '-0.02em', margin: 0 }}>Driver portal preview</h1>
             <span style={{ fontSize: 13, color: soft }}>

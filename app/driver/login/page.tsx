@@ -43,7 +43,7 @@ function DriverLoginContent() {
       <header style={{ position: 'relative', zIndex: 2, padding: 'max(18px, env(safe-area-inset-top)) clamp(16px, 2.5vw, 28px) 0' }}>
         <span style={{ display: 'inline-flex', alignItems: 'center', gap: 12 }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/mapl-logo-dark.svg" alt="MAPL Tours Jamaica" style={{ height: 48, width: 'auto', display: 'block', margin: '-8px 0' }} />
+          <img className="logo-on-dark" src="/mapl-logo-dark.svg" alt="MAPL TOURS JAMAICA" style={{ height: 48, width: 'auto', display: 'block', margin: '-8px 0' }} />
           <span style={{
             fontSize: 12, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: goldWarm,
             padding: '5px 12px', borderRadius: 9999, border: '1px solid rgba(196,164,74,0.45)', whiteSpace: 'nowrap',
@@ -73,7 +73,7 @@ function DriverLoginContent() {
                 fontSize: 13, lineHeight: 1.5, margin: '18px 0 0', padding: '11px 14px', borderRadius: 10,
                 background: '#FCEDEA', border: '1px solid rgba(176,28,12,0.25)', color: '#B01C0C',
               }}>
-                That Google account is not approved for the driver portal. Sign in with the Gmail address MAPL Tours approved, or contact contact@mapltours.com.
+                That Google account is not approved for the driver portal. Sign in with the Gmail address MAPL TOURS approved, or contact contact@mapltours.com.
               </p>
             )}
 
@@ -102,7 +102,7 @@ function DriverLoginContent() {
           </div>
 
           <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.75)', textAlign: 'center', margin: '20px 0 0', lineHeight: 1.5, textShadow: '0 1px 8px rgba(0,0,0,0.5)' }}>
-            MAPL Tours Jamaica · contact@mapltours.com
+            MAPL TOURS JAMAICA · contact@mapltours.com
           </p>
         </div>
       </main>

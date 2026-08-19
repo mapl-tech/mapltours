@@ -3,7 +3,7 @@ import EditorialPage, { Section, ValueCard } from '@/components/EditorialPage'
 
 export const metadata: Metadata = {
   title: 'Safety',
-  description: 'Your safety is our priority. Learn about MAPL Tours Jamaica safety standards, creator vetting, and traveler protection.',
+  description: 'Your safety is our priority. Learn about MAPL TOURS JAMAICA safety standards, creator vetting, and traveler protection.',
   alternates: {
     canonical: 'https://mapltours.com/safety',
   },
@@ -11,9 +11,9 @@ export const metadata: Metadata = {
 
 export default function SafetyPage() {
   return (
-    <EditorialPage slug="safety" label="Your Safety" title="Safety at MAPL Tours">
+    <EditorialPage slug="safety" label="Your Safety" title="Safety at MAPL TOURS">
       <Section title="Your Safety is Our Priority">
-        <p>We take the safety of every traveler seriously. From creator vetting to activity standards, every part of the MAPL Tours experience is designed to keep you safe while you enjoy the best of Jamaica.</p>
+        <p>We take the safety of every traveler seriously. From creator vetting to activity standards, every part of the MAPL TOURS experience is designed to keep you safe while you enjoy the best of Jamaica.</p>
       </Section>
 
       <Section title="How We Keep You Safe">

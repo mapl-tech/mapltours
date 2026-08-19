@@ -24,7 +24,7 @@ export default function VideoSubmitted({ firstName, experienceTitle }: VideoSubm
 
       {/* Reward progress nudge */}
       <div style={s.panel}>
-        <Text style={s.panelKicker}>MAPL Tours Reward</Text>
+        <Text style={s.panelKicker}>MAPL TOURS Reward</Text>
         <Text style={s.panelBody}>
           Every approved clip moves you closer to <strong style={{ color: '#FFB300' }}>5% off your next trip</strong>. Keep sharing, five approved videos unlocks the discount.
         </Text>

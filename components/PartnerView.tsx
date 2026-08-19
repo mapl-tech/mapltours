@@ -52,7 +52,7 @@ const STEPS = [
   {
     n: '2',
     title: 'We come and do it',
-    body: 'Someone from MAPL Tours books it like a guest would and goes. No clipboard, no inspection — we want to see the day a traveller would actually get.',
+    body: 'Someone from MAPL TOURS books it like a guest would and goes. No clipboard, no inspection — we want to see the day a traveller would actually get.',
   },
   {
     n: '3',
@@ -93,7 +93,7 @@ const STANDARDS = [
   },
   {
     title: 'It has to be Jamaican',
-    body: 'Owned and run by people from here, us included. The whole point of MAPL Tours is that the island is not a backdrop — it is the people who know it.',
+    body: 'Owned and run by people from here, us included. The whole point of MAPL TOURS is that the island is not a backdrop — it is the people who know it.',
   },
   {
     title: 'It has to be dependable',
@@ -202,7 +202,7 @@ export default function PartnerView() {
             fontFamily: 'var(--font-dm-sans)', fontSize: 'clamp(15px, 1.5vw, 18px)',
             lineHeight: 1.7, color: 'rgba(255,255,255,0.78)', maxWidth: 620,
           }}>
-            MAPL Tours Jamaica runs its own guided experiences and its own private
+            MAPL TOURS JAMAICA runs its own guided experiences and its own private
             airport transfers. Ten parishes of road. We also work with Jamaican guides,
             tour companies, drivers, restaurants and attractions &mdash; under their own
             names, in front of travellers who came here for exactly that.
@@ -230,7 +230,7 @@ export default function PartnerView() {
             fontFamily: 'var(--font-dm-sans)', fontSize: 16.5,
             lineHeight: 1.8, color: 'var(--text-secondary)', marginBottom: 18,
           }}>
-            MAPL Tours Jamaica is an operator. On the experiences we run, our name is on
+            MAPL TOURS JAMAICA is an operator. On the experiences we run, our name is on
             the itinerary, our driver is at the airport, and the guest&rsquo;s whole day is
             ours from pickup to drop-off. Twenty-two experiences and forty-four restaurants
             and sites sit on the site today &mdash; ours and other people&rsquo;s &mdash;
@@ -405,7 +405,7 @@ export default function PartnerView() {
             maxWidth: 680, marginTop: -22, marginBottom: 40,
           }}>
             You run your experience. We run the road &mdash; same as we do for our own.
-            Where MAPL Tours Jamaica is the operator, the page says so. Where you are,
+            Where MAPL TOURS JAMAICA is the operator, the page says so. Where you are,
             your name is on it.
           </p>
 
@@ -416,7 +416,7 @@ export default function PartnerView() {
                 textTransform: 'uppercase', letterSpacing: '0.14em',
                 color: 'var(--gold-warm)', marginBottom: 18,
               }}>
-                MAPL Tours handles
+                MAPL TOURS handles
               </p>
               <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: 12 }}>
                 {WE_HANDLE.map((item) => (

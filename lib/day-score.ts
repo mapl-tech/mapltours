@@ -23,6 +23,13 @@ export interface DayScoreBreakdown {
   isOver: boolean
 }
 
+/**
+ * The shortest tour in the catalog. Below this much room left, no tour can
+ * be added to the day at all, which is what separates "nearly full" from
+ * "full" in buildNudge.
+ */
+const SHORTEST_TOUR_HOURS = 1
+
 const VARIETY_MAX = 35
 const BALANCE_MAX = 40
 const EFFICIENCY_MAX = 25
@@ -149,9 +156,22 @@ function buildNudge({
     const hrStr = over === 1 ? 'hour' : 'hours'
     return `Remove ${fmtHours(over)} ${hrStr} to get back on track`
   }
-  if (total >= 95) return 'You’ve built a perfect day ✨'
 
   const remaining = DAILY_HOUR_LIMIT - hours
+
+  // Nothing else fits. Every nudge below this line asks for another tour, and
+  // asking for one against a bar that reads 8/8 is advice the checkout gate
+  // would refuse to honour — so when the day is full the only honest moves
+  // are a swap or a second day.
+  if (remaining < SHORTEST_TOUR_HOURS) {
+    if (total >= 95) return 'You’ve built a perfect day ✨'
+    if (distinctCategories < 3) return 'Your day is full — swap a tour for a different category to mix it up'
+    if (distinctDestinations >= 4) return 'Your day is full — tours closer together would cut the driving'
+    return 'Your day is full — a perfect eight hours'
+  }
+
+  if (total >= 95) return 'You’ve built a perfect day ✨'
+
   if (hours < 3.5) {
     return `Add ${fmtHours(remaining)} more to hit a great flow`
   }

@@ -46,7 +46,7 @@ export default function GlobalError({
               margin: 0,
             }}
           >
-            MAPL Tours
+            MAPL TOURS
           </p>
           <h1 style={{ fontWeight: 700, fontSize: 28, lineHeight: 1.2, margin: '14px 0 12px' }}>
             Something broke on our end.

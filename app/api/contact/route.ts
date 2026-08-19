@@ -70,18 +70,18 @@ export async function POST(req: NextRequest) {
   const firstName = name.split(/\s+/)[0]
 
   // Both messages are sent FROM the contact inbox so visitors see a
-  // consistent sender ("MAPL Tours <contact@mapltours.com>") and any
+  // consistent sender ("MAPL TOURS <contact@mapltours.com>") and any
   // bounce / out-of-office reply lands back in the contact inbox where
   // it can be handled.
-  const CONTACT_FROM = 'MAPL Tours <contact@mapltours.com>'
+  const CONTACT_FROM = 'MAPL TOURS <contact@mapltours.com>'
 
   // 3. Ops alert, load-bearing. Failure = 500 so the user can retry.
   const opsRes = await sendEmail({
     to: 'contact@mapltours.com',
     from: CONTACT_FROM,
     subject: subject
-      ? `MAPL Tours · Contact · ${subject}`
-      : `MAPL Tours · Contact · message from ${name}`,
+      ? `MAPL TOURS · Contact · ${subject}`
+      : `MAPL TOURS · Contact · message from ${name}`,
     replyTo: email,
     react: ContactMessage({
       name,
@@ -107,7 +107,7 @@ export async function POST(req: NextRequest) {
   const replyRes = await sendEmail({
     to: email,
     from: CONTACT_FROM,
-    subject: 'We got your message, MAPL Tours',
+    subject: 'We got your message, MAPL TOURS',
     react: ContactAutoReply({
       firstName,
       subject: subject || null,

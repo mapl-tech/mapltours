@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react'
 import { createClient } from './client'
 import { useAuth } from './auth-context'
 import { useSwrCache } from '@/lib/swr-cache'
+import { useSaved } from './saved'
 import type { Comment } from '@/lib/experiences'
 
 const supabase = createClient()
@@ -14,85 +15,58 @@ export function useUser() {
 }
 
 // ── Experience Likes ──
+/**
+ * The heart on the detail page: whether THIS guest saved the tour, plus how
+ * many people have.
+ *
+ * "Saved" is owned by SavedProvider, not fetched here. Both this heart and
+ * the one on every browse card write the same `experience_likes` row, so two
+ * independent caches would disagree the moment a guest used one and then the
+ * other — save from a card, open the tour, and the heart would show empty.
+ * Only the public count is fetched locally, and it is display-only.
+ */
 interface LikeSnapshot { liked: boolean; count: number }
 
 export function useExperienceLike(experienceId: number, enabled = true) {
   const { user } = useAuth()
-  const [loading, setLoading] = useState(false)
+  const { isSaved, toggleSave } = useSaved()
 
-  // Cache key includes user id so logging in/out doesn't show a stale "liked"
-  // state. For anonymous visitors we still cache the public count.
   // `enabled` lets feed surfaces defer the fetch until a reel is actually
-  // shown, one load of the reel page was firing 22 count queries at once.
+  // shown; one load of the reel page was firing 22 count queries at once.
   const cacheKey = `like:${experienceId}:${user?.id ?? 'anon'}`
   const { data, mutate } = useSwrCache<LikeSnapshot>(
     cacheKey,
     async () => {
-      const [countRes, likeRes] = await Promise.all([
-        supabase
-          .from('experience_likes')
-          .select('id', { count: 'exact', head: true })
-          .eq('experience_id', experienceId),
-        user
-          ? supabase
-              .from('experience_likes')
-              .select('id')
-              .eq('experience_id', experienceId)
-              .eq('user_id', user.id)
-              .maybeSingle()
-          : Promise.resolve({ data: null }),
-      ])
-      return {
-        liked: !!likeRes.data,
-        count: countRes.count ?? 0,
-      }
+      // Read from the aggregate view, not the table. Saved rows are private
+      // (migration 021), so counting them directly would return only this
+      // guest's own row — every tour would show a count of 0 or 1.
+      const { data } = await supabase
+        .from('experience_like_counts')
+        .select('like_count')
+        .eq('experience_id', experienceId)
+        .maybeSingle()
+      return { liked: false, count: data?.like_count ?? 0 }
     },
     { enabled }
   )
 
-  const liked = data?.liked ?? false
+  const liked = isSaved(experienceId)
   const likeCount = data?.count ?? 0
 
-  const toggleLike = useCallback(async () => {
-    if (loading) return
-    if (!user) {
-      window.location.href = '/login?redirect=' + encodeURIComponent(window.location.pathname)
-      return
-    }
-
-    setLoading(true)
-    const wasLiked = liked
-
-    // Optimistic update, paints instantly and persists to cache
-    mutate((prev) => ({
-      liked: !wasLiked,
-      count: Math.max(0, (prev?.count ?? 0) + (wasLiked ? -1 : 1)),
-    }))
-
-    try {
-      // Supabase resolves to { error } rather than throwing, so we must
-      // inspect it explicitly, a bare await would let a failed write slip
-      // past and leave the optimistic state stuck.
-      const { error } = wasLiked
-        ? await supabase
-            .from('experience_likes')
-            .delete()
-            .eq('experience_id', experienceId)
-            .eq('user_id', user.id)
-        : await supabase
-            .from('experience_likes')
-            .insert({ experience_id: experienceId, user_id: user.id })
-      if (error) throw error
-    } catch {
-      // Roll back the optimistic update on any failure.
+  const toggleLike = useCallback(() => {
+    // Signed-out routing to /login lives in toggleSave, so there is one
+    // answer to "what happens when a logged-out guest taps a heart".
+    const wasSaved = isSaved(experienceId)
+    if (user) {
+      // Display-only nudge so the number moves with the heart; the next
+      // revalidation reconciles it with the real count either way.
       mutate((prev) => ({
-        liked: wasLiked,
-        count: Math.max(0, (prev?.count ?? 0) + (wasLiked ? 1 : -1)),
+        liked: !wasSaved,
+        count: Math.max(0, (prev?.count ?? 0) + (wasSaved ? -1 : 1)),
       }))
     }
-
-    setLoading(false)
-  }, [user, liked, experienceId, loading, mutate])
+    toggleSave(experienceId)
+  }, [user, experienceId, isSaved, toggleSave, mutate])
 
   return { liked, likeCount, toggleLike, isLoggedIn: !!user }
 }

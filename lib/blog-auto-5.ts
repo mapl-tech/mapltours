@@ -655,7 +655,7 @@ export const POSTS_5: BlogPost[] = [
       },
       {
         type: 'p',
-        text: "We build custom honeymoon itineraries at MAPL Tours, villa, boutique, or a mix, with bookable experiences across the island. Start with /explore to see the anchors, and we can assemble the rest around them. Get married, come here, skip the wristband. No problem.",
+        text: "We build custom honeymoon itineraries at MAPL TOURS, villa, boutique, or a mix, with bookable experiences across the island. Start with /explore to see the anchors, and we can assemble the rest around them. Get married, come here, skip the wristband. No problem.",
       },
     ],
     relatedSlugs: ['negril-guide', 'blue-mountain-sunrise-hike'],

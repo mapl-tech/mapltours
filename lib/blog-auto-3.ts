@@ -59,11 +59,11 @@ export const POSTS_3: BlogPost[] = [
       },
       {
         type: 'p',
-        text: "C-tier and value-tier only make sense if the resort is a base, not the vacation. Guests who spend their days booking local excursions through MAPL Tours or similar platforms will rate a C-tier property far higher than guests who expect the resort to be the whole experience. If you are paying $280 a night in Jamaica and staying on property twelve hours a day, something has gone wrong with your planning.",
+        text: "C-tier and value-tier only make sense if the resort is a base, not the vacation. Guests who spend their days booking local excursions through MAPL TOURS or similar platforms will rate a C-tier property far higher than guests who expect the resort to be the whole experience. If you are paying $280 a night in Jamaica and staying on property twelve hours a day, something has gone wrong with your planning.",
       },
       {
         type: 'p',
-        text: "Whatever tier a traveler lands on, MAPL Tours guests tend to pair a resort stay with two or three locally-led tours booked separately at /explore, a jerk masterclass in Boston Bay, a sunrise hike in the Blue Mountains, a sound-system night in Kingston. That is where the trip becomes Jamaica rather than a generic beach week.",
+        text: "Whatever tier a traveler lands on, MAPL TOURS guests tend to pair a resort stay with two or three locally-led tours booked separately at /explore, a jerk masterclass in Boston Bay, a sunrise hike in the Blue Mountains, a sound-system night in Kingston. That is where the trip becomes Jamaica rather than a generic beach week.",
       },
     ],
     relatedSlugs: ['sandals-jamaica-property-guide', 'beyond-the-resort'],
@@ -126,7 +126,7 @@ export const POSTS_3: BlogPost[] = [
       },
       {
         type: 'p',
-        text: "Most MAPL Tours guests staying at any sandals jamaica property pair the stay with one or two locally-led tours, a jerk cooking class, a Blue Mountain sunrise hike, a sound-system night in Kingston, booked separately at /explore. That pairing tends to produce the strongest post-trip reviews in our own data.",
+        text: "Most MAPL TOURS guests staying at any sandals jamaica property pair the stay with one or two locally-led tours, a jerk cooking class, a Blue Mountain sunrise hike, a sound-system night in Kingston, booked separately at /explore. That pairing tends to produce the strongest post-trip reviews in our own data.",
       },
     ],
     relatedSlugs: ['sandals-montego-bay-review', 'jamaica-all-inclusive-tier-list'],
@@ -185,7 +185,7 @@ export const POSTS_3: BlogPost[] = [
       },
       {
         type: 'p',
-        text: "As with any all-inclusive in Jamaica, the stay gets stronger when paired with a local tour or two. MAPL Tours guests staying at sandals montego bay frequently add a jerk masterclass in Boston Bay or a Blue Mountain sunrise hike, booked separately at /explore, and report those as the most memorable hours of their trip.",
+        text: "As with any all-inclusive in Jamaica, the stay gets stronger when paired with a local tour or two. MAPL TOURS guests staying at sandals montego bay frequently add a jerk masterclass in Boston Bay or a Blue Mountain sunrise hike, booked separately at /explore, and report those as the most memorable hours of their trip.",
       },
     ],
     relatedSlugs: ['sandals-jamaica-property-guide', 'montego-bay-beyond-the-strip'],
@@ -244,7 +244,7 @@ export const POSTS_3: BlogPost[] = [
       },
       {
         type: 'p',
-        text: "MAPL Tours guests staying at sandals negril often add a Rick's Cafe cliff-jumping evening or a Seven Mile Beach snorkel with rum punch, both bookable separately at /explore. Those local experiences tend to be the hours people remember most from a Negril trip.",
+        text: "MAPL TOURS guests staying at sandals negril often add a Rick's Cafe cliff-jumping evening or a Seven Mile Beach snorkel with rum punch, both bookable separately at /explore. Those local experiences tend to be the hours people remember most from a Negril trip.",
       },
     ],
     relatedSlugs: ['sandals-jamaica-property-guide', 'negril-guide'],
@@ -303,7 +303,7 @@ export const POSTS_3: BlogPost[] = [
       },
       {
         type: 'p',
-        text: "MAPL Tours guests at sandals ochi frequently add Dunn's River Falls with the hidden blue hole or a Nine Mile Bob Marley heritage day, booked separately at /explore. The north coast is tour-dense in a way the west end is not, and Ochi's location turns that into a real advantage.",
+        text: "MAPL TOURS guests at sandals ochi frequently add Dunn's River Falls with the hidden blue hole or a Nine Mile Bob Marley heritage day, booked separately at /explore. The north coast is tour-dense in a way the west end is not, and Ochi's location turns that into a real advantage.",
       },
     ],
     relatedSlugs: ['sandals-jamaica-property-guide', 'ocho-rios-complete-guide'],
@@ -362,7 +362,7 @@ export const POSTS_3: BlogPost[] = [
       },
       {
         type: 'p',
-        text: "MAPL Tours guests at moon palace jamaica often use the resort credit toward an off-property Dunn's River Falls day or a Nine Mile heritage tour, and many add a locally-led jerk cooking class or a river rafting experience booked separately at /explore.",
+        text: "MAPL TOURS guests at moon palace jamaica often use the resort credit toward an off-property Dunn's River Falls day or a Nine Mile heritage tour, and many add a locally-led jerk cooking class or a river rafting experience booked separately at /explore.",
       },
     ],
     relatedSlugs: ['bahia-principe-grand-jamaica-review', 'ocho-rios-complete-guide'],
@@ -422,7 +422,7 @@ export const POSTS_3: BlogPost[] = [
       },
       {
         type: 'p',
-        text: "MAPL Tours guests at bahia principe grand jamaica often pair the stay with two or three north-coast tours, Dunn's River, Nine Mile, Blue Mountain coffee trek, booked separately at /explore. The property works well as a base; it is weaker as the whole experience.",
+        text: "MAPL TOURS guests at bahia principe grand jamaica often pair the stay with two or three north-coast tours, Dunn's River, Nine Mile, Blue Mountain coffee trek, booked separately at /explore. The property works well as a base; it is weaker as the whole experience.",
       },
     ],
     relatedSlugs: ['moon-palace-jamaica-review', 'jamaica-all-inclusive-tier-list'],
@@ -482,7 +482,7 @@ export const POSTS_3: BlogPost[] = [
       },
       {
         type: 'p',
-        text: "MAPL Tours guests at riu montego bay almost always book off-property tours, the savings versus Sandals more than cover a jerk masterclass in Boston Bay, a sunrise hike in the Blue Mountains, or a Kingston sound-system night, all available at /explore. That combination tends to produce a trip that punches well above the resort's nightly rate.",
+        text: "MAPL TOURS guests at riu montego bay almost always book off-property tours, the savings versus Sandals more than cover a jerk masterclass in Boston Bay, a sunrise hike in the Blue Mountains, or a Kingston sound-system night, all available at /explore. That combination tends to produce a trip that punches well above the resort's nightly rate.",
       },
     ],
     relatedSlugs: ['riu-ocho-rios-review', 'jamaica-all-inclusive-tier-list'],
@@ -542,7 +542,7 @@ export const POSTS_3: BlogPost[] = [
       },
       {
         type: 'p',
-        text: "MAPL Tours guests at riu ochorios typically add two or three north-coast tours, Dunn's River with the hidden blue hole, Nine Mile heritage pilgrimage, a Blue Mountain sunrise hike, booked separately at /explore. The savings versus Sandals Ochi cover those tours and then some.",
+        text: "MAPL TOURS guests at riu ochorios typically add two or three north-coast tours, Dunn's River with the hidden blue hole, Nine Mile heritage pilgrimage, a Blue Mountain sunrise hike, booked separately at /explore. The savings versus Sandals Ochi cover those tours and then some.",
       },
     ],
     relatedSlugs: ['riu-montego-bay-review', 'ocho-rios-complete-guide'],
@@ -602,7 +602,7 @@ export const POSTS_3: BlogPost[] = [
       },
       {
         type: 'p',
-        text: "MAPL Tours guests at riu negril commonly add Rick's Cafe cliff-jumping at sunset, a Seven Mile Beach snorkel with rum punch, or a sunrise fishing trip at Treasure Beach, all booked separately at /explore. The savings versus Sandals Negril easily cover two or three of those local experiences, which tend to be the hours travelers remember longest.",
+        text: "MAPL TOURS guests at riu negril commonly add Rick's Cafe cliff-jumping at sunset, a Seven Mile Beach snorkel with rum punch, or a sunrise fishing trip at Treasure Beach, all booked separately at /explore. The savings versus Sandals Negril easily cover two or three of those local experiences, which tend to be the hours travelers remember longest.",
       },
     ],
     relatedSlugs: ['riu-ocho-rios-review', 'negril-guide'],

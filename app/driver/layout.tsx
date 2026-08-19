@@ -5,7 +5,7 @@ import type { Metadata } from 'next'
 // indexable, competing with the homepage for its own brand terms.
 export const metadata: Metadata = {
   title: 'Driver',
-  description: 'MAPL Tours driver portal.',
+  description: 'MAPL TOURS driver portal.',
   robots: { index: false, follow: false, googleBot: { index: false, follow: false } },
 }
 

@@ -87,7 +87,7 @@ export default function ContactView() {
                   <Leaf size={18} color="var(--accent)" />
                 </div>
                 <div style={{ lineHeight: 1 }}>
-                  <span style={{ fontFamily: 'var(--font-dm-sans)', fontWeight: 800, fontSize: 16, textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block' }}>MAPL Tours</span>
+                  <span style={{ fontFamily: 'var(--font-dm-sans)', fontWeight: 800, fontSize: 16, textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block' }}>MAPL TOURS</span>
                   <span style={{ fontFamily: 'var(--font-dm-sans)', fontWeight: 700, fontSize: 11, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--text-tertiary)', display: 'block', marginTop: 1 }}>Tours Jamaica</span>
                 </div>
               </div>
@@ -142,7 +142,7 @@ export default function ContactView() {
                     href={s.href}
                     target="_blank"
                     rel="noopener noreferrer"
-                    aria-label={`MAPL Tours on ${s.label}`}
+                    aria-label={`MAPL TOURS on ${s.label}`}
                     title={s.label}
                     style={{
                       width: 44, height: 44, borderRadius: 'var(--r-md)',

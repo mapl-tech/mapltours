@@ -21,7 +21,7 @@ export const dynamic = 'force-dynamic'
 
 export const metadata: Metadata = {
   title: 'Booking Confirmation',
-  description: 'Your MAPL Tours Jamaica booking confirmation.',
+  description: 'Your MAPL TOURS JAMAICA booking confirmation.',
   robots: { index: false, follow: false },
 }
 

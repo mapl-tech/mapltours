@@ -157,15 +157,15 @@ function FlightRow({ flightRaw, dateIso, mbjRole }: {
               {isDeparture && lead != null && (
                 <span style={{ display: 'block', fontSize: 13, color: warn ? red : faint, marginTop: 3 }}>
                   {lead <= 0
-                    ? `The ${booked} pickup is at or after the flight time. Contact MAPL Tours before driving.`
+                    ? `The ${booked} pickup is at or after the flight time. Contact MAPL TOURS before driving.`
                     : lead < MIN_PICKUP_LEAD_MIN
-                      ? `Pickup at ${booked} leaves only ${leadLabel} before the flight. Confirm with MAPL Tours.`
+                      ? `Pickup at ${booked} leaves only ${leadLabel} before the flight. Confirm with MAPL TOURS.`
                       : `Pickup at ${booked} leaves ${leadLabel} before the flight.`}
                 </span>
               )}
               {!isDeparture && warn && (
                 <span style={{ display: 'block', fontSize: 13, color: red, marginTop: 3 }}>
-                  Differs from the booked {booked}. Confirm with MAPL Tours before driving.
+                  Differs from the booked {booked}. Confirm with MAPL TOURS before driving.
                 </span>
               )}
             </div>
@@ -233,13 +233,13 @@ function TripCard({ t, open, onToggle }: { t: DriverTrip; open: boolean; onToggl
   const ref = useScrollOnOpen(open)
   const isRT = t.tripType === 'round_trip'
   const arrCal = t.arrivalAt ? gcalLink({
-    title: `MAPL Tours pickup: ${t.guestName} (${t.ref})`,
+    title: `MAPL TOURS pickup: ${t.guestName} (${t.ref})`,
     startIso: t.arrivalAt, durationMin: 60,
     location: `${t.airport}, Montego Bay`,
     details: `Drop-off: ${t.hotel}. Passengers: ${t.passengers}. Guest: ${t.guestPhone ?? ''}. Your pay: ${money(t.payoutLegs[0].amount)}${isRT ? ' (leg 1 of 2)' : ''}.`,
   }) : null
   const depCal = isRT && t.departureAt ? gcalLink({
-    title: `MAPL Tours departure pickup: ${t.guestName} (${t.ref})`,
+    title: `MAPL TOURS departure pickup: ${t.guestName} (${t.ref})`,
     startIso: t.departureAt, durationMin: 90,
     location: t.hotel,
     details: `Drop at ${t.airport}. Hotel pickup ${jaTime(t.departureAt)} Jamaica time (time the guest requested)${t.departureFlight ? `, flight ${t.departureFlight}` : ''}. Your pay: ${money(t.payoutLegs[1]?.amount ?? 0)} (leg 2 of 2).`,
@@ -310,7 +310,7 @@ function TripCard({ t, open, onToggle }: { t: DriverTrip; open: boolean; onToggl
           <p style={{ fontSize: 19, fontWeight: 800, margin: '6px 0 0', letterSpacing: '-0.01em' }}>{t.guestName}</p>
           {t.guestPhone && (
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 12 }}>
-              <Act grow tone="wa" href={waLink(t.guestPhone, `Hello ${t.guestName}, this is your MAPL Tours driver.`)}>
+              <Act grow tone="wa" href={waLink(t.guestPhone, `Hello ${t.guestName}, this is your MAPL TOURS driver.`)}>
                 <MessageCircle size={16} aria-hidden="true" />WhatsApp guest
               </Act>
               <Act grow href={`tel:${t.guestPhone.replace(/[^+\d]/g, '')}`}>
@@ -419,7 +419,7 @@ function TourCard({ t, open, onToggle }: { t: DriverTour; open: boolean; onToggl
             <p style={{ fontSize: 19, fontWeight: 800, margin: '6px 0 0', letterSpacing: '-0.01em' }}>{t.guestName}</p>
             {t.guestPhone && (
               <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 12 }}>
-                <Act grow tone="wa" href={waLink(t.guestPhone, `Hello ${t.guestName}, this is your MAPL Tours driver.`)}>
+                <Act grow tone="wa" href={waLink(t.guestPhone, `Hello ${t.guestName}, this is your MAPL TOURS driver.`)}>
                   <MessageCircle size={16} aria-hidden="true" />WhatsApp guest
                 </Act>
                 <Act grow href={`tel:${t.guestPhone.replace(/[^+\d]/g, '')}`}>
@@ -498,7 +498,7 @@ export default function DriverDashboard({ trips, tours = [], driverLabel, adminP
       <header style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
         <div>
           <h1 style={{ fontWeight: 800, fontSize: 'clamp(24px, 4.5vw, 30px)', letterSpacing: '-0.025em', margin: 0 }}>Your trips</h1>
-          <p style={{ fontSize: 14, color: soft, margin: '5px 0 0' }}>{driverLabel} · MAPL Tours Jamaica</p>
+          <p style={{ fontSize: 14, color: soft, margin: '5px 0 0' }}>{driverLabel} · MAPL TOURS JAMAICA</p>
         </div>
       </header>
 
@@ -585,7 +585,7 @@ export default function DriverDashboard({ trips, tours = [], driverLabel, adminP
           {trips.length === 0 && (
             <div style={{ background: '#fff', border, borderRadius: 18, padding: '32px 20px', textAlign: 'center' }}>
               <p style={{ fontSize: 16, fontWeight: 700, margin: 0 }}>No transfers assigned yet</p>
-              <p style={{ fontSize: 14, color: soft, margin: '6px 0 0' }}>New bookings from MAPL Tours will appear here.</p>
+              <p style={{ fontSize: 14, color: soft, margin: '6px 0 0' }}>New bookings from MAPL TOURS will appear here.</p>
             </div>
           )}
           {trips.map((t) => <TripCard key={t.id} t={t} open={openId === t.id} onToggle={() => toggle(t.id)} />)}

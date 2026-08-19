@@ -28,7 +28,7 @@ export default function DriverShell({ signedInAs, children }: { signedInAs: stri
         <div style={{ width: '100%', padding: '0 clamp(16px, 2.5vw, 28px)', height: 60, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
           <span style={{ display: 'inline-flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/mapl-logo-dark.svg" alt="MAPL Tours Jamaica" style={{ height: 46, width: 'auto', display: 'block', margin: '-8px 0' }} />
+            <img className="logo-on-dark" src="/mapl-logo-dark.svg" alt="MAPL TOURS JAMAICA" style={{ height: 46, width: 'auto', display: 'block', margin: '-8px 0' }} />
             <span className="driver-shell-tag" style={{
               fontSize: 12, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: goldWarm,
               padding: '5px 12px', borderRadius: 9999, border: '1px solid rgba(196,164,74,0.45)', whiteSpace: 'nowrap',

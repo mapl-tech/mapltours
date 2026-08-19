@@ -4,7 +4,7 @@ import EditorialPage, { Section } from '@/components/EditorialPage'
 export const metadata: Metadata = {
   title: 'Privacy Policy',
   description:
-    'How MAPL Tours Jamaica collects, uses, stores, and protects your personal information when you book an experience or browse the site.',
+    'How MAPL TOURS JAMAICA collects, uses, stores, and protects your personal information when you book an experience or browse the site.',
   alternates: {
     canonical: 'https://mapltours.com/privacy',
   },
@@ -19,7 +19,7 @@ export default function PrivacyPage() {
 
       <Section title="Our commitment">
         <p>
-          MAPL Tours respects your privacy. This Policy explains what information we collect, why we collect it, who we
+          MAPL TOURS respects your privacy. This Policy explains what information we collect, why we collect it, who we
           share it with, and the choices you have. If you have any questions after reading it, email{' '}
           <a href="mailto:contact@mapltours.com" style={{ color: 'var(--text-primary)', textDecoration: 'underline' }}>
             contact@mapltours.com
@@ -46,7 +46,7 @@ export default function PrivacyPage() {
           <li>Provide customer support and respond to your questions.</li>
           <li>Improve the platform, understand which experiences travelers love, fix bugs, and tune the user experience.</li>
           <li>Detect, prevent, and address fraud or abuse on the platform.</li>
-          <li>Promote MAPL Tours Jamaica, including using photographs, video and reviews from experiences in our marketing.</li>
+          <li>Promote MAPL TOURS JAMAICA, including using photographs, video and reviews from experiences in our marketing.</li>
           <li>Comply with applicable law, including tax and accounting obligations.</li>
         </ul>
       </Section>
@@ -102,7 +102,7 @@ export default function PrivacyPage() {
 
       <Section title="Children">
         <p>
-          MAPL Tours is intended for adults. We do not knowingly collect personal information from anyone under 16. If
+          MAPL TOURS is intended for adults. We do not knowingly collect personal information from anyone under 16. If
           you believe a child has provided us with their information, contact us and we will delete it.
         </p>
       </Section>

@@ -35,7 +35,7 @@ export default function GiftCardDelivered({
 }: GiftCardDeliveredProps) {
   return (
     <MaplLayout
-      preheader={`${senderName ? `${senderName} sent you` : 'You have received'} a ${fmtMoney(amount, currency)} MAPL Tours Jamaica gift card`}
+      preheader={`${senderName ? `${senderName} sent you` : 'You have received'} a ${fmtMoney(amount, currency)} MAPL TOURS JAMAICA gift card`}
     >
       <Text style={s.eyebrow}>A gift for you</Text>
 
@@ -44,7 +44,7 @@ export default function GiftCardDelivered({
       </Heading>
       <Text style={s.heroLead}>
         {senderName ? `${senderName} has sent you` : 'You have been sent'}{' '}
-        a {fmtMoney(amount, currency)} gift card for MAPL Tours Jamaica — good for
+        a {fmtMoney(amount, currency)} gift card for MAPL TOURS JAMAICA — good for
         guided experiences, private airport transfers, and days out across the island.
       </Text>
 

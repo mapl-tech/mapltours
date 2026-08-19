@@ -651,7 +651,7 @@ export default function TransfersCheckoutView() {
               )}
 
               {/* All-in pricing: the quoted price already covers the ride,
-                  MAPL Tours's margin and card processing, so there is no Subtotal or
+                  MAPL TOURS's margin and card processing, so there is no Subtotal or
                   Service-fee row here. The booking still records the split. */}
               <div
                 style={{
@@ -1489,7 +1489,7 @@ function ConfirmedInline({
             lineHeight: 1.5,
           }}
         >
-          A confirmation email with meeting instructions is on its way. MAPL Tours
+          A confirmation email with meeting instructions is on its way. MAPL TOURS
           will reach out 24 hours before pickup.
         </p>
         <p

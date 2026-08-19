@@ -7,6 +7,7 @@ import ItineraryPanel from './ItineraryPanel'
 import PageTransition from './PageTransition'
 import ScrollReveal from './ScrollReveal'
 import { AuthProvider } from '@/lib/supabase/auth-context'
+import { SavedProvider } from '@/lib/supabase/saved'
 import { useCartStore } from '@/lib/cart'
 import { useI18nStore } from '@/lib/i18n'
 import { usePlacesCart } from '@/lib/places-cart'
@@ -36,34 +37,36 @@ export default function LayoutShell({ children }: { children: React.ReactNode })
 
   return (
     <AuthProvider>
-      <a href="#main-content" className="skip-link">Skip to main content</a>
-      <ScrollReveal />
-      {!hideNav && <TopNav onCartClick={() => setDrawerOpen(true)} />}
-      <main id="main-content">
-        <PageTransition>{children}</PageTransition>
-      </main>
-      {!hideNav && <ItineraryPanel open={drawerOpen} onClose={() => setDrawerOpen(false)} />}
-      <style jsx>{`
-        .skip-link {
-          position: absolute;
-          left: -9999px;
-          top: 0;
-          z-index: 1000;
-          padding: 12px 20px;
-          background: #fff;
-          color: #000;
-          font-family: var(--font-dm-sans);
-          font-weight: 600;
-          font-size: 14px;
-          border-radius: 0 0 8px 0;
-          text-decoration: none;
-        }
-        .skip-link:focus {
-          left: 0;
-          outline: 2px solid var(--accent, #FFB300);
-          outline-offset: 2px;
-        }
-      `}</style>
+      <SavedProvider>
+        <a href="#main-content" className="skip-link">Skip to main content</a>
+        <ScrollReveal />
+        {!hideNav && <TopNav onCartClick={() => setDrawerOpen(true)} />}
+        <main id="main-content">
+          <PageTransition>{children}</PageTransition>
+        </main>
+        {!hideNav && <ItineraryPanel open={drawerOpen} onClose={() => setDrawerOpen(false)} />}
+        <style jsx>{`
+          .skip-link {
+            position: absolute;
+            left: -9999px;
+            top: 0;
+            z-index: 1000;
+            padding: 12px 20px;
+            background: #fff;
+            color: #000;
+            font-family: var(--font-dm-sans);
+            font-weight: 600;
+            font-size: 14px;
+            border-radius: 0 0 8px 0;
+            text-decoration: none;
+          }
+          .skip-link:focus {
+            left: 0;
+            outline: 2px solid var(--accent, #FFB300);
+            outline-offset: 2px;
+          }
+        `}</style>
+      </SavedProvider>
     </AuthProvider>
   )
 }

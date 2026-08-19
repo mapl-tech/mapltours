@@ -14,7 +14,7 @@ export function generateMetadata({ params }: { params: { slug: string } }): Meta
   if (!exp) {
     return { title: 'Experience not found', robots: { index: false, follow: false } }
   }
-  // The layout template appends " | MAPL Tours Jamaica" (22 chars), so the
+  // The layout template appends " | MAPL TOURS JAMAICA" (22 chars), so the
   // per-page part has to stay short or Google truncates the tour name itself.
   const title = exp.title.length > 28 ? exp.title : `${exp.title}, ${exp.destination}`
   // Search snippets cut around 160 characters; several tour blurbs run past
@@ -33,7 +33,7 @@ export function generateMetadata({ params }: { params: { slug: string } }): Meta
       url,
       title,
       description,
-      siteName: 'MAPL Tours Jamaica',
+      siteName: 'MAPL TOURS JAMAICA',
       images: exp.image ? [{ url: exp.image, alt: exp.title }] : undefined,
     },
     twitter: {
