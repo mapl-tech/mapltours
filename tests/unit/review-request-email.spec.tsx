@@ -58,10 +58,17 @@ describe('asks about the right thing', () => {
 })
 
 describe('compliance holds', () => {
-  test('offers no incentive, and says so', async () => {
-    const html = decode(await transfer())
-    expect(html).toMatch(/nothing in it for you/i)
-    expect(html).toMatch(/no discount/i)
+  test('offers no incentive of any kind', async () => {
+    // Not offering one is the compliant act. The email used to also ANNOUNCE
+    // that it was not offering one, which read as small print answering an
+    // accusation nobody had made, so this checks for absence instead.
+    for (const html of [decode(await transfer()), decode(await tour())]) {
+      expect(html).not.toMatch(/discount/i)
+      expect(html).not.toMatch(/voucher/i)
+      expect(html).not.toMatch(/prize|giveaway|competition/i)
+      expect(html).not.toMatch(/free (trip|transfer|tour|ride)/i)
+      expect(html).not.toMatch(/in (exchange|return) for/i)
+    }
   })
 
   test('does not gate by sentiment', async () => {

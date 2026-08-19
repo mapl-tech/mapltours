@@ -123,13 +123,6 @@ export default function ReviewRequest({
         Nothing we write answers that. You can. {prompts}
       </Text>
 
-      <Text style={para}>
-        Say it however you found it. An honest middling review is more use to
-        the next traveller than a glowing one that isn&rsquo;t true. There is
-        nothing in it for you, no discount and no prize draw, and nothing about
-        your booking changes either way.
-      </Text>
-
       <Section style={s.ctaWrap}>
         <Button href={reviewUrl} style={reviewCta}>
           Write a review on Tripadvisor
