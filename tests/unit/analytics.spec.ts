@@ -27,11 +27,21 @@ function installWindow(opts: { withGtag?: boolean; storageThrows?: boolean } = {
       store[k] = v
     },
   }
-  const win: Record<string, unknown> = { dataLayer, localStorage }
-  if (opts.withGtag) win.gtag = (...args: unknown[]) => { dataLayer.push(args) }
+  const win: Record<string, unknown> = {
+    dataLayer,
+    localStorage,
+    // The module waits for gtag via setTimeout; give it the real one.
+    setTimeout: (fn: () => void, ms: number) => setTimeout(fn, ms),
+  }
+  // gtag defaults to PRESENT now: the interesting case is no longer "queue it
+  // anyway" but "wait, and give up if it never arrives".
+  if (opts.withGtag !== false) win.gtag = (...args: unknown[]) => { dataLayer.push(args) }
   ;(globalThis as unknown as { window: unknown }).window = win
   return { dataLayer, store }
 }
+
+/** The module defers to a ready gtag, so assertions run on the next tick. */
+const settle = () => new Promise((r) => setTimeout(r, 20))
 
 /** The events gtag would receive, whether queued or sent directly. */
 const sent = (dataLayer: unknown[]) =>
@@ -47,20 +57,34 @@ afterEach(() => {
 })
 
 describe('reaching gtag', () => {
-  test('queues onto dataLayer when gtag has not loaded yet', async () => {
+  test('sends once gtag exists', async () => {
+    const { dataLayer } = installWindow()
+    const { trackPurchase } = await fresh()
+    trackPurchase({ transactionId: 'MAPL-B', value: 10, currency: 'USD', items: [] })
+    await settle()
+    expect(sent(dataLayer)).toHaveLength(1)
+  })
+
+  /**
+   * The event must NEVER be pushed onto dataLayer ahead of the tag's own
+   * config. Measured on production, doing that produced the queue
+   * ["event:purchase","js","config"] and gtag.js discarded the purchase
+   * because no destination was configured when it drained.
+   */
+  test('sends NOTHING while gtag is absent, rather than queueing out of order', async () => {
     const { dataLayer } = installWindow({ withGtag: false })
     const { trackPurchase } = await fresh()
     trackPurchase({ transactionId: 'MAPL-A', value: 154, currency: 'usd', items: [] })
-    const events = sent(dataLayer)
-    expect(events).toHaveLength(1)
-    expect(events[0][1]).toBe('purchase')
+    await settle()
+    expect(dataLayer).toHaveLength(0)
   })
 
-  test('uses gtag directly once it exists', async () => {
-    const { dataLayer } = installWindow({ withGtag: true })
+  test('does not burn the once-only claim when the send never happens', async () => {
+    const w = installWindow({ withGtag: false })
     const { trackPurchase } = await fresh()
-    trackPurchase({ transactionId: 'MAPL-B', value: 10, currency: 'USD', items: [] })
-    expect(sent(dataLayer)).toHaveLength(1)
+    trackPurchase({ transactionId: 'MAPL-RETRY', value: 99, currency: 'USD', items: [] })
+    await settle()
+    expect(Object.keys(w.store)).toHaveLength(0)
   })
 
   test('does nothing at all on the server, where there is no window', async () => {
@@ -78,6 +102,7 @@ describe('purchase fires once per booking', () => {
     trackPurchase(input)
     trackPurchase(input)
     trackPurchase(input)
+    await settle()
     expect(sent(dataLayer).filter((e) => e[1] === 'purchase')).toHaveLength(1)
   })
 
@@ -86,6 +111,7 @@ describe('purchase fires once per booking', () => {
     const { trackPurchase } = await fresh()
     trackPurchase({ transactionId: 'MAPL-ONE', value: 10, currency: 'USD', items: [] })
     trackPurchase({ transactionId: 'MAPL-TWO', value: 20, currency: 'USD', items: [] })
+    await settle()
     expect(sent(dataLayer).filter((e) => e[1] === 'purchase')).toHaveLength(2)
   })
 
@@ -93,6 +119,7 @@ describe('purchase fires once per booking', () => {
     const { dataLayer } = installWindow({ storageThrows: true })
     const { trackPurchase } = await fresh()
     trackPurchase({ transactionId: 'MAPL-NOSTORE', value: 10, currency: 'USD', items: [] })
+    await settle()
     expect(sent(dataLayer)).toHaveLength(0)
   })
 })
@@ -130,6 +157,7 @@ describe('payloads', () => {
     trackPurchase({ transactionId: 'MAPL-N1', value: Number.NaN, currency: 'USD', items: [] })
     trackPurchase({ transactionId: 'MAPL-N2', value: -5, currency: 'USD', items: [] })
     trackPurchase({ transactionId: 'MAPL-N3', value: Infinity, currency: 'USD', items: [] })
+    await settle()
     expect(sent(dataLayer)).toHaveLength(0)
   })
 
@@ -137,6 +165,7 @@ describe('payloads', () => {
     const { dataLayer } = installWindow()
     const { trackPurchase } = await fresh()
     trackPurchase({ transactionId: '', value: 100, currency: 'USD', items: [] })
+    await settle()
     expect(sent(dataLayer)).toHaveLength(0)
   })
 })
@@ -147,6 +176,7 @@ describe('the other two events', () => {
     const { trackBeginCheckout } = await fresh()
     trackBeginCheckout({ key: 'bk-1', value: 351, currency: 'USD', items: [] })
     trackBeginCheckout({ key: 'bk-1', value: 351, currency: 'USD', items: [] })
+    await settle()
     expect(sent(dataLayer).filter((e) => e[1] === 'begin_checkout')).toHaveLength(1)
   })
 
@@ -156,6 +186,7 @@ describe('the other two events', () => {
     const input = { value: 351, currency: 'USD', items: [] }
     trackAddToCart(input)
     trackAddToCart(input)
+    await settle()
     expect(sent(dataLayer).filter((e) => e[1] === 'add_to_cart')).toHaveLength(2)
   })
 })

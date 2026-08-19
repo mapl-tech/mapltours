@@ -31,47 +31,34 @@
 type GtagFn = (command: string, ...args: unknown[]) => void
 
 /**
- * Build a real `arguments` object.
+ * Run something once gtag is genuinely ready, or not at all.
  *
- * gtag.js drains dataLayer by reading each entry POSITIONALLY, the way the
- * official snippet enqueues it (`function gtag(){dataLayer.push(arguments)}`).
- * An Arguments exotic object and a plain array are not interchangeable to it,
- * so this produces the former rather than approximating it.
+ * Two wrong answers were tried before this one. Calling gtag directly dropped
+ * every event, because app/layout.tsx loads both tags with
+ * strategy="lazyOnload" and a confirmation page's effect runs long before
+ * window.gtag exists. Queueing onto dataLayer instead looked right and was
+ * worse: the event landed AHEAD of the tag's own `js` and `config` commands,
+ * so gtag.js drained a purchase with no destination configured and silently
+ * discarded it. Measured on production, the queue read
+ * ["event:purchase","js","config","config"] and the only network call made was
+ * page_view.
+ *
+ * Waiting for window.gtag to exist fixes the ordering for free: the init
+ * script defines that function in the same breath as it pushes `js` and
+ * `config`, so by the time it is callable those are already in front of us.
+ *
+ * Gives up after about ten seconds. A lost event is a reporting gap; an event
+ * sent into an unconfigured tag is a lie that looks like data.
  */
-function toArguments(...args: unknown[]): IArguments {
-  // eslint-disable-next-line prefer-rest-params
-  return (function () { return arguments })(...(args as []))
-}
-
-/**
- * Send an event, whether or not gtag.js has finished loading.
- *
- * app/layout.tsx loads both gtag scripts with strategy="lazyOnload", so on a
- * confirmation page the React effect runs LONG before window.gtag exists.
- * Checking for the function and giving up, which is what this did first, meant
- * every purchase event was silently dropped: the one page where the event
- * matters most is the page least likely to have gtag ready.
- *
- * Pushing straight onto dataLayer is the supported answer and is what Google's
- * own snippet does (`function gtag(){dataLayer.push(arguments)}`). Anything
- * queued before gtag.js loads is drained when it does. The site's init script
- * uses `window.dataLayer = window.dataLayer || []`, so it adopts this array
- * rather than replacing it, and nothing is lost either way.
- */
-function send(command: string, ...args: unknown[]): void {
+function whenGtagReady(run: (gtag: GtagFn) => void, attempts = 40): void {
   if (typeof window === 'undefined') return
-  const w = window as unknown as { gtag?: GtagFn; dataLayer?: unknown[] }
+  const w = window as unknown as { gtag?: GtagFn }
   if (typeof w.gtag === 'function') {
-    w.gtag(command, ...args)
+    run(w.gtag)
     return
   }
-  const queue = (w.dataLayer = w.dataLayer || [])
-  // Push an arguments object, exactly as the official snippet does
-  // (`function gtag(){dataLayer.push(arguments)}`). gtag.js reads these
-  // positionally when it drains the queue, so a plain array is not equivalent.
-  // Pushed as an array-of-arguments the same shape gtag.js drains, built
-  // without an `arguments` object so the rest parameter is not left unused.
-  queue.push(toArguments(command, ...args))
+  if (attempts <= 0) return
+  window.setTimeout(() => whenGtagReady(run, attempts - 1), 250)
 }
 
 /**
@@ -82,6 +69,10 @@ function send(command: string, ...args: unknown[]): void {
  * Returns false when the claim was already taken, or when storage is
  * unavailable (private mode, storage disabled), which fails CLOSED: a missing
  * event is a reporting gap, a duplicate is wrong revenue.
+ *
+ * Always called INSIDE whenGtagReady, never before it. Claiming first and then
+ * failing to send would burn the only chance this booking had of being
+ * reported, and the claim would still be there on the next visit.
  */
 function claimOnce(key: string): boolean {
   try {
@@ -131,12 +122,14 @@ export function trackPurchase(input: {
   try {
     if (typeof window === 'undefined' || !input.transactionId) return
     if (!Number.isFinite(input.value) || input.value < 0) return
-    if (!claimOnce(`purchase:${input.transactionId}`)) return
-    send('event', 'purchase', {
-      transaction_id: input.transactionId,
-      value: Math.round(input.value * 100) / 100,
-      currency: (input.currency || 'USD').toUpperCase(),
-      items: toGaItems(input.items),
+    whenGtagReady((gtag) => {
+      if (!claimOnce(`purchase:${input.transactionId}`)) return
+      gtag('event', 'purchase', {
+        transaction_id: input.transactionId,
+        value: Math.round(input.value * 100) / 100,
+        currency: (input.currency || 'USD').toUpperCase(),
+        items: toGaItems(input.items),
+      })
     })
   } catch {
     // Never let reporting break a paid confirmation.
@@ -153,11 +146,13 @@ export function trackBeginCheckout(input: {
   try {
     if (typeof window === 'undefined' || !input.key) return
     if (!Number.isFinite(input.value) || input.value < 0) return
-    if (!claimOnce(`begin_checkout:${input.key}`)) return
-    send('event', 'begin_checkout', {
-      value: Math.round(input.value * 100) / 100,
-      currency: (input.currency || 'USD').toUpperCase(),
-      items: toGaItems(input.items),
+    whenGtagReady((gtag) => {
+      if (!claimOnce(`begin_checkout:${input.key}`)) return
+      gtag('event', 'begin_checkout', {
+        value: Math.round(input.value * 100) / 100,
+        currency: (input.currency || 'USD').toUpperCase(),
+        items: toGaItems(input.items),
+      })
     })
   } catch {
     /* no-op */
@@ -179,10 +174,12 @@ export function trackAddToCart(input: {
   try {
     if (typeof window === 'undefined') return
     if (!Number.isFinite(input.value) || input.value < 0) return
-    send('event', 'add_to_cart', {
-      value: Math.round(input.value * 100) / 100,
-      currency: (input.currency || 'USD').toUpperCase(),
-      items: toGaItems(input.items),
+    whenGtagReady((gtag) => {
+      gtag('event', 'add_to_cart', {
+        value: Math.round(input.value * 100) / 100,
+        currency: (input.currency || 'USD').toUpperCase(),
+        items: toGaItems(input.items),
+      })
     })
   } catch {
     /* no-op */

@@ -93,8 +93,8 @@ export default function TransferConfirmed(props: TransferConfirmedProps) {
       </Heading>
       <Text style={s.heroLead}>
         Your transfer{transfers.length > 1 ? 's are' : ' is'} confirmed. Your
-        driver will be waiting in the arrivals area with a MAPL Tours sign.
-        Booking reference{' '}
+        driver will be waiting in the arrivals area with a MAPL Tours Jamaica
+        sign. Booking reference{' '}
         <strong style={{ color: '#1a1a1a' }}>{bookingRef}</strong>.
       </Text>
 
