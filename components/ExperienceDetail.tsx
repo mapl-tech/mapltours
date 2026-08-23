@@ -654,7 +654,13 @@ function Reel({ exp, isActive, totalCount, currentIndex, onComments }: { exp: Ex
               : t('Add to your trip to see full details and what to bring.')}
         </p>
       </div>
-      {detailsFor && <TourDetailsSheet exp={detailsFor} onClose={() => setDetailsFor(null)} />}
+      {detailsFor && (
+        <TourDetailsSheet
+          exp={detailsFor}
+          onClose={() => setDetailsFor(null)}
+          cta={{ inCart, blocked, reason: tourFit.reason, onToggle: toggleCart }}
+        />
+      )}
     </div>
   )
 }

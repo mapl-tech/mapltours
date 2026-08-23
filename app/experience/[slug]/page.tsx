@@ -1,7 +1,6 @@
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import ExperienceDetail from '@/components/ExperienceDetail'
-import TourFacts from '@/components/TourFacts'
 import { getExperienceBySlug } from '@/lib/experiences'
 
 const SITE_URL = 'https://mapltours.com'
@@ -59,7 +58,14 @@ export default function ExperienceRoute({ params }: { params: { slug: string } }
     '@context': 'https://schema.org',
     '@type': 'TouristTrip',
     name: exp.title,
-    description: exp.description,
+    // The tour facts now live in a client-rendered dialog, so crawlers no
+    // longer find them in the page HTML; carry the substance here instead.
+    // The <meta> description above stays short — this one is for machines.
+    description: [
+      exp.about ?? exp.description,
+      exp.included?.length ? `Included: ${exp.included.join('; ')}.` : null,
+      exp.notIncluded?.length ? `Not included: ${exp.notIncluded.join('; ')}.` : null,
+    ].filter(Boolean).join(' '),
     // Absolute: Google discards relative image URLs in structured data.
     image: exp.image?.startsWith('http') ? exp.image : `${SITE_URL}${exp.image}`,
     offers: {
@@ -118,10 +124,6 @@ export default function ExperienceRoute({ params }: { params: { slug: string } }
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
       <ExperienceDetail slug={params.slug} />
-      {/* Rendered on the SERVER, below the reel. Everything in it was already
-          written and already in lib/experiences.ts; none of it was on any
-          page. See components/TourFacts.tsx. */}
-      <TourFacts exp={exp} />
     </>
   )
 }

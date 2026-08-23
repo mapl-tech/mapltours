@@ -3,6 +3,12 @@
  * and who it suits. Written from the operator's rate card and the well-known
  * facts of each attraction.
  *
+ * NO LONGER RENDERED. The details dialog (components/TourDetailsSheet.tsx) now
+ * reads the detail fields on Experience itself, which cover the whole
+ * catalogue; this module only ever covered ids 1 to 15. Kept for
+ * `confirmWithOperator` — the checklist of facts a human still needs to verify
+ * with Collin.
+ *
  * Kept OUT of lib/experiences.ts on purpose. That file is the pricing source of
  * truth and is read by /api/checkout on every request; copy has no business
  * being in the hot path of the money flow, and keeping them apart means editing

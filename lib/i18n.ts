@@ -27,6 +27,8 @@ export const languages: Language[] = [
 const T: Record<string, Record<string, string>> = {
   es: {
     'Discover': 'Descubre', 'beyond the resort.': 'mas alla del resort.',
+    'What is included': 'Que incluye', 'Not included': 'No incluido',
+    'What to bring': 'Que llevar', 'Good to know': 'Bueno saberlo',
     'Popular destinations': 'Destinos populares', 'Featured experiences': 'Experiencias destacadas',
     'View all': 'Ver todo', 'Curated for you': 'Seleccionado para ti',
     'More experiences': 'Mas experiencias', 'Trending Now': 'Tendencia ahora',
@@ -202,6 +204,8 @@ const T: Record<string, Record<string, string>> = {
   },
   fr: {
     'Discover': 'Decouvrez', 'beyond the resort.': 'au-dela du resort.',
+    'What is included': 'Ce qui est inclus', 'Not included': 'Non inclus',
+    'What to bring': 'Quoi apporter', 'Good to know': 'Bon a savoir',
     'Popular destinations': 'Destinations populaires', 'Featured experiences': 'Experiences en vedette',
     'View all': 'Voir tout', 'Curated for you': 'Selectionne pour vous',
     'More experiences': 'Plus d\'experiences', 'Trending Now': 'Tendance maintenant',
@@ -290,6 +294,8 @@ const T: Record<string, Record<string, string>> = {
   },
   de: {
     'Discover': 'Entdecken Sie', 'beyond the resort.': 'jenseits des Resorts.',
+    'What is included': 'Was enthalten ist', 'Not included': 'Nicht enthalten',
+    'What to bring': 'Was mitbringen', 'Good to know': 'Gut zu wissen',
     'Popular destinations': 'Beliebte Reiseziele', 'Featured experiences': 'Ausgewahlte Erlebnisse',
     'View all': 'Alle anzeigen', 'Add to Trip': 'Zur Reise hinzufugen',
     'Saved': 'Gemerkt', 'Explore': 'Erkunden', 'Checkout': 'Bezahlen', 'Search destinations': 'Reiseziele suchen',
@@ -365,6 +371,8 @@ const T: Record<string, Record<string, string>> = {
   },
   pt: {
     'Discover': 'Descubra', 'beyond the resort.': 'alem do resort.',
+    'What is included': 'O que esta incluido', 'Not included': 'Nao incluido',
+    'What to bring': 'O que levar', 'Good to know': 'Bom saber',
     'Popular destinations': 'Destinos populares', 'Featured experiences': 'Experiencias em destaque',
     'Add to Trip': 'Adicionar a viagem', 'Saved': 'Salvos', 'Explore': 'Explorar', 'Checkout': 'Finalizar',
     '/person': '/pessoa', 'From': 'A partir de', 'Itinerary': 'Roteiro',
@@ -404,6 +412,8 @@ const T: Record<string, Record<string, string>> = {
   },
   ja: {
     'Discover': '発見する', 'beyond the resort.': 'リゾートを超えて。',
+    'What is included': '含まれるもの', 'Not included': '含まれないもの',
+    'What to bring': '持ち物', 'Good to know': '知っておきたいこと',
     'Popular destinations': '人気の目的地', 'Featured experiences': '注目の体験',
     'Add to Trip': '旅行に追加', 'Saved': '保存済み', 'Explore': '探索', 'Checkout': '精算',
     '/person': '/人', 'From': 'から', 'Itinerary': '旅程',
@@ -443,6 +453,8 @@ const T: Record<string, Record<string, string>> = {
   },
   zh: {
     'Discover': '发现', 'beyond the resort.': '超越度假村。',
+    'What is included': '包含内容', 'Not included': '不包含',
+    'What to bring': '携带物品', 'Good to know': '温馨提示',
     'Popular destinations': '热门目的地', 'Featured experiences': '精选体验',
     'Add to Trip': '添加到行程', 'Saved': '已保存', 'Explore': '探索', 'Checkout': '结账',
     '/person': '/人', 'From': '起', 'Itinerary': '行程',
@@ -482,6 +494,8 @@ const T: Record<string, Record<string, string>> = {
   },
   ko: {
     'Discover': '발견하다', 'beyond the resort.': '리조트를 넘어서.',
+    'What is included': '포함 사항', 'Not included': '불포함 사항',
+    'What to bring': '준비물', 'Good to know': '알아두면 좋아요',
     'Popular destinations': '인기 여행지', 'Featured experiences': '추천 체험',
     'Add to Trip': '여행에 추가', 'Saved': '저장됨', 'Explore': '탐색', 'Checkout': '결제',
     '/person': '/인', 'From': '부터', 'Itinerary': '일정',
