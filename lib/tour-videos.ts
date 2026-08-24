@@ -111,6 +111,74 @@ export function validateVideoFile(file: File): ValidationResult {
   return { ok: true }
 }
 
+/**
+ * Grab a poster frame from a picked video, entirely in the browser: object
+ * URL into an off-screen <video>, seek just past the start (frame 0 is often
+ * black), draw to a canvas capped at 720px wide, encode as JPEG.
+ *
+ * Resolves null on ANY failure (unsupported codec, iOS quirks, timeout): a
+ * clip without a poster is degraded, never broken, so this must not throw.
+ */
+export function captureVideoThumbnail(file: File): Promise<Blob | null> {
+  if (typeof document === 'undefined') return Promise.resolve(null)
+  return new Promise((resolve) => {
+    let settled = false
+    const url = URL.createObjectURL(file)
+    const video = document.createElement('video')
+    const done = (blob: Blob | null) => {
+      if (settled) return
+      settled = true
+      clearTimeout(timer)
+      URL.revokeObjectURL(url)
+      video.removeAttribute('src')
+      video.load()
+      resolve(blob)
+    }
+    const timer = setTimeout(() => done(null), 5000)
+    video.muted = true
+    video.playsInline = true
+    video.preload = 'auto'
+    video.onerror = () => done(null)
+    video.onloadedmetadata = () => {
+      const t = Math.min(0.5, (video.duration || 1) * 0.1)
+      try {
+        video.currentTime = Number.isFinite(t) && t > 0 ? t : 0.01
+      } catch {
+        done(null)
+      }
+    }
+    video.onseeked = () => {
+      try {
+        const w = video.videoWidth
+        const h = video.videoHeight
+        if (!w || !h) { done(null); return }
+        const scale = Math.min(1, 720 / w)
+        const canvas = document.createElement('canvas')
+        canvas.width = Math.max(1, Math.round(w * scale))
+        canvas.height = Math.max(1, Math.round(h * scale))
+        const ctx = canvas.getContext('2d')
+        if (!ctx) { done(null); return }
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height)
+        // iOS Safari intermittently paints BLACK from a seeked-but-never-
+        // played video; that still encodes to a valid JPEG, so it must be
+        // caught here. A near-black frame is worse than no poster at all.
+        const data = ctx.getImageData(0, 0, canvas.width, canvas.height).data
+        let sum = 0
+        let n = 0
+        for (let i = 0; i < data.length; i += 400) {
+          sum += 0.2126 * data[i] + 0.7152 * data[i + 1] + 0.0722 * data[i + 2]
+          n++
+        }
+        if (n === 0 || sum / n < 8) { done(null); return }
+        canvas.toBlob((blob) => done(blob), 'image/jpeg', 0.82)
+      } catch {
+        done(null)
+      }
+    }
+    video.src = url
+  })
+}
+
 // ────────────────────────────────────────────────────────────────────────────
 //  Upload
 // ────────────────────────────────────────────────────────────────────────────
@@ -130,11 +198,15 @@ export async function uploadTourVideo({
   file,
   caption,
   durationSeconds,
+  thumbnail,
 }: {
   experienceId: number
   file: File
   caption?: string
   durationSeconds?: number
+  /** Optional poster frame from captureVideoThumbnail. Best-effort: a
+   *  failed thumbnail upload never blocks the clip itself. */
+  thumbnail?: Blob | null
 }): Promise<UploadResult> {
   const validation = validateVideoFile(file)
   if (!validation.ok) return { ok: false, error: validation.error }
@@ -164,7 +236,8 @@ export async function uploadTourVideo({
   }
 
   const ext = (file.name.split('.').pop() || 'mp4').toLowerCase()
-  const path = `${user.id}/${experienceId}-${Date.now()}.${ext}`
+  const stamp = Date.now()
+  const path = `${user.id}/${experienceId}-${stamp}.${ext}`
 
   const { error: uploadErr } = await supabase
     .storage
@@ -176,12 +249,30 @@ export async function uploadTourVideo({
     })
   if (uploadErr) return { ok: false, error: uploadErr.message || 'Upload failed' }
 
+  // Poster frame rides along under the same uid folder (which is what the
+  // storage RLS policy scopes on). Optional: on failure the clip ships
+  // without a poster and the gallery falls back to the <video> element.
+  let thumbnailPath: string | null = null
+  if (thumbnail) {
+    const candidate = `${user.id}/${experienceId}-${stamp}-thumb.jpg`
+    const { error: thumbErr } = await supabase
+      .storage
+      .from('tour-videos')
+      .upload(candidate, thumbnail, {
+        cacheControl: '3600',
+        contentType: 'image/jpeg',
+        upsert: false,
+      })
+    if (!thumbErr) thumbnailPath = candidate
+  }
+
   const { data: inserted, error: insertErr } = await supabase
     .from('user_tour_videos')
     .insert({
       user_id: user.id,
       experience_id: experienceId,
       video_path: path,
+      thumbnail_path: thumbnailPath,
       size_bytes: file.size,
       duration_seconds: durationSeconds ?? null,
       content_hash: hash,
@@ -192,8 +283,9 @@ export async function uploadTourVideo({
     .single()
 
   if (insertErr) {
-    // Roll back the object if the DB insert failed so we don't leak storage.
-    await supabase.storage.from('tour-videos').remove([path]).catch(() => {})
+    // Roll back the objects if the DB insert failed so we don't leak storage.
+    const orphaned = thumbnailPath ? [path, thumbnailPath] : [path]
+    await supabase.storage.from('tour-videos').remove(orphaned).catch(() => {})
     return { ok: false, error: insertErr.message || 'Could not save video' }
   }
 
@@ -257,6 +349,43 @@ export function useExperienceVideos(experienceId: number | null) {
   )
 
   return { videos: data ?? [], loading, refresh }
+}
+
+/**
+ * One approved clip by id, for ?clip= share links whose clip is missing from
+ * the loaded gallery window: a stale cached list, or a clip older than the
+ * newest 40. Returns null for anything not approved or not on this
+ * experience, so a link can never surface unreviewed content.
+ */
+export async function fetchApprovedVideo(id: string, experienceId: number): Promise<TourVideo | null> {
+  const { data: row } = await supabase
+    .from('user_tour_videos')
+    .select('id, user_id, experience_id, video_path, thumbnail_path, duration_seconds, size_bytes, content_hash, caption, status, admin_notes, reviewed_by, reviewed_at, created_at')
+    .eq('id', id)
+    .eq('experience_id', experienceId)
+    .eq('status', 'approved')
+    .maybeSingle()
+  if (!row) return null
+
+  // Uploader display info, with the same legacy-column retry as the gallery.
+  const fullRes = await supabase
+    .from('users')
+    .select('id, name, avatar_url, social_handle')
+    .eq('id', row.user_id)
+  const usersRes = fullRes.error
+    ? await supabase.from('users').select('id, name, avatar_url').eq('id', row.user_id)
+    : fullRes
+  type ProfileRow = { id: string; name: string | null; avatar_url: string | null; social_handle?: string | null }
+  const u = (usersRes.data as ProfileRow[] | null)?.[0]
+
+  return {
+    ...(row as TourVideoRow),
+    video_url: videoPublicUrl(row.video_path) ?? '',
+    thumbnail_url: videoPublicUrl(row.thumbnail_path),
+    uploader_name: u?.name ?? null,
+    uploader_avatar_url: u?.avatar_url ?? null,
+    uploader_handle: u?.social_handle ?? null,
+  }
 }
 
 /**

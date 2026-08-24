@@ -64,11 +64,34 @@ function Reel({ exp, isActive, totalCount, currentIndex, onComments }: { exp: Ex
   const [shareToast, setShareToast] = useState<string | null>(null)
   const [detailsFor, setDetailsFor] = useState<Experience | null>(null)
   const [clipsOpen, setClipsOpen] = useState(false)
+  // ?clip=<id> share links land on the experience page and should open the
+  // clips overlay on that clip. Consumed once by the active reel, then
+  // scrubbed from the URL so closing the overlay does not re-trigger it.
+  const [initialClipId, setInitialClipId] = useState<string | null>(null)
+  const clipParamConsumed = useRef(false)
   // aria-modal promises the page behind is unreachable, so keep that
   // promise: this overlay had neither a focus trap nor an Escape key.
   const clipsRef = useRef<HTMLDivElement>(null)
-  const closeClips = useCallback(() => setClipsOpen(false), [])
+  // Closing also clears any deep-linked clip id: UserTourVideos unmounts
+  // with the overlay, so a surviving id would force the shared clip open
+  // again on every manual reopen for the life of the page.
+  const closeClips = useCallback(() => {
+    setClipsOpen(false)
+    setInitialClipId(null)
+  }, [])
   useFocusTrap(clipsRef, closeClips, clipsOpen)
+
+  useEffect(() => {
+    if (!isActive || clipParamConsumed.current) return
+    clipParamConsumed.current = true
+    const clip = new URLSearchParams(window.location.search).get('clip')
+    if (!clip) return
+    setInitialClipId(clip)
+    setClipsOpen(true)
+    const url = new URL(window.location.href)
+    url.searchParams.delete('clip')
+    window.history.replaceState({}, '', url.toString())
+  }, [isActive])
 
   // Robust copy-to-clipboard with a fallback for non-secure contexts
   // (navigator.clipboard only exists on HTTPS / localhost).
@@ -387,7 +410,7 @@ function Reel({ exp, isActive, totalCount, currentIndex, onComments }: { exp: Ex
       {/* Full-screen Guest Clips overlay (gallery + upload + reward) */}
       {clipsOpen && (
         <div
-          onClick={() => setClipsOpen(false)}
+          onClick={closeClips}
           role="dialog" aria-modal="true"
           aria-label="Guest clips"
           style={{
@@ -424,7 +447,7 @@ function Reel({ exp, isActive, totalCount, currentIndex, onComments }: { exp: Ex
               display: 'flex', justifyContent: 'flex-end', marginBottom: 4,
             }}>
               <button
-                onClick={() => setClipsOpen(false)}
+                onClick={closeClips}
                 aria-label="Close"
                 style={{
                   width: 36, height: 36, borderRadius: '50%',
@@ -436,7 +459,7 @@ function Reel({ exp, isActive, totalCount, currentIndex, onComments }: { exp: Ex
                 <X size={16} />
               </button>
             </div>
-            <UserTourVideos experienceId={exp.id} experienceTitle={exp.title} />
+            <UserTourVideos experienceId={exp.id} experienceTitle={exp.title} initialVideoId={initialClipId} />
           </div>
         </div>
       )}

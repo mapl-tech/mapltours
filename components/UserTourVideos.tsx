@@ -15,11 +15,13 @@
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Plus, Pause, Play, Volume2, VolumeX, ChevronLeft, ChevronRight, X, Check, Upload, Award } from 'lucide-react'
+import { Plus, Pause, Play, Volume2, VolumeX, ChevronLeft, ChevronRight, X, Check, Upload, Award, Send } from 'lucide-react'
 import {
   useExperienceVideos,
   useMyVideoProgress,
   uploadTourVideo,
+  captureVideoThumbnail,
+  fetchApprovedVideo,
   readVideoDuration,
   validateVideoFile,
   VIDEO_MAX_BYTES,
@@ -27,6 +29,7 @@ import {
   VIDEO_REWARD_MILESTONE,
   type TourVideo,
 } from '@/lib/tour-videos'
+import { slugify } from '@/lib/experiences'
 import { useAuth } from '@/lib/supabase/auth-context'
 import { createClient } from '@/lib/supabase/client'
 import { formatGuestLabel, normalizeSocialHandle } from '@/lib/social-handle'
@@ -35,12 +38,36 @@ import Avatar from '@/components/Avatar'
 interface Props {
   experienceId: number
   experienceTitle: string
+  /** Open the fullscreen viewer on this clip once the gallery loads; used by
+   *  ?clip= share links. Consumed once, then normal browsing takes over. */
+  initialVideoId?: string | null
 }
 
-export default function UserTourVideos({ experienceId, experienceTitle }: Props) {
+export default function UserTourVideos({ experienceId, experienceTitle, initialVideoId }: Props) {
   const { videos, loading, refresh } = useExperienceVideos(experienceId)
   const [uploadOpen, setUploadOpen] = useState(false)
   const [galleryIndex, setGalleryIndex] = useState<number | null>(null)
+
+  // A clip resolved by id when the shared clip is missing from the loaded
+  // list (stale cached snapshot, or older than the gallery's 40-clip
+  // window). Viewed standalone so the link keeps working forever.
+  const [deepLinkVideo, setDeepLinkVideo] = useState<TourVideo | null>(null)
+  const deepLinkDone = useRef(false)
+  useEffect(() => {
+    if (deepLinkDone.current || !initialVideoId || loading) return
+    deepLinkDone.current = true
+    const idx = videos.findIndex((v) => v.id === initialVideoId)
+    if (idx >= 0) {
+      setGalleryIndex(idx)
+      return
+    }
+    // Not in the loaded window: resolve the one clip directly. Approved-only
+    // by construction; a rejected, deleted, or garbage id quietly falls back
+    // to the plain gallery, which is the only actionable outcome anyway.
+    fetchApprovedVideo(initialVideoId, experienceId)
+      .then((v) => { if (v) setDeepLinkVideo(v) })
+      .catch(() => {})
+  }, [initialVideoId, loading, videos, experienceId])
 
   return (
     <section style={{
@@ -116,7 +143,18 @@ export default function UserTourVideos({ experienceId, experienceTitle }: Props)
         <VideoSwiper
           videos={videos}
           startIndex={galleryIndex}
+          experienceTitle={experienceTitle}
           onClose={() => setGalleryIndex(null)}
+        />
+      )}
+
+      {/* Deep-linked clip outside the loaded window: standalone viewer */}
+      {galleryIndex === null && deepLinkVideo && (
+        <VideoSwiper
+          videos={[deepLinkVideo]}
+          startIndex={0}
+          experienceTitle={experienceTitle}
+          onClose={() => setDeepLinkVideo(null)}
         />
       )}
 
@@ -401,16 +439,61 @@ function VideoStripe({
    Swipeable viewer, full-screen, horizontal snap, mute/play controls
    ═══════════════════════════════════════════════════════════════════════════ */
 function VideoSwiper({
-  videos, startIndex, onClose,
+  videos, startIndex, experienceTitle, onClose,
 }: {
   videos: TourVideo[]
   startIndex: number
+  experienceTitle: string
   onClose: () => void
 }) {
   const railRef = useRef<HTMLDivElement>(null)
   const [index, setIndex] = useState(startIndex)
   const [muted, setMuted] = useState(true)
   const [paused, setPaused] = useState(false)
+  const [shareToast, setShareToast] = useState<string | null>(null)
+
+  // Deep link back to THIS clip: the experience page opens the gallery on
+  // the clip when it sees ?clip=<id>.
+  const shareClip = async () => {
+    const clip = videos[index]
+    if (!clip) return
+    const url = `${window.location.origin}/experience/${slugify(experienceTitle)}?clip=${clip.id}`
+    const showToast = (msg: string) => {
+      setShareToast(msg)
+      setTimeout(() => setShareToast(null), 2000)
+    }
+    if (typeof navigator !== 'undefined' && typeof navigator.share === 'function') {
+      try {
+        const shareData: ShareData = { title: experienceTitle, text: `Guest clip from ${experienceTitle}, Jamaica`, url }
+        if (!navigator.canShare || navigator.canShare(shareData)) {
+          await navigator.share(shareData)
+          return
+        }
+      } catch (err) {
+        if ((err as DOMException)?.name === 'AbortError') return
+        // Fall through to the clipboard.
+      }
+    }
+    try {
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(url)
+      } else {
+        // Non-secure contexts (LAN testing, some webviews) have no
+        // navigator.clipboard; same fallback the reel share uses.
+        const ta = document.createElement('textarea')
+        ta.value = url
+        ta.style.position = 'fixed'
+        ta.style.opacity = '0'
+        document.body.appendChild(ta)
+        ta.select()
+        document.execCommand('copy')
+        document.body.removeChild(ta)
+      }
+      showToast('Link copied')
+    } catch {
+      showToast('Could not copy the link')
+    }
+  }
 
   // Scroll to the starting card once mounted.
   useEffect(() => {
@@ -539,7 +622,28 @@ function VideoSwiper({
         <ControlButton onClick={() => setMuted((m) => !m)} label={muted ? 'Unmute' : 'Mute'}>
           {muted ? <VolumeX size={16} /> : <Volume2 size={16} />}
         </ControlButton>
+        <ControlButton onClick={shareClip} label="Share this clip">
+          <Send size={16} />
+        </ControlButton>
       </div>
+
+      {/* Share feedback */}
+      {shareToast && (
+        <div style={{
+          position: 'absolute', left: 0, right: 0,
+          bottom: 'calc(max(24px, env(safe-area-inset-bottom)) + 56px)',
+          zIndex: 4, display: 'flex', justifyContent: 'center', pointerEvents: 'none',
+        }}>
+          <span style={{
+            padding: '8px 16px', borderRadius: 9999,
+            background: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(10px)',
+            color: '#fff', fontSize: 13, fontWeight: 600,
+            fontFamily: 'var(--font-dm-sans)',
+          }}>
+            {shareToast}
+          </span>
+        </div>
+      )}
     </div>
   )
 }
@@ -773,11 +877,15 @@ function UploadSheet({
 
     setUploading(true)
     setError(null)
+    // Poster frame for the gallery; null on any failure, which only means
+    // the card renders the video element instead of a lightweight image.
+    const thumbnail = await captureVideoThumbnail(file)
     const res = await uploadTourVideo({
       experienceId,
       file,
       caption,
       durationSeconds: duration ?? undefined,
+      thumbnail,
     })
     setUploading(false)
     if (!res.ok) { setError(res.error ?? 'Upload failed'); return }

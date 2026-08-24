@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import ExperienceDetail from '@/components/ExperienceDetail'
 import { getExperienceBySlug } from '@/lib/experiences'
+import { createServiceClient } from '@/lib/supabase/service'
 
 const SITE_URL = 'https://mapltours.com'
 
@@ -9,10 +10,37 @@ const SITE_URL = 'https://mapltours.com'
 // its own and gets a correct social preview. Without this, all experience
 // URLs inherited the generic site title AND self-canonicalized to the
 // homepage, telling Google to drop them from the index.
-export function generateMetadata({ params }: { params: { slug: string } }): Metadata {
+export async function generateMetadata({ params, searchParams }: {
+  params: { slug: string }
+  searchParams?: { clip?: string }
+}): Promise<Metadata> {
   const exp = getExperienceBySlug(params.slug)
   if (!exp) {
     return { title: 'Experience not found', robots: { index: false, follow: false } }
+  }
+
+  // A shared guest clip (?clip=<id>) unfurls with the clip's own poster
+  // frame. Only approved clips belonging to this experience qualify, the
+  // canonical stays the clean experience URL so the variant never competes
+  // in search, and any failure here quietly falls back to the standard
+  // experience metadata.
+  let clipImage: string | undefined
+  const clipId = searchParams?.clip
+  if (clipId && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(clipId)) {
+    try {
+      const svc = createServiceClient()
+      const { data: clip } = await svc
+        .from('user_tour_videos')
+        .select('thumbnail_path, status, experience_id')
+        .eq('id', clipId)
+        .maybeSingle()
+      if (clip && clip.status === 'approved' && clip.experience_id === exp.id && clip.thumbnail_path) {
+        const { data: pub } = svc.storage.from('tour-videos').getPublicUrl(clip.thumbnail_path)
+        if (pub?.publicUrl) clipImage = pub.publicUrl
+      }
+    } catch {
+      // Metadata falls back to the experience defaults.
+    }
   }
   // The layout template appends " | MAPL Tours Jamaica" (22 chars), so the
   // per-page part has to stay short or Google truncates the tour name itself.
@@ -34,13 +62,15 @@ export function generateMetadata({ params }: { params: { slug: string } }): Meta
       title,
       description,
       siteName: 'MAPL Tours Jamaica',
-      images: exp.image ? [{ url: exp.image, alt: exp.title }] : undefined,
+      images: clipImage
+        ? [{ url: clipImage, alt: `Guest clip from ${exp.title}` }]
+        : exp.image ? [{ url: exp.image, alt: exp.title }] : undefined,
     },
     twitter: {
       card: 'summary_large_image',
       title,
       description,
-      images: exp.image ? [exp.image] : undefined,
+      images: clipImage ? [clipImage] : exp.image ? [exp.image] : undefined,
     },
   }
 }
