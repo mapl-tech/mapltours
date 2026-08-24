@@ -197,11 +197,12 @@ export const DESTINATION_IMAGES: Record<string, string> = {
 const VIDEOS = {
   // One DISTINCT, subject-verified video per tour (audited 2026-08-16: every
   // URL HEAD-checked 200, every subject confirmed from its Pexels page, no
-  // file shared between tours). Collins's own footage replaces these as it
-  // comes in; /rafting-video.mp4 is already his.
+  // file shared between tours). Our own reels replace the stock files as
+  // they come in: blueHole and rafting are ours, transcoded to 1080p from
+  // the 4K masters in Images/collins/reels/Generated Reels (gitignored).
   waterfall:   '/media/video/17259005.mp4',
-  blueHole:    '/media/video/4055909.mp4',
-  rafting:     '/rafting-video.mp4',
+  blueHole:    '/media/video/blue-hole-ocho-rios.mp4',
+  rafting:     '/media/video/bamboo-rafting-guests.mp4',
   whiteRiver:  '/media/video/30800508.mp4',
   rastafari:   '/media/video/31466203.mp4',
   offRoad:     '/media/video/10571253.mp4',
