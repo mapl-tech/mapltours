@@ -14,6 +14,7 @@ import { Heart, MessageCircle, Play, ChevronLeft, ChevronRight, X, ThumbsUp, Sen
 import { useExperienceLike, useComments, DisplayComment } from '@/lib/supabase/hooks'
 import { useAuth } from '@/lib/supabase/auth-context'
 import Avatar from '@/components/Avatar'
+import MaplAvatar from '@/components/MaplAvatar'
 import { isMaplCreator, displayHandle } from '@/lib/creator'
 import TourDetailsSheet from './TourDetailsSheet'
 
@@ -291,19 +292,7 @@ function Reel({ exp, isActive, totalCount, currentIndex, onComments }: { exp: Ex
             creator's initial disk (coloured by handle). No follow badge. */}
         <div style={{ marginBottom: 4 }}>
           {isMaplCreator(exp.creator) ? (
-            /* eslint-disable-next-line @next/next/no-img-element */
-            <img
-              src="/icon.svg"
-              alt="MAPL Tours Jamaica"
-              width={44}
-              height={44}
-              style={{
-                width: 44, height: 44, borderRadius: '50%',
-                background: '#fff',
-                border: '2px solid white',
-                display: 'block',
-              }}
-            />
+            <MaplAvatar size={44} border="2px solid white" />
           ) : (
             <Avatar
               name={exp.creator}
@@ -1291,18 +1280,7 @@ export default function ExperienceDetail({ slug }: { slug: string }) {
           background: 'rgba(255,255,255,0.03)',
         }}>
           {isMaplCreator(activeExp.creator) ? (
-            /* eslint-disable-next-line @next/next/no-img-element */
-            <img
-              src="/icon.svg"
-              alt="MAPL Tours Jamaica"
-              width={36}
-              height={36}
-              style={{
-                width: 36, height: 36, borderRadius: '50%', flexShrink: 0,
-                background: '#fff', border: '2px solid rgba(255,255,255,0.15)',
-                display: 'block',
-              }}
-            />
+            <MaplAvatar size={36} border="2px solid rgba(255,255,255,0.15)" />
           ) : (
             <div style={{
               width: 36, height: 36, borderRadius: '50%',

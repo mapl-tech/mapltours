@@ -2,6 +2,7 @@
 
 import { Experience, CATEGORY_COLORS , priceUnitLabel } from '@/lib/experiences'
 import { isMaplCreator, displayHandle } from '@/lib/creator'
+import MaplAvatar from '@/components/MaplAvatar'
 import { useCartStore } from '@/lib/cart'
 import { useTourFit } from '@/lib/use-tour-fit'
 import { useHydrated } from '@/lib/use-hydrated'
@@ -177,22 +178,7 @@ export default function ReelCard({
         }}
       >
         {isMaplCreator(exp.creator) ? (
-          /* eslint-disable-next-line @next/next/no-img-element */
-          <img
-            src="/icon.svg"
-            alt="MAPL Tours Jamaica"
-            width={36}
-            height={36}
-            style={{
-              width: 36,
-              height: 36,
-              borderRadius: '50%',
-              background: '#fff',
-              border: '2px solid rgba(255,255,255,0.3)',
-              flexShrink: 0,
-              display: 'block',
-            }}
-          />
+          <MaplAvatar size={36} border="2px solid rgba(255,255,255,0.3)" />
         ) : (
           <div
             style={{
