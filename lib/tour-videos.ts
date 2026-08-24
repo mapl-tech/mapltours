@@ -471,6 +471,27 @@ export function useAvailableReward(): UserRewardRow | null {
   return availableRewards[0] ?? null
 }
 
+/**
+ * Mark a reward as used on a specific booking. Idempotent.
+ *
+ * RESTORED 2026-08-24: the committed CheckoutView still imports this, and
+ * deleting it (part of the in-flight reward-reservation refactor) broke
+ * every Netlify build from c36ddf1 onward. Delete it again only in the
+ * same commit that lands the refactored CheckoutView.
+ */
+export async function consumeReward(rewardId: string, bookingId?: string | null): Promise<boolean> {
+  const { error } = await supabase
+    .from('user_rewards')
+    .update({
+      status: 'used',
+      used_on_booking_id: bookingId ?? null,
+      used_at: new Date().toISOString(),
+    })
+    .eq('id', rewardId)
+    .eq('status', 'available')
+  return !error
+}
+
 // ────────────────────────────────────────────────────────────────────────────
 //  Admin helpers (used by /admin/videos)
 // ────────────────────────────────────────────────────────────────────────────
