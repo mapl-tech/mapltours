@@ -11,6 +11,7 @@ import { useAuth } from '@/lib/supabase/auth-context'
 import { useSaved } from '@/lib/supabase/saved'
 import { useSwrCache } from '@/lib/swr-cache'
 import { useMyVideoProgress, VIDEO_REWARD_MILESTONE } from '@/lib/tour-videos'
+import { normalizeSocialHandle } from '@/lib/social-handle'
 import { Award, UserRound } from 'lucide-react'
 import type { User } from '@supabase/supabase-js'
 import { quoteRefund, formatCents } from '@/lib/refund-pricing'
@@ -45,6 +46,14 @@ interface ProfileData {
   name: string | null
   avatar_url: string | null
   location: string | null
+  /** Typed or TikTok-verified social handle (migration 026). */
+  social_handle?: string | null
+  /** Set only by the TikTok Login Kit callback. */
+  tiktok_username?: string | null
+  /** Set on link even when TikTok has not yet released the username
+   *  (user.info.profile scope pending approval), so "connected" must key
+   *  on this, not on the username. */
+  tiktok_connected_at?: string | null
 }
 
 // ── Editable Field ──
@@ -53,7 +62,9 @@ function EditableField({ label, value, placeholder, type, onSave, verified }: {
   value: string
   placeholder: string
   type?: string
-  onSave: (val: string) => Promise<void>
+  /** Return false to reject the draft: the field stays open with the typed
+   *  value intact instead of closing as if it had saved. */
+  onSave: (val: string) => Promise<void | boolean>
   verified?: boolean
 }) {
   const [editing, setEditing] = useState(false)
@@ -63,9 +74,9 @@ function EditableField({ label, value, placeholder, type, onSave, verified }: {
   async function handleSave() {
     if (draft === value) { setEditing(false); return }
     setSaving(true)
-    await onSave(draft)
+    const ok = await onSave(draft)
     setSaving(false)
-    setEditing(false)
+    if (ok !== false) setEditing(false)
   }
 
   return (
@@ -345,8 +356,19 @@ export default function ProfileView() {
     async () => {
       if (!user) return EMPTY_BUNDLE
       try {
+        // The social columns landed in migration 026; where it has not run
+        // yet, retry with the legacy columns so the profile still loads.
+        const fetchProfile = async () => {
+          const full = await supabase
+            .from('users')
+            .select('name, avatar_url, location, social_handle, tiktok_username, tiktok_connected_at')
+            .eq('id', user.id)
+            .single()
+          if (!full.error) return full
+          return supabase.from('users').select('name, avatar_url, location').eq('id', user.id).single()
+        }
         const [profileRes, bookingsRes, badgesRes, likesRes] = await Promise.all([
-          supabase.from('users').select('name, avatar_url, location').eq('id', user.id).single(),
+          fetchProfile(),
           // Server route: matches bookings by user_id OR verified email, so
           // guest checkouts appear too (and get claimed onto this account).
           fetch('/api/profile/bookings')
@@ -453,6 +475,51 @@ export default function ProfileView() {
       profile: { ...((prev ?? EMPTY_BUNDLE).profile), location: newLocation },
     }))
   }
+
+  async function updateSocialHandle(raw: string): Promise<void | boolean> {
+    const normalized = normalizeSocialHandle(raw)
+    if (raw.trim() && !normalized) {
+      window.alert('Handles are 2 to 30 characters: letters, numbers, dots or underscores.')
+      // Keep the field open with the draft so the guest can correct it.
+      return false
+    }
+    // Metadata first: comment posting mirrors it into public.users, so the
+    // handle survives even where migration 026 has not run yet.
+    await supabase.auth.updateUser({ data: { social_handle: normalized } })
+    const { error } = await supabase
+      .from('users')
+      .upsert({ id: user!.id, social_handle: normalized }, { onConflict: 'id' })
+    if (error) console.warn('[profile] social_handle save deferred (migration 026 applied?)', error.message)
+    mutate((prev) => ({
+      ...(prev ?? EMPTY_BUNDLE),
+      profile: { ...((prev ?? EMPTY_BUNDLE).profile), social_handle: normalized },
+    }))
+  }
+
+  async function disconnectTikTok() {
+    const res = await fetch('/api/tiktok/disconnect', { method: 'POST' })
+    if (!res.ok) return
+    mutate((prev) => ({
+      ...(prev ?? EMPTY_BUNDLE),
+      profile: {
+        ...((prev ?? EMPTY_BUNDLE).profile),
+        tiktok_username: null,
+        tiktok_connected_at: null,
+      },
+    }))
+  }
+
+  // The TikTok callback lands back here with ?tiktok=<status>. Read it once,
+  // show it, and scrub it from the URL so a reload does not re-announce it.
+  const [tiktokStatus, setTiktokStatus] = useState<string | null>(null)
+  useEffect(() => {
+    const status = new URLSearchParams(window.location.search).get('tiktok')
+    if (!status) return
+    setTiktokStatus(status)
+    const url = new URL(window.location.href)
+    url.searchParams.delete('tiktok')
+    window.history.replaceState({}, '', url.toString())
+  }, [])
 
   if (loading) {
     return (
@@ -716,6 +783,92 @@ export default function ProfileView() {
                 placeholder="City, Country"
                 onSave={updateLocation}
               />
+              <EditableField
+                label="Social handle"
+                value={profile.social_handle || ''}
+                placeholder="yourhandle (Instagram or TikTok)"
+                onSave={updateSocialHandle}
+                // Verified only when it came from a linked TikTok account and
+                // still matches; a typed handle is a claim, not a credential.
+                verified={!!profile.tiktok_username && profile.tiktok_username === profile.social_handle}
+              />
+
+              {process.env.NEXT_PUBLIC_TIKTOK_ENABLED === '1' && (() => {
+                // Connected keys on the link itself, not the username: until
+                // TikTok approves the user.info.profile scope the callback
+                // stores a link with no username, and that state must still
+                // read as connected (and stay disconnectable).
+                const tiktokLinked = !!(profile.tiktok_username || profile.tiktok_connected_at)
+                const statusLine =
+                  tiktokStatus === 'connected' ? 'TikTok connected.'
+                  : tiktokStatus === 'denied' ? 'TikTok link cancelled.'
+                  : tiktokStatus === 'signin' ? 'Sign in first, then connect TikTok.'
+                  : tiktokStatus === 'unconfigured' ? 'TikTok linking is not set up yet.'
+                  : tiktokStatus ? 'We could not link TikTok. Please try again.'
+                  : null
+                return (
+                  <div style={{ padding: '18px 0' }}>
+                    {statusLine && (
+                      <p style={{
+                        marginBottom: 12, padding: '10px 14px', borderRadius: 10,
+                        background: tiktokStatus === 'connected' ? 'var(--emerald-dim, rgba(29,122,80,0.07))' : 'var(--surface)',
+                        fontSize: 13.5, fontFamily: 'var(--font-dm-sans)',
+                        color: tiktokStatus === 'connected' ? 'var(--emerald)' : 'var(--text-secondary)',
+                      }}>
+                        {statusLine}
+                      </p>
+                    )}
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <p style={{
+                          fontSize: 12, fontWeight: 600, color: 'var(--text-tertiary)',
+                          fontFamily: 'var(--font-dm-sans)',
+                          textTransform: 'uppercase', letterSpacing: '0.06em',
+                          marginBottom: 6,
+                        }}>
+                          TikTok
+                        </p>
+                        <p style={{
+                          fontSize: 14, color: 'var(--text-secondary)',
+                          fontFamily: 'var(--font-dm-sans)', lineHeight: 1.5,
+                        }}>
+                          {tiktokLinked
+                            ? profile.tiktok_username
+                              ? <>Connected as <strong style={{ color: 'var(--text-primary)', fontWeight: 600 }}>@{profile.tiktok_username}</strong></>
+                              : 'Connected. Your username appears once TikTok approves profile access.'
+                            : 'Link your account for verified credit on your clips.'}
+                        </p>
+                      </div>
+                      {tiktokLinked ? (
+                        <button
+                          onClick={disconnectTikTok}
+                          style={{
+                            minHeight: 40, padding: '0 16px', borderRadius: 9999,
+                            border: '1px solid var(--border-strong)', background: 'none',
+                            fontSize: 13, fontWeight: 600, fontFamily: 'var(--font-dm-sans)',
+                            color: 'var(--text-secondary)', cursor: 'pointer', flexShrink: 0,
+                          }}
+                        >
+                          Disconnect
+                        </button>
+                      ) : (
+                        <a
+                          href="/api/tiktok/connect"
+                          style={{
+                            display: 'inline-flex', alignItems: 'center',
+                            minHeight: 40, padding: '0 18px', borderRadius: 9999,
+                            background: 'var(--accent)', color: '#fff',
+                            fontSize: 13, fontWeight: 700, fontFamily: 'var(--font-dm-sans)',
+                            textDecoration: 'none', flexShrink: 0,
+                          }}
+                        >
+                          Connect TikTok
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                )
+              })()}
             </section>
 
             {/* ── Upcoming Trips (confirmed bookings with future dates) ── */}

@@ -14,7 +14,6 @@ import { useSwrCache } from './swr-cache'
  *  • `useExperienceVideos(expId)` , public approved-only gallery feed
  *  • `useMyVideoProgress()`       , my approved count + active rewards
  *  • `useAvailableReward()`       , the reward to auto-apply at checkout
- *  • `consumeReward(id, bookingId)`, marks a reward as used on a booking
  *
  *  Everything here is client-only. The actual approval + reward grant happen
  *  server-side via RLS + the SQL trigger in migration 003.
@@ -56,6 +55,8 @@ export interface TourVideo extends TourVideoRow {
   thumbnail_url: string | null
   uploader_name: string | null
   uploader_avatar_url: string | null
+  /** Normalized social handle (migration 026); null when unset. */
+  uploader_handle: string | null
 }
 
 export interface UserRewardRow {
@@ -65,7 +66,7 @@ export interface UserRewardRow {
   percent: number
   milestone: number
   code: string
-  status: 'available' | 'used' | 'expired'
+  status: 'available' | 'reserved' | 'used' | 'expired'
   used_on_booking_id: string | null
   used_at: string | null
   expires_at: string | null
@@ -230,13 +231,19 @@ export function useExperienceVideos(experienceId: number | null) {
 
       if (!rows || rows.length === 0) return []
 
-      // Pull uploader display info so the gallery can render @handle
+      // Pull uploader display info so the gallery can render @handle.
+      // social_handle is from migration 026; where it has not run yet, retry
+      // with the legacy columns so bylines keep working.
       const userIds = Array.from(new Set(rows.map((r) => r.user_id)))
-      const { data: users } = await supabase
+      const fullRes = await supabase
         .from('users')
-        .select('id, name, avatar_url')
+        .select('id, name, avatar_url, social_handle')
         .in('id', userIds)
-      const userMap = new Map(users?.map((u) => [u.id, u]) || [])
+      const usersRes = fullRes.error
+        ? await supabase.from('users').select('id, name, avatar_url').in('id', userIds)
+        : fullRes
+      type ProfileRow = { id: string; name: string | null; avatar_url: string | null; social_handle?: string | null }
+      const userMap = new Map((usersRes.data as ProfileRow[] | null)?.map((u) => [u.id, u]) || [])
 
       return rows.map((r): TourVideo => ({
         ...(r as TourVideoRow),
@@ -244,6 +251,7 @@ export function useExperienceVideos(experienceId: number | null) {
         thumbnail_url: videoPublicUrl(r.thumbnail_path),
         uploader_name: userMap.get(r.user_id)?.name ?? null,
         uploader_avatar_url: userMap.get(r.user_id)?.avatar_url ?? null,
+        uploader_handle: userMap.get(r.user_id)?.social_handle ?? null,
       }))
     }
   )
@@ -282,7 +290,15 @@ export function useMyVideoProgress(): VideoProgress & { loading: boolean; refres
       )
 
       const allRewards = (rewardsRes.data ?? []) as UserRewardRow[]
-      const availableRewards = allRewards.filter((r) => r.status === 'available')
+      // 'reserved' counts as spendable HERE because the server's checkout
+      // lookup does. A reward goes 'reserved' the moment its holder reaches
+      // the payment step, and an abandoned tab leaves it that way; if this
+      // filter hid it, the client would price the next cart at full price
+      // while the server priced it with the discount, and every checkout for
+      // this user would 400 on the amount check forever, before the code that
+      // frees stale reservations could ever run. The reserve step on the
+      // server remains the arbiter of whether it can actually be used.
+      const availableRewards = allRewards.filter((r) => r.status === 'available' || r.status === 'reserved')
 
       return {
         approved: statusCounts.approved,
@@ -304,29 +320,14 @@ export function useMyVideoProgress(): VideoProgress & { loading: boolean; refres
 
 /**
  * The newest unused reward, if any. Used to auto-suggest the discount at
- * checkout. Does not mutate state, apply via `consumeReward`.
+ * checkout. Read-only: the SERVER moves the row (checkout reserves it, the
+ * webhook or the gift-covered settle consumes it). A client-side consume
+ * used to exist here and raced the reservation lifecycle, wiping
+ * used_on_booking_id to NULL mid-flight.
  */
 export function useAvailableReward(): UserRewardRow | null {
   const { availableRewards } = useMyVideoProgress()
   return availableRewards[0] ?? null
-}
-
-/**
- * Mark a reward as used on a specific booking (or standalone if the booking
- * row hasn't been created yet, the client-side checkout flow in this repo
- * doesn't currently persist bookings server-side). Idempotent.
- */
-export async function consumeReward(rewardId: string, bookingId?: string | null): Promise<boolean> {
-  const { error } = await supabase
-    .from('user_rewards')
-    .update({
-      status: 'used',
-      used_on_booking_id: bookingId ?? null,
-      used_at: new Date().toISOString(),
-    })
-    .eq('id', rewardId)
-    .eq('status', 'available')
-  return !error
 }
 
 // ────────────────────────────────────────────────────────────────────────────
@@ -388,6 +389,7 @@ export function useAdminVideoQueue(filter: VideoStatus | 'all' = 'pending') {
       thumbnail_url: videoPublicUrl(r.thumbnail_path),
       uploader_name: userMap.get(r.user_id)?.name ?? null,
       uploader_avatar_url: userMap.get(r.user_id)?.avatar_url ?? null,
+      uploader_handle: null, // admin queue reviews content, not attribution
       uploader_email: null, // email is on auth.users; not exposed via RLS here
     })))
     setLoading(false)

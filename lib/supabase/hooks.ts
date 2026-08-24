@@ -5,6 +5,7 @@ import { createClient } from './client'
 import { useAuth } from './auth-context'
 import { useSwrCache } from '@/lib/swr-cache'
 import { useSaved } from './saved'
+import { guestLabel, normalizeSocialHandle } from '@/lib/social-handle'
 import type { Comment } from '@/lib/experiences'
 
 const supabase = createClient()
@@ -138,6 +139,9 @@ export interface SupabaseComment {
   parent_id: string | null
   user_name: string | null
   user_avatar: string | null
+  /** Normalized social handle (migration 026); null when unset or before the
+   *  migration has run in this environment. */
+  user_handle: string | null
 }
 
 export interface DisplayComment extends Comment {
@@ -148,6 +152,9 @@ export interface DisplayComment extends Comment {
   replyToUser?: string
   /** Real user profile image URL (null for guests / hardcoded seed comments) */
   avatarUrl?: string | null
+  /** True when `user` is a social handle and should render with an @ prefix;
+   *  false when it is a first name, which must render bare. */
+  isHandle?: boolean
 }
 
 const COMMENTS_LIMIT = 20
@@ -193,24 +200,34 @@ export function useComments(experienceId: number) {
       // allows reading your own row, so for other users this returns nothing
       //, we degrade gracefully to 'Anonymous' rather than crashing.
       const userIds = Array.from(new Set(rows.map((c) => c.user_id)))
-      const { data: users, error: usersErr } = await supabase
+      // social_handle arrived in migration 026; environments where it has not
+      // run yet must keep rendering names, so retry with the legacy columns
+      // rather than letting the whole lookup fail to Anonymous.
+      const fullRes = await supabase
         .from('users')
-        .select('id, name, avatar_url')
+        .select('id, name, avatar_url, social_handle')
         .in('id', userIds)
+      const usersRes = fullRes.error
+        ? await supabase.from('users').select('id, name, avatar_url').in('id', userIds)
+        : fullRes
 
-      if (usersErr) {
-        console.warn('[comments] users lookup failed (comments will still render)', usersErr)
+      if (usersRes.error) {
+        console.warn('[comments] users lookup failed (comments will still render)', usersRes.error)
       }
 
-      const userMap = new Map(users?.map((u) => [u.id, u]) || [])
+      type ProfileRow = { id: string; name: string | null; avatar_url: string | null; social_handle?: string | null }
+      const userMap = new Map((usersRes.data as ProfileRow[] | null)?.map((u) => [u.id, u]) || [])
       return rows.map((c) => ({
         ...c,
         user_name: userMap.get(c.user_id)?.name || 'Anonymous',
         user_avatar: userMap.get(c.user_id)?.avatar_url || null,
+        user_handle: userMap.get(c.user_id)?.social_handle || null,
       }))
     }
   )
-  const comments = data ?? []
+  // Memoized so the displayComments memo below keys off a stable reference
+  // instead of a fresh [] every render while data is null.
+  const comments = useMemo(() => data ?? [], [data])
 
   const addComment = useCallback(async (text: string, parentId?: string) => {
     if (!user) return null
@@ -218,16 +235,21 @@ export function useComments(experienceId: number) {
 
     // Ensure the user has a row in public.users (required by the comments.
     // user_id foreign key). Idempotent upsert, safe to call every time.
-    const { error: upsertErr } = await supabase
+    // The handle column is from migration 026; if this environment does not
+    // have it yet, retry without it so the FK row still gets created and the
+    // comment still posts.
+    const basePayload = {
+      id: user.id,
+      name: user.user_metadata?.full_name ?? user.user_metadata?.name ?? null,
+      avatar_url: user.user_metadata?.avatar_url ?? null,
+    }
+    const metaHandle = normalizeSocialHandle(user.user_metadata?.social_handle)
+    let { error: upsertErr } = await supabase
       .from('users')
-      .upsert(
-        {
-          id: user.id,
-          name: user.user_metadata?.full_name ?? user.user_metadata?.name ?? null,
-          avatar_url: user.user_metadata?.avatar_url ?? null,
-        },
-        { onConflict: 'id' }
-      )
+      .upsert(metaHandle ? { ...basePayload, social_handle: metaHandle } : basePayload, { onConflict: 'id' })
+    if (upsertErr && metaHandle) {
+      ;({ error: upsertErr } = await supabase.from('users').upsert(basePayload, { onConflict: 'id' }))
+    }
     if (upsertErr) console.warn('[comments.hook] users upsert warning', upsertErr)
 
     // ── Optimistic insert ─────────────────────────────────────────────
@@ -243,6 +265,7 @@ export function useComments(experienceId: number) {
       parent_id: parentId && isUuid(parentId) ? parentId : null,
       user_name: user.user_metadata?.full_name || user.user_metadata?.name || 'You',
       user_avatar: user.user_metadata?.avatar_url || null,
+      user_handle: metaHandle,
     }
     mutate((prev) => [...(prev ?? []), optimistic])
     setReplyingTo(null)
@@ -293,6 +316,7 @@ export function useComments(experienceId: number) {
       ...data,
       user_name: optimistic.user_name,
       user_avatar: optimistic.user_avatar,
+      user_handle: optimistic.user_handle,
     }
     mutate((prev) => (prev ?? []).map((c) => (c.id === tempId ? newComment : c)))
     // Also re-fetch so anything server-derived (e.g. user name via join) lands.
@@ -311,19 +335,25 @@ export function useComments(experienceId: number) {
   }, [user, mutate])
 
   const displayComments = useMemo(() => {
-    const allDisplay: DisplayComment[] = comments.map((c) => ({
-      id: parseInt(c.id.replace(/-/g, '').slice(0, 8), 16) || Date.now(),
-      supabaseId: c.id,
-      parentId: c.parent_id,
-      user: c.user_name || 'Anonymous',
-      avatar: c.user_avatar ? '👤' : '🧑🏽', // legacy fallback for places still using emoji
-      avatarUrl: c.user_avatar || null,
-      text: c.text,
-      time: getRelativeTime(c.created_at),
-      likes: 0,
-      isOwn: c.user_id === user?.id,
-      replies: [],
-    }))
+    const allDisplay: DisplayComment[] = comments.map((c) => {
+      // Byline precedence: social handle (rendered @handle), else first name
+      // (rendered bare), else Anonymous.
+      const label = guestLabel(c.user_handle, c.user_name, 'Anonymous')
+      return {
+        id: parseInt(c.id.replace(/-/g, '').slice(0, 8), 16) || Date.now(),
+        supabaseId: c.id,
+        parentId: c.parent_id,
+        user: label.text,
+        isHandle: label.isHandle,
+        avatar: c.user_avatar ? '👤' : '🧑🏽', // legacy fallback for places still using emoji
+        avatarUrl: c.user_avatar || null,
+        text: c.text,
+        time: getRelativeTime(c.created_at),
+        likes: 0,
+        isOwn: c.user_id === user?.id,
+        replies: [],
+      }
+    })
 
     const topLevel: DisplayComment[] = []
     const replyMap = new Map<string, DisplayComment[]>()
@@ -350,6 +380,8 @@ export function useComments(experienceId: number) {
   function toDisplayComments(hardcodedComments: Comment[]): DisplayComment[] {
     const hardcoded: DisplayComment[] = hardcodedComments.map((c) => ({
       ...c,
+      // Seed comments are authored as handle-style strings; keep their @.
+      isHandle: true,
       replies: [],
     }))
     return [...displayComments, ...hardcoded]

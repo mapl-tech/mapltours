@@ -802,7 +802,7 @@ function MobileCommentsSheet({ comments, commentText, setCommentText, addComment
                   <Avatar src={comment.avatarUrl} name={comment.user} size={34} />
                   <div style={{ flex: 1 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 3 }}>
-                      <span style={{ fontSize: 13, fontWeight: 600, fontFamily: 'var(--font-dm-sans)', color: 'white' }}>@{comment.user}</span>
+                      <span style={{ fontSize: 13, fontWeight: 600, fontFamily: 'var(--font-dm-sans)', color: 'white' }}>{comment.isHandle ? '@' : ''}{comment.user}</span>
                       <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.66)', fontFamily: 'var(--font-dm-sans)' }}>{comment.time}</span>
                     </div>
                     <p style={{ fontSize: 14, color: '#cccccc', fontFamily: 'var(--font-dm-sans)', lineHeight: 1.5, marginBottom: 8 }}>{comment.text}</p>
@@ -817,11 +817,11 @@ function MobileCommentsSheet({ comments, commentText, setCommentText, addComment
                           // Seed comments have no supabaseId, fall back to a
                           // top-level @-mention so the Reply button always works.
                           if (comment.supabaseId) {
-                            setReplyingTo({ id: comment.supabaseId, user: comment.user })
+                            setReplyingTo({ id: comment.supabaseId, user: (comment.isHandle ? '@' : '') + comment.user })
                           } else {
                             setReplyingTo(null)
                           }
-                          setCommentText(`@${comment.user} `)
+                          setCommentText(`${(comment.isHandle ? '@' : '') + comment.user} `)
                         }}
                         style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 12, color: 'rgba(255,255,255,0.66)', fontFamily: 'var(--font-dm-sans)' }}
                       >{t('Reply')}</button>
@@ -837,7 +837,7 @@ function MobileCommentsSheet({ comments, commentText, setCommentText, addComment
                         <Avatar src={reply.avatarUrl} name={reply.user} size={26} />
                         <div style={{ flex: 1 }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 }}>
-                            <span style={{ fontSize: 12, fontWeight: 600, fontFamily: 'var(--font-dm-sans)', color: 'white' }}>@{reply.user}</span>
+                            <span style={{ fontSize: 12, fontWeight: 600, fontFamily: 'var(--font-dm-sans)', color: 'white' }}>{reply.isHandle ? '@' : ''}{reply.user}</span>
                             <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.25)', fontFamily: 'var(--font-dm-sans)' }}>{reply.time}</span>
                           </div>
                           <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.6)', fontFamily: 'var(--font-dm-sans)', lineHeight: 1.5 }}>{reply.text}</p>
@@ -858,7 +858,7 @@ function MobileCommentsSheet({ comments, commentText, setCommentText, addComment
               padding: '6px 20px 0', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
               fontSize: 12, color: 'rgba(255,255,255,0.4)', fontFamily: 'var(--font-dm-sans)',
             }}>
-              <span>Replying to <span style={{ color: 'white', fontWeight: 600 }}>@{replyingTo.user}</span></span>
+              <span>Replying to <span style={{ color: 'white', fontWeight: 600 }}>{replyingTo.user}</span></span>
               <button onClick={() => { setReplyingTo(null); setCommentText('') }} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 12, color: 'rgba(255,255,255,0.6)', fontFamily: 'var(--font-dm-sans)' }}>Cancel</button>
             </div>
           )}
@@ -871,7 +871,7 @@ function MobileCommentsSheet({ comments, commentText, setCommentText, addComment
             <input type="text"
               ref={inputRef}
               aria-label={isLoggedIn ? 'Write a comment' : 'Sign in to comment'}
-              placeholder={isLoggedIn ? (replyingTo ? `Reply to @${replyingTo.user}...` : 'Add a comment...') : 'Sign in to comment...'}
+              placeholder={isLoggedIn ? (replyingTo ? `Reply to ${replyingTo.user}...` : 'Add a comment...') : 'Sign in to comment...'}
               value={commentText} onChange={(e) => setCommentText(e.target.value)}
               onKeyDown={(e) => { if (e.key === 'Enter') submitAndBlur() }}
               readOnly={!isLoggedIn}
@@ -1319,7 +1319,7 @@ export default function ExperienceDetail({ slug }: { slug: string }) {
                   <div style={{ flex: 1 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 3 }}>
                       <span style={{ fontSize: 13, fontWeight: 600, fontFamily: 'var(--font-dm-sans)', color: 'white' }}>
-                        @{comment.user}
+                        {comment.isHandle ? '@' : ''}{comment.user}
                       </span>
                       <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.66)', fontFamily: 'var(--font-dm-sans)' }}>
                         {comment.time}
@@ -1345,11 +1345,11 @@ export default function ExperienceDetail({ slug }: { slug: string }) {
                           // supabaseId, fall back to a plain @-mention so the
                           // Reply button still works.
                           if (comment.supabaseId) {
-                            setReplyingTo({ id: comment.supabaseId, user: comment.user })
+                            setReplyingTo({ id: comment.supabaseId, user: (comment.isHandle ? '@' : '') + comment.user })
                           } else {
                             setReplyingTo(null)
                           }
-                          setCommentText(`@${comment.user} `)
+                          setCommentText(`${(comment.isHandle ? '@' : '') + comment.user} `)
                         }}
                         style={{
                           background: 'none', border: 'none', cursor: 'pointer',
@@ -1369,7 +1369,7 @@ export default function ExperienceDetail({ slug }: { slug: string }) {
                         <div style={{ flex: 1 }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 }}>
                             <span style={{ fontSize: 12, fontWeight: 600, fontFamily: 'var(--font-dm-sans)', color: 'white' }}>
-                              @{reply.user}
+                              {reply.isHandle ? '@' : ''}{reply.user}
                             </span>
                             <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.25)', fontFamily: 'var(--font-dm-sans)' }}>
                               {reply.time}
@@ -1400,7 +1400,7 @@ export default function ExperienceDetail({ slug }: { slug: string }) {
               padding: '6px 0 8px',
               fontSize: 12, color: 'rgba(255,255,255,0.4)', fontFamily: 'var(--font-dm-sans)',
             }}>
-              <span>Replying to <span style={{ color: 'white', fontWeight: 600 }}>@{replyingTo.user}</span></span>
+              <span>Replying to <span style={{ color: 'white', fontWeight: 600 }}>{replyingTo.user}</span></span>
               <button
                 onClick={() => { setReplyingTo(null); setCommentText('') }}
                 style={{
@@ -1422,7 +1422,7 @@ export default function ExperienceDetail({ slug }: { slug: string }) {
               type="text"
               aria-label={isLoggedIn ? 'Write a comment' : 'Sign in to comment'}
               data-desktop-comment-input
-              placeholder={isLoggedIn ? (replyingTo ? `Reply to @${replyingTo.user}...` : 'Add a comment...') : 'Sign in to comment...'}
+              placeholder={isLoggedIn ? (replyingTo ? `Reply to ${replyingTo.user}...` : 'Add a comment...') : 'Sign in to comment...'}
               value={commentText}
               onChange={(e) => setCommentText(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && addComment()}

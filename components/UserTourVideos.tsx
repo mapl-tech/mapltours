@@ -28,6 +28,8 @@ import {
   type TourVideo,
 } from '@/lib/tour-videos'
 import { useAuth } from '@/lib/supabase/auth-context'
+import { createClient } from '@/lib/supabase/client'
+import { formatGuestLabel, normalizeSocialHandle } from '@/lib/social-handle'
 import Avatar from '@/components/Avatar'
 
 interface Props {
@@ -317,7 +319,7 @@ function VideoStripe({
               textShadow: '0 1px 6px rgba(0,0,0,0.6)',
               flex: 1, minWidth: 0,
             }}>
-              @{v.uploader_name || 'guest'}
+              {formatGuestLabel(v.uploader_handle, v.uploader_name, 'guest')}
             </p>
           </div>
 
@@ -683,7 +685,7 @@ function SwiperSlide({
             marginBottom: 2,
             textShadow: '0 1px 8px rgba(0,0,0,0.5)',
           }}>
-            @{video.uploader_name || 'guest'}
+            {formatGuestLabel(video.uploader_handle, video.uploader_name, 'guest')}
           </p>
           {video.caption && (
             <p style={{
@@ -713,6 +715,10 @@ function UploadSheet({
   const { user } = useAuth()
   const [file, setFile] = useState<File | null>(null)
   const [caption, setCaption] = useState('')
+  const [handle, setHandle] = useState<string>(() => {
+    const v = user?.user_metadata?.social_handle
+    return typeof v === 'string' ? v : ''
+  })
   const [duration, setDuration] = useState<number | null>(null)
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
   const [uploading, setUploading] = useState(false)
@@ -740,6 +746,31 @@ function UploadSheet({
 
   const handleSubmit = async () => {
     if (!file) return
+
+    // Credit handle: optional, validated only when typed. Saving it is
+    // best-effort and never blocks the upload itself.
+    const typedHandle = handle.trim()
+    const normalizedHandle = normalizeSocialHandle(typedHandle)
+    if (typedHandle && !normalizedHandle) {
+      setError('Handles are 2 to 30 characters: letters, numbers, dots or underscores')
+      return
+    }
+    // Write whenever there is a handle to set (idempotent, and the users row
+    // can lag auth metadata after a failed mirror), and also when the guest
+    // blanked a previously saved handle, which must remove the credit.
+    const priorHandle = normalizeSocialHandle(user?.user_metadata?.social_handle)
+    if (user && (normalizedHandle || priorHandle)) {
+      const next = normalizedHandle ?? null
+      const supabase = createClient()
+      await supabase.auth.updateUser({ data: { social_handle: next } })
+      const { error: handleErr } = await supabase
+        .from('users')
+        .upsert({ id: user.id, social_handle: next }, { onConflict: 'id' })
+      // Tolerate the column not existing yet (migration 026); the metadata
+      // copy above still mirrors in on the next comment or profile save.
+      if (handleErr) console.warn('[upload] social_handle save skipped', handleErr.message)
+    }
+
     setUploading(true)
     setError(null)
     const res = await uploadTourVideo({
@@ -936,6 +967,32 @@ function UploadSheet({
                 boxSizing: 'border-box',
               }}
             />
+
+            <input
+              value={handle}
+              onChange={(e) => setHandle(e.target.value.slice(0, 40))}
+              placeholder="@yourhandle for credit (optional)"
+              aria-label="Instagram or TikTok handle for credit"
+              style={{
+                width: '100%', marginTop: 10,
+                height: 40, padding: '0 12px',
+                borderRadius: 12,
+                border: '1px solid rgba(0,0,0,0.08)',
+                background: 'var(--bg-warm, #FAF8F3)',
+                fontFamily: 'var(--font-dm-sans)', fontSize: 13,
+                color: 'var(--text-primary)',
+                outline: 'none',
+                boxSizing: 'border-box',
+              }}
+            />
+            <p style={{
+              marginTop: 6,
+              fontSize: 11.5, lineHeight: 1.5,
+              color: 'var(--text-tertiary)',
+              fontFamily: 'var(--font-dm-sans)',
+            }}>
+              Instagram or TikTok. Your clip is credited to this handle, here and when we feature it.
+            </p>
           </div>
         )}
 
