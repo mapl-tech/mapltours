@@ -15,7 +15,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Plus, Pause, Play, Volume2, VolumeX, ChevronLeft, ChevronRight, X, Check, Upload, Award, Send } from 'lucide-react'
+import { Plus, Play, Volume2, VolumeX, ChevronLeft, ChevronRight, X, Check, Upload, Award, Send } from 'lucide-react'
 import {
   useExperienceVideos,
   useMyVideoProgress,
@@ -616,9 +616,8 @@ function VideoSwiper({
         display: 'flex', justifyContent: 'center', gap: 10,
         pointerEvents: 'none',
       }}>
-        <ControlButton onClick={() => setPaused((p) => !p)} label={paused ? 'Play' : 'Pause'}>
-          {paused ? <Play size={16} fill="currentColor" strokeWidth={0} /> : <Pause size={16} />}
-        </ControlButton>
+        {/* No pause control, by explicit product decision (2026-08-24):
+            tapping the video toggles playback, space bar still works. */}
         <ControlButton onClick={() => setMuted((m) => !m)} label={muted ? 'Unmute' : 'Mute'}>
           {muted ? <VolumeX size={16} /> : <Volume2 size={16} />}
         </ControlButton>

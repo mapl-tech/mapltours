@@ -226,25 +226,10 @@ function Reel({ exp, isActive, totalCount, currentIndex, onComments }: { exp: Ex
         overflow: 'hidden', background: '#000',
       }}
     >
-      {/* WCAG 2.2.2: a real, keyboard-reachable pause control. Tap-anywhere
-          stays as a bonus, never the only mechanism. */}
-      {isActive && (
-        <button
-          type="button"
-          onClick={(e) => { e.stopPropagation(); togglePlay() }}
-          aria-label={paused ? 'Play video' : 'Pause video'}
-          aria-pressed={paused}
-          style={{
-            position: 'absolute', top: 70, left: 12, zIndex: 30,
-            width: 44, height: 44, borderRadius: 9999,
-            background: 'rgba(0,0,0,0.55)', border: '1px solid rgba(255,255,255,0.3)',
-            color: '#fff', cursor: 'pointer', fontSize: 13,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-          }}
-        >
-          {paused ? '\u25B6' : '\u23F8'}
-        </button>
-      )}
+      {/* No visible controls on the video, by explicit product decision
+          (2026-08-24): tap-anywhere is the pause mechanism. Removing the
+          on-screen button trades away the WCAG 2.2.2 keyboard-reachable
+          pause it used to provide. */}
       {exp.youtubeId ? (
         <iframe
           src={`https://www.youtube.com/embed/${exp.youtubeId}?autoplay=1&mute=1&loop=1&controls=0&showinfo=0&modestbranding=1&playlist=${exp.youtubeId}&playsinline=1`}
