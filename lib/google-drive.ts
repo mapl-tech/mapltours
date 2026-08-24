@@ -22,10 +22,24 @@ import { createSign } from 'node:crypto'
  *   GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY    shared with the calendar sync
  *   GOOGLE_DRIVE_CLIPS_FOLDER_ID          optional override of the folder
  *
- * The folder must be shared with the service account's email as Editor
- * (or live in a Shared Drive the account is a member of). NOTE: files
- * uploaded by a service account into a personal My Drive folder count
- * against the SERVICE ACCOUNT's 15 GB quota; a Shared Drive avoids that.
+ * AUTH REALITY (verified 2026-08-24): Google service accounts have NO
+ * storage quota, so a plain SA token cannot upload into anyone's My Drive
+ * folder. Two ways through, either of which this module supports:
+ *
+ *   GOOGLE_DRIVE_IMPERSONATE     a Workspace user email; the SA acts as
+ *                                them via domain-wide delegation (Workspace
+ *                                admin must authorize the SA's client id
+ *                                for the drive scope). Uploads land as that
+ *                                user, on their quota.
+ *   GOOGLE_DRIVE_OAUTH_CLIENT_ID / _CLIENT_SECRET / _REFRESH_TOKEN
+ *                                a one-time-consented refresh token for the
+ *                                folder owner's own Google account (works
+ *                                for consumer accounts, no Workspace
+ *                                needed). Takes priority when all three
+ *                                are set.
+ *
+ * A folder in a true Shared Drive also works with the bare SA (as a
+ * member), since Shared Drives carry their own quota.
  */
 
 /** The MAPL clips folder Leshan shared (drive.google.com/drive/folders/...). */
@@ -34,8 +48,16 @@ const DEFAULT_CLIPS_FOLDER_ID = '1bp1DVt48TTyy2JhcCj9z4ZzMXepijprx'
 const DRIVE_SCOPE = 'https://www.googleapis.com/auth/drive'
 const TOKEN_URL = 'https://oauth2.googleapis.com/token'
 
-export function driveConfigured(): boolean {
+function oauthConfigured(): boolean {
   return Boolean(
+    process.env.GOOGLE_DRIVE_OAUTH_CLIENT_ID &&
+    process.env.GOOGLE_DRIVE_OAUTH_CLIENT_SECRET &&
+    process.env.GOOGLE_DRIVE_OAUTH_REFRESH_TOKEN,
+  )
+}
+
+export function driveConfigured(): boolean {
+  return oauthConfigured() || Boolean(
     process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL &&
     process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY,
   )
@@ -57,29 +79,46 @@ async function driveToken(): Promise<string | null> {
   if (cachedToken && Date.now() < cachedToken.expiresAt - 60_000) {
     return cachedToken.value
   }
-  const email = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL!
-  const key = process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY!.replace(/\\n/g, '\n')
 
-  const now = Math.floor(Date.now() / 1000)
-  const header = b64url(JSON.stringify({ alg: 'RS256', typ: 'JWT' }))
-  const claims = b64url(JSON.stringify({
-    iss: email,
-    scope: DRIVE_SCOPE,
-    aud: TOKEN_URL,
-    iat: now,
-    exp: now + 3600,
-  }))
-  const signer = createSign('RSA-SHA256')
-  signer.update(`${header}.${claims}`)
-  const jwt = `${header}.${claims}.${signer.sign(key, 'base64url')}`
+  // Preferred: the folder owner's own refresh token (works for any Google
+  // account, and the uploads land on their quota under their ownership).
+  let tokenRequest: URLSearchParams
+  if (oauthConfigured()) {
+    tokenRequest = new URLSearchParams({
+      grant_type: 'refresh_token',
+      client_id: process.env.GOOGLE_DRIVE_OAUTH_CLIENT_ID!,
+      client_secret: process.env.GOOGLE_DRIVE_OAUTH_CLIENT_SECRET!,
+      refresh_token: process.env.GOOGLE_DRIVE_OAUTH_REFRESH_TOKEN!,
+    })
+  } else {
+    const email = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL!
+    const key = process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY!.replace(/\\n/g, '\n')
+
+    const now = Math.floor(Date.now() / 1000)
+    const header = b64url(JSON.stringify({ alg: 'RS256', typ: 'JWT' }))
+    const claims = b64url(JSON.stringify({
+      iss: email,
+      // Workspace domain-wide delegation: act as this user so uploads have
+      // a real storage quota behind them.
+      ...(process.env.GOOGLE_DRIVE_IMPERSONATE ? { sub: process.env.GOOGLE_DRIVE_IMPERSONATE } : {}),
+      scope: DRIVE_SCOPE,
+      aud: TOKEN_URL,
+      iat: now,
+      exp: now + 3600,
+    }))
+    const signer = createSign('RSA-SHA256')
+    signer.update(`${header}.${claims}`)
+    const jwt = `${header}.${claims}.${signer.sign(key, 'base64url')}`
+    tokenRequest = new URLSearchParams({
+      grant_type: 'urn:ietf:params:oauth:grant-type:jwt-bearer',
+      assertion: jwt,
+    })
+  }
 
   const res = await fetch(TOKEN_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: new URLSearchParams({
-      grant_type: 'urn:ietf:params:oauth:grant-type:jwt-bearer',
-      assertion: jwt,
-    }),
+    body: tokenRequest,
     signal: AbortSignal.timeout(8_000),
     cache: 'no-store',
   })
