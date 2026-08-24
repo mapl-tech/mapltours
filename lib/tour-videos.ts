@@ -289,6 +289,18 @@ export async function uploadTourVideo({
     return { ok: false, error: insertErr.message || 'Could not save video' }
   }
 
+  // Archive copy into the marketing Google Drive folder. Fire-and-forget:
+  // the server no-ops when Drive is unconfigured, and no outcome here may
+  // delay or fail the upload the guest just completed.
+  if (inserted?.id && typeof fetch !== 'undefined') {
+    void fetch('/api/drive-sync', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ videoId: inserted.id }),
+      keepalive: true,
+    }).catch(() => {})
+  }
+
   return { ok: true, videoId: inserted?.id }
 }
 
@@ -540,6 +552,19 @@ export async function moderateVideo(id: string, next: VideoStatus, notes?: strin
       reviewed_at: new Date().toISOString(),
     })
     .eq('id', id)
+
+  // A clip that failed review has no business in the marketing archive:
+  // pull its Google Drive copy back out. Fire-and-forget, same contract as
+  // the sync itself: no Drive outcome may affect the moderation result.
+  if (!error && (next === 'rejected' || next === 'flagged') && typeof fetch !== 'undefined') {
+    void fetch('/api/drive-sync', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ videoId: id }),
+      keepalive: true,
+    }).catch(() => {})
+  }
+
   return !error
 }
 
