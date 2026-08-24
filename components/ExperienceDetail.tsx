@@ -14,6 +14,7 @@ import { Heart, MessageCircle, Play, ChevronLeft, ChevronRight, X, ThumbsUp, Sen
 import { useExperienceLike, useComments, DisplayComment } from '@/lib/supabase/hooks'
 import { useAuth } from '@/lib/supabase/auth-context'
 import Avatar from '@/components/Avatar'
+import { isMaplCreator, displayHandle } from '@/lib/creator'
 import TourDetailsSheet from './TourDetailsSheet'
 
 // Heavy, only-used-on-demand surfaces, code-split so they never ship with
@@ -23,20 +24,6 @@ const UserTourVideos = dynamic(() => import('@/components/UserTourVideos'), {
   ssr: false,
   loading: () => null,
 })
-
-/** True when an experience's creator handle is owned by MAPL itself, we
- *  render the MAPL favicon instead of a coloured initial disk. Centralised
- *  so new MAPL-owned handles can be added in one place. */
-const MAPL_CREATOR_HANDLES = new Set([
-  'mapl',
-  'mapltours',
-  'mapl.tours',
-  'mapltech',
-])
-function isMaplCreator(handle: string | null | undefined): boolean {
-  if (!handle) return false
-  return MAPL_CREATOR_HANDLES.has(handle.toLowerCase().trim())
-}
 
 /** Deterministic Fisher-Yates shuffle seeded by a string, same seed gives
  *  the same order, so the feed doesn't rearrange itself mid-scroll. */
@@ -304,22 +291,19 @@ function Reel({ exp, isActive, totalCount, currentIndex, onComments }: { exp: Ex
             creator's initial disk (coloured by handle). No follow badge. */}
         <div style={{ marginBottom: 4 }}>
           {isMaplCreator(exp.creator) ? (
-            <div
-              aria-label="MAPL Tours"
+            /* eslint-disable-next-line @next/next/no-img-element */
+            <img
+              src="/icon.svg"
+              alt="MAPL Tours Jamaica"
+              width={44}
+              height={44}
               style={{
                 width: 44, height: 44, borderRadius: '50%',
-                background: '#FFB300',
+                background: '#fff',
                 border: '2px solid white',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontFamily: 'var(--font-dm-sans)',
-                fontWeight: 800, fontSize: 20,
-                color: '#08080A',
-                letterSpacing: '-0.02em',
-                lineHeight: 1,
+                display: 'block',
               }}
-            >
-              M
-            </div>
+            />
           ) : (
             <Avatar
               name={exp.creator}
@@ -543,7 +527,7 @@ function Reel({ exp, isActive, totalCount, currentIndex, onComments }: { exp: Ex
           fontSize: 14, fontWeight: 700, color: 'white',
           fontFamily: 'var(--font-dm-sans)', marginBottom: 4,
         }}>
-          @{exp.creator}
+          @{displayHandle(exp.creator)}
         </p>
 
         {/* Title */}
@@ -1306,14 +1290,29 @@ export default function ExperienceDetail({ slug }: { slug: string }) {
           display: 'flex', alignItems: 'center', gap: 12,
           background: 'rgba(255,255,255,0.03)',
         }}>
-          <div style={{
-            width: 36, height: 36, borderRadius: '50%',
-            background: activeExp.gradient, flexShrink: 0,
-            border: '2px solid rgba(255,255,255,0.15)',
-          }} />
+          {isMaplCreator(activeExp.creator) ? (
+            /* eslint-disable-next-line @next/next/no-img-element */
+            <img
+              src="/icon.svg"
+              alt="MAPL Tours Jamaica"
+              width={36}
+              height={36}
+              style={{
+                width: 36, height: 36, borderRadius: '50%', flexShrink: 0,
+                background: '#fff', border: '2px solid rgba(255,255,255,0.15)',
+                display: 'block',
+              }}
+            />
+          ) : (
+            <div style={{
+              width: 36, height: 36, borderRadius: '50%',
+              background: activeExp.gradient, flexShrink: 0,
+              border: '2px solid rgba(255,255,255,0.15)',
+            }} />
+          )}
           <div style={{ flex: 1 }}>
             <span style={{ fontSize: 13, fontWeight: 600, fontFamily: 'var(--font-dm-sans)', color: 'white' }}>
-              @{activeExp.creator}
+              @{displayHandle(activeExp.creator)}
             </span>
             <span style={{ fontSize: 12, color: '#cccccc', fontFamily: 'var(--font-dm-sans)', marginLeft: 6 }}>
               {activeExp.followers}

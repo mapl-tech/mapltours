@@ -4,6 +4,7 @@ import { useRef, useState, memo } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { Experience, CATEGORY_COLORS, slugify , priceUnitLabel } from '@/lib/experiences'
+import { displayHandle } from '@/lib/creator'
 import { useCartStore } from '@/lib/cart'
 import { useHydrated } from '@/lib/use-hydrated'
 import { Plus, Check, Play, MapPin, Star } from 'lucide-react'
@@ -217,7 +218,7 @@ export default memo(function ExpCard({ exp }: { exp: Experience }) {
           }}>{'New'}</span>
         )}
         <p style={{ fontSize: 12, color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-sans)', marginTop: 3 }}>
-          {exp.duration} · @{exp.creator}
+          {exp.duration} · @{displayHandle(exp.creator)}
         </p>
         <p style={{ fontSize: 13, fontFamily: 'var(--font-dm-sans)', fontWeight: 600, marginTop: 4 }}>
           {t('From')} {formatPrice(exp.price)}

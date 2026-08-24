@@ -4,6 +4,7 @@ import { useRef, useEffect, useState, memo } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { Experience, slugify, priceUnitLabel } from '@/lib/experiences'
+import { displayHandle } from '@/lib/creator'
 import { useI18n } from '@/lib/i18n'
 import SaveButton from './SaveButton'
 import { useCartStore } from '@/lib/cart'
@@ -259,7 +260,7 @@ export default memo(function MobileShort({ exp, priority = false }: { exp: Exper
               fontFamily: 'var(--font-dm-sans)', marginBottom: 6,
               letterSpacing: '0.02em',
             }}>
-              @{exp.creator}
+              @{displayHandle(exp.creator)}
             </p>
 
             <h3 style={{

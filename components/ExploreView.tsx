@@ -3,6 +3,7 @@
 import { useState, useMemo, useEffect, useRef, useId } from 'react'
 import { Search } from 'lucide-react'
 import { singleExperiences } from '@/lib/experiences'
+import { displayHandle } from '@/lib/creator'
 import { useI18n } from '@/lib/i18n'
 import type { ExperienceCategory } from '@/lib/experiences'
 import ExpCard from './ExpCard'
@@ -89,7 +90,7 @@ export default function ExploreView({ initialQuery = '' }: { initialQuery?: stri
           !exp.destination.toLowerCase().includes(q) &&
           !exp.parish.toLowerCase().includes(q) &&
           !exp.category.toLowerCase().includes(q) &&
-          !exp.creator.toLowerCase().includes(q) &&
+          !displayHandle(exp.creator).toLowerCase().includes(q) &&
           !exp.description.toLowerCase().includes(q) &&
           !exp.tags.some((tag) => tag.toLowerCase().includes(q))
         ) {
