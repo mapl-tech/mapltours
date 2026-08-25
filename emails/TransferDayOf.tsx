@@ -84,7 +84,7 @@ export default function TransferDayOf(props: TransferDayOfProps) {
       <Text style={s.heroLead}>
         {isArrival
           ? `${driverIntro} will be waiting just outside the arrivals hall with a MAPL Tours sign showing your name. Take your time through immigration and baggage${flight ? ': we watch your flight, so your driver already knows if it lands early or late' : ', your driver will be there'}.`
-          : `${driver} will collect you from your hotel ${isToday ? 'today' : 'tomorrow'} and take you back to Sangster International, and will be outside at the time below.`}
+          : `${driverName?.trim() ? `${driverName.trim()}, your driver,` : 'Your driver'} will pick you up from your hotel ${isToday ? 'today' : 'tomorrow'} and take you back to Sangster International, and will be outside at the time below.`}
       </Text>
 
       <Section style={{ margin: '20px 0 0' }}>
