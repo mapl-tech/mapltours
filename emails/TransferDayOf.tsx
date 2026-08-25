@@ -146,7 +146,7 @@ export default function TransferDayOf(props: TransferDayOfProps) {
                 ]
               : [
                   <>Be in the lobby a few minutes before the pickup time above.</>,
-                  <>Your driver will be outside in the vehicle listed above.</>,
+                  <>Your driver will be waiting in the vehicle listed above.</>,
                   <>If anything changes with your flight or your plans, reply to this email and we will let your driver know and adjust the pickup for you.</>,
                 ]
             ).map((step, i) => (
