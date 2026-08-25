@@ -33,7 +33,7 @@ export default function VideoRejected({
       </Heading>
       <Text style={s.body}>
         Thanks for sending a clip
-        {experienceTitle ? <> from <strong style={{ color: '#fff' }}>{experienceTitle}</strong></> : null}. It didn&rsquo;t quite fit our publishing standards, but we&rsquo;d genuinely love another take from you.
+        {experienceTitle ? <> from <strong style={{ color: '#fff' }}>{experienceTitle}</strong></> : null}. It didn&rsquo;t quite fit the gallery this time, but we&rsquo;d genuinely love another take from you.
       </Text>
 
       {/* Admin notes (if provided) */}

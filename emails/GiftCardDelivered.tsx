@@ -43,7 +43,7 @@ export default function GiftCardDelivered({
         {recipientName ? `${recipientName}, you` : 'You'}&rsquo;ve been given Jamaica
       </Heading>
       <Text style={s.heroLead}>
-        {senderName ? `${senderName} has sent you` : 'You have been sent'}{' '}
+        {senderName ? `${senderName} has sent you` : 'Someone has sent you'}{' '}
         a {fmtMoney(amount, currency)} gift card for MAPL Tours Jamaica, good for
         guided experiences, private airport transfers, and days out across the island.
       </Text>
@@ -105,7 +105,7 @@ export default function GiftCardDelivered({
         You can spend it across more than one booking until the balance runs
         out. Booking an experience needs a quick free account; airport
         transfers don&rsquo;t.
-        {expiresAt ? ` Valid until ${fmtDate(expiresAt)}.` : ''} Keep this email
+        {expiresAt ? ` Valid until ${fmtDate(expiresAt)}.` : ''} Keep this email.
         The code is the card.
       </Text>
 

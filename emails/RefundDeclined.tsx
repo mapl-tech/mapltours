@@ -30,7 +30,7 @@ export default function RefundDeclined({
       <Text style={s.heroLead}>
         {firstName ? `${firstName}, we` : 'We'}&rsquo;ve reviewed your request to cancel {bookingRef} and
         we&rsquo;re not able to refund it. No money has been taken or returned, and
-        your {noun} remains confirmed &mdash; please still come.
+        your {noun} remains confirmed. Please still come.
       </Text>
 
       {reason && (
