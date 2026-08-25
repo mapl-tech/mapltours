@@ -6,6 +6,7 @@ import {
   getDestination,
   getTransferPrice,
   driverCost,
+  MAX_TRANSFER_PASSENGERS,
   type TransferTripType,
 } from '@/lib/airport-transfers'
 import { areTransferLegsBookable, LEAD_TIME_MESSAGE } from '@/lib/booking-window'
@@ -147,17 +148,20 @@ export async function POST(request: NextRequest) {
         )
       }
       const dest = getDestination(item.destinationId)
-      const price = getTransferPrice(item.destinationId, item.tripType)
-      if (!dest || price === null) {
+      // Pax parses BEFORE pricing: parties of 5+ price per person, so the
+      // server-computed price (margin and fees included via
+      // getTransferPrice) must see the real party size.
+      const pax = Math.round(item.passengers)
+      if (!Number.isFinite(pax) || pax < 1 || pax > MAX_TRANSFER_PASSENGERS) {
         return NextResponse.json(
-          { error: `Unknown destination: ${item.destinationId}` },
+          { error: `Passengers must be between 1 and ${MAX_TRANSFER_PASSENGERS}.` },
           { status: 400 },
         )
       }
-      const pax = Math.round(item.passengers)
-      if (!Number.isFinite(pax) || pax < 1 || pax > 4) {
+      const price = getTransferPrice(item.destinationId, item.tripType, pax)
+      if (!dest || price === null) {
         return NextResponse.json(
-          { error: 'Passengers must be between 1 and 4.' },
+          { error: `Unknown destination: ${item.destinationId}` },
           { status: 400 },
         )
       }
@@ -217,7 +221,7 @@ export async function POST(request: NextRequest) {
       // `price` is the ALL-IN price the customer pays; `subtotal` tracks what
       // the driver is owed, so the split stored on the booking stays
       // supplier-cost vs MAPL-margin.
-      subtotal += driverCost(item.destinationId, item.tripType) ?? 0
+      subtotal += driverCost(item.destinationId, item.tripType, pax) ?? 0
       total += price
     }
 

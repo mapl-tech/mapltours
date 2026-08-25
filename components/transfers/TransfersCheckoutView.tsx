@@ -14,7 +14,7 @@ import {
 } from 'lucide-react'
 import { leadTimeCutoff } from '@/lib/booking-window'
 import { useTransfersCart, type TransferCartItem } from '@/lib/transfers-cart'
-import { groupDestinationsByZone } from '@/lib/airport-transfers'
+import { groupDestinationsByZone, MAX_TRANSFER_PASSENGERS } from '@/lib/airport-transfers'
 import { getStoredAttribution } from '@/lib/attribution'
 import { trackBeginCheckout } from '@/lib/analytics'
 import { CANCELLATION_SUMMARY } from '@/lib/refund-pricing'
@@ -1036,7 +1036,7 @@ function TransferCard({
                 type="button"
                 aria-label="One fewer passenger"
                 disabled={item.passengers <= 1}
-                onClick={() => onChange({ passengers: Math.max(1, item.passengers - 1) })}
+                onClick={() => onRevise({ passengers: Math.max(1, item.passengers - 1) })}
                 style={{
                   width: 24, height: 24, borderRadius: 6, cursor: item.passengers <= 1 ? 'not-allowed' : 'pointer',
                   border: '1px solid var(--border-strong)', background: '#fff',
@@ -1050,12 +1050,12 @@ function TransferCard({
               <button
                 type="button"
                 aria-label="One more passenger"
-                disabled={item.passengers >= 4}
-                onClick={() => onChange({ passengers: Math.min(4, item.passengers + 1) })}
+                disabled={item.passengers >= MAX_TRANSFER_PASSENGERS}
+                onClick={() => onRevise({ passengers: Math.min(MAX_TRANSFER_PASSENGERS, item.passengers + 1) })}
                 style={{
-                  width: 24, height: 24, borderRadius: 6, cursor: item.passengers >= 4 ? 'not-allowed' : 'pointer',
+                  width: 24, height: 24, borderRadius: 6, cursor: item.passengers >= MAX_TRANSFER_PASSENGERS ? 'not-allowed' : 'pointer',
                   border: '1px solid var(--border-strong)', background: '#fff',
-                  color: item.passengers >= 4 ? 'var(--text-tertiary)' : 'var(--text-primary)',
+                  color: item.passengers >= MAX_TRANSFER_PASSENGERS ? 'var(--text-tertiary)' : 'var(--text-primary)',
                   lineHeight: 1, fontSize: 14,
                 }}
               >+</button>
@@ -1214,15 +1214,15 @@ function TransferCard({
               <button
                 type="button" className="btn-outline" aria-label="More passengers"
                 onClick={() => onRevise({ passengers: item.passengers + 1 })}
-                disabled={item.passengers >= 4}
-                style={{ width: 42, height: 42, padding: 0, borderRadius: '0 10px 10px 0', opacity: item.passengers >= 4 ? 0.45 : 1 }}
+                disabled={item.passengers >= MAX_TRANSFER_PASSENGERS}
+                style={{ width: 42, height: 42, padding: 0, borderRadius: '0 10px 10px 0', opacity: item.passengers >= MAX_TRANSFER_PASSENGERS ? 0.45 : 1 }}
               >+</button>
             </div>
           </EditRow>
 
           <p style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 12, color: 'var(--text-tertiary)', marginTop: 4 }}>
-            One vehicle, flat for 1 to 4 passengers, so the fare does not change with
-            party size. Switching between round-trip and one-way does change it.
+            One vehicle, flat for 1 to 4 passengers; parties of 5 or more
+            price per person, so the fare updates with the count.
           </p>
         </div>
       )}

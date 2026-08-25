@@ -26,6 +26,7 @@ import {
   getTransferPrice,
   areaFromPrice,
   getDestination,
+  MAX_TRANSFER_PASSENGERS,
 } from '@/lib/airport-transfers'
 import { useTransfersCart } from '@/lib/transfers-cart'
 import { useI18n } from '@/lib/i18n'
@@ -265,7 +266,7 @@ export default function TransfersView() {
               </span>
             </h1>
             <p className="xfer-hero-sub">
-              Private vehicle, 1–4 passengers, priced up front. Meet-and-greet
+              Private vehicle for up to 7 passengers, priced up front. Meet-and-greet
               at arrivals, flight tracking, and an experienced, fully vetted
               driver who knows the road.
             </p>
@@ -305,7 +306,7 @@ export default function TransfersView() {
                   ))}
                 </div>
                 <span className="xfer-hero-rating-text">
-                  Flat rate per vehicle, up to 4 passengers
+                  Flat rate per vehicle for up to 4; parties of 5 or more price per person
                 </span>
               </div>
             </div>
@@ -570,7 +571,7 @@ export default function TransfersView() {
                 <button
                   type="button"
                   className="btn-outline"
-                  onClick={() => setPassengers((p) => Math.min(4, p + 1))}
+                  onClick={() => setPassengers((p) => Math.min(MAX_TRANSFER_PASSENGERS, p + 1))}
                   style={{
                     width: 44,
                     height: 44,
