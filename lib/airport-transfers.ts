@@ -60,10 +60,18 @@ export interface TransferDestination {
   zone: TransferZone
   /**
    * What the Jamaica driver charges MAPL for ONE direction, flat for 1 to 4
-   * passengers (the only party sizes this site sells). Source of truth for
-   * the driver payout; the customer price is derived from it.
+   * passengers. Source of truth for the driver payout; the customer price
+   * is derived from it. Parties of 5+ switch to a per-person rate (same
+   * reading as tours, confirmed by Leshan 2026-08-25): the WHOLE party pays
+   * extraPerPerson a head, floored at baseRate so more people never pay
+   * less than a smaller party.
    */
   baseRate: number
+  /**
+   * Per-person rate a party of 5+ pays, per direction, from Collin's rate
+   * sheet. Absent means the zone default in ZONE_EXTRA_PER_PERSON.
+   */
+  extraPerPerson?: number
   /**
    * True when the rate is a conservative estimate rather than a figure the
    * driver quoted. Estimates are set at or above the nearest quoted resort so
@@ -101,8 +109,8 @@ export interface TransferDestination {
 export const DESTINATIONS: TransferDestination[] = [
   // Zone A, Montego Bay & Rose Hall
   { id: 'iberostar-rose-hall', name: 'Iberostar Waves Rose Hall', parish: 'St. James', zone: 'A', baseRate: 40 },
-  { id: 'secrets-st-james', name: 'Secrets St. James, Montego Bay', parish: 'St. James', zone: 'A', baseRate: 40 , reopens: 'Q1 2027' },
-  { id: 'secrets-wild-orchid', name: 'Secrets Wild Orchid, Montego Bay', parish: 'St. James', zone: 'A', baseRate: 40 , reopens: 'Q1 2027' },
+  { id: 'secrets-st-james', name: 'Secrets St. James, Montego Bay', parish: 'St. James', zone: 'A', baseRate: 40, extraPerPerson: 5, reopens: 'Q1 2027' },
+  { id: 'secrets-wild-orchid', name: 'Secrets Wild Orchid, Montego Bay', parish: 'St. James', zone: 'A', baseRate: 40, extraPerPerson: 5, reopens: 'Q1 2027' },
   { id: 'jewel-grande-montego-bay', name: 'Jewel Grande Montego Bay', parish: 'St. James', zone: 'A', baseRate: 40, estimated: true , reopens: '2027' },
   { id: 'hyatt-ziva-rose-hall', name: 'Hyatt Ziva Rose Hall', parish: 'St. James', zone: 'A', baseRate: 30 , reopens: 'Q1 2027' },
   { id: 'hyatt-zilara-rose-hall', name: 'Hyatt Zilara Rose Hall', parish: 'St. James', zone: 'A', baseRate: 30 , reopens: 'Q1 2027' },
@@ -112,9 +120,9 @@ export const DESTINATIONS: TransferDestination[] = [
   { id: 'riu-montego-bay', name: 'Riu Montego Bay', parish: 'St. James', zone: 'A', baseRate: 20 },
   { id: 'riu-palace-jamaica', name: 'Riu Palace Jamaica', parish: 'St. James', zone: 'A', baseRate: 20 },
   { id: 'riu-reggae', name: 'Riu Reggae', parish: 'St. James', zone: 'A', baseRate: 20 },
-  { id: 'deja-resort', name: 'Deja Resort, Montego Bay', parish: 'St. James', zone: 'A', baseRate: 15 },
-  { id: 's-hotel-montego-bay', name: 'S Hotel, Montego Bay', parish: 'St. James', zone: 'A', baseRate: 15 },
-  { id: 'breathless-montego-bay', name: 'Breathless Montego Bay', parish: 'St. James', zone: 'A', baseRate: 40 , reopens: 'Q1 2027' },
+  { id: 'deja-resort', name: 'Deja Resort, Montego Bay', parish: 'St. James', zone: 'A', baseRate: 15, extraPerPerson: 5 },
+  { id: 's-hotel-montego-bay', name: 'S Hotel, Montego Bay', parish: 'St. James', zone: 'A', baseRate: 15, extraPerPerson: 5 },
+  { id: 'breathless-montego-bay', name: 'Breathless Montego Bay', parish: 'St. James', zone: 'A', baseRate: 40, extraPerPerson: 5, reopens: 'Q1 2027' },
   { id: 'iberostar-grand-rose-hall', name: 'JOIA Rose Hall by Iberostar', parish: 'St. James', zone: 'A', baseRate: 40 , reopens: '1 Dec 2026' },
   { id: 'half-moon-resort', name: 'Half Moon, A RockResort', parish: 'St. James', zone: 'A', baseRate: 40, estimated: true },
 
@@ -156,7 +164,7 @@ export const DESTINATIONS: TransferDestination[] = [
   { id: 'home-sweet-home-negril', name: 'Home Sweet Home Resort, Negril', parish: 'Westmoreland', zone: 'D', baseRate: 90, estimated: true },
   { id: 'couples-swept-away', name: 'Couples Swept Away, Negril', parish: 'Westmoreland', zone: 'D', baseRate: 90 },
   { id: 'couples-negril', name: 'Couples Negril', parish: 'Westmoreland', zone: 'D', baseRate: 90 },
-  { id: 'hedonism-ii', name: 'Hedonism II, Negril', parish: 'Westmoreland', zone: 'D', baseRate: 90 },
+  { id: 'hedonism-ii', name: 'Hedonism II, Negril', parish: 'Westmoreland', zone: 'D', baseRate: 90, extraPerPerson: 25 },
   { id: 'bahia-principe-runaway-bay', name: 'Bahia Principe Explore Jamaica, Runaway Bay', parish: 'St. Ann', zone: 'D', baseRate: 80, reopens: '1 Dec 2026' },
   { id: 'bahia-principe-escape', name: 'Bahia Principe Escape, Runaway Bay', parish: 'St. Ann', zone: 'D', baseRate: 80 },
   { id: 'jewel-paradise-cove', name: 'Royalton CHIC Jamaica Paradise Cove, Runaway Bay', parish: 'St. Ann', zone: 'D', baseRate: 80, estimated: true , reopens: '15 Jul 2027' },
@@ -423,16 +431,43 @@ export const CARD_FIXED = 0.22
  *  is his, so his payout carries it too. */
 export const ROUND_TRIP_DISCOUNT = 0.10
 
+/** The vehicle seats 7 guests; larger parties need a second vehicle and a
+ *  WhatsApp quote, so the site stops here. */
+export const MAX_TRANSFER_PASSENGERS = 7
+
+/** Zone defaults for the 5+ per-person rate, from Collin's rate sheet
+ *  (2026-08-25): Montego Bay hotels run $7 a head, Falmouth-distance $15,
+ *  Negril/Runaway Bay and Ocho Rios $20. Hotels the sheet prices
+ *  individually carry their own extraPerPerson. */
+const ZONE_EXTRA_PER_PERSON: Record<TransferZone, number> = {
+  A: 7,
+  B: 15,
+  C: 15,
+  D: 20,
+  E: 20,
+}
+
+/** Per-direction driver rate for a party of this size: flat to 4, per-person
+ *  (floored at the vehicle rate) from 5 up. */
+function legRate(dest: TransferDestination, passengers: number): number {
+  const pax = Math.max(1, Math.round(passengers))
+  if (pax <= 4) return dest.baseRate
+  const extra = dest.extraPerPerson ?? ZONE_EXTRA_PER_PERSON[dest.zone]
+  return Math.max(dest.baseRate, extra * pax)
+}
+
 export function driverCost(
   destinationId: string,
   tripType: TransferTripType,
+  passengers = 1,
 ): number | null {
   const dest = getDestination(destinationId)
   if (!dest) return null
+  const rate = legRate(dest, passengers)
   if (tripType === 'round_trip') {
-    return Math.round(dest.baseRate * 2 * (1 - ROUND_TRIP_DISCOUNT) * 100) / 100
+    return Math.round(rate * 2 * (1 - ROUND_TRIP_DISCOUNT) * 100) / 100
   }
-  return dest.baseRate
+  return rate
 }
 
 /**
@@ -447,8 +482,9 @@ export function driverCost(
 export function getTransferPrice(
   destinationId: string,
   tripType: TransferTripType,
+  passengers = 1,
 ): number | null {
-  const cost = driverCost(destinationId, tripType)
+  const cost = driverCost(destinationId, tripType, passengers)
   if (cost === null) return null
   const sends = tripType === 'round_trip' ? 2 : 1
   const payout = cost * (1 + TRANSFER_MARGIN + REMITLY_FX) + sends * REMITLY_FLAT
@@ -602,9 +638,9 @@ export function buildQuote(
   if (!dest || !zone) return null
   // All-in price for this specific resort. MUST come from getTransferPrice so
   // the quote the customer sees matches what the server recomputes and charges.
-  const price = getTransferPrice(destinationId, tripType)
+  const clampedPax = Math.max(1, Math.min(MAX_TRANSFER_PASSENGERS, Math.round(passengers)))
+  const price = getTransferPrice(destinationId, tripType, clampedPax)
   if (price === null) return null
-  const clampedPax = Math.max(1, Math.min(4, Math.round(passengers)))
   return {
     destinationId: dest.id,
     destinationName: dest.name,

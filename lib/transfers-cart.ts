@@ -1,4 +1,4 @@
-import { getTransferPrice, getDestination, ZONES } from '@/lib/airport-transfers'
+import { getTransferPrice, getDestination, ZONES, MAX_TRANSFER_PASSENGERS } from '@/lib/airport-transfers'
 import { trackAddToCart } from './analytics'
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
@@ -133,10 +133,10 @@ export const useTransfersCart = create<TransfersCartStore>()(
         // settles the direction too.
         const fromAirport =
           tripType === 'round_trip' ? true : next.fromAirport ?? current.fromAirport ?? true
-        const passengers = Math.max(1, Math.min(4, next.passengers ?? current.passengers))
+        const passengers = Math.max(1, Math.min(MAX_TRANSFER_PASSENGERS, next.passengers ?? current.passengers))
 
         const dest = getDestination(destinationId)
-        const priceUsd = getTransferPrice(destinationId, tripType)
+        const priceUsd = getTransferPrice(destinationId, tripType, passengers)
         // An unknown destination or a retired fare must not silently blank the
         // price; leave the line exactly as it was and let the guest retry.
         if (!dest || priceUsd === null) return

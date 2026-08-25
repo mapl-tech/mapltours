@@ -199,3 +199,60 @@ describe('no transfer sells below fully loaded cost', () => {
     }
   })
 })
+
+/**
+ * Parties of 5+ switch the whole party to Collin's per-person rate, floored
+ * at the vehicle rate (same reading as tours, confirmed 2026-08-25), and the
+ * customer price MUST still carry MAPL's margin and fees on top: these tests
+ * pin the driver-rate switch AND that the marked-up price moves with it.
+ */
+describe('parties of five or more', () => {
+  test('whole party switches to the per-person rate', () => {
+    // Azul (zone D, base $90, zone default $20 a head): 5 x 20 = 100
+    expect(driverCost('azul-beach-negril', 'one_way', 5)).toBe(100)
+    expect(driverCost('azul-beach-negril', 'one_way', 7)).toBe(140)
+    // Hedonism carries its own sheet rate of $25 a head
+    expect(driverCost('hedonism-ii', 'one_way', 5)).toBe(125)
+  })
+
+  test('floored at the vehicle rate: more people never pay less', () => {
+    // Secrets ($40 vehicle, $5 a head): 5 x 5 = 25 would undercut the van
+    expect(driverCost('secrets-st-james', 'one_way', 5)).toBe(40)
+    expect(driverCost('secrets-st-james', 'one_way', 7)).toBe(40)
+    expect(getTransferPrice('secrets-st-james', 'one_way', 7)).toBe(
+      getTransferPrice('secrets-st-james', 'one_way', 4),
+    )
+  })
+
+  test('markup and fees apply on top of the 5+ driver rate', () => {
+    const cost = driverCost('azul-beach-negril', 'one_way', 6) as number
+    const price = getTransferPrice('azul-beach-negril', 'one_way', 6) as number
+    // Customer price must exceed driver cost plus the 10% margin: the
+    // Remitly cover and card gross-up sit on top of that floor.
+    expect(price).toBeGreaterThan(cost * 1.1)
+    // And it must be the same derivation the 1-4 fare uses: strictly more
+    // expensive than the 4-person fare for the same route.
+    expect(price).toBeGreaterThan(getTransferPrice('azul-beach-negril', 'one_way', 4) as number)
+  })
+
+  test('round-trip pricing scales with the party too', () => {
+    const oneWay = getTransferPrice('azul-beach-negril', 'one_way', 6) as number
+    const roundTrip = getTransferPrice('azul-beach-negril', 'round_trip', 6) as number
+    expect(roundTrip).toBeGreaterThan(oneWay)
+    expect(roundTrip).toBeGreaterThan(getTransferPrice('azul-beach-negril', 'round_trip', 4) as number)
+  })
+
+  test('1-4 passengers keep the exact legacy fare', () => {
+    for (const pax of [1, 2, 3, 4]) {
+      expect(getTransferPrice('azul-beach-negril', 'one_way', pax)).toBe(
+        getTransferPrice('azul-beach-negril', 'one_way'),
+      )
+    }
+  })
+
+  test('buildQuote clamps to the vehicle and prices the clamped party', () => {
+    const q = buildQuote('azul-beach-negril', 'one_way', 9)
+    expect(q?.passengers).toBe(7)
+    expect(q?.priceUsd).toBe(getTransferPrice('azul-beach-negril', 'one_way', 7))
+  })
+})
