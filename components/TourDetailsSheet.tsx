@@ -134,7 +134,10 @@ export default function TourDetailsSheet({ exp, onClose, cta }: { exp: Experienc
         scrimPress.current = false
       }}
       style={{
-        position: 'fixed', inset: 0, zIndex: 200,
+        // Above everything on the reel page: the fixed comment bar (310),
+        // the clips overlay (1200), the upload sheet (1500) and the clip
+        // viewer (2000) must all sit behind an open details dialog.
+        position: 'fixed', inset: 0, zIndex: 2200,
         background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(3px)',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         padding: 16,
