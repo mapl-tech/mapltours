@@ -944,6 +944,22 @@ export default function ExperienceDetail({ slug }: { slug: string }) {
   const startIdx = feedExperiences.findIndex((e) => slugify(e.title) === slug)
   const [activeIndex, setActiveIndex] = useState(startIdx >= 0 ? startIdx : 0)
 
+  // The reel is a fullscreen surface: the DOCUMENT must never scroll here.
+  // Even with the page sized to exactly one viewport, iOS Safari can nudge
+  // the body on aggressive swipes; locking it keeps the chrome and the
+  // comment bar glued where they belong.
+  useEffect(() => {
+    const body = document.body.style
+    const root = document.documentElement.style
+    const prev = { overflow: body.overflow, overscroll: root.overscrollBehaviorY }
+    body.overflow = 'hidden'
+    root.overscrollBehaviorY = 'none'
+    return () => {
+      body.overflow = prev.overflow
+      root.overscrollBehaviorY = prev.overscroll
+    }
+  }, [])
+
   const activeExp = feedExperiences[activeIndex]
   const { addComment: addSupabaseComment, toDisplayComments, isLoggedIn, user: currentUser, replyingTo, setReplyingTo } = useComments(activeExp?.id || 0)
   const activeComments = activeExp ? toDisplayComments(activeExp.comments) : []
@@ -1191,6 +1207,9 @@ export default function ExperienceDetail({ slug }: { slug: string }) {
           style={{
             height: '100%', overflowY: 'scroll',
             scrollSnapType: 'y mandatory',
+            // A swipe past the first or last reel must rubber-band inside
+            // this feed, never chain into scrolling the document.
+            overscrollBehaviorY: 'contain',
           }}
         >
           {feedExperiences.map((exp, i) => (

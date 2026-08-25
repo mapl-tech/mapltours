@@ -18,7 +18,12 @@ export default function LayoutShell({ children }: { children: React.ReactNode })
   const pathname = usePathname()
   // Hide the consumer nav + cart on the login screen, the whole admin area,
   // and the driver portal. These are internal tools, not shopping surfaces.
-  const hideNav = pathname === '/login' || pathname.startsWith('/admin') || pathname.startsWith('/driver')
+  // /experience is the fullscreen reel: with TopNav mounted above its
+  // 100dvh feed the DOCUMENT gained 72px of scroll range, and mobile
+  // Safari would sometimes settle mid-scroll: chrome pushed off the top,
+  // a black void under the reel. The route closes back to /explore, so
+  // the nav was never reachable there anyway.
+  const hideNav = pathname === '/login' || pathname.startsWith('/admin') || pathname.startsWith('/driver') || pathname.startsWith('/experience')
 
   // Both stores use skipHydration so SSR and the first client paint render
   // identical (empty cart / USD) HTML. Load the persisted state once, after
