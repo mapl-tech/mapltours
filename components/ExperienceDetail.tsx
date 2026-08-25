@@ -265,7 +265,9 @@ function Reel({ exp, isActive, totalCount, currentIndex, onComments }: { exp: Ex
 
       {/* ── Snapchat-style story segments ── */}
       <div style={{
-        position: 'absolute', top: 8, left: 12, right: 12, zIndex: 15,
+        // env(): the site opts into viewport-fit=cover, so without the inset
+        // this strip renders under the iPhone Dynamic Island.
+        position: 'absolute', top: 'calc(env(safe-area-inset-top, 0px) + 8px)', left: 12, right: 12, zIndex: 15,
         display: 'flex', gap: 3,
       }}>
         {Array.from({ length: totalCount }).map((_, i) => (
@@ -594,10 +596,13 @@ function Reel({ exp, isActive, totalCount, currentIndex, onComments }: { exp: Ex
         <div style={{
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         }}>
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: 4 }}>
+          {/* flexWrap + nowrap unit: when the row is too narrow beside the
+              CTA, "up to 3 people" drops to its own line as a whole phrase
+              instead of breaking mid-phrase into a ragged "up to 3 / people". */}
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: 4, flexWrap: 'wrap', minWidth: 0, paddingRight: 8 }}>
             <span style={{ fontSize: 13, fontWeight: 500, color: '#fff', fontFamily: 'var(--font-dm-sans)' }}>{t('From')}</span>
             <span style={{ fontFamily: 'var(--font-dm-sans)', fontWeight: 800, fontSize: 22, color: 'white', letterSpacing: '-0.02em' }}>{formatPrice(exp.price)}</span>
-            <span style={{ fontSize: 13, color: '#fff', fontFamily: 'var(--font-dm-sans)' }}>{priceUnitLabel(exp.pricing)}</span>
+            <span style={{ fontSize: 13, color: '#fff', fontFamily: 'var(--font-dm-sans)', whiteSpace: 'nowrap' }}>{priceUnitLabel(exp.pricing)}</span>
           </div>
           <button
             onClick={(e) => { e.stopPropagation(); toggleCart() }}
@@ -1086,7 +1091,7 @@ export default function ExperienceDetail({ slug }: { slug: string }) {
             else router.push('/explore')
           }}
           style={{
-            position: 'absolute', top: 10, right: 10, zIndex: 30,
+            position: 'absolute', top: 'calc(env(safe-area-inset-top, 0px) + 10px)', right: 10, zIndex: 30,
             width: 48, height: 48, padding: 0,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             cursor: 'pointer', background: 'none', border: 'none',
@@ -1105,7 +1110,7 @@ export default function ExperienceDetail({ slug }: { slug: string }) {
 
         {/* ── Prev / Next arrows, top, beside close button ── */}
         <div style={{
-          position: 'absolute', top: 18, left: 14, right: 58,
+          position: 'absolute', top: 'calc(env(safe-area-inset-top, 0px) + 18px)', left: 14, right: 58,
           zIndex: 20, display: 'flex', alignItems: 'center', gap: 8,
           pointerEvents: 'none',
         }}>
