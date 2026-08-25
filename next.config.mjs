@@ -30,6 +30,14 @@ const nextConfig = {
   compress: true,
   poweredByHeader: false,
   reactStrictMode: true,
+  redirects: async () => [
+    // Social bio links. The profile shows a clean short URL; the redirect
+    // carries the attribution tags, which both GA and lib/attribution read
+    // off the landing URL. Temporary (307) so the tagging can evolve
+    // without browsers caching a stale destination.
+    { source: '/ig', destination: '/?utm_source=instagram&utm_medium=bio', permanent: false },
+    { source: '/tt', destination: '/?utm_source=tiktok&utm_medium=bio', permanent: false },
+  ],
   headers: async () => [
     // Videos — immutable, 1 year
     {
