@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { useFocusTrap } from '@/lib/use-focus-trap'
 import { X, Check, Backpack, Users, Activity, Info, MapPin, Clock } from 'lucide-react'
 import type { Experience } from '@/lib/experiences'
@@ -122,7 +123,12 @@ export default function TourDetailsSheet({ exp, onClose, cta }: { exp: Experienc
   const groupMax = exp.pricing.mode === 'group' ? exp.pricing.tierMax : null
   const hasGoodToKnow = Boolean(exp.meetingPoint || exp.ages || exp.fitness || exp.additionalInfo?.length)
 
-  return (
+  // PORTALED to <body>: rendered in place, the dialog lives inside the
+  // reel's scroll container, whose ancestor stacking context caps it below
+  // the page's own chrome no matter how high its z-index goes (and iOS
+  // Safari mishandles position:fixed inside scrollers on top of that). At
+  // the body level, zIndex 2200 genuinely tops every layer on the page.
+  return createPortal(
     <div
       className={`tour-modal-overlay${closing ? ' closing' : ''}`}
       onPointerDown={(e) => { scrimPress.current = e.target === e.currentTarget }}
@@ -307,6 +313,7 @@ export default function TourDetailsSheet({ exp, onClose, cta }: { exp: Experienc
           </div>
         )}
       </div>
-    </div>
+    </div>,
+    document.body,
   )
 }
