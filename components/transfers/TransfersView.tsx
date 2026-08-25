@@ -584,9 +584,11 @@ export default function TransfersView() {
                   +
                 </button>
                 <span className="xfer-pax-note">
-                  Flat rate, 1–4 passengers.{' '}
+                  {passengers > 4
+                    ? `Priced per person for your party of ${passengers}.`
+                    : 'Flat rate per vehicle for up to 4 passengers.'}{' '}
                   <Link href="/contact" style={{ color: 'var(--text-primary)', textDecoration: 'underline' }}>
-                    Groups of 5+ → custom quote
+                    Groups of 8+ get a custom quote
                   </Link>
                   .
                 </span>
@@ -601,7 +603,7 @@ export default function TransfersView() {
                 commit as its text is never announced. */}
             <div role="status" aria-live="polite" className="visually-hidden">
               {quote
-                ? `${formatUsd(quote.priceUsd)} ${quote.tripType === 'round_trip' ? 'round trip' : 'one way'} to ${quote.destinationName}, zone ${quote.zone}, ${quote.zoneDuration}. Price is per vehicle for 1 to 4 passengers.`
+                ? `${formatUsd(quote.priceUsd)} ${quote.tripType === 'round_trip' ? 'round trip' : 'one way'} to ${quote.destinationName}, zone ${quote.zone}, ${quote.zoneDuration}. ${quote.passengers > 4 ? `Price covers all ${quote.passengers} passengers.` : 'Price is per vehicle for up to 4 passengers.'}`
                 : ''}
             </div>
 
@@ -626,7 +628,7 @@ export default function TransfersView() {
                   {quote ? formatUsd(quote.priceUsd) : '-'}
                 </p>
                 <p className="xfer-quote-readout-meta">
-                  {tripType === 'round_trip' ? 'Round-trip' : 'One-way'} · per vehicle
+                  {tripType === 'round_trip' ? 'Round-trip' : 'One-way'} · {passengers > 4 ? `${passengers} passengers` : 'per vehicle'}
                 </p>
               </div>
             </div>
@@ -726,7 +728,7 @@ export default function TransfersView() {
             <h2 className="xfer-section-h2">
               Priced{' '}
               <span style={{ fontStyle: 'italic', fontWeight: 500 }}>per vehicle</span>
-              . Not per person.
+              , up to 4 guests.
             </h2>
             <p className="xfer-section-sub">
               Flat fares to every major resort in Jamaica served by Sangster
