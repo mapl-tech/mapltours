@@ -1,6 +1,38 @@
-[build]
-  command = "npm run build"
-  publish = ".next"
+# CDN cache policy for static media. Netlify ignores next.config.mjs header
+# rules for files served straight from public/, so every tour image and clip
+# was shipping with max-age=0 and re-validating on every view. A month of
+# cache (with a day of stale-while-revalidate so updates roll through
+# gracefully) covers everything that is safe to cache hard.
+#
+# HTML and API responses are deliberately absent: prices and availability
+# must stay live, and the Next runtime already serves those no-store.
 
-[[plugins]]
-  package = "@netlify/plugin-nextjs"
+[[headers]]
+  for = "/tours/*"
+  [headers.values]
+    Cache-Control = "public, max-age=2592000, stale-while-revalidate=86400"
+
+[[headers]]
+  for = "/media/*"
+  [headers.values]
+    Cache-Control = "public, max-age=2592000, stale-while-revalidate=86400"
+
+[[headers]]
+  for = "/images/*"
+  [headers.values]
+    Cache-Control = "public, max-age=2592000, stale-while-revalidate=86400"
+
+[[headers]]
+  for = "/mapl-logo.svg"
+  [headers.values]
+    Cache-Control = "public, max-age=2592000, stale-while-revalidate=86400"
+
+[[headers]]
+  for = "/mapl-logo-dark.svg"
+  [headers.values]
+    Cache-Control = "public, max-age=2592000, stale-while-revalidate=86400"
+
+[[headers]]
+  for = "/mapl-logo-email.png"
+  [headers.values]
+    Cache-Control = "public, max-age=2592000, stale-while-revalidate=86400"
