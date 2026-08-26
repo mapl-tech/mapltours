@@ -1,3 +1,10 @@
+[build]
+  command = "npm run build"
+  publish = ".next"
+
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
+
 # CDN cache policy for static media. Netlify ignores next.config.mjs header
 # rules for files served straight from public/, so every tour image and clip
 # was shipping with max-age=0 and re-validating on every view. A month of
