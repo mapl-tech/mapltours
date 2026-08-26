@@ -37,7 +37,7 @@ export default function RewardUnlocked({
         {name}, that&rsquo;s {percent}% off, on us.
       </Heading>
       <Text style={s.body}>
-        You&rsquo;ve shared {milestone} approved clips with the MAPL Tours community{milestone === 5 ? ', the biggest milestone.' : '.'} We saved you <strong style={{ color: '#fff' }}>{percent}% off your next trip</strong> as a thank-you. It&rsquo;s already on your account and will apply automatically at checkout.
+        You&rsquo;ve shared {milestone} approved clips with the MAPL Tours community{milestone === 5 ? ', your first milestone.' : '.'} We saved you <strong style={{ color: '#fff' }}>{percent}% off your next trip</strong> as a thank-you. It&rsquo;s already on your account and will apply automatically at checkout.
       </Text>
 
       {/* Code pill */}
