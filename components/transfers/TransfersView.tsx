@@ -14,6 +14,7 @@ import {
   Star,
   TrendingUp,
   ArrowUpDown,
+  ArrowLeftRight,
 } from 'lucide-react'
 import {
   DESTINATIONS,
@@ -31,7 +32,7 @@ import {
 import { useTransfersCart } from '@/lib/transfers-cart'
 import { useI18n } from '@/lib/i18n'
 import { HERO, DESTINATIONS as DESTINATION_IMAGES } from '@/lib/images'
-import PlacePicker, { AIRPORT_ID } from './PlacePicker'
+import PlacePicker, { AIRPORT_ID, type PlaceOffer } from './PlacePicker'
 import {
   TRANSFER_REVIEWS as REVIEWS,
   TRANSFER_FAQS as FAQS,
@@ -139,9 +140,51 @@ export default function TransfersView() {
    * one-way.
    */
   const [fromAirport, setFromAirport] = useState(true)
+
+  // The two boxes are one direction plus one hotel, never two free places.
+  // Sangster is always at exactly one end, so the box that does not hold it
+  // is offered hotels only, and the box that holds it offers nothing else.
+  const pickupValue = fromAirport ? AIRPORT_ID : destinationId
+  const dropoffValue = fromAirport ? destinationId : AIRPORT_ID
+  const pickupOffer: PlaceOffer = fromAirport ? 'airport' : 'hotels'
+  const dropoffOffer: PlaceOffer = fromAirport ? 'hotels' : 'airport'
+
+  // A round trip is arrival plus departure, so it always begins at the
+  // airport; flipping the direction is a one-way idea only.
+  const chooseTripType = (t: TransferTripType) => {
+    setTripType(t)
+    if (t === 'round_trip') setFromAirport(true)
+  }
+  const swapDirection = () => {
+    if (tripType === 'one_way') setFromAirport((v) => !v)
+  }
+  // Clearing the airport out of a box means "I start (or finish) somewhere
+  // else": the airport moves to the other box on its own and this one waits
+  // for a hotel. Clearing a hotel just empties it; the airport stays put.
+  const onPickupChange = (v: string) => {
+    if (v === AIRPORT_ID) { setFromAirport(true); return }
+    if (v === '') {
+      if (fromAirport) setFromAirport(false)
+      setDestinationId('')
+      return
+    }
+    if (tripType === 'round_trip') { setDestinationId(v); return }
+    setFromAirport(false)
+    setDestinationId(v)
+  }
+  const onDropoffChange = (v: string) => {
+    if (v === AIRPORT_ID) { setFromAirport(false); return }
+    if (v === '') {
+      if (!fromAirport) setFromAirport(true)
+      setDestinationId('')
+      return
+    }
+    setFromAirport(true)
+    setDestinationId(v)
+  }
   const [tripType, setTripType] = useState<TransferTripType>('round_trip')
   // Starts at 1, matching the tour cart. Transfer fares are per VEHICLE for
-  // 1-4 passengers, so this changes what is pre-filled, never the price quoted.
+  // Parties of 5+ price per person, so passengers now feeds the quote.
   const [passengers, setPassengers] = useState<number>(1)
 
   const quote = useMemo(
@@ -155,17 +198,46 @@ export default function TransfersView() {
     // if it is a different ride, so a guest who came back to add a second leg
     // is not silently swapped out of the one they already had.
     const existing = useTransfersCart.getState().items[0]
+    // Direction is part of the ride's identity. A guest who booked
+    // airport-to-hotel and comes back, taps Swap and books the ride home is
+    // building the SAME destination and trip type in the other direction;
+    // comparing without direction treated that as the same ride and silently
+    // replaced their outbound with the return, and they only found out when
+    // one leg of their holiday had no car. The message says which ride is
+    // being given up, and that the two legs cannot share a cart.
+    const nextFromAirport = tripType === 'round_trip' ? true : fromAirport
+    // Legacy carts predate the direction field. The server decides their
+    // direction from arrivalAt ALONE: a legacy one-way with an arrival leg is
+    // the ride from the airport, and one without is the ride home, whether or
+    // not departureAt happens to be filled in. Mirror that exactly; an extra
+    // departureAt condition here made the client call a timestamp-less
+    // one-way outbound while the server called it homebound, and the swap
+    // warning fired (or stayed silent) against the wrong ride.
+    const existingFromAirport =
+      existing == null
+        ? true
+        : existing.fromAirport ?? !(existing.tripType === 'one_way' && !existing.arrivalAt)
     const replacing =
       existing &&
-      (existing.destinationId !== quote.destinationId || existing.tripType !== quote.tripType)
+      (existing.destinationId !== quote.destinationId ||
+        existing.tripType !== quote.tripType ||
+        existingFromAirport !== nextFromAirport)
     if (replacing) {
+      const oppositeLeg =
+        existing.destinationId === quote.destinationId &&
+        existing.tripType === quote.tripType &&
+        existingFromAirport !== nextFromAirport
       const ok = window.confirm(
-        `Your cart already holds a transfer to ${existing.destinationName}. ` +
-        `We book one transfer at a time, so this will replace it. Continue?`,
+        oppositeLeg
+          ? `Your cart holds the ${existingFromAirport ? 'airport-to-hotel' : 'hotel-to-airport'} ride to ${existing.destinationName}. ` +
+            `We book one transfer at a time, so this replaces it with the ${nextFromAirport ? 'airport-to-hotel' : 'hotel-to-airport'} ride. ` +
+            `Book the other leg separately afterwards, or choose a round trip to cover both. Continue?`
+          : `Your cart already holds a transfer to ${existing.destinationName}. ` +
+            `We book one transfer at a time, so this will replace it. Continue?`,
       )
       if (!ok) return
     }
-    addQuote(quote, { fromAirport: tripType === 'round_trip' ? true : fromAirport })
+    addQuote(quote, { fromAirport: nextFromAirport })
     router.push('/transfers/checkout')
   }
 
@@ -238,6 +310,7 @@ export default function TransfersView() {
     setNotListed(false)
     resetAsk()
     setTripType('round_trip')
+    setFromAirport(true)
     // Reset to the site default alongside the trip type. This read
     // `setPassengers((p) => p)`, a no-op that looked like a reset and left the
     // previous tile's passenger count attached to the newly picked route.
@@ -420,56 +493,62 @@ export default function TransfersView() {
               <LiveActivityLine />
             </div>
 
-            {/* Two ends, stated plainly. One is always Sangster, so choosing
-                a hotel on either side sets the other automatically and an
-                impossible pair (two hotels, two airports) cannot be built. */}
-            <Field label="Pickup">
-              <PlacePicker
-                label="Pickup location"
-                placeholder="Airport, or start typing your hotel…"
-                value={fromAirport ? AIRPORT_ID : destinationId}
-                onChange={(v) => {
-                  if (v === AIRPORT_ID) { setFromAirport(true) }
-                  else if (v === '') { setDestinationId('') }
-                  else { setFromAirport(false); setDestinationId(v) }
-                }}
-              />
-            </Field>
+            {/* Two ends, stated plainly. One is always Sangster, so the box
+                that does not hold the airport lists hotels only, and the box
+                that holds it lists nothing else: an impossible pair (two
+                hotels, two airports) cannot be built, and nobody has to work
+                out which box the airport belongs in. Side by side on a wide
+                screen with a swap between them; stacked on a phone. */}
+            <div className="xfer-route">
+              <div className="xfer-route-field">
+                <Field label="Pickup">
+                  <PlacePicker
+                    label="Pickup location"
+                    value={pickupValue}
+                    offer={pickupOffer}
+                    otherEnd="drop-off"
+                    clearable={tripType === 'one_way' || !fromAirport}
+                    onChange={onPickupChange}
+                  />
+                </Field>
+              </div>
 
-            {/* Swap. Round-trips always begin at the airport, so it only
-                applies to a one-way. */}
-            {tripType === 'one_way' && (
-              <div style={{ display: 'flex', justifyContent: 'center', margin: '-6px 0 6px' }}>
+              <div className="xfer-route-swap-wrap">
                 <button
                   type="button"
-                  onClick={() => setFromAirport((v) => !v)}
+                  className="xfer-route-swap"
+                  onClick={swapDirection}
+                  disabled={tripType === 'round_trip'}
                   aria-label="Swap pickup and drop-off"
-                  style={{
-                    display: 'inline-flex', alignItems: 'center', gap: 7,
-                    height: 34, padding: '0 14px', borderRadius: 999,
-                    border: '1px solid var(--border)', background: '#fff',
-                    fontFamily: 'var(--font-dm-sans)', fontSize: 12.5,
-                    fontWeight: 600, color: 'var(--text-secondary)', cursor: 'pointer',
-                  }}
+                  title={tripType === 'round_trip' ? 'Round trips start at the airport' : 'Swap pickup and drop-off'}
                 >
-                  <ArrowUpDown size={14} />
-                  Swap
+                  <ArrowLeftRight size={17} aria-hidden className="xfer-route-swap-h" />
+                  <ArrowUpDown size={17} aria-hidden className="xfer-route-swap-v" />
+                  <span className="xfer-route-swap-label">Swap</span>
                 </button>
               </div>
-            )}
 
-            <Field label="Drop-off">
-              <PlacePicker
-                label="Drop-off location"
-                placeholder="Airport, or start typing your hotel…"
-                value={fromAirport ? destinationId : AIRPORT_ID}
-                onChange={(v) => {
-                  if (v === AIRPORT_ID) { setFromAirport(false) }
-                  else if (v === '') { setDestinationId('') }
-                  else { setFromAirport(true); setDestinationId(v) }
-                }}
-              />
-            </Field>
+              <div className="xfer-route-field">
+                <Field label="Drop-off">
+                  <PlacePicker
+                    label="Drop-off location"
+                    value={dropoffValue}
+                    offer={dropoffOffer}
+                    otherEnd="pickup"
+                    clearable={tripType === 'one_way' || fromAirport}
+                    onChange={onDropoffChange}
+                  />
+                </Field>
+              </div>
+            </div>
+
+            <p className="xfer-route-note" aria-live="polite">
+              {tripType === 'round_trip'
+                ? 'Round trip: we meet you at Sangster, and bring you back for your flight home.'
+                : fromAirport
+                  ? 'One-way from the airport to your hotel. Going the other way? Tap Swap.'
+                  : 'One-way from your hotel to the airport. Arriving instead? Tap Swap.'}
+            </p>
 
             {/* Out-of-zone escape hatch. Every AREA we drive has an "Other
                 hotel or villa" row in the picker, so this is not for a missing
@@ -519,14 +598,14 @@ export default function TransfersView() {
               <div className="xfer-trip-toggles">
                 <TripToggle
                   active={tripType === 'round_trip'}
-                  onClick={() => setTripType('round_trip')}
+                  onClick={() => chooseTripType('round_trip')}
                   title="Round-trip"
                   sub="Arrival + departure"
                   badge="10% off"
                 />
                 <TripToggle
                   active={tripType === 'one_way'}
-                  onClick={() => setTripType('one_way')}
+                  onClick={() => chooseTripType('one_way')}
                   title="One-way"
                   sub="Single pickup"
                 />
@@ -615,7 +694,13 @@ export default function TransfersView() {
                     they read as detail about the route rather than a heading. */}
                 <p className="xfer-quote-readout-kicker">Your price</p>
                 <p className="xfer-quote-readout-dest">
-                  {quote ? quote.destinationName : 'Pick a destination to see your fare.'}
+                  {quote
+                    ? tripType === 'round_trip'
+                      ? `MBJ → ${quote.destinationName} → MBJ`
+                      : fromAirport
+                        ? `MBJ → ${quote.destinationName}`
+                        : `${quote.destinationName} → MBJ`
+                    : 'Pick your hotel to see your fare.'}
                 </p>
                 {quote && (
                   <p className="xfer-quote-readout-meta" style={{ marginTop: 4 }}>
@@ -1285,6 +1370,58 @@ export default function TransfersView() {
           color: var(--text-primary);
         }
         .xfer-trip-toggles { display: flex; gap: 12px; }
+        .xfer-route { display: grid; grid-template-columns: minmax(0, 1fr); }
+        .xfer-route-field { min-width: 0; }
+        .xfer-route-swap-wrap {
+          display: flex;
+          justify-content: center;
+          margin: -6px 0 12px;
+        }
+        .xfer-route-swap {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          gap: 7px;
+          height: 44px;
+          min-width: 44px;
+          padding: 0 16px;
+          border-radius: 999px;
+          border: 1px solid var(--border);
+          background: #fff;
+          color: var(--text-secondary);
+          font-family: var(--font-dm-sans);
+          font-size: 13px;
+          font-weight: 600;
+          cursor: pointer;
+          transition: border-color var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out), background var(--dur-fast) var(--ease-out);
+        }
+        .xfer-route-swap:hover:not(:disabled) { border-color: var(--accent); color: var(--text-primary); background: var(--bg-warm); }
+        .xfer-route-swap:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+        .xfer-route-swap:disabled { opacity: 0.45; cursor: not-allowed; }
+        .xfer-route-swap-h { display: none; }
+        .xfer-route-swap-v { display: block; }
+        .xfer-route-note {
+          font-family: var(--font-dm-sans);
+          font-size: 13px;
+          line-height: 1.5;
+          color: var(--text-tertiary);
+          margin: -8px 0 18px;
+        }
+        @media (min-width: 720px) {
+          .xfer-route {
+            grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+            column-gap: 12px;
+            align-items: end;
+          }
+          /* Sits level with the two inputs: Field keeps 18px under its
+             control, the input is 50px tall, the button 44px. */
+          .xfer-route-swap-wrap { margin: 0 0 21px; }
+          .xfer-route-swap { width: 44px; padding: 0; }
+          .xfer-route-swap-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+          .xfer-route-swap-h { display: block; }
+          .xfer-route-swap-v { display: none; }
+          .xfer-route-note { margin-top: -4px; }
+        }
         .xfer-pax-row { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
         .xfer-pax-note {
           font-family: var(--font-dm-sans);

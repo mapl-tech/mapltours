@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useId, useMemo, useRef, useState } from 'react'
-import { ChevronDown, Search, X } from 'lucide-react'
+import { BedDouble, ChevronDown, Plane, Search, X } from 'lucide-react'
 import {
   DESTINATIONS,
   ZONES,
@@ -25,22 +25,58 @@ import {
  * owns the options, arrows move a highlight, Enter takes it, Escape closes.
  * On a phone it is an ordinary text input with a list under it, which is the
  * one interaction pattern nobody has to learn.
+ *
+ * Airport versus hotel is the whole decision, so the list says which is
+ * which: the airport sits under its own "Airport" heading with a plane, the
+ * properties under "Hotels & villas" with a bed. And the airport is offered
+ * only where it can still go. Every ride has Sangster at exactly one end, so
+ * once the airport is the pickup it is not in the drop-off list at all, and
+ * a guest who types "airport" into that box is told where it already is
+ * rather than shown an empty result.
  */
 
 export const AIRPORT_ID = '__mbj__'
 export const AIRPORT_NAME = 'Sangster International Airport (MBJ)'
+/** What the box shows once the airport is chosen; the full name lives in the list row. */
+export const AIRPORT_SHORT = 'Sangster Airport (MBJ)'
+
+/** What this box may hold, given what the other end of the ride already is. */
+export type PlaceOffer = 'both' | 'hotels' | 'airport'
+
+type Row = { id: string; name: string; hint: string; kind: 'airport' | 'hotel' }
+
+const AIRPORT_ROW: Row = {
+  id: AIRPORT_ID,
+  name: AIRPORT_NAME,
+  hint: 'Montego Bay · every ride starts or ends here',
+  kind: 'airport',
+}
+
+const looksLikeAirportQuery = (q: string) =>
+  /airport|mbj|sangster|montego\s*bay\s*air/i.test(q)
 
 export default function PlacePicker({
+  id,
   label,
   value,
   onChange,
+  offer = 'both',
+  otherEnd = 'drop-off',
+  clearable = true,
   placeholder,
 }: {
+  /** Injected by <Field> so its <label htmlFor> reaches the input. */
+  id?: string
   label: string
   /** A destination id, AIRPORT_ID, or '' for nothing chosen yet. */
   value: string
   onChange: (id: string) => void
-  placeholder: string
+  offer?: PlaceOffer
+  /** Name of the opposite box, for the "the airport is already your…" hint. */
+  otherEnd?: 'pickup' | 'drop-off'
+  /** False locks the box against the clear button, e.g. a round trip's airport. */
+  clearable?: boolean
+  placeholder?: string
 }) {
   const listId = useId()
   const [open, setOpen] = useState(false)
@@ -53,7 +89,16 @@ export default function PlacePicker({
     () => DESTINATIONS.find((d) => d.id === value),
     [value],
   )
-  const chosenLabel = value === AIRPORT_ID ? AIRPORT_NAME : chosen?.name ?? ''
+  const isAirport = value === AIRPORT_ID
+  const chosenLabel = isAirport ? AIRPORT_SHORT : chosen?.name ?? ''
+
+  const placeholderText =
+    placeholder ??
+    (offer === 'hotels'
+      ? 'Start typing your hotel or villa…'
+      : offer === 'airport'
+        ? AIRPORT_SHORT
+        : 'Airport, or start typing your hotel…')
 
   // The airport is not in the rate table — it is the fixed other end of every
   // fare — so it is offered as its own row rather than filtered like a hotel.
@@ -62,20 +107,29 @@ export default function PlacePicker({
     return q === '' || 'sangster international airport mbj montego bay'.includes(q)
   }, [query])
 
-  const results = useMemo(() => searchDestinations(query), [query])
-  const rows: { id: string; name: string; hint: string }[] = useMemo(
+  const results = useMemo(
+    () => (offer === 'airport' ? [] : searchDestinations(query)),
+    [offer, query],
+  )
+  const rows: Row[] = useMemo(
     () => [
-      ...(airportMatches ? [{ id: AIRPORT_ID, name: AIRPORT_NAME, hint: 'Airport' }] : []),
+      // An airport-only box always shows its one row, whatever was typed:
+      // it exists to confirm, not to search.
+      ...(offer === 'airport' || (offer === 'both' && airportMatches) ? [AIRPORT_ROW] : []),
       ...results.map((d) => ({
         id: d.id,
         name: d.name,
         // Every property reads the same, open or rebuilding: a guest booking
         // for a date months out is picking a place, not a status, and the
         // rate is the same either way.
-        hint: `${d.parish} · Zone ${d.zone} · ${ZONES[d.zone].duration}`,
+        // Parish and drive time only. The zone letter means nothing to a
+        // guest and the readout names it anyway; three lines per row made
+        // the list a scroll before the second hotel.
+        hint: `${d.parish} · ${ZONES[d.zone].duration.replace(' from MBJ', '')}`,
+        kind: 'hotel' as const,
       })),
     ],
-    [airportMatches, results],
+    [offer, airportMatches, results],
   )
 
   useEffect(() => { setActive(0) }, [query])
@@ -107,7 +161,7 @@ export default function PlacePicker({
       setActive((i) => {
         const next = e.key === 'ArrowDown' ? i + 1 : i - 1
         const clamped = Math.max(0, Math.min(rows.length - 1, next))
-        listRef.current?.children[clamped]?.scrollIntoView({ block: 'nearest' })
+        listRef.current?.querySelector(`[id="${listId}-opt-${clamped}"]`)?.scrollIntoView({ block: 'nearest' })
         return clamped
       })
       return
@@ -123,9 +177,18 @@ export default function PlacePicker({
     }
   }
 
+  const LeadIcon = open || !chosenLabel ? Search : isAirport ? Plane : BedDouble
+  const airportTakenHint =
+    offer === 'hotels' && rows.length === 0 && looksLikeAirportQuery(query)
+
+  // A heading over each kind, always: a list of hotels says it is hotels,
+  // and the airport never reads as just another row.
+  const showHeadings = true
+
   return (
     <div
       ref={wrapRef}
+      className="pp-wrap"
       // Tabbing out has to close the list too. With only the mousedown
       // click-away handler, moving to the drop-off field by keyboard left the
       // pickup list open and floating over the control that now had focus.
@@ -138,16 +201,14 @@ export default function PlacePicker({
       style={{ position: 'relative' }}
     >
       <div style={{ position: 'relative' }}>
-        <Search
-          size={16}
+        <LeadIcon
+          size={17}
           aria-hidden
-          style={{
-            position: 'absolute', left: 15, top: '50%', transform: 'translateY(-50%)',
-            color: 'var(--text-tertiary)', pointerEvents: 'none',
-          }}
+          className={`pp-lead pp-lead-${open || !chosenLabel ? 'search' : isAirport ? 'airport' : 'hotel'}`}
         />
         <input
-          className="field-input"
+          id={id}
+          className="field-input pp-input"
           role="combobox"
           aria-expanded={open}
           aria-controls={listId}
@@ -160,39 +221,28 @@ export default function PlacePicker({
           aria-activedescendant={open && rows[active] ? `${listId}-opt-${active}` : undefined}
           autoComplete="off"
           value={open ? query : chosenLabel}
-          placeholder={placeholder}
+          placeholder={placeholderText}
           onFocus={() => setOpen(true)}
+          // A box that already has focus gets no focus event, so a guest who
+          // picked a hotel and clicks the box again to change it saw nothing.
+          onClick={() => setOpen(true)}
           onChange={(e) => { setQuery(e.target.value); setOpen(true) }}
           onKeyDown={onKeyDown}
           style={{
-            height: 50, fontSize: 15, fontWeight: 500,
-            paddingLeft: 42, paddingRight: 42,
             color: chosenLabel || query ? 'var(--text-primary)' : 'var(--text-tertiary)',
           }}
         />
-        {chosenLabel && !open ? (
+        {chosenLabel && !open && clearable ? (
           <button
             type="button"
+            className="pp-clear"
             onClick={() => { onChange(''); setQuery(''); setOpen(true) }}
             aria-label={`Clear ${label.toLowerCase()}`}
-            style={{
-              position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)',
-              width: 34, height: 34, borderRadius: '50%', border: 'none', background: 'none',
-              display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-              cursor: 'pointer', color: 'var(--text-tertiary)',
-            }}
           >
             <X size={15} />
           </button>
         ) : (
-          <ChevronDown
-            size={16}
-            aria-hidden
-            style={{
-              position: 'absolute', right: 16, top: '50%', transform: 'translateY(-50%)',
-              color: 'var(--text-secondary)', pointerEvents: 'none',
-            }}
-          />
+          <ChevronDown size={16} aria-hidden className="pp-chevron" />
         )}
       </div>
 
@@ -202,22 +252,27 @@ export default function PlacePicker({
           ref={listRef}
           role="listbox"
           aria-label={label}
-          style={{
-            position: 'absolute', zIndex: 30, top: 'calc(100% + 6px)', left: 0, right: 0,
-            maxHeight: 300, overflowY: 'auto', margin: 0, padding: 6,
-            listStyle: 'none', background: '#fff',
-            border: '1px solid var(--border)', borderRadius: 'var(--r-md)',
-            boxShadow: '0 12px 32px rgba(23,22,20,0.12)',
-          }}
+          className="pp-list"
+          // Chrome makes any scrollable box a tab stop; the input owns the
+          // keyboard (arrows scroll the highlight into view), so the list
+          // itself must not be one.
+          tabIndex={-1}
         >
           {rows.length === 0 && (
-            <li role="presentation" style={{
-              padding: '12px 12px 14px', fontSize: 13.5, lineHeight: 1.5,
-              color: 'var(--text-secondary)', fontFamily: 'var(--font-dm-sans)',
-            }}>
-              No match for “{query}”. Try the town instead: Negril, Ocho Rios,
-              Falmouth, and pick the “Other hotel or villa” row for that area.
-              The fare is set by zone, so it will be the right price.
+            <li role="presentation" className="pp-empty">
+              {airportTakenHint ? (
+                <>
+                  Sangster (MBJ) is already your {otherEnd}. Choose your hotel or
+                  villa here, or use <strong>Swap</strong> to ride from your hotel
+                  to the airport instead.
+                </>
+              ) : (
+                <>
+                  No match for “{query}”. Try the town instead: Negril, Ocho Rios,
+                  Falmouth, and pick the “Other hotel or villa” row for that area.
+                  The fare is set by zone, so it will be the right price.
+                </>
+              )}
             </li>
           )}
           {/* role="option" sits on the li itself. It used to sit on a button
@@ -228,28 +283,43 @@ export default function PlacePicker({
               highlighted. The row is not a button any more either, because an
               option is not a button; the combobox input keeps the keyboard
               and the click handler stays for the mouse. */}
-          {rows.map((row, i) => (
-            <li
-              key={row.id}
-              id={`${listId}-opt-${i}`}
-              role="option"
-              aria-selected={i === active}
-              onMouseEnter={() => setActive(i)}
-              onMouseDown={(e) => { e.preventDefault(); pick(row.id) }}
-              style={{
-                borderRadius: 8, padding: '9px 11px', cursor: 'pointer',
-                background: i === active ? 'var(--surface)' : 'none',
-                fontFamily: 'var(--font-dm-sans)',
-              }}
-            >
-              <span style={{ display: 'block', fontSize: 14, fontWeight: 600, color: 'var(--text-primary)' }}>
-                {row.name}
-              </span>
-              <span style={{ display: 'block', fontSize: 12, color: 'var(--text-tertiary)', marginTop: 1 }}>
-                {row.hint}
-              </span>
+          {rows.map((row, i) => {
+            const heading =
+              showHeadings && (i === 0 || rows[i - 1].kind !== row.kind)
+                ? row.kind === 'airport' ? 'Airport' : 'Hotels & villas'
+                : null
+            const RowIcon = row.kind === 'airport' ? Plane : BedDouble
+            return [
+              heading && (
+                <li key={`h-${row.kind}`} role="presentation" className="pp-heading">
+                  {heading}
+                </li>
+              ),
+              <li
+                key={row.id}
+                id={`${listId}-opt-${i}`}
+                role="option"
+                aria-selected={i === active}
+                onMouseEnter={() => setActive(i)}
+                onMouseDown={(e) => { e.preventDefault(); pick(row.id) }}
+                className={`pp-option${i === active ? ' is-active' : ''}${row.id === value ? ' is-chosen' : ''}`}
+              >
+                <span className={`pp-option-icon pp-option-icon-${row.kind}`} aria-hidden>
+                  <RowIcon size={15} />
+                </span>
+                <span className="pp-option-text">
+                  <span className="pp-option-name">{row.name}</span>
+                  <span className="pp-option-hint">{row.hint}</span>
+                </span>
+              </li>,
+            ]
+          })}
+          {offer === 'airport' && (
+            <li role="presentation" className="pp-empty" style={{ paddingTop: 4 }}>
+              Every ride starts or ends at Sangster. Choose your hotel in the
+              {otherEnd === 'pickup' ? ' Pickup' : ' Drop-off'} box.
             </li>
-          ))}
+          )}
         </ul>
       )}
     </div>
