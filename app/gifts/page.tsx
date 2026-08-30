@@ -3,7 +3,7 @@ import GiftCardsView from '@/components/GiftCardsView'
 
 export const metadata: Metadata = {
   title: 'Gift Cards',
-  description: 'Give the gift of Jamaica. MAPL Tours gift cards for authentic Jamaican cultural experiences.',
+  description: 'Give the gift of Jamaica. MAPL Tours Jamaica gift cards: good for any private tour, day package or airport transfer on the site.',
   alternates: {
     canonical: 'https://mapltours.com/gifts',
   },

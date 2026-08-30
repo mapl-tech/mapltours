@@ -306,7 +306,7 @@ export default function HelpCenter() {
                   fontSize: 15, color: 'var(--text-tertiary)',
                   fontFamily: 'var(--font-dm-sans)',
                 }}>
-                  Our support team is available 24/7.
+                  Support is by email, and a person replies within 24 hours.
                 </p>
               </div>
 

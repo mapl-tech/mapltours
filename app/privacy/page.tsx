@@ -34,14 +34,14 @@ export default function PrivacyPage() {
           <li><strong>Booking information</strong>, the experiences or transfers you purchase, travel dates, traveler counts, pickup and drop-off details, and any special requests you send us.</li>
           <li><strong>Payment information</strong>, handled directly by Stripe. We never see or store your full card number; we only receive a token plus the last four digits and card brand for receipt display.</li>
           <li><strong>Usage data</strong>, pages you view, experiences you save, and basic device information (browser, OS, screen size) collected through analytics cookies.</li>
-          <li><strong>Communication</strong>, anything you send us through the contact form, email, or support chat.</li>
+          <li><strong>Communication</strong>, anything you send us through the contact form or email.</li>
           <li><strong>Photographs and video</strong>, images and recordings captured during experiences and transfers, which may include you. See the photography section of our <a href="/terms" style={{ color: 'var(--text-primary)', textDecoration: 'underline' }}>Terms of Service</a> for how these are used.</li>
         </ul>
       </Section>
 
       <Section title="How we use your information">
         <ul style={{ marginTop: 12, paddingLeft: 20, display: 'flex', flexDirection: 'column', gap: 8 }}>
-          <li>Process and confirm your bookings, including sharing the relevant details with the experience creator delivering your trip.</li>
+          <li>Process and confirm your bookings, including sharing the relevant details with the driver or operator delivering your trip.</li>
           <li>Send transactional emails (booking confirmations, transfer details, contact form replies).</li>
           <li>Provide customer support and respond to your questions.</li>
           <li>Improve the platform, understand which experiences travelers love, fix bugs, and tune the user experience.</li>
@@ -56,7 +56,7 @@ export default function PrivacyPage() {
           We share the minimum information necessary with trusted third parties that help us operate:
         </p>
         <ul style={{ marginTop: 12, paddingLeft: 20, display: 'flex', flexDirection: 'column', gap: 8 }}>
-          <li><strong>Experience creators</strong>, receive your name, traveler count, date, contact phone, and any special requests so they can host you.</li>
+          <li><strong>Our partner drivers and operators</strong>, receive your name, traveler count, date, contact phone, and any special requests so they can host you.</li>
           <li><strong>Stripe</strong>, payment processing.</li>
           <li><strong>Resend</strong>, transactional email delivery.</li>
           <li><strong>Supabase</strong>, secure database hosting (Frankfurt region).</li>

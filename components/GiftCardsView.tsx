@@ -20,11 +20,13 @@ const StripePaymentPanel = dynamic(() => import('./checkout/StripePaymentPanel')
 })
 
 const presetAmounts = [
-  { amount: 50, label: '$50', tagline: 'A taste of Jamaica', desc: 'Street food crawl or sunrise fishing' },
-  { amount: 100, label: '$100', tagline: 'The essentials', desc: 'Most individual experiences' },
-  { amount: 150, label: '$150', tagline: 'Go deeper', desc: 'Full-day cultural immersion' },
-  { amount: 250, label: '$250', tagline: 'For two', desc: 'Multi-experience couples package' },
-  { amount: 500, label: '$500', tagline: 'The collection', desc: 'The ultimate Jamaica experience' },
+  // Every line is checked against the live rate card and catalogue: an
+  // amount must actually buy what its line says, or the card is a letdown.
+  { amount: 50, label: '$50', tagline: 'The first ride', desc: 'An airport pickup to a Montego Bay resort' },
+  { amount: 100, label: '$100', tagline: 'There and back', desc: 'A round trip between MBJ and Montego Bay' },
+  { amount: 150, label: '$150', tagline: 'Go further', desc: 'A ride to Negril or Ocho Rios, or a first tour' },
+  { amount: 250, label: '$250', tagline: 'The Negril run', desc: 'A round trip to Negril, with change to spare' },
+  { amount: 500, label: '$500', tagline: 'A whole day', desc: 'A day package for your party, plus the ride from the airport' },
 ]
 
 export default function GiftCardsView() {
@@ -839,7 +841,7 @@ export default function GiftCardsView() {
             fontSize: 15, color: 'rgba(255,255,255,0.7)',
             fontFamily: 'var(--font-dm-sans)', marginBottom: 24,
           }}>
-            Our team is happy to help with bulk orders, corporate gifts, or custom amounts.
+            Need a different amount, or several cards at once? Email contact@mapltours.com and we will sort it out.
           </p>
           <a href="mailto:contact@mapltours.com" style={{
             display: 'inline-flex', alignItems: 'center',

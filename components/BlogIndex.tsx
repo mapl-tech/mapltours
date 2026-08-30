@@ -167,8 +167,8 @@ function Masthead() {
             margin: '24px auto 0',
           }}
         >
-          Essays, guides, and dispatches from the pit masters, selectors, and guides
-          who know the island, because they live here.
+          Guides to Jamaica&rsquo;s resorts, beaches, towns and money, written by the
+          people who drive it every week.
         </p>
       </div>
     </header>
@@ -495,54 +495,9 @@ function Colophon() {
             marginBottom: 32,
           }}
         >
-          One letter each month. New essays, insider guides, and early access to experiences
-          before they reach the site.
+          New guides land here first. To hear when they do, follow @mapltoursjamaica on
+          Instagram or TikTok, or email contact@mapltours.com with the subject &ldquo;Journal&rdquo;.
         </p>
-        <form
-          onSubmit={(e) => e.preventDefault()}
-          style={{
-            display: 'flex',
-            alignItems: 'stretch',
-            borderBottom: '1px solid var(--text-primary)',
-            maxWidth: 420,
-            margin: '0 auto',
-          }}
-        >
-          <input
-            type="email"
-            placeholder="your.email@domain.com"
-            aria-label="Email address"
-            style={{
-              flex: 1,
-              minWidth: 0,
-              padding: '12px 4px',
-              background: 'transparent',
-              border: 'none',
-              outline: 'none',
-              fontFamily: 'var(--font-dm-sans)',
-              fontStyle: 'italic',
-              fontSize: 15,
-              color: 'var(--text-primary)',
-            }}
-          />
-          <button
-            type="submit"
-            style={{
-              background: 'transparent',
-              border: 'none',
-              padding: '12px 4px',
-              cursor: 'pointer',
-              fontFamily: 'var(--font-dm-sans)',
-              fontSize: 12,
-              fontWeight: 700,
-              textTransform: 'uppercase',
-              letterSpacing: '0.22em',
-              color: 'var(--text-primary)',
-            }}
-          >
-            Subscribe →
-          </button>
-        </form>
       </div>
     </section>
   )

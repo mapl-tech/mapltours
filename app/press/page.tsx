@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import EditorialPage, { Section } from '@/components/EditorialPage'
 import { experiences, singleExperiences } from '@/lib/experiences'
 import { PLACES } from '@/lib/places'
+import { DESTINATIONS as TRANSFER_DESTINATIONS } from '@/lib/airport-transfers'
 
 export const metadata: Metadata = {
   title: 'Press',
@@ -18,8 +19,8 @@ export default function PressPage() {
         {/* "Reggae studio sessions in Kingston" described the old catalogue.
             Kingston, the Blue Mountains and Port Royal are no longer sold, so
             the examples now name tours that actually exist. */}
-        <p>MAPL Tours Jamaica is a cultural travel platform connecting travelers with authentic Jamaican experiences. We curate experiences created and led by local Jamaicans, from climbing Dunn&rsquo;s River Falls in Ocho Rios to sunset at Rick&rsquo;s Cafe in Negril and the pilgrimage to Bob Marley&rsquo;s birthplace at Nine Mile, and get travelers to them by private transport.</p>
-        <p style={{ marginTop: 16 }}>The platform covers {singleExperiences.length} guided experiences and {PLACES.length} restaurants and heritage sites across {new Set(experiences.map((e) => e.parish)).size} parishes, alongside flat-rate airport transfers from Sangster International to more than 50 north-coast resorts.</p>
+        <p>MAPL Tours Jamaica sells private airport transfers from Sangster International (MBJ) and private tours and day packages across Jamaica&rsquo;s north coast, run with Jamaican drivers and hosts, from climbing Dunn&rsquo;s River Falls in Ocho Rios to sunset at Rick&rsquo;s Cafe in Negril and the pilgrimage to Bob Marley&rsquo;s birthplace at Nine Mile, and get travelers to them by private transport.</p>
+        <p style={{ marginTop: 16 }}>The platform covers {singleExperiences.length} guided experiences and {PLACES.length} restaurants and heritage sites across {new Set(experiences.map((e) => e.parish)).size} parishes, alongside flat-rate private airport transfers from Sangster International to {TRANSFER_DESTINATIONS.length} hotels and villas from Montego Bay to Negril and Ocho Rios.</p>
       </Section>
 
       {/* "In the News" is deliberately absent.

@@ -33,11 +33,11 @@ export interface TransferFaq {
 export const TRANSFER_FAQS: TransferFaq[] = [
   {
     q: 'Is the price really flat for 1–4 passengers?',
-    a: 'Yes. The fare shown is per vehicle, not per person. A family of four pays the same as a solo traveler on the same route. Groups of five or more get a custom quote, we run a separate vehicle to keep everyone comfortable.',
+    a: 'Yes. The fare shown is per vehicle, not per person. A family of four pays the same as a solo traveler on the same route. Parties of five to seven are priced per person and still ride together; groups of eight or more get a custom quote with a second vehicle.',
   },
   {
     q: 'What happens if my flight is delayed?',
-    a: 'We track your flight in real time from the moment it leaves. If you land late, your driver adjusts, there is no delay surcharge on any booking, even multi-hour holds. If your flight is cancelled outright, just let us know and we will gladly reschedule your pickup or arrange a refund.',
+    a: 'We track your flight in real time from the moment it leaves. If you land late, your driver adjusts, there is no delay surcharge on any booking. If your flight is cancelled outright, just let us know and we will gladly reschedule your pickup or arrange a refund.',
   },
   {
     q: 'How do I find my driver at MBJ?',
@@ -49,7 +49,7 @@ export const TRANSFER_FAQS: TransferFaq[] = [
   },
   {
     q: 'Do you serve Kingston (KIN) and Port Antonio?',
-    a: 'Yes, but those routes are priced individually rather than by zone. Use the contact form with your dates and we will quote within 24 hours. Kingston transfers typically run $90 to $150 depending on destination; Port Antonio is $180 to $240 depending on the hotel.',
+    a: 'Yes, but those routes are priced individually rather than by zone. Use the contact form with your dates and hotel and we will quote within 24 hours.',
   },
   {
     q: 'What is your cancellation policy?',

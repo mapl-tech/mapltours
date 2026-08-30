@@ -61,8 +61,8 @@ export default async function OG() {
               maxWidth: 880,
             }}
           >
-            Cliff dives in Negril. Coffee at sunrise in the Blue Mountains. Reggae sessions in Kingston.
-            Curated by locals.
+            Sunset off the Negril cliffs. The climb at Dunn&rsquo;s River. Rafting on the Martha Brae.
+            Private transfers from MBJ. Run by locals.
           </div>
         </div>
         <div
@@ -76,11 +76,11 @@ export default async function OG() {
         >
           <span>mapltours.com</span>
           <span style={{ display: 'flex', gap: 12 }}>
-            <span>Kingston</span>
+            <span>Montego Bay</span>
             <span>·</span>
             <span>Negril</span>
             <span>·</span>
-            <span>Portland</span>
+            <span>Ocho Rios</span>
           </span>
         </div>
       </div>

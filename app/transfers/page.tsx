@@ -71,7 +71,6 @@ export const metadata: Metadata = {
  *
  *  • Service, the offering, with an AggregateOffer and price range that
  *    renders as a rich price snippet in some search UIs.
- *  • AggregateRating, review count + rating stars.
  *  • FAQPage, the full FAQ, which Google can surface as "People also ask".
  *  • BreadcrumbList, home > transfers crumb trail.
  */
@@ -91,7 +90,7 @@ function buildStructuredData() {
     serviceType: 'Airport transfer',
     name: 'MAPL Tours Jamaica, Private Airport Transfers',
     description:
-      'Private flat-rate airport transfers from Sangster International Airport (MBJ) to every major resort destination in Jamaica. Licensed drivers, flight tracking, meet-and-greet at arrivals, flexible cancellation within 48 hours of booking.',
+      'Private flat-rate airport transfers from Sangster International Airport (MBJ) to every major resort destination in Jamaica. Private drivers, flight tracking, meet-and-greet at arrivals, flexible cancellation within 48 hours of booking.',
     image: HERO.startsWith('http') ? HERO : `${SITE_URL}${HERO}`,
     url: PAGE_URL,
     brand: { '@type': 'Brand', name: 'MAPL Tours Jamaica' },

@@ -26,15 +26,15 @@ export const HELP_CATEGORIES: HelpCategory[] = [
       },
       {
         q: 'Can I book for a group?',
-        a: 'Absolutely. Most experiences accommodate 1-12 guests, just select your group size at checkout. For groups larger than 12, reach out to us directly and we\'ll arrange a bespoke private experience.',
+        a: 'Yes. Every tour is private and priced per vehicle for your party, usually up to 3 or 4 guests, with a per-person rate above that; set your guest count at checkout and the price updates. For larger groups, email us and we\'ll arrange a second vehicle.',
       },
       {
         q: 'How far in advance should I book?',
-        a: 'Bookings close 24 hours before an experience or pickup begins, and experience days are counted from midnight in Jamaica, so in practice you need one to two days\' notice. Book earlier where you can: popular experiences like the Bob Marley Heritage Pilgrimage and Rick\'s Cafe Cliff Diving can sell out a week ahead during peak season (December-March).',
+        a: 'Bookings close 24 hours before an experience or pickup begins, and experience days are counted from midnight in Jamaica, so in practice you need one to two days\' notice. Book earlier where you can: in peak season our drivers\' days fill up, and the sunset run to Rick\'s Cafe goes first, especially (December-March).',
       },
       {
         q: 'Can I modify my booking after checkout?',
-        a: 'Changes run on the same window as cancellations: within 48 hours of booking, and before the experience has started. Contact our support team with the date or guest count you need and we\'ll sort it out with your creator. Once that 48-hour window closes the booking is locked in, the same point at which it stops being refundable.',
+        a: 'Changes run on the same window as cancellations: within 48 hours of booking, and before the experience has started. Contact our support team with the date or guest count you need and we\'ll sort it out with your driver. Once that 48-hour window closes the booking is locked in, the same point at which it stops being refundable.',
       },
     ],
   },
@@ -47,8 +47,8 @@ export const HELP_CATEGORIES: HelpCategory[] = [
         a: 'Yes, within 48 hours of booking. Request the cancellation from your Profile page, where we quote you the exact refund before you confirm, and our team reviews it. Your booking stays confirmed until we approve the request. Refunds are the amount you paid less an administration charge equivalent to 20% of the total amount of fees paid plus taxes (if applicable). After the 48-hour window bookings are non-refundable, a booking whose experience has already started can no longer be refunded, and no-shows are charged in full.',
       },
       {
-        q: 'What if the creator cancels my experience?',
-        a: 'If a creator cancels, you receive a full refund with no administration charge, or you can choose to rebook at no additional cost. We\'ll notify you as soon as we know and help arrange an alternative experience if you prefer.',
+        q: 'What if MAPL Tours has to cancel my booking?',
+        a: 'If we have to cancel, you receive a full refund with no administration charge, or you can choose to rebook at no additional cost. We\'ll notify you as soon as we know and help arrange an alternative experience if you prefer.',
       },
       {
         q: 'How long do refunds take to process?',
@@ -74,7 +74,7 @@ export const HELP_CATEGORIES: HelpCategory[] = [
       },
       {
         q: 'Are experiences suitable for children?',
-        a: 'Many are family-friendly, look for the age recommendations in each experience\'s details. Adventures like cliff diving have minimum age requirements. When in doubt, email contact@mapltours.com with your children\'s ages and we\'ll confirm with the creator for you.',
+        a: 'Many are family-friendly, look for the age recommendations in each experience\'s details. Adventures like cliff diving have minimum age requirements. When in doubt, email contact@mapltours.com with your children\'s ages and we\'ll confirm for you.',
       },
     ],
   },

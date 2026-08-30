@@ -202,28 +202,7 @@ export default function ReelCard({
           >
             @{displayHandle(exp.creator)}
           </span>
-          <span
-            style={{
-              fontSize: 12,
-              color: 'rgba(255,255,255,0.5)',
-              fontFamily: 'var(--font-dm-sans)',
-              marginLeft: 8,
-            }}
-          >
-            {exp.followers}
-          </span>
         </div>
-        <button
-          className="btn-ghost"
-          style={{
-            padding: '4px 14px',
-            fontSize: 12,
-            fontFamily: 'var(--font-dm-sans)',
-            fontWeight: 600,
-          }}
-        >
-          Follow
-        </button>
       </div>
 
       {/* Layer 7: Center emoji */}

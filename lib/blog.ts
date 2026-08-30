@@ -30,10 +30,13 @@ export interface BlogPost {
   relatedSlugs?: string[]
 }
 
-const devon: BlogAuthor = { name: 'Devon Wilson', role: 'Food Editor', initials: 'DW' }
-const maya: BlogAuthor = { name: 'Maya Clarke', role: 'Culture Writer', initials: 'MC' }
-const andre: BlogAuthor = { name: 'Andre Bennett', role: 'Senior Editor', initials: 'AB' }
-const simone: BlogAuthor = { name: 'Simone Thompson', role: 'Travel Guide', initials: 'ST' }
+// One real byline. The four named writers these used to be were invented,
+// and a byline is a claim about who wrote the piece.
+const mapl: BlogAuthor = { name: 'MAPL Tours Jamaica', role: 'Editorial', initials: 'MT' }
+const devon: BlogAuthor = mapl
+const maya: BlogAuthor = mapl
+const andre: BlogAuthor = mapl
+const simone: BlogAuthor = mapl
 
 const HAND_POSTS: BlogPost[] = [
   {

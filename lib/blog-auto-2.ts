@@ -1,9 +1,11 @@
 import type { BlogPost, BlogAuthor } from './blog'
 import { BLOG_IMAGES } from './blog-images'
 
-const maya: BlogAuthor = { name: 'Maya Clarke', role: 'Culture Writer', initials: 'MC' }
-const andre: BlogAuthor = { name: 'Andre Bennett', role: 'Senior Editor', initials: 'AB' }
-const simone: BlogAuthor = { name: 'Simone Thompson', role: 'Travel Guide', initials: 'ST' }
+// One real byline; the named writers these used to be were invented.
+const mapl: BlogAuthor = { name: 'MAPL Tours Jamaica', role: 'Editorial', initials: 'MT' }
+const maya: BlogAuthor = mapl
+const andre: BlogAuthor = mapl
+const simone: BlogAuthor = mapl
 
 export const POSTS_2: BlogPost[] = [
   {

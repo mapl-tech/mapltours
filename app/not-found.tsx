@@ -54,13 +54,13 @@ export default function NotFound() {
             margin: '0 0 28px',
           }}
         >
-          The link may be old or the page may have moved. Head back to the feed and discover what locals are
-          loving in Jamaica today.
+          The link may be old or the page may have moved. Head back to the tours and pick a day, or book the
+          ride from the airport.
         </p>
         <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
           <Link href="/" className="btn-primary" style={{ textDecoration: 'none' }}>
             <span aria-hidden="true" style={{ fontSize: 16, lineHeight: 1 }}>&larr;</span>
-            Back to feed
+            Back to the tours
           </Link>
           <Link href="/explore" className="btn-outline" style={{ textDecoration: 'none' }}>
             Browse experiences

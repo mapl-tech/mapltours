@@ -27,15 +27,14 @@ export default function TermsPage() {
 
       <Section title="Who we are">
         <p>
-          MAPL Tours Jamaica sells and operates travel services in Jamaica. We run our own tours, itineraries and
-          airport transfers, and we also list experiences delivered by independent Jamaican creators, hosts and
-          guides. Each experience page identifies who delivers it.
+          MAPL Tours Jamaica sells and operates travel services in Jamaica: private airport transfers, private tours
+          and day packages, delivered through the Jamaican drivers, operators and hosts we work with (our partners).
+          Each tour page describes what is included and who meets you.
         </p>
         <p style={{ marginTop: 12 }}>
-          Where an experience is operated by MAPL Tours Jamaica, we are the operator and these Terms apply to us
-          directly. Where it is delivered by an independent creator, we facilitate the booking and payment and the
-          creator delivers the experience. Restaurants, attractions and other third-party venues suggested on the
-          site are not operated by us and are paid for directly by you.
+          We are the operator of every transfer and tour sold on the site, and these Terms apply to us directly.
+          Restaurants, attractions and other third-party venues suggested on the site are not operated by us and are
+          paid for directly by you.
         </p>
       </Section>
 
@@ -54,11 +53,11 @@ export default function TermsPage() {
         <ul style={{ marginTop: 12, paddingLeft: 20, display: 'flex', flexDirection: 'column', gap: 8 }}>
           <li>You may cancel within 48 hours of booking for a refund of the amount you paid, less an administration charge equivalent to 20% of the total amount of fees paid plus taxes (if applicable).</li>
           <li>Cancellations are requested from your Profile page and are reviewed by us before any refund is made. Your booking remains confirmed until the request is approved.</li>
-          <li>Changes to your date or number of guests may be requested within the same 48 hours of booking, by contacting us. Changes are subject to availability and to the creator being able to accommodate them.</li>
-          <li>Cancellations and changes requested more than 48 hours after booking cannot be accepted, and the booking is non-refundable, except where the creator agrees otherwise.</li>
+          <li>Changes to your date or number of guests may be requested within the same 48 hours of booking, by contacting us. Changes are subject to availability and to our partners being able to accommodate them.</li>
+          <li>Cancellations and changes requested more than 48 hours after booking cannot be accepted, and the booking is non-refundable, except where we agree otherwise.</li>
           <li>Once an experience or pickup has begun, the booking has been delivered and is no longer refundable or changeable, even if the 48 hours have not elapsed.</li>
           <li>If you do not arrive for your experience, the booking is charged in full.</li>
-          <li>If a creator cancels your experience, you will receive a full refund and we will help you find an alternative.</li>
+          <li>If we have to cancel your booking, you will receive a full refund and we will help you find an alternative.</li>
           <li>If weather or other safety conditions force a cancellation, we will reschedule you at no additional cost, to another date or to an experience of equivalent value. A full refund is given only where no reschedule is possible within your time in Jamaica.</li>
         </ul>
       </Section>
@@ -78,26 +77,25 @@ export default function TermsPage() {
       <Section title="Your responsibilities">
         <ul style={{ marginTop: 12, paddingLeft: 20, display: 'flex', flexDirection: 'column', gap: 8 }}>
           <li>Provide accurate information at booking, including any medical conditions, allergies, or physical limitations relevant to the activity.</li>
-          <li>Arrive on time and follow all reasonable safety instructions from your creator or guide.</li>
+          <li>Arrive on time and follow all reasonable safety instructions from your driver, host and venue staff.</li>
           <li>Carry valid travel documents and any insurance required for your activity. We strongly recommend personal travel insurance.</li>
-          <li>Treat creators, fellow travelers, and the Jamaican communities you visit with respect.</li>
-          <li>Raise anything to do with your booking with us at contact@mapltours.com rather than with the creator directly. We are your single point of contact before, during and after the trip, and we deal with the creator on your behalf.</li>
+          <li>Treat our partners, fellow travelers, and the Jamaican communities you visit with respect.</li>
+          <li>Raise anything to do with your booking with us at contact@mapltours.com rather than with the driver or venue directly. We are your single point of contact before, during and after the trip, and we deal with our partners on your behalf.</li>
         </ul>
       </Section>
 
-      <Section title="Creator responsibilities">
+      <Section title="Our partners">
         <p>
-          Creators on the platform are independent operators who have agreed to MAPL Tours&rsquo; quality and safety
-          standards. Creators are responsible for delivering the experience as listed, maintaining required insurance
-          and certifications, and providing appropriate equipment and safety briefings.
+          The drivers, operators and hosts who deliver your transfer or tour work with MAPL Tours Jamaica under our
+          quality and safety expectations. Activities at third-party venues, such as cliff jumping, waterfall climbs
+          and rafting, run under each venue&rsquo;s own rules, equipment and staff.
         </p>
       </Section>
 
       <Section title="Liability">
         <p>
-          Where MAPL Tours Jamaica operates an experience or transfer, we are responsible for delivering it with
-          reasonable care and skill. Where an experience is delivered by an independent creator, that creator is
-          responsible for its delivery and we act as the booking and payment facilitator.
+          MAPL Tours Jamaica is responsible for delivering every transfer and tour we sell with reasonable care and
+          skill. Third-party venues are responsible for the activities they run on their own premises.
         </p>
         <p style={{ marginTop: 12 }}>
           Travel and outdoor activities carry inherent risk, and participation is at your own risk to the extent the

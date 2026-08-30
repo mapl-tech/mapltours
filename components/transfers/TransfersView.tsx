@@ -340,8 +340,8 @@ export default function TransfersView() {
             </h1>
             <p className="xfer-hero-sub">
               Private vehicle for up to 7 passengers, priced up front. Meet-and-greet
-              at arrivals, flight tracking, and an experienced, fully vetted
-              driver who knows the road.
+              at arrivals, flight tracking, and a driver who knows the road and
+              is named in your email before pickup.
             </p>
 
             {/* Each figure is the CHEAPEST rate to that area, derived from the
@@ -368,16 +368,6 @@ export default function TransfersView() {
                 Book now →
               </button>
               <div className="xfer-hero-rating">
-                <div style={{ display: 'flex', gap: 2 }}>
-                  {[0, 1, 2, 3, 4].map((i) => (
-                    <Star
-                      key={i}
-                      size={14}
-                      fill="var(--gold)"
-                      stroke="var(--gold)"
-                    />
-                  ))}
-                </div>
                 <span className="xfer-hero-rating-text">
                   Flat rate per vehicle for up to 4; parties of 5 or more price per person
                 </span>
@@ -398,13 +388,13 @@ export default function TransfersView() {
               />
               <TrustItem
                 icon={<ShieldCheck size={17} />}
-                title="Licensed & insured"
-                body="JUTA-affiliated operators only."
+                title="Your driver, by name"
+                body="Name, vehicle, plate and WhatsApp before pickup."
               />
               <TrustItem
                 icon={<Mail size={17} />}
-                title="24/7 support"
-                body="A real person on email, not a call-centre script."
+                title="A person on email"
+                body="Replies within 24 hours, and your driver on WhatsApp on the day."
               />
             </div>
           </div>
@@ -773,7 +763,7 @@ export default function TransfersView() {
                 'Fixed zone price, paid up front',
                 'Driver waits with your name at arrivals',
                 'Flight tracking, no surcharge if you land late',
-                'Chilled bottled water, AC, English-speaking driver',
+                'Air-conditioned private vehicle, your party only',
                 'Flexible cancellation within 48 hours of booking',
               ]}
             />
@@ -797,9 +787,9 @@ export default function TransfersView() {
               <SavingsRow route="MBJ → Hilton Rose Hall (round-trip)" mapl={getTransferPrice('hilton-rose-hall', 'round_trip') ?? 0} typical="90–160" />
             </div>
             <p className="xfer-savings-note">
-              Typical taxi quotes pulled from average prices reported by JUTA
-              operators and concierge desks at the major resorts. Your actual
-              taxi-queue quote may be higher during peak season.
+              Taxi ranges are indicative, based on published airport taxi rates and
+              what guests tell us they were quoted at the MBJ taxi queue. Your quote
+              may be higher in peak season.
             </p>
           </div>
         </div>
@@ -880,7 +870,7 @@ export default function TransfersView() {
             <div>
               <p className="xfer-contact-cta-title">Not on the list?</p>
               <p className="xfer-contact-cta-body">
-                Kingston (KIN), Port Antonio, or groups of five or more, we&rsquo;ll
+                Kingston (KIN), Port Antonio, or groups of eight or more, we&rsquo;ll
                 quote you directly within 24 hours.
               </p>
             </div>
@@ -981,7 +971,7 @@ export default function TransfersView() {
             price={getTransferPrice('sandals-negril', 'round_trip') ?? 0}
             destinationId="sandals-negril"
             onSelect={selectRoute}
-            body="Sangster International (MBJ) is the airport everyone flying to Negril uses, Norman Manley (KIN) is on the wrong side of the island, three hours further. The drive is straightforward and scenic; the catch is that the Negril taxi queue at MBJ is one of the most-overpriced in the Caribbean during peak season. A pre-booked private transfer locks the price, skips the queue, and gets you to Seven Mile Beach with bottled water and the AC already running."
+            body="Sangster International (MBJ) is the airport everyone flying to Negril uses, Norman Manley (KIN) is on the wrong side of the island, three hours further. The drive is straightforward and scenic; the catch is that the Negril taxi queue at MBJ is one of the most-overpriced in the Caribbean during peak season. A pre-booked private transfer locks the price, skips the queue, and gets you to Seven Mile Beach in a private, air-conditioned car."
           />
 
           <RouteSection

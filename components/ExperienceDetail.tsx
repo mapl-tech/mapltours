@@ -1324,9 +1324,6 @@ export default function ExperienceDetail({ slug }: { slug: string }) {
             <span style={{ fontSize: 13, fontWeight: 600, fontFamily: 'var(--font-dm-sans)', color: 'white' }}>
               @{displayHandle(activeExp.creator)}
             </span>
-            <span style={{ fontSize: 12, color: '#cccccc', fontFamily: 'var(--font-dm-sans)', marginLeft: 6 }}>
-              {activeExp.followers}
-            </span>
           </div>
           <div style={{
             padding: '6px 14px', borderRadius: 9999,

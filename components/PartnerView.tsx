@@ -203,7 +203,7 @@ export default function PartnerView() {
             lineHeight: 1.7, color: 'rgba(255,255,255,0.78)', maxWidth: 620,
           }}>
             MAPL Tours Jamaica runs its own guided experiences and its own private
-            airport transfers. Ten parishes of road. We also work with Jamaican guides,
+            airport transfers. Seven parishes of road. We also work with Jamaican guides,
             tour companies, drivers, restaurants and attractions &mdash; under their own
             names, in front of travellers who came here for exactly that.
           </p>
@@ -234,7 +234,7 @@ export default function PartnerView() {
             the itinerary, our driver is at the airport, and the guest&rsquo;s whole day is
             ours from pickup to drop-off. Twenty-two experiences and forty-four restaurants
             and sites sit on the site today &mdash; ours and other people&rsquo;s &mdash;
-            across ten parishes of road.
+            across seven parishes of road.
           </p>
           <p style={{
             fontFamily: 'var(--font-dm-sans)', fontSize: 16.5,

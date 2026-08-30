@@ -660,7 +660,7 @@ export default function ProfileView() {
                 fontFamily: 'var(--font-dm-sans)', marginBottom: 20,
                 lineHeight: 1.5,
               }}>
-                Confirm your details to build trust with experience creators.
+                Confirm your details so your driver knows who to meet.
               </p>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
                 {[
@@ -744,7 +744,7 @@ export default function ProfileView() {
                 fontFamily: 'var(--font-dm-sans)', marginBottom: 28,
                 lineHeight: 1.5,
               }}>
-                Update your details below. This information is used for your bookings and how creators see you.
+                Update your details below. This information is used for your bookings and for the name your driver holds up at arrivals.
               </p>
 
               <EditableField

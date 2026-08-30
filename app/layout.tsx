@@ -36,7 +36,7 @@ export const metadata: Metadata = {
   keywords: [
     'best tours in Jamaica',
     'Jamaica tours',
-    'Jamaica cultural experiences',
+    'Jamaica private tours',
     'things to do in Jamaica',
     'Jamaica excursions',
     'Negril tours',
@@ -129,7 +129,7 @@ function JsonLd() {
     // Google wants a crawlable raster logo (>=112px); the SVG favicon route
     // is not reliable for this.
     logo: `${siteUrl}/brand/mapl-icon-1024.png`,
-    description: 'Discover the best tours in Jamaica. Authentic cultural experiences crafted by locals who know Jamaica best.',
+    description: 'Private airport transfers from Sangster (MBJ) at one flat price per vehicle, and private tours and day packages with hotel pickup, run with Jamaican drivers and hosts.',
     address: {
       '@type': 'PostalAddress',
       addressCountry: 'JM',
@@ -154,7 +154,6 @@ function JsonLd() {
       { '@type': 'City', name: 'Ocho Rios' },
       { '@type': 'City', name: 'Lucea' },
       { '@type': 'City', name: 'Negril' },
-      { '@type': 'City', name: 'Nine Mile' },
     ],
     priceRange: '$22 - $459',
     // Note: aggregateRating intentionally omitted from the site-wide entity.

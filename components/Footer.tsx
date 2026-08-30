@@ -32,7 +32,7 @@ export default function Footer() {
             fontSize: 14, color: 'var(--text-on-dark-2)',
             fontFamily: 'var(--font-dm-sans)', lineHeight: 1.65, maxWidth: 300,
           }}>
-            {t('Discover Jamaica beyond the resort. Curated experiences from the people who know Jamaica best.')}
+            {t('Discover Jamaica beyond the resort. Private transfers and tours, run by the people who know Jamaica best.')}
           </p>
         </div>
 

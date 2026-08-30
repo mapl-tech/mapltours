@@ -26,6 +26,7 @@ export const languages: Language[] = [
 
 const T: Record<string, Record<string, string>> = {
   es: {
+    'Private, not pooled': 'Privado, sin compartir', 'Jamaican drivers and hosts': 'Conductores y anfitriones jamaicanos', 'A person on email': 'Una persona por correo', 'One price per vehicle': 'Un precio por vehiculo', 'Paid to the people who drive it': 'Pagado a quienes te llevan',
     'Discover': 'Descubre', 'beyond the resort.': 'mas alla del resort.',
     'What is included': 'Que incluye', 'Not included': 'No incluido',
     'What to bring': 'Que llevar', 'Good to know': 'Bueno saberlo',
@@ -57,13 +58,8 @@ const T: Record<string, Record<string, string>> = {
     'Share': 'Compartir', 'Send': 'Enviar', 'No comments yet. Be the first!': 'Sin comentarios aun. Se el primero!',
     'Why MAPL Tours': 'Por que MAPL Tours',
     'The authenticity of local culture.': 'La autenticidad de la cultura local.',
-    'The comfort of a curated trip.': 'La comodidad de un viaje curado.',
-    'Only the best experiences': 'Solo las mejores experiencias',
-    'Real local creators': 'Creadores locales reales',
-    '24/7 trip support': 'Soporte de viaje 24/7',
+    'The comfort of a private driver.': 'La comodidad de un conductor privado.',
     'Flexible cancellation': 'Cancelacion flexible',
-    '98%+ satisfaction': '98%+ satisfaccion',
-    'Supports local economy': 'Apoya la economia local',
     'Contact Us': 'Contactanos', 'Get in touch': 'Ponerse en contacto',
     'more': 'mas',
     // Checkout - Details
@@ -95,14 +91,13 @@ const T: Record<string, Record<string, string>> = {
     // Concierge section
     'The MAPL Tours Experience': 'La experiencia MAPL Tours',
     'Build your perfect day in Jamaica.': 'Construye tu dia perfecto en Jamaica.',
-    'Pick the experiences you love. We arrange your private transport, guide, and full itinerary from door to door.': 'Elige las experiencias que te gusten. Organizamos tu transporte privado, guia e itinerario completo de puerta a puerta.',
+    'Pick the experiences you love. We arrange your private driver, host, and full itinerary from door to door.': 'Elige las experiencias que te gusten. Organizamos tu transporte privado, guia e itinerario completo de puerta a puerta.',
     'Choose what excites you': 'Elige lo que te emociona',
-    'Browse experiences crafted by locals. Add the ones that speak to you.': 'Explora experiencias creadas por locales. Agrega las que te hablen.',
+    'Browse the tours. Add the ones that speak to you.': 'Explora experiencias creadas por locales. Agrega las que te hablen.',
     'Tell us where you\'re staying': 'Dinos donde te hospedas',
-    'Your hotel, villa, or airport. We plan the route, the guide, and the transport.': 'Tu hotel, villa o aeropuerto. Planificamos la ruta, el guia y el transporte.',
+    'Your hotel, villa, or airport. We plan the route, the driver, and the timing.': 'Tu hotel, villa o aeropuerto. Planificamos la ruta, el guia y el transporte.',
     'Show up and enjoy': 'Presentate y disfruta',
-    'We pick you up, your guide handles the rest, and we bring you back when it\'s done.': 'Te recogemos, tu guia se encarga del resto, y te llevamos de vuelta cuando termine.',
-    'Personal local guides': 'Guias locales personales',
+    'We pick you up, your host handles the rest, and we bring you back when it\'s done.': 'Te recogemos, tu guia se encarga del resto, y te llevamos de vuelta cuando termine.',
     'Private door-to-door transport': 'Transporte privado puerta a puerta',
     'How it works': 'Como funciona',
     // Transport section
@@ -192,7 +187,7 @@ const T: Record<string, Record<string, string>> = {
     'Scotchies': 'Scotchies', 'Rum Tasting': 'Degustacion de Ron', 'Jerk': 'Jerk',
     'Curry Goat': 'Curry de Cabra', 'Ackee & Saltfish': 'Ackee y Bacalao',
     // Footer
-    'Discover Jamaica beyond the resort. Curated experiences from the people who know Jamaica best.': 'Descubre Jamaica mas alla del resort. Experiencias curadas por quienes mejor conocen Jamaica.',
+    'Discover Jamaica beyond the resort. Private transfers and tours, run by the people who know Jamaica best.': 'Descubre Jamaica mas alla del resort. Experiencias curadas por quienes mejor conocen Jamaica.',
     'Recommended on': 'Recomendado en',
     'Excellent': 'Excelente',
     'Company': 'Empresa', 'Resources': 'Recursos', 'Destinations': 'Destinos', 'Connect': 'Conectar',
@@ -203,6 +198,7 @@ const T: Record<string, Record<string, string>> = {
     'Full day': 'Dia completo',
   },
   fr: {
+    'Private, not pooled': 'Privé, jamais partagé', 'Jamaican drivers and hosts': 'Chauffeurs et hôtes jamaïcains', 'A person on email': 'Une vraie personne par e-mail', 'One price per vehicle': 'Un prix par véhicule', 'Paid to the people who drive it': 'Payé à ceux qui vous conduisent',
     'Discover': 'Decouvrez', 'beyond the resort.': 'au-dela du resort.',
     'What is included': 'Ce qui est inclus', 'Not included': 'Non inclus',
     'What to bring': 'Quoi apporter', 'Good to know': 'Bon a savoir',
@@ -225,7 +221,7 @@ const T: Record<string, Record<string, string>> = {
     'Comments': 'Commentaires', 'Reply': 'Repondre', 'Contact Us': 'Contactez-nous',
     'Why MAPL Tours': 'Pourquoi MAPL Tours',
     'The authenticity of local culture.': 'L\'authenticite de la culture locale.',
-    'The comfort of a curated trip.': 'Le confort d\'un voyage organise.',
+    'The comfort of a private driver.': 'Le confort d\'un chauffeur privé.',
     // Categories
     'Adventure': 'Aventure', 'Nature': 'Nature', 'Music': 'Musique', 'Food': 'Gastronomie', 'Culture': 'Culture', 'Water': 'Nautique',
     // Experience titles
@@ -283,7 +279,7 @@ const T: Record<string, Record<string, string>> = {
     'Ice Cream': 'Glace', 'History': 'Histoire', 'Rum Tasting': 'Degustation de Rhum',
     'Curry Goat': 'Curry de Chevre', 'Ackee & Saltfish': 'Ackee et Morue',
     // Footer
-    'Discover Jamaica beyond the resort. Curated experiences from the people who know Jamaica best.': 'Decouvrez la Jamaique au-dela du resort. Experiences curees par ceux qui connaissent le mieux la Jamaique.',
+    'Discover Jamaica beyond the resort. Private transfers and tours, run by the people who know Jamaica best.': 'Decouvrez la Jamaique au-dela du resort. Experiences curees par ceux qui connaissent le mieux la Jamaique.',
     'Recommended on': 'Recommande sur', 'Excellent': 'Excellent',
     'Company': 'Entreprise', 'Resources': 'Ressources', 'Destinations': 'Destinations', 'Connect': 'Connexion',
     'About': 'A propos', 'Careers': 'Carrieres', 'Press': 'Presse', 'Blog': 'Blog',
@@ -293,6 +289,7 @@ const T: Record<string, Record<string, string>> = {
     'Full day': 'Journee complete',
   },
   de: {
+    'Private, not pooled': 'Privat, nie geteilt', 'Jamaican drivers and hosts': 'Jamaikanische Fahrer und Gastgeber', 'A person on email': 'Ein Mensch per E-Mail', 'One price per vehicle': 'Ein Preis pro Fahrzeug', 'Paid to the people who drive it': 'Bezahlt an die, die Sie fahren',
     'Discover': 'Entdecken Sie', 'beyond the resort.': 'jenseits des Resorts.',
     'What is included': 'Was enthalten ist', 'Not included': 'Nicht enthalten',
     'What to bring': 'Was mitbringen', 'Good to know': 'Gut zu wissen',
@@ -360,7 +357,7 @@ const T: Record<string, Record<string, string>> = {
     'Ice Cream': 'Eis', 'History': 'Geschichte', 'Rum Tasting': 'Rum-Verkostung',
     'Curry Goat': 'Curry-Ziege', 'Ackee & Saltfish': 'Ackee und Salzfisch',
     // Footer
-    'Discover Jamaica beyond the resort. Curated experiences from the people who know Jamaica best.': 'Entdecken Sie Jamaika jenseits des Resorts. Kuratierte Erlebnisse von Menschen, die Jamaika am besten kennen.',
+    'Discover Jamaica beyond the resort. Private transfers and tours, run by the people who know Jamaica best.': 'Entdecken Sie Jamaika jenseits des Resorts. Kuratierte Erlebnisse von Menschen, die Jamaika am besten kennen.',
     'Recommended on': 'Empfohlen auf', 'Excellent': 'Ausgezeichnet',
     'Company': 'Unternehmen', 'Resources': 'Ressourcen', 'Destinations': 'Reiseziele', 'Connect': 'Verbinden',
     'About': 'Uber uns', 'Careers': 'Karriere', 'Press': 'Presse', 'Blog': 'Blog',
@@ -370,6 +367,7 @@ const T: Record<string, Record<string, string>> = {
     'Full day': 'Ganzer Tag',
   },
   pt: {
+    'Private, not pooled': 'Privado, sem partilha', 'Jamaican drivers and hosts': 'Motoristas e anfitriões jamaicanos', 'A person on email': 'Uma pessoa por e-mail', 'One price per vehicle': 'Um preço por veículo', 'Paid to the people who drive it': 'Pago a quem te leva',
     'Discover': 'Descubra', 'beyond the resort.': 'alem do resort.',
     'What is included': 'O que esta incluido', 'Not included': 'Nao incluido',
     'What to bring': 'O que levar', 'Good to know': 'Bom saber',
@@ -401,7 +399,7 @@ const T: Record<string, Record<string, string>> = {
     'Scotchies Jerk Centre & Rum Bar Crawl': 'Scotchies Jerk Centre e Tour de Bares de Rum',
     "Miss T's Kitchen Cooking Experience": 'Experiencia Culinaria na Cozinha da Miss T',
     // Footer
-    'Discover Jamaica beyond the resort. Curated experiences from the people who know Jamaica best.': 'Descubra a Jamaica alem do resort. Experiencias curadas por quem melhor conhece a Jamaica.',
+    'Discover Jamaica beyond the resort. Private transfers and tours, run by the people who know Jamaica best.': 'Descubra a Jamaica alem do resort. Experiencias curadas por quem melhor conhece a Jamaica.',
     'Recommended on': 'Recomendado em', 'Excellent': 'Excelente',
     'Company': 'Empresa', 'Resources': 'Recursos', 'Destinations': 'Destinos', 'Connect': 'Conectar',
     'About': 'Sobre', 'Careers': 'Carreiras', 'Press': 'Imprensa', 'Blog': 'Blog',
@@ -411,6 +409,7 @@ const T: Record<string, Record<string, string>> = {
     'Full day': 'Dia inteiro',
   },
   ja: {
+    'Private, not pooled': '完全プライベート、相乗りなし', 'Jamaican drivers and hosts': 'ジャマイカ人のドライバーとホスト', 'A person on email': 'メールには人が返信', 'One price per vehicle': '車両ごとの一律料金', 'Paid to the people who drive it': '運転する人に支払われます',
     'Discover': '発見する', 'beyond the resort.': 'リゾートを超えて。',
     'What is included': '含まれるもの', 'Not included': '含まれないもの',
     'What to bring': '持ち物', 'Good to know': '知っておきたいこと',
@@ -442,7 +441,7 @@ const T: Record<string, Record<string, string>> = {
     'Scotchies Jerk Centre & Rum Bar Crawl': 'スコッチーズ ジャークセンター＆ラムバー巡り',
     "Miss T's Kitchen Cooking Experience": 'ミスTのキッチン料理体験',
     // Footer
-    'Discover Jamaica beyond the resort. Curated experiences from the people who know Jamaica best.': 'リゾートを超えたジャマイカを発見。ジャマイカを最もよく知る人々が厳選した体験。',
+    'Discover Jamaica beyond the resort. Private transfers and tours, run by the people who know Jamaica best.': 'リゾートを超えたジャマイカを発見。ジャマイカを最もよく知る人々が厳選した体験。',
     'Recommended on': '推薦', 'Excellent': '優秀',
     'Company': '会社', 'Resources': 'リソース', 'Destinations': '目的地', 'Connect': 'つながる',
     'About': '会社概要', 'Careers': '採用情報', 'Press': 'プレス', 'Blog': 'ブログ',
@@ -452,6 +451,7 @@ const T: Record<string, Record<string, string>> = {
     'Full day': '終日',
   },
   zh: {
+    'Private, not pooled': '私人包车，不拼车', 'Jamaican drivers and hosts': '牙买加本地司机与向导', 'A person on email': '邮件由真人回复', 'One price per vehicle': '按车计价', 'Paid to the people who drive it': '付给为你开车的人',
     'Discover': '发现', 'beyond the resort.': '超越度假村。',
     'What is included': '包含内容', 'Not included': '不包含',
     'What to bring': '携带物品', 'Good to know': '温馨提示',
@@ -483,7 +483,7 @@ const T: Record<string, Record<string, string>> = {
     'Scotchies Jerk Centre & Rum Bar Crawl': 'Scotchies烤肉中心与朗姆酒吧巡游',
     "Miss T's Kitchen Cooking Experience": 'Miss T的厨房烹饪体验',
     // Footer
-    'Discover Jamaica beyond the resort. Curated experiences from the people who know Jamaica best.': '发现度假村之外的牙买加。由最了解牙买加的人精选的体验。',
+    'Discover Jamaica beyond the resort. Private transfers and tours, run by the people who know Jamaica best.': '发现度假村之外的牙买加。由最了解牙买加的人精选的体验。',
     'Recommended on': '推荐于', 'Excellent': '优秀',
     'Company': '公司', 'Resources': '资源', 'Destinations': '目的地', 'Connect': '联系',
     'About': '关于', 'Careers': '招聘', 'Press': '新闻', 'Blog': '博客',
@@ -493,6 +493,7 @@ const T: Record<string, Record<string, string>> = {
     'Full day': '全天',
   },
   ko: {
+    'Private, not pooled': '프라이빗, 합승 없음', 'Jamaican drivers and hosts': '자메이카 현지 드라이버와 호스트', 'A person on email': '이메일은 사람이 답합니다', 'One price per vehicle': '차량당 하나의 가격', 'Paid to the people who drive it': '운전하는 사람에게 지급',
     'Discover': '발견하다', 'beyond the resort.': '리조트를 넘어서.',
     'What is included': '포함 사항', 'Not included': '불포함 사항',
     'What to bring': '준비물', 'Good to know': '알아두면 좋아요',
@@ -524,7 +525,7 @@ const T: Record<string, Record<string, string>> = {
     'Scotchies Jerk Centre & Rum Bar Crawl': 'Scotchies 저크 센터 & 럼 바 투어',
     "Miss T's Kitchen Cooking Experience": 'Miss T의 주방 요리 체험',
     // Footer
-    'Discover Jamaica beyond the resort. Curated experiences from the people who know Jamaica best.': '리조트를 넘어 자메이카를 발견하세요. 자메이카를 가장 잘 아는 사람들이 엄선한 체험.',
+    'Discover Jamaica beyond the resort. Private transfers and tours, run by the people who know Jamaica best.': '리조트를 넘어 자메이카를 발견하세요. 자메이카를 가장 잘 아는 사람들이 엄선한 체험.',
     'Recommended on': '추천', 'Excellent': '우수',
     'Company': '회사', 'Resources': '리소스', 'Destinations': '여행지', 'Connect': '연결',
     'About': '소개', 'Careers': '채용', 'Press': '보도자료', 'Blog': '블로그',

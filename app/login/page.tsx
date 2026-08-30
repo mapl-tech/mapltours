@@ -325,7 +325,7 @@ function LoginContent() {
                   type="text"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  placeholder="Alex Wanderlust"
+                  placeholder="Your full name"
                   required
                   style={{
                     width: '100%',

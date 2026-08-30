@@ -6,11 +6,11 @@ import Footer from './Footer'
 
 const bannerImages: Record<string, string> = {
   about: DESTINATION_IMAGES['Negril'],
-  careers: DESTINATION_IMAGES['Kingston'],
+  careers: DESTINATION_IMAGES['Montego Bay'],
   press: DESTINATION_IMAGES['Montego Bay'],
   blog: DESTINATION_IMAGES['Blue Mountains'],
   help: DESTINATION_IMAGES['Ocho Rios'],
-  safety: DESTINATION_IMAGES['Portland'],
+  safety: DESTINATION_IMAGES['Negril'],
   accessibility: DESTINATION_IMAGES['Treasure Beach'],
   gifts: DESTINATION_IMAGES['Falmouth'],
 }

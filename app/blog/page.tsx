@@ -8,7 +8,7 @@ const BLOG_URL = `${SITE_URL}/blog`
 export const metadata: Metadata = {
   title: 'The MAPL Journal | Jamaica Travel Guides',
   description:
-    'Stories, guides, and dispatches from the real Jamaica. Essays from pit masters, selectors, and local creators who know the island beyond the resort.',
+    'Guides to Jamaica beyond the resort: resorts, beaches, towns, money and how to get around, from the people who drive it every week.',
   alternates: { canonical: BLOG_URL },
   openGraph: {
     title: 'The MAPL Tours Journal, Jamaica Travel Stories & Guides',
@@ -36,7 +36,7 @@ export default function BlogPage() {
     url: BLOG_URL,
     name: 'The MAPL Tours Journal',
     description:
-      'Stories, guides, and dispatches from the real Jamaica. Essays from pit masters, selectors, and local creators.',
+      'Guides to Jamaica beyond the resort, written by MAPL Tours Jamaica.',
     inLanguage: 'en-US',
     publisher: {
       '@type': 'Organization',
@@ -51,7 +51,7 @@ export default function BlogPage() {
       image: p.image,
       datePublished: p.publishedAt,
       articleSection: p.category,
-      author: { '@type': 'Person', name: p.author.name },
+      author: { '@type': 'Organization', name: 'MAPL Tours Jamaica' },
     })),
   }
 

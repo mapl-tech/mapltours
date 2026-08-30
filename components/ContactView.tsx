@@ -96,7 +96,7 @@ export default function ContactView() {
                 fontFamily: 'var(--font-dm-sans)', lineHeight: 1.65,
                 maxWidth: 340,
               }}>
-                We are here to help you plan the perfect Jamaica experience. Reach out and our team will get back to you within 24 hours.
+                We are here to help you plan the perfect Jamaica experience. Write to us and a person will get back to you within 24 hours.
               </p>
             </div>
 
@@ -104,7 +104,7 @@ export default function ContactView() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: 20, marginBottom: 36 }}>
               {[
                 { icon: <Mail size={16} />, label: 'Email', value: 'contact@mapltours.com' },
-                { icon: <Clock size={16} />, label: 'Hours', value: '24/7' },
+                { icon: <Clock size={16} />, label: 'Replies', value: 'Within 24 hours, by email' },
               ].map((item) => (
                 <div key={item.label} style={{ display: 'flex', alignItems: 'flex-start', gap: 14 }}>
                   <div style={{
@@ -178,7 +178,7 @@ export default function ContactView() {
                   Message Sent
                 </h2>
                 <p style={{ fontSize: 14, color: 'var(--text-secondary)', fontFamily: 'var(--font-dm-sans)', lineHeight: 1.6 }}>
-                  Thank you for reaching out. Our team will get back to you within 24 hours.
+                  Thank you for reaching out. We will get back to you within 24 hours.
                 </p>
               </div>
             ) : (

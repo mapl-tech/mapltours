@@ -883,7 +883,7 @@ export default function FeedView() {
             lineHeight: 1.55,
             textShadow: '0 1px 6px rgba(0,0,0,0.4)',
           }}>
-            {t('Curated experiences from the people who know Jamaica best.')}
+            {t('Private transfers and tours, run by the people who know Jamaica best.')}
           </p>
 
           {/* The two doors, in selling order: transfers convert today, the
@@ -1092,7 +1092,7 @@ export default function FeedView() {
             display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 24, flexWrap: 'wrap',
           }}>
             {[
-              { icon: <Users size={14} color="var(--gold-warm)" />, text: 'Personal local guides' },
+              { icon: <Users size={14} color="var(--gold-warm)" />, text: 'Jamaican drivers and hosts' },
               { icon: <MapPin size={14} color="var(--gold-warm)" />, text: 'Private door-to-door transport' },
               { icon: <ShieldCheck size={14} color="var(--gold-warm)" />, text: 'Flexible cancellation within 48 hrs of booking' },
             ].map((t) => (
@@ -1156,7 +1156,7 @@ export default function FeedView() {
                     fontSize: 12, fontWeight: 600, color: 'white',
                     fontFamily: 'var(--font-dm-sans)', marginBottom: 10,
                   }}>
-                    <TrendingUp size={12} /> {viralExperiences[0].reviews.toLocaleString()} reviews
+                    <TrendingUp size={12} /> Most booked
                   </span>
                   <h3 style={{
                     fontFamily: 'var(--font-dm-sans)', fontWeight: 700, fontSize: 22,
@@ -1175,7 +1175,7 @@ export default function FeedView() {
                       {formatPrice(viralExperiences[0].price)}
                     </span>
                     <span style={{ fontSize: 12, color: '#cccccc', fontFamily: 'var(--font-dm-sans)' }}>
-                      /person · {viralExperiences[0].duration}
+                      {priceUnitLabel(viralExperiences[0].pricing)} · {viralExperiences[0].duration}
                     </span>
                     <span style={{
                       display: 'inline-flex', alignItems: 'center', gap: 3,
@@ -1278,17 +1278,17 @@ export default function FeedView() {
               color: 'var(--text-on-dark-3)', lineHeight: 1.12, letterSpacing: '-0.02em',
               marginBottom: 48,
             }}>
-              {t('The comfort of a curated trip.')}
+              {t('The comfort of a private driver.')}
             </p>
 
             <div className="grid-features">
               {[
-                { icon: <Award size={18} />, title: 'Only the best experiences', desc: 'Every adventure is vetted. If it is not a day we would put our own family on, it does not make the site.' },
-                { icon: <Users size={18} />, title: 'Real local creators', desc: 'Not tour guides, your Jamaican cousin who knows everywhere worth going.' },
-                { icon: <Headphones size={18} />, title: '24/7 trip support', desc: 'Email us anytime. We handle logistics so you just show up and enjoy.' },
+                { icon: <Award size={18} />, title: 'Private, not pooled', desc: 'Your party, your driver, your vehicle. Nobody else in the car, and no meeting point to find.' },
+                { icon: <Users size={18} />, title: 'Jamaican drivers and hosts', desc: 'The people who run your day live here and drive these roads every week. You get their name before pickup.' },
+                { icon: <Headphones size={18} />, title: 'A person on email', desc: 'Write to us any time and a person replies within 24 hours. On the day, your driver is a WhatsApp away.' },
                 { icon: <ShieldCheck size={18} />, title: 'Flexible cancellation', desc: 'Change of plans? Cancel within 48 hours of booking for a refund, less a 20% administration charge. No stress.' },
-                { icon: <Star size={18} />, title: '98%+ satisfaction', desc: 'Our guests consistently rate their experiences 4.8 stars or higher.' },
-                { icon: <Heart size={18} />, title: 'Supports local economy', desc: 'Every dollar goes directly to Jamaican creators and their communities.' },
+                { icon: <Star size={18} />, title: 'One price per vehicle', desc: 'Tours and transfers are priced for your party, not per person, with nothing added at checkout.' },
+                { icon: <Heart size={18} />, title: 'Paid to the people who drive it', desc: 'Every trip you book is driven and hosted by Jamaicans, and they are paid for every one.' },
               ].map((item) => (
                 <div key={item.title}>
                   <div style={{
