@@ -566,8 +566,12 @@ export default function TopNav({ onCartClick }: { onCartClick?: () => void }) {
               style={{
                 display: 'inline-flex', alignItems: 'center',
                 minHeight: 38, padding: '0 16px', fontSize: 13, fontWeight: 700,
-                fontFamily: 'var(--font-dm-sans)', color: '#1A1508',
-                background: 'var(--gold)', borderRadius: 9999,
+                // White on the bright gold is 3.3:1, under the 4.5:1 floor
+                // for 13px text, so the pill takes the AA gold the tokens
+                // already reserve for text on light surfaces (white on it is
+                // 6.7:1) and keeps the same shape, weight and size.
+                fontFamily: 'var(--font-dm-sans)', color: '#fff',
+                background: 'var(--gold-text)', borderRadius: 9999,
                 transition: 'filter 0.15s ease', whiteSpace: 'nowrap',
                 textDecoration: 'none',
               }}
