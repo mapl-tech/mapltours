@@ -1,5 +1,11 @@
 import { experiences, slugify, priceUnitLabel } from '@/lib/experiences'
-import { DESTINATIONS } from '@/lib/airport-transfers'
+import {
+  DESTINATIONS,
+  ZONES,
+  getTransferPrice,
+  ROUND_TRIP_DISCOUNT,
+  type TransferZone,
+} from '@/lib/airport-transfers'
 import { BLOG_POSTS } from '@/lib/blog'
 
 const baseUrl = 'https://mapltours.com'
@@ -22,6 +28,43 @@ export function GET() {
   const singleCount = experiences.filter((e) => e.kind !== 'package').length
   const packageCount = experiences.length - singleCount
   const transferCount = DESTINATIONS.length
+
+  // Transfer fares, derived from the live rate table so every figure below is
+  // the exact amount checkout charges today. Answer engines lift these lines
+  // verbatim ("MBJ to X costs $Y one-way"), so each destination gets its own
+  // answer-shaped row rather than a summary range an assistant would have to
+  // guess inside.
+  const zoneOrder: TransferZone[] = ['A', 'B', 'C', 'D', 'E']
+  const pricedTransfers = DESTINATIONS.flatMap((dest) => {
+    const ow = getTransferPrice(dest.id, 'one_way')
+    const rt = getTransferPrice(dest.id, 'round_trip')
+    return ow === null || rt === null ? [] : [{ dest, ow, rt }]
+  })
+  const cheapestTransfer = pricedTransfers.reduce((a, b) => (b.ow < a.ow ? b : a))
+  const dearestTransfer = pricedTransfers.reduce((a, b) => (b.ow > a.ow ? b : a))
+  // The showcase sentence must never feature a closed property, so prefer an
+  // open Negril hotel, then any Negril hotel, then anything.
+  const exampleTransfer =
+    pricedTransfers.find((p) => p.dest.name.toLowerCase().includes('negril') && !p.dest.reopens) ??
+    pricedTransfers.find((p) => p.dest.name.toLowerCase().includes('negril')) ??
+    pricedTransfers[0]
+  const roundTripPct = Math.round(ROUND_TRIP_DISCOUNT * 100)
+  const zoneLabels = zoneOrder.map((z) => ZONES[z].label).join('; ')
+  const transferRateSections = zoneOrder
+    .map((z) => {
+      const rows = pricedTransfers
+        .filter((p) => p.dest.zone === z)
+        .sort((a, b) => a.dest.name.localeCompare(b.dest.name))
+        .map(
+          (p) =>
+            `- ${p.dest.name}: $${p.ow} one-way / $${p.rt} round-trip${
+              p.dest.reopens ? ` (reopening ${p.dest.reopens})` : ''
+            }`,
+        )
+        .join('\n')
+      return `### ${ZONES[z].label} (${ZONES[z].duration})\n\n${rows}`
+    })
+    .join('\n\n')
 
   const experienceLines = experiences
     .map((exp) => {
@@ -51,7 +94,7 @@ Tagline: "Discover Jamaica Beyond the Resort."
 
 - [Home](${baseUrl}/): Video-reel discovery feed of Jamaica experiences.
 - [Explore](${baseUrl}/explore): The full catalogue of ${experiences.length} tours and packages, filterable by category (${list(categories)}) and parish (${list(parishes)}).
-- [Airport transfers](${baseUrl}/transfers): Flat-rate private transfers from Sangster International Airport (MBJ) to ${transferCount} properties across Montego Bay, Rose Hall, Falmouth, Runaway Bay, Ocho Rios, and Negril. One all-in price per vehicle (1-4 passengers), from $22 one-way; round trips are 10% cheaper than two one-ways. Includes meet and greet with a name sign just outside arrivals, live flight tracking, and a day-of email with the driver's name, vehicle, plate, and WhatsApp. Book online with card or Apple Pay, no account needed.
+- [Airport transfers](${baseUrl}/transfers): Flat-rate private transfers from Sangster International Airport (MBJ) to ${transferCount} properties across ${zoneLabels}. One all-in price per vehicle (1-4 passengers), from $${cheapestTransfer.ow} one-way; round trips are ${roundTripPct}% cheaper than two one-ways. Every property's exact fare is listed under "Airport transfer rates" below. Includes meet and greet with a name sign just outside arrivals, live flight tracking, and a day-of email with the driver's name, vehicle, plate, and WhatsApp. Book online with card or Apple Pay, no account needed.
 - [The MAPL Journal](${baseUrl}/blog): Essays and guides from local writers.
 - [About](${baseUrl}/about): Company background.
 - [Contact](${baseUrl}/contact): Customer support.
@@ -60,6 +103,12 @@ Tagline: "Discover Jamaica Beyond the Resort."
 - [Gift cards](${baseUrl}/gifts): Gift experiences.
 - [Careers](${baseUrl}/careers): Open roles.
 - [Press](${baseUrl}/press): Press and media inquiries.
+
+## Airport transfer rates from MBJ
+
+Every fare below is the full all-in price in USD per vehicle for 1 to 4 passengers, prepaid online with nothing added at checkout. A round trip costs ${roundTripPct}% less than two one-ways booked separately. Every transfer includes meet and greet just outside arrivals with a name sign, live flight tracking, and a day-of email with the driver's name, vehicle, plate, and WhatsApp. For example: a private transfer from MBJ to ${exampleTransfer.dest.name} costs $${exampleTransfer.ow} one-way or $${exampleTransfer.rt} round-trip for up to 4 passengers. Book at [Airport transfers](${baseUrl}/transfers). Kingston, Port Antonio, and parties of 5 or more are quoted individually through [Contact](${baseUrl}/contact). A property marked "reopening" is closed for renovation until the date shown; transfers there are bookable for stays from that date.
+
+${transferRateSections}
 
 ## Experiences
 
@@ -73,7 +122,7 @@ ${blogLines}
 
 - Country: Jamaica
 - Currency: USD
-- Airport transfers: one flat all-in price per vehicle for 1-4 passengers, nothing added at checkout. From $22 one-way (Montego Bay hotels) up to $158 (Treasure Beach); round trips are 10% off two one-ways. Cancellation: flexible within 48 hours of booking, less a 20% administration charge plus taxes (if applicable); after that window bookings are non-refundable, and no-shows are charged in full.
+- Airport transfers: one flat all-in price per vehicle for 1-4 passengers, nothing added at checkout. From $${cheapestTransfer.ow} one-way (${ZONES[cheapestTransfer.dest.zone].label}) up to $${dearestTransfer.ow} (${ZONES[dearestTransfer.dest.zone].label}); round trips are ${roundTripPct}% off two one-ways. Cancellation: flexible within 48 hours of booking, less a 20% administration charge plus taxes (if applicable); after that window bookings are non-refundable, and no-shows are charged in full.
 - Tours and experiences: $103 to $459 all-in, nothing added at checkout. Most are private group tours priced per vehicle for a party of up to 3 or 4, not per person; a few are per person. Ready-made multi-stop day packages run $192 to $332. Cancellation: flexible within 48 hours of booking, less a 20% administration charge plus taxes (if applicable).
 - Payments: Stripe (cards and Apple Pay)
 - Booking cutoff: bookings close 24 hours before an experience or pickup begins
