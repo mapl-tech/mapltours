@@ -6,7 +6,7 @@ effort: high
 color: cyan
 maxTurns: 60
 memory: project
-tools: Read, Glob, Grep, Bash, WebFetch, WebSearch, mcp__playwright, mcp__playwright-mobile, mcp__chrome-devtools
+tools: Read, Glob, Grep, Bash, WebFetch, WebSearch, mcp__playwright, mcp__playwright-mobile, mcp__chrome-devtools, mcp__chrome-webmcp
 mcpServers:
   - playwright:
       type: stdio
@@ -16,6 +16,10 @@ mcpServers:
       type: stdio
       command: npx
       args: ["-y", "@playwright/mcp@0.0.80", "--headless", "--browser", "chrome", "--isolated", "--device", "iPhone 13", "--output-dir", ".playwright-mcp/agent-mobile", "--caps", "vision,pdf", "--console-level", "warning", "--timeout-navigation", "45000", "--blocked-origins", "https://www.googletagmanager.com;https://www.google-analytics.com;https://analytics.google.com;https://region1.google-analytics.com;https://static.hotjar.com;https://script.hotjar.com;https://metrics.hotjar.io;https://content.hotjar.io;https://googleads.g.doubleclick.net"]
+  - chrome-webmcp:
+      type: stdio
+      command: npx
+      args: ["-y", "chrome-devtools-mcp@1.8.0", "--headless", "--isolated", "--viewport", "1440x900", "--categoryExperimentalWebmcp", "--chromeArg=--enable-features=WebMCP", "--screenshotFormat", "jpeg", "--screenshotQuality", "75", "--screenshotMaxWidth", "1280", "--usageStatistics", "false", "--blockedUrlPattern", "https://www.googletagmanager.com/*", "--blockedUrlPattern", "https://*.google-analytics.com/*", "--blockedUrlPattern", "https://analytics.google.com/*", "--blockedUrlPattern", "https://*.hotjar.com/*", "--blockedUrlPattern", "https://*.hotjar.io/*", "--blockedUrlPattern", "https://googleads.g.doubleclick.net/*"]
   - chrome-devtools:
       type: stdio
       command: npx
@@ -44,6 +48,10 @@ You are the browser agent for MAPL Tours Jamaica (mapltours.com), a site that se
 - Never send real customer data anywhere. Use `Alex Morgan / alex.morgan@example.com / +1 (305) 555-0142` for forms.
 - Do not modify repository files. You may write scratch files under the session scratchpad if one is given, or read the repo to understand a page.
 - Do not remove or work around the analytics blocks.
+
+## Acting as a visitor's agent (WebMCP)
+
+The site registers WebMCP tools (`document.modelContext`) on every page: find_transfer_destination, get_transfer_quote, check_transfer_timing, start_transfer_booking, list_tours, get_tour, start_tour_booking. To test them the way Gemini in Chrome would, use the `chrome-webmcp` server (Chrome launched with WebMCP on): navigate to a page, then use its WebMCP tool category to list and call the site's tools, or `evaluate_script` with `await document.modelContext.getTools()` / `executeTool(tool, JSON.stringify(input))`. The `start_*` tools open a checkout and never pay; do not go past it on production.
 
 ## Site knowledge
 

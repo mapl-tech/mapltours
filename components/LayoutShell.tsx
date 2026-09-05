@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation'
 import TopNav from './TopNav'
 import ItineraryPanel from './ItineraryPanel'
 import PageTransition from './PageTransition'
+import WebMcpTools from './WebMcpTools'
 import ScrollReveal from './ScrollReveal'
 import { AuthProvider } from '@/lib/supabase/auth-context'
 import { SavedProvider } from '@/lib/supabase/saved'
@@ -24,6 +25,9 @@ export default function LayoutShell({ children }: { children: React.ReactNode })
   // a black void under the reel. The route closes back to /explore, so
   // the nav was never reachable there anyway.
   const hideNav = pathname === '/login' || pathname.startsWith('/admin') || pathname.startsWith('/driver') || pathname.startsWith('/experience')
+  // WebMCP tools exist only where a traveller can shop: not on the login
+  // screen, the admin area or the driver portal. The /experience reel is a shop.
+  const hideTools = pathname === '/login' || pathname.startsWith('/admin') || pathname.startsWith('/driver')
 
   // Both stores use skipHydration so SSR and the first client paint render
   // identical (empty cart / USD) HTML. Load the persisted state once, after
@@ -45,6 +49,7 @@ export default function LayoutShell({ children }: { children: React.ReactNode })
       <SavedProvider>
         <a href="#main-content" className="skip-link">Skip to main content</a>
         <ScrollReveal />
+        {!hideTools && <WebMcpTools />}
         {!hideNav && <TopNav onCartClick={() => setDrawerOpen(true)} />}
         <main id="main-content">
           <PageTransition>{children}</PageTransition>

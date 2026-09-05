@@ -80,6 +80,27 @@ export function captureAttribution(): void {
   } catch { /* never break the page over analytics */ }
 }
 
+/** A visitor's browser agent (WebMCP) started a booking: record it as the
+ *  source so agent-driven bookings are countable in the admin and in
+ *  `bookings.attribution`. Overrides UTM/referrer source but keeps the
+ *  referrer so we still know which page the agent came from. Never throws. */
+export function markAgentAttribution(tool: string): void {
+  try {
+    if (typeof window === 'undefined') return
+    let existing: Attribution | null = null
+    try { existing = JSON.parse(localStorage.getItem(KEY) ?? 'null') } catch { existing = null }
+    const fresh: Attribution = {
+      ...(existing?.referrer ? { referrer: existing.referrer } : {}),
+      source: 'webmcp',
+      medium: 'browser-agent',
+      content: scrub(tool).slice(0, 60),
+      landing: scrub(window.location.pathname).slice(0, 200),
+      ts: new Date().toISOString(),
+    }
+    localStorage.setItem(KEY, JSON.stringify(fresh))
+  } catch { /* never break the page over analytics */ }
+}
+
 /** The stored attribution to attach to a checkout payload (or null). */
 export function getStoredAttribution(): Attribution | null {
   try {

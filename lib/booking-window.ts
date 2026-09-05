@@ -39,6 +39,15 @@ function startOfDayJamaicaMs(date: string): number | null {
   return utcMidnight - JAMAICA_UTC_OFFSET_HOURS * MS_PER_HOUR
 }
 
+/**
+ * Sensible gap between hotel pickup and the flight home: roughly an hour's
+ * drive from most zones plus 2.5 hours of international check-in. Below this
+ * the dispatch consoles warn; the WebMCP tools derive a pickup from it when
+ * an agent only knows the flight time. (Moved from lib/dispatch, which is
+ * server-only and cannot be imported by browser code.)
+ */
+export const MIN_PICKUP_LEAD_MIN = 210
+
 /** The cutoff instant: nothing starting before this may be booked. */
 export function leadTimeCutoff(now: Date = new Date()): Date {
   return new Date(now.getTime() + MIN_LEAD_TIME_HOURS * MS_PER_HOUR)

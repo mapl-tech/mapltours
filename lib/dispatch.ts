@@ -170,8 +170,8 @@ export function shiftIso(iso: string, minutes: number): string {
 /** Customers typically clear customs + bags ~45 min after landing. */
 export const ARRIVAL_CLEAR_MIN = 45
 /** Sensible gap between hotel pickup and flight departure: below this, warn.
- *  (~1h drive from most zones + 2.5h international check-in.) */
-export const MIN_PICKUP_LEAD_MIN = 210
+ *  Defined in lib/booking-window (pure) so browser code can share it. */
+export { MIN_PICKUP_LEAD_MIN } from './booking-window'
 
 /* ── Google Calendar link (correct Jamaica timezone via ctz) ── */
 

@@ -454,3 +454,43 @@ Conventions that keep these safe and useful:
 - **The `browser` agent** (`.claude/agents/browser.md`) owns these tools for delegated work: say "use the browser agent to …" or `@agent-browser …`, or spawn it with the Agent tool. It starts its own isolated copies of the three servers, so several can run in parallel without sharing a page, and a hook stops it from ever clicking into a payment step. The server args are duplicated between `.mcp.json` and the agent file on purpose; change both together.
 - `/site-check` runs the standard route check; `/run` launches the app.
 - The servers are pinned (`@playwright/mcp@0.0.80`, `chrome-devtools-mcp@1.8.0`). Bump deliberately, then confirm with a `browser_navigate` to the live site.
+
+---
+
+## WebMCP: tools the site offers to visitors' browser agents
+
+`lib/webmcp-tools.ts` + `components/WebMcpTools.tsx` (mounted in `LayoutShell`) register seven tools with `document.modelContext` on every page, for browsers that have WebMCP (Chrome 149+ via origin trial or `chrome://flags/#enable-webmcp-testing`). Spec: https://developer.chrome.com/docs/ai/webmcp.
+
+| Tool | Kind | What it does |
+|---|---|---|
+| `find_transfer_destination` | read-only | Search the 199 hotels and villas on the rate card |
+| `get_transfer_quote` | read-only | Exact all-in fare, per vehicle, round trip or one way |
+| `check_transfer_timing` | read-only | Applies the 24-hour rule in Jamaica time; returns the earliest bookable time; derives the hotel pickup from `departure_flight_at` |
+| `start_transfer_booking` | consequential | Puts the ride and flight details in the cart and opens `/transfers/checkout`; a one-way carries only the legs its direction allows |
+| `list_tours` / `get_tour` | read-only | Catalogue, details, price per party size |
+| `start_tour_booking` | consequential | Puts a tour, date and party in the cart and opens `/checkout` |
+
+Rules, enforced in code, not just described:
+- No tool pays or submits a checkout. The traveller taps "Continue to payment" and completes Stripe themselves; the `start_*` tools carry `consequentialHint` so the agent confirms first.
+- Prices come from the same `buildQuote` / `tourPrice` the checkout uses, so an agent can never quote a number the server will refuse.
+- Errors are returned as `{ error }` objects with a next step. A thrown error reaches the agent only as "invocation failed", so nothing in `execute` throws.
+- Descriptions stay under 500 characters and outputs compact (Chrome's prompt-injection guidance). Never put user-generated content in a result without `untrustedContentHint`.
+- Leg times are validated to `YYYY-MM-DDTHH:MM` (Jamaica wall clock, calendar-checked) and judged against the 24-hour rule as `${value}:00Z`, so the visitor's browser timezone never changes the answer. A date-only value or a `Z`/offset suffix is an error, never stored.
+- A one-way carries only the legs its direction allows (mirrors `planTransferLegs` on the server); stray fields are refused. `trip_type` is required, and so is `direction` for a one-way; unrecognised enum values are errors, not defaults.
+- Tour adds go through `addTourToCart`, which uses the real store's `conflictsInCart` / `fitTourToDay`, reports refusals and evictions, and applies the date and party size to every line the way checkout does. `start_tour_booking` checks the date against `isExperienceDateBookable` first.
+- Both `start_*` tools refuse while `lib/payment-lock` says a Stripe confirm is in flight (`StripePaymentPanel` mirrors its `processing` state into it).
+- The tools are not registered on `/login`, `/admin` or `/driver` (`hideTools` in `LayoutShell`); the `/experience` reel is a shop and keeps them.
+- Agent input is echoed back only after validation and clipped; `list_tours` returns compact rows (no per-row URL, at most 12, `more` + hint beyond that).
+- The pure module is unit-tested (`tests/unit/webmcp-tools.spec.ts`) with fake cart actions AND against the real cart store; the timing tests run under UTC, Los Angeles, Berlin and Tokyo. The component only wires real stores and `router.push`.
+- The two `start_*` tools call `onBookingStarted` before navigating; the component maps it to `markAgentAttribution`, which stamps the stored attribution `source: webmcp / medium: browser-agent / content: <tool>`. That flows into `bookings.attribution` at checkout, so agent-started bookings are countable in the admin. `llms.txt` lists the tools for agents that read it.
+
+Testing: launch Chrome with `--enable-features=WebMCP` (the `browser` agent's `chrome-webmcp` server does this, with the DevTools WebMCP tool category), or install Chrome's "Model Context Tool Inspector" extension with the flag on. From a page console: `await document.modelContext.getTools()` and `await document.modelContext.executeTool(tool, JSON.stringify({...}))`.
+
+Going live for real visitors: register mapltours.com for the WebMCP origin trial (link in the Chrome doc), then serve the token as a header from `netlify.toml`:
+```
+[[headers]]
+  for = "/*"
+  [headers.values]
+    Origin-Trial = "<token>"
+```
+`window.originAgentCluster` is already true on production, so no `Origin-Agent-Cluster` header is needed.

@@ -1,12 +1,13 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js'
 import { CreditCard, Lock, ShieldCheck } from 'lucide-react'
 import { getStripe } from '@/lib/stripe'
 import { useI18n } from '@/lib/i18n'
 import LegalModal from './LegalModal'
 import { CANCELLATION_SUMMARY } from '@/lib/refund-pricing'
+import { setPaymentInFlight } from '@/lib/payment-lock'
 
 /**
  * Stripe payment UI, extracted into its own chunk so the ~80 KB gz
@@ -76,6 +77,12 @@ function PaymentStep({
   const [error, setError] = useState<string | null>(null)
   const [processing, setProcessing] = useState(false)
   const [legalOpen, setLegalOpen] = useState(false)
+  // Tell the WebMCP tools (any page) that a confirm is in flight, so an
+  // agent cannot rewrite the cart while the PaymentIntent is settling.
+  useEffect(() => {
+    setPaymentInFlight(processing)
+    return () => setPaymentInFlight(false)
+  }, [processing])
 
   const handleSubmit = async () => {
     if (!stripe || !elements) return
