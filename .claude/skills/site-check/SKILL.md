@@ -5,7 +5,7 @@ description: Check a mapltours.com route (or the whole money path) the way a gue
 
 # Site check
 
-Look at the page, do not infer it. Use `playwright-mobile` first, then `playwright`. Screenshots go to `.playwright-mcp/` (gitignored). Analytics origins are blocked in these browsers, so browsing never pollutes GA4.
+Delegate this to the `browser` agent (Agent tool, `subagent_type: browser`) so the screenshots and tool calls stay out of the main context; it has the same servers and the same rules. Look at the page, do not infer it. Use `playwright-mobile` first, then `playwright`. Screenshots go to `.playwright-mcp/` (gitignored). Analytics origins are blocked in these browsers, so browsing never pollutes GA4.
 
 ## Inputs
 `$ARGUMENTS` is a route (`/transfers`), a full URL (a Netlify deploy preview, `http://localhost:3100/...`), or empty. Empty means the transfers money path on production.
