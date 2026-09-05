@@ -1,0 +1,53 @@
+{
+  "mcpServers": {
+    "playwright": {
+      "command": "npx",
+      "args": [
+        "-y", "@playwright/mcp@0.0.80",
+        "--headless",
+        "--browser", "chrome",
+        "--isolated",
+        "--viewport-size", "1440x900",
+        "--output-dir", ".playwright-mcp/desktop",
+        "--caps", "vision,pdf",
+        "--console-level", "warning",
+        "--timeout-navigation", "45000",
+        "--blocked-origins", "https://www.googletagmanager.com;https://www.google-analytics.com;https://analytics.google.com;https://region1.google-analytics.com;https://static.hotjar.com;https://script.hotjar.com;https://metrics.hotjar.io;https://content.hotjar.io;https://googleads.g.doubleclick.net"
+      ]
+    },
+    "playwright-mobile": {
+      "command": "npx",
+      "args": [
+        "-y", "@playwright/mcp@0.0.80",
+        "--headless",
+        "--browser", "chrome",
+        "--isolated",
+        "--device", "iPhone 13",
+        "--output-dir", ".playwright-mcp/mobile",
+        "--caps", "vision,pdf",
+        "--console-level", "warning",
+        "--timeout-navigation", "45000",
+        "--blocked-origins", "https://www.googletagmanager.com;https://www.google-analytics.com;https://analytics.google.com;https://region1.google-analytics.com;https://static.hotjar.com;https://script.hotjar.com;https://metrics.hotjar.io;https://content.hotjar.io;https://googleads.g.doubleclick.net"
+      ]
+    },
+    "chrome-devtools": {
+      "command": "npx",
+      "args": [
+        "-y", "chrome-devtools-mcp@1.8.0",
+        "--headless",
+        "--isolated",
+        "--viewport", "1440x900",
+        "--screenshotFormat", "jpeg",
+        "--screenshotQuality", "75",
+        "--screenshotMaxWidth", "1280",
+        "--usageStatistics", "false",
+        "--blockedUrlPattern", "https://www.googletagmanager.com/*",
+        "--blockedUrlPattern", "https://*.google-analytics.com/*",
+        "--blockedUrlPattern", "https://analytics.google.com/*",
+        "--blockedUrlPattern", "https://*.hotjar.com/*",
+        "--blockedUrlPattern", "https://*.hotjar.io/*",
+        "--blockedUrlPattern", "https://googleads.g.doubleclick.net/*"
+      ]
+    }
+  }
+}

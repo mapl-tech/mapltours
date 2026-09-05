@@ -1,7 +1,15 @@
 {
   "permissions": {
     "allow": [
-      "WebFetch(domain:www.pexels.com)"
+      "WebFetch(domain:www.pexels.com)",
+      "mcp__playwright",
+      "mcp__playwright-mobile",
+      "mcp__chrome-devtools"
     ]
-  }
+  },
+  "enabledMcpjsonServers": [
+    "chrome-devtools",
+    "playwright",
+    "playwright-mobile"
+  ]
 }

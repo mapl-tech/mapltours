@@ -432,3 +432,24 @@ Build files in this sequence:
 - Currency: USD
 - Empty states: always include a Jamaica emoji + short encouraging line
 - After checkout: sign off with "No problem."
+
+---
+
+## Browser MCPs (project-scoped, in `.mcp.json`)
+
+Three headless-browser servers ship with the repo so Claude can open the site the way a guest does. They are pre-approved in `.claude/settings.json`; first use downloads them via npx.
+
+| Server | Use it for | Notes |
+|---|---|---|
+| `playwright` | Desktop (1440×900) walkthroughs, screenshots, accessibility snapshots, clicking and typing through a flow | Real Google Chrome, isolated profile, output in `.playwright-mcp/desktop/` |
+| `playwright-mobile` | The same on an iPhone 13 profile. **Default to this one**; nearly every real prospect is on a phone | Output in `.playwright-mcp/mobile/` |
+| `chrome-devtools` | Performance traces, Core Web Vitals, network waterfalls, console and request inspection, CPU/network throttling | Call `list_pages` first; every page tool needs a `pageId`. Use `emulate` for mobile and slow-network profiles before a trace |
+
+Conventions that keep these safe and useful:
+
+- **Analytics is blocked in these browsers** (gtag, GA4, Google Ads, Hotjar origins), so nothing Claude does shows up as traffic or conversions. Do not remove those blocks. If a check needs the trackers themselves, use a one-off Playwright script instead.
+- **Production is read-only.** Browse, click, fill forms, but never tap "Continue to payment" on mapltours.com: it creates a pending booking, a live Stripe PaymentIntent and a recovery email. Stop at the filled details step. Flows that must create data run against the local dev server and use an `@example.com` email so `scripts/purge-test-bookings.mjs` can remove the rows.
+- **Check every UI change at 390 and 1440.** Mobile first, then desktop. Look at the screenshot; do not infer from the DOM.
+- **Measure, do not judge.** Contrast, tap targets, load times and layout shift come from the page (`browser_evaluate`, `performance_start_trace`), not from reading the source.
+- `/site-check` runs the standard route check; `/run` launches the app.
+- The servers are pinned (`@playwright/mcp@0.0.80`, `chrome-devtools-mcp@1.8.0`). Bump deliberately, then confirm with a `browser_navigate` to the live site.
