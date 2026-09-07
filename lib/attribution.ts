@@ -19,7 +19,42 @@ const MAX_AGE_DAYS = 90
 const ALLOWED_KEYS = [
   'referrer', 'source', 'medium', 'campaign', 'term', 'content',
   'gclid', 'fbclid', 'landing', 'ts',
+  // GA4 client and session ids, read from the GA cookies at checkout so the
+  // Stripe webhook can report the purchase server-side against the same
+  // session (and therefore the same Google Ads click). See lib/ga4-server.
+  'ga_client_id', 'ga_session_id',
 ] as const
+
+/** The GA4 web stream this site loads (components/Trackers). */
+export const GA4_MEASUREMENT_ID = 'G-2JVWPL4GBE'
+
+/**
+ * GA4 client and session ids from a document.cookie string.
+ *
+ *   _ga                  GA1.1.<client a>.<client b>   -> client_id "a.b"
+ *   _ga_<CONTAINER>      GS1.1.<session>.<n>...        (pre-2025)
+ *                        GS2.1.s<session>$o<n>$g...    (2025 onward)
+ *
+ * The container is the measurement id without "G-". Pure so it is testable;
+ * missing or malformed cookies yield nothing rather than a guess.
+ */
+export function readGaIds(cookie: string, measurementId: string = GA4_MEASUREMENT_ID): { ga_client_id?: string; ga_session_id?: string } {
+  const out: { ga_client_id?: string; ga_session_id?: string } = {}
+  try {
+    const jar = new Map<string, string>()
+    for (const part of (cookie ?? '').split(';')) {
+      const i = part.indexOf('=')
+      if (i > 0) jar.set(part.slice(0, i).trim(), part.slice(i + 1).trim())
+    }
+    const ga = jar.get('_ga')
+    const client = ga?.match(/^GA1\.\d+\.(\d+\.\d+)$/)?.[1]
+    if (client) out.ga_client_id = client
+    const sess = jar.get(`_ga_${measurementId.replace(/^G-/, '')}`)
+    const session = sess?.match(/^GS2\.\d+\.s(\d+)/)?.[1] ?? sess?.match(/^GS1\.\d+\.(\d+)\./)?.[1]
+    if (session) out.ga_session_id = session
+  } catch { /* a bad cookie is not worth a broken checkout */ }
+  return out
+}
 
 export type Attribution = Partial<Record<(typeof ALLOWED_KEYS)[number], string>>
 
@@ -101,12 +136,20 @@ export function markAgentAttribution(tool: string): void {
   } catch { /* never break the page over analytics */ }
 }
 
-/** The stored attribution to attach to a checkout payload (or null). */
+/**
+ * The stored attribution to attach to a checkout payload (or null), plus the
+ * GA4 client and session ids as they stand at this moment. Called when the
+ * checkout POSTs, which is the session we want the server-side purchase to
+ * land in.
+ */
 export function getStoredAttribution(): Attribution | null {
   try {
     if (typeof window === 'undefined') return null
     const raw = localStorage.getItem(KEY)
-    return raw ? (JSON.parse(raw) as Attribution) : null
+    const stored = raw ? (JSON.parse(raw) as Attribution) : null
+    const ga = readGaIds(typeof document !== 'undefined' ? document.cookie : '')
+    if (!stored && !Object.keys(ga).length) return null
+    return { ...(stored ?? {}), ...ga }
   } catch { return null }
 }
 

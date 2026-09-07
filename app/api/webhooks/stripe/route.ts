@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import Stripe from 'stripe'
 import { createServiceClient } from '@/lib/supabase/service'
 import { DEFAULT_DRIVER } from '@/lib/dispatch'
+import { reportServerPurchase } from '@/lib/ga4-server'
 import { activateGiftCard } from '@/lib/gift-activation'
 import { settleGiftClaim, releaseGiftClaim, refundToGiftCard } from '@/lib/gift-redemption'
 import { sendEmail, operatorAlertRecipients, confirmationBcc } from '@/lib/email/send'
@@ -270,6 +271,13 @@ async function handlePaymentSucceeded(pi: Stripe.PaymentIntent) {
       return
     }
     booking.status = 'paid'
+
+    // Server-side purchase for GA4 and Google Ads, exactly once: on the
+    // delivery that flipped this booking to paid, so a Stripe redelivery
+    // never double counts. The confirm page fires the same transaction id
+    // client-side and GA4 dedupes on it; this one lands even when the guest
+    // never returns from 3DS or closes the tab. Never fatal.
+    await reportServerPurchase(booking)
 
     // Auto-assign the default driver, exactly once: on the delivery that
     // flipped this booking to paid. Living inside the transition means a
