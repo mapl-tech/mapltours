@@ -11,7 +11,7 @@ import { getStoredAttribution } from '@/lib/attribution'
 import { trackBeginCheckout } from '@/lib/analytics'
 import { planDay } from '@/lib/day-route'
 import { useAvailableReward, consumeReward } from '@/lib/tour-videos'
-import { CANCELLATION_SUMMARY } from '@/lib/refund-pricing'
+import { CANCELLATION_WINDOW_HOURS, ADMIN_CHARGE_RATE } from '@/lib/refund-pricing'
 import { useI18n } from '@/lib/i18n'
 import { useFocusTrap } from '@/lib/use-focus-trap'
 import { validateTourForm, validateContact, orderKey, formatDate, type FieldErrors } from '@/lib/checkout-form'
@@ -43,6 +43,9 @@ import { PICKUP_PLACES, OTHER_PLACE } from './pickup-places'
  */
 
 const FONT = 'var(--font-dm-sans)'
+/** The cancellation promise as a sentence, from the same numbers as the policy
+ *  dialog, so the line under the pay button can never say something else. */
+const CANCEL_LINE = `Cancel within ${CANCELLATION_WINDOW_HOURS} hours of booking for a refund, minus a ${Math.round(ADMIN_CHARGE_RATE * 100)}% admin charge.`
 const FIELD_ORDER = ['tripDate', 'pickup', 'firstName', 'lastName', 'email', 'phone', 'waiver']
 const AUTO_SAVE_DELAY_MS = 2500
 
@@ -351,7 +354,7 @@ export default function OnePageCheckout() {
           <div className="opc-form">
             {/* ── 1. Your trip ── */}
             <Card className="opc-pad">
-              <SectionTitle step={1} title={t('Your trip')} sub={items.length > 1 ? `${items.length} tours, one day` : 'One day, one party. Change anything here.'} />
+              <SectionTitle step={1} title={t('Your trip')} sub={items.length > 1 ? `${items.length} tours on one day. Change anything here.` : 'Change anything here before you pay.'} />
               <div>
                 {items.map((item) => (
                   <div key={item.id} style={{ display: 'flex', gap: 14, alignItems: 'center', padding: '14px 0', borderBottom: '1px solid var(--border)' }}>
@@ -412,7 +415,7 @@ export default function OnePageCheckout() {
                   </SelectField>
                   <p style={{ display: 'flex', gap: 8, alignItems: 'flex-start', marginTop: 12, fontFamily: FONT, fontSize: 13, lineHeight: 1.5, color: 'var(--text-tertiary)' }}>
                     <MapPin size={13} style={{ flexShrink: 0, marginTop: 2 }} />
-                    <span>We plan your pickup time around your tour and confirm it with you before the day, once your driver is set.</span>
+                    <span>We set your pickup time around the tour and confirm it with you before the day.</span>
                   </p>
                 </div>
 
@@ -439,7 +442,7 @@ export default function OnePageCheckout() {
                   <TextField id="opc-last" fieldKey="lastName" label="Last name" value={form.lastName} onChange={setField('lastName')} error={errors.lastName} autoComplete="family-name" placeholder="Last name" />
                 </div>
                 <TextField id="opc-email" fieldKey="email" label="Email" type="email" inputMode="email" value={form.email} onChange={setField('email')} error={errors.email} autoComplete="email" placeholder="you@email.com" hint="Your confirmation and trip details go here." />
-                <TextField id="opc-phone" fieldKey="phone" label="Phone" type="tel" inputMode="tel" value={form.phone} onChange={setField('phone')} error={errors.phone} autoComplete="tel" placeholder="+1 (555) 000-0000" hint="WhatsApp works. This is how we reach you about your trip." />
+                <TextField id="opc-phone" fieldKey="phone" label="Phone" type="tel" inputMode="tel" value={form.phone} onChange={setField('phone')} error={errors.phone} autoComplete="tel" placeholder="+1 (555) 000-0000" hint="WhatsApp works. We use it to reach you about your trip." />
               </div>
               <div style={{ marginTop: 14 }}>
                 <Disclosure summary="Add a note" detail="Dietary needs, accessibility, a celebration, anything we should know" open={noteOpen} onToggle={() => setNoteOpen((o) => !o)}>
@@ -462,7 +465,7 @@ export default function OnePageCheckout() {
             {/* ── 3. Payment ── */}
             <div ref={payCardRef}>
               <Card className="opc-pad opc-card-pay">
-                <SectionTitle step={3} title={t('Payment')} sub={amountCents >= 50 ? `${formatUsd(finalTotal)} today. Nothing is charged until you tap Pay.` : 'Nothing to charge today.'} />
+                <SectionTitle step={3} title={t('Payment')} sub={amountCents >= 50 ? `${formatUsd(finalTotal)} today. Nothing is charged until you press the button below.` : 'Nothing to charge today.'} />
                 <DeferredPaymentPanel
                   amountCents={amountCents}
                   returnUrl="/checkout/confirm"
@@ -474,19 +477,24 @@ export default function OnePageCheckout() {
                   billing={{ name: contactName || undefined, email: form.email.trim() || undefined, phone: form.phone.trim() || undefined }}
                   externalError={serverError}
                   onAmountResolved={(usd) => setServerDue(usd)}
-                  footer={<Reassurance lines={['Encrypted by Stripe. Card, Apple Pay or Google Pay. We never see your card number.', CANCELLATION_SUMMARY.short + '.', 'We confirm your pickup time with you before the day.']} />}
+                  footer={<Reassurance lines={['Stripe takes the payment. We never see your card number.', CANCEL_LINE, 'We confirm your pickup time with you before the day.']} />}
                 >
                   <div data-field="waiver" style={{ marginTop: 18 }}>
-                    <label style={{ display: 'flex', gap: 12, alignItems: 'flex-start', cursor: 'pointer', padding: '4px 0' }}>
+                    {/* The box is 20px, sized to the 13px sentence beside it rather
+                        than to a 24px target rule: the LABEL is the target here, and
+                        it spans the whole sentence, which is far larger than 24px in
+                        both directions. A 24px box next to 13px text read as a
+                        checkbox that had wandered in from another form. */}
+                    <label style={{ display: 'flex', gap: 10, alignItems: 'flex-start', cursor: 'pointer', padding: '6px 0' }}>
                       <input type="checkbox" checked={waiver}
                         onChange={(e) => { setWaiver(e.target.checked); if (errors.waiver) setErrors((er) => { const n = { ...er }; delete n.waiver; return n }) }}
                         aria-invalid={errors.waiver ? true : undefined} aria-describedby={errors.waiver ? 'opc-waiver-error' : undefined}
-                        style={{ width: 24, height: 24, marginTop: 0, flexShrink: 0, accentColor: 'var(--accent)' }} />
-                      <span style={{ fontFamily: FONT, fontSize: 13, lineHeight: 1.55, color: errors.waiver ? '#b00020' : 'var(--text-secondary)' }}>
+                        style={{ width: 20, height: 20, marginTop: 1, flexShrink: 0, accentColor: 'var(--accent)' }} />
+                      <span style={{ fontFamily: FONT, fontSize: 13, lineHeight: 1.6, color: errors.waiver ? '#b00020' : 'var(--text-secondary)' }}>
                         I accept the <LinkButton onClick={() => setLegal('waiver')}>Activity Waiver</LinkButton>, the <LinkButton onClick={() => setLegal('terms')}>Terms</LinkButton> and the <LinkButton onClick={() => setLegal('cancellation')}>Cancellation Policy</LinkButton>.
                       </span>
                     </label>
-                    {errors.waiver && <p id="opc-waiver-error" style={{ fontFamily: FONT, fontSize: 13, color: '#b00020', marginTop: 2, paddingLeft: 34 }}>{errors.waiver}</p>}
+                    {errors.waiver && <p id="opc-waiver-error" style={{ fontFamily: FONT, fontSize: 13, color: '#b00020', marginTop: 2, paddingLeft: 30 }}>{errors.waiver}</p>}
                   </div>
                 </DeferredPaymentPanel>
               </Card>
@@ -687,7 +695,7 @@ function OrderSummary(p: {
           <span>{t('Total')}</span><span>{formatUsd(p.finalTotal)}</span>
         </div>
         <p style={{ marginTop: 8, fontSize: 13, lineHeight: 1.5, color: 'var(--text-tertiary)', fontFamily: FONT }}>
-          Private tour, all-in. {CANCELLATION_SUMMARY.short} · <LinkButton onClick={p.openPolicy}>full policy</LinkButton>
+          Private tour, all-in. {CANCEL_LINE} <LinkButton onClick={p.openPolicy}>Read the full cancellation policy</LinkButton>
         </p>
       </div>
     </Card>

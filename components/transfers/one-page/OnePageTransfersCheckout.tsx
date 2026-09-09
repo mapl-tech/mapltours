@@ -8,7 +8,7 @@ import { MAX_TRANSFER_PASSENGERS, ROUND_TRIP_DISCOUNT } from '@/lib/airport-tran
 import { leadTimeCutoff } from '@/lib/booking-window'
 import { getStoredAttribution } from '@/lib/attribution'
 import { trackBeginCheckout } from '@/lib/analytics'
-import { CANCELLATION_SUMMARY } from '@/lib/refund-pricing'
+import { CANCELLATION_WINDOW_HOURS, ADMIN_CHARGE_RATE } from '@/lib/refund-pricing'
 import { useI18n } from '@/lib/i18n'
 import {
   validateTransferForm, orderKey, legsFor, pickupFromFlight, flightFromPickup, formatWallClock, PICKUP_LEAD_TEXT, LEG_TIME_RE, type FieldErrors,
@@ -34,6 +34,9 @@ import { useHydrated } from '@/components/checkout/one-page/useHydrated'
  */
 
 const FONT = 'var(--font-dm-sans)'
+/** The cancellation promise as a sentence, from the same numbers as the policy
+ *  dialog, so the line under the pay button can never say something else. */
+const CANCEL_LINE = `Cancel within ${CANCELLATION_WINDOW_HOURS} hours of booking for a refund, minus a ${Math.round(ADMIN_CHARGE_RATE * 100)}% admin charge.`
 const FIELD_ORDER = ['arrivalAt', 'arrivalFlight', 'departureAt', 'departureFlight', 'firstName', 'lastName', 'email', 'phone']
 const AUTO_SAVE_DELAY_MS = 2500
 
@@ -296,7 +299,7 @@ export default function OnePageTransfersCheckout() {
                 </div>
                 <p style={{ fontFamily: FONT, fontSize: 13, color: 'var(--text-tertiary)', marginTop: 6, display: 'flex', gap: 10, flexWrap: 'wrap' }}>
                   <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}><Car size={13} /> {item.passengers <= 4 ? 'Private vehicle, one price for up to 4' : 'Private vehicle, priced per person'}</span>
-                  <Link href={`/transfers?to=${item.destinationId}`} style={{ textDecoration: 'underline', textUnderlineOffset: 2, color: 'var(--text-secondary)', minHeight: 44, padding: '0 4px', display: 'inline-flex', alignItems: 'center' }}>Change hotel</Link>
+                  <Link href={`/transfers?to=${item.destinationId}`} aria-label="Change hotel, back to the fare page" style={{ textDecoration: 'underline', textUnderlineOffset: 2, color: 'var(--text-secondary)', minHeight: 44, padding: '0 4px', display: 'inline-flex', alignItems: 'center' }}>Change hotel</Link>
                 </p>
               </div>
 
@@ -343,7 +346,7 @@ export default function OnePageTransfersCheckout() {
                     <div style={{ width: 28, height: 28, borderRadius: 8, background: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}><Plane size={14} color="#fff" /></div>
                     <div>
                       <p style={{ fontFamily: FONT, fontWeight: 700, fontSize: 15 }}>Your flights</p>
-                      <p style={{ fontFamily: FONT, fontSize: 13, color: 'var(--text-tertiary)' }}>We track them, so a late flight never leaves you waiting.</p>
+                      <p style={{ fontFamily: FONT, fontSize: 13, color: 'var(--text-tertiary)' }}>We track your flights, so a delay never leaves you waiting.</p>
                     </div>
                   </div>
 
@@ -370,6 +373,7 @@ export default function OnePageTransfersCheckout() {
                           <div style={{ fontFamily: FONT, fontSize: 13, lineHeight: 1.5, color: 'var(--text-secondary)' }}>
                             <span style={{ fontWeight: 700, color: 'var(--text-primary)' }}>Hotel pickup {derivedPickup}</span>{standardLead ? `, ${PICKUP_LEAD_TEXT} before your flight.` : ', the time you chose.'}{' '}
                             <button type="button" onClick={() => setAdjustPickup((a) => !a)}
+                              aria-label={adjustPickup ? 'Done adjusting the hotel pickup time' : 'Adjust the hotel pickup time'}
                               style={{ background: 'none', border: 'none', padding: '6px 8px', margin: '0 -8px', minHeight: 32, font: 'inherit', color: 'inherit', cursor: 'pointer', textDecoration: 'underline', textUnderlineOffset: 2 }}>
                               {adjustPickup ? 'Done' : 'Adjust'}
                             </button>
@@ -398,7 +402,7 @@ export default function OnePageTransfersCheckout() {
                   <TextField id="xfer-last" fieldKey="lastName" label="Last name" value={form.lastName} onChange={setField('lastName')} error={errors.lastName} autoComplete="family-name" placeholder="Last name" />
                 </div>
                 <TextField id="xfer-email" fieldKey="email" label="Email" type="email" inputMode="email" value={form.email} onChange={setField('email')} error={errors.email} autoComplete="email" placeholder="you@email.com" hint="Your confirmation and driver details go here." />
-                <TextField id="xfer-phone" fieldKey="phone" label="Phone" type="tel" inputMode="tel" value={form.phone} onChange={setField('phone')} error={errors.phone} autoComplete="tel" placeholder="+1 (555) 000-0000" hint="WhatsApp works. Your driver texts you when you land." />
+                <TextField id="xfer-phone" fieldKey="phone" label="Phone" type="tel" inputMode="tel" value={form.phone} onChange={setField('phone')} error={errors.phone} autoComplete="tel" placeholder="+1 (555) 000-0000" hint="WhatsApp works. Your driver messages you when you land." />
               </div>
               <div style={{ marginTop: 14 }}>
                 <Disclosure summary="Add a note" detail="A child seat, extra luggage, a stop on the way, anything we should know" open={noteOpen} onToggle={() => setNoteOpen((o) => !o)}>
@@ -418,7 +422,7 @@ export default function OnePageTransfersCheckout() {
             {/* ── 3. Payment ── */}
             <div ref={payCardRef}>
               <Card className="opc-pad opc-card-pay">
-                <SectionTitle step={3} title="Payment" sub={amountCents >= 50 ? `${formatUsd(finalTotal)} today. Nothing is charged until you tap Pay.` : 'Nothing to charge today.'} />
+                <SectionTitle step={3} title="Payment" sub={amountCents >= 50 ? `${formatUsd(finalTotal)} today. Nothing is charged until you press the button below.` : 'Nothing to charge today.'} />
                 <DeferredPaymentPanel
                   amountCents={amountCents}
                   returnUrl="/transfers/confirm"
@@ -429,7 +433,7 @@ export default function OnePageTransfersCheckout() {
                   billing={{ name: contactName || undefined, email: form.email.trim() || undefined, phone: form.phone.trim() || undefined }}
                   externalError={serverError}
                   onAmountResolved={(usd) => setServerDue(usd)}
-                  footer={<Reassurance lines={['Encrypted by Stripe. Card, Apple Pay or Google Pay. We never see your card number.', 'Meet and greet at MBJ arrivals with a name sign. Flight tracked.', CANCELLATION_SUMMARY.short + '. Driver name, vehicle and plate sent before pickup.']} />}
+                  footer={<Reassurance lines={['Stripe takes the payment. We never see your card number.', CANCEL_LINE, 'Your driver meets you at arrivals with a name sign. We send their name, vehicle and plate before pickup.']} />}
                 >
                   <p style={{ marginTop: 18, fontFamily: FONT, fontSize: 13, lineHeight: 1.55, color: 'var(--text-tertiary)' }}>
                     By paying you agree to the <LinkButton onClick={() => setLegal('terms')}>Terms</LinkButton> and the <LinkButton onClick={() => setLegal('cancellation')}>Cancellation Policy</LinkButton>.
@@ -565,7 +569,7 @@ function RideSummary(p: {
           <span>Total</span><span>{formatUsd(p.finalTotal)}</span>
         </div>
         <p style={{ marginTop: 8, fontSize: 13, lineHeight: 1.5, color: 'var(--text-tertiary)', fontFamily: FONT }}>
-          All-in, nothing added at the airport. {CANCELLATION_SUMMARY.short} · <LinkButton onClick={p.openPolicy}>full policy</LinkButton>
+          All-in, nothing added at the airport. {CANCEL_LINE} <LinkButton onClick={p.openPolicy}>Read the full cancellation policy</LinkButton>
         </p>
       </div>
     </Card>

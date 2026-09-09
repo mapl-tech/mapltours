@@ -324,6 +324,13 @@ function PayForm({ amountCents, returnUrl, payLabel, validate, createIntent, onP
             layout: 'tabs',
             defaultValues: { billingDetails: { name: billing?.name || undefined, email: billing?.email || undefined, phone: billing?.phone || undefined } },
             business: { name: 'MAPL Tours Jamaica' },
+            // Link is off because it re-asks for the email and phone the guest
+            // already gave in step 2 and offers to create an account, which is
+            // roughly 400px of the wrong conversation on a first booking.
+            // Apple and Google Pay are off HERE because they are already
+            // rendered above the card form by the Express Checkout Element;
+            // leaving them on would show the same wallet twice.
+            wallets: { link: 'never', applePay: 'never', googlePay: 'never' },
           }}
         />
       </div>

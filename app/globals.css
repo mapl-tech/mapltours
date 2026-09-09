@@ -1799,9 +1799,11 @@ img[alt="Devon House Patty & Ice Cream Tour"] {
 /* Eyebrow above a section: small, letterspaced, quiet. */
 .opc-eyebrow {
   font-family: var(--font-dm-sans);
-  font-size: 11px;
+  /* 12px, not 11: an all-caps letterspaced run is already the hardest thing
+     on the page to read, and it labels the receipt. */
+  font-size: 12px;
   font-weight: 700;
-  letter-spacing: 0.14em;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--text-tertiary);
 }
@@ -1849,6 +1851,11 @@ img[alt="Devon House Patty & Ice Cream Tour"] {
 }
 .opc-sticky[data-visible="true"] { transform: translateY(0); }
 .opc-pay {
+  /* The site-wide mobile rule shrinks every .btn-primary to 48px/14.5px with
+     !important, which quietly undid the pay button's own size on the one
+     screen where it matters most. Re-stated here, scoped to this button. */
+  height: 56px !important;
+  font-size: 16px !important;
   transition: transform 0.12s ease, box-shadow 0.12s ease, filter 0.12s ease;
 }
 .opc-pay:hover:not(:disabled) { filter: brightness(1.06); box-shadow: 0 10px 26px -8px rgba(23, 22, 20, 0.42); }
