@@ -250,6 +250,11 @@ export default function OnePageTransfersCheckout() {
   const contactName = `${form.firstName.trim()} ${form.lastName.trim()}`.trim()
   const rt = tripType === 'round_trip'
   const routeLine = item ? (rt || fromAirport ? `Sangster (MBJ) → ${item.destinationName}` : `${item.destinationName} → Sangster (MBJ)`) : ''
+  const summaryFacts = ([
+    hasArrivalLeg && item?.arrivalAt && LEG_TIME_RE.test(item.arrivalAt) ? { label: 'Arrive', value: formatWallClock(item.arrivalAt) } : null,
+    hasDepartureLeg && item?.departureAt && LEG_TIME_RE.test(item.departureAt) ? { label: 'Pickup', value: formatWallClock(item.departureAt) } : null,
+    item ? { label: item.passengers === 1 ? 'Passenger' : 'Passengers', value: String(item.passengers) } : null,
+  ].filter(Boolean)) as { label: string; value: string }[]
   const derivedPickup = item?.departureAt && LEG_TIME_RE.test(item.departureAt) ? formatWallClock(item.departureAt) : ''
   // True only while the pickup is still the one we worked out from the
   // flight. The guest can move it, and the line must stop claiming otherwise.
@@ -259,10 +264,10 @@ export default function OnePageTransfersCheckout() {
     <div className="opc-wrap" style={{ minHeight: '100vh', paddingTop: 'var(--nav-h, 56px)', background: 'var(--bg-warm)' }}>
       <div style={{ borderBottom: '1px solid var(--border)', background: '#fff' }}>
         <div className="opc-topbar">
-          <Link href="/transfers" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, minHeight: 44, fontSize: 13.5, fontFamily: FONT, fontWeight: 500, color: 'var(--text-secondary)' }}>
+          <Link href="/transfers" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, minHeight: 44, fontSize: 13, fontFamily: FONT, fontWeight: 500, color: 'var(--text-secondary)' }}>
             <ArrowLeft size={15} /> Back
           </Link>
-          <h1 style={{ fontFamily: FONT, fontWeight: 700, fontSize: 17, letterSpacing: '-0.01em' }}>Checkout</h1>
+          <h1 style={{ fontFamily: FONT, fontWeight: 700, fontSize: 19, letterSpacing: '-0.01em' }}>Checkout</h1>
           <span aria-hidden />
         </div>
       </div>
@@ -277,37 +282,38 @@ export default function OnePageTransfersCheckout() {
         <div className="opc-body">
           <div className="opc-form">
             {/* ── 1. Your ride ── */}
-            <Card>
-              <div style={{ padding: '18px 18px 14px', borderBottom: '1px solid var(--border)' }}>
-                <p style={{ fontFamily: FONT, fontSize: 12, fontWeight: 700, letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--gold-text)', marginBottom: 6 }}>
+            <Card className="opc-pad">
+              <SectionTitle step={1} title="Your ride" sub="Change anything here before you pay." />
+              <div style={{ paddingBottom: 16, borderBottom: '1px solid var(--border)' }}>
+                <p style={{ fontFamily: FONT, fontSize: 13, fontWeight: 700, letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--gold-text)', marginBottom: 6 }}>
                   {item.zoneLabel} · {item.zoneDuration}
                 </p>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
-                  <p style={{ fontFamily: FONT, fontWeight: 700, fontSize: 18, lineHeight: 1.25, letterSpacing: '-0.01em' }}>
+                  <p style={{ fontFamily: FONT, fontWeight: 700, fontSize: 19, lineHeight: 1.25, letterSpacing: '-0.01em' }}>
                     {routeLine}{rt && <span style={{ fontWeight: 500, color: 'var(--text-tertiary)' }}> and back</span>}
                   </p>
-                  <p style={{ fontFamily: FONT, fontWeight: 700, fontSize: 18, flexShrink: 0 }}>{formatUsd(item.priceUsd)}</p>
+                  <p style={{ fontFamily: FONT, fontWeight: 700, fontSize: 19, flexShrink: 0 }}>{formatUsd(item.priceUsd)}</p>
                 </div>
-                <p style={{ fontFamily: FONT, fontSize: 12.5, color: 'var(--text-tertiary)', marginTop: 6, display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                <p style={{ fontFamily: FONT, fontSize: 13, color: 'var(--text-tertiary)', marginTop: 6, display: 'flex', gap: 10, flexWrap: 'wrap' }}>
                   <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}><Car size={13} /> {item.passengers <= 4 ? 'Private vehicle, one price for up to 4' : 'Private vehicle, priced per person'}</span>
                   <Link href={`/transfers?to=${item.destinationId}`} style={{ textDecoration: 'underline', textUnderlineOffset: 2, color: 'var(--text-secondary)', minHeight: 44, padding: '0 4px', display: 'inline-flex', alignItems: 'center' }}>Change hotel</Link>
                 </p>
               </div>
 
-              <div style={{ padding: '4px 18px 0' }}>
+              <div>
                 <div className="opc-row">
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
                     <Users size={18} color="var(--text-secondary)" style={{ flexShrink: 0 }} />
                     <div>
-                      <span style={{ display: 'block', fontFamily: FONT, fontSize: 14.5, fontWeight: 600 }}>Passengers</span>
-                      <span style={{ display: 'block', fontFamily: FONT, fontSize: 12.5, color: 'var(--text-tertiary)' }}>{item.passengers <= 4 ? 'Flat fare for 1 to 4' : 'Priced per person from 5'}</span>
+                      <span style={{ display: 'block', fontFamily: FONT, fontSize: 15, fontWeight: 600 }}>Passengers</span>
+                      <span style={{ display: 'block', fontFamily: FONT, fontSize: 13, color: 'var(--text-tertiary)' }}>{item.passengers <= 4 ? 'Flat fare for 1 to 4' : 'Priced per person from 5'}</span>
                     </div>
                   </div>
                   <Stepper value={item.passengers} min={1} max={MAX_TRANSFER_PASSENGERS} onChange={(n) => reviseItem(item.id, { passengers: n })} label="Passengers" />
                 </div>
 
                 <div className="opc-row" style={{ alignItems: 'stretch', flexDirection: 'column', gap: 10 }}>
-                  <span style={{ fontFamily: FONT, fontSize: 14.5, fontWeight: 600 }}>Trip</span>
+                  <span style={{ fontFamily: FONT, fontSize: 15, fontWeight: 600 }}>Trip</span>
                   <div role="group" aria-label="Trip type" style={{ display: 'flex', gap: 8 }}>
                     {([
                       { v: 'round_trip' as const, label: 'Round trip', note: `Both ways · ${Math.round(ROUND_TRIP_DISCOUNT * 100)}% off` },
@@ -317,8 +323,8 @@ export default function OnePageTransfersCheckout() {
                       return (
                         <button key={o.v} type="button" aria-pressed={active} onClick={() => reviseItem(item.id, { tripType: o.v })}
                           style={{ flex: 1, minHeight: 52, padding: '8px 12px', borderRadius: 'var(--r-md)', border: active ? '2px solid var(--accent)' : '1px solid var(--border-strong)', background: active ? 'var(--surface)' : '#fff', cursor: 'pointer', textAlign: 'left', fontFamily: FONT }}>
-                          <span style={{ display: 'block', fontSize: 14, fontWeight: 700 }}>{o.label}</span>
-                          <span style={{ display: 'block', fontSize: 12, color: 'var(--text-tertiary)' }}>{o.note}</span>
+                          <span style={{ display: 'block', fontSize: 15, fontWeight: 700 }}>{o.label}</span>
+                          <span style={{ display: 'block', fontSize: 13, color: 'var(--text-tertiary)' }}>{o.note}</span>
                         </button>
                       )
                     })}
@@ -336,8 +342,8 @@ export default function OnePageTransfersCheckout() {
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
                     <div style={{ width: 28, height: 28, borderRadius: 8, background: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}><Plane size={14} color="#fff" /></div>
                     <div>
-                      <p style={{ fontFamily: FONT, fontWeight: 700, fontSize: 14.5 }}>Your flights</p>
-                      <p style={{ fontFamily: FONT, fontSize: 12.5, color: 'var(--text-tertiary)' }}>We track them, so a late flight never leaves you waiting.</p>
+                      <p style={{ fontFamily: FONT, fontWeight: 700, fontSize: 15 }}>Your flights</p>
+                      <p style={{ fontFamily: FONT, fontSize: 13, color: 'var(--text-tertiary)' }}>We track them, so a late flight never leaves you waiting.</p>
                     </div>
                   </div>
 
@@ -349,7 +355,7 @@ export default function OnePageTransfersCheckout() {
                           <TextField id="xfer-arrival-at" fieldKey="arrivalAt" label="Flight lands" type="datetime-local" min={minDateTime} value={item.arrivalAt ?? ''} onChange={(v) => setLeg({ arrivalAt: v }, 'arrivalAt')} error={errors.arrivalAt} hint="Jamaica time, from your ticket" />
                           <TextField id="xfer-arrival-flight" fieldKey="arrivalFlight" label="Arrival flight" value={item.arrivalFlight ?? ''} onChange={(v) => setLeg({ arrivalFlight: v }, 'arrivalFlight')} error={errors.arrivalFlight} placeholder="e.g. AA1234" autoComplete="off" autoCapitalize="characters" />
                         </div>
-                        <p style={{ fontFamily: FONT, fontSize: 12.5, color: 'var(--text-tertiary)', lineHeight: 1.5 }}>Your driver meets you at arrivals with a name sign, after customs and bags.</p>
+                        <p style={{ fontFamily: FONT, fontSize: 13, color: 'var(--text-tertiary)', lineHeight: 1.5 }}>Your driver meets you at arrivals with a name sign, after customs and bags.</p>
                       </div>
                     )}
 
@@ -363,7 +369,10 @@ export default function OnePageTransfersCheckout() {
                         {derivedPickup ? (
                           <div style={{ fontFamily: FONT, fontSize: 13, lineHeight: 1.5, color: 'var(--text-secondary)' }}>
                             <span style={{ fontWeight: 700, color: 'var(--text-primary)' }}>Hotel pickup {derivedPickup}</span>{standardLead ? `, ${PICKUP_LEAD_TEXT} before your flight.` : ', the time you chose.'}{' '}
-                            <LinkButton onClick={() => setAdjustPickup((a) => !a)}>{adjustPickup ? 'Done' : 'Adjust'}</LinkButton>
+                            <button type="button" onClick={() => setAdjustPickup((a) => !a)}
+                              style={{ background: 'none', border: 'none', padding: '6px 8px', margin: '0 -8px', minHeight: 32, font: 'inherit', color: 'inherit', cursor: 'pointer', textDecoration: 'underline', textUnderlineOffset: 2 }}>
+                              {adjustPickup ? 'Done' : 'Adjust'}
+                            </button>
                             {adjustPickup && (
                               <div style={{ marginTop: 10, maxWidth: 300 }}>
                                 <TextField id="xfer-departure-at" label="Pickup time at the hotel" type="datetime-local" min={hasArrivalLeg && item.arrivalAt ? item.arrivalAt : minDateTime} value={item.departureAt ?? ''} onChange={(v) => setLeg({ departureAt: v }, 'departureAt')} hint="Earlier is safer than later on departure day." />
@@ -371,7 +380,7 @@ export default function OnePageTransfersCheckout() {
                             )}
                           </div>
                         ) : (
-                          <p style={{ fontFamily: FONT, fontSize: 12.5, color: 'var(--text-tertiary)', lineHeight: 1.5 }}>We set your hotel pickup {PICKUP_LEAD_TEXT} before the flight, and confirm it by email.</p>
+                          <p style={{ fontFamily: FONT, fontSize: 13, color: 'var(--text-tertiary)', lineHeight: 1.5 }}>We set your hotel pickup {PICKUP_LEAD_TEXT} before the flight, and confirm it by email.</p>
                         )}
                       </div>
                     )}
@@ -381,8 +390,8 @@ export default function OnePageTransfersCheckout() {
             </Card>
 
             {/* ── 2. Your details ── */}
-            <Card style={{ padding: '20px 18px 8px' }}>
-              <SectionTitle title="Your details" sub="For your confirmation, and so your driver can reach you at the airport." />
+            <Card className="opc-pad">
+              <SectionTitle step={2} title="Your details" sub="For your confirmation, and so your driver can reach you at the airport." />
               <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
                 <div className="opc-grid-2">
                   <TextField id="xfer-first" fieldKey="firstName" label="First name" value={form.firstName} onChange={setField('firstName')} error={errors.firstName} autoComplete="given-name" placeholder="First name" />
@@ -403,13 +412,13 @@ export default function OnePageTransfersCheckout() {
 
             <div className="opc-mobile-only">
               <RideSummary item={item} formatUsd={formatUsd} giftCard={giftCard} giftPreview={giftPreview} giftCodeInput={giftCodeInput} setGiftCodeInput={setGiftCodeInput} giftChecking={giftChecking} giftError={giftError} applyGiftCode={applyGiftCode}
-                removeGift={() => { setGiftCard(null); setGiftCodeInput(''); setGiftError(null) }} finalTotal={finalTotal} openPolicy={() => setLegal('cancellation')} />
+                removeGift={() => { setGiftCard(null); setGiftCodeInput(''); setGiftError(null) }} finalTotal={finalTotal} openPolicy={() => setLegal('cancellation')} facts={summaryFacts} />
             </div>
 
             {/* ── 3. Payment ── */}
             <div ref={payCardRef}>
-              <Card style={{ padding: '20px 18px 22px' }}>
-                <SectionTitle title="Payment" sub={amountCents >= 50 ? `${formatUsd(finalTotal)} today. Nothing is charged until you tap Pay.` : 'Nothing to charge today.'} />
+              <Card className="opc-pad opc-card-pay">
+                <SectionTitle step={3} title="Payment" sub={amountCents >= 50 ? `${formatUsd(finalTotal)} today. Nothing is charged until you tap Pay.` : 'Nothing to charge today.'} />
                 <DeferredPaymentPanel
                   amountCents={amountCents}
                   returnUrl="/transfers/confirm"
@@ -432,7 +441,7 @@ export default function OnePageTransfersCheckout() {
 
           <aside className="opc-rail" aria-label="Order summary">
             <RideSummary item={item} formatUsd={formatUsd} giftCard={giftCard} giftPreview={giftPreview} giftCodeInput={giftCodeInput} setGiftCodeInput={setGiftCodeInput} giftChecking={giftChecking} giftError={giftError} applyGiftCode={applyGiftCode}
-              removeGift={() => { setGiftCard(null); setGiftCodeInput(''); setGiftError(null) }} finalTotal={finalTotal} openPolicy={() => setLegal('cancellation')} />
+              removeGift={() => { setGiftCard(null); setGiftCodeInput(''); setGiftError(null) }} finalTotal={finalTotal} openPolicy={() => setLegal('cancellation')} facts={summaryFacts} />
           </aside>
         </div>
       )}
@@ -441,7 +450,7 @@ export default function OnePageTransfersCheckout() {
         <div className="opc-sticky" data-visible={!payInView} aria-hidden={payInView}>
           <div>
             <span className="opc-sticky-label">Total</span>
-            <span className="opc-sticky-total">{formatUsd(finalTotal)}</span>
+            <span className="opc-sticky-total opc-num">{formatUsd(finalTotal)}</span>
           </div>
           <button type="button" className="btn-primary" tabIndex={payInView ? -1 : 0}
             onClick={() => { if (!validate()) return; payCardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }) }}>
@@ -454,7 +463,7 @@ export default function OnePageTransfersCheckout() {
       {legal === 'cancellation' && <LegalModal kind="terms" answer="cancellation" onClose={() => setLegal(null)} />}
       {/* removeItem stays reachable for a guest who changes their mind entirely. */}
       {hydrated && item && (
-        <p style={{ textAlign: 'center', padding: '0 16px 24px', fontFamily: FONT, fontSize: 12.5, color: 'var(--text-tertiary)' }}>
+        <p style={{ textAlign: 'center', padding: '0 16px 24px', fontFamily: FONT, fontSize: 13, color: 'var(--text-tertiary)' }}>
           Not this ride? <button type="button" onClick={() => removeItem(item.id)} style={{ background: 'none', border: 'none', padding: '12px 4px', font: 'inherit', color: 'inherit', textDecoration: 'underline', cursor: 'pointer', minHeight: 44, display: 'inline-flex', alignItems: 'center' }}>Remove it</button> and start again.
         </p>
       )}
@@ -486,8 +495,8 @@ function EmptyRide() {
         <Car size={24} color="var(--text-tertiary)" />
       </div>
       <h2 style={{ fontSize: 20, fontFamily: FONT, fontWeight: 700, marginBottom: 8 }}>No ride in your cart yet</h2>
-      <p style={{ fontSize: 14, color: 'var(--text-tertiary)', fontFamily: FONT, marginBottom: 24, maxWidth: 320 }}>Pick your hotel on the transfers page and the fare lands here, ready to book. 🇯🇲</p>
-      <Link href="/transfers" className="btn-primary" style={{ height: 46, padding: '0 28px', fontSize: 14, display: 'inline-flex', alignItems: 'center' }}>Get a fare</Link>
+      <p style={{ fontSize: 15, color: 'var(--text-tertiary)', fontFamily: FONT, marginBottom: 24, maxWidth: 320 }}>Pick your hotel on the transfers page and the fare lands here, ready to book. 🇯🇲</p>
+      <Link href="/transfers" className="btn-primary" style={{ height: 46, padding: '0 28px', fontSize: 15, display: 'inline-flex', alignItems: 'center' }}>Get a fare</Link>
     </div>
   )
 }
@@ -505,26 +514,36 @@ function RideSummary(p: {
   removeGift: () => void
   finalTotal: number
   openPolicy: () => void
+  facts: { label: string; value: string }[]
 }) {
   const { item, formatUsd } = p
   const [giftOpen, setGiftOpen] = useState(false)
   const rt = item.tripType === 'round_trip'
   return (
     <Card>
-      <div style={{ padding: '16px 18px 12px' }}>
-        <h2 style={{ fontFamily: FONT, fontWeight: 700, fontSize: 16, letterSpacing: '-0.01em' }}>Order Summary</h2>
-        <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, padding: '12px 0 0', fontFamily: FONT }}>
-          <div style={{ minWidth: 0 }}>
-            <p style={{ fontSize: 13.5, fontWeight: 600 }}>{rt ? 'Round trip' : 'One way'}, {item.destinationName}</p>
-            <p style={{ fontSize: 12.5, color: 'var(--text-tertiary)', marginTop: 2 }}>{item.passengers} passenger{item.passengers === 1 ? '' : 's'} · private vehicle{rt ? ` · ${Math.round(ROUND_TRIP_DISCOUNT * 100)}% round-trip saving included` : ''}</p>
-          </div>
-          <span style={{ fontSize: 13.5, fontWeight: 700, flexShrink: 0 }}>{formatUsd(item.priceUsd)}</span>
-        </div>
+      <div className="opc-pad-x" style={{ paddingTop: 20, paddingBottom: 14 }}>
+        <h2 className="opc-eyebrow" style={{ marginBottom: 10 }}>Order Summary</h2>
+        <p style={{ fontFamily: FONT, fontWeight: 700, fontSize: 15, lineHeight: 1.3, letterSpacing: '-0.01em', marginBottom: 4 }}>
+          {rt ? 'Round trip' : 'One way'}, {item.destinationName}
+        </p>
+        {p.facts.length > 0 && (
+          <ul style={{ listStyle: 'none', margin: '10px 0 0', padding: 0, display: 'flex', flexDirection: 'column', gap: 6 }}>
+            {p.facts.map((f) => (
+              <li key={f.label} style={{ display: 'flex', justifyContent: 'space-between', gap: 12, fontFamily: FONT, fontSize: 13, color: 'var(--text-tertiary)' }}>
+                <span>{f.label}</span>
+                <span style={{ color: 'var(--text-primary)', fontWeight: 600, textAlign: 'right', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{f.value}</span>
+              </li>
+            ))}
+          </ul>
+        )}
+        <p style={{ fontFamily: FONT, fontSize: 13, color: 'var(--text-tertiary)', lineHeight: 1.5 }}>
+          Private vehicle{rt ? `, ${Math.round(ROUND_TRIP_DISCOUNT * 100)}% round-trip saving included` : ''}
+        </p>
       </div>
-      <div style={{ padding: '10px 18px 16px', background: 'var(--bg-warm)', borderTop: '1px solid var(--border)', borderRadius: '0 0 var(--r-xl) var(--r-xl)' }}>
+      <div className="opc-pad-x" style={{ paddingTop: 12, paddingBottom: 18, background: 'var(--bg-warm)', borderTop: '1px solid var(--border)', borderRadius: '0 0 var(--r-xl) var(--r-xl)' }}>
         {p.giftCard ? (
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 13.5, fontFamily: FONT, fontWeight: 600, color: 'var(--emerald)' }}>
-            <span>Gift card {p.giftCard.code} <button type="button" onClick={p.removeGift} style={{ marginLeft: 8, background: 'none', border: 'none', padding: 0, fontSize: 12, color: 'var(--text-tertiary)', cursor: 'pointer', textDecoration: 'underline', fontFamily: 'inherit', minHeight: 24 }}>remove</button></span>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 13, fontFamily: FONT, fontWeight: 600, color: 'var(--emerald)' }}>
+            <span>Gift card {p.giftCard.code} <button type="button" onClick={p.removeGift} style={{ marginLeft: 8, background: 'none', border: 'none', padding: 0, fontSize: 13, color: 'var(--text-tertiary)', cursor: 'pointer', textDecoration: 'underline', fontFamily: 'inherit', minHeight: 24 }}>remove</button></span>
             <span>−{formatUsd(p.giftPreview)}</span>
           </div>
         ) : giftOpen ? (
@@ -535,17 +554,17 @@ function RideSummary(p: {
                 {p.giftChecking ? 'Checking…' : 'Apply'}
               </button>
             </div>
-            {p.giftError && <p role="alert" style={{ marginTop: 6, fontSize: 12.5, color: '#b00020', fontFamily: FONT }}>{p.giftError}</p>}
+            {p.giftError && <p role="alert" style={{ marginTop: 6, fontSize: 13, color: '#b00020', fontFamily: FONT }}>{p.giftError}</p>}
           </div>
         ) : (
           <button type="button" onClick={() => setGiftOpen(true)} style={{ background: 'none', border: 'none', padding: '10px 0', minHeight: 44, display: 'inline-flex', alignItems: 'center', fontFamily: FONT, fontSize: 13, color: 'var(--text-secondary)', textDecoration: 'underline', textUnderlineOffset: 3, cursor: 'pointer' }}>
             Have a gift card?
           </button>
         )}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', fontFamily: FONT, fontWeight: 700, fontSize: 20, marginTop: 8, paddingTop: 12, borderTop: '1px solid var(--border)' }}>
+        <div className="opc-num" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', fontFamily: FONT, fontWeight: 700, fontSize: 20, marginTop: 10, paddingTop: 14, borderTop: '1px solid var(--border)' }}>
           <span>Total</span><span>{formatUsd(p.finalTotal)}</span>
         </div>
-        <p style={{ marginTop: 8, fontSize: 12.5, lineHeight: 1.5, color: 'var(--text-tertiary)', fontFamily: FONT }}>
+        <p style={{ marginTop: 8, fontSize: 13, lineHeight: 1.5, color: 'var(--text-tertiary)', fontFamily: FONT }}>
           All-in, nothing added at the airport. {CANCELLATION_SUMMARY.short} · <LinkButton onClick={p.openPolicy}>full policy</LinkButton>
         </p>
       </div>

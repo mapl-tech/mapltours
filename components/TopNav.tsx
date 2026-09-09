@@ -126,13 +126,13 @@ export default function TopNav({ onCartClick }: { onCartClick?: () => void }) {
           borderBottom: '1px solid var(--border)',
         }}
       >
-        {/* maxWidth matches the checkout body (both CheckoutView and
-            TransfersCheckoutView constrain to 1100), so the logo and the
-            secure-checkout marker sit on the same left and right edges as the
-            Back link, the title and the step indicator below them. The bare
-            .container is 1832px, which pushed both to the viewport edges and
-            left the header visibly unrelated to the page under it. */}
-        <div className="container" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', gap: 16, maxWidth: 1100, paddingLeft: 16, paddingRight: 16 }}>
+        {/* .opc-shell is the single source of the checkout's width and
+            gutters, shared with the page title bar and the body below, so the
+            logo sits on exactly the same left edge as the first card and the
+            secure marker on the same right edge as the summary. Using
+            .container with its own responsive padding, or any hand-set pad,
+            drifts from the body the moment either changes. */}
+        <div className="opc-shell" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}>
           <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0, minHeight: 44 }}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/mapl-logo.svg" alt="MAPL Tours Jamaica" width={160} height={38} style={{ height: 38, width: 'auto', display: 'block' }} />

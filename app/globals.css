@@ -1751,6 +1751,13 @@ img[alt="Devon House Patty & Ice Cream Tour"] {
    that shows only while the payment card is off screen. From 900px the
    form takes the left column and the summary becomes a sticky rail.
    ═══════════════════════════════════════════════════════════════════════ */
+.opc-shell {
+  width: 100%;
+  max-width: 1100px;
+  margin: 0 auto;
+  padding-left: 16px;
+  padding-right: 16px;
+}
 .opc-topbar {
   display: grid;
   grid-template-columns: 1fr auto 1fr;
@@ -1771,6 +1778,39 @@ img[alt="Devon House Patty & Ice Cream Tour"] {
   padding: 16px 16px calc(96px + env(safe-area-inset-bottom));
 }
 .opc-form { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+@media (min-width: 900px) { .opc-form { gap: 20px; } }
+
+/* Cards. A hairline plus one soft, low shadow reads as a raised surface;
+   a 1px grey box reads as a table cell. The shadow is almost entirely
+   downward and heavily blurred, so it never announces itself. */
+.opc-card {
+  background: #fff;
+  border: 1px solid rgba(23, 22, 20, 0.07);
+  border-radius: 18px;
+  box-shadow: 0 1px 2px rgba(23, 22, 20, 0.03), 0 12px 28px -18px rgba(23, 22, 20, 0.18);
+}
+/* The payment card carries the decision, so it sits one step above the rest. */
+.opc-card-pay { box-shadow: 0 1px 2px rgba(23, 22, 20, 0.04), 0 20px 44px -24px rgba(23, 22, 20, 0.28); }
+
+/* Every figure that is part of the charge, in tabular figures so the digits
+   line up down the column the way a receipt's do. */
+.opc-num { font-variant-numeric: tabular-nums; font-feature-settings: 'tnum' 1; }
+
+/* Eyebrow above a section: small, letterspaced, quiet. */
+.opc-eyebrow {
+  font-family: var(--font-dm-sans);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+}
+/* One place to tune the cards' inner space. It was 18px inside a 32px page
+   gutter, so the content sat tighter than the page around it. */
+.opc-pad { padding: 20px; }
+@media (min-width: 900px) { .opc-pad { padding: 24px; } }
+.opc-pad-x { padding-left: 20px; padding-right: 20px; }
+@media (min-width: 900px) { .opc-pad-x { padding-left: 24px; padding-right: 24px; } }
 .opc-rail { display: none; }
 .opc-row {
   display: flex;
@@ -1808,14 +1848,24 @@ img[alt="Devon House Patty & Ice Cream Tour"] {
   transition: transform 0.2s ease-out;
 }
 .opc-sticky[data-visible="true"] { transform: translateY(0); }
+.opc-pay {
+  transition: transform 0.12s ease, box-shadow 0.12s ease, filter 0.12s ease;
+}
+.opc-pay:hover:not(:disabled) { filter: brightness(1.06); box-shadow: 0 10px 26px -8px rgba(23, 22, 20, 0.42); }
+.opc-pay:active:not(:disabled) { transform: translateY(1px); box-shadow: 0 4px 12px -6px rgba(23, 22, 20, 0.4); }
+@media (prefers-reduced-motion: reduce) { .opc-pay { transition: none; } .opc-pay:active:not(:disabled) { transform: none; } }
 .opc-sticky .btn-primary { height: 48px; padding: 0 22px; font-size: 14px; white-space: nowrap; }
 .opc-sticky-label { display: block; font-family: var(--font-dm-sans); font-size: 12px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-tertiary); }
 .opc-sticky-total { display: block; font-family: var(--font-dm-sans); font-size: 18px; font-weight: 700; color: var(--text-primary); }
 @media (prefers-reduced-motion: reduce) { .opc-sticky { transition: none; } }
 
 @media (min-width: 900px) {
-  .opc-topbar { padding: 10px 48px; }
-  .opc-body { flex-direction: row; align-items: flex-start; gap: 40px; padding: 40px 48px 80px; }
+  .opc-shell { padding-left: 32px; padding-right: 32px; }
+  .opc-topbar { padding: 10px 32px; }
+  /* space-between pins BOTH columns to the shell's edges. With flex-start the
+     640px form and the 340px rail left 24px of slack sitting after the rail,
+     so the summary's right edge no longer lined up with the header's. */
+  .opc-body { flex-direction: row; align-items: flex-start; justify-content: space-between; gap: 32px; padding: 32px 32px 80px; }
   .opc-form { flex: 1; max-width: 640px; gap: 20px; }
   .opc-rail { display: block; width: 340px; flex-shrink: 0; position: sticky; top: calc(var(--nav-h, 72px) + 24px); }
   .opc-mobile-only { display: none; }

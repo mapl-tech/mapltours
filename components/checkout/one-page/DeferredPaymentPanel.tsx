@@ -122,7 +122,7 @@ function ErrorBox({ message }: { message: string }) {
     <div role="alert" style={{
       marginTop: 12, padding: '12px 14px', borderRadius: 'var(--r-md)',
       background: 'rgba(176,0,32,0.05)', border: '1px solid rgba(176,0,32,0.18)',
-      fontSize: 13.5, lineHeight: 1.45, color: '#b00020', fontFamily: 'var(--font-dm-sans)',
+      fontSize: 13, lineHeight: 1.45, color: '#b00020', fontFamily: 'var(--font-dm-sans)',
       display: 'flex', alignItems: 'flex-start', gap: 8,
     }}>
       <span aria-hidden style={{ flexShrink: 0 }}>&#9888;</span>
@@ -135,11 +135,11 @@ function PayButton({ label, busy, disabled, onClick }: { label: string; busy: bo
   return (
     <button
       type="button"
-      className="btn-primary"
+      className="btn-primary opc-pay opc-num"
       onClick={onClick}
       disabled={disabled || busy}
       data-checkout-cta
-      style={{ width: '100%', height: 54, fontSize: 16, fontWeight: 700, marginTop: 16, opacity: busy ? 0.7 : 1, cursor: busy ? 'progress' : 'pointer', boxShadow: busy ? 'none' : '0 6px 18px rgba(23,22,20,0.16)' }}
+      style={{ width: '100%', height: 56, fontSize: 16, fontWeight: 700, marginTop: 18, letterSpacing: '-0.01em', opacity: busy ? 0.7 : 1, cursor: busy ? 'progress' : 'pointer', boxShadow: busy ? 'none' : '0 6px 18px -6px rgba(23,22,20,0.35)' }}
     >
       {busy ? (
         <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
@@ -177,7 +177,7 @@ function NothingToCharge({ payLabel, validate, createIntent, onPaid, registerPay
   const shown = error ?? externalError ?? null
   return (
     <div>
-      <p style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 14, color: 'var(--text-secondary)', lineHeight: 1.55 }}>
+      <p style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 15, color: 'var(--text-secondary)', lineHeight: 1.55 }}>
         Your gift card covers this booking in full. No card is needed.
       </p>
       {children}
@@ -305,7 +305,7 @@ function PayForm({ amountCents, returnUrl, payLabel, validate, createIntent, onP
             paymentMethods: { link: 'never', paypal: 'never', amazonPay: 'never', klarna: 'never' },
           }}
         />
-        <div aria-hidden style={{ display: 'flex', alignItems: 'center', gap: 12, margin: '14px 0 2px', color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-sans)', fontSize: 12.5 }}>
+        <div aria-hidden style={{ display: 'flex', alignItems: 'center', gap: 12, margin: '14px 0 2px', color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-sans)', fontSize: 13 }}>
           <span style={{ flex: 1, height: 1, background: 'var(--border)' }} />
           or pay by card
           <span style={{ flex: 1, height: 1, background: 'var(--border)' }} />
@@ -314,7 +314,7 @@ function PayForm({ amountCents, returnUrl, payLabel, validate, createIntent, onP
 
       <div style={{ minHeight: cardReady ? undefined : 180, position: 'relative' }}>
         {!cardReady && (
-          <p aria-live="polite" style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--font-dm-sans)', fontSize: 13.5, color: 'var(--text-tertiary)' }}>
+          <p aria-live="polite" style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--font-dm-sans)', fontSize: 13, color: 'var(--text-tertiary)' }}>
             Loading secure card form…
           </p>
         )}
