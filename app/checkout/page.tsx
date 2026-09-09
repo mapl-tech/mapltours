@@ -1,5 +1,5 @@
-import CheckoutView from '@/components/checkout/CheckoutView'
+import OnePageCheckout from '@/components/checkout/one-page/OnePageCheckout'
 
 export default function CheckoutPage() {
-  return <CheckoutView />
+  return <OnePageCheckout />
 }

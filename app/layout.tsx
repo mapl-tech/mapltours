@@ -245,8 +245,8 @@ export default function RootLayout({
         <StyledJsxRegistry>
           <LayoutShell>{children}</LayoutShell>
         </StyledJsxRegistry>
-        <Script src="https://www.googletagmanager.com/gtag/js?id=G-2JVWPL4GBE" strategy="lazyOnload" />
-        <Script id="gtag-init" strategy="lazyOnload">
+        <Script src="https://www.googletagmanager.com/gtag/js?id=G-2JVWPL4GBE" strategy="afterInteractive" />
+        <Script id="gtag-init" strategy="afterInteractive">
           {`window.dataLayer = window.dataLayer || [];
 function gtag(){dataLayer.push(arguments);}
 gtag('js', new Date());

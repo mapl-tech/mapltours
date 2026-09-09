@@ -8,7 +8,7 @@ import { priceUnitLabel } from '@/lib/experiences'
 import { useCartStore } from '@/lib/cart'
 import { fitCandidateStop, MAX_STOP_GAP_MIN } from '@/lib/day-route'
 import { useHydrated } from '@/lib/use-hydrated'
-import { CULTURE_IMAGE, HERO_VIDEO } from '@/lib/images'
+import { CULTURE_IMAGE, HERO_VIDEO, HERO_VIDEO_540, HERO_VIDEO_720, HERO_VIDEO_1080 } from '@/lib/images'
 import ExpCard from './ExpCard'
 import MobileShort from './MobileShort'
 import Footer from './Footer'
@@ -32,9 +32,24 @@ function HeroVideo({ src, poster }: { src: string; poster: string }) {
     if (conn?.saveData || conn?.effectiveType === '2g' || conn?.effectiveType === 'slow-2g') {
       return
     }
-    const timer = setTimeout(() => setShouldLoad(true), 1000)
-    return () => clearTimeout(timer)
+    // After the page has finished loading (fonts, poster, scripts), then a
+    // beat later. The old 1-second timer fired while the poster and the
+    // checkout bundles were still downloading, and the 22 MB source pushed
+    // a slow-4G load to 7.5 seconds. The loop is now sized for the screen.
+    let timer: ReturnType<typeof setTimeout> | undefined
+    const start = () => { timer = setTimeout(() => setShouldLoad(true), 800) }
+    if (document.readyState === 'complete') start()
+    else window.addEventListener('load', start, { once: true })
+    return () => { window.removeEventListener('load', start); if (timer) clearTimeout(timer) }
   }, [])
+
+  // One file per screen size. A phone shows a cover-cropped slice of the
+  // frame, so 540p there looks like 1080p did while costing a fraction of it.
+  const [chosenSrc, setChosenSrc] = useState(src)
+  useEffect(() => {
+    const w = window.innerWidth * Math.min(window.devicePixelRatio || 1, 2)
+    setChosenSrc(w <= 900 ? HERO_VIDEO_540 : w <= 1600 ? HERO_VIDEO_720 : HERO_VIDEO_1080)
+  }, [src])
 
   useEffect(() => {
     if (!shouldLoad || !videoRef.current) return
@@ -69,7 +84,7 @@ function HeroVideo({ src, poster }: { src: string; poster: string }) {
         <video
           ref={videoRef}
           muted loop playsInline
-          preload="auto"
+          preload="none"
           style={{
             position: 'absolute', inset: 0,
             width: '100%', height: '100%',
@@ -78,7 +93,7 @@ function HeroVideo({ src, poster }: { src: string; poster: string }) {
             transition: 'opacity 1.2s ease',
           }}
         >
-          <source src={src} type="video/mp4" />
+          <source src={chosenSrc} type="video/mp4" />
         </video>
       )}
     </>

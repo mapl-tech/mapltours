@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import TransfersCheckoutView from '@/components/transfers/TransfersCheckoutView'
+import OnePageTransfersCheckout from '@/components/transfers/one-page/OnePageTransfersCheckout'
 
 export const metadata: Metadata = {
   title: 'Airport Transfer Checkout',
@@ -8,5 +8,5 @@ export const metadata: Metadata = {
 }
 
 export default function TransfersCheckoutPage() {
-  return <TransfersCheckoutView />
+  return <OnePageTransfersCheckout />
 }

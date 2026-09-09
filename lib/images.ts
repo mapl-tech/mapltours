@@ -13,6 +13,10 @@ export const HERO = '/media/img/14788935-hero.jpg'
 // Replaced Pexels 35684532 (/hero-video.mp4), a hazy roadside shot that read
 // flat and grey behind the headline.
 export const HERO_VIDEO = '/hero-negril-jamaica.mp4'
+/** 12-second loops of the same footage, one per screen size (see FeedView.HeroVideo). */
+export const HERO_VIDEO_540 = '/hero-negril-jamaica-540.mp4'
+export const HERO_VIDEO_720 = '/hero-negril-jamaica-720.mp4'
+export const HERO_VIDEO_1080 = '/hero-negril-jamaica-1080.mp4'
 
 // All destinations, confirmed Jamaica locations
 export const DESTINATIONS: Record<string, string> = {

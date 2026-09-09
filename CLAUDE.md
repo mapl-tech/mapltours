@@ -333,6 +333,18 @@ Layers (bottom to top):
 
 **ConfirmedView**: "Booking Confirmed!" (Syne 800), body copy ending "No problem.", summary card with all items + dates + travelers + total paid, "Explore More Experiences +" button -> `clearCart()` + redirect to `/`.
 
+### One-page checkout (Sept 2026, REAL payments)
+
+`app/checkout` and `app/transfers/checkout` now render `components/checkout/one-page/OnePageCheckout.tsx` and `components/transfers/one-page/OnePageTransfersCheckout.tsx`. The two-step views above are no longer mounted. Shape, top to bottom: the trip or ride (editable), the guest's details, payment with the terms line and one pay button. Shared pieces live in `components/checkout/one-page/` (`DeferredPaymentPanel`, `fields`, `useHydrated`) and the pure form rules in `lib/checkout-form.ts` (tested in `tests/unit/checkout-form.spec.ts`).
+
+Rules, enforced in code:
+- **The server contract is unchanged.** Both pages POST the same bodies to `/api/checkout` and `/api/transfers/checkout` as the old views did; the server still prices the cart, owns the pending row, mints and reuses the PaymentIntent, and the webhook still flips paid. The only client-side novelty is Stripe's deferred-intent flow: the Payment Element and Apple/Google Pay mount with `{ mode: 'payment', amount, currency }` before any intent exists; on Pay we run our validation, `elements.submit()`, create or reuse the intent, `elements.update({ amount })` to the server's `amountDue`, then `confirmPayment`. Do not pass `paymentMethodTypes` to Elements: the server mints intents with automatic payment methods and Stripe refuses to confirm across the two configurations.
+- **Save early.** Once the details are complete (contact, place, date; legs for transfers) the page quietly creates the pending booking after 2.5 s, so an abandoned checkout is visible in the admin and to the recovery email. The same order key means the Pay tap reuses that intent instead of POSTing again. A server refusal that only says "accept the waiver" is ignored at this stage (the waiver is ticked at Pay).
+- **Never "Your itinerary is empty" before the cart has loaded.** `useHydrated` renders a loading card until zustand persist reports hydration; it is false on the server and on the first client render so SSR and hydration always agree (`store.persist` does not exist without localStorage).
+- **Fewer decisions.** No pickup-time field on tours (the operator sets it; the page says so), no country field (Stripe reads it from the card), the note and the day builder are collapsed. Transfers ask for the time the flight home DEPARTS and derive the hotel pickup from `MIN_PICKUP_LEAD_MIN`; the guest can adjust it. Flight numbers stay required for every leg the ride has because the server requires them.
+- **Mobile.** 16px inputs (no iOS zoom), 44px targets on every standalone control, the order summary inline before payment, and a bottom bar with the total that shows only while the payment card is off screen. From 900px the summary is a sticky rail.
+- **Testing.** Walk it on the dev server (`:3100`) with an `@example.com` email; a test card on the live key produces a clean decline and proves the intent path without charging. Remove the rows you created (and cancel their PaymentIntents) afterwards. Never complete the details form on production: that creates a live pending row and intent.
+
 ### ProfileView
 - Hero banner: Jamaica-green gradient, avatar (80px, gold gradient circle), name "Alex Wanderlust", "Toronto - Member since 2024"
 - Stats row: Trips (3), Parishes (4), Experiences Saved — Syne gold numbers
