@@ -208,6 +208,18 @@ export async function POST(request: NextRequest) {
       special_requests: c.specialRequests ? c.specialRequests.slice(0, 2000) : null,
     } as const
 
+
+    // The confirmation and the operator dispatch both ride on this address; a
+    // direct POST with a blank or junk email produced a PAID booking whose
+    // confirmation could never be sent. The client form validates too, but
+    // this is the boundary that actually holds.
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customerFields.email)) {
+      return NextResponse.json(
+        { error: 'A valid email address is required, your confirmation is sent there.', requestId: reqId },
+        { status: 400 },
+      )
+    }
+
     const monetaryFields = {
       total_paid: pricing.total,
       subtotal: pricing.subtotal,

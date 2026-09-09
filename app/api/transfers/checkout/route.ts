@@ -165,6 +165,30 @@ export async function POST(request: NextRequest) {
           { status: 400 },
         )
       }
+      // A leg the STATED direction says does not exist must not arrive on the
+      // wire at all. The leg columns are persisted verbatim and every
+      // downstream consumer (dispatch, the day-of email, the driver board)
+      // reads "timestamp set" as "leg exists", so a one-way payload carrying
+      // the other leg's timestamp and flight booked a phantom second ride:
+      // two legs dispatched and day-of emailed, one priced and paid. Refuse
+      // rather than silently strip; the client never produces this shape, so
+      // it is a stale or crafted payload and should learn so.
+      if (item.tripType === 'one_way' && item.fromAirport !== undefined) {
+        const present = (v?: string | null) => (v ?? '').trim().length > 0
+        if (item.fromAirport === false && (present(item.arrivalAt) || present(item.arrivalFlight))) {
+          return NextResponse.json(
+            { error: 'This one-way transfer runs to the airport, so it has no arrival pickup. Remove the arrival details or book a round trip.', requestId: reqId },
+            { status: 400 },
+          )
+        }
+        if (item.fromAirport === true && (present(item.departureAt) || present(item.departureFlight))) {
+          return NextResponse.json(
+            { error: 'This one-way transfer runs from the airport, so it has no ride back. Remove the departure details or book a round trip.', requestId: reqId },
+            { status: 400 },
+          )
+        }
+      }
+
       // Flight numbers are REQUIRED for every leg the booking has: the
       // flight tracker, the day-of email's promises, and the driver's
       // timing all depend on them. Deliberately permissive shape check
@@ -310,6 +334,18 @@ export async function POST(request: NextRequest) {
         ? { pickup: hotel, dropoff: AIRPORT_LABEL }
         : { pickup: AIRPORT_LABEL, dropoff: hotel }
     })()
+
+
+    // The confirmation and the operator dispatch both ride on this address; a
+    // direct POST with a blank or junk email produced a PAID booking whose
+    // confirmation could never be sent. The client form validates too, but
+    // this is the boundary that actually holds.
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customerFields.email)) {
+      return NextResponse.json(
+        { error: 'A valid email address is required, your confirmation is sent there.', requestId: reqId },
+        { status: 400 },
+      )
+    }
 
     const monetaryFields = {
       total_paid: total,
