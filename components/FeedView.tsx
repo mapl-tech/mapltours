@@ -111,7 +111,7 @@ function SectionHeader({ label, action }: { label: string; action?: { text: stri
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18 }}>
       <span className="text-label">{t(label)}</span>
       {action && (
-        <a href={action.href} style={{ fontSize: 13, fontFamily: 'var(--font-dm-sans)', fontWeight: 500, color: 'var(--text-tertiary)' }}>
+        <a href={action.href} style={{ fontSize: 14, fontFamily: 'var(--font-dm-sans)', fontWeight: 500, color: 'var(--text-tertiary)' }}>
           {t(action.text)} →
         </a>
       )}
@@ -190,7 +190,7 @@ function FoodSection() {
               <UtensilsCrossed size={15} color="var(--gold-warm)" />
               <span style={{
                 fontFamily: 'var(--font-dm-sans)', fontWeight: 600,
-                fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.08em',
+                fontSize: 13, textTransform: 'uppercase', letterSpacing: '0.08em',
                 color: 'var(--gold-warm)',
               }}>
                 {t('Food & Culture')}
@@ -204,9 +204,9 @@ function FoodSection() {
               {t('A Taste of Jamaica')}
             </h2>
             <p style={{
-              fontSize: 14, color: '#cccccc',
-              fontFamily: 'var(--font-dm-sans)', marginTop: 8,
-              maxWidth: 440,
+              fontSize: 16, color: '#E8E6E1', lineHeight: 1.55,
+              fontFamily: 'var(--font-dm-sans)', marginTop: 10,
+              maxWidth: 460,
             }}>
               Real spots, no reservations needed: the jerk pits and kitchens Jamaicans swear by, from Scotchies&apos; pimento smoke to sunset jerk on the Negril cliffs.
             </p>
@@ -218,7 +218,7 @@ function FoodSection() {
                 had already told them. */}
             {tours.length === 0 && (
               <p style={{
-                fontSize: 13, color: 'var(--gold-warm)',
+                fontSize: 14, color: 'var(--gold-warm)',
                 fontFamily: 'var(--font-dm-sans)', marginTop: 10,
                 maxWidth: 460, lineHeight: 1.5,
               }}>
@@ -318,7 +318,7 @@ function FoodSection() {
               <span style={{
                 position: 'absolute', bottom: 12, left: 12,
                 display: 'flex', alignItems: 'center', gap: 4,
-                fontSize: 12, fontWeight: 500, color: 'rgba(255,255,255,0.9)',
+                fontSize: 13, fontWeight: 500, color: 'rgba(255,255,255,0.9)',
                 fontFamily: 'var(--font-dm-sans)',
               }}>
                 <MapPin size={12} strokeWidth={2} /> {r.town}, {r.parish}
@@ -328,7 +328,7 @@ function FoodSection() {
                 position: 'absolute', top: 12, left: 12,
                 padding: '3px 10px', borderRadius: 9999,
                 background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(8px)',
-                fontSize: 12, fontWeight: 600, color: '#fff',
+                fontSize: 13, fontWeight: 600, color: '#fff',
                 fontFamily: 'var(--font-dm-sans)', letterSpacing: '0.04em',
                 textTransform: 'uppercase',
               }}>
@@ -346,13 +346,13 @@ function FoodSection() {
                 {r.name}
               </h3>
               <p style={{
-                fontSize: 12, color: 'var(--gold-warm)', fontWeight: 600,
+                fontSize: 13, color: 'var(--gold-warm)', fontWeight: 600,
                 fontFamily: 'var(--font-dm-sans)', marginBottom: 6,
               }}>
                 {r.knownFor}
               </p>
               <p style={{
-                fontSize: 12, color: '#cccccc',
+                fontSize: 13, color: '#cccccc',
                 fontFamily: 'var(--font-dm-sans)', lineHeight: 1.45,
                 marginBottom: 14,
                 display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden',
@@ -363,7 +363,7 @@ function FoodSection() {
                   above the button so the answer arrives before the tap, not
                   after it. */}
               <p style={{
-                fontSize: 11.5, fontFamily: 'var(--font-dm-sans)', marginBottom: 8,
+                fontSize: 13, fontFamily: 'var(--font-dm-sans)', marginBottom: 8,
                 lineHeight: 1.4, minHeight: 16,
                 color: added
                   ? 'var(--emerald)'
@@ -394,7 +394,7 @@ function FoodSection() {
                       background: 'rgba(255,255,255,0.08)',
                       border: '1px solid rgba(255,255,255,0.16)',
                       color: '#fff', textDecoration: 'none',
-                      fontSize: 13, fontWeight: 700,
+                      fontSize: 14, fontWeight: 700,
                       fontFamily: 'var(--font-dm-sans)',
                     }}
                   >
@@ -410,7 +410,7 @@ function FoodSection() {
                       border: '1px solid rgba(255,255,255,0.10)',
                       color: 'rgba(255,255,255,0.42)',
                       cursor: 'not-allowed',
-                      fontSize: 13, fontWeight: 700,
+                      fontSize: 14, fontWeight: 700,
                       fontFamily: 'var(--font-dm-sans)',
                     }}
                   >
@@ -429,7 +429,7 @@ function FoodSection() {
                     background: added ? 'var(--emerald)' : 'var(--gold)',
                     color: added ? '#fff' : '#1A1508',
                     border: 'none', cursor: 'pointer',
-                    fontSize: 13, fontWeight: 700,
+                    fontSize: 14, fontWeight: 700,
                     fontFamily: 'var(--font-dm-sans)',
                     transition: 'all 0.2s ease',
                   }}
@@ -462,7 +462,7 @@ function FoodSection() {
       {/* Honest framing: these are recommendations, not MAPL products. */}
       <div className="container">
         <p style={{
-          marginTop: 20, fontSize: 12, color: '#999999',
+          marginTop: 20, fontSize: 14, color: '#ADADAD',
           fontFamily: 'var(--font-dm-sans)',
         }}>
           Stops you add are free, they ride along with your booking and your driver builds them into your day.
@@ -504,7 +504,7 @@ function PackagesSection() {
               <span aria-hidden style={{ width: 26, height: 2, background: 'var(--gold)', borderRadius: 2 }} />
               <span style={{
                 fontFamily: 'var(--font-dm-sans)', fontWeight: 600,
-                fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.1em',
+                fontSize: 13, textTransform: 'uppercase', letterSpacing: '0.1em',
                 color: 'var(--gold-text)',
               }}>
                 {t('Ready-made days')}
@@ -578,7 +578,7 @@ function PackagesSection() {
                   position: 'absolute', top: 12, left: 12,
                   padding: '4px 11px', borderRadius: 9999,
                   background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(8px)',
-                  fontSize: 12, fontWeight: 600, color: '#fff',
+                  fontSize: 13, fontWeight: 600, color: '#fff',
                   fontFamily: 'var(--font-dm-sans)', letterSpacing: '0.04em',
                   textTransform: 'uppercase',
                 }}>
@@ -588,7 +588,7 @@ function PackagesSection() {
 
               <div className="pkg-body">
                 <p style={{
-                  fontSize: 12, fontWeight: 600, letterSpacing: '0.06em',
+                  fontSize: 13, fontWeight: 600, letterSpacing: '0.06em',
                   textTransform: 'uppercase', color: 'var(--text-tertiary)',
                   fontFamily: 'var(--font-dm-sans)', marginBottom: 6,
                 }}>
@@ -621,7 +621,7 @@ function PackagesSection() {
                     }}>
                       {formatPrice(pkg.price)}
                     </span>
-                    <span style={{ fontSize: 12, color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-sans)', marginLeft: 4 }}>
+                    <span style={{ fontSize: 13, color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-sans)', marginLeft: 4 }}>
                       {priceUnitLabel(pkg.pricing)}
                     </span>
                   </div>
@@ -638,7 +638,7 @@ function PackagesSection() {
                           background: 'var(--emerald)', color: '#fff',
                           display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7,
                           textDecoration: 'none',
-                          fontSize: 13.5, fontWeight: 700, fontFamily: 'var(--font-dm-sans)',
+                          fontSize: 14, fontWeight: 700, fontFamily: 'var(--font-dm-sans)',
                         }}
                         onMouseEnter={(e) => { e.currentTarget.style.filter = 'brightness(1.08)' }}
                         onMouseLeave={(e) => { e.currentTarget.style.filter = '' }}
@@ -650,7 +650,7 @@ function PackagesSection() {
                         aria-label={`Remove ${pkg.title} from your itinerary`}
                         style={{
                           minHeight: 32, background: 'none', border: 'none', cursor: 'pointer',
-                          fontSize: 12.5, fontWeight: 600, color: 'var(--text-tertiary)',
+                          fontSize: 13, fontWeight: 600, color: 'var(--text-tertiary)',
                           fontFamily: 'var(--font-dm-sans)', textDecoration: 'underline',
                         }}
                       >
@@ -665,7 +665,7 @@ function PackagesSection() {
                         width: '100%', minHeight: 44, borderRadius: 9999,
                         background: 'var(--gold)', color: '#1A1508',
                         border: 'none', cursor: 'pointer',
-                        fontSize: 13.5, fontWeight: 700, fontFamily: 'var(--font-dm-sans)',
+                        fontSize: 14, fontWeight: 700, fontFamily: 'var(--font-dm-sans)',
                       }}
                       onMouseEnter={(e) => { e.currentTarget.style.filter = 'brightness(1.08)' }}
                       onMouseLeave={(e) => { e.currentTarget.style.filter = '' }}
@@ -681,7 +681,7 @@ function PackagesSection() {
                       when there are singles in the cart to swap, which is
                       exactly when the question is live. */}
                   {replaces.length > 0 && !inCart && (
-                    <p className="pkg-replaces" style={{ fontSize: 12, color: 'var(--gold-text)', fontFamily: 'var(--font-dm-sans)', lineHeight: 1.45 }}>
+                    <p className="pkg-replaces" style={{ fontSize: 13, color: 'var(--gold-text)', fontFamily: 'var(--font-dm-sans)', lineHeight: 1.45 }}>
                       {t('Choose this day, or add individual tours as you like.')}
                     </p>
                   )}
@@ -709,7 +709,7 @@ function DestinationsSection() {
     }}>
       <Image src={DESTINATION_IMAGES[d.name]} alt={d.name} fill sizes="(max-width:768px) 50vw, 16vw" style={{ objectFit: 'cover' }} />
       <div className="overlay-bottom" style={{ height: '60%' }} />
-      <span style={{ position: 'relative', zIndex: 1, color: '#fff', fontFamily: 'var(--font-dm-sans)', fontWeight: 600, fontSize: 13 }}>
+      <span style={{ position: 'relative', zIndex: 1, color: '#fff', fontFamily: 'var(--font-dm-sans)', fontWeight: 600, fontSize: 14 }}>
         {d.name}
       </span>
     </a>
@@ -783,7 +783,7 @@ function DestinationsSection() {
                 <span style={{ color: '#fff', fontFamily: 'var(--font-dm-sans)', fontWeight: 700, fontSize: 18, display: 'block', letterSpacing: '-0.01em' }}>
                   {d.name}
                 </span>
-                <span style={{ color: 'rgba(255,255,255,0.7)', fontFamily: 'var(--font-dm-sans)', fontWeight: 500, fontSize: 13, marginTop: 3, display: 'block' }}>
+                <span style={{ color: 'rgba(255,255,255,0.7)', fontFamily: 'var(--font-dm-sans)', fontWeight: 500, fontSize: 14, marginTop: 3, display: 'block' }}>
                   {d.parish}
                 </span>
               </div>
@@ -937,7 +937,7 @@ export default function FeedView() {
           {/* Sentinel top improvement: price anchor + risk reversal at the
               exact moment of decision. Sits in the deepest scrim zone. */}
           <p className="animate-fade-up stagger-4" style={{
-            fontFamily: 'var(--font-dm-sans)', fontSize: 13, fontWeight: 500,
+            fontFamily: 'var(--font-dm-sans)', fontSize: 14, fontWeight: 500,
             color: '#fff', marginTop: 16, textShadow: '0 1px 6px rgba(0,0,0,0.5)',
           }}>
             From $22 · Flexible cancellation within 48 hours of booking
@@ -951,7 +951,7 @@ export default function FeedView() {
           {/* Headline */}
           <div data-reveal style={{ textAlign: 'center', marginBottom: 52 }}>
             <span style={{
-              fontSize: 12, fontWeight: 600, fontFamily: 'var(--font-dm-sans)',
+              fontSize: 13, fontWeight: 600, fontFamily: 'var(--font-dm-sans)',
               textTransform: 'uppercase', letterSpacing: '0.14em',
               color: 'var(--gold-warm)', marginBottom: 16, display: 'block',
             }}>
@@ -1024,7 +1024,7 @@ export default function FeedView() {
                 <div style={{ display: 'flex', alignItems: 'center', gap: 9, marginBottom: 14 }}>
                   {path.icon}
                   <span style={{
-                    fontSize: 12, fontWeight: 600, fontFamily: 'var(--font-dm-sans)',
+                    fontSize: 13, fontWeight: 600, fontFamily: 'var(--font-dm-sans)',
                     letterSpacing: '0.16em', textTransform: 'uppercase',
                     color: 'var(--gold-warm)',
                   }}>
@@ -1038,7 +1038,7 @@ export default function FeedView() {
                   {path.title}
                 </h3>
                 <p style={{
-                  fontSize: 13, color: 'rgba(255,255,255,0.72)',
+                  fontSize: 14, color: 'rgba(255,255,255,0.72)',
                   fontFamily: 'var(--font-dm-sans)', lineHeight: 1.62,
                   marginBottom: 18,
                 }}>
@@ -1051,7 +1051,7 @@ export default function FeedView() {
                   {path.steps.map((step, i) => (
                     <li key={step} style={{
                       display: 'flex', alignItems: 'flex-start', gap: 10,
-                      fontSize: 13, color: 'rgba(255,255,255,0.82)',
+                      fontSize: 14, color: 'rgba(255,255,255,0.82)',
                       fontFamily: 'var(--font-dm-sans)', lineHeight: 1.5,
                     }}>
                       <span aria-hidden style={{
@@ -1059,7 +1059,7 @@ export default function FeedView() {
                         border: '1px solid rgba(196,164,74,0.45)',
                         color: 'var(--gold-warm)',
                         display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                        fontSize: 10.5, fontWeight: 600, marginTop: 1,
+                        fontSize: 13, fontWeight: 600, marginTop: 1,
                       }}>
                         {i + 1}
                       </span>
@@ -1073,8 +1073,10 @@ export default function FeedView() {
                     marginTop: 'auto', alignSelf: 'flex-start',
                     display: 'inline-flex', alignItems: 'center', gap: 7,
                     height: 40, padding: '0 20px', borderRadius: 9999,
-                    background: 'var(--gold)', color: '#fff',
-                    fontFamily: 'var(--font-dm-sans)', fontWeight: 600, fontSize: 13,
+                    /* Near-black on gold, never white: white on this gold is
+                       3.29:1 and fails AA, let alone AAA. */
+                    background: 'var(--gold)', color: 'var(--gold-ink)',
+                    fontFamily: 'var(--font-dm-sans)', fontWeight: 600, fontSize: 14,
                     textDecoration: 'none',
                   }}
                 >
@@ -1113,7 +1115,7 @@ export default function FeedView() {
             ].map((t) => (
               <span key={t.text} style={{
                 display: 'inline-flex', alignItems: 'center', gap: 7,
-                fontSize: 12, fontFamily: 'var(--font-dm-sans)', color: 'rgba(255,255,255,0.7)', fontWeight: 500,
+                fontSize: 13, fontFamily: 'var(--font-dm-sans)', color: 'rgba(255,255,255,0.7)', fontWeight: 500,
               }}>
                 {t.icon} {t.text}
               </span>
@@ -1132,7 +1134,7 @@ export default function FeedView() {
             <TrendingUp size={16} color="var(--gold-warm)" />
             <span style={{
               fontFamily: 'var(--font-dm-sans)', fontWeight: 600,
-              fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.08em',
+              fontSize: 13, textTransform: 'uppercase', letterSpacing: '0.08em',
               color: 'var(--gold-warm)',
             }}>
               {t('Trending Now')}
@@ -1168,7 +1170,7 @@ export default function FeedView() {
                     display: 'inline-flex', alignItems: 'center', gap: 4,
                     padding: '4px 10px', borderRadius: 9999,
                     background: 'rgba(255,255,255,0.12)', backdropFilter: 'blur(8px)',
-                    fontSize: 12, fontWeight: 600, color: 'white',
+                    fontSize: 13, fontWeight: 600, color: 'white',
                     fontFamily: 'var(--font-dm-sans)', marginBottom: 10,
                   }}>
                     <TrendingUp size={12} /> Most booked
@@ -1180,7 +1182,7 @@ export default function FeedView() {
                     {t(viralExperiences[0].title)}
                   </h3>
                   <p style={{
-                    fontSize: 13, color: '#cccccc', fontFamily: 'var(--font-dm-sans)',
+                    fontSize: 14, color: '#cccccc', fontFamily: 'var(--font-dm-sans)',
                     lineHeight: 1.45, marginBottom: 10, maxWidth: 360,
                   }}>
                     {t(viralExperiences[0].description)}
@@ -1189,12 +1191,12 @@ export default function FeedView() {
                     <span style={{ fontFamily: 'var(--font-dm-sans)', fontWeight: 700, fontSize: 18, color: 'white' }}>
                       {formatPrice(viralExperiences[0].price)}
                     </span>
-                    <span style={{ fontSize: 12, color: '#cccccc', fontFamily: 'var(--font-dm-sans)' }}>
+                    <span style={{ fontSize: 13, color: '#cccccc', fontFamily: 'var(--font-dm-sans)' }}>
                       {priceUnitLabel(viralExperiences[0].pricing)} · {viralExperiences[0].duration}
                     </span>
                     <span style={{
                       display: 'inline-flex', alignItems: 'center', gap: 3,
-                      fontSize: 12, fontWeight: 600, color: 'var(--gold-warm)',
+                      fontSize: 13, fontWeight: 600, color: 'var(--gold-warm)',
                       fontFamily: 'var(--font-dm-sans)',
                     }}>
                       {viralExperiences[0].reviews > 0 ? <><Star size={12} fill="currentColor" strokeWidth={0} /> {viralExperiences[0].rating}</> : 'New'}
@@ -1227,12 +1229,12 @@ export default function FeedView() {
                     <span style={{ fontSize: 14, fontWeight: 700, color: 'white', fontFamily: 'var(--font-dm-sans)' }}>
                       {formatPrice(exp.price)}
                     </span>
-                    <span style={{ fontSize: 12, color: '#cccccc', fontFamily: 'var(--font-dm-sans)' }}>
+                    <span style={{ fontSize: 13, color: '#cccccc', fontFamily: 'var(--font-dm-sans)' }}>
                       · {exp.duration}
                     </span>
                     <span style={{
                       display: 'inline-flex', alignItems: 'center', gap: 2,
-                      fontSize: 12, fontWeight: 600, color: 'var(--gold-warm)',
+                      fontSize: 13, fontWeight: 600, color: 'var(--gold-warm)',
                       fontFamily: 'var(--font-dm-sans)',
                     }}>
                       {exp.reviews > 0 ? <><Star size={10} fill="currentColor" strokeWidth={0} /> {exp.rating}</> : 'New'}
@@ -1321,7 +1323,7 @@ export default function FeedView() {
                     {t(item.title)}
                   </h3>
                   <p style={{
-                    fontSize: 13, color: 'var(--text-on-dark-2)',
+                    fontSize: 14, color: 'var(--text-on-dark-2)',
                     fontFamily: 'var(--font-dm-sans)', lineHeight: 1.55,
                   }}>
                     {item.desc}

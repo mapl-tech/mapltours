@@ -15,7 +15,7 @@ import {
 } from '@/lib/checkout-form'
 import LegalModal from '@/components/checkout/LegalModal'
 import DeferredPaymentPanel, { type IntentResult } from '@/components/checkout/one-page/DeferredPaymentPanel'
-import { Card, SectionTitle, TextField, Stepper, Disclosure, Reassurance, LinkButton, focusFirstError } from '@/components/checkout/one-page/fields'
+import { Card, SectionTitle, TextField, Stepper, Reassurance, LinkButton, focusFirstError } from '@/components/checkout/one-page/fields'
 import { useHydrated } from '@/components/checkout/one-page/useHydrated'
 
 /**
@@ -53,7 +53,6 @@ export default function OnePageTransfersCheckout() {
   const [errors, setErrors] = useState<FieldErrors>({})
   const [announcement, setAnnouncement] = useState('')
   const [legal, setLegal] = useState<'terms' | 'cancellation' | null>(null)
-  const [noteOpen, setNoteOpen] = useState(false)
   const [adjustPickup, setAdjustPickup] = useState(false)
   const [serverError, setServerError] = useState<string | null>(null)
 
@@ -402,15 +401,19 @@ export default function OnePageTransfersCheckout() {
                   <TextField id="xfer-last" fieldKey="lastName" label="Last name" value={form.lastName} onChange={setField('lastName')} error={errors.lastName} autoComplete="family-name" placeholder="Last name" />
                 </div>
                 <TextField id="xfer-email" fieldKey="email" label="Email" type="email" inputMode="email" value={form.email} onChange={setField('email')} error={errors.email} autoComplete="email" placeholder="you@email.com" hint="Your confirmation and driver details go here." />
-                <TextField id="xfer-phone" fieldKey="phone" label="Phone" type="tel" inputMode="tel" value={form.phone} onChange={setField('phone')} error={errors.phone} autoComplete="tel" placeholder="+1 (555) 000-0000" hint="WhatsApp works. Your driver messages you when you land." />
+                <TextField id="xfer-phone" fieldKey="phone" label="Phone" type="tel" inputMode="tel" value={form.phone} onChange={setField('phone')} error={errors.phone} autoComplete="tel" placeholder="+1 (555) 000-0000" />
               </div>
-              <div style={{ marginTop: 14 }}>
-                <Disclosure summary="Add a note" detail="A child seat, extra luggage, a stop on the way, anything we should know" open={noteOpen} onToggle={() => setNoteOpen((o) => !o)}>
-                  <label htmlFor="xfer-note" className="visually-hidden">Note for your driver</label>
-                  <textarea id="xfer-note" className="field-input" rows={3} value={form.specialRequests} onChange={(e) => setField('specialRequests')(e.target.value)}
-                    placeholder="A child seat, extra luggage, a grocery stop on the way…"
-                    style={{ fontSize: 16, minHeight: 96, padding: 12, background: '#fff', width: '100%', resize: 'vertical' }} />
-                </Disclosure>
+              {/* Shown, not hidden behind a disclosure. A child seat or a
+                  wheelchair is the kind of thing a guest mentions only if the
+                  box is in front of them, and it is far cheaper to read here
+                  than to discover at the kerb. */}
+              <div style={{ marginTop: 18 }}>
+                <label htmlFor="xfer-note" style={{ display: 'block', fontFamily: FONT, fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 6 }}>
+                  Anything we should know? <span style={{ fontWeight: 400, color: 'var(--text-tertiary)' }}>Optional</span>
+                </label>
+                <textarea id="xfer-note" className="field-input" rows={3} value={form.specialRequests} onChange={(e) => setField('specialRequests')(e.target.value)}
+                  placeholder="A child seat, extra luggage, a stop on the way, a wheelchair to fit in"
+                  style={{ fontSize: 16, minHeight: 88, padding: 12, background: '#fff', width: '100%', resize: 'vertical', borderColor: 'rgba(23,22,20,0.16)' }} />
               </div>
             </Card>
 

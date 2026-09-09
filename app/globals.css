@@ -28,16 +28,17 @@
 
   /* Brand */
   --accent:         #171614;
-  --gold:           #A68B3C;
-  --gold-warm:      #C4A44A;
-  --gold-text:      #6E5A1C;  /* AA-compliant gold for text on white (≈5.4:1), use this instead of --gold/--gold-warm for any text/label on a light surface */
-  --emerald:        #1D7A50;
+  --gold:           #C9A94E;  /* Button and accent SURFACE. Near-black --gold-ink on it is 8.03:1 (AAA); white on it was 3.29:1 and failed AA outright. */
+  --gold-warm:      #D6BB63;  /* The hover step above --gold, and gold TEXT on a dark surface (10:1 on #111110). */
+  --gold-ink:       #1A1508;  /* The only text colour to put on --gold. */
+  --gold-text:      #5A4A16;  /* Gold for TEXT on a light surface. AAA (7:1+) on white, on --bg-warm and on --surface; measured 8.66 / 8.23 / 7.73. Never use --gold or --gold-warm for text: they are 3.3:1 and fail AA. */
+  --emerald:        #12563A;  /* AAA on white, warm and surface: 8.69 / 8.25 / 7.76 */
   --emerald-dim:    rgba(29, 122, 80, 0.07);
 
   /* Text */
   --text-primary:   #171614;
-  --text-secondary: #5E5C57;
-  --text-tertiary:  #6E6C67;
+  --text-secondary: #4E4C47;  /* AAA: 8.58 on white, 8.15 on warm, 7.66 on surface */
+  --text-tertiary:  #524F49;  /* AAA: 8.16 / 7.76 / 7.29. Still lighter than secondary, so the hierarchy survives the darkening. */
   --text-on-dark:   #FFFFFF;
   --text-on-dark-2: #cccccc;
   --text-on-dark-3: #cccccc;

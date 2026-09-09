@@ -553,7 +553,7 @@ export default function TransfersView() {
                 style={{
                   alignSelf: 'flex-start', background: 'none', border: 'none',
                   padding: '10px 0', minHeight: 44, cursor: 'pointer',
-                  fontFamily: 'var(--font-dm-sans)', fontSize: 13, fontWeight: 600,
+                  fontFamily: 'var(--font-dm-sans)', fontSize: 14, fontWeight: 600,
                   color: 'var(--text-secondary)', textDecoration: 'underline',
                   textUnderlineOffset: 3,
                 }}
@@ -732,7 +732,7 @@ export default function TransfersView() {
                 marginTop: 14,
                 textAlign: 'center',
                 fontFamily: 'var(--font-dm-sans)',
-                fontSize: 12,
+                fontSize: 13,
                 color: 'var(--text-tertiary)',
               }}
             >
@@ -877,7 +877,7 @@ export default function TransfersView() {
             <Link
               href="/contact"
               className="btn-outline"
-              style={{ height: 44, padding: '0 22px', fontSize: 13 }}
+              style={{ height: 44, padding: '0 22px', fontSize: 14 }}
             >
               Request a custom quote
             </Link>
@@ -1059,7 +1059,7 @@ export default function TransfersView() {
             style={{
               marginTop: 14,
               fontFamily: 'var(--font-dm-sans)',
-              fontSize: 12,
+              fontSize: 13,
               color: 'var(--text-tertiary)',
             }}
           >
@@ -1155,7 +1155,7 @@ export default function TransfersView() {
         }
         .xfer-hero-rating-text {
           font-family: var(--font-dm-sans);
-          font-size: 12.5px;
+          font-size: 13px;
           color: var(--text-secondary);
           font-weight: 600;
         }
@@ -1191,7 +1191,7 @@ export default function TransfersView() {
         .xfer-hero-image-caption-kicker {
           display: block;
           font-family: var(--font-dm-sans);
-          font-size: 11px;
+          font-size: 13px;
           font-weight: 700;
           letter-spacing: 0.22em;
           text-transform: uppercase;
@@ -1211,7 +1211,7 @@ export default function TransfersView() {
           flex-wrap: wrap;
           gap: 10px;
           font-family: var(--font-dm-sans);
-          font-size: 13.5px;
+          font-size: 14px;
           color: var(--text-secondary);
           margin-bottom: 28px;
           align-items: center;
@@ -1280,7 +1280,7 @@ export default function TransfersView() {
           color: var(--text-primary);
         }
         .xfer-route-tile-time {
-          font-size: 12px;
+          font-size: 13px;
           color: var(--text-tertiary);
           font-weight: 600;
           letter-spacing: 0.02em;
@@ -1291,7 +1291,7 @@ export default function TransfersView() {
           gap: 6px;
         }
         .xfer-route-tile-from {
-          font-size: 11px;
+          font-size: 13px;
           color: var(--text-tertiary);
           letter-spacing: 0.18em;
           text-transform: uppercase;
@@ -1306,11 +1306,11 @@ export default function TransfersView() {
           font-feature-settings: 'tnum' 1;
         }
         .xfer-route-tile-rt {
-          font-size: 12px;
+          font-size: 13px;
           color: var(--text-tertiary);
         }
         .xfer-route-tile-cta {
-          font-size: 12.5px;
+          font-size: 13px;
           font-weight: 700;
           color: var(--text-primary);
           letter-spacing: 0.04em;
@@ -1321,7 +1321,7 @@ export default function TransfersView() {
         .xfer-quote-activity {
           margin-top: 12px;
           font-family: var(--font-dm-sans);
-          font-size: 12.5px;
+          font-size: 13px;
           color: var(--text-tertiary);
           display: flex;
           align-items: center;
@@ -1380,7 +1380,7 @@ export default function TransfersView() {
           background: #fff;
           color: var(--text-secondary);
           font-family: var(--font-dm-sans);
-          font-size: 13px;
+          font-size: 14px;
           font-weight: 600;
           cursor: pointer;
           transition: border-color var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out), background var(--dur-fast) var(--ease-out);
@@ -1392,7 +1392,7 @@ export default function TransfersView() {
         .xfer-route-swap-v { display: block; }
         .xfer-route-note {
           font-family: var(--font-dm-sans);
-          font-size: 13px;
+          font-size: 14px;
           line-height: 1.5;
           color: var(--text-tertiary);
           margin: -8px 0 18px;
@@ -1415,7 +1415,7 @@ export default function TransfersView() {
         .xfer-pax-row { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
         .xfer-pax-note {
           font-family: var(--font-dm-sans);
-          font-size: 12.5px;
+          font-size: 13px;
           color: var(--text-tertiary);
           margin-left: auto;
         }
@@ -1433,7 +1433,7 @@ export default function TransfersView() {
         }
         .xfer-quote-readout-kicker {
           font-family: var(--font-dm-sans);
-          font-size: 11px;
+          font-size: 13px;
           font-weight: 600;
           letter-spacing: 0.22em;
           text-transform: uppercase;
@@ -1460,7 +1460,7 @@ export default function TransfersView() {
         }
         .xfer-quote-readout-meta {
           font-family: var(--font-dm-sans);
-          font-size: 12px;
+          font-size: 13px;
           color: var(--text-tertiary);
           margin-top: 6px;
         }
@@ -1529,7 +1529,7 @@ export default function TransfersView() {
         }
         .xfer-contact-cta-body {
           font-family: var(--font-dm-sans);
-          font-size: 13.5px;
+          font-size: 14px;
           color: var(--text-secondary);
           max-width: 520px;
         }
@@ -1577,7 +1577,7 @@ export default function TransfersView() {
           top: 14px;
           right: 14px;
           font-family: var(--font-dm-sans);
-          font-size: 11px;
+          font-size: 13px;
           font-weight: 700;
           letter-spacing: 0.18em;
           text-transform: uppercase;
@@ -1605,7 +1605,7 @@ export default function TransfersView() {
         .xfer-savings-note {
           margin-top: 18px;
           font-family: var(--font-dm-sans);
-          font-size: 12px;
+          font-size: 13px;
           color: var(--text-tertiary);
           line-height: 1.55;
         }
@@ -1616,7 +1616,7 @@ export default function TransfersView() {
         }
         .xfer-saving-route {
           font-family: var(--font-dm-sans);
-          font-size: 12px;
+          font-size: 13px;
           font-weight: 700;
           letter-spacing: 0.04em;
           color: var(--text-tertiary);
@@ -1638,13 +1638,13 @@ export default function TransfersView() {
         }
         .xfer-saving-typical {
           font-family: var(--font-dm-sans);
-          font-size: 12.5px;
+          font-size: 13px;
           color: var(--text-tertiary);
         }
         .xfer-saving-tag {
           margin-top: 4px;
           font-family: var(--font-dm-sans);
-          font-size: 11px;
+          font-size: 13px;
           font-weight: 700;
           letter-spacing: 0.06em;
           color: var(--emerald);
@@ -1687,7 +1687,7 @@ export default function TransfersView() {
         }
         .xfer-route-block-meta {
           font-family: var(--font-dm-sans);
-          font-size: 12.5px;
+          font-size: 13px;
           color: var(--text-tertiary);
           margin-bottom: 12px;
         }
@@ -1712,7 +1712,7 @@ export default function TransfersView() {
           display: inline-flex;
           align-items: center;
           font-family: var(--font-dm-sans);
-          font-size: 12.5px;
+          font-size: 13px;
           font-weight: 700;
           letter-spacing: 0.04em;
           color: var(--text-primary);
@@ -1746,7 +1746,7 @@ export default function TransfersView() {
         }
         .xfer-zone-duration {
           font-family: var(--font-dm-sans);
-          font-size: 12px;
+          font-size: 13px;
           color: var(--text-tertiary);
           letter-spacing: 0.06em;
           white-space: nowrap;
@@ -1761,7 +1761,7 @@ export default function TransfersView() {
         }
         .xfer-zone-price-label {
           font-family: var(--font-dm-sans);
-          font-size: 11px;
+          font-size: 13px;
           color: var(--text-tertiary);
           text-transform: uppercase;
           letter-spacing: 0.18em;
@@ -1779,7 +1779,7 @@ export default function TransfersView() {
         }
         .xfer-zone-destinations {
           font-family: var(--font-dm-sans);
-          font-size: 12.5px;
+          font-size: 13px;
           color: var(--text-tertiary);
           line-height: 1.55;
         }
@@ -1813,7 +1813,7 @@ export default function TransfersView() {
         }
         .xfer-review-footer {
           font-family: var(--font-dm-sans);
-          font-size: 12px;
+          font-size: 13px;
           color: var(--text-tertiary);
           display: flex;
           gap: 4px;
@@ -1912,7 +1912,7 @@ export default function TransfersView() {
         }
         .xfer-sticky-meta {
           font-family: var(--font-dm-sans);
-          font-size: 12px;
+          font-size: 13px;
           color: var(--text-tertiary);
           margin-top: 2px;
         }
@@ -1945,7 +1945,7 @@ export default function TransfersView() {
           .xfer-final-cta { padding-bottom: 120px; }
           .xfer-savings-row { grid-template-columns: minmax(0, 1fr); gap: 14px; }
           .xfer-routes-section { padding: 28px 16px 8px; }
-          .xfer-hero-price-strip { font-size: 12.5px; }
+          .xfer-hero-price-strip { font-size: 13px; }
         }
       `}</style>
     </div>
@@ -1968,7 +1968,7 @@ function Kicker({
         display: centered ? 'block' : 'inline-block',
         margin: 0,
         fontFamily: 'var(--font-dm-sans)',
-        fontSize: 12,
+        fontSize: 13,
         fontWeight: 700,
         letterSpacing: '0.22em',
         textTransform: 'uppercase',
@@ -2025,7 +2025,7 @@ function UnlistedHotelPanel({
           Got it, we&rsquo;re on it
         </p>
         <p style={{
-          fontFamily: 'var(--font-dm-sans)', fontSize: 13, lineHeight: 1.55,
+          fontFamily: 'var(--font-dm-sans)', fontSize: 14, lineHeight: 1.55,
           color: 'var(--text-secondary)', margin: 0,
         }}>
           We&rsquo;ll work out the flat price for {form.hotel || 'your hotel'} and email{' '}
@@ -2044,7 +2044,7 @@ function UnlistedHotelPanel({
             border: 'none',
             cursor: 'pointer',
             fontFamily: 'var(--font-dm-sans)',
-            fontSize: 13,
+            fontSize: 14,
             fontWeight: 600,
             color: 'var(--gold-text)',
             textDecoration: 'underline',
@@ -2066,7 +2066,7 @@ function UnlistedHotelPanel({
         Tell us where you&rsquo;re staying
       </p>
       <p style={{
-        fontFamily: 'var(--font-dm-sans)', fontSize: 13, lineHeight: 1.55,
+        fontFamily: 'var(--font-dm-sans)', fontSize: 14, lineHeight: 1.55,
         color: 'var(--text-secondary)', marginBottom: 14,
       }}>
         We drive the whole island. If it&rsquo;s not in the list we&rsquo;ll price it by
@@ -2112,7 +2112,7 @@ function UnlistedHotelPanel({
 
       {error && (
         <p role="alert" style={{
-          fontFamily: 'var(--font-dm-sans)', fontSize: 13, lineHeight: 1.5,
+          fontFamily: 'var(--font-dm-sans)', fontSize: 14, lineHeight: 1.5,
           // Matches the error red already used in the email templates.
           // 6.25:1 on --bg-warm (#FAF9F7), comfortably past WCAG AA.
           color: '#B42318', marginTop: 12, marginBottom: 0,
@@ -2143,7 +2143,7 @@ function UnlistedHotelPanel({
 const labelStyle: React.CSSProperties = {
   display: 'block',
   fontFamily: 'var(--font-dm-sans)',
-  fontSize: 12,
+  fontSize: 13,
   fontWeight: 600,
   color: 'var(--text-secondary)',
   marginBottom: 6,
@@ -2181,7 +2181,7 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
         style={{
           display: 'block',
           fontFamily: 'var(--font-dm-sans)',
-          fontSize: 12,
+          fontSize: 13,
           fontWeight: 600,
           color: 'var(--text-secondary)',
           marginBottom: 8,
@@ -2231,7 +2231,7 @@ function TripToggle({
             top: -9,
             right: 10,
             fontFamily: 'var(--font-dm-sans)',
-            fontSize: 12,
+            fontSize: 13,
             fontWeight: 700,
             letterSpacing: '0.1em',
             textTransform: 'uppercase',
@@ -2258,7 +2258,7 @@ function TripToggle({
       <p
         style={{
           fontFamily: 'var(--font-dm-sans)',
-          fontSize: 12,
+          fontSize: 13,
           color: active ? 'rgba(255,255,255,0.7)' : 'var(--text-tertiary)',
         }}
       >
@@ -2311,7 +2311,7 @@ function TrustItem({
         <p
           style={{
             fontFamily: 'var(--font-dm-sans)',
-            fontSize: 12,
+            fontSize: 13,
             color: 'var(--text-tertiary)',
             lineHeight: 1.5,
           }}
@@ -2365,7 +2365,7 @@ function CompareItem({
               display: 'flex',
               gap: 10,
               fontFamily: 'var(--font-dm-sans)',
-              fontSize: 13,
+              fontSize: 14,
               color: 'var(--text-secondary)',
               lineHeight: 1.55,
             }}
@@ -2436,7 +2436,7 @@ function StatBlock({
       <p
         style={{
           fontFamily: 'var(--font-dm-sans)',
-          fontSize: 12,
+          fontSize: 13,
           color: 'var(--text-tertiary)',
         }}
       >

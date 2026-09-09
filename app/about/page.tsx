@@ -45,7 +45,7 @@ const STATS = [
 
 const GOLD = '#A68B3C'
 /** AA-compliant gold for text on a light surface, mirrors --gold-text. */
-const GOLD_TEXT = '#6E5A1C'
+const GOLD_TEXT = '#5A4A16'
 const GOLD_WARM = '#C4A44A'
 const INK = '#171614'
 const INK_WARM = '#1A1917'
@@ -165,7 +165,7 @@ export default function AboutPage() {
         }}>
           Pick the food, culture and experiences you want, and
           {' '}
-          <span style={{ fontStyle: 'italic', color: GOLD }}>we drive you there from your hotel and back</span>.
+          <span style={{ fontStyle: 'italic', color: GOLD_TEXT }}>we drive you there from your hotel and back</span>.
           {' '}
           Airport pickups too, timed to your flight.
         </p>

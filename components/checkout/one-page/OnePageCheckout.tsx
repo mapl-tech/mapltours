@@ -63,7 +63,6 @@ export default function OnePageCheckout() {
   const [announcement, setAnnouncement] = useState('')
   const [legal, setLegal] = useState<'waiver' | 'terms' | 'cancellation' | null>(null)
   const [limitOpen, setLimitOpen] = useState(false)
-  const [noteOpen, setNoteOpen] = useState(false)
   const [dayOpen, setDayOpen] = useState(false)
   const [serverError, setServerError] = useState<string | null>(null)
   const [minDate, setMinDate] = useState('')
@@ -444,13 +443,16 @@ export default function OnePageCheckout() {
                 <TextField id="opc-email" fieldKey="email" label="Email" type="email" inputMode="email" value={form.email} onChange={setField('email')} error={errors.email} autoComplete="email" placeholder="you@email.com" hint="Your confirmation and trip details go here." />
                 <TextField id="opc-phone" fieldKey="phone" label="Phone" type="tel" inputMode="tel" value={form.phone} onChange={setField('phone')} error={errors.phone} autoComplete="tel" placeholder="+1 (555) 000-0000" hint="WhatsApp works. We use it to reach you about your trip." />
               </div>
-              <div style={{ marginTop: 14 }}>
-                <Disclosure summary="Add a note" detail="Dietary needs, accessibility, a celebration, anything we should know" open={noteOpen} onToggle={() => setNoteOpen((o) => !o)}>
-                  <label htmlFor="opc-note" className="visually-hidden">Note for your driver and host</label>
-                  <textarea id="opc-note" className="field-input" rows={3} value={form.specialRequests} onChange={(e) => setField('specialRequests')(e.target.value)}
-                    placeholder="Dietary restrictions, accessibility needs, anything we should know…"
-                    style={{ fontSize: 16, minHeight: 96, padding: 12, background: '#fff', width: '100%', resize: 'vertical' }} />
-                </Disclosure>
+              {/* Shown, not hidden behind a disclosure. A dietary need or a
+                  mobility question is only ever mentioned when the box is
+                  already in front of someone. */}
+              <div style={{ marginTop: 18 }}>
+                <label htmlFor="opc-note" style={{ display: 'block', fontFamily: FONT, fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 6 }}>
+                  Anything we should know? <span style={{ fontWeight: 400, color: 'var(--text-tertiary)' }}>Optional</span>
+                </label>
+                <textarea id="opc-note" className="field-input" rows={3} value={form.specialRequests} onChange={(e) => setField('specialRequests')(e.target.value)}
+                  placeholder="Dietary needs, a birthday, anything that would make the day easier"
+                  style={{ fontSize: 16, minHeight: 88, padding: 12, background: '#fff', width: '100%', resize: 'vertical', borderColor: 'rgba(23,22,20,0.16)' }} />
               </div>
             </Card>
 
