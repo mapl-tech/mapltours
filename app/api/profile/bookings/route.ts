@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createServiceClient } from '@/lib/supabase/service'
+import { escapeLikePattern } from '@/lib/pg-like'
 
 /**
  * The signed-in user's own bookings for the profile page.
@@ -34,8 +35,12 @@ export async function GET() {
     .in('status', ['paid', 'refunded'])
     .order('created_at', { ascending: false })
     .limit(100)
+  // `ilike` runs SQL ILIKE, where % and _ are WILDCARDS, so an unescaped
+  // address matched other people's bookings: a guest whose verified email is
+  // john_smith@gmail.com also matched johnXsmith@gmail.com, and underscores in
+  // email addresses are commonplace. See lib/pg-like.ts for the measurement.
   const { data, error } = email
-    ? await query.or(`user_id.eq.${user.id},email.ilike.${email}`)
+    ? await query.or(`user_id.eq.${user.id},email.ilike.${escapeLikePattern(email)}`)
     : await query.eq('user_id', user.id)
   // A failed query and an empty result set are different facts, and
   // collapsing them hid a real outage: the select above names refund_amount
@@ -51,7 +56,13 @@ export async function GET() {
     )
   }
 
-  const rows = (data ?? []) as Row[]
+  // Second lock on ownership, in plain JavaScript, so that what this route
+  // returns never depends on how a pattern is parsed. This is the SAME rule
+  // /api/bookings/[id]/cancel enforces before it will touch a booking, so the
+  // page can no longer show a row that the cancel button would then refuse.
+  const rows = ((data ?? []) as Row[]).filter(
+    (b) => b.user_id === user.id || (!!email && (b.email ?? '').toLowerCase() === email),
+  )
 
   // Claim guest bookings that match the verified email (first sign-in only).
   const unclaimed = rows.filter((b) => !b.user_id && email && (b.email ?? '').toLowerCase() === email)
