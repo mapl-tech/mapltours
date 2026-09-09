@@ -159,7 +159,12 @@ export default memo(function MobileShort({ exp, priority = false }: { exp: Exper
               ref={videoRef}
               src={exp.video}
               muted
-              autoPlay
+              /* No autoPlay attribute on purpose. With it the browser started
+                 playback itself, which walked straight past the
+                 prefers-reduced-motion guard in attemptPlay below and made
+                 that guard dead code: a guest who asks for less motion still
+                 got every visible card looping. Playback is driven only from
+                 that effect, the way ExperienceDetail already does it. */
               loop
               playsInline
               preload={isVisible ? 'auto' : 'metadata'}

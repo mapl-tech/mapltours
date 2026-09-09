@@ -24,7 +24,16 @@ export const DESTINATIONS: Record<string, string> = {
   // the attraction's own site wherever possible (dunnsriverfallsja.com,
   // rosehall.com, rickscafejamaica.com), which is both the strongest proof
   // the photo is really that place and the safest licensing position.
-  'Ocho Rios':   '/img/dest/ocho-rios-dunns-river.jpg',   // Dunn's River Falls terraces
+  // The file this replaces was named for Dunn's River but showed a generic
+  // long-exposure forest waterfall with no terraces and no climbers: not the
+  // landmark, and not obviously Jamaica. Stock libraries are the trap here,
+  // since a search for "Dunn's River Falls" on Pexels returns no photo of it
+  // at all, only tropical waterfalls from Indonesia and Nigeria. This one is
+  // documented as the falls on Wikimedia Commons and reads as the real place:
+  // the limestone staircase, the climb, the pool at the foot of it.
+  // Photo: Dr. Thomas Liptak, CC BY-SA 4.0, via Wikimedia Commons
+  // https://commons.wikimedia.org/wiki/File:Jamaica_Ocho_Rios_Dunn's_River_Falls_1.jpg
+  'Ocho Rios':   '/img/dest/ocho-rios-dunns-river-falls.jpg',  // Dunn's River Falls terraces
   'Montego Bay': '/img/dest/montego-bay-beach.jpg',       // banded turquoise water and palm, Pexels
   'Falmouth':    '/img/dest/falmouth-martha-brae-sunlit.jpg',  // sunlit Martha Brae raft, jamaicarafting.com
   'Negril':      '/img/dest/negril-ricks-cafe.jpg',       // Rick's Cafe on the West End cliffs

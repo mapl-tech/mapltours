@@ -34,6 +34,10 @@ export default function SaveButton({
 
   return (
     <button
+      /* 36px is the VISUAL size; .tap-target lifts the hit area to 46px with
+         a centred pseudo-element, so the control clears the house 44px rule
+         without the heart growing on the card. */
+      className="tap-target"
       onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleSave(experienceId) }}
       aria-label={saved ? `Remove ${title} from your saved tours` : `Save ${title} for later`}
       aria-pressed={saved}

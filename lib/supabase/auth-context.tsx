@@ -10,7 +10,10 @@ interface AuthContextType {
   loading: boolean
 }
 
-const AuthContext = createContext<AuthContextType>({ user: null, loading: true })
+// Exported so a preview or a test can render a subtree with a known user,
+// without standing up a real Supabase session. Application code should use
+// AuthProvider and useAuth, never this directly.
+export const AuthContext = createContext<AuthContextType>({ user: null, loading: true })
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)

@@ -1,6 +1,6 @@
 'use client'
 
-import { createContext, useCallback, useContext, useMemo, useRef, type ReactNode } from 'react'
+import { createContext, useCallback, useContext, useMemo, useRef, useState, type ReactNode } from 'react'
 import { createClient } from './client'
 import { useAuth } from './auth-context'
 import { clearCache, useSwrCache } from '@/lib/swr-cache'
@@ -31,6 +31,14 @@ interface SavedContextValue {
   isLoggedIn: boolean
   /** True only before the first load lands, and only when signed in. */
   loading: boolean
+  /**
+   * True when the LOAD failed, as distinct from succeeding with nothing.
+   * Without this the page told a guest who had saved eight tours that they
+   * had saved none, which is the worst possible reading of an outage.
+   */
+  failed: boolean
+  /** Set when a save or unsave could not be written; cleared on the next try. */
+  writeError: string | null
 }
 
 const SavedContext = createContext<SavedContextValue>({
@@ -39,6 +47,8 @@ const SavedContext = createContext<SavedContextValue>({
   toggleSave: () => {},
   isLoggedIn: false,
   loading: false,
+  failed: false,
+  writeError: null,
 })
 
 export function SavedProvider({ children }: { children: ReactNode }) {
@@ -46,7 +56,8 @@ export function SavedProvider({ children }: { children: ReactNode }) {
   const inFlight = useRef(new Set<number>())
 
   const cacheKey = user ? `saved:${user.id}` : null
-  const { data, loading, mutate } = useSwrCache<number[]>(
+  const [writeError, setWriteError] = useState<string | null>(null)
+  const { data, loading, error, mutate } = useSwrCache<number[]>(
     cacheKey,
     async () => {
       if (!user) return []
@@ -79,6 +90,8 @@ export function SavedProvider({ children }: { children: ReactNode }) {
       inFlight.current.add(id)
 
       const wasSaved = savedIds.includes(id)
+      const priorIndex = savedIds.indexOf(id)
+      setWriteError(null)
       // Optimistic: the heart fills instantly and survives a page change,
       // because mutate writes through to the cache as well as to state.
       mutate((prev) => {
@@ -103,10 +116,20 @@ export function SavedProvider({ children }: { children: ReactNode }) {
         // that heart agrees with this one next time it mounts.
         clearCache(`like:${id}:`)
       } catch {
+        // Restore the ORIGINAL position. Reinserting at 0 silently reordered
+        // the guest's shortlist every time a delete failed.
         mutate((prev) => {
-          const list = prev ?? []
-          return wasSaved ? [id, ...list.filter((n) => n !== id)] : list.filter((n) => n !== id)
+          const list = (prev ?? []).filter((n) => n !== id)
+          if (!wasSaved) return list
+          const restored = [...list]
+          restored.splice(Math.min(priorIndex < 0 ? list.length : priorIndex, list.length), 0, id)
+          return restored
         })
+        setWriteError(
+          wasSaved
+            ? 'We could not remove that tour. Check your connection and try again.'
+            : 'We could not save that tour. Check your connection and try again.',
+        )
       } finally {
         inFlight.current.delete(id)
       }
@@ -121,8 +144,10 @@ export function SavedProvider({ children }: { children: ReactNode }) {
       toggleSave,
       isLoggedIn: !!user,
       loading: !!user && loading,
+      failed: !!user && !!error,
+      writeError,
     }),
-    [savedIds, isSaved, toggleSave, user, loading]
+    [savedIds, isSaved, toggleSave, user, loading, error, writeError]
   )
 
   return <SavedContext.Provider value={value}>{children}</SavedContext.Provider>

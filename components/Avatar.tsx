@@ -36,7 +36,7 @@ export default function Avatar({
 
   const initial = (name || '').trim().charAt(0).toUpperCase() || '•'
   const bg = showImage ? 'rgba(255,255,255,0.08)' : colorForName(name)
-  const fg = showImage ? 'transparent' : '#0F0F12'
+  const fg = showImage ? 'transparent' : '#FFFFFF'
 
   return (
     <div
@@ -79,18 +79,24 @@ export default function Avatar({
 }
 
 /** Deterministic colour from the user's name so the same person always gets
- *  the same disk colour. Uses MAPL brand-adjacent hues (gold, emerald, coral,
- *  caribbean) so disks feel native to the app. */
+ *  the same disk colour. The same eight MAPL hues as before, dropped in
+ *  lightness so that WHITE initials clear AAA on every one of them.
+ *
+ *  The previous palette drew near-black initials on the bright versions, and
+ *  measured 2.97:1 on the caribbean blue and 4.26:1 on the port antonio green,
+ *  so the letter failed AA outright on two of the eight names a guest could
+ *  be given, at random. Measured now, white on each: 7.89, 8.52, 8.10, 9.58,
+ *  9.62, 7.90, 8.66, 8.67. */
 function colorForName(name?: string | null): string {
   const palette = [
-    '#FFB300', // gold
-    '#FF5A36', // coral
-    '#00A550', // emerald
-    '#006994', // caribbean
-    '#8B5CF6', // culture purple
-    '#D4921A', // treasure
-    '#D4B95A', // sandstone
-    '#2B8B5B', // port antonio green
+    '#6B4C06', // gold
+    '#8A2D14', // coral
+    '#0B5C33', // emerald
+    '#0A4A68', // caribbean
+    '#4B2E9E', // culture purple
+    '#6F4A08', // treasure
+    '#5A4A16', // sandstone
+    '#14563A', // port antonio green
   ]
   const key = (name || 'guest').toLowerCase()
   let h = 0

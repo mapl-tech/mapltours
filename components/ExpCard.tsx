@@ -137,6 +137,10 @@ export default memo(function ExpCard({ exp }: { exp: Experience }) {
 
           {/* Add button */}
           <button
+            /* Same 46px hit area as the save heart beside it; both sit 12px
+               in from the card edge, so the expanded area is not clipped by
+               .photo-card's overflow. */
+            className="tap-target"
             onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleCart() }}
             disabled={blocked}
             title={tourFit.reason ?? undefined}

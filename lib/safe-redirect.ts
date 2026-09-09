@@ -4,7 +4,14 @@
  */
 
 // Exact paths a post-login redirect may land on.
-const ALLOWED_EXACT = ['/', '/profile', '/explore', '/checkout']
+//
+// /saved is here because SavedView's signed-out state sends the guest to
+// `/login?redirect=%2Fsaved`, and without it that path fell through to the
+// /profile fallback: the guest asked to sign in so they could see their
+// shortlist and was landed somewhere else, with no way back but the nav.
+// /transfers is the same omission one level up, since the '/transfers/'
+// PREFIX below was already allowed while the page itself was not.
+const ALLOWED_EXACT = ['/', '/profile', '/saved', '/explore', '/checkout', '/transfers']
 // Namespaces a redirect may land in. Covers the engagement loop
 // (/experience/<slug> after liking/commenting), the post-payment confirm
 // pages, and the admin moderation queue, none of which are static and so

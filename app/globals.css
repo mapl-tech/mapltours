@@ -1879,3 +1879,175 @@ img[alt="Devon House Patty & Ice Cream Tour"] {
   .opc-mobile-only { display: none; }
   .opc-sticky { display: none; }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Profile  (/profile)
+
+   The page's responsive behaviour lived in a `<style jsx global>` tag inside
+   ProfileView holding a single max-width:768px rule, while every dimension
+   around it was an inline pixel value. That produced a band between 769px and
+   899px where the content column was 309px wide, NARROWER than the same page
+   on a phone, because the 340px sidebar arrived before there was room for it.
+
+   Introducing a rail always narrows the main column at the breakpoint, so the
+   only question is by how much. Measured, with the column capped at 700px on
+   both sides of the step: a rail at 900px drops it 700 -> 464 (236px), at
+   1024px 700 -> 588 (112px), at 1080px 700 -> 644 (56px). 1080 it is, and the
+   column is capped below the breakpoint as well, which is what turns a
+   403px collapse into a 56px one.
+
+   Mobile first, min-width queries only.
+   ═══════════════════════════════════════════════════════════════════════════ */
+.pf-shell {
+  max-width: 1120px;
+  margin: 0 auto;
+  /* The token, never a literal 72: the bar is shorter on mobile and the two
+     must not drift apart. */
+  padding: calc(var(--nav-h) + 20px) 16px 72px;
+}
+.pf-body { display: flex; flex-direction: column; gap: 28px; align-items: center; }
+/* Capped at every width, not just once the rail appears. See the note above. */
+.pf-main { width: 100%; max-width: 700px; min-width: 0; display: flex; flex-direction: column; gap: 28px; }
+.pf-rail { width: 100%; max-width: 700px; min-width: 0; display: flex; flex-direction: column; gap: 16px; }
+
+/* Card chrome, defined once. Six copies with four different hand-rolled pure
+   black shadows sat inline in the component; the page is warm, so the ramp is
+   the warm one from the token set. */
+.pf-card {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--r-xl);
+  box-shadow: var(--shadow-xs);
+}
+.pf-pad { padding: 20px; }
+
+.pf-eyebrow {
+  font-family: var(--font-dm-sans);
+  font-size: var(--fs-label);
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+}
+.pf-num { font-variant-numeric: tabular-nums; font-feature-settings: 'tnum' 1; }
+
+/* Section heading. Deliberately NOT var(--fs-h2): seven 40px headings in a
+   700px column out-shout the 44px page h1 and flatten the hierarchy the page
+   is trying to establish. A kicker above an h3 does the same job quietly. */
+.pf-h2 {
+  font-family: var(--font-dm-sans);
+  font-weight: 800;
+  font-size: var(--fs-h3);
+  letter-spacing: -0.02em;
+  color: var(--text-primary);
+  line-height: 1.25;
+}
+
+/* The masthead: the only place the page carries a photograph. */
+.pf-hero {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--r-xl);
+  min-height: 210px;
+  display: flex;
+  align-items: flex-end;
+  background: var(--bg-dark);
+}
+.pf-hero-media { position: absolute; inset: 0; }
+/* Bottom stop 0.86 over the warm ink. White on that is 11.9:1 even where the
+   photograph underneath is blown to pure white; 0.75 is the AAA floor and
+   0.60, which the old price chip used, is only 4.7:1 in that worst case. */
+.pf-hero-scrim {
+  position: absolute; inset: 0;
+  background: linear-gradient(180deg, rgba(23,22,20,0.28) 0%, rgba(23,22,20,0.62) 46%, rgba(23,22,20,0.88) 100%);
+}
+.pf-hero-body { position: relative; padding: 26px 20px 20px; width: 100%; }
+
+/* Stat row. Three up from the start; they are short numbers, not columns. */
+.pf-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; background: var(--border); border-radius: var(--r-md); overflow: hidden; }
+.pf-stat { background: var(--card-bg); padding: 14px 8px; text-align: center; min-height: 44px; }
+a.pf-stat { display: block; text-decoration: none; }
+a.pf-stat:hover { background: var(--surface); }
+
+/* Trip rows. The 120px fixed image rail ate a third of a 390px card and
+   crushed the two-line transfer titles beside it. */
+.pf-trip { display: flex; flex-direction: column; }
+.pf-trip-media { position: relative; width: 100%; aspect-ratio: 16 / 9; background: var(--surface); flex-shrink: 0; }
+.pf-trip-body { padding: 16px; min-width: 0; flex: 1; }
+
+/* Past trips: one column on a phone, never the fixed two that made 161px
+   cards on a 390px screen. */
+.pf-grid { display: grid; grid-template-columns: 1fr; gap: 16px; }
+
+/* Long strings that must not push the page wider than the screen. A 40-char
+   email in a fixed row is what took the document to 422px on a 390px phone. */
+.pf-wrap { overflow-wrap: anywhere; word-break: break-word; min-width: 0; }
+
+/* Every standalone control clears 44px. The edit, cancel and disclosure
+   controls were 14px to 16px tall, well under half the WCAG 2.2 floor. */
+.pf-tap {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  font-family: var(--font-dm-sans);
+  color: var(--text-primary);
+}
+.pf-link { font-weight: 600; text-decoration: underline; text-underline-offset: 3px; }
+.pf-skel {
+  background: linear-gradient(90deg, var(--surface) 25%, var(--surface-hover) 37%, var(--surface) 63%);
+  background-size: 400% 100%;
+  animation: opcShimmer 1.4s ease infinite;
+  border-radius: var(--r-md);
+}
+@media (prefers-reduced-motion: reduce) { .pf-skel { animation: none; } }
+
+@media (min-width: 560px) {
+  .pf-trip { flex-direction: row; align-items: stretch; }
+  .pf-trip-media { width: 200px; aspect-ratio: auto; }
+  .pf-trip-body { padding: 18px 20px; }
+  .pf-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (min-width: 768px) {
+  .pf-shell { padding-left: 24px; padding-right: 24px; }
+  .pf-hero { min-height: 260px; }
+  .pf-hero-body { padding: 32px 28px 26px; }
+  .pf-pad { padding: 24px; }
+}
+
+/* The rail, at the width where it costs the main column 56px rather than 236. */
+@media (min-width: 1080px) {
+  .pf-shell { padding-left: 32px; padding-right: 32px; padding-bottom: 96px; }
+  .pf-body { flex-direction: row; align-items: flex-start; gap: 32px; justify-content: center; }
+  .pf-main { flex: 1; }
+  .pf-rail { width: 340px; max-width: 340px; flex-shrink: 0; position: sticky; top: calc(var(--nav-h) + 24px); }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Saved  (/saved)
+
+   The grid was a fixed `repeat(4, 1fr)` applied from 768px up, inside a
+   1200px shell with 24px gutters. At 768px that is (768 - 48 - 60) / 4 =
+   165px per card, where ExpCard's own badges start overlapping its save
+   heart and the caption is taller than the photograph. Auto-fill with a
+   260px floor gives 2 columns at 768px and 4 only once there is room.
+   ═══════════════════════════════════════════════════════════════════════════ */
+.saved-shell {
+  max-width: 1200px;
+  margin: 0 auto;
+  /* 16px on a phone, matching every other page. The old 24px made saved
+     cards narrower here than the same cards on /explore. */
+  padding: calc(var(--nav-h) + 32px) 16px 96px;
+}
+.saved-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 20px;
+}
+@media (min-width: 768px) { .saved-shell { padding-left: 24px; padding-right: 24px; } }
+@media (min-width: 1100px) { .saved-shell { padding-left: 32px; padding-right: 32px; } }
