@@ -66,6 +66,31 @@ export async function POST(req: Request) {
     return NextResponse.json({ ready: false, status: pi.status })
   }
 
+  // The PaymentIntent id is NOT a secret, and this route hands back a bearer
+  // instrument. Stripe appends `payment_intent` to the return URL, so the id
+  // sits in /gifts?payment_intent=pi_... and from there it reaches the browser
+  // history, any shared link, and Google Analytics and Ads, because gtag's
+  // default page_view sends the whole location and nothing overrides
+  // page_location. Anyone who can read those reports could replay the id here
+  // and walk off with a spendable code plus the recipient's email address.
+  //
+  // The legitimate buyer arrives within seconds of paying. Nobody else needs
+  // this endpoint at all: the card is emailed to the recipient, and the
+  // purchaser gets their own copy. So the reveal is bound to a short window
+  // after the charge, which removes the permanent exposure without changing
+  // anything the real buyer experiences.
+  const REVEAL_WINDOW_MIN = 30
+  const ageMin = (Date.now() / 1000 - pi.created) / 60
+  if (ageMin > REVEAL_WINDOW_MIN) {
+    return NextResponse.json(
+      {
+        error:
+          'For security we only show a gift code right after purchase. Check the email we sent, or contact contact@mapltours.com and we will resend it.',
+      },
+      { status: 410 },
+    )
+  }
+
   // Paid. Make sure the card is live even if the webhook has not landed —
   // idempotent, and it also (re)attempts the delivery emails.
   try {

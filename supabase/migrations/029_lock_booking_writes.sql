@@ -1,0 +1,37 @@
+-- 029 — Only the server may create a booking
+--
+-- Idempotent, safe to re-run.
+--
+-- Migration 001 gave `bookings` and `booking_items` permissive INSERT policies
+-- from the era when the browser created its own rows. That era is over: every
+-- booking is now written by an API route through the SERVICE ROLE, which
+-- bypasses RLS entirely, and a repo-wide search finds no client component that
+-- touches either table. The policies were left behind as pure attack surface.
+--
+-- What they allowed, verified against production on 2026-09-09:
+--
+--   * `authenticated` holds INSERT on EVERY column of bookings, including
+--     status, total_paid, paid_at, email and booking_type.
+--   * The policy's only condition is `auth.uid() = user_id`, which an attacker
+--     satisfies trivially by naming themselves.
+--   * `bookings_status_check` permits 'paid', and there is no INSERT trigger.
+--
+-- So any signed-in account could POST straight to PostgREST and mint a row
+-- reading `status = 'paid'`, `total_paid = 0`, with an arbitrary `email`. That
+-- row is indistinguishable from a real sale to everything downstream: it shows
+-- up in the admin dispatch console, where an operator could send a real driver
+-- on a real trip nobody paid for; the day-of cron would send MAPL-branded mail
+-- to whatever address the attacker wrote into the row; and it would forge
+-- revenue in any figure taken from this table.
+--
+-- Dropping the policies leaves RLS with NO permissive INSERT policy on either
+-- table, which is default-deny for anon and authenticated. The service role is
+-- unaffected because it bypasses RLS. SELECT policies are deliberately kept:
+-- the profile page reads a guest's own bookings through them.
+--
+-- The broad table grants stay as they are. They are Supabase defaults on every
+-- table in this database and RLS is what actually gates access; narrowing them
+-- here would diverge from every other table without adding protection.
+
+drop policy if exists "Users can create their own bookings" on public.bookings;
+drop policy if exists "Users can create their own booking items" on public.booking_items;

@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { rateLimit, getIp } from '@/lib/rate-limit'
 
 /**
  * Proxy for Google Places photos.
@@ -24,6 +25,15 @@ const CACHE = 'public, max-age=2592000, stale-while-revalidate=604800'
 export async function GET(req: Request) {
   const key = process.env.GOOGLE_PLACES_API_KEY
   if (!key) return NextResponse.json({ error: 'not_configured' }, { status: 404 })
+
+  // Every miss here is a BILLED Google Places call. The resource-name regex
+  // below stops this being an open proxy, but it does not stop someone
+  // looping over our own photo names to run up the bill, so throttle by IP.
+  // Generous on purpose: a single page legitimately asks for a dozen photos.
+  const ip = getIp(req)
+  if (rateLimit(ip, { bucket: 'places-photo', max: 60, windowMs: 60_000 })) {
+    return NextResponse.json({ error: 'rate_limited' }, { status: 429 })
+  }
 
   const { searchParams } = new URL(req.url)
   const name = searchParams.get('name')

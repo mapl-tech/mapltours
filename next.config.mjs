@@ -74,6 +74,54 @@ const nextConfig = {
         { key: 'X-Frame-Options', value: 'DENY' },
         { key: 'X-XSS-Protection', value: '1; mode=block' },
         { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
+        // Turn off browser features this site never uses, so a script that
+        // does get injected cannot reach for the camera, the microphone or
+        // the visitor's location. Zero risk: nothing here is used by Stripe,
+        // Hotjar or the tag manager, and the site asks for none of it.
+        {
+          key: 'Permissions-Policy',
+          value: [
+            'camera=()', 'microphone=()', 'geolocation=()', 'payment=(self)',
+            'usb=()', 'magnetometer=()', 'gyroscope=()', 'accelerometer=()',
+            'interest-cohort=()',
+          ].join(', '),
+        },
+        // Content-Security-Policy, deliberately in REPORT-ONLY.
+        //
+        // This site takes card payments. An enforcing policy that is missing
+        // one Stripe origin does not degrade, it stops customers paying, and
+        // the payment element cannot be exercised here without creating a
+        // real booking and a real PaymentIntent. So the policy ships in the
+        // mode that reports violations and blocks nothing.
+        //
+        // TO PROMOTE IT: take one real payment end to end with devtools open,
+        // confirm the console logs no CSP violation, then rename this key to
+        // 'Content-Security-Policy'. Until then it is documentation that the
+        // browser checks for you.
+        //
+        // 'unsafe-inline' and 'unsafe-eval' are present because Next.js
+        // inlines hydration scripts and the tag manager evaluates its
+        // container. Removing them needs per-request nonces, which is a
+        // separate piece of work.
+        {
+          key: 'Content-Security-Policy-Report-Only',
+          value: [
+            "default-src 'self'",
+            "base-uri 'self'",
+            "object-src 'none'",
+            "frame-ancestors 'none'",
+            "form-action 'self'",
+            "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com https://www.googletagmanager.com https://static.hotjar.com https://script.hotjar.com https://www.google-analytics.com https://www.googleadservices.com https://googleads.g.doubleclick.net",
+            "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+            "font-src 'self' data: https://fonts.gstatic.com https://script.hotjar.com",
+            "img-src 'self' data: blob: https:",
+            "media-src 'self' blob:",
+            "frame-src https://js.stripe.com https://hooks.stripe.com https://www.youtube.com https://www.youtube-nocookie.com https://vars.hotjar.com",
+            "connect-src 'self' https://api.stripe.com https://*.supabase.co wss://*.supabase.co https://www.google-analytics.com https://*.analytics.google.com https://www.googletagmanager.com https://*.hotjar.com https://*.hotjar.io wss://*.hotjar.com https://api.supabase.com",
+            "worker-src 'self' blob:",
+            "upgrade-insecure-requests",
+          ].join('; '),
+        },
       ],
     },
   ],

@@ -52,7 +52,16 @@ export async function GET(req: Request) {
   }
 
   // Otherwise match either side's email. `ilike` so "JANE@" finds "jane@".
-  const pattern = `%${q.replace(/[%_]/g, '')}%`
+  //
+  // % and _ are LIKE wildcards, and a comma or bracket is STRUCTURAL inside a
+  // PostgREST or(...) expression: a search for "a,status.eq.used" would graft
+  // an extra condition onto the filter rather than being matched as text. All
+  // five are stripped, not escaped, because none of them belongs in an email
+  // search anyway. Only an authenticated admin reaches this route, so the
+  // ceiling was always "see more gift cards than you asked for", never
+  // privilege escalation, but it is the same defect class as the profile
+  // bookings leak and it is one line to close.
+  const pattern = `%${q.replace(/[%_,()\\]/g, '')}%`
   const { data } = await svc
     .from('gift_cards')
     .select(COLS)

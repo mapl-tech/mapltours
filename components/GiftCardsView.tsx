@@ -114,6 +114,14 @@ export default function GiftCardsView() {
   useEffect(() => {
     const pi = new URLSearchParams(window.location.search).get('payment_intent')
     if (pi) {
+      // Scrub the payment identifiers from the address bar IMMEDIATELY, before
+      // handing off to reveal(). Stripe puts both `payment_intent` and
+      // `payment_intent_client_secret` in this return URL, and gtag's default
+      // page_view ships the whole location to Google Analytics and Google Ads,
+      // so leaving them there published a spendable gift card's payment
+      // reference into third-party reports, browser history and any shared
+      // link. The id we already read stays in memory for the reveal call.
+      window.history.replaceState(null, '', '/gifts')
       setStage('pay')
       void reveal(pi)
     }
