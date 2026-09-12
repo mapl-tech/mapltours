@@ -1,6 +1,7 @@
 import { describe, test, expect, vi, beforeEach, afterEach } from 'vitest'
 import { createHash } from 'node:crypto'
 import { buildPurchaseEvent, reportMetaPurchase } from '../../lib/meta-capi'
+import { reportServerPurchase } from '../../lib/ga4-server'
 
 const sha256 = (v: string) => createHash('sha256').update(v).digest('hex')
 
@@ -93,5 +94,90 @@ describe('server-side Meta purchase (Conversions API)', () => {
 
     delete process.env.META_CAPI_TOKEN
     expect(await reportMetaPurchase(booking, fetchMock as unknown as typeof fetch)).toBe('skipped')
+  })
+
+  /**
+   * The money-safety contract the Stripe webhook depends on.
+   *
+   * handlePaymentSucceeded awaits Promise.all([reportServerPurchase,
+   * reportMetaPurchase]) INSIDE the paid transition, with the traveller
+   * email, the operator email, the driver assign and the calendar sync still
+   * to happen below it. If either reporter could reject, Promise.all would
+   * reject, the webhook would throw, Stripe would see a 500 and redeliver,
+   * and a guest who has already been charged could be fulfilled twice or not
+   * at all. So "neither of these throws" is not a nicety, it is the thing
+   * that keeps a Meta outage from breaking a paid booking.
+   */
+  describe('never breaks the webhook, whatever Meta does', () => {
+    test('a network failure resolves to failed rather than throwing', async () => {
+      const boom = vi.fn().mockRejectedValue(new Error('ECONNRESET'))
+      await expect(reportMetaPurchase(booking, boom as unknown as typeof fetch)).resolves.toBe('failed')
+    })
+
+    test('an HTTP error from Meta resolves to failed rather than throwing', async () => {
+      const rejected = vi.fn().mockResolvedValue({ ok: false, status: 400 })
+      await expect(reportMetaPurchase(booking, rejected as unknown as typeof fetch)).resolves.toBe('failed')
+    })
+
+    test('an aborted/timed-out request resolves to failed rather than throwing', async () => {
+      const aborted = vi.fn().mockImplementation(() => {
+        const err = new Error('The operation was aborted')
+        err.name = 'AbortError'
+        return Promise.reject(err)
+      })
+      await expect(reportMetaPurchase(booking, aborted as unknown as typeof fetch)).resolves.toBe('failed')
+    })
+
+    test('a malformed booking resolves rather than throwing', async () => {
+      const fetchMock = vi.fn().mockResolvedValue({ ok: true })
+      const junk = { id: '', total_paid: 'not-a-number', email: 12345 } as never
+      await expect(reportMetaPurchase(junk, fetchMock as unknown as typeof fetch)).resolves.toMatch(/skipped|failed/)
+    })
+
+    test('the exact webhook pattern survives BOTH reporters failing on the network', async () => {
+      process.env.GA4_API_SECRET = 'test-secret'
+      const boom = vi.fn().mockRejectedValue(new Error('both platforms down'))
+      // A booking carrying BOTH a GA client id and Meta cookies, so neither
+      // reporter short-circuits and both genuinely attempt the network.
+      const reportable = {
+        ...booking,
+        attribution: { ...booking.attribution, ga_client_id: '1234567890.1725000000', ga_session_id: '1747323152' },
+      }
+      // Mirrors handlePaymentSucceeded line for line.
+      const results = await Promise.all([
+        reportServerPurchase(reportable as never, boom as unknown as typeof fetch),
+        reportMetaPurchase(reportable, boom as unknown as typeof fetch),
+      ])
+      expect(results).toEqual(['failed', 'failed'])
+      expect(boom).toHaveBeenCalledTimes(2)
+      delete process.env.GA4_API_SECRET
+    })
+
+    test('resolves (never rejects) even when a reporter short-circuits', async () => {
+      // GA4 skips a booking with no GA client id; Meta fails on the network.
+      // Mixed outcomes must still RESOLVE, because a rejection here would
+      // throw the webhook and make Stripe redeliver a charged booking.
+      process.env.GA4_API_SECRET = 'test-secret'
+      const boom = vi.fn().mockRejectedValue(new Error('down'))
+      const results = await Promise.all([
+        reportServerPurchase(booking as never, boom as unknown as typeof fetch),
+        reportMetaPurchase(booking, boom as unknown as typeof fetch),
+      ])
+      expect(results).toEqual(['skipped', 'failed'])
+      for (const r of results) expect(['sent', 'skipped', 'failed']).toContain(r)
+      delete process.env.GA4_API_SECRET
+    })
+  })
+
+  test('honours the visitor tracking opt-out recorded at checkout', async () => {
+    // components/Trackers withholds the browser pixel from a Do Not Track /
+    // GPC visitor. The Conversions API matches on the hashed email, not a
+    // cookie, so without this gate it would report their purchase regardless.
+    const optedOut = { ...booking, attribution: { ...booking.attribution, dnt: '1' } }
+    expect(buildPurchaseEvent(optedOut, NOW)).toMatchObject({ skipped: expect.stringMatching(/opted out/) })
+
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true })
+    expect(await reportMetaPurchase(optedOut, fetchMock as unknown as typeof fetch)).toBe('skipped')
+    expect(fetchMock).not.toHaveBeenCalled()
   })
 })

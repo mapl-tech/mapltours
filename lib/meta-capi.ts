@@ -83,6 +83,13 @@ export function buildPurchaseEvent(
 
   const attr = (b.attribution && typeof b.attribution === 'object' ? b.attribution : {}) as Record<string, unknown>
 
+  // The visitor asked not to be tracked, recorded by lib/attribution at
+  // checkout. components/Trackers already withheld the browser pixel from
+  // them; this is the server half of the same promise, and without it the
+  // Conversions API would report the purchase anyway, because it matches on
+  // the hashed email rather than on a cookie the opted-out visitor never got.
+  if (attr.dnt === '1') return { skipped: 'visitor opted out of tracking' }
+
   // Identity for matching. An event with no identifiers at all cannot be
   // attributed to anyone, so skip it rather than send a phantom conversion
   // that only inflates the account's unattributed purchases.

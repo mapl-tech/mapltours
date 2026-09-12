@@ -27,6 +27,15 @@ const ALLOWED_KEYS = [
   // so the webhook's Conversions API call can match the purchase to the ad
   // click even when the pixel never fired. See lib/meta-capi.
   'fbp', 'fbc',
+  // The visitor's tracking opt-out, recorded at checkout so SERVER-side
+  // reporting can honour it too. components/Trackers already withholds every
+  // tag from a visitor sending Do Not Track or Global Privacy Control, but
+  // the Conversions API fires from the Stripe webhook long after that
+  // decision, and it matches on the hashed email rather than a cookie, so
+  // nothing about the browser's choice would otherwise reach it. GA4 is
+  // implicitly safe because it needs a _ga cookie the opted-out visitor never
+  // got; Meta is not. See lib/meta-capi.
+  'dnt',
 ] as const
 
 /** The GA4 web stream this site loads (components/Trackers). */
@@ -58,6 +67,29 @@ export function readGaIds(cookie: string, measurementId: string = GA4_MEASUREMEN
     if (session) out.ga_session_id = session
   } catch { /* a bad cookie is not worth a broken checkout */ }
   return out
+}
+
+/**
+ * Does this visitor's browser ask not to be tracked?
+ *
+ * Deliberately duplicated from components/Trackers rather than imported: that
+ * is a client component, and this module is also pulled into server code.
+ * Both must agree, so change them together.
+ */
+export function trackingOptedOut(): boolean {
+  try {
+    if (typeof window === 'undefined' || typeof navigator === 'undefined') return false
+    const dnt =
+      navigator.doNotTrack === '1' ||
+      (navigator as unknown as { msDoNotTrack?: string }).msDoNotTrack === '1' ||
+      (window as unknown as { doNotTrack?: string }).doNotTrack === '1'
+    const gpc =
+      (window as unknown as { globalPrivacyControl?: boolean }).globalPrivacyControl === true ||
+      (navigator as unknown as { globalPrivacyControl?: boolean }).globalPrivacyControl === true
+    return dnt || gpc
+  } catch {
+    return false
+  }
 }
 
 /**
@@ -177,8 +209,9 @@ export function getStoredAttribution(): Attribution | null {
     const cookie = typeof document !== 'undefined' ? document.cookie : ''
     const ga = readGaIds(cookie)
     const meta = readMetaIds(cookie)
-    if (!stored && !Object.keys(ga).length && !Object.keys(meta).length) return null
-    return { ...(stored ?? {}), ...ga, ...meta }
+    const optOut: Attribution = trackingOptedOut() ? { dnt: '1' } : {}
+    if (!stored && !Object.keys(ga).length && !Object.keys(meta).length && !Object.keys(optOut).length) return null
+    return { ...(stored ?? {}), ...ga, ...meta, ...optOut }
   } catch { return null }
 }
 

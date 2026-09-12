@@ -3,6 +3,7 @@ import Stripe from 'stripe'
 import { createServiceClient } from '@/lib/supabase/service'
 import { DEFAULT_DRIVER } from '@/lib/dispatch'
 import { reportServerPurchase } from '@/lib/ga4-server'
+import { reportMetaPurchase } from '@/lib/meta-capi'
 import { activateGiftCard } from '@/lib/gift-activation'
 import { settleGiftClaim, releaseGiftClaim, refundToGiftCard } from '@/lib/gift-redemption'
 import { sendEmail, operatorAlertRecipients, confirmationBcc } from '@/lib/email/send'
@@ -272,12 +273,25 @@ async function handlePaymentSucceeded(pi: Stripe.PaymentIntent) {
     }
     booking.status = 'paid'
 
-    // Server-side purchase for GA4 and Google Ads, exactly once: on the
-    // delivery that flipped this booking to paid, so a Stripe redelivery
-    // never double counts. The confirm page fires the same transaction id
-    // client-side and GA4 dedupes on it; this one lands even when the guest
-    // never returns from 3DS or closes the tab. Never fatal.
-    await reportServerPurchase(booking)
+    // Server-side purchase for GA4/Google Ads and for Meta, exactly once: on
+    // the delivery that flipped this booking to paid, so a Stripe redelivery
+    // never double counts. Each confirm page fires the same id client-side
+    // and both platforms dedupe on it (GA4 on transaction_id, Meta on
+    // event_id), so these land even when the guest never returns from 3DS or
+    // closes the tab.
+    //
+    // Run in PARALLEL, deliberately. Each reporter carries its own 4s
+    // timeout, and everything below still has to happen inside Stripe's
+    // ~10s webhook budget: the driver assign, the traveller and operator
+    // emails, the calendar sync. Awaiting them in sequence would put 8s of
+    // analytics in front of fulfilment and risk a timeout, which Stripe
+    // answers by redelivering. Promise.all cannot reject here because
+    // neither function throws: both resolve to 'sent' | 'skipped' | 'failed'
+    // and swallow their own errors. Never fatal.
+    await Promise.all([
+      reportServerPurchase(booking),
+      reportMetaPurchase(booking),
+    ])
 
     // Auto-assign the default driver, exactly once: on the delivery that
     // flipped this booking to paid. Living inside the transition means a
