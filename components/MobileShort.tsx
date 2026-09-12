@@ -33,8 +33,21 @@ export default memo(function MobileShort({ exp, priority = false }: { exp: Exper
   const [videoMounted, setVideoMounted] = useState(false)
   const [isPlaying, setIsPlaying] = useState(false)
 
-  const playAttempted = useRef(false)
-  const retryTimer = useRef<ReturnType<typeof setTimeout>>()
+  // Mirrors isVisible synchronously. The observer pauses an off-screen video,
+  // which fires a 'pause' event that the keep-playing handler below would
+  // otherwise answer by restarting a card nobody is looking at. React state
+  // updates too late to prevent that; this ref does not.
+  const visibleRef = useRef(false)
+  // Whether this device asks for less motion. Read once, on the client.
+  const [allowMotion, setAllowMotion] = useState(false)
+
+  useEffect(() => {
+    const mq = window.matchMedia('(prefers-reduced-motion: reduce)')
+    const apply = () => setAllowMotion(!mq.matches)
+    apply()
+    mq.addEventListener('change', apply)
+    return () => mq.removeEventListener('change', apply)
+  }, [])
 
   // Intersection Observer, generous rootMargin for early video loading
   useEffect(() => {
@@ -44,6 +57,7 @@ export default memo(function MobileShort({ exp, priority = false }: { exp: Exper
     const observer = new IntersectionObserver(
       ([entry]) => {
         const visible = entry.isIntersecting
+        visibleRef.current = visible
         setIsVisible(visible)
 
         if (visible) {
@@ -54,7 +68,6 @@ export default memo(function MobileShort({ exp, priority = false }: { exp: Exper
             videoRef.current.pause()
             setIsPlaying(false)
           }
-          playAttempted.current = false
         }
       },
       { threshold: 0, rootMargin: '200px 0px' }
@@ -64,60 +77,81 @@ export default memo(function MobileShort({ exp, priority = false }: { exp: Exper
     return () => observer.disconnect()
   }, [])
 
-  // Play video when visible
+  /**
+   * Keep the visible card playing, and keep trying.
+   *
+   * Mobile browsers refuse autoplay for reasons that are not errors and do not
+   * resolve on a timer, so a fixed chain of retries gives up while the video is
+   * still perfectly playable. The ones that actually happen in the wild:
+   *
+   *   - iOS Low Power Mode blocks autoplay outright until the visitor touches
+   *     the page. No delay defeats it; only a gesture does, which is why this
+   *     listens for the first one.
+   *   - The media is not buffered yet, so the early attempt rejects and the
+   *     later 'canplay' is the real starting gun.
+   *   - The tab was backgrounded, and iOS silently paused everything.
+   *   - The OS paused playback for a call or another app taking audio focus.
+   *
+   * So rather than attempt N times and stop, every one of those becomes a
+   * trigger to try again, and a video that is already playing is left alone.
+   * The previous version also latched a playAttempted flag BEFORE calling
+   * play(), which meant one rejection retired the card for good.
+   *
+   * A visitor who asks for reduced motion keeps the still photograph: that is
+   * what the setting means, and the card is designed to read well either way.
+   */
   useEffect(() => {
-    if (!isVisible || !videoMounted) return
+    if (!isVisible || !videoMounted || !allowMotion) return
     const video = videoRef.current
-    if (!video || playAttempted.current) return
+    if (!video) return
+
+    let cancelled = false
+    const timers: ReturnType<typeof setTimeout>[] = []
 
     const onPlaying = () => setIsPlaying(true)
     video.addEventListener('playing', onPlaying)
 
-    const attemptPlay = () => {
-      if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
-      playAttempted.current = true
-      video.muted = true
-      video.play()
-        .then(() => setIsPlaying(true))
-        .catch(() => {
-          // Retry with increasing delay
-          retryTimer.current = setTimeout(() => {
-            video.muted = true
-            video.play()
-              .then(() => setIsPlaying(true))
-              .catch(() => {
-                // Final retry
-                retryTimer.current = setTimeout(() => {
-                  video.muted = true
-                  video.play().then(() => setIsPlaying(true)).catch(() => {})
-                }, 500)
-              })
-          }, 200)
-        })
+    const tryPlay = () => {
+      if (cancelled || !visibleRef.current) return
+      const v = videoRef.current
+      if (!v || !v.paused) return
+      // Muted is what makes autoplay permissible at all on iOS and Android.
+      v.muted = true
+      v.play().then(() => { if (!cancelled) setIsPlaying(true) }).catch(() => {})
     }
 
-    if (video.readyState >= 2) {
-      attemptPlay()
-    } else {
-      video.addEventListener('loadeddata', attemptPlay, { once: true })
-      // Timeout fallback for slow connections
-      const timeout = setTimeout(() => {
-        if (!playAttempted.current && video.readyState >= 1) {
-          attemptPlay()
-        }
-      }, 2000)
-      return () => {
-        clearTimeout(timeout)
-        if (retryTimer.current) clearTimeout(retryTimer.current)
-        video.removeEventListener('playing', onPlaying)
-      }
+    // Something paused a card that is still on screen. Resume it.
+    const onPause = () => {
+      if (!cancelled && visibleRef.current) tryPlay()
     }
+    const onVisibilityChange = () => {
+      if (document.visibilityState === 'visible') tryPlay()
+    }
+
+    tryPlay()
+    video.addEventListener('loadeddata', tryPlay)
+    video.addEventListener('canplay', tryPlay)
+    video.addEventListener('pause', onPause)
+    document.addEventListener('visibilitychange', onVisibilityChange)
+    // The gesture unlock. Passive and non-capturing: this only ever calls
+    // play() on an already-muted video, so it cannot interfere with taps.
+    document.addEventListener('pointerdown', tryPlay, { passive: true })
+    document.addEventListener('touchstart', tryPlay, { passive: true })
+    // A few nudges for slow media, on top of the event-driven attempts.
+    for (const delay of [150, 600, 1500]) timers.push(setTimeout(tryPlay, delay))
 
     return () => {
-      if (retryTimer.current) clearTimeout(retryTimer.current)
+      cancelled = true
+      for (const t of timers) clearTimeout(t)
       video.removeEventListener('playing', onPlaying)
+      video.removeEventListener('loadeddata', tryPlay)
+      video.removeEventListener('canplay', tryPlay)
+      video.removeEventListener('pause', onPause)
+      document.removeEventListener('visibilitychange', onVisibilityChange)
+      document.removeEventListener('pointerdown', tryPlay)
+      document.removeEventListener('touchstart', tryPlay)
     }
-  }, [isVisible, videoMounted])
+  }, [isVisible, videoMounted, allowMotion])
 
   return (
     <div ref={containerRef}>
@@ -159,12 +193,15 @@ export default memo(function MobileShort({ exp, priority = false }: { exp: Exper
               ref={videoRef}
               src={exp.video}
               muted
-              /* No autoPlay attribute on purpose. With it the browser started
-                 playback itself, which walked straight past the
-                 prefers-reduced-motion guard in attemptPlay below and made
-                 that guard dead code: a guest who asks for less motion still
-                 got every visible card looping. Playback is driven only from
-                 that effect, the way ExperienceDetail already does it. */
+              /* autoPlay is gated on allowMotion rather than always-on. It was
+                 removed entirely once because a bare attribute let the browser
+                 start playback on its own, straight past the reduced-motion
+                 guard in the effect above, making that guard dead code. Tying
+                 the attribute to the same flag keeps the guard honest AND lets
+                 the browser's own autoplay machinery start the video, which
+                 succeeds on some mobile builds before any script runs. The
+                 effect then handles every case where it does not. */
+              {...(allowMotion ? { autoPlay: true } : {})}
               loop
               playsInline
               preload={isVisible ? 'auto' : 'metadata'}
