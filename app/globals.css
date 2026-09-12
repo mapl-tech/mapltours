@@ -2096,3 +2096,48 @@ a.pf-stat:hover { background: var(--surface); }
 }
 @media (min-width: 768px) { .saved-shell { padding-left: 24px; padding-right: 24px; } }
 @media (min-width: 1100px) { .saved-shell { padding-left: 32px; padding-right: 32px; } }
+
+/* ── Airport-transfer fare tables ────────────────────────────────────────
+   Classes rather than inline styles, and not for tidiness: the table is 199
+   rows x 4 cells, and the App Router serialises the server tree twice (once
+   as HTML, once as the RSC flight payload), so a style object per cell was
+   paid for roughly 1,600 times and pushed /transfers from 201KB to 652KB.
+   Two thirds of this audience is on a phone. */
+.fare-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--font-dm-sans);
+  font-size: 14px;
+  min-width: 420px;
+}
+.fare-table thead tr { border-bottom: 1px solid rgba(255, 255, 255, 0.16); }
+.fare-table th,
+.fare-table td { padding: 10px 12px; }
+.fare-table thead th {
+  text-align: left;
+  padding-top: 8px;
+  padding-bottom: 8px;
+  color: rgba(255, 255, 255, 0.6);
+  font-weight: 600;
+}
+.fare-table tbody tr { border-bottom: 1px solid rgba(255, 255, 255, 0.07); }
+.fare-table tbody th {
+  text-align: left;
+  color: #fff;
+  font-weight: 500;
+}
+.fare-table td { color: rgba(255, 255, 255, 0.6); }
+/* One-way and round-trip columns: right-aligned, never wrapped mid-price. */
+.fare-table .fare-num {
+  color: #fff;
+  text-align: right;
+  white-space: nowrap;
+}
+.fare-table thead .fare-num { color: rgba(255, 255, 255, 0.6); }
+.fare-table th:first-child,
+.fare-table td:first-child { padding-left: 0; }
+.fare-table th:last-child,
+.fare-table td:last-child { padding-right: 0; }
+.fare-reopen { color: rgba(255, 255, 255, 0.45); font-weight: 400; }
+/* Tables are the one thing allowed to scroll sideways; the page body is not. */
+.fare-scroll { overflow-x: auto; }

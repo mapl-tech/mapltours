@@ -235,7 +235,7 @@ export const POSTS_1: BlogPost[] = [
       { type: 'h2', text: "Private driver, the pick" },
       {
         type: 'p',
-        text: "For one to four people, a pre-booked private transfer is the clear winner. Cost is $120–160 one-way, it takes 90–110 minutes, and the driver meets you inside arrivals with a name board. No haggling, no shared shuttle loop, and the car is yours. Book 24 hours ahead minimum.",
+        text: "For one to four people, a pre-booked private transfer is the clear winner. It takes 90 to 110 minutes, the driver meets you inside arrivals with a name board, and the car is yours: no haggling and no shared shuttle loop. [Our fare to Ocho Rios](/transfers) is $111 one-way or $199 round trip, flat per vehicle for up to four people, which is less than the $120 to $160 the airport desks quote. Book 24 hours ahead minimum.",
       },
       {
         type: 'p',
@@ -277,7 +277,7 @@ export const POSTS_1: BlogPost[] = [
       },
       {
         type: 'p',
-        text: "MAPL Tours can arrange the airport transfer to Ocho Rios as part of any experience booking, ask when you check out on /explore.",
+        text: "You can book the Ocho Rios transfer on its own, it is not an add-on: pick your hotel on [airport transfers](/transfers) and the exact fare is shown before you pay. If you want a tour on the same trip, [browse the experiences](/explore) and add it to the same day.",
       },
     ],
     relatedSlugs: ['ocho-rios-complete-guide', 'getting-around-jamaica-guide'],

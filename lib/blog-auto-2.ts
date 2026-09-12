@@ -349,7 +349,7 @@ export const POSTS_2: BlogPost[] = [
       },
       {
         type: 'p',
-        text: "Ride-hailing apps do operate around Montego Bay, but they sit under a government ban that remains officially in force, and Sangster's own site lists only its two authorised taxi companies at the desk outside customs. Do not plan an arrival around one. For most first-time visitors, pre-book a private driver through your hotel or a reputable operator and have them meet you past customs with a name card.",
+        text: "Ride-hailing apps do operate around Montego Bay, but they sit under a government ban that remains officially in force, and Sangster's own site lists only its two authorised taxi companies at the desk outside customs. Do not plan an arrival around one. For most first-time visitors the answer is a private driver booked before you fly, meeting you past customs with a name card. That is what we do: [our airport transfers](/transfers) are a flat price per vehicle for up to four people, $22 to a Montego Bay hotel and $111 to Negril or Ocho Rios, with the fare for all 199 properties listed before you book.",
       },
       {
         type: 'h2',

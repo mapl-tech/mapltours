@@ -187,6 +187,45 @@ function AuthorMonogram({ initials, size = 44 }: { initials: string; size?: numb
 
 /* ─── Block renderer ─── */
 
+/**
+ * Inline `[text](/path)` inside a paragraph.
+ *
+ * Article bodies had no way to link at all, so 421 paragraphs of editorial
+ * passed no equity to any commercial page and 46 of the 55 posts wrote
+ * "/explore" as plain unclickable text. A mid-sentence link converts far
+ * better than a block-level one tacked on the end, which is why this parses
+ * inside `p` rather than adding a `link` block to BlogBlock.
+ *
+ * INTERNAL PATHS ONLY. The href must start with a single "/", so an author
+ * cannot introduce javascript:, data:, or an offsite link through post copy.
+ * Anything else is left as literal text rather than silently dropped, so a
+ * mistake is visible in the article instead of invisible in the markup.
+ */
+const LINK_RE = /\[([^\]\n]+)\]\((\/[^)\s]*)\)/g
+
+function withLinks(text: string): React.ReactNode {
+  if (!text.includes('](')) return text
+  const nodes: React.ReactNode[] = []
+  let last = 0
+  let m: RegExpExecArray | null
+  LINK_RE.lastIndex = 0
+  while ((m = LINK_RE.exec(text)) !== null) {
+    if (m.index > last) nodes.push(text.slice(last, m.index))
+    nodes.push(
+      <Link
+        key={`${m.index}-${m[2]}`}
+        href={m[2]}
+        style={{ color: 'var(--gold)', textDecoration: 'underline', textUnderlineOffset: 3 }}
+      >
+        {m[1]}
+      </Link>,
+    )
+    last = m.index + m[0].length
+  }
+  if (last < text.length) nodes.push(text.slice(last))
+  return nodes
+}
+
 function Block({ block, isFirst }: { block: BlogBlock; isFirst: boolean }) {
   switch (block.type) {
     case 'h2':
@@ -250,7 +289,7 @@ function Block({ block, isFirst }: { block: BlogBlock; isFirst: boolean }) {
             >
               {first}
             </span>
-            {rest}
+            {withLinks(rest)}
           </p>
         )
       }
@@ -265,7 +304,7 @@ function Block({ block, isFirst }: { block: BlogBlock; isFirst: boolean }) {
             marginBottom: 26,
           }}
         >
-          {block.text}
+          {withLinks(block.text)}
         </p>
       )
     case 'quote':
@@ -396,7 +435,7 @@ function Block({ block, isFirst }: { block: BlogBlock; isFirst: boolean }) {
               >
                 {String(i + 1).padStart(2, '0')}
               </span>
-              {item}
+              {withLinks(item)}
             </li>
           ))}
         </ul>

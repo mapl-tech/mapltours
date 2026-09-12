@@ -37,6 +37,25 @@ const nextConfig = {
     // without browsers caching a stale destination.
     { source: '/ig', destination: '/?utm_source=instagram&utm_medium=bio', permanent: false },
     { source: '/tt', destination: '/?utm_source=tiktok&utm_medium=bio', permanent: false },
+
+    /**
+     * Three cannabis-tour posts were removed in e0b6453 and have been
+     * answering Google with a 404 ever since. They were still the best
+     * performing posts on the site when they went: ganja-farm-tour-ocho-rios
+     * was the fourth highest organic landing page in the last 90 days and
+     * cannabis-wellness-retreat-jamaica the ninth, so roughly seven of every
+     * ten blog visits from search were arriving at "Post not found".
+     *
+     * Permanent, and deliberately NOT a republish. The removal looks
+     * intentional rather than incidental: all three promoted ganja farm,
+     * cannabis-culinary and cannabis-retreat TOURS, which MAPL does not sell,
+     * while cbd-spa-jamaica covers the same subject from the wellness angle
+     * and was left alone. So the reader keeps their answer and Google keeps
+     * the signal, without reinstating copy someone chose to take down.
+     */
+    { source: '/blog/ganja-farm-tour-ocho-rios', destination: '/blog/cbd-spa-jamaica', permanent: true },
+    { source: '/blog/cannabis-wellness-retreat-jamaica', destination: '/blog/cbd-spa-jamaica', permanent: true },
+    { source: '/blog/jamaica-cannabis-culinary-tour', destination: '/blog/kingston-gastronomy-tour', permanent: true },
   ],
   headers: async () => [
     // Videos — immutable, 1 year
