@@ -2,7 +2,7 @@
 
 import Image from 'next/image'
 import Link from 'next/link'
-import { experiences, singleExperiences, packageExperiences, HERO_IMAGE, DESTINATION_IMAGES, TOUR_DESTINATIONS, slugify } from '@/lib/experiences'
+import { experiences, singleExperiences, packageExperiences, HERO_IMAGE, DESTINATION_IMAGES, TOUR_DESTINATIONS, slugify, type Experience } from '@/lib/experiences'
 import { EATS } from '@/lib/eats'
 import { priceUnitLabel } from '@/lib/experiences'
 import { useCartStore } from '@/lib/cart'
@@ -795,6 +795,189 @@ function DestinationsSection() {
   )
 }
 
+/** Gap between trending cards. Shared by the rail and the arrow step so a tap
+ *  always lands exactly one card along. */
+const TRENDING_GAP = 12
+
+/**
+ * The mobile face of Trending Now.
+ *
+ * Stacked, these five reels ran roughly 3,000px down the page to say "here are
+ * five popular tours". A rail says it in one screen, and matches how Popular
+ * destinations directly above and Packages directly below already behave.
+ *
+ * Only the snapped card is handed `active`, so only one of the five video
+ * elements exists at a time. That is the entire reason this tracks scroll
+ * position: the five loops weigh 15-41MB each (one is encoded at 22.9 Mbps for
+ * eleven seconds), so letting the rail mount whatever happens to intersect
+ * would put well over 100MB on someone's phone plan for a section they swiped
+ * past. See the note on MobileShort's `active` prop.
+ */
+function TrendingRail({ items }: { items: Experience[] }) {
+  const railRef = useRef<HTMLDivElement>(null)
+  const [activeIndex, setActiveIndex] = useState(0)
+  // Video is opt-in, not opt-out: until we know the connection can carry it,
+  // every card stays on its poster. Mirrors the hero's guard above.
+  const [videoOk, setVideoOk] = useState(false)
+
+  useEffect(() => {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
+    const nav = navigator as Navigator & {
+      connection?: { effectiveType?: string; saveData?: boolean }
+    }
+    const conn = nav.connection
+    if (conn?.saveData || conn?.effectiveType === '2g' || conn?.effectiveType === 'slow-2g') return
+    setVideoOk(true)
+  }, [])
+
+  /**
+   * Which card is being looked at.
+   *
+   * A centre band rather than scrollLeft arithmetic. Shrinking the rail's own
+   * box to the middle 20% means exactly one card can overlap it at a time, so
+   * the active index needs no pitch constant, no tie-break, and no reading of
+   * offsetWidth on the scroll path. The four hardcoded scroll pitches
+   * elsewhere in this file (128, 180, 495, 703) are each a number that has to
+   * be kept in step with a CSS width by hand; this needs none.
+   */
+  useEffect(() => {
+    const rail = railRef.current
+    if (!rail) return
+    const cards = Array.from(rail.children) as HTMLElement[]
+    const io = new IntersectionObserver(
+      (entries) => {
+        for (const e of entries) {
+          if (!e.isIntersecting) continue
+          const i = cards.indexOf(e.target as HTMLElement)
+          if (i >= 0) setActiveIndex((prev) => (prev === i ? prev : i))
+        }
+      },
+      { root: rail, rootMargin: '0px -40% 0px -40%', threshold: 0 },
+    )
+    for (const c of cards) io.observe(c)
+    return () => io.disconnect()
+  }, [items.length])
+
+  /** One card plus one gap, measured rather than assumed: the card is
+   *  min(86vw, 340px), so the number differs between a phone and a tablet and
+   *  only the layout knows which one happened. Read on tap, never on scroll. */
+  const scroll = (dir: 'left' | 'right') => {
+    const rail = railRef.current
+    const first = rail?.firstElementChild as HTMLElement | null
+    if (!rail || !first) return
+    const s = first.offsetWidth + TRENDING_GAP
+    rail.scrollBy({ left: dir === 'left' ? -s : s, behavior: 'smooth' })
+  }
+
+  const atStart = activeIndex <= 0
+  const atEnd = activeIndex >= items.length - 1
+
+  return (
+    <>
+      <div className="container">
+        <div style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          gap: 16, marginBottom: 16,
+        }}>
+          {/* Announced, because position in a rail is information a sighted
+              visitor gets for free from the cards sliding and a screen reader
+              visitor otherwise never gets at all. The visible text stays terse;
+              the announced text is a sentence, because "3 / 5" read aloud is
+              not one. */}
+          <span
+            aria-live="polite"
+            aria-atomic="true"
+            style={{
+              fontFamily: 'var(--font-dm-sans)', fontWeight: 500, fontSize: 14,
+              color: 'rgba(255,255,255,0.6)',
+            }}
+          >
+            <span aria-hidden>{activeIndex + 1} / {items.length}</span>
+            <span className="visually-hidden">
+              {`Showing ${activeIndex + 1} of ${items.length}, ${items[activeIndex]?.title ?? ''}`}
+            </span>
+          </span>
+          {/* Disabled at the ends rather than silently doing nothing. A tap
+              that produces no movement and no explanation reads as a broken
+              control, and a screen reader otherwise gets no signal that the
+              rail has run out. */}
+          <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+            <button
+              onClick={() => scroll('left')}
+              disabled={atStart}
+              aria-label="Previous"
+              style={{
+                width: 44, height: 44, borderRadius: '50%',
+                background: 'transparent', border: '1px solid rgba(255,255,255,0.15)',
+                cursor: atStart ? 'default' : 'pointer', opacity: atStart ? 0.4 : 1,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                color: '#cccccc', transition: 'all 0.2s ease',
+              }}
+            >
+              <ChevronLeft size={18} />
+            </button>
+            <button
+              onClick={() => scroll('right')}
+              disabled={atEnd}
+              aria-label="Next"
+              style={{
+                width: 44, height: 44, borderRadius: '50%',
+                background: 'var(--gold)', border: 'none',
+                cursor: atEnd ? 'default' : 'pointer', opacity: atEnd ? 0.4 : 1,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                color: '#1A1508', transition: 'all 0.2s ease',
+              }}
+            >
+              <ChevronRight size={18} />
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* The rail is a SIBLING of .container, not a child, so it is already
+          full width and carries its own 16px gutter. That gutter matches
+          .container's so the first card lines up under the heading, and
+          scrollPaddingLeft keeps it lined up after every snap. The
+          paddingBottom/marginBottom pair buys back the room the card shadow
+          needs, which overflow-x would otherwise slice: the same trade
+          .pkg-rail makes in globals.css. */}
+      <div
+        ref={railRef}
+        className="no-scrollbar"
+        tabIndex={0}
+        role="region"
+        aria-label="Trending experiences, scroll"
+        style={{
+          display: 'flex', gap: TRENDING_GAP, overflowX: 'auto',
+          scrollSnapType: 'x mandatory', WebkitOverflowScrolling: 'touch',
+          paddingLeft: 16, paddingRight: 16, scrollPaddingLeft: 16,
+          paddingBottom: 28, marginBottom: -24,
+        }}
+      >
+        {items.map((exp, i) => (
+          <div
+            key={exp.id}
+            /* snap-stop keeps a fling from crossing three cards and leaving
+               three aborted media fetches racing each other. */
+            style={{
+              flex: '0 0 min(86vw, 340px)',
+              scrollSnapAlign: 'start',
+              scrollSnapStop: 'always',
+            }}
+          >
+            <MobileShort
+              exp={exp}
+              priority={i === 0}
+              active={videoOk && i === activeIndex}
+              badge={i === 0 ? 'Most booked' : undefined}
+            />
+          </div>
+        ))}
+      </div>
+    </>
+  )
+}
+
 function AllExperiencesSection() {
   const { t } = useI18n()
   const [visibleCount, setVisibleCount] = useState(15)
@@ -1150,8 +1333,9 @@ export default function FeedView() {
             <span style={{ color: '#cccccc' }}>Now book them.</span>
           </p>
 
-          {/* Large featured viral card + grid */}
-          <div className="grid-trending">
+          {/* Large featured viral card + grid. Desktop only: stacked, these
+              five 9:16 tiles ran about 3,000px down a phone. */}
+          <div className="grid-trending hide-mobile">
             {/* Hero viral card, large */}
             {viralExperiences[0] && (
               <a href={`/experience/${slugify(viralExperiences[0].title)}`} className="photo-card" style={{
@@ -1173,7 +1357,7 @@ export default function FeedView() {
                     fontSize: 13, fontWeight: 600, color: 'white',
                     fontFamily: 'var(--font-dm-sans)', marginBottom: 10,
                   }}>
-                    <TrendingUp size={12} /> Most booked
+                    <TrendingUp size={12} /> {t('Most booked')}
                   </span>
                   <h3 style={{
                     fontFamily: 'var(--font-dm-sans)', fontWeight: 700, fontSize: 22,
@@ -1229,8 +1413,11 @@ export default function FeedView() {
                     <span style={{ fontSize: 14, fontWeight: 700, color: 'white', fontFamily: 'var(--font-dm-sans)' }}>
                       {formatPrice(exp.price)}
                     </span>
+                    {/* The unit is not decoration: every tour in this section
+                        is priced `mode: 'group'`, so a bare $459 reads as a
+                        per-head figure that would quadruple at checkout. */}
                     <span style={{ fontSize: 13, color: '#cccccc', fontFamily: 'var(--font-dm-sans)' }}>
-                      · {exp.duration}
+                      {priceUnitLabel(exp.pricing)} · {exp.duration}
                     </span>
                     <span style={{
                       display: 'inline-flex', alignItems: 'center', gap: 2,
@@ -1244,6 +1431,13 @@ export default function FeedView() {
               </a>
             ))}
           </div>
+        </div>
+
+        {/* Mobile: the same five as a swipeable rail. Outside .container on
+            purpose, so the rail can run to both screen edges while its own
+            padding keeps the first card under the heading. */}
+        <div className="hide-desktop">
+          <TrendingRail items={viralExperiences} />
         </div>
       </section>
 
