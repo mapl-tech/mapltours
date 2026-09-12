@@ -71,7 +71,7 @@ export const POSTS_1: BlogPost[] = [
       },
       {
         type: 'p',
-        text: "If you want the climb without any of the planning, MAPL Tours pairs Dunn's River with the hidden Blue Hole an hour inland on a single half-day trip. Browse the Ocho Rios experiences at /explore to see dates and pricing.",
+        text: "If you want the climb without any of the planning, we pair it with the blue hole an hour inland on a single day: [Dunn's River and the Blue Hole](/experience/dunns-river-blue-hole), with hotel pickup and both entries handled. If you only want the falls, [the climb on its own](/experience/dunns-river-falls-climb) is the shorter day. Dates and prices for both are in [the catalogue](/explore).",
       },
     ],
     relatedSlugs: ['reach-falls-vs-dunns-river', 'ocho-rios-complete-guide'],
@@ -137,7 +137,7 @@ export const POSTS_1: BlogPost[] = [
       },
       {
         type: 'p',
-        text: "MAPL Tours's entire catalogue is built around the kind of Jamaica excursions that pass the group-size test. Browse what's running this week at /explore.",
+        text: "The one we would put at the top of any first-timer's list is [the Nine Mile pilgrimage](/blog/nine-mile-marley-pilgrimage), Bob Marley's birthplace and grave up in the St. Ann hills, which we run as [a full day from the north coast](/experience/bob-marley-nine-mile-pilgrimage). The rest of what passes the group-size test is in [the catalogue](/explore).",
       },
     ],
     relatedSlugs: ['beyond-the-resort', 'first-time-jamaica'],
@@ -208,7 +208,7 @@ export const POSTS_1: BlogPost[] = [
       },
       {
         type: 'p',
-        text: "MAPL Tours runs small-group versions of the top picks, the raft, the rum tour, the great-house night. See dates on /explore.",
+        text: "We run small-group versions of the picks that are ours to run: [bamboo rafting on the Martha Brae](/experience/bamboo-rafting-on-the-martha-brae), [parasailing over the bay](/experience/parasailing-over-the-bay) and [a jet ski run along the coast](/experience/jet-ski-the-caribbean). Dates are in [the catalogue](/explore).",
       },
     ],
     relatedSlugs: ['montego-bay-beyond-the-strip', 'montego-bay-airport-guide'],
@@ -345,7 +345,7 @@ export const POSTS_1: BlogPost[] = [
       },
       {
         type: 'p',
-        text: "MAPL Tours runs a small-group Kingston street food and market crawl that hits many of these stops in a single afternoon. See it on /explore.",
+        text: "We do not run Kingston, we drive the north coast, so treat this as a list to walk yourself rather than a tour to buy from us. If you are crossing the island to Ocho Rios or Montego Bay afterwards, [what we do run is in the catalogue](/explore).",
       },
     ],
     relatedSlugs: ['jamaican-jerk-explained', 'kingston-culture-guide'],
@@ -412,7 +412,7 @@ export const POSTS_1: BlogPost[] = [
       },
       {
         type: 'p',
-        text: "MAPL Tours pairs cottage stays with day experiences, cliff-diving at Rick's, snorkeling off Seven Mile, or a food crawl in Savanna-la-Mar. Browse Negril and Westmoreland experiences on /explore.",
+        text: "A cottage stay pairs well with a day out, and the one we run on this end of the island is [Rick's Cafe cliff diving at sunset](/experience/ricks-cafe-cliff-diving-and-sunset), $255 for up to four rather than per head. The rest of what we run is east, in [the catalogue](/explore).",
       },
     ],
     relatedSlugs: ['negril-guide', 'negril-seven-mile-truth'],
@@ -480,7 +480,7 @@ export const POSTS_1: BlogPost[] = [
       },
       {
         type: 'p',
-        text: "If you want the recovery without the label, a regular deep-tissue massage from a great therapist is often just as good. MAPL Tours lists vetted boutique spa partners as add-ons when you book an experience on /explore.",
+        text: "If you want the recovery without the label, a regular deep-tissue massage from a great therapist is often just as good. MAPL Tours lists vetted boutique spa partners as add-ons when you book an experience in [the catalogue](/explore).",
       },
     ],
     relatedSlugs: ['negril-guide'],

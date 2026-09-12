@@ -62,7 +62,7 @@ export const POSTS_5: BlogPost[] = [
       },
       {
         type: 'p',
-        text: "The best way to buy it is to visit. We build coffee farm tastings into the Blue Mountain sunrise trek at /explore, and you can walk out with a sealed bag straight from the roaster, with the seal, the lot number, and a cup you just drank to prove it. No duty-free markup, no mystery blend. Just the coffee, the mountain that grew it, and the farmer who picked it. No problem.",
+        text: "The best way to buy it is to visit. We build coffee farm tastings into the Blue Mountain sunrise trek in [the catalogue](/explore), and you can walk out with a sealed bag straight from the roaster, with the seal, the lot number, and a cup you just drank to prove it. No duty-free markup, no mystery blend. Just the coffee, the mountain that grew it, and the farmer who picked it. No problem.",
       },
     ],
     relatedSlugs: ['blue-mountain-sunrise-hike', 'appleton-estate-rum-tour'],
@@ -121,7 +121,7 @@ export const POSTS_5: BlogPost[] = [
       },
       {
         type: 'p',
-        text: "If you want the full Portland version with pimento wood and a three-generation pit, we run sessions in Boston Bay, you can book one on /explore. Bring an appetite and come hungry. No problem.",
+        text: "The full Portland version with pimento wood and a three-generation pit is worth the drive, though Boston Bay is a long way east of where we drive, so that one is on you. Ask your driver where they eat jerk on the north coast and you will do well. [The days we do run](/explore) leave room for a proper lunch stop. No problem.",
       },
     ],
     relatedSlugs: ['birthplace-of-jerk-boston-bay', 'blue-mountain-coffee-story'],
@@ -189,7 +189,7 @@ export const POSTS_5: BlogPost[] = [
       },
       {
         type: 'p',
-        text: "We run a Reach Falls day trip with a Portland local that includes the underwater swim, lunch, and a stop at Frenchman's Cove. You can book it on /explore. Bring reef shoes, not flip-flops. No problem.",
+        text: "Reach Falls is in Portland, which is outside the parishes we drive, so we will not pretend to run it. What we do run is the other side of this comparison: [Dunn's River Falls](/experience/dunns-river-falls-climb), or [the falls paired with the blue hole inland](/experience/dunns-river-blue-hole) if you want the quiet water too. Either way, bring reef shoes, not flip-flops. No problem.",
       },
     ],
     relatedSlugs: ['birthplace-of-jerk-boston-bay', 'portland-parish-guide'],
@@ -257,7 +257,7 @@ export const POSTS_5: BlogPost[] = [
       },
       {
         type: 'p',
-        text: "We can pair an Appleton tour with a Treasure Beach lunch and a YS Falls stop, it is the best one-day rum and south-coast combo on the island. Find it on /explore. No problem.",
+        text: "We can pair an Appleton tour with a Treasure Beach lunch and a YS Falls stop, it is the best one-day rum and south-coast combo on the island. Find it in [the catalogue](/explore). No problem.",
       },
     ],
     relatedSlugs: ['blue-mountain-coffee-story', 'jamaica-on-a-budget'],
@@ -321,7 +321,7 @@ export const POSTS_5: BlogPost[] = [
       },
       {
         type: 'p',
-        text: "We run a Kingston culture day that combines the Bob Marley Museum with Trench Town and a sound-system dance on the right weekend, the full arc of the music, not just the postcard. Book it on /explore. No problem.",
+        text: "The museum is the Kingston half of the story. The other half is [Nine Mile](/blog/nine-mile-marley-pilgrimage), the village in the St. Ann hills where Bob was born and is buried, and where the feeling is completely different: no platinum records, just the cabin, the stone pillow and the family. Kingston is where he became Bob. Nine Mile is where he was Nesta. We run the Nine Mile day out of the north coast, [a full day for $459 for up to three](/experience/bob-marley-nine-mile-pilgrimage), and if you are doing both, do them on separate days. No problem.",
       },
     ],
     relatedSlugs: ['nine-mile-marley-pilgrimage', 'kingston-culture-guide'],
@@ -364,7 +364,7 @@ export const POSTS_5: BlogPost[] = [
         items: [
           "Standard tour entry, $35 per person at the gate",
           "Combined tour plus round-trip shuttle from Ocho Rios, $55 to $70",
-          "Private driver from Montego Bay, $140 to $180 round trip",
+          "Private driver from Montego Bay, $140 to $180 round trip, or [our full day with entry included](/experience/bob-marley-nine-mile-pilgrimage) at $459 for up to three",
           "Tips for the Rasta guides, customary, $5 to $10 per person",
           "Optional lunch at a local spot on the way back, $12 to $20 per person",
         ],
@@ -380,7 +380,7 @@ export const POSTS_5: BlogPost[] = [
       },
       {
         type: 'p',
-        text: "We run a Nine Mile day trip that pairs the pilgrimage with a proper St. Ann lunch and a detour through the hills Bob wrote about. It sits alongside our Bob Marley Museum day on /explore, do both on the same trip if you can. No problem.",
+        text: "We run this one ourselves. [The Bob Marley Nine Mile Pilgrimage](/experience/bob-marley-nine-mile-pilgrimage) is a full day, $459 for up to three people rather than per head, and it pairs the mausoleum with a proper St. Ann lunch and a detour through the hills Bob wrote about. Your driver picks you up at the hotel, so the two hours of mountain road are somebody else's problem. No problem.",
       },
     ],
     relatedSlugs: ['bob-marley-museum-guide', 'kingston-sound-system-culture'],
@@ -446,7 +446,7 @@ export const POSTS_5: BlogPost[] = [
       },
       {
         type: 'p',
-        text: "We pair dive days with a local lunch and a reef-education segment on /explore, small groups, proper gear, real operators. The reefs are better than Jamaica's reputation gives them credit for. No problem.",
+        text: "We pair dive days with a local lunch and a reef-education segment in [the catalogue](/explore), small groups, proper gear, real operators. The reefs are better than Jamaica's reputation gives them credit for. No problem.",
       },
     ],
     relatedSlugs: ['montego-bay-beyond-the-strip', 'negril-guide'],
@@ -517,7 +517,7 @@ export const POSTS_5: BlogPost[] = [
       },
       {
         type: 'p',
-        text: "Every experience we run on /explore includes transport built in, no guesswork, no airport surprises. The island rewards patience. No problem.",
+        text: "Every experience we run in [the catalogue](/explore) includes transport built in, no guesswork, no airport surprises. The island rewards patience. No problem.",
       },
     ],
     relatedSlugs: ['first-time-jamaica', 'jamaica-on-a-budget'],
@@ -592,7 +592,7 @@ export const POSTS_5: BlogPost[] = [
       },
       {
         type: 'p',
-        text: "Our /explore page lists every MAPL experience with the all-in price, card processing included, booked direct with the operator. The budget version of Jamaica is the real version. No problem.",
+        text: "Our [the catalogue](/explore) page lists every MAPL experience with the all-in price, card processing included, booked direct with the operator. The budget version of Jamaica is the real version. No problem.",
       },
     ],
     relatedSlugs: ['getting-around-jamaica-guide', 'first-time-jamaica'],
@@ -657,7 +657,7 @@ export const POSTS_5: BlogPost[] = [
       },
       {
         type: 'p',
-        text: "We build custom honeymoon itineraries at MAPL Tours, villa, boutique, or a mix, with bookable experiences across the island. Start with /explore to see the anchors, and we can assemble the rest around them. Get married, come here, skip the wristband. No problem.",
+        text: "We build custom honeymoon itineraries at MAPL Tours, villa, boutique, or a mix, with bookable experiences across the island. Start with [the catalogue](/explore) to see the anchors, and we can assemble the rest around them. Get married, come here, skip the wristband. No problem.",
       },
     ],
     relatedSlugs: ['negril-guide', 'blue-mountain-sunrise-hike'],

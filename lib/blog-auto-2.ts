@@ -74,7 +74,7 @@ export const POSTS_2: BlogPost[] = [
       },
       {
         type: 'p',
-        text: "Ocho Rios rewards a plan. Book the big stuff early, leave afternoons loose, and let the town show itself after the ships leave. When you are ready to build a day, head to /explore and start with a waterfall.",
+        text: "Ocho Rios rewards a plan. Book the big stuff early, leave afternoons loose, and let the town show itself after the ships leave. If you have a full day to give, [Nine Mile](/blog/nine-mile-marley-pilgrimage) is ninety minutes up into the St. Ann hills and is the one trip people talk about afterwards. Otherwise head to [the catalogue](/explore) and start with a waterfall.",
       },
     ],
     relatedSlugs: ['dunns-river-falls-tour-guide', 'hotels-in-ocho-rios'],
@@ -149,7 +149,7 @@ export const POSTS_2: BlogPost[] = [
       },
       {
         type: 'p',
-        text: "Hotels in Ocho Rios are the start of the trip, not the trip. Whichever you pick, build at least two days outside the gates, head to /explore for a starter list of what is actually worth leaving the pool for.",
+        text: "Hotels in Ocho Rios are the start of the trip, not the trip. Whichever you pick, build at least two days outside the gates, head to [the catalogue](/explore) for a starter list of what is actually worth leaving the pool for.",
       },
     ],
     relatedSlugs: ['villas-in-ocho-rios', 'ocho-rios-complete-guide'],
@@ -221,7 +221,7 @@ export const POSTS_2: BlogPost[] = [
       },
       {
         type: 'p',
-        text: "The villa is the container. The island fills it. Once you have the house sorted, head to /explore and start stacking what the family will actually do when they are not in the pool.",
+        text: "The villa is the container. The island fills it. Once you have the house sorted, head to [the catalogue](/explore) and start stacking what the family will actually do when they are not in the pool.",
       },
     ],
     relatedSlugs: ['hotels-in-ocho-rios', 'ocho-rios-complete-guide'],
@@ -293,7 +293,7 @@ export const POSTS_2: BlogPost[] = [
       },
       {
         type: 'p',
-        text: "The city is easier to like once you stop asking it to be Negril. Montego Bay Jamaica has its own rhythm, a little harder-edged, a little more urban, more alive at street level. Start on /explore to pick a day out of the resort and into the town itself.",
+        text: "The city is easier to like once you stop asking it to be Negril. Montego Bay Jamaica has its own rhythm, a little harder-edged, a little more urban, more alive at street level. Start in [the catalogue](/explore) to pick a day out of the resort and into the town itself.",
       },
     ],
     relatedSlugs: ['montego-bay-airport-guide', 'breathless-montego-bay-review'],
@@ -373,7 +373,7 @@ export const POSTS_2: BlogPost[] = [
       },
       {
         type: 'p',
-        text: "The airport is the first 30 minutes of the trip, not the trip itself. Clear it cleanly and the rest of Jamaica opens up, head straight to /explore once you have unpacked and let the island begin.",
+        text: "The airport is the first 30 minutes of the trip, not the trip itself. Clear it cleanly and the rest of Jamaica opens up, head straight to [the catalogue](/explore) once you have unpacked and let the island begin.",
       },
     ],
     relatedSlugs: ['montego-bay-beyond-the-strip', 'first-time-jamaica'],
@@ -445,7 +445,7 @@ export const POSTS_2: BlogPost[] = [
       },
       {
         type: 'p',
-        text: "Negril Jamaica rewards slow days. Walk the beach at 7am before the vendors set up. Spend an afternoon on the cliffs with nothing but a book. Watch one sunset from the water instead of the bar. When you are ready to build a day trip, head to /explore, and save the cliffs for the last evening.",
+        text: "Negril Jamaica rewards slow days. Walk the beach at 7am before the vendors set up. Spend an afternoon on the cliffs with nothing but a book. Watch one sunset from the water instead of the bar. When you are ready to build a day trip, head to [the catalogue](/explore), and save the cliffs for the last evening.",
       },
     ],
     relatedSlugs: ['negril-beach-walkthrough', 'negril-guide'],
@@ -525,7 +525,7 @@ export const POSTS_2: BlogPost[] = [
       },
       {
         type: 'p',
-        text: "Negril Beach changes every mile. Pick the one that matches the day you actually want, and spend the rest of the time exploring, /explore has the rest of the island whenever you are ready to leave the sand.",
+        text: "Negril Beach changes every mile. Pick the one that matches the day you actually want, and spend the rest of the time exploring, [the catalogue](/explore) has the rest of the island whenever you are ready to leave the sand.",
       },
     ],
     relatedSlugs: ['negril-seven-mile-truth', 'negril-guide'],
@@ -605,7 +605,7 @@ export const POSTS_2: BlogPost[] = [
       },
       {
         type: 'p',
-        text: "The consistent pattern is a 4.3 to 4.5 out of 5 across major travel platforms, with repeat guests a reliable share of reviews. Breathless Montego Bay works best when the trip is about the property itself, not Jamaica at large. Pair it with a day or two of off-resort exploring, head to /explore to plan those, and you have a balanced trip.",
+        text: "The consistent pattern is a 4.3 to 4.5 out of 5 across major travel platforms, with repeat guests a reliable share of reviews. Breathless Montego Bay works best when the trip is about the property itself, not Jamaica at large. Pair it with a day or two of off-resort exploring, head to [the catalogue](/explore) to plan those, and you have a balanced trip.",
       },
     ],
     relatedSlugs: ['montego-bay-beyond-the-strip', 'secrets-wild-orchid-montego-bay-review'],
@@ -685,7 +685,7 @@ export const POSTS_2: BlogPost[] = [
       },
       {
         type: 'p',
-        text: "Ratings cluster around 4.1 to 4.4 across major platforms, with the sister-property swap and the food variety the most consistent positives, and dated rooms and a compact beach the most consistent negatives. It is a strong mid-to-upper-mid all-inclusive that rewards a little planning. Pair your stay with an off-property day or two, head to /explore to pick them, and it holds up well.",
+        text: "Ratings cluster around 4.1 to 4.4 across major platforms, with the sister-property swap and the food variety the most consistent positives, and dated rooms and a compact beach the most consistent negatives. It is a strong mid-to-upper-mid all-inclusive that rewards a little planning. Pair your stay with an off-property day or two, head to [the catalogue](/explore) to pick them, and it holds up well.",
       },
     ],
     relatedSlugs: ['breathless-montego-bay-review', 'jewel-grande-montego-bay-review'],
@@ -765,7 +765,7 @@ export const POSTS_2: BlogPost[] = [
       },
       {
         type: 'p',
-        text: "Ratings typically land around 4.2 to 4.4 out of 5, with the suite size and villa tier the defining strengths, and food and beach the common reservations. Booked as what it is, a family-and-group suite resort, it punches above its weight. Line up one or two off-property days to break up the rhythm; head to /explore to build them into your week.",
+        text: "Ratings typically land around 4.2 to 4.4 out of 5, with the suite size and villa tier the defining strengths, and food and beach the common reservations. Booked as what it is, a family-and-group suite resort, it punches above its weight. Line up one or two off-property days to break up the rhythm; head to [the catalogue](/explore) to build them into your week.",
       },
     ],
     relatedSlugs: ['breathless-montego-bay-review', 'secrets-wild-orchid-montego-bay-review'],

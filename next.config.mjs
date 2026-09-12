@@ -56,6 +56,39 @@ const nextConfig = {
     { source: '/blog/ganja-farm-tour-ocho-rios', destination: '/blog/cbd-spa-jamaica', permanent: true },
     { source: '/blog/cannabis-wellness-retreat-jamaica', destination: '/blog/cbd-spa-jamaica', permanent: true },
     { source: '/blog/jamaica-cannabis-culinary-tour', destination: '/blog/kingston-gastronomy-tour', permanent: true },
+
+    /**
+     * The original ten-tour catalogue, replaced by Collin's real products and
+     * never redirected. Search Console says these seventeen URLs still carry
+     * 1,335 impressions and 13 clicks over 90 days, which is more clicks than
+     * the entire rest of the site earned in the same window, and five of them
+     * rank between position 8.9 and 12.6. Every one answers with a 404.
+     *
+     * Each goes to the nearest thing MAPL actually sells. Where there is no
+     * equivalent any more (the Kingston food tours, the coffee trek, the
+     * luminous lagoon, the fishing trip) the target is /explore: that is the
+     * real catalogue for the category, which is what Google asks for when a
+     * product is gone, rather than a pretend match that wastes the click.
+     */
+    { source: '/experience/rastafari-indigenous-village-immersion', destination: '/experience/rasta-cultural-atv-safari', permanent: true },
+    { source: '/experience/blue-hole-secret-falls-and-rope-swings', destination: '/experience/blue-hole-and-secret-falls', permanent: true },
+    { source: '/experience/reach-falls-and-rabbit-hole-cave-swim', destination: '/experience/blue-hole-and-secret-falls', permanent: true },
+    { source: '/experience/dunns-river-falls-and-hidden-blue-hole', destination: '/experience/dunns-river-blue-hole', permanent: true },
+    { source: '/experience/mystic-mountain-bobsled-and-rainforest-zipline', destination: '/experience/rainforest-zipline-adventure', permanent: true },
+    { source: '/experience/rio-grande-bamboo-rafting', destination: '/experience/bamboo-rafting-on-the-martha-brae', permanent: true },
+    { source: '/experience/seven-mile-beach-snorkel-and-rum-punch', destination: '/experience/ricks-cafe-cliff-diving-and-sunset', permanent: true },
+    // Both of these are Marley, and Nine Mile is the Marley tour MAPL runs.
+    { source: '/experience/bob-marley-heritage-pilgrimage', destination: '/experience/bob-marley-nine-mile-pilgrimage', permanent: true },
+    { source: '/experience/reggae-roots-studio-session-and-sound-system', destination: '/experience/bob-marley-nine-mile-pilgrimage', permanent: true },
+    // No current equivalent: send to the catalogue rather than fake a match.
+    { source: '/experience/luminous-lagoon-bioluminescent-night-swim', destination: '/explore', permanent: true },
+    { source: '/experience/glorias-seafood-and-port-royal-history-walk', destination: '/explore', permanent: true },
+    { source: '/experience/kingston-street-food-and-market-crawl', destination: '/explore', permanent: true },
+    { source: '/experience/sunrise-coffee-trek-and-farm-tasting', destination: '/explore', permanent: true },
+    { source: '/experience/miss-ts-kitchen-cooking-experience', destination: '/explore', permanent: true },
+    { source: '/experience/jerk-pit-master-class-with-devon', destination: '/explore', permanent: true },
+    { source: '/experience/devon-house-patty-and-ice-cream-tour', destination: '/explore', permanent: true },
+    { source: '/experience/sunrise-fishing-with-local-fishermen', destination: '/explore', permanent: true },
   ],
   headers: async () => [
     // Videos — immutable, 1 year
