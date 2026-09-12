@@ -358,11 +358,20 @@ h5, h6 { letter-spacing: -0.01em; }
 .footer-social {
   display: flex;
   flex-wrap: wrap;
-  /* Three 44px tiles need 156px at a 12px gap, but the footer's two-column
-     grid cell is only 154px at 360px wide, which orphaned the third icon on
-     its own line. The gap shrinks to 8px on narrow screens (still the minimum
-     separation between touch targets) and holds 12px from ~545px up. */
-  gap: clamp(8px, 2.2vw, 12px);
+  /* Tiles are 44px and must stay that size: it is the tap-target minimum.
+     The gap shrinks to 8px on narrow screens (still the minimum separation
+     between two touch targets) and holds 12px from ~545px up. */
+  --social-gap: clamp(8px, 2.2vw, 12px);
+  gap: var(--social-gap);
+}
+@media (max-width: 767px) {
+  /* Four tiles need 200px; the footer's two-column grid cell is 154px at
+     360px wide, so they would wrap three-then-one and read as a mistake.
+     Capping the row at exactly two tiles makes it break as an even 2x2.
+     Derived from the gap rather than hardcoded, so the two cannot drift. */
+  .footer-social {
+    max-width: calc(44px * 2 + var(--social-gap));
+  }
 }
 .footer-social a {
   display: inline-flex;
