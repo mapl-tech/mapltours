@@ -23,6 +23,10 @@ const ALLOWED_KEYS = [
   // Stripe webhook can report the purchase server-side against the same
   // session (and therefore the same Google Ads click). See lib/ga4-server.
   'ga_client_id', 'ga_session_id',
+  // Meta's browser cookies (_fbp browser id, _fbc click id), read the same way
+  // so the webhook's Conversions API call can match the purchase to the ad
+  // click even when the pixel never fired. See lib/meta-capi.
+  'fbp', 'fbc',
 ] as const
 
 /** The GA4 web stream this site loads (components/Trackers). */
@@ -52,6 +56,29 @@ export function readGaIds(cookie: string, measurementId: string = GA4_MEASUREMEN
     const sess = jar.get(`_ga_${measurementId.replace(/^G-/, '')}`)
     const session = sess?.match(/^GS2\.\d+\.s(\d+)/)?.[1] ?? sess?.match(/^GS1\.\d+\.(\d+)\./)?.[1]
     if (session) out.ga_session_id = session
+  } catch { /* a bad cookie is not worth a broken checkout */ }
+  return out
+}
+
+/**
+ * Meta's `_fbp` (browser id) and `_fbc` (click id) cookies from a
+ * document.cookie string, so the Stripe webhook can pass them to the
+ * Conversions API for matching. Both cookies carry the `fb.<n>.<...>` shape
+ * the API expects; anything malformed is dropped rather than guessed. Pure and
+ * testable, mirroring readGaIds. See lib/meta-capi.
+ */
+export function readMetaIds(cookie: string): { fbp?: string; fbc?: string } {
+  const out: { fbp?: string; fbc?: string } = {}
+  try {
+    const jar = new Map<string, string>()
+    for (const part of (cookie ?? '').split(';')) {
+      const i = part.indexOf('=')
+      if (i > 0) jar.set(part.slice(0, i).trim(), part.slice(i + 1).trim())
+    }
+    const fbp = jar.get('_fbp')
+    if (fbp && /^fb\.\d+\.\d+\.\d+$/.test(fbp)) out.fbp = fbp
+    const fbc = jar.get('_fbc')
+    if (fbc && /^fb\.\d+\.\d+\./.test(fbc)) out.fbc = fbc
   } catch { /* a bad cookie is not worth a broken checkout */ }
   return out
 }
@@ -147,9 +174,11 @@ export function getStoredAttribution(): Attribution | null {
     if (typeof window === 'undefined') return null
     const raw = localStorage.getItem(KEY)
     const stored = raw ? (JSON.parse(raw) as Attribution) : null
-    const ga = readGaIds(typeof document !== 'undefined' ? document.cookie : '')
-    if (!stored && !Object.keys(ga).length) return null
-    return { ...(stored ?? {}), ...ga }
+    const cookie = typeof document !== 'undefined' ? document.cookie : ''
+    const ga = readGaIds(cookie)
+    const meta = readMetaIds(cookie)
+    if (!stored && !Object.keys(ga).length && !Object.keys(meta).length) return null
+    return { ...(stored ?? {}), ...ga, ...meta }
   } catch { return null }
 }
 

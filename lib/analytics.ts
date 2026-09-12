@@ -61,6 +61,36 @@ function whenGtagReady(run: (gtag: GtagFn) => void, attempts = 40): void {
   window.setTimeout(() => whenGtagReady(run, attempts - 1), 250)
 }
 
+type FbqFn = (command: string, ...args: unknown[]) => void
+
+/**
+ * The Meta Pixel counterpart of whenGtagReady. The base snippet in
+ * components/Trackers defines `window.fbq` synchronously and queues calls
+ * before fbevents.js loads, so unlike gtag it is safe to call the instant it
+ * exists; we still poll briefly because the pixel is gated behind the same
+ * privacy check and mounts a tick after hydration. A visitor who opted out
+ * (no pixel) simply never satisfies this and nothing is sent.
+ */
+function whenFbqReady(run: (fbq: FbqFn) => void, attempts = 40): void {
+  if (typeof window === 'undefined') return
+  const w = window as unknown as { fbq?: FbqFn }
+  if (typeof w.fbq === 'function') {
+    run(w.fbq)
+    return
+  }
+  if (attempts <= 0) return
+  window.setTimeout(() => whenFbqReady(run, attempts - 1), 250)
+}
+
+/** Map cart items to the Meta Pixel `contents` shape. */
+function toMetaContents(items: AnalyticsItem[]) {
+  return items.map((i) => ({
+    id: i.id,
+    quantity: Number.isFinite(i.quantity) ? i.quantity : 1,
+    item_price: Number.isFinite(i.price) ? Math.round(i.price * 100) / 100 : 0,
+  }))
+}
+
 /**
  * Claim an event so it is sent at most once, ever, for this browser.
  *
@@ -131,6 +161,18 @@ export function trackPurchase(input: {
         items: toGaItems(input.items),
       })
     })
+    // Meta Pixel Purchase, deduped against the server-side Conversions API by
+    // eventID (the booking ref). Its own once-claim is independent of GA's, so
+    // one tracker being blocked never suppresses the other.
+    whenFbqReady((fbq) => {
+      if (!claimOnce(`purchase-meta:${input.transactionId}`)) return
+      fbq('track', 'Purchase', {
+        value: Math.round(input.value * 100) / 100,
+        currency: (input.currency || 'USD').toUpperCase(),
+        content_type: 'product',
+        contents: toMetaContents(input.items),
+      }, { eventID: input.transactionId })
+    })
   } catch {
     // Never let reporting break a paid confirmation.
   }
@@ -153,6 +195,15 @@ export function trackBeginCheckout(input: {
         currency: (input.currency || 'USD').toUpperCase(),
         items: toGaItems(input.items),
       })
+    })
+    whenFbqReady((fbq) => {
+      if (!claimOnce(`begin_checkout-meta:${input.key}`)) return
+      fbq('track', 'InitiateCheckout', {
+        value: Math.round(input.value * 100) / 100,
+        currency: (input.currency || 'USD').toUpperCase(),
+        content_type: 'product',
+        contents: toMetaContents(input.items),
+      }, { eventID: `ic:${input.key}` })
     })
   } catch {
     /* no-op */

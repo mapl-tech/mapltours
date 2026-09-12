@@ -351,6 +351,42 @@ h5, h6 { letter-spacing: -0.01em; }
   }
 }
 
+/* Footer social icons. 44px tiles (their own tap target, no .tap-target
+   needed) with a 12px gap, so touch targets never overlap. Hover and
+   keyboard focus lift the same way the text links brighten muted->white; the
+   gold focus ring comes from the footer's own :focus-visible rule above. */
+.footer-social {
+  display: flex;
+  flex-wrap: wrap;
+  /* Three 44px tiles need 156px at a 12px gap, but the footer's two-column
+     grid cell is only 154px at 360px wide, which orphaned the third icon on
+     its own line. The gap shrinks to 8px on narrow screens (still the minimum
+     separation between touch targets) and holds 12px from ~545px up. */
+  gap: clamp(8px, 2.2vw, 12px);
+}
+.footer-social a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  color: var(--text-on-dark-2);
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--border-on-dark);
+  transition: color 0.15s ease, background 0.15s ease, border-color 0.15s ease;
+}
+.footer-social a:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.14);
+  border-color: rgba(255, 255, 255, 0.24);
+}
+.footer-social svg {
+  width: 20px;
+  height: 20px;
+  display: block;
+}
+
 /* Concierge grid (desktop only, mobile uses carousel) */
 
 /* Checkout layout */
