@@ -1,9 +1,9 @@
 import type { Metadata, Viewport } from 'next'
 import { DM_Sans } from 'next/font/google'
-import Script from 'next/script'
 import './globals.css'
 import LayoutShell from '@/components/LayoutShell'
 import StyledJsxRegistry from '@/components/StyledJsxRegistry'
+import Trackers from '@/components/Trackers'
 
 // DM Sans is the ENTIRE typographic system, display headings, body, UI, and
 // every numeral. There is deliberately no second family: hierarchy is carried
@@ -245,24 +245,9 @@ export default function RootLayout({
         <StyledJsxRegistry>
           <LayoutShell>{children}</LayoutShell>
         </StyledJsxRegistry>
-        <Script src="https://www.googletagmanager.com/gtag/js?id=G-2JVWPL4GBE" strategy="afterInteractive" />
-        <Script id="gtag-init" strategy="afterInteractive">
-          {`window.dataLayer = window.dataLayer || [];
-function gtag(){dataLayer.push(arguments);}
-gtag('js', new Date());
-gtag('config', 'G-2JVWPL4GBE');
-gtag('config', 'AW-18126709990');`}
-        </Script>
-        <Script id="hotjar" strategy="lazyOnload">
-          {`(function(h,o,t,j,a,r){
-h.hj=h.hj||function(){(h.hj.q=h.hj.q||[]).push(arguments)};
-h._hjSettings={hjid:6688839,hjsv:6};
-a=o.getElementsByTagName('head')[0];
-r=o.createElement('script');r.async=1;
-r.src=t+h._hjSettings.hjid+j+h._hjSettings.hjsv;
-a.appendChild(r);
-})(window,document,'https://static.hotjar.com/c/hotjar-','.js?sv=');`}
-        </Script>
+        {/* GA4 + Ads tag + Hotjar, gated on DNT / Global Privacy Control —
+            the opt-out the privacy policy promises. */}
+        <Trackers />
       </body>
     </html>
   )
