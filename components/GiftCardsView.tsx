@@ -759,7 +759,10 @@ export default function GiftCardsView() {
               placeholder="MAPL-XXXX-XXXX"
               style={{
                 flex: 1, minWidth: 0, height: 44, borderRadius: 'var(--r-sm)',
-                border: '1px solid var(--border-strong)', padding: '0 14px',
+                // 12px, not 14px: phones force inputs to 16px, where the
+                // "MAPL-XXXX-XXXX" placeholder is 135px and the old 125px text
+                // box clipped it to "MAPL-XXXX-XXX" on a 360px screen.
+                border: '1px solid var(--border-strong)', padding: '0 12px',
                 fontSize: 14, fontFamily: 'var(--font-dm-sans)',
                 color: 'var(--text-primary)', background: 'var(--bg)',
                 outline: 'none', boxSizing: 'border-box', textTransform: 'uppercase',
@@ -770,7 +773,7 @@ export default function GiftCardsView() {
               disabled={balanceChecking || balanceCode.trim().length < 4}
               className="btn-outline"
               style={{
-                height: 44, padding: '0 20px', fontSize: 14, fontWeight: 600,
+                height: 44, padding: '0 14px', fontSize: 14, fontWeight: 600,
                 borderRadius: 'var(--r-sm)', whiteSpace: 'nowrap',
                 opacity: balanceChecking || balanceCode.trim().length < 4 ? 0.5 : 1,
               }}

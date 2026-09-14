@@ -194,7 +194,10 @@ export default function ContactView() {
                 </p>
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+                  {/* Side by side only when each field gets 200px. The fixed
+                      1fr 1fr left the Email field 124px wide on a 360px phone,
+                      cutting "you@email.com" to "you@email.c". */}
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 14 }}>
                     <div>
                       <label htmlFor="contact-name" style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)', fontFamily: 'var(--font-dm-sans)', display: 'block', marginBottom: 6 }}>Name</label>
                       <input id="contact-name" className="field-input" placeholder="Your name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />

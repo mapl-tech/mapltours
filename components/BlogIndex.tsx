@@ -312,9 +312,13 @@ function FeaturedLead({ post }: { post: BlogPost }) {
         >
           {post.excerpt}
         </p>
+        {/* Wraps as a whole rather than squeezing: at 360px the byline and the
+            link could not share a 328px row, so the link broke "READ THE
+            ESSAY" from its arrow. Now the link drops to its own line intact. */}
         <div
           style={{
             display: 'flex',
+            flexWrap: 'wrap',
             alignItems: 'center',
             gap: 14,
             paddingTop: 20,
@@ -349,6 +353,7 @@ function FeaturedLead({ post }: { post: BlogPost }) {
             href={`/blog/${post.slug}`}
             style={{
               marginLeft: 'auto',
+              whiteSpace: 'nowrap',
               fontFamily: 'var(--font-dm-sans)',
               fontSize: 12,
               fontWeight: 600,

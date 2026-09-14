@@ -1409,15 +1409,15 @@ export default function FeedView() {
                   }}>
                     {t(exp.title)}
                   </h3>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  {/* Price and rating on one line, the unit and duration on
+                      their own. Crammed into a single row, the small cards at
+                      768-820px squeezed "up to 3 people · 1.5 hrs" into a
+                      71px column that stacked three lines deep into the
+                      title. A fixed second line reads the same at every
+                      width. */}
+                  <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', columnGap: 8, rowGap: 2 }}>
                     <span style={{ fontSize: 14, fontWeight: 700, color: 'white', fontFamily: 'var(--font-dm-sans)' }}>
                       {formatPrice(exp.price)}
-                    </span>
-                    {/* The unit is not decoration: every tour in this section
-                        is priced `mode: 'group'`, so a bare $459 reads as a
-                        per-head figure that would quadruple at checkout. */}
-                    <span style={{ fontSize: 13, color: '#cccccc', fontFamily: 'var(--font-dm-sans)' }}>
-                      {priceUnitLabel(exp.pricing)} · {exp.duration}
                     </span>
                     <span style={{
                       display: 'inline-flex', alignItems: 'center', gap: 2,
@@ -1425,6 +1425,12 @@ export default function FeedView() {
                       fontFamily: 'var(--font-dm-sans)',
                     }}>
                       {exp.reviews > 0 ? <><Star size={10} fill="currentColor" strokeWidth={0} /> {exp.rating}</> : 'New'}
+                    </span>
+                    {/* The unit is not decoration: every tour in this section
+                        is priced `mode: 'group'`, so a bare $459 reads as a
+                        per-head figure that would quadruple at checkout. */}
+                    <span style={{ flexBasis: '100%', fontSize: 13, lineHeight: 1.35, color: '#cccccc', fontFamily: 'var(--font-dm-sans)' }}>
+                      {priceUnitLabel(exp.pricing)} · {exp.duration}
                     </span>
                   </div>
                 </div>

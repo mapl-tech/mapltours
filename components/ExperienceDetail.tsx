@@ -548,11 +548,16 @@ function Reel({ exp, isActive, totalCount, currentIndex, onComments }: { exp: Ex
 
         {/* The reel sells the feeling; this answers the questions that decide a
             purchase (transport, entrance fees, minimum age, what to wear). */}
+        {/* 44px tall with the old 10px bottom margin folded in, so the reel's
+            overlay keeps the same height. Left-aligned so that when it wraps
+            on a 360px phone the second line lines up under the title instead
+            of centring "bring" on its own. */}
         <button
           onClick={() => setDetailsFor(exp)}
           style={{
             display: 'inline-flex', alignItems: 'center', gap: 6,
-            minHeight: 34, padding: '0 2px', marginBottom: 10,
+            textAlign: 'left', justifyContent: 'flex-start',
+            minHeight: 44, padding: '0 2px', marginBottom: 0,
             background: 'none', border: 'none', cursor: 'pointer',
             fontFamily: 'var(--font-dm-sans)', fontSize: 13.5, fontWeight: 600,
             color: '#fff', textDecoration: 'underline', textUnderlineOffset: 3,

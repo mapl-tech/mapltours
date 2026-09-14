@@ -1133,6 +1133,15 @@ img[alt="Devon House Patty & Ice Cream Tour"] {
   aspect-ratio: 4 / 5;
   min-height: 380px;
   background: var(--surface);
+  /* The grid row stretches this box to the height of the (taller) copy
+     column. With width left auto, aspect-ratio then derives the WIDTH from
+     that stretched height: at 768px it came out 636px wide in a 296px track
+     and sat on top of the paragraphs beside it, on /about and /partner. The
+     mobile block below fixed the same thing for phones only. A definite
+     width pins the box to its track at every size; the ratio still applies
+     whenever the row is not forcing a height. */
+  width: 100%;
+  min-width: 0;
 }
 .about-split-copy { padding-top: 8px; }
 .about-stats {
@@ -1529,10 +1538,55 @@ img[alt="Devon House Patty & Ice Cream Tour"] {
   gap: clamp(32px, 5vw, 64px);
   align-items: start;
 }
+/* Fields pair up only when each can be at least 220px wide. A fixed 1fr 1fr
+   put two 131px inputs inside the 277px form column at 768px, clipping the
+   Email and Business placeholders. */
 .partner-fields {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 14px;
+}
+/* Portrait and small landscape tablets: the enquiry form takes the full
+   width under its intro instead of squeezing into the right half. */
+@media (max-width: 1023px) {
+  .partner-apply {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   TRANSFERS: the phone "Book now" bar
+   Declared here, not in TransfersView's styled-jsx block, so the fix ships
+   without touching that component. Selectors are one step more specific
+   than the component's own, because its global styles load after this file.
+   ══════════════════════════════════════════════════════════════ */
+/* One line of meta, not three. "From $22 · 1–4 passengers · flight tracked"
+   wrapped to three lines at 360px and made the fixed bar 108px tall. The text
+   column must be allowed to shrink (min-width: 0) for the ellipsis to engage. */
+.xfer-sticky-cta > div:first-child {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+.xfer-sticky-cta .xfer-sticky-meta {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* Get out of the way while someone is filling in the quote. The bar is fixed
+   to the bottom of the screen and sat over the Pickup and Drop-off fields and
+   the hotel picker's results; once focus is inside the quote card the bar's
+   job (take you to the quote) is already done. */
+.xfer-sticky-cta {
+  transition: opacity 0.2s ease, transform 0.2s ease, visibility 0.2s;
+}
+body:has(.xfer-quote-card:focus-within) .xfer-sticky-cta {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform: translateY(calc(100% + 24px));
+}
+@media (prefers-reduced-motion: reduce) {
+  .xfer-sticky-cta { transition: none; }
 }
 @media (max-width: 767px) {
   .partner-split,
@@ -2141,3 +2195,11 @@ a.pf-stat:hover { background: var(--surface); }
 .fare-reopen { color: rgba(255, 255, 255, 0.45); font-weight: 400; }
 /* Tables are the one thing allowed to scroll sideways; the page body is not. */
 .fare-scroll { overflow-x: auto; }
+.fare-section { padding: 56px 0 72px; }
+/* On phones this section is the last thing on /transfers, and the fixed
+   "Book now" bar (up to ~90px tall, 16px off the bottom) sat over the final
+   row of fares. The page used to end on .xfer-final-cta, which reserves
+   120px for exactly this; the fare tables now come after it. */
+@media (max-width: 600px) {
+  .fare-section { padding-bottom: 136px; }
+}

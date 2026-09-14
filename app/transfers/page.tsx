@@ -269,7 +269,8 @@ function FareTables() {
   return (
     <section
       aria-labelledby="every-fare"
-      style={{ background: 'var(--bg-dark)', padding: '56px 0 72px' }}
+      className="fare-section"
+      style={{ background: 'var(--bg-dark)' }}
     >
       <div className="container">
         <h2
