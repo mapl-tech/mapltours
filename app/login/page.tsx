@@ -162,21 +162,36 @@ function LoginContent() {
         </div>
       </aside>
 
+      {/* Mobile first. The split used to be the only layout, so on a phone
+          and on a portrait tablet the decorative photo kept 52% of the width
+          and the form got the rest: "Continue with Google" wrapped onto three
+          lines, the email field showed "you@ex", and the Sign in button split
+          its own label. The photo carries no information (it is aria-hidden),
+          so below 1024px it goes and the form gets the whole screen. */}
       <style jsx>{`
         .login-shell {
           min-height: 100vh;
+          min-height: 100dvh;
           position: relative;
           display: grid;
-          grid-template-columns: 1.05fr 0.95fr;
+          grid-template-columns: minmax(0, 1fr);
         }
         .login-aside {
+          display: none;
           position: relative;
           overflow: hidden;
           background-image: url('${DESTINATION_IMAGES['Negril']}');
           background-size: cover;
           background-position: center;
-          display: flex;
           align-items: flex-end;
+        }
+        @media (min-width: 1024px) {
+          .login-shell {
+            grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
+          }
+          .login-aside {
+            display: flex;
+          }
         }
         .login-aside-overlay {
           position: absolute; inset: 0;
@@ -186,13 +201,29 @@ function LoginContent() {
           position: relative; z-index: 1;
           padding: clamp(40px, 5vw, 72px);
         }
+        /* Top padding clears the 44px back button (absolute, top 16px) so it
+           can never sit on the logo once the photo panel is gone; 20px sides
+           keep the 16px minimum gutter with room to spare. */
         .login-formcol {
           display: flex;
           align-items: center;
           justify-content: center;
-          padding: 24px;
+          padding: 76px 20px 40px;
           background: var(--bg-warm);
           min-height: 100vh;
+          min-height: 100dvh;
+        }
+        @media (min-width: 1024px) {
+          .login-formcol {
+            padding: 24px;
+          }
+        }
+        /* The card's inline 32px padding left 248px of content on a 360px
+           phone. Inline styles outrank classes, hence !important. */
+        @media (max-width: 480px) {
+          .login-card {
+            padding: 24px 20px !important;
+          }
         }
       `}</style>
 
@@ -226,7 +257,7 @@ function LoginContent() {
         </div>
 
         {/* Card */}
-        <div className="surface-card animate-fade-up" style={{
+        <div className="surface-card animate-fade-up login-card" style={{
           padding: 32,
           borderRadius: 'var(--r-xl)',
           border: '1px solid var(--border)',
@@ -256,7 +287,7 @@ function LoginContent() {
                 transition: 'all 0.2s ease',
               }}
             >
-              <svg width="18" height="18" viewBox="0 0 24 24">
+              <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
                 <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/>
                 <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
                 <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
@@ -287,7 +318,7 @@ function LoginContent() {
                 transition: 'all 0.2s ease',
               }}
             >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" focusable="false">
                 <path d="M17.05 20.28c-.98.95-2.05.88-3.08.4-1.09-.5-2.08-.48-3.24 0-1.44.62-2.2.44-3.06-.4C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"/>
               </svg>
               Continue with Apple
@@ -320,23 +351,29 @@ function LoginContent() {
                 }} htmlFor="login-name">
                   Full name
                 </label>
+                {/* Matches the email and password fields exactly. It was 44px
+                    tall, 15px text (iOS zooms below 16px) and a fainter border,
+                    so the sign-up form had one field that looked different. */}
                 <input
                   id="login-name"
                   type="text"
+                  name="name"
+                  autoComplete="name"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder="Your full name"
                   required
+                  className="login-field"
                   style={{
                     width: '100%',
-                    height: 44,
+                    height: 46,
                     borderRadius: 'var(--r-md)',
-                    border: '1px solid var(--border-strong)',
+                    border: '1px solid rgba(23,22,20,0.5)',
                     padding: '0 14px',
-                    fontSize: 15,
+                    fontSize: 16,
                     fontFamily: 'var(--font-dm-sans)',
                     color: 'var(--text-primary)',
-                    background: 'var(--bg-warm)',
+                    background: '#F1EFEA',
                     outline: 'none',
                     boxSizing: 'border-box',
                   }}
@@ -371,7 +408,7 @@ function LoginContent() {
                   width: '100%',
                   height: 46,
                   borderRadius: 'var(--r-md)',
-                  border: '1px solid rgba(23,22,20,0.4)',
+                  border: '1px solid rgba(23,22,20,0.5)', // 0.4 measured 2.87:1 vs the card; WCAG 1.4.11 needs 3:1
                   padding: '0 14px',
                   fontSize: 16,
                   fontFamily: 'var(--font-dm-sans)',
@@ -412,7 +449,7 @@ function LoginContent() {
                     width: '100%',
                     height: 46,
                     borderRadius: 'var(--r-md)',
-                    border: '1px solid rgba(23,22,20,0.4)',
+                    border: '1px solid rgba(23,22,20,0.5)', // 0.4 measured 2.87:1 vs the card; WCAG 1.4.11 needs 3:1
                     padding: '0 46px 0 14px',
                     fontSize: 16,
                     fontFamily: 'var(--font-dm-sans)',
@@ -524,7 +561,14 @@ function LoginContent() {
           {mode === 'login' ? "Don't have an account? " : 'Already have an account? '}
           <button
             onClick={() => { setMode(mode === 'login' ? 'signup' : 'login'); setError(''); setMessage('') }}
+            // A real control, not an inline link: it swaps the whole form, so
+            // it gets the same 44px floor as every other button on the page
+            // (the text alone measured about 18px tall).
             style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              minHeight: 44,
+              padding: '0 6px',
               background: 'none',
               border: 'none',
               color: 'var(--gold-text)',
