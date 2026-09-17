@@ -17,6 +17,14 @@ export const HERO_VIDEO = '/hero-negril-jamaica.mp4'
 export const HERO_VIDEO_540 = '/hero-negril-jamaica-540.mp4'
 export const HERO_VIDEO_720 = '/hero-negril-jamaica-720.mp4'
 export const HERO_VIDEO_1080 = '/hero-negril-jamaica-1080.mp4'
+/**
+ * The same loop cropped to 9:16 for phones (720x1280, 30fps, ~1.7 Mbps), with
+ * its own first frame as the poster so nothing swaps scene when it starts.
+ * The landscape files showed a 363px-wide slice of a 960px frame on a phone,
+ * upscaled 3.2x, under a poster of a different road.
+ */
+export const HERO_VIDEO_PORTRAIT = '/hero-negril-jamaica-portrait.mp4'
+export const HERO_POSTER_PORTRAIT = '/hero-negril-jamaica-portrait.webp'
 
 // All destinations, confirmed Jamaica locations
 export const DESTINATIONS: Record<string, string> = {

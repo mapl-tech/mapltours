@@ -8,13 +8,13 @@ import { priceUnitLabel } from '@/lib/experiences'
 import { useCartStore } from '@/lib/cart'
 import { fitCandidateStop, MAX_STOP_GAP_MIN } from '@/lib/day-route'
 import { useHydrated } from '@/lib/use-hydrated'
-import { CULTURE_IMAGE, HERO_VIDEO, HERO_VIDEO_540, HERO_VIDEO_720, HERO_VIDEO_1080 } from '@/lib/images'
+import { CULTURE_IMAGE, HERO_VIDEO, HERO_VIDEO_540, HERO_VIDEO_720, HERO_VIDEO_1080, HERO_VIDEO_PORTRAIT, HERO_POSTER_PORTRAIT } from '@/lib/images'
 import ExpCard from './ExpCard'
 import MobileShort from './MobileShort'
 import Footer from './Footer'
 import { useI18n } from '@/lib/i18n'
 import { useRef, useState, useEffect } from 'react'
-import { Award, Users, Headphones, ShieldCheck, Star, Heart, UtensilsCrossed, TrendingUp, ChevronLeft, ChevronRight, MapPin, PlaneLanding, Route, ArrowRight } from 'lucide-react'
+import { Award, Users, Headphones, ShieldCheck, Star, Heart, UtensilsCrossed, TrendingUp, ChevronLeft, ChevronRight, MapPin, PlaneLanding, Route, ArrowRight, Pause, Play } from 'lucide-react'
 
 
 /* Hero video, lazy loads on fast connections, shows poster on slow/mobile data */
@@ -46,7 +46,9 @@ function HeroVideo({ src, poster }: { src: string; poster: string }) {
   // One file per screen size. A phone shows a cover-cropped slice of the
   // frame, so 540p there looks like 1080p did while costing a fraction of it.
   const [chosenSrc, setChosenSrc] = useState(src)
+  const [userPaused, setUserPaused] = useState(false)
   useEffect(() => {
+    if (window.matchMedia('(max-width: 767px)').matches) { setChosenSrc(HERO_VIDEO_PORTRAIT); return }
     const w = window.innerWidth * Math.min(window.devicePixelRatio || 1, 2)
     setChosenSrc(w <= 900 ? HERO_VIDEO_540 : w <= 1600 ? HERO_VIDEO_720 : HERO_VIDEO_1080)
   }, [src])
@@ -65,21 +67,29 @@ function HeroVideo({ src, poster }: { src: string; poster: string }) {
 
   return (
     <>
-      {/* Poster, visible until video is actually playing */}
-      <Image
-        src={poster}
-        alt=""
-        fill
-        sizes="100vw"
-        priority
-        fetchPriority="high"
-        style={{
-          objectFit: 'cover', objectPosition: 'center 35%',
-          opacity: isPlaying ? 0 : 1,
-          transition: 'opacity 1.2s ease',
-          zIndex: 1,
-        }}
-      />
+      {/* Poster, visible until video is actually playing. A <picture> so a
+          phone gets the portrait first frame of the clip it is about to play
+          (one shot, no scene swap) and desktop keeps the landscape still
+          through the image optimiser. The <img> sits in the server HTML, so
+          the preload scanner finds it before any script runs. */}
+      <picture>
+        <source media="(max-width: 767px)" srcSet={HERO_POSTER_PORTRAIT} type="image/webp" />
+        <img
+          src={`/_next/image?url=${encodeURIComponent(poster)}&w=1920&q=75`}
+          srcSet={`/_next/image?url=${encodeURIComponent(poster)}&w=1200&q=75 1200w, /_next/image?url=${encodeURIComponent(poster)}&w=1920&q=75 1920w`}
+          sizes="100vw"
+          alt=""
+          fetchPriority="high"
+          decoding="async"
+          style={{
+            position: 'absolute', inset: 0, width: '100%', height: '100%',
+            objectFit: 'cover', objectPosition: 'center 35%',
+            opacity: isPlaying ? 0 : 1,
+            transition: 'opacity 1.2s ease',
+            zIndex: 1,
+          }}
+        />
+      </picture>
       {shouldLoad && (
         <video
           ref={videoRef}
@@ -95,6 +105,28 @@ function HeroVideo({ src, poster }: { src: string; poster: string }) {
         >
           <source src={chosenSrc} type="video/mp4" />
         </video>
+      )}
+      {/* WCAG 2.2.2: anything that moves for more than five seconds needs a
+          way to stop it. 44px, bottom right, out of the headline's way. */}
+      {isPlaying && (
+        <button
+          type="button"
+          onClick={() => {
+            const v = videoRef.current
+            if (!v) return
+            if (v.paused) { v.play().catch(() => {}); setUserPaused(false) }
+            else { v.pause(); setUserPaused(true) }
+          }}
+          aria-label={userPaused ? 'Play background video' : 'Pause background video'}
+          style={{
+            position: 'absolute', right: 12, bottom: 'max(12px, env(safe-area-inset-bottom))', zIndex: 3,
+            width: 44, height: 44, borderRadius: '50%', border: '1px solid rgba(255,255,255,0.35)',
+            background: 'rgba(0,0,0,0.45)', color: '#fff', display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+            cursor: 'pointer', backdropFilter: 'blur(6px)',
+          }}
+        >
+          {userPaused ? <Play size={18} aria-hidden /> : <Pause size={18} aria-hidden />}
+        </button>
       )}
     </>
   )
@@ -1292,7 +1324,7 @@ export default function FeedView() {
                   style={{
                     marginTop: 'auto', alignSelf: 'flex-start',
                     display: 'inline-flex', alignItems: 'center', gap: 7,
-                    height: 40, padding: '0 20px', borderRadius: 9999,
+                    height: 44, padding: '0 20px', borderRadius: 9999,
                     /* Near-black on gold, never white: white on this gold is
                        3.29:1 and fails AA, let alone AAA. */
                     background: 'var(--gold)', color: 'var(--gold-ink)',

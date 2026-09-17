@@ -226,6 +226,21 @@ const VIDEOS = {
 } as const
 
 /**
+ * Phone versions of the clips above: 720x1280 centre crop, 30fps, about
+ * 2.5 Mbps, 12 seconds, no audio, index at the front. Made with ffmpeg from
+ * the files in /media/video (scratch script, Sept 2026); a unit test checks
+ * every clip has both files. The desktop files run 3 to 54 MB at up to
+ * 23 Mbps, which on cellular stalled or never started.
+ */
+export function mobileVideo(video: string): string {
+  return video.replace(/^\/media\/video\/([^/]+)\.mp4$/, '/media/video/m/$1.mp4')
+}
+/** The first frame of the phone clip, so the still and the video are one shot. */
+export function videoPoster(video: string): string {
+  return video.replace(/^\/media\/video\/([^/]+)\.mp4$/, '/media/video/m/$1.webp')
+}
+
+/**
  * ── DRAFT DETAIL CONTENT ────────────────────────────────────────────────
  * Every `about` / `ages` / `fitness` / `included` / `notIncluded` / `bring` /
  * `additionalInfo` block below is placeholder copy, written to be practically

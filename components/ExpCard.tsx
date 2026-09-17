@@ -1,6 +1,6 @@
 'use client'
 
-import { useRef, useState, memo } from 'react'
+import { useEffect, useRef, useState, memo } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { Experience, CATEGORY_COLORS, slugify , priceUnitLabel } from '@/lib/experiences'
@@ -28,23 +28,34 @@ export default memo(function ExpCard({ exp }: { exp: Experience }) {
     if (inCart) removeItem(exp.id)
     else if (tourFit.allowed) addItem(exp)
   }
-  const videoRef = useRef<HTMLVideoElement>(null)
+  const videoRef = useRef<HTMLVideoElement | null>(null)
   const [hovering, setHovering] = useState(false)
+  // The clip element exists only once a pointer has been over the card. The
+  // desktop grid is in the phone DOM too (hidden), so without this a phone
+  // carried 15 idle <video> elements it could never show.
+  const [everHovered, setEverHovered] = useState(false)
 
   const handleMouseEnter = () => {
     setHovering(true)
-    if (videoRef.current) {
-      videoRef.current.currentTime = 0
-      videoRef.current.play().catch(() => {})
-    }
+    setEverHovered(true)
   }
 
   const handleMouseLeave = () => {
     setHovering(false)
-    if (videoRef.current) {
-      videoRef.current.pause()
-    }
   }
+
+  // Play and pause after the commit, so the first hover, which is also the
+  // render that creates the element, finds it with its src in place.
+  useEffect(() => {
+    const v = videoRef.current
+    if (!v) return
+    if (hovering) {
+      v.currentTime = 0
+      v.play().catch(() => {})
+    } else {
+      v.pause()
+    }
+  }, [hovering, everHovered])
 
   return (
     <article className="exp-card" style={{ cursor: 'pointer' }}>
@@ -85,7 +96,7 @@ export default memo(function ExpCard({ exp }: { exp: Experience }) {
                 pointerEvents: 'none',
               }}
             />
-          ) : (
+          ) : everHovered ? (
           <video
             ref={videoRef}
             src={exp.video}
@@ -103,7 +114,7 @@ export default memo(function ExpCard({ exp }: { exp: Experience }) {
               transition: 'opacity 0.3s ease',
             }}
           />
-          )}
+          ) : null}
 
           <div className="overlay-bottom" />
 

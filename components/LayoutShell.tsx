@@ -1,11 +1,16 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import dynamic from 'next/dynamic'
 import { usePathname } from 'next/navigation'
 import TopNav from './TopNav'
 import ItineraryPanel from './ItineraryPanel'
 import PageTransition from './PageTransition'
-import WebMcpTools from './WebMcpTools'
+// The WebMCP tool registrations pull the whole rate card and catalogue into
+// the layout chunk (about 105 KB before gzip) for a feature only browsers
+// with document.modelContext can use. Split off, and mounted after load
+// and only in those browsers.
+const WebMcpTools = dynamic(() => import('./WebMcpTools'), { ssr: false })
 import ScrollReveal from './ScrollReveal'
 import { AuthProvider } from '@/lib/supabase/auth-context'
 import { SavedProvider } from '@/lib/supabase/saved'
@@ -16,6 +21,15 @@ import { captureAttribution } from '@/lib/attribution'
 
 export default function LayoutShell({ children }: { children: React.ReactNode }) {
   const [drawerOpen, setDrawerOpen] = useState(false)
+  const [agentBrowser, setAgentBrowser] = useState(false)
+  useEffect(() => {
+    if (!('modelContext' in document)) return
+    let t: ReturnType<typeof setTimeout> | undefined
+    const arm = () => { t = setTimeout(() => setAgentBrowser(true), 1000) }
+    if (document.readyState === 'complete') arm()
+    else window.addEventListener('load', arm, { once: true })
+    return () => { window.removeEventListener('load', arm); if (t) clearTimeout(t) }
+  }, [])
   const pathname = usePathname()
   // Hide the consumer nav + cart on the login screen, the whole admin area,
   // and the driver portal. These are internal tools, not shopping surfaces.
@@ -49,7 +63,7 @@ export default function LayoutShell({ children }: { children: React.ReactNode })
       <SavedProvider>
         <a href="#main-content" className="skip-link">Skip to main content</a>
         <ScrollReveal />
-        {!hideTools && <WebMcpTools />}
+        {!hideTools && agentBrowser && <WebMcpTools />}
         {!hideNav && <TopNav onCartClick={() => setDrawerOpen(true)} />}
         <main id="main-content">
           <PageTransition>{children}</PageTransition>

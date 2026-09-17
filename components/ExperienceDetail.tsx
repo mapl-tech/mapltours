@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react'
 import { useFocusTrap } from '@/lib/use-focus-trap'
 import { useRouter } from 'next/navigation'
-import { singleExperiences, packageExperiences, Experience, slugify , priceUnitLabel } from '@/lib/experiences'
+import { singleExperiences, packageExperiences, Experience, slugify , priceUnitLabel, mobileVideo, videoPoster } from '@/lib/experiences'
 import { trackViewItem } from '@/lib/analytics'
 import { useI18n } from '@/lib/i18n'
 import { useCartStore, DAILY_HOUR_LIMIT } from '@/lib/cart'
@@ -188,7 +188,8 @@ function Reel({ exp, isActive, near, totalCount, currentIndex, onComments }: { e
       }
     } else {
       video.pause()
-      // Free memory for off-screen videos
+      // Free memory for off-screen videos: the <source> children are gone
+      // from this render, so load() empties the element.
       video.removeAttribute('src')
       video.load()
     }
@@ -246,12 +247,22 @@ function Reel({ exp, isActive, near, totalCount, currentIndex, onComments }: { e
       // other reels take a poster as they come within one swipe.
       <video
         ref={videoRef}
-        src={isActive ? exp.video : undefined}
         loop muted playsInline
         preload={isActive ? 'auto' : 'none'}
-        poster={near ? `/_next/image?url=${encodeURIComponent(exp.image)}&w=750&q=70` : undefined}
+        poster={near ? (exp.video ? videoPoster(exp.video) : `/_next/image?url=${encodeURIComponent(exp.image)}&w=750&q=70`) : undefined}
         style={{ width: '100%', height: '100%', objectFit: 'cover', willChange: 'opacity', background: '#08080A' }}
-      />
+      >
+        {/* Two sources, the browser picks by media query before any script
+            runs: the 720x1280 phone clip under 768px, the original above.
+            Rendered only while active; deactivation calls load() with no
+            sources, which empties the element and frees the buffer. */}
+        {isActive && exp.video && (
+          <>
+            <source src={mobileVideo(exp.video)} type="video/mp4" media="(max-width: 767px)" />
+            <source src={exp.video} type="video/mp4" />
+          </>
+        )}
+      </video>
       )}
 
       {/* Pause overlay */}

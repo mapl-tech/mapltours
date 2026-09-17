@@ -3,7 +3,7 @@
 import { useRef, useEffect, useState, memo } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { Experience, slugify, priceUnitLabel } from '@/lib/experiences'
+import { Experience, slugify, priceUnitLabel, mobileVideo, videoPoster } from '@/lib/experiences'
 import { displayHandle } from '@/lib/creator'
 import { useI18n } from '@/lib/i18n'
 import SaveButton from './SaveButton'
@@ -207,9 +207,10 @@ export default memo(function MobileShort({
           willChange: 'transform',
           transform: 'translateZ(0)',
         }}>
-          {/* Static image, shows until video plays */}
+          {/* Static image, shows until video plays: the clip's own first
+              frame when there is a clip, so nothing jumps when it starts. */}
           <Image
-            src={exp.image}
+            src={exp.video ? videoPoster(exp.video) : exp.image}
             alt={exp.title}
             fill
             sizes="(max-width: 767px) 86vw, 20vw"
@@ -229,7 +230,7 @@ export default memo(function MobileShort({
           {videoMounted && exp.video && videoAllowed && (
             <video
               ref={videoRef}
-              src={exp.video}
+              src={mobileVideo(exp.video)}
               muted
               /* autoPlay is gated on allowMotion rather than always-on. It was
                  removed entirely once because a bare attribute let the browser

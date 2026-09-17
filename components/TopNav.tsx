@@ -474,7 +474,7 @@ export default function TopNav({ onCartClick }: { onCartClick?: () => void }) {
             className="hide-desktop"
             onClick={() => setShowSearch(true)}
             style={{
-              flex: 1, minWidth: 0, height: 40, borderRadius: 9999,
+              flex: 1, minWidth: 0, height: 44, borderRadius: 9999,
               display: 'flex', alignItems: 'center', gap: 8,
               padding: '0 16px', border: '1px solid rgba(0,0,0,0.08)',
               background: '#fff', cursor: 'pointer',
