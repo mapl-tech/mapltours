@@ -232,6 +232,69 @@ export function trackAddToCart(input: {
         items: toGaItems(input.items),
       })
     })
+    whenFbqReady((fbq) => {
+      fbq('track', 'AddToCart', {
+        value: Math.round(input.value * 100) / 100,
+        currency: (input.currency || 'USD').toUpperCase(),
+        content_type: 'product',
+        contents: toMetaContents(input.items),
+      })
+    })
+  } catch {
+    /* no-op */
+  }
+}
+
+/**
+ * Looking at one thing that can be bought: a tour's reel, or a transfer fare
+ * once a hotel is chosen. GA4 view_item and Meta ViewContent. Not claimed
+ * once: looking twice is a real signal, and there is no revenue to double
+ * count. Callers debounce so a scroll through the reel does not fire per
+ * frame.
+ */
+export function trackViewItem(input: {
+  value: number
+  currency: string
+  items: AnalyticsItem[]
+}): void {
+  try {
+    if (typeof window === 'undefined') return
+    if (!Number.isFinite(input.value) || input.value < 0) return
+    whenGtagReady((gtag) => {
+      gtag('event', 'view_item', {
+        value: Math.round(input.value * 100) / 100,
+        currency: (input.currency || 'USD').toUpperCase(),
+        items: toGaItems(input.items),
+      })
+    })
+    whenFbqReady((fbq) => {
+      fbq('track', 'ViewContent', {
+        value: Math.round(input.value * 100) / 100,
+        currency: (input.currency || 'USD').toUpperCase(),
+        content_type: 'product',
+        contents: toMetaContents(input.items),
+      })
+    })
+  } catch {
+    /* no-op */
+  }
+}
+
+/**
+ * A message that actually reached the inbox: the contact form after the
+ * server said it delivered, or a "price my hotel" request. GA4 generate_lead
+ * (a key event) and Meta Lead. Only ever call on a confirmed delivery; a
+ * GA4 rule used to count every visit to /contact as a lead.
+ */
+export function trackLead(source: 'contact_form' | 'unlisted_hotel'): void {
+  try {
+    if (typeof window === 'undefined') return
+    whenGtagReady((gtag) => {
+      gtag('event', 'generate_lead', { lead_source: source })
+    })
+    whenFbqReady((fbq) => {
+      fbq('track', 'Lead', { content_name: source })
+    })
   } catch {
     /* no-op */
   }

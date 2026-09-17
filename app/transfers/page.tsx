@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import TransfersView from '@/components/transfers/TransfersView'
-import { ZONES, DESTINATIONS, getTransferPrice, zoneFromPrice, groupDestinationsByZone } from '@/lib/airport-transfers'
+import { ZONES, DESTINATIONS, getTransferPrice, zoneFromPrice } from '@/lib/airport-transfers'
 import { TRANSFER_FAQS } from '@/lib/airport-transfers-content'
 import { HERO } from '@/lib/images'
 
@@ -247,110 +247,6 @@ function buildStructuredData() {
 // and await it; it returns null on a quiet day and the line hides itself.
 export const revalidate = 300
 
-/**
- * Every fare, as server-rendered text.
- *
- * The interactive picker above this says "Pick your hotel to see your fare",
- * which is right for a person and useless to everything else: a crawler, an
- * AI assistant, or anyone comparing on a phone with the tab half-loaded reads
- * nothing. The 199 exact fares were published in llms.txt and nowhere in any
- * page's HTML, and llms.txt is neither linked nor in the sitemap.
- *
- * This is also the likeliest reason the page already earns what it earns:
- * /transfers is the top AI-assistant landing page on the site, and the only
- * commercial page that server-renders prices at all, though until now only
- * zone bands rather than per-property fares.
- *
- * Prices come from getTransferPrice, the same function the checkout prices
- * with, so what is published here cannot drift from what is charged.
- */
-function FareTables() {
-  const groups = groupDestinationsByZone()
-  return (
-    <section
-      aria-labelledby="every-fare"
-      className="fare-section"
-      style={{ background: 'var(--bg-dark)' }}
-    >
-      <div className="container">
-        <h2
-          id="every-fare"
-          style={{
-            fontFamily: 'var(--font-dm-sans)', fontWeight: 700,
-            fontSize: 'var(--fs-h2)', color: '#fff',
-            lineHeight: 1.15, letterSpacing: '-0.02em', marginBottom: 10,
-          }}
-        >
-          Every fare from Sangster (MBJ)
-        </h2>
-        <p
-          style={{
-            fontFamily: 'var(--font-dm-sans)', fontSize: 15,
-            color: 'rgba(255,255,255,0.68)', lineHeight: 1.6,
-            maxWidth: 680, marginBottom: 36,
-          }}
-        >
-          One flat price per vehicle for one to four passengers, all in, with nothing added at
-          checkout. A round trip costs less than two one-ways booked separately. Parties of five or
-          more, and Kingston or Port Antonio, are quoted individually.
-        </p>
-
-        {groups.map(({ zone, items }) => (
-          <div key={zone.code} style={{ marginBottom: 40 }}>
-            <h3
-              style={{
-                fontFamily: 'var(--font-dm-sans)', fontWeight: 600, fontSize: 18,
-                color: 'var(--gold-warm)', marginBottom: 4,
-              }}
-            >
-              {zone.label}
-            </h3>
-            <p
-              style={{
-                fontFamily: 'var(--font-dm-sans)', fontSize: 13,
-                color: 'rgba(255,255,255,0.5)', marginBottom: 14,
-              }}
-            >
-              {zone.duration}
-            </p>
-            <div className="fare-scroll">
-              <table className="fare-table">
-                <thead>
-                  <tr>
-                    <th scope="col">Hotel or villa</th>
-                    <th scope="col">Parish</th>
-                    <th scope="col" className="fare-num">One way</th>
-                    <th scope="col" className="fare-num">Round trip</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {items.map((d) => {
-                    const ow = getTransferPrice(d.id, 'one_way')
-                    const rt = getTransferPrice(d.id, 'round_trip')
-                    return (
-                      <tr key={d.id}>
-                        <th scope="row">
-                          {d.name}
-                          {d.reopens ? (
-                            <span className="fare-reopen"> (reopening {d.reopens})</span>
-                          ) : null}
-                        </th>
-                        <td>{d.parish}</td>
-                        <td className="fare-num">{ow != null ? `$${ow}` : 'On request'}</td>
-                        <td className="fare-num">{rt != null ? `$${rt}` : 'On request'}</td>
-                      </tr>
-                    )
-                  })}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        ))}
-      </div>
-    </section>
-  )
-}
-
 export default function TransfersPage() {
   const { serviceSchema, faqSchema, breadcrumbs } = buildStructuredData()
   return (
@@ -368,7 +264,6 @@ export default function TransfersPage() {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbs) }}
       />
       <TransfersView />
-      <FareTables />
     </>
   )
 }

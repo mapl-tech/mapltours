@@ -30,9 +30,11 @@ import {
   MAX_TRANSFER_PASSENGERS,
 } from '@/lib/airport-transfers'
 import { useTransfersCart } from '@/lib/transfers-cart'
+import { trackViewItem, trackLead } from '@/lib/analytics'
 import { useI18n } from '@/lib/i18n'
 import { HERO, DESTINATIONS as DESTINATION_IMAGES } from '@/lib/images'
 import PlacePicker, { AIRPORT_ID, type PlaceOffer } from './PlacePicker'
+import FareTables from './FareTables'
 import {
   TRANSFER_REVIEWS as REVIEWS,
   TRANSFER_FAQS as FAQS,
@@ -114,6 +116,9 @@ export default function TransfersView() {
   // produce a quote. This only ever opens a request form.
   const [notListed, setNotListed] = useState(false)
   const [askForm, setAskForm] = useState({ hotel: '', email: '' })
+  // The last thing typed into a hotel box. When the picker finds nothing and
+  // the visitor asks for a price, the form opens with it already filled in.
+  const [hotelQuery, setHotelQuery] = useState('')
   const [askState, setAskState] = useState<'idle' | 'sending' | 'sent'>('idle')
   const [askError, setAskError] = useState<string | null>(null)
   // Honeypot, matching /api/contact's contract. Real people never fill it.
@@ -192,6 +197,19 @@ export default function TransfersView() {
     [destinationId, tripType, passengers],
   )
 
+  // A fare seen for a chosen hotel is the transfer equivalent of viewing a
+  // product. Once per hotel, not per toggle of trip type or passengers.
+  useEffect(() => {
+    if (!destinationId) return
+    const q = buildQuote(destinationId, 'round_trip', 1)
+    if (!q) return
+    trackViewItem({
+      value: q.priceUsd,
+      currency: 'USD',
+      items: [{ id: q.destinationId, name: `Airport transfer, ${q.destinationName}`, category: 'transfer round trip', price: q.priceUsd, quantity: 1 }],
+    })
+  }, [destinationId])
+
   const handleBook = () => {
     if (!quote) return
     // One transfer per cart: this REPLACES anything already there. Warn first
@@ -241,10 +259,19 @@ export default function TransfersView() {
     router.push('/transfers/checkout')
   }
 
-  const scrollToQuote = () => {
-    document
-      .getElementById('quote')
-      ?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  // `focusHotel` puts the cursor in the hotel field as well, so the "Book now"
+  // buttons land the visitor ready to type instead of on an empty card. The
+  // focus happens inside the tap (iOS only opens the keyboard for a focus that
+  // is part of a user gesture) with preventScroll, and the smooth scroll to
+  // the card follows.
+  const scrollToQuote = (focusHotel = false) => {
+    const card = document.getElementById('quote')
+    if (focusHotel && card) {
+      const boxes = Array.from(card.querySelectorAll<HTMLInputElement>('input[role="combobox"]'))
+      const hotel = boxes.find((b) => !b.value) ?? boxes.find((b) => !/sangster/i.test(b.value))
+      hotel?.focus({ preventScroll: true })
+    }
+    card?.scrollIntoView({ behavior: 'smooth', block: 'start' })
   }
 
   // Prefill the calculator from a popular-route tile, then scroll the user
@@ -259,6 +286,13 @@ export default function TransfersView() {
     setAskForm({ hotel: '', email: '' })
     setAskState('idle')
     setAskError(null)
+  }
+  /** Open the "tell us your hotel" form with whatever the visitor typed. */
+  const openNotListed = (typed?: string) => {
+    setNotListed(true)
+    setAskState('idle')
+    setAskError(null)
+    setAskForm({ hotel: (typed ?? hotelQuery).trim(), email: '' })
   }
 
   /* Ask us to price an unlisted property.
@@ -297,29 +331,56 @@ export default function TransfersView() {
         return
       }
       setAskState('sent')
+      trackLead('unlisted_hotel')
     } catch {
       setAskError('Network error. Please check your connection and try again.')
       setAskState('idle')
     }
   }
 
-  const selectRoute = (destId: string) => {
+  const selectRoute = (destId: string, trip: TransferTripType = 'round_trip') => {
     setDestinationId(destId)
     // A popular-route tile is a real destination, so leave the unlisted-hotel
     // branch behind or the picker would show one thing and price another.
     setNotListed(false)
     resetAsk()
-    setTripType('round_trip')
+    setTripType(trip)
     setFromAirport(true)
     // Reset to the site default alongside the trip type. This read
     // `setPassengers((p) => p)`, a no-op that looked like a reset and left the
     // previous tile's passenger count attached to the newly picked route.
     setPassengers(1)
-    setTimeout(scrollToQuote, 60)
+    setTimeout(() => scrollToQuote(), 60)
   }
+
+  const trustItems = (
+    <>
+              <TrustItem
+                icon={<Plane size={17} />}
+                title="Flight tracked"
+                body="Your driver adjusts to real-time arrivals."
+              />
+              <TrustItem
+                icon={<MapPin size={17} />}
+                title="Meet-and-greet"
+                body="MAPL Tours Jamaica sign at arrivals, bags handled."
+              />
+              <TrustItem
+                icon={<ShieldCheck size={17} />}
+                title="Your driver, by name"
+                body="Name, vehicle, plate and WhatsApp before pickup."
+              />
+              <TrustItem
+                icon={<Mail size={17} />}
+                title="A person on email"
+                body="Replies within 24 hours, and your driver on WhatsApp on the day."
+              />
+    </>
+  )
 
   return (
     <div
+      className="xfer-page"
       style={{
         minHeight: '100vh',
         paddingTop: 'var(--nav-h)',
@@ -362,7 +423,7 @@ export default function TransfersView() {
               <button
                 type="button"
                 className="btn-primary"
-                onClick={scrollToQuote}
+                onClick={() => scrollToQuote(true)}
                 style={{ height: 50, padding: '0 26px', fontSize: 14 }}
               >
                 Book now →
@@ -374,28 +435,9 @@ export default function TransfersView() {
               </div>
             </div>
 
-            {/* Trust strip */}
-            <div className="xfer-trust-strip">
-              <TrustItem
-                icon={<Plane size={17} />}
-                title="Flight tracked"
-                body="Your driver adjusts to real-time arrivals."
-              />
-              <TrustItem
-                icon={<MapPin size={17} />}
-                title="Meet-and-greet"
-                body="MAPL Tours Jamaica sign at arrivals, bags handled."
-              />
-              <TrustItem
-                icon={<ShieldCheck size={17} />}
-                title="Your driver, by name"
-                body="Name, vehicle, plate and WhatsApp before pickup."
-              />
-              <TrustItem
-                icon={<Mail size={17} />}
-                title="A person on email"
-                body="Replies within 24 hours, and your driver on WhatsApp on the day."
-              />
+            {/* Trust strip (desktop position; phones show it under the quote card) */}
+            <div className="xfer-trust-strip xfer-trust-strip--hero">
+              {trustItems}
             </div>
           </div>
 
@@ -499,6 +541,8 @@ export default function TransfersView() {
                     otherEnd="drop-off"
                     clearable={tripType === 'one_way' || !fromAirport}
                     onChange={onPickupChange}
+                    onQueryChange={setHotelQuery}
+                    onNotListed={openNotListed}
                   />
                 </Field>
               </div>
@@ -527,6 +571,8 @@ export default function TransfersView() {
                     otherEnd="pickup"
                     clearable={tripType === 'one_way' || fromAirport}
                     onChange={onDropoffChange}
+                    onQueryChange={setHotelQuery}
+                    onNotListed={openNotListed}
                   />
                 </Field>
               </div>
@@ -549,7 +595,7 @@ export default function TransfersView() {
             {!notListed && (
               <button
                 type="button"
-                onClick={() => { setNotListed(true); resetAsk() }}
+                onClick={() => openNotListed()}
                 style={{
                   alignSelf: 'flex-start', background: 'none', border: 'none',
                   padding: '10px 0', minHeight: 44, cursor: 'pointer',
@@ -743,6 +789,13 @@ export default function TransfersView() {
         </div>
       </section>
 
+      {/* Phones put the quote card first; the trust strip follows it here. */}
+      <section className="xfer-trust-mobile" aria-label="What is included">
+        <div className="container xfer-trust-strip">
+          {trustItems}
+        </div>
+      </section>
+
       {/* ───────────── WHY MAPL Tours (value prop) ───────────── */}
       <section className="xfer-why-section">
         <div className="container" style={{ maxWidth: 1100 }}>
@@ -860,6 +913,13 @@ export default function TransfersView() {
                         .join(' · ')}
                       {DESTINATIONS.filter((d) => d.zone === code).length > 4 ? ' · and more' : ''}
                     </p>
+                    <a
+                      className="xfer-zone-fares-link"
+                      href={`#fares-${code}`}
+                      onClick={() => document.getElementById(`fares-${code}`)?.setAttribute('open', '')}
+                    >
+                      All {DESTINATIONS.filter((d) => d.zone === code).length} hotels and fares →
+                    </a>
                   </div>
                 </article>
               )
@@ -1031,6 +1091,9 @@ export default function TransfersView() {
         </div>
       </section>
 
+      {/* ───────────── EVERY FARE, per hotel ───────────── */}
+      <FareTables onPick={selectRoute} />
+
       {/* ───────────── FINAL CTA ───────────── */}
       <section className="xfer-final-cta">
         <div className="container" style={{ maxWidth: 820, textAlign: 'center' }}>
@@ -1044,7 +1107,7 @@ export default function TransfersView() {
           <button
             type="button"
             className="btn-primary"
-            onClick={scrollToQuote}
+            onClick={() => scrollToQuote(true)}
             style={{
               marginTop: 24,
               height: 52,
@@ -1100,7 +1163,7 @@ export default function TransfersView() {
             <button
               type="button"
               className="btn-primary"
-              onClick={scrollToQuote}
+              onClick={() => scrollToQuote(true)}
               style={{ height: 46, padding: '0 20px', fontSize: 14, whiteSpace: 'nowrap' }}
             >
               Book now →
@@ -1917,8 +1980,44 @@ export default function TransfersView() {
           margin-top: 2px;
         }
 
+        .xfer-trust-mobile { display: none; }
+        .xfer-zone-fares-link {
+          display: inline-flex;
+          align-items: center;
+          min-height: 44px;
+          margin-top: 6px;
+          font-family: var(--font-dm-sans);
+          font-size: 14px;
+          font-weight: 600;
+          color: var(--text-primary);
+          text-decoration: underline;
+          text-underline-offset: 3px;
+        }
         @media (max-width: 900px) {
-          .xfer-hero { padding: 48px 20px 40px; }
+          /* Phones: the quote card is the first thing after the headline.
+             Hotjar showed visitors scrolling 3.7 screens of photo, trust
+             bullets and route tiles before they could type a hotel. */
+          .xfer-page { display: flex; flex-direction: column; }
+          .xfer-page > .xfer-hero { order: 0; }
+          .xfer-page > .xfer-quote-section { order: 1; }
+          .xfer-page > .xfer-trust-mobile { order: 2; }
+          .xfer-page > .xfer-routes-section { order: 3; }
+          .xfer-page > .xfer-why-section { order: 4; }
+          .xfer-page > .xfer-zones-section { order: 5; }
+          .xfer-page > .xfer-reviews-section { order: 6; }
+          .xfer-page > .xfer-routes-content { order: 7; }
+          .xfer-page > .xfer-faq-section { order: 8; }
+          .xfer-page > .fare-section { order: 9; }
+          .xfer-page > .xfer-final-cta { order: 10; }
+          .xfer-hero-image,
+          .xfer-hero-price-strip,
+          .xfer-hero-cta-row,
+          .xfer-trust-strip--hero { display: none; }
+          .xfer-trust-mobile { display: block; padding: 8px 20px 24px; }
+          .xfer-trust-mobile .xfer-trust-strip { margin-top: 0; }
+          .xfer-hero { padding: 28px 20px 8px; border-bottom: 0; }
+          .xfer-hero-sub { margin-bottom: 0; }
+          .xfer-quote-section { padding-top: 16px; }
           .xfer-hero-grid { grid-template-columns: minmax(0, 1fr); gap: 32px; }
           /* .xfer-hero-image mobile aspect-ratio + order:-1 are in globals.css */
           .xfer-trust-strip { gap: 16px; }
@@ -2016,7 +2115,7 @@ function UnlistedHotelPanel({
   // always-mounted region in the parent, which assistive tech can observe.
   if (state === 'sent') {
     return (
-      <div className="animate-fade-up" style={panelStyle}>
+      <div className="animate-fade-up xfer-unlisted-panel" style={panelStyle}>
         <p style={{
           fontFamily: 'var(--font-dm-sans)', fontSize: 14, fontWeight: 600,
           color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6,
@@ -2058,7 +2157,7 @@ function UnlistedHotelPanel({
   }
 
   return (
-    <form className="animate-fade-up" style={panelStyle} onSubmit={onSubmit} noValidate={false}>
+    <form className="animate-fade-up xfer-unlisted-panel" style={panelStyle} onSubmit={onSubmit} noValidate={false}>
       <p style={{
         fontFamily: 'var(--font-dm-sans)', fontSize: 14, fontWeight: 600,
         color: 'var(--text-primary)', marginBottom: 4,

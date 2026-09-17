@@ -569,40 +569,205 @@ function squash(text: string): string {
   return flatten(text).replace(/ /g, '')
 }
 
+/**
+ * Words that say nothing about WHICH place. "the riu hotel" is the Riu;
+ * requiring every token to appear made any of these a guaranteed miss.
+ */
+const STOP_WORDS = new Set([
+  'the', 'a', 'an', 'at', 'in', 'of', 'and', 'to', 'my', 'our',
+  'hotel', 'hotels', 'resort', 'resorts', 'spa', 'all', 'inclusive', 'jamaica', 'villas',
+])
+
+/**
+ * A guest who types one of these is not staying at a hotel we list, so the
+ * right answer is the area rows: the fare is set by zone and "Other hotel or
+ * villa, Negril" prices exactly like the hotel next door.
+ */
+const LODGING_WORDS = new Set([
+  'airbnb', 'bnb', 'vrbo', 'villa', 'apartment', 'apartments', 'apt', 'condo', 'condos',
+  'rental', 'rentals', 'house', 'home', 'cottage', 'guesthouse', 'guest', 'private', 'stay',
+])
+
+/**
+ * Places guests name that are in no hotel's name or parish: beaches,
+ * districts, nicknames. Attached to every property in the parish, so "seven
+ * mile beach" lists the Negril hotels and "silver sands" the Falmouth ones.
+ */
+const AREA_WORDS: Record<string, string> = {
+  'St. James': 'montego bay mobay ironshore freeport rose hall',
+  'Trelawny': 'falmouth silver sands duncans',
+  'Hanover': 'hanover lucea hopewell sandy bay green island',
+  'Westmoreland': 'negril seven mile beach 7 mile west end bloody bay long bay whitehouse bluefields belmont south coast',
+  // St. Ann spans two zones; see areaWords().
+  'St. Ann / Runaway Bay': 'runaway bay discovery bay priory st anns bay',
+  'St. Ann / Ocho Rios': 'ocho rios ochi mammee bay tower isle boscobel',
+  'St. Mary': 'oracabessa port maria',
+  'St. Elizabeth': 'treasure beach south coast black river',
+}
+
+function areaWords(d: TransferDestination): string {
+  if (d.parish === 'St. Ann') return AREA_WORDS[d.zone === 'D' ? 'St. Ann / Runaway Bay' : 'St. Ann / Ocho Rios']
+  return AREA_WORDS[d.parish] ?? ''
+}
+
+/** Nicknames nothing else catches. */
+const AREA_REWRITES: Array<[RegExp, string]> = [
+  [/\bmo ?bay\b/g, 'montego bay'],
+]
+
+/**
+ * Names a guest may know a place by that the row does not carry: a former
+ * brand, a booking-site spelling, the island a resort sits on.
+ */
+const NAME_ALIASES: Record<string, string> = {
+  'sandals-royal-caribbean': 'sandals royal caribbean private island',
+  'jewel-paradise-cove': 'jewel paradise cove',
+  'royalton-white-sands': 'royalton white sands',
+  'hilton-rose-hall': 'hilton',
+  'grand-decameron-montego-beach': 'royal decameron',
+  'grand-decameron-cornwall-beach': 'royal decameron',
+  'iberostar-grand-rose-hall': 'iberostar grand',
+  'moon-palace-grand-montego-bay': 'moon palace montego bay',
+}
+
+/** Shown before a guest types anything: the places most people are going. */
+export const POPULAR_DESTINATION_IDS = [
+  'sandals-negril', 'riu-ocho-rios', 'iberostar-rose-hall', 'royalton-blue-water-trelawny',
+  'hyatt-ziva-rose-hall', 'excellence-oyster-bay', 'grand-palladium-lucea', 'moon-palace-ocho-rios',
+  'sandals-montego-bay', 'riu-montego-bay', 'sandals-ochi', 'beaches-negril',
+]
+
+/**
+ * Optimal string alignment distance: insert, delete, substitute, or swap two
+ * neighbours, each costing one. "Rui" is one swap from "riu"; "sandles" one
+ * substitution from "sandals".
+ */
+function editDistance(a: string, b: string): number {
+  const m = a.length, n = b.length
+  const d: number[][] = Array.from({ length: m + 1 }, (_, i) => [i, ...new Array<number>(n).fill(0)])
+  for (let j = 0; j <= n; j++) d[0][j] = j
+  for (let i = 1; i <= m; i++) {
+    for (let j = 1; j <= n; j++) {
+      const cost = a[i - 1] === b[j - 1] ? 0 : 1
+      d[i][j] = Math.min(d[i - 1][j] + 1, d[i][j - 1] + 1, d[i - 1][j - 1] + cost)
+      if (i > 1 && j > 1 && a[i - 1] === b[j - 2] && a[i - 2] === b[j - 1]) d[i][j] = Math.min(d[i][j], d[i - 2][j - 2] + 1)
+    }
+  }
+  return d[m][n]
+}
+
+/** How far off a typed token may be from a word in a name, by length. */
+function tolerance(token: string): number {
+  if (token.length <= 2) return 0
+  if (token.length <= 6) return 1
+  return 2
+}
+
+/**
+ * Town and area words. A query made only of these ("negril", "ocho rios") is
+ * browsing a place, so the list keeps table order (nearest the airport first)
+ * instead of promoting whichever hotel happens to start with the town's name.
+ */
+const TOWN_WORDS = new Set([
+  'montego', 'bay', 'rose', 'hall', 'falmouth', 'hanover', 'lucea', 'negril', 'runaway', 'discovery',
+  'ocho', 'rios', 'oracabessa', 'port', 'maria', 'treasure', 'beach', 'south', 'coast', 'trelawny',
+  'st', 'ann', 'james', 'mary', 'elizabeth', 'westmoreland', 'green', 'island',
+])
+
+/**
+ * 3.5 when the name's opening words are exactly what was typed ("s hotel"
+ * is S Hotel before it is Sandals), 3 when they merely start with it, else 0.
+ */
+function prefixScore(name: string, tokens: string[]): number {
+  if (tokens.every((t) => TOWN_WORDS.has(t))) return 0
+  const words = flatten(name).split(' ')
+  if (words.length < tokens.length) return 0
+  let exact = true
+  for (let i = 0; i < tokens.length; i++) {
+    const last = i === tokens.length - 1
+    if (words[i] === tokens[i]) continue
+    if (last && words[i].startsWith(tokens[i])) { exact = false; continue }
+    return 0
+  }
+  return exact ? 3.5 : 3
+}
+
 export function searchDestinations(query: string, limit = 40): TransferDestination[] {
-  const tokens = flatten(query).split(' ').filter(Boolean)
-  if (tokens.length === 0) return DESTINATIONS.slice(0, limit)
+  let text = flatten(query)
+  for (const [re, word] of AREA_REWRITES) text = text.replace(re, word)
+  const raw = text.split(' ').filter(Boolean)
+  const meaningful = raw.filter((t) => !STOP_WORDS.has(t))
 
-  const scored: { d: TransferDestination; score: number }[] = []
-
-  for (const d of DESTINATIONS) {
-    // Two haystacks per field: spaced and squashed. An apostrophe becomes a
-    // space when flattened, so a guest typing "doctors cave" would otherwise
-    // miss "Doctor's Cave" — the spelling nobody reproduces.
-    const own = `${d.name} ${d.parish}`
-    const strong = [flatten(own), squash(own)]
-    const area = `${own} ${ZONES[d.zone].label}`
-    const weak = [flatten(area), squash(area)]
-
-    const hits = (hay: string[]) =>
-      tokens.every((t) => hay.some((h) => h.includes(t) || h.includes(t.replace(/ /g, ''))))
-
-    if (hits(strong)) scored.push({ d, score: 2 })
-    else if (hits(weak)) scored.push({ d, score: 1 })
+  if (raw.length > 0 && meaningful.length > 0 && meaningful.every((t) => LODGING_WORDS.has(t))) {
+    return DESTINATIONS.filter((d) => d.id.endsWith('-other')).slice(0, limit)
   }
 
-  // Name-and-parish matches first, then places that only matched through
-  // their zone's label — "negril" should list Negril before it lists Runaway
-  // Bay, which shares the zone "Negril & Runaway Bay". Inside a band, table
-  // order (nearest the airport first) holds.
-  const ranked = scored
+  if (raw.length === 0) {
+    const popular = POPULAR_DESTINATION_IDS.map((id) => DESTINATIONS.find((d) => d.id === id)).filter((d): d is TransferDestination => !!d)
+    const seen = new Set(popular.map((d) => d.id))
+    const areas = DESTINATIONS.filter((d) => d.id.endsWith('-other'))
+    for (const d of areas) seen.add(d.id)
+    const rest = DESTINATIONS.filter((d) => !seen.has(d.id))
+    return [...popular, ...areas, ...rest].slice(0, limit)
+  }
+
+  const haystacks = (d: TransferDestination) => {
+    // Two haystacks per field: spaced and squashed. An apostrophe becomes a
+    // space when flattened, so a guest typing "doctors cave" would otherwise
+    // miss "Doctor's Cave", the spelling nobody reproduces.
+    const alias = NAME_ALIASES[d.id] ?? ''
+    const own = `${d.name} ${d.parish} ${alias}`
+    const area = `${own} ${ZONES[d.zone].label} ${areaWords(d)}`
+    return { own, strong: [flatten(own), squash(own)], weak: [flatten(area), squash(area)] }
+  }
+  // A one-to-three-letter token has to START a word: "rui" is a typo for
+  // Riu, not a reason to list every cruise port.
+  const has = (h: string, t: string) => (t.length <= 3 ? (' ' + h).includes(' ' + t) : h.includes(t))
+  const hits = (hay: string[], tokens: string[]) =>
+    tokens.every((t) => hay.some((h) => has(h, t) || has(h, t.replace(/ /g, ''))))
+
+  // Pass 1: every word as typed. Pass 2: without filler ("the riu hotel" is
+  // the Riu). Pass 3: typo tolerance, word by word. Later passes only run
+  // when the earlier ones found nothing, so "riu" never has "rui"-shaped
+  // noise mixed into an exact list.
+  const exact = (tokens: string[]) => {
+    const out: { d: TransferDestination; score: number }[] = []
+    for (const d of DESTINATIONS) {
+      const h = haystacks(d)
+      if (hits(h.strong, tokens)) out.push({ d, score: Math.max(2, prefixScore(d.name, tokens)) })
+      else if (hits(h.weak, tokens)) out.push({ d, score: 1 })
+    }
+    return out
+  }
+  const fuzzy = (tokens: string[]) => {
+    const out: { d: TransferDestination; score: number }[] = []
+    for (const d of DESTINATIONS) {
+      const words = flatten(haystacks(d).own).split(' ')
+      const near = tokens.every((t) => {
+        const tol = tolerance(t)
+        return tol > 0 && words.some((w) => Math.abs(w.length - t.length) <= 1 && editDistance(t, w) <= tol)
+      })
+      if (near) out.push({ d, score: 0.5 })
+    }
+    return out
+  }
+
+  let pool = exact(raw)
+  if (pool.length === 0 && meaningful.length > 0 && meaningful.length < raw.length) pool = exact(meaningful)
+  if (pool.length === 0 && meaningful.length > 0) pool = fuzzy(meaningful)
+
+  // Name starts with what was typed first, then name-and-parish matches, then
+  // places that only matched through their zone's label: "negril" should list
+  // Negril before it lists Runaway Bay, which shares the zone "Negril &
+  // Runaway Bay". Inside a band, table order (nearest the airport first) holds.
+  const ranked = pool
     .sort((a, b) => b.score - a.score)
     .map((m) => m.d)
 
   // The "Other hotel or villa" rows are pinned to the end of the RESULT, not
   // just sorted there, because a town like Negril now matches more properties
   // than the list shows: sorting alone pushed the fallback past the cut, and
-  // the guest who most needs it — the one whose hotel is not in the table —
+  // the guest who most needs it, the one whose hotel is not in the table,
   // is exactly the one who would never scroll to it.
   const fallbacks = ranked.filter((d) => d.id.endsWith('-other'))
   const rest = ranked.filter((d) => !d.id.endsWith('-other'))

@@ -42,7 +42,12 @@ describe('WebMCP tool set', () => {
     const r = (await t.execute({ query: 'sandals negril' })) as R
     expect(r.matches[0].name).toMatch(/Sandals Negril/)
     expect(DESTINATIONS.some((d) => d.id === r.matches[0].id)).toBe(true)
-    const none = (await t.execute({ query: 'Silver Sands villa' })) as R
+    // Silver Sands is a district near Falmouth with no listed hotel; the
+    // Trelawny properties and the Falmouth area row come back, priced by zone.
+    const area = (await t.execute({ query: 'Silver Sands villa' })) as R
+    expect(area.matches.map((m: R) => m.id)).toContain('falmouth-other')
+    expect(area.matches.every((m: R) => /Falmouth|Trelawny/.test(m.area))).toBe(true)
+    const none = (await t.execute({ query: 'xyzzy nowhere' })) as R
     expect(none.matches).toEqual([])
     expect(none.fallbacks.map((f: R) => f.id)).toContain('negril-other')
     const kingston = (await t.execute({ query: 'Kingston Pegasus' })) as R

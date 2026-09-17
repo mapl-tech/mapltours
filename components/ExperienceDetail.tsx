@@ -4,6 +4,7 @@ import { useState, useRef, useEffect, useCallback, useMemo } from 'react'
 import { useFocusTrap } from '@/lib/use-focus-trap'
 import { useRouter } from 'next/navigation'
 import { singleExperiences, packageExperiences, Experience, slugify , priceUnitLabel } from '@/lib/experiences'
+import { trackViewItem } from '@/lib/analytics'
 import { useI18n } from '@/lib/i18n'
 import { useCartStore, DAILY_HOUR_LIMIT } from '@/lib/cart'
 import { useHydrated } from '@/lib/use-hydrated'
@@ -938,11 +939,20 @@ export default function ExperienceDetail({ slug }: { slug: string }) {
     // recombination of singles already in that feed.
     const openedPackage = packageExperiences.find((e) => slugify(e.title) === slug)
     if (openedPackage) return [openedPackage]
-    if (!dayIsFull || items.length === 0) return singleExperiences
+    // The tour in the URL is always the FIRST reel. The server renders the
+    // same order, so the tour a visitor tapped (an ad, a search result) is on
+    // screen from the first paint instead of appearing only after hydration
+    // scrolls a 15-reel list to it, which on a slow phone took 6 to 10 s of
+    // showing the wrong tour at the wrong price.
+    const requestedFirst = (list: Experience[]) => {
+      const i = list.findIndex((e) => slugify(e.title) === slug)
+      return i > 0 ? [list[i], ...list.slice(0, i), ...list.slice(i + 1)] : list
+    }
+    if (!dayIsFull || items.length === 0) return requestedFirst(singleExperiences)
     const cartIdSet = new Set(items.map((i) => i.id))
     const cartExps = singleExperiences.filter((e) => cartIdSet.has(e.id))
     const otherExps = singleExperiences.filter((e) => !cartIdSet.has(e.id))
-    return [...shuffle(cartExps, cartIdsKey), ...shuffle(otherExps, cartIdsKey)]
+    return requestedFirst([...shuffle(cartExps, cartIdsKey), ...shuffle(otherExps, cartIdsKey)])
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dayIsFull, cartIdsKey, slug])
 
@@ -966,6 +976,20 @@ export default function ExperienceDetail({ slug }: { slug: string }) {
   }, [])
 
   const activeExp = feedExperiences[activeIndex]
+
+  // The reel a visitor settles on, reported once it has held the screen for
+  // a moment: a swipe through five tours is not five views.
+  useEffect(() => {
+    if (!activeExp) return
+    const t = window.setTimeout(() => {
+      trackViewItem({
+        value: activeExp.price,
+        currency: 'USD',
+        items: [{ id: slugify(activeExp.title), name: activeExp.title, category: 'tour', price: activeExp.price, quantity: 1 }],
+      })
+    }, 1200)
+    return () => window.clearTimeout(t)
+  }, [activeExp])
   const { addComment: addSupabaseComment, toDisplayComments, isLoggedIn, user: currentUser, replyingTo, setReplyingTo } = useComments(activeExp?.id || 0)
   const activeComments = activeExp ? toDisplayComments(activeExp.comments) : []
 

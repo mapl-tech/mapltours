@@ -5,6 +5,7 @@ import { BedDouble, ChevronDown, Plane, Search, X } from 'lucide-react'
 import {
   DESTINATIONS,
   ZONES,
+  getTransferPrice,
   searchDestinations,
   type TransferDestination,
 } from '@/lib/airport-transfers'
@@ -55,6 +56,21 @@ const AIRPORT_ROW: Row = {
 const looksLikeAirportQuery = (q: string) =>
   /airport|mbj|sangster|montego\s*bay\s*air/i.test(q)
 
+/** Places we drive to only by custom quote, so the empty state can say so. */
+const looksOutOfArea = (q: string) =>
+  /kingston|port antonio|portland|mandeville|st\.? ?thomas|morant|spanish town|blue mountain/i.test(q)
+
+/**
+ * Parish, drive time and the fares, so the price is visible while choosing:
+ * on a phone the readout below the card is off screen until the list closes.
+ */
+function rowHint(d: TransferDestination): string {
+  const ow = getTransferPrice(d.id, 'one_way')
+  const rt = getTransferPrice(d.id, 'round_trip')
+  const fares = ow != null && rt != null ? ` · $${ow} one way, $${rt} round trip` : ''
+  return `${d.parish} · ${ZONES[d.zone].duration.replace(' from MBJ', '')}${fares}`
+}
+
 export default function PlacePicker({
   id,
   label,
@@ -64,6 +80,8 @@ export default function PlacePicker({
   otherEnd = 'drop-off',
   clearable = true,
   placeholder,
+  onQueryChange,
+  onNotListed,
 }: {
   /** Injected by <Field> so its <label htmlFor> reaches the input. */
   id?: string
@@ -77,6 +95,15 @@ export default function PlacePicker({
   /** False locks the box against the clear button, e.g. a round trip's airport. */
   clearable?: boolean
   placeholder?: string
+  /** Every keystroke, so the parent can carry the text into "tell us your hotel". */
+  onQueryChange?: (query: string) => void
+  /**
+   * Shows a "Not listed? Tell us your hotel" action pinned under the list
+   * and inside the empty state, with whatever was typed. Without it the
+   * empty-state box sat exactly on top of the page's own "I don't see my
+   * hotel" button, and a tap there did nothing.
+   */
+  onNotListed?: (query: string) => void
 }) {
   const listId = useId()
   const [open, setOpen] = useState(false)
@@ -125,7 +152,7 @@ export default function PlacePicker({
         // Parish and drive time only. The zone letter means nothing to a
         // guest and the readout names it anyway; three lines per row made
         // the list a scroll before the second hotel.
-        hint: `${d.parish} · ${ZONES[d.zone].duration.replace(' from MBJ', '')}`,
+        hint: rowHint(d),
         kind: 'hotel' as const,
       })),
     ],
@@ -180,6 +207,12 @@ export default function PlacePicker({
   const LeadIcon = open || !chosenLabel ? Search : isAirport ? Plane : BedDouble
   const airportTakenHint =
     offer === 'hotels' && rows.length === 0 && looksLikeAirportQuery(query)
+  const outOfAreaHint = rows.length === 0 && looksOutOfArea(query)
+  const notListed = () => {
+    onNotListed?.(query.trim())
+    setQuery('')
+    setOpen(false)
+  }
 
   // A heading over each kind, always: a list of hotels says it is hotels,
   // and the airport never reads as just another row.
@@ -226,7 +259,7 @@ export default function PlacePicker({
           // A box that already has focus gets no focus event, so a guest who
           // picked a hotel and clicks the box again to change it saw nothing.
           onClick={() => setOpen(true)}
-          onChange={(e) => { setQuery(e.target.value); setOpen(true) }}
+          onChange={(e) => { setQuery(e.target.value); onQueryChange?.(e.target.value); setOpen(true) }}
           onKeyDown={onKeyDown}
           style={{
             color: chosenLabel || query ? 'var(--text-primary)' : 'var(--text-tertiary)',
@@ -247,6 +280,7 @@ export default function PlacePicker({
       </div>
 
       {open && (
+        <div className="pp-pop">
         <ul
           id={listId}
           ref={listRef}
@@ -266,11 +300,16 @@ export default function PlacePicker({
                   villa here, or use <strong>Swap</strong> to ride from your hotel
                   to the airport instead.
                 </>
+              ) : outOfAreaHint ? (
+                <>
+                  We price Kingston, Port Antonio and the east by request. Tell us
+                  where you are staying below and we will email a fare.
+                </>
               ) : (
                 <>
-                  No match for “{query}”. Try the town instead: Negril, Ocho Rios,
-                  Falmouth, and pick the “Other hotel or villa” row for that area.
-                  The fare is set by zone, so it will be the right price.
+                  No match for “{query}”. Try the town: Negril, Ocho Rios,
+                  Falmouth, Montego Bay. If your place is not listed, tell us
+                  below; the fare is set by area, so it will be the right price.
                 </>
               )}
             </li>
@@ -321,6 +360,20 @@ export default function PlacePicker({
             </li>
           )}
         </ul>
+        {onNotListed && offer !== 'airport' && (
+          <div className="pp-foot">
+            <button
+              type="button"
+              className="pp-foot-btn"
+              // mousedown, like the rows: a click would blur the input first
+              // and the click-away handler would close the popover under it.
+              onMouseDown={(e) => { e.preventDefault(); notListed() }}
+            >
+              {query.trim() ? `Not listed? Tell us about “${query.trim()}”` : 'Not listed? Tell us your hotel or villa'}
+            </button>
+          </div>
+        )}
+        </div>
       )}
     </div>
   )

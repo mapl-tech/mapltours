@@ -4,6 +4,7 @@ import { useState } from 'react'
 import Image from 'next/image'
 import { Leaf, Mail, Clock, Send, Check, Camera, Music2 } from 'lucide-react'
 import { DESTINATION_IMAGES } from '@/lib/experiences'
+import { trackLead } from '@/lib/analytics'
 
 export default function ContactView() {
   const [sent, setSent] = useState(false)
@@ -31,6 +32,7 @@ export default function ContactView() {
         return
       }
       setSent(true)
+      trackLead('contact_form')
     } catch {
       setError('Network error, please check your connection and try again.')
     } finally {

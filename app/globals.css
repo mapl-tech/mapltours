@@ -1579,7 +1579,10 @@ img[alt="Devon House Patty & Ice Cream Tour"] {
 .xfer-sticky-cta {
   transition: opacity 0.2s ease, transform 0.2s ease, visibility 0.2s;
 }
-body:has(.xfer-quote-card:focus-within) .xfer-sticky-cta {
+/* ...and while the "tell us your hotel" form is open: the fixed bar sat over
+   its hotel field on a phone. */
+body:has(.xfer-quote-card:focus-within) .xfer-sticky-cta,
+body:has(.xfer-unlisted-panel) .xfer-sticky-cta {
   opacity: 0;
   visibility: hidden;
   pointer-events: none;
@@ -1777,22 +1780,48 @@ body:has(.xfer-quote-card:focus-within) .xfer-sticky-cta {
   pointer-events: none;
   color: var(--text-secondary);
 }
-.pp-list {
+/* The popover: the list scrolls, the "not listed" action stays pinned under it. */
+.pp-pop {
   position: absolute;
   z-index: 30;
   top: calc(100% + 6px);
   left: 0;
   right: 0;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  box-shadow: 0 12px 32px rgba(23, 22, 20, 0.12);
+  overflow: hidden;
+}
+.pp-list {
   max-height: min(320px, 52vh);
   overflow-y: auto;
   margin: 0;
   padding: 6px;
   list-style: none;
-  background: #fff;
-  border: 1px solid var(--border);
-  border-radius: var(--r-md);
-  box-shadow: 0 12px 32px rgba(23, 22, 20, 0.12);
 }
+@media (max-width: 600px) {
+  /* Room for eight rows on a phone; the old 320px showed four. */
+  .pp-list { max-height: min(440px, 58vh); }
+}
+.pp-foot { border-top: 1px solid var(--border); padding: 6px; background: var(--bg-warm); }
+.pp-foot-btn {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-height: 44px;
+  padding: 8px 11px;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  font-family: var(--font-dm-sans);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+  text-align: left;
+  cursor: pointer;
+}
+.pp-foot-btn:hover, .pp-foot-btn:focus-visible { background: var(--surface); outline: none; }
 .pp-heading {
   font-family: var(--font-dm-sans);
   font-size: 11px;
@@ -1836,7 +1865,7 @@ body:has(.xfer-quote-card:focus-within) .xfer-sticky-cta {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.pp-option-hint { font-size: 12px; color: var(--text-tertiary); margin-top: 1px; }
+.pp-option-hint { font-size: 12px; color: var(--text-tertiary); margin-top: 1px; line-height: 1.35; }
 .pp-empty {
   padding: 12px 12px 14px;
   font-size: 13.5px;
@@ -2157,22 +2186,64 @@ a.pf-stat:hover { background: var(--surface); }
    as HTML, once as the RSC flight payload), so a style object per cell was
    paid for roughly 1,600 times and pushed /transfers from 201KB to 652KB.
    Two thirds of this audience is on a phone. */
+.fare-h2 {
+  font-family: var(--font-dm-sans);
+  font-weight: 700;
+  font-size: var(--fs-h2);
+  color: #fff;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  margin-bottom: 10px;
+}
+.fare-intro {
+  font-family: var(--font-dm-sans);
+  font-size: 15px;
+  color: rgba(255, 255, 255, 0.68);
+  line-height: 1.6;
+  max-width: 680px;
+  margin-bottom: 20px;
+}
+/* One collapsed block per zone. The summary carries the count and the price
+   range, so a visitor can see whether their hotel is likely inside before
+   opening 58 rows; on phones the five open tables ran to 21 screens. */
+.fare-zone { border-top: 1px solid rgba(255, 255, 255, 0.12); }
+.fare-zone:last-of-type { border-bottom: 1px solid rgba(255, 255, 255, 0.12); }
+.fare-zone-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  min-height: 64px;
+  padding: 14px 0;
+  cursor: pointer;
+  list-style: none;
+  font-family: var(--font-dm-sans);
+  color: #fff;
+}
+.fare-zone-summary::-webkit-details-marker { display: none; }
+.fare-zone-summary:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+.fare-zone-summary-text { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.fare-zone-label { font-weight: 600; font-size: 17px; color: var(--gold-warm); }
+.fare-zone-meta { font-size: 13px; color: rgba(255, 255, 255, 0.6); line-height: 1.45; }
+.fare-zone-chevron { flex: 0 0 auto; color: rgba(255, 255, 255, 0.6); transition: transform 0.2s ease; }
+.fare-zone[open] .fare-zone-chevron { transform: rotate(180deg); }
+.fare-zone[open] .fare-zone-summary { padding-bottom: 6px; }
+.fare-scroll { padding-bottom: 18px; }
 .fare-table {
   width: 100%;
   border-collapse: collapse;
   font-family: var(--font-dm-sans);
   font-size: 14px;
-  min-width: 420px;
 }
 .fare-table thead tr { border-bottom: 1px solid rgba(255, 255, 255, 0.16); }
 .fare-table th,
-.fare-table td { padding: 10px 12px; }
+.fare-table td { padding: 4px 12px; }
 .fare-table thead th {
   text-align: left;
   padding-top: 8px;
   padding-bottom: 8px;
+  font-weight: 500;
   color: rgba(255, 255, 255, 0.6);
-  font-weight: 600;
 }
 .fare-table tbody tr { border-bottom: 1px solid rgba(255, 255, 255, 0.07); }
 .fare-table tbody th {
@@ -2187,19 +2258,42 @@ a.pf-stat:hover { background: var(--surface); }
   text-align: right;
   white-space: nowrap;
 }
-.fare-table thead .fare-num { color: rgba(255, 255, 255, 0.6); }
 .fare-table th:first-child,
 .fare-table td:first-child { padding-left: 0; }
 .fare-table th:last-child,
 .fare-table td:last-child { padding-right: 0; }
 .fare-reopen { color: rgba(255, 255, 255, 0.45); font-weight: 400; }
+/* Every hotel name and price is a button that fills the quote card. Rows
+   keep a 44px tap height; the name is left-aligned, prices right-aligned. */
+.fare-pick {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0;
+  background: none;
+  border: 0;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  text-decoration: underline;
+  text-decoration-color: rgba(255, 255, 255, 0.28);
+  text-underline-offset: 3px;
+}
+.fare-pick:hover,
+.fare-pick:focus-visible { color: var(--gold); text-decoration-color: currentColor; outline: none; }
+.fare-pick-price { justify-content: flex-end; width: 100%; font-variant-numeric: tabular-nums; }
 /* Tables are the one thing allowed to scroll sideways; the page body is not. */
 .fare-scroll { overflow-x: auto; }
-.fare-section { padding: 56px 0 72px; }
-/* On phones this section is the last thing on /transfers, and the fixed
-   "Book now" bar (up to ~90px tall, 16px off the bottom) sat over the final
-   row of fares. The page used to end on .xfer-final-cta, which reserves
-   120px for exactly this; the fare tables now come after it. */
+.fare-section { padding: 56px 0 72px; background: var(--bg-dark); }
 @media (max-width: 600px) {
-  .fare-section { padding-bottom: 136px; }
+  .fare-section { padding: 44px 0 56px; }
+  .fare-h2 { font-size: 26px; }
+  /* Parish is the one column a phone can spare. With it gone the four
+     columns fit in 358px and the round-trip price no longer sits off the
+     right edge behind a sideways swipe. */
+  .fare-table .fare-parish { display: none; }
+  .fare-table { font-size: 15px; }
+  .fare-table th,
+  .fare-table td { padding: 2px 8px; }
 }

@@ -181,3 +181,66 @@ describe('the type-ahead finds what guests actually type', () => {
     expect(searchDestinations('').length).toBeGreaterThan(0)
   })
 })
+
+describe('the type-ahead forgives what phones produce', () => {
+  const ids = (q: string) => searchDestinations(q).map((d) => d.id)
+  const first = (q: string) => searchDestinations(q)[0]?.name ?? ''
+
+  test('a one-letter typo still finds the brand', () => {
+    expect(first('Rui')).toMatch(/^Riu/)
+    expect(first('sandles')).toMatch(/^Sandals/)
+    expect(first('negrill')).toMatch(/Negril/)
+    expect(first('excelence')).toBe('Excellence Oyster Bay')
+    expect(first('royalton hideway')).toMatch(/Royalton Hideaway/)
+  })
+
+  test('a typo never pollutes an exact list', () => {
+    // "rui" is inside "cruise": a three-letter token has to start a word.
+    expect(ids('riu')).not.toContain('falmouth-cruise-port')
+    expect(ids('Rui')).not.toContain('falmouth-cruise-port')
+  })
+
+  test('filler words are ignored', () => {
+    expect(first('the riu hotel')).toMatch(/^Riu/)
+    expect(first('sandals resorts negril')).toBe('Sandals Negril Beach Resort')
+    expect(first('hotel riu')).toMatch(/^Riu/)
+  })
+
+  test('a former or booking-site name finds the row', () => {
+    expect(first('royal caribbean')).toMatch(/Caribbean/)
+    expect(first('jewel paradise cove')).toMatch(/Paradise Cove/)
+    expect(first('royal decameron')).toMatch(/Decameron/)
+  })
+
+  test('a beach or district lists its hotels', () => {
+    expect(ids('seven mile beach')).toContain('sandals-negril')
+    expect(ids('7 mile')).toContain('sandals-negril')
+    expect(ids('mobay')).toContain('sandals-montego-bay')
+    expect(ids('mammee bay')).toContain('riu-ocho-rios')
+    expect(ids('silver sands')).toContain('falmouth-other')
+  })
+
+  test('a villa or Airbnb guest is offered the area rows', () => {
+    for (const q of ['airbnb', 'villa', 'private villa', 'apartment']) {
+      const r = searchDestinations(q)
+      expect(r.length).toBe(8)
+      expect(r.every((d) => d.id.endsWith('-other'))).toBe(true)
+    }
+  })
+
+  test('a short exact name beats a longer one that starts the same way', () => {
+    expect(first('S hotel')).toBe('S Hotel, Montego Bay')
+  })
+
+  test('before anything is typed, the popular resorts come first, then the areas', () => {
+    const r = searchDestinations('')
+    expect(r[0].id).toBe('sandals-negril')
+    expect(r.slice(0, 12).map((d) => d.id)).toContain('riu-ocho-rios')
+    expect(r[12].id.endsWith('-other')).toBe(true)
+  })
+
+  test('towns are still browsed nearest-first, not alphabetically by whoever starts with the town', () => {
+    expect(first('negril')).toBe('Sandals Negril Beach Resort')
+    expect(first('ocho rios')).toMatch(/Moon Palace/)
+  })
+})
