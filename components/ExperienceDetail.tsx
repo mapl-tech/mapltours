@@ -214,6 +214,15 @@ function Reel({ exp, isActive, near, totalCount, currentIndex, onComments }: { e
   return (
     <div
       onClick={togglePlay}
+      // Keyboard users get the same tap-anywhere pause (WCAG 2.2.2): the reel
+      // root is focusable and Space or Enter toggles playback.
+      tabIndex={isActive ? 0 : -1}
+      role="group"
+      aria-label={`${exp.title} reel. Press Space to pause or play the video.`}
+      onKeyDown={(e) => {
+        if (e.target !== e.currentTarget) return
+        if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); togglePlay() }
+      }}
       // Off-screen reels are visually stacked out of view but their buttons
       // and inputs were still in the tab order; inert removes the whole
       // subtree from focus and the accessibility tree until it is active.
@@ -540,7 +549,7 @@ function Reel({ exp, isActive, near, totalCount, currentIndex, onComments }: { e
         }} />
         {/* Creator name */}
         <p style={{
-          fontSize: 14, fontWeight: 700, color: 'white',
+          fontSize: 13, fontWeight: 500, color: 'white',
           fontFamily: 'var(--font-dm-sans)', marginBottom: 4,
         }}>
           @{displayHandle(exp.creator)}
@@ -570,10 +579,10 @@ function Reel({ exp, isActive, near, totalCount, currentIndex, onComments }: { e
         <button
           type="button"
           className="reel-meta-line"
-          onClick={() => setDetailsFor(exp)}
+          onClick={(e) => { e.stopPropagation(); setDetailsFor(exp) }}
           aria-label={`${exp.destination}, ${exp.duration}. What's included, ages and what to bring`}
           style={{
-            alignItems: 'center', gap: 6, minHeight: 44, padding: 0, marginBottom: 2,
+            alignItems: 'center', gap: 6, minHeight: 44, padding: 0, marginBottom: 8,
             background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left',
             fontFamily: 'var(--font-dm-sans)', fontSize: 13.5, fontWeight: 600, color: '#fff',
           }}
@@ -650,9 +659,12 @@ function Reel({ exp, isActive, near, totalCount, currentIndex, onComments }: { e
             <span style={{ fontSize: 13, color: '#fff', fontFamily: 'var(--font-dm-sans)', whiteSpace: 'nowrap' }}>{priceUnitLabel(exp.pricing)}</span>
           </div>
           <button
+            className="reel-cta"
             onClick={(e) => { e.stopPropagation(); toggleCart() }}
             disabled={blocked}
             title={tourFit.reason ?? undefined}
+            aria-pressed={inCart}
+            aria-label={inCart ? `Remove ${exp.title} from your trip` : blocked ? `${exp.title}: another day` : `Add ${exp.title} to your trip`}
             style={{
               minHeight: 48, padding: '0 22px', borderRadius: 9999,
               // Spent, not merely inert: a white CTA that does nothing when
@@ -668,6 +680,11 @@ function Reel({ exp, isActive, near, totalCount, currentIndex, onComments }: { e
             {inCart ? t('✓ In Trip') : blocked ? t('Another day') : t('Add to Trip')}
           </button>
         </div>
+        {/* The toggle's result, spoken: the button's label alone is not a
+            status message (WCAG 4.1.3). */}
+        <p role="status" aria-live="polite" className="visually-hidden">
+          {hydrated ? (inCart ? `${exp.title} added to your trip.` : '') : ''}
+        </p>
 
         {/* Points at where the detail actually lives. The reel is the
             browsing surface and stays uncluttered; what to bring, group size
@@ -1584,29 +1601,32 @@ export default function ExperienceDetail({ slug }: { slug: string }) {
             }
             setMobileComments(true)
           }}
+          aria-label={isLoggedIn ? 'Add a comment' : 'Sign in to comment'}
           style={{
-            flex: 1, display: 'flex', alignItems: 'center', gap: 8,
+            // With a Checkout link beside it the field shrinks to an icon
+            // button; the booking action is the one that deserves the width.
+            flex: items.length > 0 ? '0 0 auto' : 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
             background: 'rgba(255,255,255,0.08)', border: 'none',
-            borderRadius: 9999, padding: '10px 16px', minHeight: 44,
+            borderRadius: 9999, padding: items.length > 0 ? '0 14px' : '10px 16px', minHeight: 44, minWidth: 44,
             cursor: 'pointer', color: 'rgba(255,255,255,0.66)',
             fontSize: 13, fontFamily: 'var(--font-dm-sans)',
             textAlign: 'left',
           }}
         >
-          {isLoggedIn ? 'Add a comment...' : 'Sign in to comment...'}
+          {items.length > 0 ? <MessageCircle size={20} aria-hidden /> : (isLoggedIn ? 'Add a comment...' : 'Sign in to comment...')}
         </button>
         {items.length > 0 && (
           <Link
             href={checkoutHref}
+            className="btn-primary"
             style={{
-              display: 'flex', alignItems: 'center', gap: 5,
-              padding: '8px 14px', borderRadius: 9999,
-              background: 'var(--emerald)', color: 'white',
-              fontSize: 12, fontWeight: 600, fontFamily: 'var(--font-dm-sans)',
+              flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+              minHeight: 46, padding: '0 20px', borderRadius: 9999,
+              fontSize: 15, fontWeight: 700, fontFamily: 'var(--font-dm-sans)',
               whiteSpace: 'nowrap',
             }}
           >
-            <ShoppingBag size={14} />
+            <ShoppingBag size={16} />
             {`Checkout (${items.length})`}
           </Link>
         )}

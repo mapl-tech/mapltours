@@ -292,6 +292,19 @@ h5, h6 { letter-spacing: -0.01em; }
   bottom: 24px;
 }
 .reel-meta-line { display: none; }
+/* The site's focus ring is the AA-safe olive for light pages; on a video it
+   measured 2.2:1 on the overlay band and 1:1 on the green button. A white
+   ring with a dark halo reads on sand, sea and the scrim alike. */
+.reel-right-rail button:focus-visible,
+.reel-bottom-info button:focus-visible,
+.reel-meta-line:focus-visible,
+[data-mobile-bottom-bar] a:focus-visible,
+[data-mobile-bottom-bar] button:focus-visible,
+[role="group"][aria-label$="video."]:focus-visible {
+  outline: 2px solid #fff !important;
+  outline-offset: 2px;
+  box-shadow: 0 0 0 4px rgba(0, 0, 0, 0.6);
+}
 @media (max-width: 767px) {
   .reel-right-rail {
     bottom: var(--reel-bottom-offset, max(96px, calc(76px + env(safe-area-inset-bottom)))) !important;
@@ -301,6 +314,12 @@ h5, h6 { letter-spacing: -0.01em; }
      screens (and in the details sheet). */
   .reel-desc, .reel-chips, .reel-included, .reel-helper { display: none !important; }
   .reel-meta-line { display: flex; flex-wrap: wrap; }
+  /* 320px phones: the rail's brand avatar rose into the close button. */
+  @media (max-width: 359px) {
+    .reel-right-rail { gap: 10px !important; }
+    .reel-right-rail > div:first-child { display: none; }
+    .reel-cta { padding: 0 16px !important; }
+  }
   /* No bottom bar on this reel: sit on the safe-area edge instead of the
      96px reserved for it. */
   .reel-no-bar .reel-bottom-mobile-pad { padding-bottom: calc(20px + env(safe-area-inset-bottom)) !important; }
