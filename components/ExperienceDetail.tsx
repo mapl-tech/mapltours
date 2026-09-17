@@ -349,7 +349,7 @@ function Reel({ exp, isActive, near, totalCount, currentIndex, onComments }: { e
             // than the client's first paint. Suppress the warning, the
             // client value is the correct one and renders within ms.
             suppressHydrationWarning
-            style={{ fontSize: 12, fontWeight: 700, fontFamily: 'var(--font-dm-sans)', padding: '1px 8px', borderRadius: 9999, background: 'rgba(0,0,0,0.5)' }}
+            style={{ fontSize: 12, fontWeight: 700, fontFamily: 'var(--font-dm-sans)', padding: '1px 8px', borderRadius: 9999, background: 'rgba(0,0,0,0.5)', visibility: exp.reviews + likeCount > 0 ? 'visible' : 'hidden' }}
           >
             {(exp.reviews + likeCount).toLocaleString('en-US')}
           </span>
@@ -368,7 +368,7 @@ function Reel({ exp, isActive, near, totalCount, currentIndex, onComments }: { e
           <span className="reel-action-disc">
             <MessageCircle size={24} strokeWidth={1.8} />
           </span>
-          <span style={{ fontSize: 12, fontWeight: 700, fontFamily: 'var(--font-dm-sans)', padding: '1px 8px', borderRadius: 9999, background: 'rgba(0,0,0,0.5)' }}>
+          <span style={{ fontSize: 12, fontWeight: 700, fontFamily: 'var(--font-dm-sans)', padding: '1px 8px', borderRadius: 9999, background: 'rgba(0,0,0,0.5)', visibility: exp.comments.length > 0 ? 'visible' : 'hidden' }}>
             {exp.comments.length}
           </span>
         </button>
@@ -554,14 +554,36 @@ function Reel({ exp, isActive, near, totalCount, currentIndex, onComments }: { e
           {t(exp.title)}
         </TitleTag>
 
-        {/* Description, 2 line clamp */}
-        <p style={{
+        {/* Description, 2 line clamp. Phones hide it (class): with it, the
+            chips and the helper line, the overlay covered more than half the
+            video; the same words are one tap away in the details sheet. */}
+        <p className="reel-desc" style={{
           fontSize: 15, color: '#fff',
           fontFamily: 'var(--font-dm-sans)', lineHeight: 1.45, marginBottom: 10,
           display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden',
         }}>
           {t(exp.description)}
         </p>
+
+        {/* Phones: one line carries the place, the duration and the way to
+            the details, in place of the paragraph, the link and the chips. */}
+        <button
+          type="button"
+          className="reel-meta-line"
+          onClick={() => setDetailsFor(exp)}
+          aria-label={`${exp.destination}, ${exp.duration}. What's included, ages and what to bring`}
+          style={{
+            alignItems: 'center', gap: 6, minHeight: 44, padding: 0, marginBottom: 2,
+            background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left',
+            fontFamily: 'var(--font-dm-sans)', fontSize: 13.5, fontWeight: 600, color: '#fff',
+          }}
+        >
+          <MapPin size={13} aria-hidden /> {exp.destination}
+          <span aria-hidden style={{ opacity: 0.6 }}>·</span>
+          <Clock size={13} aria-hidden /> {exp.duration}
+          <span aria-hidden style={{ opacity: 0.6 }}>·</span>
+          <span style={{ textDecoration: 'underline', textUnderlineOffset: 3 }}>What&apos;s included</span>
+        </button>
 
         {/* The reel sells the feeling; this answers the questions that decide a
             purchase (transport, entrance fees, minimum age, what to wear). */}
@@ -570,6 +592,7 @@ function Reel({ exp, isActive, near, totalCount, currentIndex, onComments }: { e
             on a 360px phone the second line lines up under the title instead
             of centring "bring" on its own. */}
         <button
+          className="reel-included"
           onClick={() => setDetailsFor(exp)}
           style={{
             display: 'inline-flex', alignItems: 'center', gap: 6,
@@ -584,7 +607,7 @@ function Reel({ exp, isActive, near, totalCount, currentIndex, onComments }: { e
         </button>
 
         {/* Info chips row */}
-        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 12 }}>
+        <div className="reel-chips" style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 12 }}>
           <span style={{
             display: 'inline-flex', alignItems: 'center', gap: 4,
             padding: '4px 10px', borderRadius: 9999,
@@ -651,7 +674,7 @@ function Reel({ exp, isActive, near, totalCount, currentIndex, onComments }: { e
             and what the price covers sit in checkout, where they change a
             decision. Wording flips once it is in the trip so it reads as a
             next step rather than a repeated instruction. */}
-        <p style={{
+        <p className="reel-helper" style={{
           marginTop: 10, fontSize: 12.5, lineHeight: 1.5,
           color: 'rgba(255,255,255,0.72)', fontFamily: 'var(--font-dm-sans)',
         }}>
@@ -1007,6 +1030,9 @@ export default function ExperienceDetail({ slug }: { slug: string }) {
     return () => window.clearTimeout(t)
   }, [activeExp])
   const { addComment: addSupabaseComment, toDisplayComments, isLoggedIn, user: currentUser, replyingTo, setReplyingTo } = useComments(activeExp?.id || 0)
+  // The phone bottom bar exists only with a checkout link or a signed-in
+  // commenter; without it the overlay and rail sit on the safe-area edge.
+  const mobileBarShown = isLoggedIn || items.length > 0
   const activeComments = activeExp ? toDisplayComments(activeExp.comments) : []
 
   // Checkout requires an account. Rather than a silent 307 → /login after the
@@ -1130,7 +1156,7 @@ export default function ExperienceDetail({ slug }: { slug: string }) {
     // had nowhere to live. One viewport of immersive reel, then the page
     // continues: the internal scroll-snap feed is unaffected because it sizes
     // against this box, which is still exactly one viewport tall.
-    <div style={{
+    <div className={mobileBarShown ? undefined : 'reel-no-bar'} style={{
       position: 'relative', zIndex: 1,
       height: '100dvh', width: '100%',
       background: '#000', display: 'flex',
@@ -1538,7 +1564,12 @@ export default function ExperienceDetail({ slug }: { slug: string }) {
         </div>
       </div>
 
-      {/* ── Mobile bottom bar (YouTube Shorts style) ── */}
+      {/* ── Mobile bottom bar (YouTube Shorts style) ──
+          Shown only when it has a job: a checkout link, or a signed-in
+          commenter. A bare "Sign in to comment" bar took 65px off every
+          reel for a feature with no comments yet; the comment icon on the
+          rail opens the sheet either way. */}
+      {(isLoggedIn || items.length > 0) && (
       <div ref={mobileBarRef} data-mobile-bottom-bar className="hide-desktop" style={{
         position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 310,
         background: 'var(--bg-dark)', borderTop: '1px solid rgba(255,255,255,0.08)',
@@ -1580,6 +1611,7 @@ export default function ExperienceDetail({ slug }: { slug: string }) {
           </Link>
         )}
       </div>
+      )}
 
       {/* ── Mobile comments sheet, draggable, half → full → close ── */}
       {mobileComments && (

@@ -291,10 +291,20 @@ h5, h6 { letter-spacing: -0.01em; }
 .reel-right-rail {
   bottom: 24px;
 }
+.reel-meta-line { display: none; }
 @media (max-width: 767px) {
   .reel-right-rail {
     bottom: var(--reel-bottom-offset, max(96px, calc(76px + env(safe-area-inset-bottom)))) !important;
   }
+  /* Phones: the overlay is creator, title, one meta line, price and the
+     button. The paragraph, the chips and the helper line stay for wider
+     screens (and in the details sheet). */
+  .reel-desc, .reel-chips, .reel-included, .reel-helper { display: none !important; }
+  .reel-meta-line { display: flex; flex-wrap: wrap; }
+  /* No bottom bar on this reel: sit on the safe-area edge instead of the
+     96px reserved for it. */
+  .reel-no-bar .reel-bottom-mobile-pad { padding-bottom: calc(20px + env(safe-area-inset-bottom)) !important; }
+  .reel-no-bar .reel-right-rail { bottom: calc(28px + env(safe-area-inset-bottom)) !important; }
   .reel-bottom-mobile-pad {
     padding-bottom: var(--reel-bottom-offset, max(96px, calc(76px + env(safe-area-inset-bottom)))) !important;
   }
