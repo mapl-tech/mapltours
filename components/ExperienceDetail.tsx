@@ -45,7 +45,7 @@ function shuffle<T>(arr: T[], seed: string): T[] {
 }
 
 /* ── Single Reel (Snapchat style) ── */
-function Reel({ exp, isActive, totalCount, currentIndex, onComments }: { exp: Experience; isActive: boolean; totalCount: number; currentIndex: number; onComments: () => void }) {
+function Reel({ exp, isActive, near, totalCount, currentIndex, onComments }: { exp: Experience; isActive: boolean; near: boolean; totalCount: number; currentIndex: number; onComments: () => void }) {
   const videoRef = useRef<HTMLVideoElement>(null)
   const [paused, setPaused] = useState(false)
   const { addItem, removeItem, isInCart } = useCartStore()
@@ -239,13 +239,18 @@ function Reel({ exp, isActive, totalCount, currentIndex, onComments }: { exp: Ex
           style={{ width: '100%', height: '100%', border: 'none' }}
         />
       ) : (
+      // The poster only for this reel and its two neighbours, and at phone
+      // size through the image optimiser: with the raw catalogue file on all
+      // 15 reels a tour page pulled 4 MB of stills before the one on screen
+      // got any bandwidth, so on cellular the video sat dark for 20 s. The
+      // other reels take a poster as they come within one swipe.
       <video
         ref={videoRef}
         src={isActive ? exp.video : undefined}
         loop muted playsInline
         preload={isActive ? 'auto' : 'none'}
-        poster={exp.image}
-        style={{ width: '100%', height: '100%', objectFit: 'cover', willChange: 'opacity' }}
+        poster={near ? `/_next/image?url=${encodeURIComponent(exp.image)}&w=750&q=70` : undefined}
+        style={{ width: '100%', height: '100%', objectFit: 'cover', willChange: 'opacity', background: '#08080A' }}
       />
       )}
 
@@ -1246,6 +1251,7 @@ export default function ExperienceDetail({ slug }: { slug: string }) {
               key={exp.id}
               exp={exp}
               isActive={i === activeIndex}
+              near={Math.abs(i - activeIndex) <= 1}
               totalCount={feedExperiences.length}
               currentIndex={activeIndex}
               onComments={() => {

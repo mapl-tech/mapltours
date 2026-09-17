@@ -735,7 +735,7 @@ function DestinationsSection() {
                 onClick={() => scroll('left')}
                 aria-label="Previous"
                 style={{
-                  width: 40, height: 40, borderRadius: '50%',
+                  width: 44, height: 44, borderRadius: '50%',
                   background: 'transparent', border: '1px solid var(--border-strong)',
                   cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
                   color: 'var(--text-secondary)', transition: 'all 0.15s ease',
@@ -747,7 +747,7 @@ function DestinationsSection() {
                 onClick={() => scroll('right')}
                 aria-label="Next"
                 style={{
-                  width: 40, height: 40, borderRadius: '50%',
+                  width: 44, height: 44, borderRadius: '50%',
                   background: 'var(--accent)', border: 'none',
                   cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
                   color: '#fff', transition: 'all 0.15s ease',
@@ -772,7 +772,7 @@ function DestinationsSection() {
           }}
         >
           {destinations.map((d) => (
-            <a key={d.name} href="/explore" className="photo-card mobile-dest-card" style={{
+            <a key={d.name} href={`/explore?q=${encodeURIComponent(d.name)}`} className="photo-card mobile-dest-card" style={{
               flex: '0 0 200px', aspectRatio: '3/4', display: 'flex',
               alignItems: 'flex-end', padding: 16, scrollSnapAlign: 'start',
               borderRadius: 'var(--r-xl)',
@@ -967,7 +967,6 @@ function TrendingRail({ items }: { items: Experience[] }) {
           >
             <MobileShort
               exp={exp}
-              priority={i === 0}
               active={videoOk && i === activeIndex}
               badge={i === 0 ? 'Most booked' : undefined}
             />
@@ -975,6 +974,40 @@ function TrendingRail({ items }: { items: Experience[] }) {
         ))}
       </div>
     </>
+  )
+}
+
+function MobilePosterCard({ exp }: { exp: Experience }) {
+  const { formatPrice } = useI18n()
+  return (
+    <Link
+      href={`/experience/${slugify(exp.title)}`}
+      aria-label={`${exp.title}, from ${formatPrice(exp.price)}`}
+      style={{
+        position: 'relative', display: 'block', aspectRatio: '3 / 4',
+        borderRadius: 'var(--r-xl)', overflow: 'hidden', background: 'var(--card-bg)',
+        WebkitTapHighlightColor: 'transparent',
+      }}
+    >
+      <Image
+        src={exp.image}
+        alt=""
+        fill
+        sizes="(max-width: 767px) 46vw, 20vw"
+        quality={70}
+        loading="lazy"
+        style={{ objectFit: 'cover' }}
+      />
+      <div aria-hidden style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, rgba(0,0,0,0) 45%, rgba(0,0,0,0.78) 100%)' }} />
+      <div style={{ position: 'absolute', left: 12, right: 12, bottom: 12, color: '#fff' }}>
+        <p style={{ fontFamily: 'var(--font-syne)', fontWeight: 700, fontSize: 15, lineHeight: 1.25, margin: 0, textShadow: '0 1px 2px rgba(0,0,0,0.5)' }}>
+          {exp.title}
+        </p>
+        <p style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 13, fontWeight: 500, margin: '4px 0 0', color: 'rgba(255,255,255,0.88)' }}>
+          From {formatPrice(exp.price)} · {exp.duration}
+        </p>
+      </div>
+    </Link>
   )
 }
 
@@ -992,12 +1025,13 @@ function AllExperiencesSection() {
       <div className="hide-mobile" style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 14 }}>
         {visible.map((e) => <ExpCard key={e.id} exp={e} />)}
       </div>
-      {/* Mobile: shorts, 1 col */}
-      {/* Two columns, matching /explore: one column of 9:16 shorts made the
-          home page 22816px tall on a phone. */}
-      {/* One full-width reel per row, matching the explore page. */}
-      <div className="hide-desktop mobile-shorts-grid" style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 10 }}>
-        {visible.map((e) => <MobileShort key={e.id} exp={e} />)}
+      {/* Phones: a two-up poster grid. The previous 15 screen-tall video
+          cards made this section 9,877px of a 16,898px page, mounted 15
+          <video> elements that never let go, and pulled 54 to 114 MB in one
+          scroll. Trending Now above already plays the clips; here a tap
+          opens the reel. */}
+      <div className="hide-desktop mobile-poster-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 10 }}>
+        {visible.map((e) => <MobilePosterCard key={e.id} exp={e} />)}
       </div>
       {hasMore && (
         <div style={{ display: 'flex', justifyContent: 'center', marginTop: 40 }}>
@@ -1129,7 +1163,10 @@ export default function FeedView() {
       </section>
 
       {/* ═══ CONCIERGE PROMISE ═══ */}
-      <section className="section-y reveal" style={{ background: 'var(--bg-dark)' }}>
+      {/* No .reveal here: this section starts at the fold on a phone, and a
+          dark block fading in over the cream body read as a grey slab with
+          a white seam under the hero. */}
+      <section className="section-y" style={{ background: 'var(--bg-dark)' }}>
         <div className="container" style={{ maxWidth: 1100, margin: '0 auto' }}>
           {/* Headline */}
           <div data-reveal style={{ textAlign: 'center', marginBottom: 52 }}>

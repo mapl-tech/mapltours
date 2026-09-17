@@ -98,11 +98,14 @@ export default memo(function MobileShort({
         if (visible) {
           setVideoMounted(true)
         } else {
-          // Pause and reset when off-screen
+          // Off screen (past the 200px margin): pause, then unmount, so a
+          // card that scrolled by does not keep its clip open and buffering.
+          // It mounts again, from its poster, when it comes back.
           if (videoRef.current) {
             videoRef.current.pause()
             setIsPlaying(false)
           }
+          setVideoMounted(false)
         }
       },
       { threshold: 0, rootMargin: '200px 0px' }
@@ -209,7 +212,7 @@ export default memo(function MobileShort({
             src={exp.image}
             alt={exp.title}
             fill
-            sizes="100vw"
+            sizes="(max-width: 767px) 86vw, 20vw"
             quality={75}
             {...(priority
               ? { priority: true, fetchPriority: 'high' as const }

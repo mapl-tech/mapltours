@@ -990,6 +990,7 @@ html.js-reveal [data-reveal].is-in {
   display: flex;
   align-items: flex-end;
   aspect-ratio: 1 / 1;
+  background: var(--bg-dark);
 }
 @media (min-width: 768px) {
   .hero-section {
