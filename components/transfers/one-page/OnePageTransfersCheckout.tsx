@@ -8,7 +8,6 @@ import { MAX_TRANSFER_PASSENGERS, ROUND_TRIP_DISCOUNT } from '@/lib/airport-tran
 import { leadTimeCutoff } from '@/lib/booking-window'
 import { getStoredAttribution } from '@/lib/attribution'
 import { trackBeginCheckout } from '@/lib/analytics'
-import { CANCELLATION_WINDOW_HOURS, ADMIN_CHARGE_RATE } from '@/lib/refund-pricing'
 import { useI18n } from '@/lib/i18n'
 import {
   validateTransferForm, orderKey, legsFor, pickupFromFlight, flightFromPickup, formatWallClock, PICKUP_LEAD_TEXT, LEG_TIME_RE, type FieldErrors,
@@ -34,9 +33,6 @@ import { useHydrated } from '@/components/checkout/one-page/useHydrated'
  */
 
 const FONT = 'var(--font-dm-sans)'
-/** The cancellation promise as a sentence, from the same numbers as the policy
- *  dialog, so the line under the pay button can never say something else. */
-const CANCEL_LINE = `Cancel within ${CANCELLATION_WINDOW_HOURS} hours of booking for a refund, minus a ${Math.round(ADMIN_CHARGE_RATE * 100)}% admin charge.`
 const FIELD_ORDER = ['arrivalAt', 'arrivalFlight', 'departureAt', 'departureFlight', 'firstName', 'lastName', 'email', 'phone']
 const AUTO_SAVE_DELAY_MS = 2500
 
@@ -436,7 +432,7 @@ export default function OnePageTransfersCheckout() {
                   billing={{ name: contactName || undefined, email: form.email.trim() || undefined, phone: form.phone.trim() || undefined }}
                   externalError={serverError}
                   onAmountResolved={(usd) => setServerDue(usd)}
-                  footer={<Reassurance lines={['Stripe takes the payment. We never see your card number.', CANCEL_LINE, 'Your driver meets you at arrivals with a name sign. We send their name, vehicle and plate before pickup.']} />}
+                  footer={<Reassurance lines={['Stripe takes the payment. We never see your card number.', 'Your driver meets you at arrivals with a name sign. We send their name, vehicle and plate before pickup.']} />}
                 >
                   <p style={{ marginTop: 18, fontFamily: FONT, fontSize: 13, lineHeight: 1.55, color: 'var(--text-tertiary)' }}>
                     By paying you agree to the <LinkButton onClick={() => setLegal('terms')}>Terms</LinkButton> and the <LinkButton onClick={() => setLegal('cancellation')}>Cancellation Policy</LinkButton>.
@@ -572,7 +568,7 @@ function RideSummary(p: {
           <span>Total</span><span>{formatUsd(p.finalTotal)}</span>
         </div>
         <p style={{ marginTop: 8, fontSize: 13, lineHeight: 1.5, color: 'var(--text-tertiary)', fontFamily: FONT }}>
-          All-in, nothing added at the airport. {CANCEL_LINE} <LinkButton onClick={p.openPolicy}>Read the full cancellation policy</LinkButton>
+          All-in, nothing added at the airport. <LinkButton onClick={p.openPolicy}>Cancellation policy</LinkButton>
         </p>
       </div>
     </Card>

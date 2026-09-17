@@ -11,7 +11,6 @@ import { getStoredAttribution } from '@/lib/attribution'
 import { trackBeginCheckout } from '@/lib/analytics'
 import { planDay } from '@/lib/day-route'
 import { useAvailableReward, consumeReward } from '@/lib/tour-videos'
-import { CANCELLATION_WINDOW_HOURS, ADMIN_CHARGE_RATE } from '@/lib/refund-pricing'
 import { useI18n } from '@/lib/i18n'
 import { useFocusTrap } from '@/lib/use-focus-trap'
 import { validateTourForm, validateContact, orderKey, formatDate, type FieldErrors } from '@/lib/checkout-form'
@@ -43,9 +42,6 @@ import { PICKUP_PLACES, OTHER_PLACE } from './pickup-places'
  */
 
 const FONT = 'var(--font-dm-sans)'
-/** The cancellation promise as a sentence, from the same numbers as the policy
- *  dialog, so the line under the pay button can never say something else. */
-const CANCEL_LINE = `Cancel within ${CANCELLATION_WINDOW_HOURS} hours of booking for a refund, minus a ${Math.round(ADMIN_CHARGE_RATE * 100)}% admin charge.`
 const FIELD_ORDER = ['tripDate', 'pickup', 'firstName', 'lastName', 'email', 'phone', 'waiver']
 const AUTO_SAVE_DELAY_MS = 2500
 
@@ -479,7 +475,7 @@ export default function OnePageCheckout() {
                   billing={{ name: contactName || undefined, email: form.email.trim() || undefined, phone: form.phone.trim() || undefined }}
                   externalError={serverError}
                   onAmountResolved={(usd) => setServerDue(usd)}
-                  footer={<Reassurance lines={['Stripe takes the payment. We never see your card number.', CANCEL_LINE, 'We confirm your pickup time with you before the day.']} />}
+                  footer={<Reassurance lines={['Stripe takes the payment. We never see your card number.', 'We confirm your pickup time with you before the day.']} />}
                 >
                   <div data-field="waiver" style={{ marginTop: 18 }}>
                     {/* The box is 20px, sized to the 13px sentence beside it rather
@@ -697,7 +693,7 @@ function OrderSummary(p: {
           <span>{t('Total')}</span><span>{formatUsd(p.finalTotal)}</span>
         </div>
         <p style={{ marginTop: 8, fontSize: 13, lineHeight: 1.5, color: 'var(--text-tertiary)', fontFamily: FONT }}>
-          Private tour, all-in. {CANCEL_LINE} <LinkButton onClick={p.openPolicy}>Read the full cancellation policy</LinkButton>
+          Private tour, all-in. <LinkButton onClick={p.openPolicy}>Cancellation policy</LinkButton>
         </p>
       </div>
     </Card>
