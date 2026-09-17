@@ -284,7 +284,7 @@ function Reel({ exp, isActive, near, totalCount, currentIndex, onComments }: { e
       <div style={{
         // env(): the site opts into viewport-fit=cover, so without the inset
         // this strip renders under the iPhone Dynamic Island.
-        position: 'absolute', top: 'calc(env(safe-area-inset-top, 0px) + 8px)', left: 12, right: 12, zIndex: 15,
+        position: 'absolute', top: 'max(calc(env(safe-area-inset-top, 0px) + 8px), 50px)', left: 12, right: 12, zIndex: 15,
         display: 'flex', gap: 3,
       }}>
         {Array.from({ length: totalCount }).map((_, i) => (
@@ -1152,7 +1152,9 @@ export default function ExperienceDetail({ slug }: { slug: string }) {
             else router.push('/explore')
           }}
           style={{
-            position: 'absolute', top: 'calc(env(safe-area-inset-top, 0px) + 10px)', right: 10, zIndex: 30,
+            // A 52px floor: iPhones report a 0 safe-area inset while Safari's
+            // collapsed chrome still lets the status bar overlay the top 47px.
+            position: 'absolute', top: 'max(calc(env(safe-area-inset-top, 0px) + 10px), 52px)', right: 10, zIndex: 30,
             width: 48, height: 48, padding: 0,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             cursor: 'pointer', background: 'none', border: 'none',
@@ -1171,7 +1173,7 @@ export default function ExperienceDetail({ slug }: { slug: string }) {
 
         {/* ── Prev / Next arrows, top, beside close button ── */}
         <div style={{
-          position: 'absolute', top: 'calc(env(safe-area-inset-top, 0px) + 18px)', left: 14, right: 58,
+          position: 'absolute', top: 'max(calc(env(safe-area-inset-top, 0px) + 18px), 60px)', left: 14, right: 58,
           zIndex: 20, display: 'flex', alignItems: 'center', gap: 8,
           pointerEvents: 'none',
         }}>

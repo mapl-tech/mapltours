@@ -1117,11 +1117,15 @@ export default function FeedView() {
           // straight through the text band. Tuned so the gold eyebrow and the
           // green "Jamaica" in the headline stay legible against sand, while
           // the top of the frame keeps the footage vivid.
-          position: 'absolute', bottom: 0, left: 0, right: 0, height: '78%',
+          position: 'absolute', bottom: 0, left: 0, right: 0, height: '86%',
           // The 0% stop is fully opaque and EXACTLY --bg-dark (#111110): at
           // 93% the bright Negril sand bled through and the hero's bottom
           // edge read grey against the black section that follows it.
-          background: 'linear-gradient(0deg, rgb(17,17,16) 0%, rgba(10,10,8,0.85) 16%, rgba(8,8,6,0.6) 40%, rgba(8,8,6,0.26) 68%, transparent 100%)',
+          // Measured on the portrait loop (Sept 2026): with the old 26% stop
+          // at the headline's height, white text over the surf and sand
+          // came out at 1:1 to 1.9:1. The band under the text now holds
+          // 72 to 90% and the fade to clear happens above the headline.
+          background: 'linear-gradient(0deg, rgb(17,17,16) 0%, rgba(10,10,8,0.92) 18%, rgba(8,8,6,0.84) 40%, rgba(8,8,6,0.74) 62%, rgba(8,8,6,0.4) 84%, transparent 100%)',
           pointerEvents: 'none',
         }} />
         <div className="container" style={{ position: 'relative', zIndex: 1, paddingBottom: 'clamp(40px, 6vw, 72px)' }}>
@@ -1132,7 +1136,7 @@ export default function FeedView() {
             lineHeight: 0.98,
             letterSpacing: '-0.035em',
             color: 'white',
-            textShadow: '0 2px 16px rgba(0,0,0,0.55)',
+            textShadow: '0 2px 6px rgba(0,0,0,0.6), 0 4px 24px rgba(0,0,0,0.55)',
             maxWidth: 900,
           }}>
             {t('Discover')} <span className="flag-text">Jamaica</span><br />{t('beyond the resort.')}
@@ -1145,7 +1149,7 @@ export default function FeedView() {
             marginTop: 16,
             maxWidth: 480,
             lineHeight: 1.55,
-            textShadow: '0 1px 6px rgba(0,0,0,0.4)',
+            textShadow: '0 1px 4px rgba(0,0,0,0.6), 0 2px 16px rgba(0,0,0,0.5)',
           }}>
             {t('Private transfers and tours, run by the people who know Jamaica best.')}
           </p>
