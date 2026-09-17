@@ -9,6 +9,8 @@ export type BlogBlock =
   | { type: 'quote'; text: string; attribution?: string }
   | { type: 'image'; src: string; caption?: string }
   | { type: 'list'; items: string[] }
+  /** Questions people actually search; rendered open on the page and emitted as FAQPage schema. */
+  | { type: 'faq'; items: { q: string; a: string }[] }
 
 export interface BlogAuthor {
   name: string
@@ -28,6 +30,8 @@ export interface BlogPost {
   featured?: boolean
   body: BlogBlock[]
   relatedSlugs?: string[]
+  /** Set when a post is substantially rewritten; feeds dateModified. */
+  updatedAt?: string
 }
 
 // One real byline. The four named writers these used to be were invented,

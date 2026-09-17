@@ -25,13 +25,13 @@ function ArticleJsonLd({ post }: { post: BlogPost }) {
     description: post.excerpt,
     articleSection: post.category,
     wordCount: post.body
-      .map((b) => ('text' in b ? b.text : 'items' in b ? b.items.join(' ') : ''))
+      .map((b) => ('text' in b ? b.text : b.type === 'faq' ? b.items.map((i) => `${i.q} ${i.a}`).join(' ') : 'items' in b ? b.items.join(' ') : ''))
       .join(' ')
       .split(/\s+/)
       .filter(Boolean).length,
     image: [post.image],
     datePublished: post.publishedAt,
-    dateModified: post.publishedAt,
+    dateModified: post.updatedAt ?? post.publishedAt,
     inLanguage: 'en-US',
     author: {
       '@type': 'Person',
@@ -49,6 +49,8 @@ function ArticleJsonLd({ post }: { post: BlogPost }) {
       address: { '@type': 'PostalAddress', addressCountry: 'JM' },
     },
   }
+
+  const faq = post.body.flatMap((b) => (b.type === 'faq' ? b.items : []))
 
   const breadcrumbs = {
     '@context': 'https://schema.org',
@@ -70,6 +72,20 @@ function ArticleJsonLd({ post }: { post: BlogPost }) {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbs) }}
       />
+      {faq.length > 0 && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify({
+            '@context': 'https://schema.org',
+            '@type': 'FAQPage',
+            mainEntity: faq.map((i) => ({
+              '@type': 'Question',
+              name: i.q,
+              acceptedAnswer: { '@type': 'Answer', text: i.a.replace(/\[([^\]]+)\]\([^)]+\)/g, '$1') },
+            })),
+          }) }}
+        />
+      )}
     </>
   )
 }
@@ -397,6 +413,49 @@ function Block({ block, isFirst }: { block: BlogBlock; isFirst: boolean }) {
             </figcaption>
           )}
         </figure>
+      )
+    case 'faq':
+      return (
+        <section aria-label="Questions people ask" style={{ margin: '28px 0 36px' }}>
+          {block.items.map((item, i) => (
+            <details
+              key={i}
+              open={i === 0}
+              style={{
+                borderTop: '1px solid var(--border)',
+                padding: '4px 0',
+              }}
+            >
+              <summary
+                style={{
+                  cursor: 'pointer',
+                  listStyle: 'none',
+                  minHeight: 44,
+                  display: 'flex',
+                  alignItems: 'center',
+                  fontFamily: 'var(--font-dm-sans)',
+                  fontWeight: 600,
+                  fontSize: 17,
+                  color: 'var(--text-primary)',
+                  lineHeight: 1.4,
+                }}
+              >
+                {item.q}
+              </summary>
+              <p
+                style={{
+                  margin: '0 0 14px',
+                  fontFamily: 'var(--font-dm-sans)',
+                  fontSize: 17,
+                  color: 'var(--text-secondary)',
+                  lineHeight: 1.65,
+                }}
+              >
+                {withLinks(item.a)}
+              </p>
+            </details>
+          ))}
+        </section>
       )
     case 'list':
       return (
