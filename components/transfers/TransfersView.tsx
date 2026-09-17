@@ -913,11 +913,7 @@ export default function TransfersView() {
                         .join(' · ')}
                       {DESTINATIONS.filter((d) => d.zone === code).length > 4 ? ' · and more' : ''}
                     </p>
-                    <a
-                      className="xfer-zone-fares-link"
-                      href={`#fares-${code}`}
-                      onClick={() => document.getElementById(`fares-${code}`)?.setAttribute('open', '')}
-                    >
+                    <a className="xfer-zone-fares-link" href={`#fares-${code}`}>
                       All {DESTINATIONS.filter((d) => d.zone === code).length} hotels and fares →
                     </a>
                   </div>

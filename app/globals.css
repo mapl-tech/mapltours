@@ -2187,85 +2187,128 @@ a.pf-stat:hover { background: var(--surface); }
    as HTML, once as the RSC flight payload), so a style object per cell was
    paid for roughly 1,600 times and pushed /transfers from 201KB to 652KB.
    Two thirds of this audience is on a phone. */
-.fare-h2 {
+/* ── Fare finder: zone tabs, search, one panel of hotel rows ── */
+.fare-section { padding: 64px 0 72px; background: var(--bg-dark); }
+.fare-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 20px;
+}
+.fare-eyebrow {
   font-family: var(--font-dm-sans);
+  font-size: 12px;
   font-weight: 700;
-  font-size: var(--fs-h2);
-  color: #fff;
-  line-height: 1.15;
-  letter-spacing: -0.02em;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--gold-warm);
   margin-bottom: 10px;
+}
+.fare-h2 {
+  font-family: var(--font-syne);
+  font-weight: 700;
+  font-size: 32px;
+  color: #fff;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  margin-bottom: 8px;
 }
 .fare-intro {
   font-family: var(--font-dm-sans);
   font-size: 15px;
   color: rgba(255, 255, 255, 0.68);
-  line-height: 1.6;
-  max-width: 680px;
-  margin-bottom: 20px;
+  line-height: 1.55;
+  max-width: 560px;
+  margin: 0;
 }
-/* One collapsed block per zone. The summary carries the count and the price
-   range, so a visitor can see whether their hotel is likely inside before
-   opening 58 rows; on phones the five open tables ran to 21 screens. */
-.fare-zone { border-top: 1px solid rgba(255, 255, 255, 0.12); }
-.fare-zone:last-of-type { border-bottom: 1px solid rgba(255, 255, 255, 0.12); }
-.fare-zone-summary {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  min-height: 64px;
-  padding: 14px 0;
-  cursor: pointer;
-  list-style: none;
-  font-family: var(--font-dm-sans);
-  color: #fff;
+.fare-search {
+  position: relative;
+  flex: 0 0 320px;
+  display: block;
 }
-.fare-zone-summary::-webkit-details-marker { display: none; }
-.fare-zone-summary:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
-.fare-zone-summary-text { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
-.fare-zone-label { font-weight: 600; font-size: 17px; color: var(--gold-warm); }
-.fare-zone-meta { font-size: 13px; color: rgba(255, 255, 255, 0.6); line-height: 1.45; }
-.fare-zone-chevron { flex: 0 0 auto; color: rgba(255, 255, 255, 0.6); transition: transform 0.2s ease; }
-.fare-zone[open] .fare-zone-chevron { transform: rotate(180deg); }
-.fare-zone[open] .fare-zone-summary { padding-bottom: 6px; }
-.fare-scroll { padding-bottom: 18px; }
-.fare-table {
+.fare-search-icon {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: rgba(255, 255, 255, 0.55);
+  pointer-events: none;
+}
+.fare-search input {
   width: 100%;
-  border-collapse: collapse;
+  height: 48px;
+  padding: 0 14px 0 42px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.06);
+  color: #fff;
   font-family: var(--font-dm-sans);
-  font-size: 14px;
+  font-size: 16px;
+  outline: none;
 }
-.fare-table thead tr { border-bottom: 1px solid rgba(255, 255, 255, 0.16); }
-.fare-table th,
-.fare-table td { padding: 4px 12px; }
-.fare-table thead th {
+.fare-search input::placeholder { color: rgba(255, 255, 255, 0.5); }
+.fare-search input:focus-visible { border-color: var(--gold); box-shadow: 0 0 0 3px rgba(255, 179, 0, 0.25); }
+.fare-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 14px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  scroll-snap-type: x proximity;
+  padding-bottom: 2px;
+}
+.fare-tabs::-webkit-scrollbar { display: none; }
+.fare-tab {
+  flex: 1 1 0;
+  min-width: max-content;
+  min-height: 56px;
+  padding: 8px 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.04);
+  color: #fff;
+  font-family: var(--font-dm-sans);
   text-align: left;
-  padding-top: 8px;
-  padding-bottom: 8px;
-  font-weight: 500;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 2px;
+  cursor: pointer;
+  scroll-snap-align: start;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+.fare-tab:hover { background: rgba(255, 255, 255, 0.08); }
+.fare-tab:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+.fare-tab.is-active { background: var(--gold); border-color: var(--gold); color: var(--gold-ink); }
+.fare-tab-name { font-size: 14px; font-weight: 600; line-height: 1.2; white-space: nowrap; }
+.fare-tab-from { font-size: 12px; opacity: 0.75; white-space: nowrap; }
+.fare-tab.is-active .fare-tab-from { opacity: 0.85; }
+.fare-panel { border-top: 1px solid rgba(255, 255, 255, 0.12); padding-top: 14px; }
+.fare-panel-meta {
+  font-family: var(--font-dm-sans);
+  font-size: 13px;
   color: rgba(255, 255, 255, 0.6);
+  margin: 0 0 10px;
 }
-.fare-table tbody tr { border-bottom: 1px solid rgba(255, 255, 255, 0.07); }
-.fare-table tbody th {
-  text-align: left;
-  color: #fff;
-  font-weight: 500;
+.fare-rows {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  column-gap: 32px;
+  row-gap: 0;
 }
-.fare-table td { color: rgba(255, 255, 255, 0.6); }
-/* One-way and round-trip columns: right-aligned, never wrapped mid-price. */
-.fare-table .fare-num {
-  color: #fff;
-  text-align: right;
-  white-space: nowrap;
+.fare-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  column-gap: 10px;
+  min-height: 52px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
-.fare-table th:first-child,
-.fare-table td:first-child { padding-left: 0; }
-.fare-table th:last-child,
-.fare-table td:last-child { padding-right: 0; }
-.fare-reopen { color: rgba(255, 255, 255, 0.45); font-weight: 400; }
-/* Every hotel name and price is a button that fills the quote card. Rows
-   keep a 44px tap height; the name is left-aligned, prices right-aligned. */
+.fare-row[hidden] { display: none; }
 .fare-pick {
   display: inline-flex;
   align-items: center;
@@ -2274,27 +2317,77 @@ a.pf-stat:hover { background: var(--surface); }
   background: none;
   border: 0;
   font: inherit;
-  color: inherit;
+  font-family: var(--font-dm-sans);
+  color: #fff;
   text-align: left;
   cursor: pointer;
-  text-decoration: underline;
-  text-decoration-color: rgba(255, 255, 255, 0.28);
-  text-underline-offset: 3px;
+  border-radius: 6px;
 }
-.fare-pick:hover,
-.fare-pick:focus-visible { color: var(--gold); text-decoration-color: currentColor; outline: none; }
-.fare-pick-price { justify-content: flex-end; width: 100%; font-variant-numeric: tabular-nums; }
-/* Tables are the one thing allowed to scroll sideways; the page body is not. */
-.fare-scroll { overflow-x: auto; }
-.fare-section { padding: 56px 0 72px; background: var(--bg-dark); }
-@media (max-width: 600px) {
+.fare-pick:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+.fare-pick-name { flex-direction: column; align-items: flex-start; justify-content: center; gap: 1px; min-width: 0; width: 100%; }
+.fare-pick-name:hover .fare-row-name { color: var(--gold); }
+.fare-row-name {
+  font-size: 14.5px;
+  font-weight: 600;
+  line-height: 1.25;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+}
+.fare-row-sub {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.5);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+}
+.fare-pick-price {
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 0;
+  min-width: 58px;
+  font-size: 15px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  padding: 0 4px;
+}
+.fare-pick-price.is-rt { color: var(--gold-warm); }
+.fare-pick-price:hover { background: rgba(255, 255, 255, 0.08); }
+.fare-price-label { font-size: 11px; font-weight: 500; letter-spacing: 0.06em; text-transform: uppercase; color: rgba(255, 255, 255, 0.5); }
+.fare-price-na { font-family: var(--font-dm-sans); font-size: 13px; color: rgba(255, 255, 255, 0.45); min-width: 58px; text-align: right; }
+.fare-more {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  margin-top: 12px;
+  padding: 0 16px;
+  border-radius: 9999px;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  background: none;
+  color: #fff;
+  font-family: var(--font-dm-sans);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.fare-more:hover { background: rgba(255, 255, 255, 0.08); }
+.fare-more:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+@media (max-width: 1023px) {
+  .fare-rows { grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 24px; }
+}
+@media (max-width: 767px) {
   .fare-section { padding: 44px 0 56px; }
+  .fare-head { flex-direction: column; align-items: stretch; gap: 16px; margin-bottom: 16px; }
   .fare-h2 { font-size: 26px; }
-  /* Parish is the one column a phone can spare. With it gone the four
-     columns fit in 358px and the round-trip price no longer sits off the
-     right edge behind a sideways swipe. */
-  .fare-table .fare-parish { display: none; }
-  .fare-table { font-size: 15px; }
-  .fare-table th,
-  .fare-table td { padding: 2px 8px; }
+  .fare-search { flex: 1 1 auto; }
+  /* Full-bleed scroll row; scroll-padding keeps the snapped tab on the gutter. */
+  .fare-tabs { margin: 0 -16px 12px; padding: 0 16px 2px; scroll-padding-left: 16px; }
+  .fare-tab { flex: 0 0 auto; }
+  .fare-rows { grid-template-columns: minmax(0, 1fr); }
+  .fare-row { min-height: 56px; }
+  /* Eight hotels before "Show all" on a phone (twelve on wider screens). */
+  .fare-panel:not(.is-all) .fare-row:nth-child(n + 9) { display: none; }
 }
