@@ -9,22 +9,27 @@ const simone: BlogAuthor = mapl
 export const POSTS_3: BlogPost[] = [
   {
     slug: 'jamaica-all-inclusive-tier-list',
-    title: "Jamaica All-Inclusive Resorts: The Honest Tier List",
+    title: "Jamaica All Inclusive Tier List: 10 Resort Brands Ranked",
     excerpt:
-      "A travel-editor ranking of the main jamaica all inclusive resorts by value, food, beach, and service, grouped into S, A, B, and C tiers.",
+      "Ten Jamaica all-inclusive brands ranked S to value tier, who each one suits, which are open after Hurricane Melissa, and what a day off the resort costs.",
     category: 'Guides',
     image: BLOG_IMAGES['jamaica-all-inclusive-tier-list'],
-    readTime: 5,
+    readTime: 8,
     publishedAt: '2025-10-23',
+    updatedAt: '2026-09-17',
     author: andre,
     body: [
       {
         type: 'p',
-        text: "Walk into any travel agency in North America and the conversation about jamaica all inclusive resorts tends to collapse into three names. The actual landscape is bigger than that, and the gap between the best and the worst properties is wider than most brochures will admit.",
+        text: "A Jamaica all inclusive tier list, ranked S to value: Sandals and Couples on top, RIU at the bottom, Moon Palace, Beaches, Hyatt Zilara, Secrets, Iberostar, Bahia Principe and Royalton between them, all within two hours of Montego Bay airport. Here is who each tier suits, what is open after Hurricane Melissa, and what a day off the resort costs.",
       },
       {
         type: 'p',
-        text: "This ranking pulls from published guest review data, on-property audits by travel-industry reviewers, and the price ranges properties currently list on their own booking engines. It covers the ten chains that do the bulk of the business on the island, priced as of early 2026, and it tries to answer one question: who is each brand actually for.",
+        text: "Walk into any North American travel agency and jamaica all inclusive resorts collapse into three names. The landscape is bigger, and the gap between best and worst is wider than the brochures admit. Then Hurricane Melissa hit on 28 October 2025 and put some of the biggest names here on reopening dates that run into 2027.",
+      },
+      {
+        type: 'p',
+        text: "The ranking pulls from published guest reviews and industry audits; the rates are the ranges the resorts listed on their own booking engines when it was built, and they move with the season and every reopening, so treat each as a bracket.",
       },
       { type: 'h2', text: 'How the tiers were built for jamaica all inclusive resorts' },
       {
@@ -33,7 +38,7 @@ export const POSTS_3: BlogPost[] = [
       },
       {
         type: 'p',
-        text: "Nothing here is about loyalty points or redemption math. It is about what the experience feels like across a four-night stay, and whether travelers leaving reviews sound relieved, flat, or genuinely happy.",
+        text: "Nothing here is about loyalty points. It is about what a four-night stay feels like, and whether the reviews sound relieved, flat, or genuinely happy.",
       },
       {
         type: 'quote',
@@ -43,29 +48,128 @@ export const POSTS_3: BlogPost[] = [
       {
         type: 'list',
         items: [
-          "S tier, Sandals (couples-only, strongest food program, $500 to $900 per night) and Couples Resorts (small, adults-only, $450 to $750). Suits honeymooners and repeat Caribbean travelers who value service.",
-          "A tier, Moon Palace Jamaica ($400 to $700, family premium) and Beaches Ocho Rios ($500 to $850, family flagship). Suits multi-generational trips that want kids clubs without compromising adult zones.",
-          "B tier, Hyatt Zilara Rose Hall ($380 to $620) and Secrets Wild Orchid ($350 to $600). Reliable adults-only mid-premium with inconsistent food. Suits first-timers who want the brand safety net.",
-          "C tier, Iberostar Rose Hall ($280 to $480), Bahia Principe Grand ($250 to $430), and Royalton Negril ($280 to $460). Volume properties with good beaches and average everything else. Suits budget-conscious travelers who plan to leave the resort daily.",
-          "Value tier, RIU's three Jamaica properties ($180 to $320). Strong beach placement, dated rooms, heavy crowd, no pretense. Suits spring-breakers and travelers who want a beach chair and a wristband, nothing more.",
+          "S tier: Sandals (couples-only, strongest food program, $500 to $900 per night) and Couples Resorts (small, adults-only, $450 to $750). Suits honeymooners and repeat Caribbean travelers who value service. [Our Sandals guide](/blog/sandals-jamaica-property-guide) picks between its Jamaica properties.",
+          "A tier: Moon Palace Jamaica ($400 to $700, family premium) and Beaches Ocho Rios ($500 to $850, family flagship). Suits multi-generational trips that want kids clubs without compromising adult zones. Both are in Ocho Rios. Reviews: [Moon Palace](/blog/moon-palace-jamaica-review), [Beaches](/blog/beaches-ocho-rios-review).",
+          "B tier: Hyatt Zilara Rose Hall ($380 to $620) and Secrets Wild Orchid ($350 to $600). Reliable adults-only mid-premium with inconsistent food. Suits first-timers who want the brand safety net. Both were closed by the hurricane. Review: [Secrets Wild Orchid](/blog/secrets-wild-orchid-montego-bay-review).",
+          "C tier: Iberostar Rose Hall ($280 to $480), Bahia Principe Grand ($250 to $430) and Royalton Negril ($280 to $460). Volume properties with good beaches and average everything else. Suits budget travelers who plan to leave the resort daily. Reviews: [Bahia Principe](/blog/bahia-principe-grand-jamaica-review), [Royalton Negril](/blog/royalton-negril-review).",
+          "Value tier: the RIU properties ($180 to $320). Strong beach placement, dated rooms, heavy crowd, no pretense. Suits spring-breakers and anyone who wants a beach chair and a wristband. Reviews: [Montego Bay](/blog/riu-montego-bay-review), [Ocho Rios](/blog/riu-ocho-rios-review), [Negril](/blog/riu-negril-review).",
         ],
       },
       {
         type: 'p',
-        text: "A few notes on omissions. Azul Beach Resort Negril and Breathless Montego Bay are too new for a fair ranking in this pass. Jewel Grande and Secrets St. James overlap heavily with their sister properties and are covered in their own reviews. The Royalton CHIC in Negril is functionally an adults-only wing rather than a standalone.",
+        text: "Omissions: [Azul Beach Negril](/blog/azul-beach-resort-negril-review), [Breathless](/blog/breathless-montego-bay-review) and [Jewel Grande](/blog/jewel-grande-montego-bay-review) were too new, or too close to a sister property, to rank fairly; each has its own review.",
       },
       { type: 'h2', text: 'Who each tier actually suits' },
       {
         type: 'p',
-        text: "S-tier guests are paying for the staff. The food and rooms are excellent, but what justifies the nightly rate is consistency, the same butler remembering your coffee order on day three is the product. A-tier is the sweet spot for families with kids under twelve, where the water parks and sprawling grounds do heavy lifting. B-tier is where most first-time Jamaica travelers land, and where most post-trip reviews hover at a generous four stars.",
+        text: "S-tier guests are paying for the staff. What justifies the rate is consistency: the same butler remembering your coffee order on day three is the product. A-tier is the sweet spot for families with kids under twelve. B-tier is where most first-time Jamaica travelers land, and where most reviews hover at a generous four stars.",
       },
       {
         type: 'p',
-        text: "C-tier and value-tier only make sense if the resort is a base, not the vacation. Guests who spend their days booking local excursions through MAPL Tours or similar platforms will rate a C-tier property far higher than guests who expect the resort to be the whole experience. If you are paying $280 a night in Jamaica and staying on property twelve hours a day, something has gone wrong with your planning.",
+        text: "C-tier and value-tier only work if the resort is a base, not the vacation. Guests who spend their days on tours rate a C-tier property far higher than guests who expect it to be the whole experience. Paying $280 a night to stay on property twelve hours a day is a planning mistake.",
+      },
+      { type: 'h2', text: 'Where each resort is, and how far from the airport' },
+      {
+        type: 'p',
+        text: "Nearly everyone lands at Sangster International in Montego Bay, and the drive from there is the hidden cost of a cheap room. The bands our drivers work to:",
+      },
+      {
+        type: 'list',
+        items: [
+          "Montego Bay and Rose Hall (Sandals Montego Bay, Hyatt Zilara, Secrets, Iberostar, Riu Montego Bay): under 20 minutes from MBJ.",
+          "Falmouth (Excellence Oyster Bay, Royalton Blue Waters): 35 to 45 minutes.",
+          "Negril (Sandals, Couples, Royalton, Riu, Azul): 75 to 90 minutes.",
+          "Runaway Bay (Bahia Principe): 75 to 90 minutes.",
+          "Ocho Rios (Sandals Ochi, Beaches, Moon Palace, Couples Tower Isle, Riu): 90 to 120 minutes.",
+        ],
       },
       {
         type: 'p',
-        text: "Whatever tier a traveler lands on, MAPL Tours guests tend to pair a resort stay with two or three locally-led tours booked separately in [the catalogue](/explore), a jerk masterclass in Boston Bay, a sunrise hike in the Blue Mountains, a sound-system night in Kingston. That is where the trip becomes Jamaica rather than a generic beach week.",
+        text: "A private transfer with MAPL Tours Jamaica is a flat fare per vehicle for up to four passengers: $22 to $51 one way to Montego Bay and Rose Hall, from $99 to Runaway Bay, and from $111 one way or $199 round trip to Negril or Ocho Rios. Your driver meets you inside arrivals with a name board; every resort's fare is on [the transfers page](/transfers).",
+      },
+      { type: 'h2', text: 'What it costs to leave the resort for a day' },
+      {
+        type: 'p',
+        text: "This is the number the brochures leave out, and it decides whether a C-tier room is a bargain or a mistake. The excursion desk sells coach seats per person; most private tours are priced per party, pick you up at your lobby and include entry. Current prices, all with round-trip transport:",
+      },
+      {
+        type: 'list',
+        items: [
+          "[Dunn's River Falls Climb](/experience/dunns-river-falls-climb): $351 for up to three people, two hours, park entry and guide included.",
+          "[Bamboo Rafting on the Martha Brae](/experience/bamboo-rafting-on-the-martha-brae): $128 for up to three, ninety minutes, the easiest morning off a Montego Bay resort.",
+          "[Rick's Cafe Cliff Diving and Sunset](/experience/ricks-cafe-cliff-diving-and-sunset): $255 for up to four, three hours in Negril, entry included.",
+          "[Rainforest Zipline Adventure](/experience/rainforest-zipline-adventure): $153 per person, two hours.",
+          "[Bob Marley Nine Mile Pilgrimage](/experience/bob-marley-nine-mile-pilgrimage): $459 for up to three, a full day in the St. Ann hills, entry included.",
+        ],
+      },
+      {
+        type: 'p',
+        text: "Split three ways, the falls come to $117 a head and Nine Mile to $153; the fourth person at Rick's costs nothing extra. It is the part of the trip people talk about at home.",
+      },
+      { type: 'h2', text: 'Which resorts are open after Hurricane Melissa' },
+      {
+        type: 'p',
+        text: "Hurricane Melissa made landfall on 28 October 2025 as a Category 5. The south and west coast took the worst of it. Ocho Rios and Negril saw tropical-storm conditions and were spared major structural damage; Montego Bay lost power, with flooded businesses and damaged roads. These dates are what the operators announced, not a promise.",
+      },
+      {
+        type: 'list',
+        items: [
+          "Hyatt Inclusive Collection (Hyatt Zilara and Ziva, Secrets Wild Orchid, Secrets St. James, Breathless, Dreams, Jewel Grande): all seven still closed and now expected back in phases in the first half of 2027.",
+          "Sandals Montego Bay and Caribbean Cay: expected back December 2026. Sandals South Coast: November 2026. Other Sandals properties had resumed by April 2026.",
+          "Bahia Principe, Runaway Bay: 664 rooms open by April 2026.",
+          "RIU and Moon Palace: operating again by April 2026.",
+        ],
+      },
+      {
+        type: 'p',
+        text: "Dates slip, in both directions. Check the resort's own site before paying a deposit, then again a month out. Ocho Rios and Negril are the safer bets for the rest of 2026, and every tour in this post runs from both.",
+      },
+      { type: 'h2', text: 'Best time to go' },
+      {
+        type: 'p',
+        text: "Jamaica has two rainy seasons, May to June and September to November, and hurricanes can pass over between June and November, with most activity between mid-August and mid-October. That leaves December through April as the dry window, and the busy one. Temperatures run 19°C to 32°C (66°F to 90°F) all year, so the choice is about rain and price, not warmth.",
+      },
+      {
+        type: 'p',
+        text: "Winter is when the ranges above sit at the top. Late April to early June is shoulder season, after the winter crowds and before the summer break, so the beaches are the same and quieter. From August to October, pick a resort that is fully reopened, watch the forecast, and know that if weather cancels a tour with us you are refunded in full or rescheduled at no cost.",
+      },
+      { type: 'h2', text: 'Tips before you book' },
+      {
+        type: 'list',
+        items: [
+          "Match the resort to the airport run: Rose Hall is under 20 minutes from MBJ, Ocho Rios up to two hours.",
+          "Book tours a day ahead; our checkout enforces a 24-hour lead time.",
+          "Carry small bills for tips; USD is welcome, small JMD notes are better for staff. [Our money guide](/blog/jamaica-currency-and-money) covers the rest.",
+        ],
+      },
+      {
+        type: 'p',
+        text: "Whatever tier you land on, the trip becomes Jamaica when you leave the gate. Pair the room with [the Dunn's River climb](/experience/dunns-river-falls-climb), [sunset at Rick's Cafe](/experience/ricks-cafe-cliff-diving-and-sunset) or [the Nine Mile pilgrimage](/experience/bob-marley-nine-mile-pilgrimage), and [a private transfer](/transfers) from the airport so the vacation starts at arrivals, not the lobby. The rest is in [Explore](/explore). No problem.",
+      },
+      {
+        type: 'faq',
+        items: [
+          {
+            q: 'What is the best all-inclusive resort in Jamaica?',
+            a: "There is no single best. Sandals and Couples lead for couples; Beaches Ocho Rios and Moon Palace lead for families. Choose by who is traveling and how much of the week you will spend off the resort.",
+          },
+          {
+            q: 'Which Jamaica all-inclusive resorts are still closed after Hurricane Melissa?',
+            a: "Hyatt's seven Inclusive Collection resorts (Hyatt Zilara and Ziva, Secrets Wild Orchid, Secrets St. James, Breathless, Dreams, Jewel Grande) are still closed and now expected back in phases in the first half of 2027; Sandals Montego Bay is expected back in December 2026. Check the resort's own site before booking.",
+          },
+          {
+            q: 'Is it worth leaving an all-inclusive resort in Jamaica?',
+            a: "Yes, and it is the whole point of a cheaper tier. A private [Dunn's River Falls climb](/experience/dunns-river-falls-climb) is $351 for up to three people with hotel pickup and entry; [a Martha Brae raft](/experience/bamboo-rafting-on-the-martha-brae) is $128 for up to three.",
+          },
+          {
+            q: 'How far are the all-inclusive resorts from Montego Bay airport?',
+            a: "Montego Bay and Rose Hall are under 20 minutes from MBJ, Negril and Runaway Bay 75 to 90, Ocho Rios 90 to 120 minutes. A private [airport transfer](/transfers) is a flat fare per vehicle for up to four, from $22 one way.",
+          },
+          {
+            q: 'When is the cheapest time to stay at a Jamaica all-inclusive?',
+            a: "The dry, busy months are December to April; the rainy seasons are May to June and September to November. Late April to early June is shoulder season, after the winter crowds and before the summer break, so it is usually quieter; check the resort's calendar for your dates.",
+          },
+        ],
       },
     ],
     relatedSlugs: ['sandals-jamaica-property-guide', 'beyond-the-resort'],
