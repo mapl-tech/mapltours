@@ -340,6 +340,9 @@ export default function TransfersView() {
 
   const selectRoute = (destId: string, trip: TransferTripType = 'round_trip') => {
     setDestinationId(destId)
+    // A pick from the rate card far below scrolls 10,000px up; focus must
+    // travel with it or the next Tab starts back at the fare button.
+    window.setTimeout(() => document.getElementById('quote')?.focus({ preventScroll: true }), 700)
     // A popular-route tile is a real destination, so leave the unlisted-hotel
     // branch behind or the picker would show one thing and price another.
     setNotListed(false)
@@ -497,7 +500,7 @@ export default function TransfersView() {
       </section>
 
       {/* ───────────── QUOTE CARD ───────────── */}
-      <section id="quote" className="xfer-quote-section">
+      <section id="quote" className="xfer-quote-section" tabIndex={-1} style={{ outline: 'none' }}>
         <div className="container" style={{ maxWidth: 820 }}>
           <div className="xfer-quote-card">
             {/* Gold hairline, prestige cue matching the email templates */}
@@ -2009,21 +2012,26 @@ export default function TransfersView() {
           .xfer-hero-price-strip,
           .xfer-hero-cta-row,
           .xfer-trust-strip--hero { display: none; }
-          .xfer-trust-mobile { display: block; padding: 8px 20px 24px; }
+          /* Side gutters come from .container alone (16px on a phone, 24px
+             from 768px), the same edge the checkout card sits on. The
+             sections used to add 16 to 20px of their own, so cards sat 32px
+             in while the checkout's sat at 16. */
+          .xfer-trust-mobile { display: block; padding: 8px 0 24px; }
           .xfer-trust-mobile .xfer-trust-strip { margin-top: 0; }
-          .xfer-hero { padding: 28px 20px 8px; border-bottom: 0; }
+          .xfer-hero { padding: 28px 0 8px; border-bottom: 0; }
+          .xfer-routes-content { padding: 56px 0; }
           .xfer-hero-sub { margin-bottom: 0; }
           .xfer-quote-section { padding-top: 16px; }
           .xfer-hero-grid { grid-template-columns: minmax(0, 1fr); gap: 32px; }
           /* .xfer-hero-image mobile aspect-ratio + order:-1 are in globals.css */
           .xfer-trust-strip { gap: 16px; }
-          .xfer-quote-section { padding: 40px 16px 32px; }
-          .xfer-quote-card { padding: 28px 22px 24px; }
+          .xfer-quote-section { padding: 40px 0 32px; }
+          .xfer-quote-card { padding: 28px 20px 24px; }
           .xfer-why-section,
           .xfer-zones-section,
           .xfer-reviews-section,
           .xfer-faq-section,
-          .xfer-final-cta { padding: 56px 20px; }
+          .xfer-final-cta { padding: 56px 0; }
           .xfer-compare-grid { grid-template-columns: minmax(0, 1fr); gap: 14px; }
           .xfer-review-stats { grid-template-columns: minmax(0, 1fr); gap: 16px; }
         }
@@ -2039,7 +2047,7 @@ export default function TransfersView() {
           .xfer-contact-cta { flex-direction: column; align-items: flex-start; }
           .xfer-final-cta { padding-bottom: 120px; }
           .xfer-savings-row { grid-template-columns: minmax(0, 1fr); gap: 14px; }
-          .xfer-routes-section { padding: 28px 16px 8px; }
+          .xfer-routes-section { padding: 28px 0 8px; }
           .xfer-hero-price-strip { font-size: 13px; }
         }
       `}</style>

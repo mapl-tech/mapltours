@@ -31,7 +31,19 @@ import {
 const ROWS_BEFORE_MORE = 12
 
 export default function FareTables({ onPick }: { onPick: (destinationId: string, tripType: TransferTripType) => void }) {
-  const groups = useMemo(() => groupDestinationsByZone(), [])
+  // Open hotels first, cheapest first, so the fare the tab promises ("from
+  // $22") is on the first screen and a phone's eight rows are not seven
+  // closed resorts.
+  const groups = useMemo(() => groupDestinationsByZone().map((g) => ({
+    ...g,
+    items: [...g.items].sort((a, b) => {
+      const ca = a.reopens ? 1 : 0, cb = b.reopens ? 1 : 0
+      if (ca !== cb) return ca - cb
+      const pa = getTransferPrice(a.id, 'one_way') ?? Infinity, pb = getTransferPrice(b.id, 'one_way') ?? Infinity
+      if (pa !== pb) return pa - pb
+      return a.name.localeCompare(b.name)
+    }),
+  })), [])
   const [zone, setZone] = useState<TransferZone>('A')
   const [query, setQuery] = useState('')
   const [showAll, setShowAll] = useState<Record<string, boolean>>({})
@@ -53,7 +65,7 @@ export default function FareTables({ onPick }: { onPick: (destinationId: string,
 
   return (
     <section aria-labelledby="every-fare" className="fare-section">
-      <div className="container">
+      <div className="container" style={{ maxWidth: 1180 }}>
         <div className="fare-head">
           <div>
             <p className="fare-eyebrow">Rate card</p>
@@ -77,8 +89,8 @@ export default function FareTables({ onPick }: { onPick: (destinationId: string,
         </div>
 
         {q ? (
-          <div className="fare-panel" role="region" aria-live="polite" aria-label={`Fares matching ${q}`}>
-            <p className="fare-panel-meta">
+          <div className="fare-panel" role="region" aria-label={`Fares matching ${q}`}>
+            <p className="fare-panel-meta" aria-live="polite">
               {matches.length === 0
                 ? 'No hotel by that name. Try the town, or type it into the quote card above and we will price it by area.'
                 : `${matches.length} ${matches.length === 1 ? 'match' : 'matches'} · one way and round trip, per vehicle`}
@@ -88,7 +100,7 @@ export default function FareTables({ onPick }: { onPick: (destinationId: string,
         ) : (
           <>
             <div className="fare-tabs" role="tablist" aria-label="Areas">
-              {groups.map(({ zone: z, items }) => {
+              {groups.map(({ zone: z, items }, idx) => {
                 const from = Math.min(...items.map((d) => getTransferPrice(d.id, 'one_way') ?? Infinity))
                 const active = z.code === zone
                 return (
@@ -99,8 +111,22 @@ export default function FareTables({ onPick }: { onPick: (destinationId: string,
                     role="tab"
                     aria-selected={active}
                     aria-controls={`fares-panel-${z.code}`}
+                    tabIndex={active ? 0 : -1}
                     className={`fare-tab${active ? ' is-active' : ''}`}
                     onClick={() => setZone(z.code)}
+                    // One Tab stop for the row; arrows move between areas.
+                    onKeyDown={(e) => {
+                      const codes = groups.map((g) => g.zone.code)
+                      let next = -1
+                      if (e.key === 'ArrowRight') next = (idx + 1) % codes.length
+                      else if (e.key === 'ArrowLeft') next = (idx - 1 + codes.length) % codes.length
+                      else if (e.key === 'Home') next = 0
+                      else if (e.key === 'End') next = codes.length - 1
+                      if (next < 0) return
+                      e.preventDefault()
+                      setZone(codes[next])
+                      document.getElementById(`fares-${codes[next]}`)?.focus()
+                    }}
                   >
                     <span className="fare-tab-name">{z.label}</span>
                     <span className="fare-tab-from">{Number.isFinite(from) ? `from $${from}` : 'on request'}</span>
@@ -164,7 +190,7 @@ function FareRows({ items, onPick, limit }: {
         const base = paren ? d.name.slice(0, paren.index) : d.name
         const short = base.replace(/,\s*[^,]+$/, '')
         const town = base === short ? '' : base.slice(short.length + 1).trim()
-        const sub = [paren?.[1], town || d.parish, d.reopens ? `reopening ${d.reopens}` : ''].filter(Boolean).join(' · ')
+        const sub = [d.reopens ? `reopening ${d.reopens}` : '', paren?.[1], town || d.parish].filter(Boolean).join(' · ')
         return (
           <li key={d.id} className="fare-row" hidden={i >= limit}>
             <button type="button" className="fare-pick fare-pick-name" onClick={() => onPick(d.id, 'round_trip')} aria-label={`Book a transfer to ${d.name}`}>
