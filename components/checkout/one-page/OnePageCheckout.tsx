@@ -18,6 +18,7 @@ import LegalModal from '@/components/checkout/LegalModal'
 import TripTimeBar from '@/components/TripTimeBar'
 import DayFlow from '@/components/DayFlow'
 import DeferredPaymentPanel, { type IntentResult } from './DeferredPaymentPanel'
+import AskFirst from '@/components/AskFirst'
 import { Card, SectionTitle, TextField, SelectField, Stepper, Disclosure, Reassurance, LinkButton, focusFirstError } from './fields'
 import { useHydrated } from './useHydrated'
 import { PICKUP_PLACES, OTHER_PLACE } from './pickup-places'
@@ -97,6 +98,10 @@ export default function OnePageCheckout() {
   }, [items])
 
   const tripDate = items[0]?.date ?? ''
+  // Opening line of a WhatsApp or email question, so the reply can be specific.
+  const askContext = items.length
+    ? `${items.map((i) => i.title).join(' and ')}${tripDate ? ` on ${formatDate(tripDate)}` : ''} for ${items[0].travelers} ${items[0].travelers === 1 ? 'person' : 'people'}`
+    : 'a tour'
   // A cart persisted from an earlier visit can hold a date that has since
   // fallen inside the booking window. Saying so here beats letting the guest
   // fill the whole form and meet it at the pay button.
@@ -475,7 +480,7 @@ export default function OnePageCheckout() {
                   billing={{ name: contactName || undefined, email: form.email.trim() || undefined, phone: form.phone.trim() || undefined }}
                   externalError={serverError}
                   onAmountResolved={(usd) => setServerDue(usd)}
-                  footer={<Reassurance lines={['Stripe takes the payment. We never see your card number.', 'We confirm your pickup time with you before the day.']} />}
+                  footer={<><Reassurance lines={['Stripe takes the payment. We never see your card number.', 'We confirm your pickup time with you before the day.']} /><AskFirst place="tour_checkout" context={askContext} /></>}
                 >
                   <div data-field="waiver" style={{ marginTop: 18 }}>
                     {/* The box is 20px, sized to the 13px sentence beside it rather

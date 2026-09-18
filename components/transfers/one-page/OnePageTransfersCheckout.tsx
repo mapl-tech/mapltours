@@ -14,6 +14,7 @@ import {
 } from '@/lib/checkout-form'
 import LegalModal from '@/components/checkout/LegalModal'
 import DeferredPaymentPanel, { type IntentResult } from '@/components/checkout/one-page/DeferredPaymentPanel'
+import AskFirst from '@/components/AskFirst'
 import { Card, SectionTitle, TextField, Stepper, Reassurance, LinkButton, focusFirstError } from '@/components/checkout/one-page/fields'
 import { useHydrated } from '@/components/checkout/one-page/useHydrated'
 
@@ -248,6 +249,9 @@ export default function OnePageTransfersCheckout() {
   const contactName = `${form.firstName.trim()} ${form.lastName.trim()}`.trim()
   const rt = tripType === 'round_trip'
   const routeLine = item ? (rt || fromAirport ? `Sangster (MBJ) → ${item.destinationName}` : `${item.destinationName} → Sangster (MBJ)`) : ''
+  const askContext = item
+    ? `the ${rt ? 'round trip' : 'one way'} airport transfer ${routeLine.replace('→', 'to')} for ${item.passengers} ${item.passengers === 1 ? 'passenger' : 'passengers'}`
+    : 'an airport transfer'
   const summaryFacts = ([
     hasArrivalLeg && item?.arrivalAt && LEG_TIME_RE.test(item.arrivalAt) ? { label: 'Arrive', value: formatWallClock(item.arrivalAt) } : null,
     hasDepartureLeg && item?.departureAt && LEG_TIME_RE.test(item.departureAt) ? { label: 'Pickup', value: formatWallClock(item.departureAt) } : null,
@@ -432,7 +436,7 @@ export default function OnePageTransfersCheckout() {
                   billing={{ name: contactName || undefined, email: form.email.trim() || undefined, phone: form.phone.trim() || undefined }}
                   externalError={serverError}
                   onAmountResolved={(usd) => setServerDue(usd)}
-                  footer={<Reassurance lines={['Stripe takes the payment. We never see your card number.', 'Your driver meets you at arrivals with a name sign. We send their name, vehicle and plate before pickup.']} />}
+                  footer={<><Reassurance lines={['Stripe takes the payment. We never see your card number.', 'Your driver meets you at arrivals with a name sign. We send their name, vehicle and plate before pickup.']} /><AskFirst place="transfer_checkout" context={askContext} /></>}
                 >
                   <p style={{ marginTop: 18, fontFamily: FONT, fontSize: 13, lineHeight: 1.55, color: 'var(--text-tertiary)' }}>
                     By paying you agree to the <LinkButton onClick={() => setLegal('terms')}>Terms</LinkButton> and the <LinkButton onClick={() => setLegal('cancellation')}>Cancellation Policy</LinkButton>.

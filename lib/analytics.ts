@@ -286,6 +286,21 @@ export function trackViewItem(input: {
  * (a key event) and Meta Lead. Only ever call on a confirmed delivery; a
  * GA4 rule used to count every visit to /contact as a lead.
  */
+/**
+ * A tap on a WhatsApp or email link. Not a lead (nothing has reached the
+ * inbox yet); a separate event so the two channels can be compared.
+ */
+export function trackContactClick(method: 'whatsapp' | 'email', place: string): void {
+  try {
+    if (typeof window === 'undefined') return
+    whenGtagReady((gtag) => {
+      gtag('event', 'contact_click', { method, place })
+    })
+  } catch {
+    /* no-op */
+  }
+}
+
 export function trackLead(source: 'contact_form' | 'unlisted_hotel'): void {
   try {
     if (typeof window === 'undefined') return

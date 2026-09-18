@@ -1992,6 +1992,22 @@ body:has(.xfer-unlisted-panel) .xfer-sticky-cta {
 @keyframes opcShimmer { from { background-position: 200% 0; } to { background-position: -200% 0; } }
 @media (prefers-reduced-motion: reduce) { .opc-shimmer { animation: none; } }
 
+/* "Ask a person first": under the pay button and beside a quote. */
+.ask-first { margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--border); }
+.ask-first-bare .ask-first { margin-top: 0; padding-top: 0; border-top: 0; }
+.ask-first-h { margin: 0 0 10px; font-family: var(--font-dm-sans); font-size: 13px; line-height: 1.55; color: var(--text-secondary); font-weight: 600; }
+.ask-first-h span { font-weight: 400; color: var(--text-tertiary); }
+.ask-first-row { display: flex; flex-wrap: wrap; gap: 8px; }
+.ask-first-btn {
+  display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 16px;
+  border-radius: 999px; border: 1px solid var(--border); background: var(--surface);
+  font-family: var(--font-dm-sans); font-size: 14px; font-weight: 500; color: var(--text-primary);
+  text-decoration: none; overflow-wrap: anywhere;
+}
+.ask-first-btn:hover { background: #ECEAE6; }
+.ask-first-wa { color: #0B6459; } /* WhatsApp green darkened to 5.9:1 on the surface */
+@media (max-width: 419px) { .ask-first-btn { flex: 1 1 100%; justify-content: center; } }
+
 .opc-sticky {
   position: fixed;
   left: 0; right: 0; bottom: 0;

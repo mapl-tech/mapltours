@@ -2,15 +2,16 @@
 
 import { useState } from 'react'
 import Image from 'next/image'
-import { Leaf, Mail, Clock, Send, Check, Camera, Music2 } from 'lucide-react'
+import { Leaf, Send, Check, Camera, Music2 } from 'lucide-react'
 import { DESTINATION_IMAGES } from '@/lib/experiences'
 import { trackLead } from '@/lib/analytics'
+import AskFirst from '@/components/AskFirst'
 
 export default function ContactView() {
   const [sent, setSent] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [form, setForm] = useState({ name: '', email: '', subject: '', message: '' })
+  const [form, setForm] = useState({ name: '', email: '', message: '' })
   // Honeypot, hidden from real users via CSS. Bots will fill it; the
   // server silently discards any submission where this isn't empty.
   const [website, setWebsite] = useState('')
@@ -90,7 +91,7 @@ export default function ContactView() {
                 </div>
                 <div style={{ lineHeight: 1 }}>
                   <span style={{ fontFamily: 'var(--font-dm-sans)', fontWeight: 800, fontSize: 16, textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block' }}>MAPL Tours</span>
-                  <span style={{ fontFamily: 'var(--font-dm-sans)', fontWeight: 700, fontSize: 11, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--text-tertiary)', display: 'block', marginTop: 1 }}>Tours Jamaica</span>
+                  <span style={{ fontFamily: 'var(--font-dm-sans)', fontWeight: 700, fontSize: 11, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--text-tertiary)', display: 'block', marginTop: 1 }}>Jamaica</span>
                 </div>
               </div>
               <p style={{
@@ -102,31 +103,9 @@ export default function ContactView() {
               </p>
             </div>
 
-            {/* Contact details */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 20, marginBottom: 36 }}>
-              {[
-                { icon: <Mail size={16} />, label: 'Email', value: 'contact@mapltours.com' },
-                { icon: <Clock size={16} />, label: 'Replies', value: 'Within 24 hours, by email' },
-              ].map((item) => (
-                <div key={item.label} style={{ display: 'flex', alignItems: 'flex-start', gap: 14 }}>
-                  <div style={{
-                    width: 38, height: 38, borderRadius: 'var(--r-md)',
-                    background: 'var(--surface)', display: 'flex',
-                    alignItems: 'center', justifyContent: 'center',
-                    color: 'var(--text-secondary)', flexShrink: 0,
-                  }}>
-                    {item.icon}
-                  </div>
-                  <div>
-                    <p style={{ fontSize: 12, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-sans)', marginBottom: 3 }}>
-                      {item.label}
-                    </p>
-                    <p style={{ fontSize: 14, fontWeight: 500, color: 'var(--text-primary)', fontFamily: 'var(--font-dm-sans)' }}>
-                      {item.value}
-                    </p>
-                  </div>
-                </div>
-              ))}
+            {/* The two ways to reach a person, tappable, before the form. */}
+            <div style={{ marginBottom: 36 }}>
+              <div className="ask-first-bare"><AskFirst place="contact_page" heading="Prefer to just ask?" context="my Jamaica trip" /></div>
             </div>
 
             {/* Social */}
@@ -192,7 +171,7 @@ export default function ContactView() {
                   Send us a message
                 </h2>
                 <p style={{ fontSize: 13, color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-sans)', marginBottom: 24 }}>
-                  We would love to hear from you
+                  Three fields. We reply to the address you give us.
                 </p>
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
@@ -208,10 +187,6 @@ export default function ContactView() {
                       <label htmlFor="contact-email" style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)', fontFamily: 'var(--font-dm-sans)', display: 'block', marginBottom: 6 }}>Email</label>
                       <input id="contact-email" className="field-input" type="email" placeholder="you@email.com" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} required />
                     </div>
-                  </div>
-                  <div>
-                    <label htmlFor="contact-subject" style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)', fontFamily: 'var(--font-dm-sans)', display: 'block', marginBottom: 6 }}>Subject</label>
-                    <input id="contact-subject" className="field-input" placeholder="How can we help?" value={form.subject} onChange={(e) => setForm({ ...form, subject: e.target.value })} required />
                   </div>
                   <div>
                     <label htmlFor="contact-message" style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)', fontFamily: 'var(--font-dm-sans)', display: 'block', marginBottom: 6 }}>Message</label>
