@@ -191,6 +191,17 @@ export default function TransfersView() {
   // Starts at 1, matching the tour cart. Transfer fares are per VEHICLE for
   // Parties of 5+ price per person, so passengers now feeds the quote.
   const [passengers, setPassengers] = useState<number>(1)
+  // bio.mapltours.com prices a ride with a trip type and a party size and
+  // hands both over as ?trip=round-trip|one-way&pax=N next to ?to=. Read once
+  // after hydration, like `to`, so the guest lands on the ride they priced.
+  useEffect(() => {
+    const p = new URLSearchParams(window.location.search)
+    const trip = p.get('trip')
+    if (trip === 'one-way' || trip === 'one_way') setTripType('one_way')
+    else if (trip === 'round-trip' || trip === 'round_trip') setTripType('round_trip')
+    const pax = Number(p.get('pax'))
+    if (Number.isInteger(pax) && pax >= 1 && pax <= 7) setPassengers(pax)
+  }, [])
 
   const quote = useMemo(
     () => (destinationId ? buildQuote(destinationId, tripType, passengers) : null),
