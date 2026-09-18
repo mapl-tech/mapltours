@@ -30,7 +30,10 @@ function HeroVideo({ src, poster }: { src: string; poster: string }) {
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
     const nav = navigator as Navigator & { connection?: { effectiveType?: string; saveData?: boolean } }
     const conn = nav.connection
-    if (conn?.saveData || conn?.effectiveType === '2g' || conn?.effectiveType === 'slow-2g') {
+    // 3g included: on a Slow 4G profile (Chrome reports it as 3g) the 2.5 MB
+    // loop starting at load pushed LCP from the 3.9 s poster to a 6.3 s
+    // first video frame. Those visitors keep the still.
+    if (conn?.saveData || conn?.effectiveType === '2g' || conn?.effectiveType === 'slow-2g' || conn?.effectiveType === '3g') {
       return
     }
     // After the page has finished loading (fonts, poster, scripts), then a
