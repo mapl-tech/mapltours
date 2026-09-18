@@ -11,6 +11,7 @@ import { useHydrated } from '@/lib/use-hydrated'
 import { CULTURE_IMAGE, HERO_VIDEO, HERO_VIDEO_540, HERO_VIDEO_720, HERO_VIDEO_1080, HERO_VIDEO_PORTRAIT, HERO_POSTER_PORTRAIT } from '@/lib/images'
 import ExpCard from './ExpCard'
 import MobileShort from './MobileShort'
+import InView from './InView'
 import Footer from './Footer'
 import { useI18n } from '@/lib/i18n'
 import { useRef, useState, useEffect } from 'react'
@@ -335,12 +336,12 @@ function FoodSection() {
           >
             {/* Image */}
             <div style={{ position: 'relative', height: 200, overflow: 'hidden' }}>
-              <Image
+<InView>              <Image
                 src={r.image}
                 alt={`${r.knownFor} at ${r.name}`}
                 fill sizes="(max-width:768px) 85vw, 310px"
                 style={{ objectFit: 'cover', transition: 'transform 0.4s ease' }}
-              />
+              /></InView>
               <div style={{
                 position: 'absolute', inset: 0,
                 background: 'linear-gradient(0deg, rgba(0,0,0,0.4) 0%, transparent 50%)',
@@ -599,13 +600,13 @@ function PackagesSection() {
                 className="pkg-media"
                 aria-label={t(pkg.title)}
               >
-                <Image
+<InView>                <Image
                   src={pkg.image}
                   alt=""
                   fill
                   sizes="(max-width: 767px) 84vw, 320px"
                   style={{ objectFit: 'cover' }}
-                />
+                /></InView>
                 <span style={{
                   position: 'absolute', top: 12, left: 12,
                   padding: '4px 11px', borderRadius: 9999,
@@ -739,7 +740,7 @@ function DestinationsSection() {
     <a key={d.name} href={`/explore?q=${encodeURIComponent(d.name)}`} className="photo-card" style={{
       aspectRatio: '1', display: 'flex', alignItems: 'flex-end', padding: 14,
     }}>
-      <Image src={DESTINATION_IMAGES[d.name]} alt={d.name} fill sizes="(max-width:768px) 50vw, 16vw" style={{ objectFit: 'cover' }} />
+      <InView><Image src={DESTINATION_IMAGES[d.name]} alt={d.name} fill sizes="(max-width:768px) 50vw, 16vw" style={{ objectFit: 'cover' }} /></InView>
       <div className="overlay-bottom" style={{ height: '60%' }} />
       <span style={{ position: 'relative', zIndex: 1, color: '#fff', fontFamily: 'var(--font-dm-sans)', fontWeight: 600, fontSize: 14 }}>
         {d.name}
@@ -809,7 +810,7 @@ function DestinationsSection() {
               alignItems: 'flex-end', padding: 16, scrollSnapAlign: 'start',
               borderRadius: 'var(--r-xl)',
             }}>
-              <Image src={DESTINATION_IMAGES[d.name]} alt={d.name} fill sizes="200px" style={{ objectFit: 'cover' }} />
+              <InView><Image src={DESTINATION_IMAGES[d.name]} alt={d.name} fill sizes="200px" style={{ objectFit: 'cover' }} /></InView>
               <div className="overlay-bottom" style={{ height: '65%' }} />
               <div style={{ position: 'relative', zIndex: 1 }}>
                 <span style={{ color: '#fff', fontFamily: 'var(--font-dm-sans)', fontWeight: 700, fontSize: 18, display: 'block', letterSpacing: '-0.01em' }}>
@@ -1021,7 +1022,7 @@ function MobilePosterCard({ exp }: { exp: Experience }) {
         WebkitTapHighlightColor: 'transparent',
       }}
     >
-      <Image
+<InView>      <Image
         src={exp.image}
         alt=""
         fill
@@ -1029,7 +1030,7 @@ function MobilePosterCard({ exp }: { exp: Experience }) {
         quality={70}
         loading="lazy"
         style={{ objectFit: 'cover' }}
-      />
+      /></InView>
       <div aria-hidden style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, rgba(0,0,0,0) 45%, rgba(0,0,0,0.78) 100%)' }} />
       <div style={{ position: 'absolute', left: 12, right: 12, bottom: 12, color: '#fff' }}>
         <p style={{ fontFamily: 'var(--font-syne)', fontWeight: 700, fontSize: 15, lineHeight: 1.25, margin: 0, textShadow: '0 1px 2px rgba(0,0,0,0.5)' }}>
@@ -1416,7 +1417,7 @@ export default function FeedView() {
                 display: 'flex', alignItems: 'flex-end', padding: 24,
                 minHeight: 420,
               }}>
-                <Image src={viralExperiences[0].image} alt={viralExperiences[0].title} fill sizes="(max-width:768px) 100vw, 40vw" style={{ objectFit: 'cover' }} />
+                <InView><Image src={viralExperiences[0].image} alt={viralExperiences[0].title} fill sizes="(max-width:768px) 100vw, 40vw" style={{ objectFit: 'cover' }} /></InView>
                 <div style={{
                   position: 'absolute', inset: 0,
                   background: 'linear-gradient(0deg, rgba(0,0,0,0.75) 0%, rgba(0,0,0,0.15) 50%, transparent 100%)',
@@ -1469,7 +1470,7 @@ export default function FeedView() {
                 display: 'flex', alignItems: 'flex-end', padding: 16,
                 minHeight: 196,
               }}>
-                <Image src={exp.image} alt={exp.title} fill sizes="(max-width:768px) 100vw, 25vw" style={{ objectFit: 'cover' }} />
+                <InView><Image src={exp.image} alt={exp.title} fill sizes="(max-width:768px) 100vw, 25vw" style={{ objectFit: 'cover' }} /></InView>
                 <div style={{
                   position: 'absolute', inset: 0,
                   background: 'linear-gradient(0deg, rgba(0,0,0,0.72) 0%, rgba(0,0,0,0.1) 50%, transparent 100%)',
@@ -1534,12 +1535,12 @@ export default function FeedView() {
         <div className="mapl-diff">
           {/* Left: Large image with gradient overlay */}
           <div className="mapl-diff-image">
-            <Image
+<InView>            <Image
               src={CULTURE_IMAGE}
               alt="Jamaica culture"
               fill sizes="45vw"
               style={{ objectFit: 'cover', objectPosition: 'right center' }}
-            />
+            /></InView>
             <div style={{
               position: 'absolute', inset: 0,
               background: 'linear-gradient(to right, transparent 0%, transparent 50%, var(--bg-dark) 100%)',

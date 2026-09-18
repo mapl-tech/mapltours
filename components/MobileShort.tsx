@@ -1,6 +1,7 @@
 'use client'
 
 import { useRef, useEffect, useState, memo } from 'react'
+import InView from './InView'
 import Image from 'next/image'
 import Link from 'next/link'
 import { Experience, slugify, priceUnitLabel, mobileVideo, videoPoster } from '@/lib/experiences'
@@ -209,7 +210,7 @@ export default memo(function MobileShort({
         }}>
           {/* Static image, shows until video plays: the clip's own first
               frame when there is a clip, so nothing jumps when it starts. */}
-          <Image
+<InView>          <Image
             src={exp.video ? videoPoster(exp.video) : exp.image}
             alt={exp.title}
             fill
@@ -223,7 +224,7 @@ export default memo(function MobileShort({
               opacity: isPlaying ? 0 : 1,
               transition: 'opacity 0.3s ease',
             }}
-          />
+          /></InView>
 
           {/* Video, mounts when near viewport, plays when visible. Tours
               without footage simply keep showing their photo. */}
