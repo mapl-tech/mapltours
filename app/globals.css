@@ -815,6 +815,32 @@ h5, h6 { letter-spacing: -0.01em; }
 }
 .field-input::placeholder { color: var(--text-tertiary); }
 
+/* The checkout code field: the typed code is uppercased, the placeholder is not
+   (an uppercased placeholder reads as shouting), and the Apply button fills in
+   as soon as there is something to apply so it never looks dead. */
+.opc-code-input::placeholder { text-transform: none; letter-spacing: 0; font-weight: 400; }
+.opc-code-input { height: 48px !important; }
+.opc-code-apply {
+  height: 48px;
+  min-width: 88px;
+  padding: 0 18px;
+  border-radius: 10px;
+  border: 1.5px solid var(--text-primary);
+  background: #fff;
+  color: var(--text-primary);
+  font-family: var(--font-dm-sans);
+  font-weight: 700;
+  font-size: 14px;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease, opacity 0.15s ease;
+}
+.opc-code-apply[data-ready="true"] { background: var(--text-primary); color: #fff; }
+.opc-code-apply:disabled { cursor: default; opacity: 0.55; }
+.opc-code-apply:focus-visible { outline: 2px solid var(--text-primary); outline-offset: 2px; }
+@media (prefers-reduced-motion: reduce) { .opc-code-apply { transition: none; } }
+
 /* Global keyboard-focus indicator. Several inputs/buttons set
    `outline: none` inline (which beats a normal stylesheet rule), so this
    uses !important to guarantee a visible focus ring for keyboard users

@@ -11,8 +11,11 @@ import { rateLimit, getIp } from '@/lib/rate-limit'
  * One live code per address per source: a repeat signup gets the same code
  * back (and is told if it has been used), so a person cannot farm codes by
  * signing up twice, and a daily ceiling per source bounds what a leaked key
- * could mint. Issued codes are always single-use, tours-only and bound to
- * the address they were sent to; the percent is capped by ISSUED_PERCENT_MAX.
+ * could mint. Issued codes are always single-use, good on tours and airport
+ * rides, and bound to the address they were sent to; the percent is capped
+ * by ISSUED_PERCENT_MAX. The bio page now hands out the shared JAMAICA5
+ * instead of calling this, but the endpoint stays live for any partner that
+ * holds the key.
  */
 
 export const runtime = 'nodejs'
@@ -20,7 +23,7 @@ export const dynamic = 'force-dynamic'
 
 const DAILY_CAP = 200
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/
-const COLS = 'id, code, kind, value, applies_to, email, max_uses, uses, min_total, starts_at, expires_at, status'
+const COLS = 'id, code, kind, value, applies_to, email, max_uses, uses, uses_per_email, min_total, starts_at, expires_at, status'
 
 function keyMatches(given: string | null): boolean {
   const expected = process.env.COUPON_ISSUE_KEY ?? ''
@@ -70,7 +73,7 @@ export async function POST(req: Request) {
   }
   if (prev) {
     const expired = !!prev.expires_at && Date.parse(prev.expires_at) < Date.now()
-    const spent = prev.status !== 'active' || Number(prev.uses) >= Number(prev.max_uses) || expired
+    const spent = prev.status !== 'active' || (prev.max_uses != null && Number(prev.uses) >= Number(prev.max_uses)) || expired
     return NextResponse.json({ code: prev.code, kind: prev.kind, value: Number(prev.value), expiresAt: prev.expires_at, reused: true, spent })
   }
 
@@ -89,7 +92,7 @@ export async function POST(req: Request) {
     const code = generateCouponCode()
     const { data, error } = await supabase
       .from('coupons')
-      .insert({ code, kind, value, applies_to: 'tour', email, max_uses: 1, expires_at: expiresAt, status: 'active', source, note: `Issued to ${email} by ${source}` })
+      .insert({ code, kind, value, applies_to: 'both', email, max_uses: 1, expires_at: expiresAt, status: 'active', source, note: `Issued to ${email} by ${source}` })
       .select('code, kind, value, expires_at')
       .single()
     if (!error && data) return NextResponse.json({ code: data.code, kind: data.kind, value: Number(data.value), expiresAt: data.expires_at, reused: false, spent: false })

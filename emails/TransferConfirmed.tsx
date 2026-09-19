@@ -11,6 +11,9 @@ export interface TransferConfirmedProps {
   /** Per-leg breakdown, server fills these when we have them. */
   subtotal?: number | null
   bookingFee?: number | null
+  /** A code applied at checkout; the total is already net of it. */
+  couponCode?: string | null
+  couponDiscount?: number | null
   totalPaid: number
   currency: string
   paidAt?: string | null
@@ -64,6 +67,8 @@ export default function TransferConfirmed(props: TransferConfirmedProps) {
     country,
     subtotal,
     bookingFee,
+    couponCode,
+    couponDiscount,
     totalPaid,
     currency,
     paidAt,
@@ -72,11 +77,13 @@ export default function TransferConfirmed(props: TransferConfirmedProps) {
   } = props
   const name = firstName?.trim() || 'there'
   // Transfers are quoted and sold at ONE all-in price. `subtotal` is the
-  // driver's wholesale cost and `bookingFee` is MAPL's margin, so itemising
-  // them here would publish internal costs to the customer. Show the total.
-  const showBreakdown = false
+  // driver's wholesale cost and `bookingFee` is MAPL's margin, so they are
+  // never itemised here: that would publish internal costs to the guest.
+  // The only line above the total is a code the guest applied, shown
+  // against the fare they were quoted.
   void subtotal
   void bookingFee
+  const hasCoupon = couponDiscount != null && couponDiscount > 0
   const paidAtPretty = fmtDateTime(paidAt)
   const customerLines = [
     [firstName, props.lastName].filter(Boolean).join(' ').trim() || null,
@@ -174,14 +181,10 @@ export default function TransferConfirmed(props: TransferConfirmedProps) {
           <Text style={s.cardHeaderText}>Payment summary</Text>
         </Section>
         <Section style={s.cardBody}>
-          {showBreakdown && (
+          {hasCoupon && (
             <>
-              {subtotal != null && (
-                <BreakdownLine label="Subtotal" value={fmtMoney(subtotal, currency)} />
-              )}
-              {bookingFee != null && (
-                <BreakdownLine label="Service fee" value={fmtMoney(bookingFee, currency)} />
-              )}
+              <BreakdownLine label="Fare" value={fmtMoney(totalPaid + couponDiscount, currency)} />
+              <BreakdownLine label={couponCode ? `Code ${couponCode}` : 'Discount code'} value={`− ${fmtMoney(couponDiscount, currency)}`} emphasis="emerald" />
             </>
           )}
           <div style={s.totalRow}>
@@ -267,7 +270,7 @@ export default function TransferConfirmed(props: TransferConfirmedProps) {
   )
 }
 
-function BreakdownLine({ label, value }: { label: string; value: string }) {
+function BreakdownLine({ label, value, emphasis }: { label: string; value: string; emphasis?: 'emerald' }) {
   return (
     <div
       style={{
@@ -278,7 +281,7 @@ function BreakdownLine({ label, value }: { label: string; value: string }) {
       }}
     >
       <Text style={s.rowLabel}>{label}</Text>
-      <Text style={s.rowValue}>{value}</Text>
+      <Text style={emphasis === 'emerald' ? { ...s.rowValue, color: '#1d7a50', fontWeight: 600 } : s.rowValue}>{value}</Text>
     </div>
   )
 }

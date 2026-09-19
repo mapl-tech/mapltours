@@ -6,10 +6,13 @@
  * Money model (corrected with the operator, Aug 14 2026):
  *   the SUPPLIER is paid the subtotal in full, and MAPL's entire margin is
  *   the customer-facing fee charged on top:
- *     transfers: customer pays fare + 15% (10% margin + 5% Remitly cover) -> driver gets the fare
+ *     transfers: customer pays the all-in fare (driver cost + 10% margin +
+ *                the real Remitly cost + card processing) -> driver gets the cost
  *     tours:     customer pays price + 20% fee     -> operator gets the price
+ *   A coupon comes off the customer's total and out of MAPL's margin only:
+ *   the supplier's payout never moves.
  *   => driver is owed  subtotal  (round-trips split half per leg)
- *   => MAPL keeps      fee - Stripe fee
+ *   => MAPL keeps      fee - coupon - Stripe fee
  *   There is no separate markup: the fee IS the markup.
  *
  * Time model: the checkout stores the customer's typed wall-clock (a
@@ -103,8 +106,11 @@ export interface MoneyBlock {
   customerPaid: number
   /** the fare, which IS the driver's rate (MAPL's margin is the trip fee). */
   fare: number
-  /** the trip fee charged on top (10% margin + 5% Remitly cover): MAPL's entire margin on a transfer. */
+  /** the trip fee charged on top (10% margin + 5% Remitly cover): MAPL's entire margin on a transfer, BEFORE any code. */
   transferFee: number
+  /** a coupon the guest applied, taken from transferFee; the customer paid fare + transferFee - couponDiscount. */
+  couponDiscount: number
+  couponCode: string | null
   stripeFee: number | null
   /** what Stripe deposits (customer paid minus Stripe fee), BEFORE the driver. */
   netToMapl: number | null
@@ -119,6 +125,8 @@ export interface MoneyBlock {
 export function moneyBlock(b: Bk, stripeFee: number | null): MoneyBlock {
   const fare = Number(b.subtotal ?? 0)
   const transferFee = Number(b.booking_fee ?? 0)
+  const couponDiscount = Number(b.coupon_discount ?? 0) || 0
+  const couponCode = (b.coupon_code as string | null | undefined) ?? null
   const customerPaid = Number(b.total_paid ?? 0)
   const driverTotal = supplierPayout(fare)
   const netToMapl = stripeFee != null ? round2(customerPaid - stripeFee) : null
@@ -128,6 +136,8 @@ export function moneyBlock(b: Bk, stripeFee: number | null): MoneyBlock {
     customerPaid,
     fare,
     transferFee,
+    couponDiscount,
+    couponCode,
     stripeFee,
     netToMapl,
     driverTotal,

@@ -22,7 +22,7 @@ export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-const COLS = 'id, code, kind, value, applies_to, email, max_uses, uses, min_total, starts_at, expires_at, status, source, note, created_at, updated_at'
+const COLS = 'id, code, kind, value, applies_to, email, max_uses, uses, uses_per_email, min_total, starts_at, expires_at, status, source, note, created_at, updated_at'
 
 async function requireAdmin() {
   const session = createServerSupabase()
@@ -80,8 +80,16 @@ export async function POST(req: Request) {
   if (kind === 'percent' && (value > 100 || !Number.isInteger(value))) return NextResponse.json({ error: 'A percent is a whole number from 1 to 100.' }, { status: 400 })
   if (kind === 'fixed' && value > 1000) return NextResponse.json({ error: 'A fixed amount is at most $1,000.' }, { status: 400 })
 
-  const maxUses = Math.round(Number(b.maxUses ?? 1))
-  if (!Number.isFinite(maxUses) || maxUses < 1 || maxUses > 100000) return NextResponse.json({ error: 'Uses must be from 1 to 100,000.' }, { status: 400 })
+  // Blank means unlimited. A number is a hard overall ceiling.
+  const maxUses = b.maxUses == null || b.maxUses === '' ? null : Math.round(Number(b.maxUses))
+  if (maxUses != null && (!Number.isFinite(maxUses) || maxUses < 1 || maxUses > 100000)) return NextResponse.json({ error: 'Uses is blank for unlimited, or a number from 1 to 100,000.' }, { status: 400 })
+
+  // How many times one email address may redeem it. Blank means no limit.
+  const usesPerEmail = b.usesPerEmail == null || b.usesPerEmail === '' ? null : Math.round(Number(b.usesPerEmail))
+  if (usesPerEmail != null && (!Number.isFinite(usesPerEmail) || usesPerEmail < 1 || usesPerEmail > 100)) return NextResponse.json({ error: 'Per guest is blank for no limit, or a number from 1 to 100.' }, { status: 400 })
+
+  const appliesTo = b.appliesTo == null || b.appliesTo === '' ? 'both' : b.appliesTo
+  if (appliesTo !== 'tour' && appliesTo !== 'transfer' && appliesTo !== 'both') return NextResponse.json({ error: 'Pick tours, airport rides, or both.' }, { status: 400 })
 
   const emailRaw = typeof b.email === 'string' ? normalizeEmail(b.email) : ''
   if (emailRaw && !EMAIL_RE.test(emailRaw)) return NextResponse.json({ error: 'That email address does not look right.' }, { status: 400 })
@@ -108,7 +116,7 @@ export async function POST(req: Request) {
     const tryCode = code ?? generateCouponCode()
     const { data, error } = await svc
       .from('coupons')
-      .insert({ code: tryCode, kind, value, applies_to: 'tour', email: emailRaw || null, max_uses: maxUses, min_total: minTotal, expires_at: expiresAt, status: 'active', source: 'admin', note, created_by: gate.user!.id })
+      .insert({ code: tryCode, kind, value, applies_to: appliesTo, email: emailRaw || null, max_uses: maxUses, uses_per_email: usesPerEmail, min_total: minTotal, expires_at: expiresAt, status: 'active', source: 'admin', note, created_by: gate.user!.id })
       .select(COLS)
       .single<CouponRow>()
     if (!error && data) return NextResponse.json({ coupon: data })

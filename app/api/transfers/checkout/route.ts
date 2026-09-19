@@ -13,6 +13,9 @@ import { areTransferLegsBookable, LEAD_TIME_MESSAGE } from '@/lib/booking-window
 import { assertCheckoutSchema, SchemaNotReadyError } from '@/lib/checkout-schema'
 import { claimGiftCard, releaseGiftClaim } from '@/lib/gift-redemption'
 import { normalizeGiftCode } from '@/lib/gift-cards'
+import type { CouponRow } from '@/lib/coupons'
+import { resolveCoupon } from '@/lib/coupon-lookup'
+import { consumeCoupon } from '@/lib/coupon-redemption'
 import { maybeSendTravelerConfirmation, maybeSendOperatorAlert } from '@/lib/email/booking'
 import { rateLimit, getIp } from '@/lib/rate-limit'
 import { DEFAULT_DRIVER } from '@/lib/dispatch'
@@ -57,6 +60,8 @@ interface CheckoutBody {
   items: TransferItemIn[]
   /** Gift card code applied at checkout, if any. */
   giftCode?: string
+  /** Coupon code applied at checkout, if any. A price reduction, never tender. */
+  couponCode?: string
   attribution?: unknown
   customer?: {
     email?: string
@@ -72,7 +77,7 @@ interface CheckoutBody {
   }
 }
 
-function hashCart(items: TransferItemIn[], amountCents: number, email: string, giftCode = ''): string {
+function hashCart(items: TransferItemIn[], amountCents: number, email: string, giftCode = '', couponCode = ''): string {
   const payload = JSON.stringify({
     items: items
       .map(
@@ -88,6 +93,9 @@ function hashCart(items: TransferItemIn[], amountCents: number, email: string, g
     // A transfer paid partly by gift card is a different charge from the same
     // transfer paid in full; it must not reuse the other's PaymentIntent.
     gift: giftCode,
+    // Same for a coupon: the net cents above already differ, the code makes
+    // the identity explicit.
+    coupon: couponCode,
   })
   return crypto.createHash('sha256').update(payload).digest('hex').slice(0, 32)
 }
@@ -252,7 +260,7 @@ export async function POST(request: NextRequest) {
     // Customers see one all-in price; MAPL's margin is whatever is left after
     // the driver's cost (it covers the 10% markup, 5% Remitly cover, and card processing).
     const fee = round2(total - subtotal)
-    const amountInCents = Math.round(total * 100)
+    let amountInCents = Math.round(total * 100)
     if (amountInCents < 50) {
       return NextResponse.json({ error: 'Amount must be at least $0.50' }, { status: 400 })
     }
@@ -273,8 +281,39 @@ export async function POST(request: NextRequest) {
     const supabase = createServiceClient()
     const schemaFeatures = await assertCheckoutSchema(supabase)
 
+    // 1b. Coupon: looked up and checked server-side against the all-in
+    //     fare, AFTER the amount assertion (the client keeps claiming the
+    //     pre-coupon fare) and BEFORE the gift card (a gift is drawn against
+    //     what is owed after the code). A price reduction, never tender:
+    //     total_paid becomes net of it; `subtotal`, the driver's payout, is
+    //     never touched, and the discount is capped at MAPL's margin so it
+    //     cannot reach the driver's rate. Nothing is reserved here; the code
+    //     is counted when the booking is paid.
+    let coupon: CouponRow | null = null
+    let couponDiscountCents = 0
+    if (body.couponCode) {
+      const r = await resolveCoupon(supabase, {
+        code: body.couponCode,
+        baseCents: amountInCents,
+        email: body.customer?.email,
+        bookingType: 'transfer',
+        marginCents: Math.max(0, Math.round(fee * 100)),
+      })
+      if (r.kind === 'backend') {
+        return NextResponse.json({ error: r.message, couponCode: true, requestId: reqId }, { status: r.status })
+      }
+      if (r.kind === 'refused') {
+        return NextResponse.json({ error: r.message, couponCode: true, requestId: reqId }, { status: 400 })
+      }
+      coupon = r.row
+      couponDiscountCents = r.check.discountCents
+      amountInCents = r.check.chargeCents
+      total = amountInCents / 100
+    }
+    const couponDiscount = couponDiscountCents / 100
+
     const c = body.customer ?? {}
-    const cartHash = hashCart(body.items, amountInCents, c.email ?? '', normalizeGiftCode(body.giftCode ?? '') ?? '')
+    const cartHash = hashCart(body.items, amountInCents, c.email ?? '', normalizeGiftCode(body.giftCode ?? '') ?? '', coupon?.code ?? '')
 
     const customerFields = {
       first_name: (c.firstName ?? '').slice(0, 80),
@@ -348,9 +387,15 @@ export async function POST(request: NextRequest) {
     }
 
     const monetaryFields = {
+      // Net of the coupon. `subtotal` is what the driver is paid, untouched;
+      // `booking_fee` stays the gross margin so the receipt's lines add up,
+      // and the coupon is its own line taken from that margin.
       total_paid: total,
       subtotal,
       booking_fee: fee,
+      ...(schemaFeatures.hasCoupon
+        ? { coupon_code: coupon?.code ?? null, coupon_discount: coupon ? couponDiscount : 0 }
+        : {}),
       currency: 'usd',
     } as const
 
@@ -561,6 +606,13 @@ export async function POST(request: NextRequest) {
         .eq('booking_id', bookingId!)
         .eq('status', 'reserved')
 
+      // And the coupon: no webhook will ever run for this booking.
+      if (coupon && couponDiscountCents > 0) {
+        const used = await consumeCoupon(supabase, { couponId: coupon.id, bookingId: bookingId!, email: customerFields.email, amount: couponDiscount })
+        if (!used.ok) console.error('[transfers/checkout]', reqId, 'CRITICAL: coupon consume failed on gift-covered booking', { booking: bookingId, coupon: coupon.code, error: used.message })
+        else if (used.overRedeemed) console.error('[transfers/checkout]', reqId, 'CRITICAL: coupon over-redeemed', { booking: bookingId, coupon: coupon.code })
+      }
+
       const { data: paidBooking } = await supabase
         .from('bookings').select('*').eq('id', bookingId!).maybeSingle()
       const { data: paidItems } = await supabase
@@ -614,6 +666,7 @@ export async function POST(request: NextRequest) {
         fullyCoveredByGift: true,
         bookingId,
         giftAmount: giftAmountCents / 100,
+        couponDiscount,
         requestId: reqId,
       })
     }
@@ -689,6 +742,9 @@ export async function POST(request: NextRequest) {
           return NextResponse.json({
             clientSecret: existingPi.client_secret,
             bookingId,
+            giftAmount: giftAmountCents / 100,
+            couponDiscount,
+            amountDue: chargeCents / 100,
             requestId: reqId,
           })
         }
@@ -708,6 +764,10 @@ export async function POST(request: NextRequest) {
           booking_type: 'transfer',
           item_count: String(priced.length),
           ...(giftAmountCents > 0 ? { gift_card_amount: String(giftAmountCents / 100) } : {}),
+          // The webhook counts the coupon on payment success, keyed on this.
+          ...(coupon && couponDiscountCents > 0
+            ? { coupon_id: coupon.id, coupon_code: coupon.code, coupon_discount: String(couponDiscount) }
+            : {}),
           summary: priced
             .map((p) => `${p.destination!.name}|${p.input.tripType}|${p.input.passengers}pax`)
             .join(', ')
@@ -761,6 +821,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       clientSecret: paymentIntent.client_secret,
       bookingId,
+      giftAmount: giftAmountCents / 100,
+      couponDiscount,
+      amountDue: chargeCents / 100,
       requestId: reqId,
     })
   } catch (err) {

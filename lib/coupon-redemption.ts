@@ -1,5 +1,6 @@
 import 'server-only'
 import type { createServiceClient } from '@/lib/supabase/service'
+import { normalizeEmail } from '@/lib/coupons'
 
 /**
  * Consuming a coupon.
@@ -39,7 +40,9 @@ export async function consumeCoupon(supabase: DB, input: CouponConsumeInput): Pr
   const { error: insErr } = await supabase.from('coupon_redemptions').insert({
     coupon_id: input.couponId,
     booking_id: input.bookingId,
-    email: input.email,
+    // Lowercased and trimmed: the per-address limit counts this column with
+    // an equality, so the same person typing Jane@ and jane@ is one person.
+    email: normalizeEmail(input.email) || null,
     amount: input.amount,
   })
   if (insErr) {
@@ -66,7 +69,8 @@ export async function consumeCoupon(supabase: DB, input: CouponConsumeInput): Pr
       .select('id')
       .maybeSingle()
     if (swapErr) return { ok: false, message: `coupon swap failed: ${swapErr.message}` }
-    if (swapped) return { ok: true, alreadyCounted: false, overRedeemed: uses + 1 > Number(row.max_uses) }
+    // A NULL max_uses is unlimited: never over-redeemed.
+    if (swapped) return { ok: true, alreadyCounted: false, overRedeemed: row.max_uses != null && uses + 1 > Number(row.max_uses) }
   }
   return { ok: false, message: 'coupon use count kept moving underneath the swap' }
 }

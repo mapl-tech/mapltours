@@ -11,7 +11,8 @@ import { DEFAULT_DRIVER } from '@/lib/dispatch'
 import { sanitizeAttribution } from '@/lib/attribution'
 import { claimGiftCard, releaseGiftClaim } from '@/lib/gift-redemption'
 import { normalizeGiftCode } from '@/lib/gift-cards'
-import { applyCoupon, couponBlockedMessage, normalizeCouponCode, type CouponRow } from '@/lib/coupons'
+import { normalizeCouponCode, type CouponRow } from '@/lib/coupons'
+import { resolveCoupon } from '@/lib/coupon-lookup'
 import { consumeCoupon } from '@/lib/coupon-redemption'
 import { maybeSendTravelerConfirmation, maybeSendOperatorAlert } from '@/lib/email/booking'
 
@@ -38,7 +39,6 @@ export const runtime = 'nodejs'
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!)
 
-const COUPON_COLS = 'id, code, kind, value, applies_to, email, max_uses, uses, min_total, starts_at, expires_at, status'
 
 interface CartItemIn {
   id: number
@@ -186,30 +186,23 @@ export async function POST(request: NextRequest) {
     //     counted when the booking is paid.
     let coupon: CouponRow | null = null
     if (body.couponCode) {
-      const code = normalizeCouponCode(body.couponCode)
-      const { data: row, error: couponErr } = code
-        ? await supabase.from('coupons').select(COUPON_COLS).eq('code', code).maybeSingle<CouponRow>()
-        : { data: null, error: null }
-      if (couponErr) {
-        console.error('[checkout]', reqId, 'coupon lookup failed', couponErr.message)
-        return NextResponse.json(
-          { error: 'Could not check that code. Please try again.', couponCode: true, requestId: reqId },
-          { status: 503 },
-        )
-      }
-      const check = applyCoupon(row ?? null, {
+      const r = await resolveCoupon(supabase, {
+        code: body.couponCode,
         baseCents: Math.round(pricing.totalBeforeCoupon * 100),
         email: body.customer?.email,
         bookingType: 'tour',
+        // Out of MAPL's margin only: the fee after the reward already taken
+        // from it. The operator's price is never touched.
+        marginCents: Math.max(0, Math.round((pricing.fee - pricing.rewardDiscount) * 100)),
       })
-      if (!check.applicable) {
-        return NextResponse.json(
-          { error: couponBlockedMessage(check.reason, row ?? null), couponCode: true, requestId: reqId },
-          { status: 400 },
-        )
+      if (r.kind === 'backend') {
+        return NextResponse.json({ error: r.message, couponCode: true, requestId: reqId }, { status: r.status })
       }
-      coupon = row!
-      pricing = withCouponDiscount(pricing, check.discountCents)
+      if (r.kind === 'refused') {
+        return NextResponse.json({ error: r.message, couponCode: true, requestId: reqId }, { status: 400 })
+      }
+      coupon = r.row
+      pricing = withCouponDiscount(pricing, r.check.discountCents)
     }
     const amountInCents = Math.round(pricing.total * 100)
     if (amountInCents < 50) {

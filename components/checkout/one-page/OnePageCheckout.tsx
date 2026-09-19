@@ -6,6 +6,8 @@ import Image from 'next/image'
 import { ArrowLeft, Award, CalendarDays, Leaf, MapPin, Users } from 'lucide-react'
 import { useCartStore, DAILY_HOUR_LIMIT } from '@/lib/cart'
 import { couponDiscountCents } from '@/lib/coupons'
+import { priceTourCart } from '@/lib/checkout-pricing'
+import CodeField from './CodeField'
 import { tourPrice, perTravelerPrice } from '@/lib/experiences'
 import { earliestBookableExperienceDate } from '@/lib/booking-window'
 import { getStoredAttribution } from '@/lib/attribution'
@@ -86,7 +88,22 @@ export default function OnePageCheckout() {
   const afterReward = Math.max(0, baseTotal - rewardDiscount)
   // The coupon comes off after the reward, in the same integer cents the
   // server computes (lib/coupons), so the preview and the charge agree.
-  const couponPreviewLocal = coupon ? couponDiscountCents(coupon.kind, coupon.value, Math.round(afterReward * 100)) / 100 : 0
+  // Capped at MAPL's margin after the reward, exactly as the server caps it.
+  // The cart's fee() is 0 under all-in pricing (the margin is inside each
+  // price), so the margin comes from the same pure pricing the server runs:
+  // the customer total minus the operators' cost, minus the reward.
+  // When the cart cannot be priced here (a line the catalog no longer has),
+  // no margin is sent and the server decides on its own figures at Pay.
+  const marginCents = useMemo<number | undefined>(() => {
+    if (!items.length) return undefined
+    try {
+      const p = priceTourCart(items.map((i) => ({ id: i.id, travelers: i.travelers, date: i.date })), {}, {})
+      return Math.max(0, Math.round((p.fee - rewardDiscount) * 100))
+    } catch { return undefined }
+  }, [items, rewardDiscount])
+  const couponPreviewLocal = coupon
+    ? Math.min(couponDiscountCents(coupon.kind, coupon.value, Math.round(afterReward * 100)), marginCents ?? Number.MAX_SAFE_INTEGER) / 100
+    : 0
   const [serverCoupon, setServerCoupon] = useState<number | null>(null)
   const couponPreview = serverCoupon ?? couponPreviewLocal
   const afterCoupon = Math.max(0, afterReward - couponPreview)
@@ -317,7 +334,7 @@ export default function OnePageCheckout() {
     if (!code) return
     setCodeChecking(true); setCodeError(null)
     try {
-      const res = await fetch('/api/coupons/validate', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code, email: form.email.trim(), amountCents: Math.round(afterReward * 100) }) })
+      const res = await fetch('/api/coupons/validate', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code, email: form.email.trim(), amountCents: Math.round(afterReward * 100), bookingType: 'tour', marginCents }) })
       const data = await res.json()
       if (data.valid) { setCoupon({ code: data.code, kind: data.kind, value: Number(data.value) }); setCodeInput(''); return }
       if (res.status === 429 || (data.reason && data.reason !== 'not_found')) { setCodeError(data.message ?? 'That code could not be used.'); return }
@@ -624,12 +641,9 @@ function OrderSummary(p: {
   facts: { label: string; value: string }[]
 }) {
   const { items, formatUsd, t } = p
-  const [codeOpen, setCodeOpen] = useState(false)
-  // The toggle leaves the DOM when the field opens, so focus has to be moved
-  // to the field or a keyboard user is dropped on the page body.
-  const codeRef = useRef<HTMLInputElement>(null)
-  useEffect(() => { if (codeOpen) codeRef.current?.focus() }, [codeOpen])
-  const canApply = !p.codeChecking && p.codeInput.trim().length >= 4
+  // The field is always open. Under an applied coupon it closes into a chip
+  // and this reopens it for a gift card.
+  const [moreOpen, setMoreOpen] = useState(false)
   return (
     <Card>
       <div className="opc-pad-x" style={{ paddingTop: 20, paddingBottom: 4 }}>
@@ -703,38 +717,11 @@ function OrderSummary(p: {
           </div>
         )}
 
-        {p.coupon && (
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 8, fontSize: 13, fontFamily: FONT, fontWeight: 600, color: 'var(--emerald)' }}>
-            <span>{p.coupon.kind === 'percent' ? `${p.coupon.value}% off` : `${formatUsd(p.coupon.value)} off`} · {p.coupon.code} <button type="button" onClick={p.removeCoupon} aria-label={`Remove code ${p.coupon.code}`} style={{ marginLeft: 8, background: 'none', border: 'none', padding: 0, fontSize: 13, color: 'var(--text-tertiary)', cursor: 'pointer', textDecoration: 'underline', fontFamily: 'inherit', minHeight: 24 }}>remove</button></span>
-            <span>−{formatUsd(p.couponPreview)}</span>
-          </div>
-        )}
-        {p.giftCard && (
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 8, fontSize: 13, fontFamily: FONT, fontWeight: 600, color: 'var(--emerald)' }}>
-            <span>Gift card {p.giftCard.code} <button type="button" onClick={p.removeGift} aria-label={`Remove gift card ${p.giftCard.code}`} style={{ marginLeft: 8, background: 'none', border: 'none', padding: 0, fontSize: 13, color: 'var(--text-tertiary)', cursor: 'pointer', textDecoration: 'underline', fontFamily: 'inherit', minHeight: 24 }}>remove</button></span>
-            <span>−{formatUsd(p.giftPreview)}</span>
-          </div>
-        )}
-        {/* One field for a coupon or a gift card. It stays available after a
-            coupon is applied so a guest can add a gift card too; a second
-            coupon simply replaces the first. */}
-        {codeOpen || p.codeError ? (
-          <div style={{ marginTop: 10 }}>
-            <div style={{ display: 'flex', gap: 8 }}>
-              <input ref={codeRef} value={p.codeInput} onChange={(e) => { p.setCodeInput(e.target.value) }} onKeyDown={(e) => { if (e.key === 'Enter' && canApply) { e.preventDefault(); p.applyCode() } }} placeholder="Enter your code" aria-label="Coupon or gift card code" className="field-input" autoCapitalize="characters" autoCorrect="off" spellCheck={false}
-                style={{ flex: 1, minWidth: 0, height: 44, fontSize: 16, background: '#fff', textTransform: 'uppercase' }} />
-              <button type="button" onClick={p.applyCode} disabled={!canApply} className="btn-outline"
-                style={{ height: 44, padding: '0 16px', fontSize: 13, fontWeight: 600, whiteSpace: 'nowrap', opacity: canApply ? 1 : 0.5 }}>
-                {p.codeChecking ? 'Checking…' : 'Apply'}
-              </button>
-            </div>
-            {p.codeError && <p role="alert" style={{ marginTop: 6, fontSize: 13, color: '#b00020', fontFamily: FONT }}>{p.codeError}</p>}
-          </div>
-        ) : (
-          <button type="button" onClick={() => setCodeOpen(true)} style={{ background: 'none', border: 'none', padding: '10px 0', minHeight: 44, display: 'inline-flex', alignItems: 'center', fontFamily: FONT, fontSize: 13, color: 'var(--text-secondary)', textDecoration: 'underline', textUnderlineOffset: 3, cursor: 'pointer' }}>
-            {p.coupon || p.giftCard ? 'Have another code?' : 'Have a code?'}
-          </button>
-        )}
+        <div style={{ marginTop: 12 }}>
+          <CodeField coupon={p.coupon} couponPreview={p.couponPreview} giftCard={p.giftCard} giftPreview={p.giftPreview}
+            codeInput={p.codeInput} setCodeInput={p.setCodeInput} codeChecking={p.codeChecking} codeError={p.codeError} applyCode={p.applyCode}
+            removeCoupon={p.removeCoupon} removeGift={p.removeGift} formatUsd={formatUsd} moreOpen={moreOpen} setMoreOpen={setMoreOpen} />
+        </div>
 
         <div className="opc-num" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', fontFamily: FONT, fontWeight: 700, fontSize: 20, marginTop: 10, paddingTop: 14, borderTop: '1px solid var(--border)' }}>
           <span>{t('Total')}</span><span>{formatUsd(p.finalTotal)}</span>

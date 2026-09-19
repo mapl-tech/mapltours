@@ -157,6 +157,7 @@ export default function DispatchConsole({ booking, stripeFee, driverEmailConfigu
           <div style={subLabel}>What the customer paid</div>
           <MRow k="Driver's rate (paid to Collin)" v={money(m.fare)} />
           <MRow k="MAPL margin (covers card fees)" v={`+ ${money(m.transferFee)}`} />
+          {m.couponDiscount > 0 && <MRow k={`Code ${m.couponCode ?? ''} (from MAPL's margin)`} v={`- ${money(m.couponDiscount)}`} em />}
           <MRow k="Customer paid" v={`${money(m.customerPaid)} USD`} big />
 
           <div style={{ ...subLabel, marginTop: 16 }}>Where it goes</div>

@@ -58,7 +58,6 @@ export default function CashflowView({ rows }: { rows: CashRow[] }) {
   const remitlyEst = sum(rows.map((r) => r.remitlyEstUsd))
   const netKept = Math.round((collected - stripeFees - supplierPayouts - remitlyEst) * 100) / 100
   const settledCad = rows.some((r) => r.settledCad != null) ? sum(rows.map((r) => r.settledCad ?? 0)) : null
-  const hasTour = rows.some((r) => r.type === 'tour')
 
   const byMonth: Record<string, number> = {}
   for (const r of rows) if (r.date) { const k = r.date.slice(0, 7); byMonth[k] = (byMonth[k] ?? 0) + r.gross }
@@ -198,7 +197,7 @@ export default function CashflowView({ rows }: { rows: CashRow[] }) {
       </section>
 
       <p style={{ fontSize: 12, color: faint, marginTop: 16, lineHeight: 1.55, maxWidth: 760 }}>
-        Figures are in USD (the currency customers are charged). Your Stripe account is Canadian and settles in CAD, so each Stripe fee (processing plus currency conversion) is converted to USD at the transaction rate, and the actual amount deposited is shown as Settled (CAD). Pricing since Aug 15 builds in a 10% margin, a 5% Remitly cover, and card processing on top of the supplier&rsquo;s rate, with round trips at 90% of double the one-way base (Collin&rsquo;s discount). The Remitly column estimates what sending each payout costs (about $2.90 flat per send plus 2.1% FX, two sends for a round trip paid in halves), so Net kept is profit after EVERYTHING. Bookings paid before Aug 15 were priced under the old 10%-only model, which is why some show thin or negative nets: that is the real history, and the new pricing exists to fix it. Batching payouts into one weekly send cuts the Remitly cost sharply.{hasTour ? ' Tour supplier costs (guides and creators) are not tracked yet, so the net kept on tour bookings is shown before any supplier payout.' : ''}
+        Figures are in USD (the currency customers are charged). Your Stripe account is Canadian and settles in CAD, so each Stripe fee (processing plus currency conversion) is converted to USD at the transaction rate, and the actual amount deposited is shown as Settled (CAD). Pricing since Aug 15 builds in a 10% margin, a 5% Remitly cover, and card processing on top of the supplier&rsquo;s rate, with round trips at 90% of double the one-way base (Collin&rsquo;s discount). The Remitly column estimates what sending each payout costs (about $2.90 flat per send plus 2.1% FX, two sends for a round trip paid in halves), so Net kept is profit after EVERYTHING. Bookings paid before Aug 15 were priced under the old 10%-only model, which is why some show thin or negative nets: that is the real history, and the new pricing exists to fix it. Batching payouts into one weekly send cuts the Remitly cost sharply. A coupon (JAMAICA5 and any code made on the coupons desk) lowers Gross and Net kept only: the driver or tour operator payout is always their full rate. The Driver column is the supplier payout for either type; tour operators are paid their price the same way.
       </p>
 
       {tip && (

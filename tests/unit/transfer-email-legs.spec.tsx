@@ -60,6 +60,27 @@ describe('a one-way hotel to airport transfer', () => {
   })
 })
 
+describe('a coupon on a transfer', () => {
+  const ride = { ...leg, tripType: 'one_way' as const, arrivalFlight: 'VS0165', arrivalAt: '2026-09-20T21:05:00+00:00', departureFlight: null, departureAt: null }
+
+  test('the guest sees the fare, the code and the total, never the driver split', async () => {
+    const text = strip(await render(TransferConfirmed({ ...guest, totalPaid: 119.7, subtotal: 100, bookingFee: 26, couponCode: 'JAMAICA5', couponDiscount: 6.3, transfers: [ride] } as never)))
+    expect(text).toContain('Code JAMAICA5')
+    expect(text).toContain('6.30')
+    expect(text).toContain('126.00')
+    expect(text).not.toContain('Subtotal')
+    expect(text).not.toContain('Service fee')
+    expect(text).not.toContain('100.00')
+  })
+
+  test('without a code the summary is the total alone', async () => {
+    const text = strip(await render(TransferConfirmed({ ...guest, totalPaid: 126, subtotal: 100, bookingFee: 26, transfers: [ride] } as never)))
+    expect(text).not.toContain('Code ')
+    expect(text).not.toContain('Subtotal')
+    expect(text).not.toContain('100.00')
+  })
+})
+
 describe('a one-way airport to hotel transfer', () => {
   const arrival = {
     ...leg,

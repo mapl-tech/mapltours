@@ -43,6 +43,8 @@ interface ConfirmData {
   specialRequests: string | null
   subtotal: number | null
   bookingFee: number | null
+  couponCode: string | null
+  couponDiscount: number | null
   totalPaid: number | null
   currency: string
   transfers: ConfirmedTransfer[]
@@ -60,6 +62,8 @@ function emptyData(): ConfirmData {
     specialRequests: null,
     subtotal: null,
     bookingFee: null,
+    couponCode: null,
+    couponDiscount: null,
     totalPaid: null,
     currency: 'USD',
     transfers: [],
@@ -106,7 +110,7 @@ async function resolveConfirm(
   let { data: booking } = await supabase
     .from('bookings')
     .select(
-      'id, email, first_name, last_name, phone, country, special_requests, subtotal, booking_fee, total_paid, currency, paid_at, booking_type',
+      'id, email, first_name, last_name, phone, country, special_requests, subtotal, booking_fee, coupon_code, coupon_discount, total_paid, currency, paid_at, booking_type',
     )
     .eq('stripe_payment_id', piId)
     .eq('booking_type', 'transfer')
@@ -117,7 +121,7 @@ async function resolveConfirm(
     const { data: byMeta } = await supabase
       .from('bookings')
       .select(
-        'id, email, first_name, last_name, phone, country, special_requests, subtotal, booking_fee, total_paid, currency, paid_at, booking_type',
+        'id, email, first_name, last_name, phone, country, special_requests, subtotal, booking_fee, coupon_code, coupon_discount, total_paid, currency, paid_at, booking_type',
       )
       .eq('id', pi.metadata.booking_id)
       .eq('booking_type', 'transfer')
@@ -156,6 +160,8 @@ async function resolveConfirm(
     specialRequests: null,
     subtotal: booking?.subtotal != null ? Number(booking.subtotal) : null,
     bookingFee: booking?.booking_fee != null ? Number(booking.booking_fee) : null,
+    couponCode: (booking as { coupon_code?: string | null } | null)?.coupon_code ?? null,
+    couponDiscount: (booking as { coupon_discount?: number | string | null } | null)?.coupon_discount != null ? Number((booking as { coupon_discount?: number | string | null }).coupon_discount) : null,
     totalPaid: booking?.total_paid != null ? Number(booking.total_paid) : pi.amount / 100,
     currency: (booking?.currency ?? pi.currency ?? 'usd').toUpperCase(),
     transfers: (items ?? []).map((i) => ({
@@ -183,7 +189,7 @@ async function resolveConfirmFromBooking(bookingId: string): Promise<ConfirmData
   const supabase = createServiceClient()
   const { data: booking } = await supabase
     .from('bookings')
-    .select('id, first_name, subtotal, booking_fee, total_paid, currency, paid_at, status, booking_type')
+    .select('id, first_name, subtotal, booking_fee, coupon_code, coupon_discount, total_paid, currency, paid_at, status, booking_type')
     .eq('id', bookingId)
     .eq('booking_type', 'transfer')
     .eq('status', 'paid')
@@ -207,6 +213,8 @@ async function resolveConfirmFromBooking(bookingId: string): Promise<ConfirmData
     specialRequests: null,
     subtotal: booking.subtotal != null ? Number(booking.subtotal) : null,
     bookingFee: booking.booking_fee != null ? Number(booking.booking_fee) : null,
+    couponCode: (booking as { coupon_code?: string | null }).coupon_code ?? null,
+    couponDiscount: (booking as { coupon_discount?: number | string | null }).coupon_discount != null ? Number((booking as { coupon_discount?: number | string | null }).coupon_discount) : null,
     totalPaid: booking.total_paid != null ? Number(booking.total_paid) : null,
     currency: (booking.currency ?? 'usd').toUpperCase(),
     transfers: (items ?? []).map((i) => ({
@@ -327,8 +335,10 @@ export default async function TransferConfirmPage({
 
 function Success({ data }: { data: ConfirmData }) {
   // Transfers are sold at one all-in price; `subtotal` is the driver's cost
-  // and `bookingFee` is MAPL's margin, so neither is shown to the customer.
-  const showBreakdown = false
+  // and `bookingFee` is MAPL's margin, so neither is ever shown to the guest.
+  // The only lines above the total are the fare they were quoted and the
+  // code they applied, when there is one.
+  const showBreakdown = data.couponDiscount !== null && data.couponDiscount > 0 && data.totalPaid !== null
 
   return (
     <div style={{ textAlign: 'center' }}>
@@ -501,12 +511,8 @@ function Success({ data }: { data: ConfirmData }) {
         <div style={{ padding: '16px 24px 18px' }}>
           {showBreakdown && (
             <>
-              {data.subtotal !== null && (
-                <BreakdownRow label="Subtotal" value={formatMoney(data.subtotal, data.currency)} />
-              )}
-              {data.bookingFee !== null && (
-                <BreakdownRow label="Service fee" value={formatMoney(data.bookingFee, data.currency)} />
-              )}
+              <BreakdownRow label="Fare" value={formatMoney((data.totalPaid ?? 0) + (data.couponDiscount ?? 0), data.currency)} />
+              <BreakdownRow label={data.couponCode ? `Code ${data.couponCode}` : 'Discount code'} value={`− ${formatMoney(data.couponDiscount ?? 0, data.currency)}`} emphasis="emerald" />
             </>
           )}
           <div
@@ -772,7 +778,7 @@ function Leg({
   )
 }
 
-function BreakdownRow({ label, value }: { label: string; value: string }) {
+function BreakdownRow({ label, value, emphasis }: { label: string; value: string; emphasis?: 'emerald' }) {
   return (
     <div
       style={{
@@ -785,7 +791,7 @@ function BreakdownRow({ label, value }: { label: string; value: string }) {
       }}
     >
       <span>{label}</span>
-      <span style={{ fontFamily: 'var(--font-dm-sans)', fontFeatureSettings: '"tnum" 1', color: 'var(--text-primary)', fontWeight: 600 }}>
+      <span style={{ fontFamily: 'var(--font-dm-sans)', fontFeatureSettings: '"tnum" 1', color: emphasis === 'emerald' ? 'var(--emerald)' : 'var(--text-primary)', fontWeight: emphasis === 'emerald' ? 700 : 600 }}>
         {value}
       </span>
     </div>

@@ -137,6 +137,8 @@ export async function maybeSendTravelerConfirmation(
           country: booking.country,
           subtotal: booking.subtotal != null ? Number(booking.subtotal) : null,
           bookingFee: booking.booking_fee != null ? Number(booking.booking_fee) : null,
+          couponCode: booking.coupon_code ?? null,
+          couponDiscount: booking.coupon_discount != null ? Number(booking.coupon_discount) : null,
           totalPaid: Number(booking.total_paid),
           currency: booking.currency.toUpperCase(),
           paidAt: (booking as { paid_at?: string | null }).paid_at ?? null,

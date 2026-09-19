@@ -37,7 +37,7 @@ function state(c: Coupon): keyof typeof BADGE {
   if (c.status === 'void') return 'void'
   if (c.status === 'paused') return 'paused'
   if (c.expires_at && Date.parse(c.expires_at) < Date.now()) return 'expired'
-  if (Number(c.uses) >= Number(c.max_uses)) return 'used'
+  if (c.max_uses != null && Number(c.uses) >= Number(c.max_uses)) return 'used'
   return 'active'
 }
 
@@ -65,13 +65,24 @@ export default function CouponDesk() {
   const [confirmVoid, setConfirmVoid] = useState<string | null>(null)
   const [open, setOpen] = useState<string | null>(null)
   const [creating, setCreating] = useState(false)
+  // The card just created, so the eye lands on it after the list reloads.
+  const [justMade, setJustMade] = useState<string | null>(null)
+  useEffect(() => {
+    if (!justMade) return
+    document.getElementById(`coupon-${justMade}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    const t = window.setTimeout(() => setJustMade(null), 2500)
+    return () => window.clearTimeout(t)
+  }, [justMade, coupons])
 
-  // The form: percent by default, one use, six months, no code (issued).
+  // The form, set up for the common case: a shared word code, 5% off tours
+  // and rides, no overall limit, once per guest, six months.
   const [kind, setKind] = useState<'percent' | 'fixed'>('percent')
   const [value, setValue] = useState('5')
+  const [appliesTo, setAppliesTo] = useState<'tour' | 'transfer' | 'both'>('both')
   const [code, setCode] = useState('')
   const [email, setEmail] = useState('')
-  const [maxUses, setMaxUses] = useState('1')
+  const [maxUses, setMaxUses] = useState('')
+  const [usesPerEmail, setUsesPerEmail] = useState('1')
   const [minTotal, setMinTotal] = useState('')
   const [expiresAt, setExpiresAt] = useState(plusDays(180))
   const [formNote, setFormNote] = useState('')
@@ -104,13 +115,14 @@ export default function CouponDesk() {
     try {
       const res = await fetch('/api/admin/coupons', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ kind, value: Number(value), code: code.trim() || undefined, email: email.trim() || undefined, maxUses: Number(maxUses), minTotal: minTotal.trim() || undefined, expiresAt: expiresAt ? `${expiresAt}T23:59:59-05:00` : undefined, note: formNote.trim() || undefined }),
+        body: JSON.stringify({ kind, value: Number(value), appliesTo, code: code.trim() || undefined, email: email.trim() || undefined, maxUses: maxUses.trim() ? Number(maxUses) : null, usesPerEmail: usesPerEmail.trim() ? Number(usesPerEmail) : null, minTotal: minTotal.trim() || undefined, expiresAt: expiresAt ? `${expiresAt}T23:59:59-05:00` : undefined, note: formNote.trim() || undefined }),
       })
       const data = await res.json()
       if (!res.ok) { setFormError(data.error ?? 'That did not work.'); return }
       setNote(`Created ${data.coupon.code}: ${describeCoupon(data.coupon)}.`)
       setCode(''); setEmail(''); setFormNote('')
       await load()
+      setJustMade(data.coupon.id)
     } catch {
       setFormError('That did not work. Please try again.')
     } finally {
@@ -139,7 +151,7 @@ export default function CouponDesk() {
     try { await navigator.clipboard.writeText(text); setNote(`${text} copied.`) } catch { setNote('Could not copy. Select the code and copy it by hand.') }
   }
 
-  const preview = describeCoupon({ kind, value: Number(value) || 0, applies_to: 'tour', max_uses: Number(maxUses) || 1, email: email.trim() || null, min_total: minTotal.trim() ? Number(minTotal) : null, expires_at: expiresAt ? `${expiresAt}T23:59:59Z` : null })
+  const preview = describeCoupon({ kind, value: Number(value) || 0, applies_to: appliesTo, max_uses: maxUses.trim() ? Number(maxUses) : null, uses_per_email: usesPerEmail.trim() ? Number(usesPerEmail) : null, email: email.trim() || null, min_total: minTotal.trim() ? Number(minTotal) : null, expires_at: expiresAt ? `${expiresAt}T23:59:59Z` : null })
 
   return (
     <div>
@@ -148,16 +160,18 @@ export default function CouponDesk() {
         <Link href="/admin/bookings" style={{ fontSize: 13, fontWeight: 600, color: soft, textDecoration: 'none' }}>← Bookings</Link>
         <Link href="/admin/gift-cards" style={{ fontSize: 13, fontWeight: 600, color: soft, textDecoration: 'none' }}>Gift cards →</Link>
       </div>
-      <p style={{ marginTop: 8, color: soft, fontSize: 14, maxWidth: 640, lineHeight: 1.6 }}>
-        A coupon takes a percent or a fixed amount off a tour at checkout. It is not money: nothing is refunded on it, and the
-        booking&rsquo;s total is already net of it. The bio page issues 5% single-use codes on its own; make anything else here.
+      <p style={{ marginTop: 8, color: soft, fontSize: 14, maxWidth: 680, lineHeight: 1.6 }}>
+        A coupon takes a percent or a fixed amount off a tour or an airport ride at checkout. It is not money: nothing is refunded on it,
+        and the booking&rsquo;s total is already net of it. <strong style={{ color: ink }}>Every discount comes out of MAPL Tours&rsquo; margin.</strong> The
+        driver or the tour operator is paid their full rate, and a code can never take more than the margin on that booking.
+        JAMAICA5 is the public code the bio page hands out; make anything else here.
       </p>
 
       {/* Stat tiles */}
       <div style={{ marginTop: 22, display: 'grid', gap: 12, gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))' }}>
         {(['active', 'used', 'paused', 'expired', 'void'] as const).map((s) => (
           <button key={s} type="button" onClick={() => setFilter(filter === s ? 'all' : s)} aria-pressed={filter === s}
-            style={{ textAlign: 'left', background: '#fff', border: filter === s ? `1px solid ${ink}` : border, borderRadius: 14, padding: '14px 16px', cursor: 'pointer', fontFamily: dm, minHeight: 44 }}>
+            style={{ textAlign: 'left', background: filter === s ? '#F3EFE6' : '#fff', border: filter === s ? `1px solid ${ink}` : border, borderRadius: 14, padding: '14px 16px', cursor: 'pointer', fontFamily: dm, minHeight: 44 }}>
             <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: faint }}>{BADGE[s].label}</div>
             <div style={{ marginTop: 4, fontSize: 28, fontWeight: 800, letterSpacing: '-0.02em', ...tnum }}>{counts[s] ?? 0}</div>
           </button>
@@ -184,16 +198,31 @@ export default function CouponDesk() {
             <input id="cp-value" style={input} inputMode="decimal" value={value} onChange={(e) => setValue(e.target.value)} required />
           </div>
           <div>
-            <label style={label} htmlFor="cp-uses">Uses</label>
-            <input id="cp-uses" style={input} inputMode="numeric" value={maxUses} onChange={(e) => setMaxUses(e.target.value)} required />
+            <span style={label}>Applies to</span>
+            <div role="group" aria-label="Applies to" style={{ display: 'flex', gap: 0, border: '1px solid rgba(0,0,0,0.16)', borderRadius: 10, overflow: 'hidden', height: 44 }}>
+              {([['both', 'Both'], ['tour', 'Tours'], ['transfer', 'Rides']] as const).map(([k, l]) => (
+                <button key={k} type="button" aria-pressed={appliesTo === k} onClick={() => setAppliesTo(k)}
+                  style={{ flex: 1, border: 'none', background: appliesTo === k ? ink : '#fff', color: appliesTo === k ? '#fff' : ink, fontFamily: dm, fontWeight: 600, fontSize: 14, cursor: 'pointer' }}>
+                  {l}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div>
+            <label style={label} htmlFor="cp-uses">Uses in total <span style={{ fontWeight: 500 }}>(blank = unlimited)</span></label>
+            <input id="cp-uses" style={input} inputMode="numeric" value={maxUses} onChange={(e) => setMaxUses(e.target.value)} placeholder="Unlimited" />
+          </div>
+          <div>
+            <label style={label} htmlFor="cp-per-guest">Uses per guest <span style={{ fontWeight: 500 }}>(blank = no limit)</span></label>
+            <input id="cp-per-guest" style={input} inputMode="numeric" value={usesPerEmail} onChange={(e) => setUsesPerEmail(e.target.value)} placeholder="No limit" />
           </div>
           <div>
             <label style={label} htmlFor="cp-expires">Expires</label>
             <input id="cp-expires" style={input} type="date" value={expiresAt} onChange={(e) => setExpiresAt(e.target.value)} />
           </div>
           <div>
-            <label style={label} htmlFor="cp-code">Code <span style={{ fontWeight: 500 }}>(blank = issued)</span></label>
-            <input id="cp-code" style={{ ...input, textTransform: 'uppercase' }} value={code} onChange={(e) => setCode(e.target.value)} placeholder="WELCOME5" autoCapitalize="characters" />
+            <label style={label} htmlFor="cp-code">Code <span style={{ fontWeight: 500 }}>(blank = random MAPL-XXXX-XXXX)</span></label>
+            <input id="cp-code" style={{ ...input, textTransform: 'uppercase' }} value={code} onChange={(e) => setCode(e.target.value)} placeholder="JAMAICA5" autoCapitalize="characters" />
           </div>
           <div>
             <label style={label} htmlFor="cp-email">Only for this email <span style={{ fontWeight: 500 }}>(optional)</span></label>
@@ -208,7 +237,7 @@ export default function CouponDesk() {
             <input id="cp-note" style={input} value={formNote} onChange={(e) => setFormNote(e.target.value)} placeholder="Instagram giveaway, March" />
           </div>
         </div>
-        <p style={{ marginTop: 14, fontSize: 14, color: soft }}>This coupon will be: <strong style={{ color: ink }}>{preview}</strong>. Tours only.</p>
+        <p style={{ marginTop: 14, fontSize: 14, color: soft }}>This coupon will be: <strong style={{ color: ink }}>{preview}</strong>. Taken from MAPL Tours&rsquo; margin, never from the driver or operator.</p>
         {formError && <p role="alert" style={{ marginTop: 8, fontSize: 14, fontWeight: 600, color: '#B3261E' }}>{formError}</p>}
         <button type="submit" disabled={creating}
           style={{ marginTop: 12, height: 44, padding: '0 22px', borderRadius: 10, border: 'none', background: ink, color: '#fff', fontFamily: dm, fontWeight: 600, fontSize: 14, cursor: creating ? 'wait' : 'pointer', opacity: creating ? 0.6 : 1 }}>
@@ -236,14 +265,14 @@ export default function CouponDesk() {
           const uses = redemptions.filter((r) => r.coupon_id === c.id)
           const isOpen = open === c.id
           return (
-            <div key={c.id} style={{ background: '#fff', borderRadius: 14, padding: '16px 18px', border }}>
+            <div key={c.id} id={`coupon-${c.id}`} style={{ background: justMade === c.id ? '#FFF7DF' : '#fff', borderRadius: 14, padding: '16px 18px', border: justMade === c.id ? '1px solid #C9A94E' : border, transition: 'background 0.6s ease, border-color 0.6s ease' }}>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px 14px', alignItems: 'center' }}>
                 <button type="button" onClick={() => copy(c.code)} title="Copy the code" aria-label={`Copy ${c.code}`}
                   style={{ fontFamily: dm, fontWeight: 800, fontSize: 18, letterSpacing: '0.06em', background: 'none', border: 'none', padding: '8px 0', cursor: 'pointer', color: ink, minHeight: 44 }}>
                   {c.code}
                 </button>
                 <span style={{ fontSize: 11.5, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', padding: '4px 10px', borderRadius: 9999, background: BADGE[s].bg, color: BADGE[s].fg }}>{BADGE[s].label}</span>
-                <span style={{ marginLeft: 'auto', fontSize: 14, fontWeight: 700, ...tnum }}>{c.uses} / {c.max_uses} used</span>
+                <span style={{ marginLeft: 'auto', fontSize: 14, fontWeight: 700, ...tnum }}>{c.max_uses == null ? `${c.uses} used` : `${c.uses} / ${c.max_uses} used`}</span>
               </div>
               <p style={{ margin: '8px 0 0', fontSize: 14, color: ink }}>{describeCoupon(c)}</p>
               <div style={{ marginTop: 8, display: 'grid', gap: '4px 24px', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', fontSize: 13, color: soft, lineHeight: 1.5 }}>

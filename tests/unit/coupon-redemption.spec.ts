@@ -6,7 +6,7 @@ import { consumeCoupon } from '@/lib/coupon-redemption'
  * PostgREST it relies on: the unique index on coupon_redemptions.booking_id
  * (23505) and the compare-and-swap on coupons.uses.
  */
-function fakeDb(seed: { uses: number; max_uses: number }, opts: { raceOnce?: boolean } = {}) {
+function fakeDb(seed: { uses: number; max_uses: number | null }, opts: { raceOnce?: boolean } = {}) {
   const coupon = { id: 'c1', ...seed }
   const redemptions: Record<string, unknown>[] = []
   let raced = false
@@ -72,5 +72,16 @@ describe('consumeCoupon', () => {
     const r = await consumeCoupon(f.db, { couponId: 'c1', bookingId: 'b9', email: null, amount: 5 })
     expect(r).toEqual({ ok: true, alreadyCounted: false, overRedeemed: true })
     expect(f.coupon.uses).toBe(2)
+  })
+  it('an unlimited code is never over-redeemed', async () => {
+    const f = fakeDb({ uses: 500, max_uses: null })
+    const r = await consumeCoupon(f.db, { couponId: 'c1', bookingId: 'b500', email: null, amount: 5 })
+    expect(r).toEqual({ ok: true, alreadyCounted: false, overRedeemed: false })
+    expect(f.coupon.uses).toBe(501)
+  })
+  it('stores the ledger email lowercased so the per-address count can match it', async () => {
+    const f = fakeDb({ uses: 0, max_uses: null })
+    await consumeCoupon(f.db, { couponId: 'c1', bookingId: 'b1', email: '  Jane@Example.COM ', amount: 5 })
+    expect(f.redemptions[0].email).toBe('jane@example.com')
   })
 })

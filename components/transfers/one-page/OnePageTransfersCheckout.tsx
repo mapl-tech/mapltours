@@ -4,10 +4,12 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
 import { ArrowLeft, Car, Plane, PlaneLanding, PlaneTakeoff, Users } from 'lucide-react'
 import { useTransfersCart, type TransferCartItem } from '@/lib/transfers-cart'
-import { MAX_TRANSFER_PASSENGERS, ROUND_TRIP_DISCOUNT } from '@/lib/airport-transfers'
+import { MAX_TRANSFER_PASSENGERS, ROUND_TRIP_DISCOUNT, driverCost, getTransferPrice } from '@/lib/airport-transfers'
 import { leadTimeCutoff } from '@/lib/booking-window'
 import { getStoredAttribution } from '@/lib/attribution'
 import { trackBeginCheckout } from '@/lib/analytics'
+import { couponDiscountCents } from '@/lib/coupons'
+import CodeField from '@/components/checkout/one-page/CodeField'
 import { useI18n } from '@/lib/i18n'
 import {
   validateTransferForm, orderKey, legsFor, pickupFromFlight, flightFromPickup, formatWallClock, PICKUP_LEAD_TEXT, LEG_TIME_RE, type FieldErrors,
@@ -73,18 +75,37 @@ export default function OnePageTransfersCheckout() {
     if (item.departureAt && LEG_TIME_RE.test(item.departureAt)) setFlightAt(flightFromPickup(item.departureAt))
   }, [item])
 
-  // ── Gift card (checked here, spent only server-side) ──
-  const [giftCodeInput, setGiftCodeInput] = useState('')
+  // ── One code field: a coupon (checked first) or a gift card. Both are
+  //    checked here and applied for real only server-side. ──
+  const [codeInput, setCodeInput] = useState('')
   const [giftCard, setGiftCard] = useState<{ code: string; balanceCents: number } | null>(null)
-  const [giftChecking, setGiftChecking] = useState(false)
-  const [giftError, setGiftError] = useState<string | null>(null)
+  const [coupon, setCoupon] = useState<{ code: string; kind: 'percent' | 'fixed'; value: number } | null>(null)
+  const [codeChecking, setCodeChecking] = useState(false)
+  const [codeError, setCodeError] = useState<string | null>(null)
+  const [moreOpen, setMoreOpen] = useState(false)
 
   const total = grandTotal()
-  const giftPreviewLocal = giftCard ? Math.min(giftCard.balanceCents / 100, total) : 0
+  // The coupon comes off the all-in fare, in the same integer cents the
+  // server computes (lib/coupons), capped at MAPL's margin so the driver's
+  // rate is never touched; then the gift card is drawn against the rest.
+  // The cart's fee() is 0 under all-in pricing (the margin is inside the
+  // fare), so the margin comes from the same rate table the server prices
+  // with: the fare minus the driver's cost for this exact ride.
+  const marginCents = useMemo(() => {
+    if (!item) return 0
+    const fare = getTransferPrice(item.destinationId, item.tripType, item.passengers)
+    const cost = driverCost(item.destinationId, item.tripType, item.passengers)
+    return fare != null && cost != null ? Math.max(0, Math.round((fare - cost) * 100)) : 0
+  }, [item])
+  const couponPreviewLocal = coupon ? Math.min(couponDiscountCents(coupon.kind, coupon.value, Math.round(total * 100)), marginCents) / 100 : 0
+  const [serverCoupon, setServerCoupon] = useState<number | null>(null)
+  const couponPreview = serverCoupon ?? couponPreviewLocal
+  const afterCoupon = Math.max(0, total - couponPreview)
+  const giftPreviewLocal = giftCard ? Math.min(giftCard.balanceCents / 100, afterCoupon) : 0
   const [serverGift, setServerGift] = useState<number | null>(null)
   const [serverDue, setServerDue] = useState<number | null>(null)
   const giftPreview = serverGift ?? giftPreviewLocal
-  const finalTotal = serverDue ?? Math.max(0, total - giftPreview)
+  const finalTotal = serverDue ?? Math.max(0, afterCoupon - giftPreview)
   const amountCents = Math.round(finalTotal * 100)
 
   const tripType = item?.tripType ?? 'round_trip'
@@ -125,14 +146,15 @@ export default function OnePageTransfersCheckout() {
     },
     breakdown: { subtotal: subtotal(), fee: fee() },
     giftCode: giftCard?.code,
-  }), [total, item, legs, form, subtotal, fee, giftCard])
+    couponCode: coupon?.code,
+  }), [total, item, legs, form, subtotal, fee, giftCard, coupon])
 
   const intentRef = useRef<{ key: string; result: { clientSecret: string; bookingId: string; amountDue: number } } | null>(null)
   // A request already on the wire for this exact order, so the quiet save and
   // a Pay tap a moment later share one POST instead of racing on the server.
   const inflightRef = useRef<{ key: string; promise: Promise<IntentResult> } | null>(null)
-  const pricingKey = orderKey({ items: body.items, amount: body.amount, gift: body.giftCode ?? '' })
-  useEffect(() => { setServerGift(null); setServerDue(null); setServerError(null) }, [pricingKey])
+  const pricingKey = orderKey({ items: body.items, amount: body.amount, gift: body.giftCode ?? '', coupon: body.couponCode ?? '' })
+  useEffect(() => { setServerGift(null); setServerCoupon(null); setServerDue(null); setServerError(null) }, [pricingKey])
 
   const runIntent = useCallback(async (payload: Record<string, unknown>, key: string): Promise<IntentResult> => {
     let data: Record<string, unknown>
@@ -147,12 +169,14 @@ export default function OnePageTransfersCheckout() {
       return { error: 'Could not reach the payment service. Please check your connection and try again.' }
     }
     if (typeof data.error === 'string') {
-      if (data.giftCode) { setGiftCard(null); setGiftError(data.error) }
+      if (data.giftCode) { setGiftCard(null); setCodeError(data.error) }
+      if (data.couponCode) { setCoupon(null); setCodeError(data.error) }
       return { error: data.error }
     }
     if (data.alreadyPaid || data.fullyCoveredByGift) return { navigate: `/transfers/confirm?booking_id=${data.bookingId}` }
     if (typeof data.clientSecret !== 'string') return { error: 'Could not set up payment. Please try again.' }
     if (typeof data.giftAmount === 'number') setServerGift(data.giftAmount)
+    if (typeof data.couponDiscount === 'number') setServerCoupon(data.couponDiscount)
     if (typeof data.amountDue === 'number') {
       if (amountCents < 50 && data.amountDue > 0) setServerError('Your gift card no longer covers the whole amount. The card form below is ready for the rest.')
       setServerDue(data.amountDue)
@@ -221,18 +245,28 @@ export default function OnePageTransfersCheckout() {
     return true
   }, [form, legs, minDateTime])
 
-  async function applyGiftCode() {
-    const code = giftCodeInput.trim()
+  /**
+   * One field, two kinds of code. A coupon is tried first; a miss falls
+   * through to the gift-card ledger so sold cards keep working. Neither call
+   * reserves anything: the server applies the code for real on the Pay tap.
+   */
+  async function applyCode() {
+    const code = codeInput.trim()
     if (!code) return
-    setGiftChecking(true); setGiftError(null)
+    setCodeChecking(true); setCodeError(null)
     try {
-      const res = await fetch('/api/gifts/validate', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code }) })
+      const res = await fetch('/api/coupons/validate', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code, email: form.email.trim(), amountCents: Math.round(total * 100), bookingType: 'transfer', marginCents }) })
       const data = await res.json()
-      if (!data.valid) { setGiftError(data.message ?? 'That code could not be used.'); return }
-      setGiftCard({ code: data.code, balanceCents: data.balanceCents })
+      if (data.valid) { setCoupon({ code: data.code, kind: data.kind, value: Number(data.value) }); setCodeInput(''); setMoreOpen(false); return }
+      if (res.status === 429 || (data.reason && data.reason !== 'not_found')) { setCodeError(data.message ?? 'That code could not be used.'); return }
+      const g = await fetch('/api/gifts/validate', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code }) })
+      const gd = await g.json()
+      if (!gd.valid) { setCodeError(data.message ?? gd.message ?? 'That code could not be used.'); return }
+      setGiftCard({ code: gd.code, balanceCents: gd.balanceCents })
+      setCodeInput(''); setMoreOpen(false)
     } catch {
-      setGiftError('Could not check that code. Please try again.')
-    } finally { setGiftChecking(false) }
+      setCodeError('Could not check that code. Please try again.')
+    } finally { setCodeChecking(false) }
   }
 
   const payCardRef = useRef<HTMLDivElement>(null)
@@ -418,8 +452,9 @@ export default function OnePageTransfersCheckout() {
             </Card>
 
             <div className="opc-mobile-only">
-              <RideSummary item={item} formatUsd={formatUsd} giftCard={giftCard} giftPreview={giftPreview} giftCodeInput={giftCodeInput} setGiftCodeInput={setGiftCodeInput} giftChecking={giftChecking} giftError={giftError} applyGiftCode={applyGiftCode}
-                removeGift={() => { setGiftCard(null); setGiftCodeInput(''); setGiftError(null) }} finalTotal={finalTotal} openPolicy={() => setLegal('cancellation')} facts={summaryFacts} />
+              <RideSummary item={item} formatUsd={formatUsd} giftCard={giftCard} giftPreview={giftPreview} coupon={coupon} couponPreview={couponPreview}
+                codeInput={codeInput} setCodeInput={setCodeInput} codeChecking={codeChecking} codeError={codeError} applyCode={applyCode} moreOpen={moreOpen} setMoreOpen={setMoreOpen}
+                removeGift={() => { setGiftCard(null); setCodeError(null) }} removeCoupon={() => { setCoupon(null); setCodeError(null) }} finalTotal={finalTotal} openPolicy={() => setLegal('cancellation')} facts={summaryFacts} />
             </div>
 
             {/* ── 3. Payment ── */}
@@ -447,8 +482,9 @@ export default function OnePageTransfersCheckout() {
           </div>
 
           <aside className="opc-rail" aria-label="Order summary">
-            <RideSummary item={item} formatUsd={formatUsd} giftCard={giftCard} giftPreview={giftPreview} giftCodeInput={giftCodeInput} setGiftCodeInput={setGiftCodeInput} giftChecking={giftChecking} giftError={giftError} applyGiftCode={applyGiftCode}
-              removeGift={() => { setGiftCard(null); setGiftCodeInput(''); setGiftError(null) }} finalTotal={finalTotal} openPolicy={() => setLegal('cancellation')} facts={summaryFacts} />
+            <RideSummary item={item} formatUsd={formatUsd} giftCard={giftCard} giftPreview={giftPreview} coupon={coupon} couponPreview={couponPreview}
+              codeInput={codeInput} setCodeInput={setCodeInput} codeChecking={codeChecking} codeError={codeError} applyCode={applyCode} moreOpen={moreOpen} setMoreOpen={setMoreOpen}
+              removeGift={() => { setGiftCard(null); setCodeError(null) }} removeCoupon={() => { setCoupon(null); setCodeError(null) }} finalTotal={finalTotal} openPolicy={() => setLegal('cancellation')} facts={summaryFacts} />
           </aside>
         </div>
       )}
@@ -513,18 +549,22 @@ function RideSummary(p: {
   formatUsd: (n: number) => string
   giftCard: { code: string; balanceCents: number } | null
   giftPreview: number
-  giftCodeInput: string
-  setGiftCodeInput: (v: string) => void
-  giftChecking: boolean
-  giftError: string | null
-  applyGiftCode: () => void
+  coupon: { code: string; kind: 'percent' | 'fixed'; value: number } | null
+  couponPreview: number
+  codeInput: string
+  setCodeInput: (v: string) => void
+  codeChecking: boolean
+  codeError: string | null
+  applyCode: () => void
+  moreOpen: boolean
+  setMoreOpen: (b: boolean) => void
   removeGift: () => void
+  removeCoupon: () => void
   finalTotal: number
   openPolicy: () => void
   facts: { label: string; value: string }[]
 }) {
   const { item, formatUsd } = p
-  const [giftOpen, setGiftOpen] = useState(false)
   const rt = item.tripType === 'round_trip'
   return (
     <Card>
@@ -548,26 +588,9 @@ function RideSummary(p: {
         </p>
       </div>
       <div className="opc-pad-x" style={{ paddingTop: 12, paddingBottom: 18, background: 'var(--bg-warm)', borderTop: '1px solid var(--border)', borderRadius: '0 0 var(--r-xl) var(--r-xl)' }}>
-        {p.giftCard ? (
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 13, fontFamily: FONT, fontWeight: 600, color: 'var(--emerald)' }}>
-            <span>Gift card {p.giftCard.code} <button type="button" onClick={p.removeGift} style={{ marginLeft: 8, background: 'none', border: 'none', padding: 0, fontSize: 13, color: 'var(--text-tertiary)', cursor: 'pointer', textDecoration: 'underline', fontFamily: 'inherit', minHeight: 24 }}>remove</button></span>
-            <span>−{formatUsd(p.giftPreview)}</span>
-          </div>
-        ) : giftOpen ? (
-          <div>
-            <div style={{ display: 'flex', gap: 8 }}>
-              <input value={p.giftCodeInput} onChange={(e) => p.setGiftCodeInput(e.target.value)} placeholder="Gift card code" aria-label="Gift card code" className="field-input" style={{ flex: 1, minWidth: 0, height: 44, fontSize: 16, background: '#fff', textTransform: 'uppercase' }} />
-              <button type="button" onClick={p.applyGiftCode} disabled={p.giftChecking || p.giftCodeInput.trim().length < 4} className="btn-outline" style={{ height: 44, padding: '0 16px', fontSize: 13, fontWeight: 600, whiteSpace: 'nowrap', opacity: p.giftChecking || p.giftCodeInput.trim().length < 4 ? 0.5 : 1 }}>
-                {p.giftChecking ? 'Checking…' : 'Apply'}
-              </button>
-            </div>
-            {p.giftError && <p role="alert" style={{ marginTop: 6, fontSize: 13, color: '#b00020', fontFamily: FONT }}>{p.giftError}</p>}
-          </div>
-        ) : (
-          <button type="button" onClick={() => setGiftOpen(true)} style={{ background: 'none', border: 'none', padding: '10px 0', minHeight: 44, display: 'inline-flex', alignItems: 'center', fontFamily: FONT, fontSize: 13, color: 'var(--text-secondary)', textDecoration: 'underline', textUnderlineOffset: 3, cursor: 'pointer' }}>
-            Have a gift card?
-          </button>
-        )}
+        <CodeField coupon={p.coupon} couponPreview={p.couponPreview} giftCard={p.giftCard} giftPreview={p.giftPreview}
+          codeInput={p.codeInput} setCodeInput={p.setCodeInput} codeChecking={p.codeChecking} codeError={p.codeError} applyCode={p.applyCode}
+          removeCoupon={p.removeCoupon} removeGift={p.removeGift} formatUsd={formatUsd} moreOpen={p.moreOpen} setMoreOpen={p.setMoreOpen} />
         <div className="opc-num" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', fontFamily: FONT, fontWeight: 700, fontSize: 20, marginTop: 10, paddingTop: 14, borderTop: '1px solid var(--border)' }}>
           <span>Total</span><span>{formatUsd(p.finalTotal)}</span>
         </div>

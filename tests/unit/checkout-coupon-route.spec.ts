@@ -15,6 +15,8 @@ import { POST } from '@/app/api/checkout/route'
 
 const state = vi.hoisted(() => ({
   coupon: null as Record<string, unknown> | null,
+  /** Paid redemptions by this guest's address, what the per-address limit reads. */
+  emailUses: 0,
   inserts: [] as { table: string; row: Record<string, unknown> }[],
   updates: [] as { table: string; patch: Record<string, unknown> }[],
   intents: [] as Record<string, unknown>[],
@@ -52,6 +54,7 @@ function builder(table: string) {
   const ctx: { op: string; row?: Record<string, unknown>; cols?: string } = { op: 'select' }
   const resolve = () => {
     if (table === 'coupons' && ctx.op === 'select') return { data: state.coupon, error: null }
+    if (table === 'coupon_redemptions' && ctx.op === 'select') return { data: null, error: null, count: state.emailUses }
     if (table === 'bookings' && ctx.op === 'insert') { state.inserts.push({ table, row: ctx.row! }); return { data: { id: 'b_test' }, error: null } }
     if (table === 'booking_items' && ctx.op === 'insert') { state.inserts.push({ table, row: ctx.row! }); return { data: null, error: null } }
     if (table === 'bookings' && ctx.op === 'select') return { data: { gift_card_id: null, gift_card_amount: null, stripe_payment_id: null, status: 'pending' }, error: null }
@@ -80,13 +83,14 @@ const pricing = priceTourCart(items.map((i) => ({ id: i.id, travelers: i.travele
 const baseCents = Math.round(pricing.total * 100)
 const customer = { email: 'jane@example.com', firstName: 'Jane', lastName: 'Doe' }
 
-const liveCoupon = () => ({ id: 'c_test', code: 'MAPL-AAAA-AAAA', kind: 'percent', value: 5, applies_to: 'tour', email: null, max_uses: 1, uses: 0, min_total: null, starts_at: '2026-01-01T00:00:00Z', expires_at: '2030-01-01T00:00:00Z', status: 'active' })
+const liveCoupon = () => ({ id: 'c_test', code: 'MAPL-AAAA-AAAA', kind: 'percent', value: 5, applies_to: 'tour', email: null, max_uses: 1, uses: 0, uses_per_email: null, min_total: null, starts_at: '2026-01-01T00:00:00Z', expires_at: '2030-01-01T00:00:00Z', status: 'active' })
+const sharedCoupon = () => ({ ...liveCoupon(), id: 'c_shared', code: 'JAMAICA5', applies_to: 'both', max_uses: null, uses: 4321, uses_per_email: 1, expires_at: null })
 
 function post(body: Record<string, unknown>) {
   return POST(new NextRequest('http://localhost/api/checkout', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) }))
 }
 
-beforeEach(() => { state.coupon = null; state.inserts.length = 0; state.updates.length = 0; state.intents.length = 0 })
+beforeEach(() => { state.coupon = null; state.emailUses = 0; state.inserts.length = 0; state.updates.length = 0; state.intents.length = 0 })
 
 describe('POST /api/checkout with a coupon', () => {
   it('sizes the intent to the net total and records the discount on the booking', async () => {
@@ -141,6 +145,33 @@ describe('POST /api/checkout with a coupon', () => {
     expect(res.status).toBe(400)
     expect((await res.json()).error).toMatch(/mismatch/)
     expect(state.intents).toHaveLength(0)
+  })
+
+  it('accepts the shared code once per address and refuses it the second time', async () => {
+    state.coupon = sharedCoupon()
+    const first = await post({ amount: pricing.total, items, customer, couponCode: 'jamaica5' })
+    expect(first.status).toBe(200)
+    expect(state.intents[0].amount).toBe(baseCents - couponDiscountCents('percent', 5, baseCents))
+    expect((state.intents[0].metadata as Record<string, string>).coupon_code).toBe('JAMAICA5')
+
+    state.emailUses = 1
+    state.intents.length = 0; state.inserts.length = 0
+    const second = await post({ amount: pricing.total, items, customer, couponCode: 'JAMAICA5' })
+    expect(second.status).toBe(400)
+    expect((await second.json()).error).toMatch(/already been used with this email/)
+    expect(state.intents).toHaveLength(0)
+  })
+
+  it('never lets a code reach the operator\'s price: the discount is capped at MAPL\'s margin', async () => {
+    state.coupon = { ...liveCoupon(), kind: 'fixed', value: 900 }
+    const res = await post({ amount: pricing.total, items, customer, couponCode: 'MAPL-AAAA-AAAA' })
+    const data = await res.json()
+    expect(res.status).toBe(200)
+    const marginCents = Math.round((pricing.fee - pricing.rewardDiscount) * 100)
+    expect(Math.round(data.couponDiscount * 100)).toBe(marginCents)
+    expect(state.intents[0].amount).toBe(baseCents - marginCents)
+    const booking = state.inserts.find((i) => i.table === 'bookings')!.row
+    expect(Number(booking.subtotal)).toBeCloseTo(pricing.subtotal, 2)
   })
 
   it('leaves a cart without a code exactly as before', async () => {
