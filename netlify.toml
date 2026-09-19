@@ -42,32 +42,17 @@
 # Hero media is not content-hashed, so a day, not a month: a replaced poster
 # reaches returning visitors by tomorrow instead of revalidating on every visit.
 [[headers]]
-  for = "/hero-negril-jamaica-portrait.webp"
+  for = "/hero-montage-phone.webp"
   [headers.values]
     Cache-Control = "public, max-age=86400, stale-while-revalidate=604800"
 
 [[headers]]
-  for = "/hero-negril-jamaica-portrait.mp4"
+  for = "/hero-montage.webp"
   [headers.values]
     Cache-Control = "public, max-age=86400, stale-while-revalidate=604800"
 
 [[headers]]
-  for = "/hero-negril-jamaica-540.mp4"
-  [headers.values]
-    Cache-Control = "public, max-age=86400, stale-while-revalidate=604800"
-
-[[headers]]
-  for = "/hero-negril-jamaica-720.mp4"
-  [headers.values]
-    Cache-Control = "public, max-age=86400, stale-while-revalidate=604800"
-
-[[headers]]
-  for = "/hero-negril-jamaica-1080.mp4"
-  [headers.values]
-    Cache-Control = "public, max-age=86400, stale-while-revalidate=604800"
-
-[[headers]]
-  for = "/hero-montage-portrait.mp4"
+  for = "/hero-montage-phone.mp4"
   [headers.values]
     Cache-Control = "public, max-age=86400, stale-while-revalidate=604800"
 

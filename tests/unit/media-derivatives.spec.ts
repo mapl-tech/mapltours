@@ -2,7 +2,7 @@ import { describe, expect, test } from 'vitest'
 import { existsSync } from 'node:fs'
 import { join } from 'node:path'
 import { experiences, mobileVideo, videoPoster } from '@/lib/experiences'
-import { HERO_VIDEO_PORTRAIT, HERO_POSTER_PORTRAIT } from '@/lib/images'
+import { HERO_VIDEO_PHONE, HERO_POSTER_PHONE, HERO_POSTER, HERO_VIDEO_540, HERO_VIDEO_720, HERO_VIDEO_1080 } from '@/lib/images'
 
 const pub = (p: string) => join(process.cwd(), 'public', p)
 
@@ -17,9 +17,10 @@ describe('phone video derivatives', () => {
     }
   })
 
-  test('the portrait hero pair exists', () => {
-    expect(existsSync(pub(HERO_VIDEO_PORTRAIT))).toBe(true)
-    expect(existsSync(pub(HERO_POSTER_PORTRAIT))).toBe(true)
+  test('every home hero file the component can pick exists', () => {
+    for (const f of [HERO_VIDEO_PHONE, HERO_POSTER_PHONE, HERO_POSTER, HERO_VIDEO_540, HERO_VIDEO_720, HERO_VIDEO_1080]) {
+      expect(existsSync(pub(f)), f).toBe(true)
+    }
   })
 
   test('helpers leave unknown paths alone', () => {

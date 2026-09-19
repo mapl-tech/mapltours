@@ -12,19 +12,20 @@ export const HERO = '/media/img/14788935-hero.jpg'
 // 32s) so the hero never depends on a third-party CDN.
 // Replaced Pexels 35684532 (/hero-video.mp4), a hazy roadside shot that read
 // flat and grey behind the headline.
-export const HERO_VIDEO = '/hero-montage-720.mp4'
-/** 12-second loops of the same footage, one per screen size (see FeedView.HeroVideo). */
+/**
+ * The home hero loop: the same four-shot montage bio.mapltours.com plays
+ * (coast, jet skis, horseback, parasail; 13.7 s, no audio), one file per
+ * screen size (see FeedView.HeroVideo). Every file is 8-bit 4:2:0 H.264 with
+ * the moov atom first, which is what iOS needs to start it inline.
+ */
 export const HERO_VIDEO_540 = '/hero-montage-540.mp4'
 export const HERO_VIDEO_720 = '/hero-montage-720.mp4'
 export const HERO_VIDEO_1080 = '/hero-montage-1080.mp4'
-/**
- * The same loop cropped to 9:16 for phones (720x1280, 30fps, ~1.7 Mbps), with
- * its own first frame as the poster so nothing swaps scene when it starts.
- * The landscape files showed a 363px-wide slice of a 960px frame on a phone,
- * upscaled 3.2x, under a poster of a different road.
- */
-export const HERO_VIDEO_PORTRAIT = '/hero-montage-portrait.mp4'
-export const HERO_POSTER_PORTRAIT = '/hero-negril-jamaica-portrait.webp'
+/** Phones get the bio page's own 720x540 cut (1.3 MB) and its first frame as the poster. */
+export const HERO_VIDEO_PHONE = '/hero-montage-phone.mp4'
+export const HERO_POSTER_PHONE = '/hero-montage-phone.webp'
+/** Desktop poster: the montage's first frame, so nothing swaps scene when it starts. */
+export const HERO_POSTER = '/hero-montage.webp'
 
 // All destinations, confirmed Jamaica locations
 export const DESTINATIONS: Record<string, string> = {

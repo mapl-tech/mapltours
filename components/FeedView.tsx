@@ -2,13 +2,13 @@
 
 import Image from 'next/image'
 import Link from 'next/link'
-import { experiences, singleExperiences, packageExperiences, HERO_IMAGE, DESTINATION_IMAGES, TOUR_DESTINATIONS, slugify, type Experience } from '@/lib/experiences'
+import { experiences, singleExperiences, packageExperiences, DESTINATION_IMAGES, TOUR_DESTINATIONS, slugify, type Experience } from '@/lib/experiences'
 import { EATS } from '@/lib/eats'
 import { priceUnitLabel } from '@/lib/experiences'
 import { useCartStore } from '@/lib/cart'
 import { fitCandidateStop, MAX_STOP_GAP_MIN } from '@/lib/day-route'
 import { useHydrated } from '@/lib/use-hydrated'
-import { CULTURE_IMAGE, HERO_VIDEO, HERO_VIDEO_540, HERO_VIDEO_720, HERO_VIDEO_1080, HERO_VIDEO_PORTRAIT, HERO_POSTER_PORTRAIT } from '@/lib/images'
+import { CULTURE_IMAGE, HERO_VIDEO_540, HERO_VIDEO_720, HERO_VIDEO_1080, HERO_VIDEO_PHONE, HERO_POSTER_PHONE, HERO_POSTER } from '@/lib/images'
 import ExpCard from './ExpCard'
 import MobileShort from './MobileShort'
 import InView from './InView'
@@ -19,64 +19,100 @@ import { Award, Users, Headphones, ShieldCheck, Star, Heart, UtensilsCrossed, Tr
 
 
 /* Hero video, lazy loads on fast connections, shows poster on slow/mobile data */
-function HeroVideo({ src, poster }: { src: string; poster: string }) {
+function HeroVideo({ poster }: { poster: string }) {
   const videoRef = useRef<HTMLVideoElement>(null)
-  const [shouldLoad, setShouldLoad] = useState(false)
+  const [src, setSrc] = useState<string | null>(null)
   const [isPlaying, setIsPlaying] = useState(false)
 
   useEffect(() => {
     // Motion preference first: a user who asked for reduced motion gets the
-    // poster, full stop. Then data constraints.
+    // poster, full stop. Then data constraints: Data Saver and 2g keep the
+    // still. 3g (Chrome's label for a 270 ms+ round trip, common on real
+    // phone networks) gets the loop, only later, once the page has settled.
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
     const nav = navigator as Navigator & { connection?: { effectiveType?: string; saveData?: boolean } }
     const conn = nav.connection
-    // 3g included: on a Slow 4G profile (Chrome reports it as 3g) the 2.5 MB
-    // loop starting at load pushed LCP from the 3.9 s poster to a 6.3 s
-    // first video frame. Those visitors keep the still.
-    if (conn?.saveData || conn?.effectiveType === '2g' || conn?.effectiveType === 'slow-2g' || conn?.effectiveType === '3g') {
-      return
-    }
-    // After the page has finished loading (fonts, poster, scripts), then a
-    // beat later. The old 1-second timer fired while the poster and the
-    // checkout bundles were still downloading, and the 22 MB source pushed
-    // a slow-4G load to 7.5 seconds. The loop is now sized for the screen.
-    let timer: ReturnType<typeof setTimeout> | undefined
-    const start = () => { timer = setTimeout(() => setShouldLoad(true), 800) }
-    if (document.readyState === 'complete') start()
-    else window.addEventListener('load', start, { once: true })
-    return () => { window.removeEventListener('load', start); if (timer) clearTimeout(timer) }
+    if (conn?.saveData || conn?.effectiveType === '2g' || conn?.effectiveType === 'slow-2g') return
+    const slow = conn?.effectiveType === '3g'
+
+    // One file per screen size. A phone shows a cover-cropped slice of the
+    // frame, so the bio page's 720x540 cut looks like 1080p did there while
+    // costing a fraction of it.
+    const phone = window.matchMedia('(max-width: 767px)').matches
+    const w = window.innerWidth * Math.min(window.devicePixelRatio || 1, 2)
+    const file = phone ? HERO_VIDEO_PHONE : w <= 900 ? HERO_VIDEO_540 : w <= 1600 ? HERO_VIDEO_720 : HERO_VIDEO_1080
+
+    // Start a beat after the load event (fonts, poster, scripts are in), so
+    // the loop never competes with the poster for LCP. The wait is capped:
+    // on a phone a hanging tracker or a slow third-party script can hold the
+    // load event for many seconds, and the hero used to sit on its still for
+    // that whole time. The cap is measured from hydration, which on a slow
+    // network is already well past the poster's paint.
+    let started = false
+    const go = () => { if (!started) { started = true; setSrc(file) } }
+    let afterLoadTimer: ReturnType<typeof setTimeout> | undefined
+    const afterLoad = () => { afterLoadTimer = setTimeout(go, slow ? 2500 : 800) }
+    if (document.readyState === 'complete') afterLoad()
+    else window.addEventListener('load', afterLoad, { once: true })
+    const cap = setTimeout(go, slow ? 8000 : 4000)
+    return () => { window.removeEventListener('load', afterLoad); if (afterLoadTimer) clearTimeout(afterLoadTimer); clearTimeout(cap) }
   }, [])
 
-  // One file per screen size. A phone shows a cover-cropped slice of the
-  // frame, so 540p there looks like 1080p did while costing a fraction of it.
-  const [chosenSrc, setChosenSrc] = useState(src)
   useEffect(() => {
-    if (window.matchMedia('(max-width: 767px)').matches) { setChosenSrc(HERO_VIDEO_PORTRAIT); return }
-    const w = window.innerWidth * Math.min(window.devicePixelRatio || 1, 2)
-    setChosenSrc(w <= 900 ? HERO_VIDEO_540 : w <= 1600 ? HERO_VIDEO_720 : HERO_VIDEO_1080)
-  }, [src])
-
-  useEffect(() => {
-    if (!shouldLoad || !videoRef.current) return
     const video = videoRef.current
+    if (!src || !video) return
 
+    // The poster fades only once frames are actually moving. 'playing' is
+    // the signal; the first 'timeupdate' is the belt for engines that start
+    // without announcing it.
     const onPlaying = () => setIsPlaying(true)
     video.addEventListener('playing', onPlaying)
+    video.addEventListener('timeupdate', onPlaying, { once: true })
 
-    video.play().catch(() => {})
+    const tryPlay = () => { const p = video.play(); if (p && typeof p.catch === 'function') p.catch(() => {}) }
+    tryPlay()
 
-    return () => video.removeEventListener('playing', onPlaying)
-  }, [shouldLoad])
+    // Measured in WebKit (Sept 2026): with a <source> child, preload="none"
+    // and play() in the same tick, Safari flipped paused to false and then
+    // never fetched the file: readyState stayed 0 with the network idle for
+    // as long as we watched, and the hero sat on its poster. The src
+    // attribute plus preload="auto" avoids it; this watchdog is the belt: if
+    // nothing has arrived after a few seconds, ask for the file again.
+    // Safari has no navigator.connection, so on a slow link metadata can
+    // legitimately still be in flight at 3 s: only re-ask when nothing is
+    // loading either (the stuck state is idle, not loading).
+    const watchdog = setTimeout(() => {
+      if (video.readyState === 0 && !video.error && video.networkState !== HTMLMediaElement.NETWORK_LOADING) { video.load(); tryPlay() }
+    }, 3000)
+
+    // A muted inline loop may still be refused without a gesture (iOS Low
+    // Power Mode, some Android data settings). The first tap, click or key
+    // anywhere on the page is the gesture; the loop starts on it. When the
+    // tab comes back from the background, start it again.
+    const onGesture = () => { if (video.paused) tryPlay() }
+    const gestures: Array<keyof WindowEventMap> = ['touchend', 'pointerup', 'click', 'keydown']
+    gestures.forEach((g) => window.addEventListener(g, onGesture, { passive: true }))
+    const onVisible = () => { if (document.visibilityState === 'visible' && video.paused) tryPlay() }
+    document.addEventListener('visibilitychange', onVisible)
+
+    return () => {
+      video.removeEventListener('playing', onPlaying)
+      video.removeEventListener('timeupdate', onPlaying)
+      gestures.forEach((g) => window.removeEventListener(g, onGesture))
+      document.removeEventListener('visibilitychange', onVisible)
+      clearTimeout(watchdog)
+    }
+  }, [src])
 
   return (
     <>
-      {/* Poster, visible until video is actually playing. A <picture> so a
-          phone gets the portrait first frame of the clip it is about to play
-          (one shot, no scene swap) and desktop keeps the landscape still
-          through the image optimiser. The <img> sits in the server HTML, so
-          the preload scanner finds it before any script runs. */}
+      {/* Poster, visible until the loop is actually playing. A <picture> so a
+          phone gets the first frame of the clip it is about to play and
+          desktop gets the same frame through the image optimiser. The <img>
+          sits in the server HTML, so the preload scanner finds it before any
+          script runs. */}
       <picture>
-        <source media="(max-width: 767px)" srcSet={HERO_POSTER_PORTRAIT} type="image/webp" />
+        <source media="(max-width: 767px)" srcSet={HERO_POSTER_PHONE} type="image/webp" />
         <img
           src={`/_next/image?url=${encodeURIComponent(poster)}&w=1920&q=75`}
           srcSet={`/_next/image?url=${encodeURIComponent(poster)}&w=1200&q=75 1200w, /_next/image?url=${encodeURIComponent(poster)}&w=1920&q=75 1920w`}
@@ -84,6 +120,8 @@ function HeroVideo({ src, poster }: { src: string; poster: string }) {
           alt=""
           fetchPriority="high"
           decoding="async"
+          width={1280}
+          height={720}
           style={{
             position: 'absolute', inset: 0, width: '100%', height: '100%',
             objectFit: 'cover', objectPosition: 'center 35%',
@@ -93,11 +131,14 @@ function HeroVideo({ src, poster }: { src: string; poster: string }) {
           }}
         />
       </picture>
-      {shouldLoad && (
+      {src && (
         <video
           ref={videoRef}
+          src={src}
           muted loop playsInline
-          preload="none"
+          preload="auto"
+          aria-hidden="true"
+          tabIndex={-1}
           style={{
             position: 'absolute', inset: 0,
             width: '100%', height: '100%',
@@ -105,9 +146,7 @@ function HeroVideo({ src, poster }: { src: string; poster: string }) {
             opacity: isPlaying ? 1 : 0,
             transition: 'opacity 1.2s ease',
           }}
-        >
-          <source src={chosenSrc} type="video/mp4" />
-        </video>
+        />
       )}
     </>
   )
@@ -1086,7 +1125,7 @@ export default function FeedView() {
       {/* ═══ HERO, 16/4 desktop, 1/1 mobile ═══ */}
       <section className="hero-section">
         {/* Video background */}
-        <HeroVideo src={HERO_VIDEO} poster={HERO_IMAGE} />
+        <HeroVideo poster={HERO_POSTER} />
         {/* Top scrim for nav readability */}
         <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 140, background: 'linear-gradient(180deg, rgba(0,0,0,0.5) 0%, transparent 100%)', pointerEvents: 'none' }} />
         {/* Bottom-anchored warm scrim, keeps the footage vivid up top while
