@@ -2485,3 +2485,7 @@ a.pf-stat:hover { background: var(--surface); }
   /* Eight hotels before "Show all" on a phone (twelve on wider screens). */
   .fare-panel:not(.is-all) .fare-row:nth-child(n + 9) { display: none; }
 }
+
+/* Contact page social tiles: the same four glyphs as the footer. */
+.contact-social svg { width: 20px; height: 20px; display: block; }
+.contact-social:hover, .contact-social:focus-visible { color: var(--text-primary); background: #fff; box-shadow: 0 0 0 1px var(--border); }

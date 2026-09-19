@@ -25,6 +25,11 @@ interface Redemption { coupon_id: string; booking_id: string | null; email: stri
 
 type Filter = 'all' | 'active' | 'used' | 'paused' | 'expired' | 'void'
 
+interface EditDraft {
+  kind: 'percent' | 'fixed'; value: string; appliesTo: 'tour' | 'transfer' | 'both'
+  maxUses: string; usesPerEmail: string; minTotal: string; expiresAt: string; email: string; note: string
+}
+
 const BADGE: Record<string, { bg: string; fg: string; label: string }> = {
   active:  { bg: '#E3F3EA', fg: '#0F7B4F', label: 'Live' },
   used:    { bg: '#EEEDE9', fg: '#4E4C47', label: 'Used' },
@@ -64,6 +69,11 @@ export default function CouponDesk() {
   const [busy, setBusy] = useState<string | null>(null)
   const [confirmVoid, setConfirmVoid] = useState<string | null>(null)
   const [open, setOpen] = useState<string | null>(null)
+  // The card being edited and its draft. One at a time.
+  const [editing, setEditing] = useState<string | null>(null)
+  const [draft, setDraft] = useState<EditDraft | null>(null)
+  const [editError, setEditError] = useState<string | null>(null)
+  const [saving, setSaving] = useState(false)
   const [creating, setCreating] = useState(false)
   // The card just created, so the eye lands on it after the list reloads.
   const [justMade, setJustMade] = useState<string | null>(null)
@@ -144,6 +154,36 @@ export default function CouponDesk() {
       setNote('That did not work. Please try again.')
     } finally {
       setBusy(null)
+    }
+  }
+
+  function startEdit(c: Coupon) {
+    setEditing(c.id); setEditError(null); setConfirmVoid(null)
+    setDraft({
+      kind: c.kind, value: String(Number(c.value)), appliesTo: c.applies_to,
+      maxUses: c.max_uses == null ? '' : String(c.max_uses), usesPerEmail: c.uses_per_email == null ? '' : String(c.uses_per_email),
+      minTotal: c.min_total == null ? '' : String(Number(c.min_total)), expiresAt: c.expires_at ? c.expires_at.slice(0, 10) : '',
+      email: c.email ?? '', note: c.note ?? '',
+    })
+  }
+
+  async function saveEdit(id: string) {
+    if (!draft) return
+    setSaving(true); setEditError(null)
+    try {
+      const res = await fetch('/api/admin/coupons', {
+        method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, action: 'update', kind: draft.kind, value: Number(draft.value), appliesTo: draft.appliesTo, maxUses: draft.maxUses.trim() ? Number(draft.maxUses) : null, usesPerEmail: draft.usesPerEmail.trim() ? Number(draft.usesPerEmail) : null, minTotal: draft.minTotal.trim() || null, expiresAt: draft.expiresAt ? `${draft.expiresAt}T23:59:59-05:00` : null, email: draft.email.trim() || undefined, note: draft.note.trim() || undefined }),
+      })
+      const data = await res.json()
+      if (!res.ok) { setEditError(data.error ?? 'That did not work.'); return }
+      setNote(`Saved ${data.coupon.code}: ${describeCoupon(data.coupon)}.`)
+      setEditing(null); setDraft(null)
+      await load()
+    } catch {
+      setEditError('That did not work. Please try again.')
+    } finally {
+      setSaving(false)
     }
   }
 
@@ -282,6 +322,7 @@ export default function CouponDesk() {
 
               <div style={{ marginTop: 14, display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
                 {uses.length > 0 && <Action label={isOpen ? 'Hide uses' : `Show ${uses.length} use${uses.length === 1 ? '' : 's'}`} onClick={() => setOpen(isOpen ? null : c.id)} busy={false} />}
+                {c.status !== 'void' && editing !== c.id && <Action label="Edit" onClick={() => startEdit(c)} busy={false} />}
                 {c.status === 'active' && <Action label="Pause" onClick={() => act(c.id, 'pause')} busy={busy === c.id + 'pause'} />}
                 {c.status === 'paused' && <Action label="Resume" onClick={() => act(c.id, 'resume')} busy={busy === c.id + 'resume'} />}
                 {c.status !== 'void' && confirmVoid !== c.id && <Action label="Void" danger onClick={() => setConfirmVoid(c.id)} busy={false} />}
@@ -293,6 +334,73 @@ export default function CouponDesk() {
                   </>
                 )}
               </div>
+
+              {editing === c.id && draft && (
+                <form onSubmit={(e) => { e.preventDefault(); void saveEdit(c.id) }} style={{ marginTop: 14, padding: '14px 16px', borderRadius: 12, background: '#FAF9F7', border }}>
+                  <p style={{ margin: '0 0 10px', fontSize: 13, fontWeight: 700, color: ink }}>Editing {c.code}. The code and its uses so far stay as they are.</p>
+                  <div style={{ display: 'grid', gap: 12, gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))' }}>
+                    <div>
+                      <span style={label}>Discount</span>
+                      <div role="group" aria-label="Discount kind" style={{ display: 'flex', border: '1px solid rgba(0,0,0,0.16)', borderRadius: 10, overflow: 'hidden', height: 44 }}>
+                        {(['percent', 'fixed'] as const).map((k) => (
+                          <button key={k} type="button" aria-pressed={draft.kind === k} onClick={() => setDraft({ ...draft, kind: k })}
+                            style={{ flex: 1, border: 'none', background: draft.kind === k ? ink : '#fff', color: draft.kind === k ? '#fff' : ink, fontFamily: dm, fontWeight: 600, fontSize: 14, cursor: 'pointer' }}>
+                            {k === 'percent' ? 'Percent' : 'Dollars'}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    <div>
+                      <label style={label} htmlFor={`ed-value-${c.id}`}>{draft.kind === 'percent' ? 'Percent off' : 'Dollars off'}</label>
+                      <input id={`ed-value-${c.id}`} style={input} inputMode="decimal" value={draft.value} onChange={(e) => setDraft({ ...draft, value: e.target.value })} required />
+                    </div>
+                    <div>
+                      <span style={label}>Applies to</span>
+                      <div role="group" aria-label="Applies to" style={{ display: 'flex', border: '1px solid rgba(0,0,0,0.16)', borderRadius: 10, overflow: 'hidden', height: 44 }}>
+                        {([['both', 'Both'], ['tour', 'Tours'], ['transfer', 'Rides']] as const).map(([k, l]) => (
+                          <button key={k} type="button" aria-pressed={draft.appliesTo === k} onClick={() => setDraft({ ...draft, appliesTo: k })}
+                            style={{ flex: 1, border: 'none', background: draft.appliesTo === k ? ink : '#fff', color: draft.appliesTo === k ? '#fff' : ink, fontFamily: dm, fontWeight: 600, fontSize: 14, cursor: 'pointer' }}>
+                            {l}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    <div>
+                      <label style={label} htmlFor={`ed-uses-${c.id}`}>Uses in total <span style={{ fontWeight: 500 }}>(blank = unlimited)</span></label>
+                      <input id={`ed-uses-${c.id}`} style={input} inputMode="numeric" value={draft.maxUses} onChange={(e) => setDraft({ ...draft, maxUses: e.target.value })} placeholder="Unlimited" />
+                    </div>
+                    <div>
+                      <label style={label} htmlFor={`ed-per-${c.id}`}>Uses per guest <span style={{ fontWeight: 500 }}>(blank = no limit)</span></label>
+                      <input id={`ed-per-${c.id}`} style={input} inputMode="numeric" value={draft.usesPerEmail} onChange={(e) => setDraft({ ...draft, usesPerEmail: e.target.value })} placeholder="No limit" />
+                    </div>
+                    <div>
+                      <label style={label} htmlFor={`ed-exp-${c.id}`}>Expires <span style={{ fontWeight: 500 }}>(blank = never)</span></label>
+                      <input id={`ed-exp-${c.id}`} style={input} type="date" value={draft.expiresAt} onChange={(e) => setDraft({ ...draft, expiresAt: e.target.value })} />
+                    </div>
+                    <div>
+                      <label style={label} htmlFor={`ed-min-${c.id}`}>Minimum booking <span style={{ fontWeight: 500 }}>(optional, $)</span></label>
+                      <input id={`ed-min-${c.id}`} style={input} inputMode="decimal" value={draft.minTotal} onChange={(e) => setDraft({ ...draft, minTotal: e.target.value })} placeholder="None" />
+                    </div>
+                    <div>
+                      <label style={label} htmlFor={`ed-email-${c.id}`}>Only for this email <span style={{ fontWeight: 500 }}>(optional)</span></label>
+                      <input id={`ed-email-${c.id}`} style={input} type="email" inputMode="email" value={draft.email} onChange={(e) => setDraft({ ...draft, email: e.target.value })} placeholder="Anyone" />
+                    </div>
+                    <div>
+                      <label style={label} htmlFor={`ed-note-${c.id}`}>Note</label>
+                      <input id={`ed-note-${c.id}`} style={input} value={draft.note} onChange={(e) => setDraft({ ...draft, note: e.target.value })} />
+                    </div>
+                  </div>
+                  <p style={{ marginTop: 12, fontSize: 14, color: soft }}>This coupon will be: <strong style={{ color: ink }}>{describeCoupon({ kind: draft.kind, value: Number(draft.value) || 0, applies_to: draft.appliesTo, max_uses: draft.maxUses.trim() ? Number(draft.maxUses) : null, uses_per_email: draft.usesPerEmail.trim() ? Number(draft.usesPerEmail) : null, email: draft.email.trim() || null, min_total: draft.minTotal.trim() ? Number(draft.minTotal) : null, expires_at: draft.expiresAt ? `${draft.expiresAt}T23:59:59-05:00` : null })}</strong>.</p>
+                  {editError && <p role="alert" style={{ marginTop: 8, fontSize: 14, fontWeight: 600, color: '#B3261E' }}>{editError}</p>}
+                  <div style={{ marginTop: 12, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                    <button type="submit" disabled={saving}
+                      style={{ height: 44, padding: '0 22px', borderRadius: 10, border: 'none', background: ink, color: '#fff', fontFamily: dm, fontWeight: 600, fontSize: 14, cursor: saving ? 'wait' : 'pointer', opacity: saving ? 0.7 : 1 }}>
+                      {saving ? 'Saving…' : 'Save changes'}
+                    </button>
+                    <Action label="Cancel" onClick={() => { setEditing(null); setDraft(null); setEditError(null) }} busy={false} />
+                  </div>
+                </form>
+              )}
 
               {isOpen && (
                 <ul style={{ margin: '12px 0 0', padding: 0, listStyle: 'none', display: 'grid', gap: 6, fontSize: 13, color: soft }}>

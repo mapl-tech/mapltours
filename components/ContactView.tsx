@@ -2,7 +2,8 @@
 
 import { useState } from 'react'
 import Image from 'next/image'
-import { Leaf, Send, Check, Camera, Music2 } from 'lucide-react'
+import { Leaf, Send, Check } from 'lucide-react'
+import { SOCIALS } from '@/components/Socials'
 import { DESTINATION_IMAGES } from '@/lib/experiences'
 import { trackLead } from '@/lib/analytics'
 import AskFirst from '@/components/AskFirst'
@@ -113,18 +114,16 @@ export default function ContactView() {
               <p style={{ fontSize: 12, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-sans)', marginBottom: 12 }}>
                 Follow us
               </p>
-              <div style={{ display: 'flex', gap: 10 }}>
-                {[
-                  { icon: <Camera size={16} />, label: 'Instagram', href: 'https://www.instagram.com/mapltoursjamaica' },
-                  { icon: <Music2 size={16} />, label: 'TikTok', href: 'https://www.tiktok.com/@mapltoursjamaica' },
-                ].map((s) => (
+              <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                {SOCIALS.map((s) => (
                   <a
                     key={s.label}
                     href={s.href}
                     target="_blank"
                     rel="noopener noreferrer"
-                    aria-label={`MAPL Tours on ${s.label}`}
+                    aria-label={`MAPL Tours Jamaica on ${s.label}`}
                     title={s.label}
+                    className="contact-social"
                     style={{
                       width: 44, height: 44, borderRadius: 'var(--r-md)',
                       background: 'var(--surface)', display: 'flex',
@@ -133,7 +132,7 @@ export default function ContactView() {
                       transition: 'all 0.15s ease', textDecoration: 'none',
                     }}
                   >
-                    {s.icon}
+                    <span style={{ width: 20, height: 20, display: 'block' }}>{s.icon}</span>
                   </a>
                 ))}
               </div>

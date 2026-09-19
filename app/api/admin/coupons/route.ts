@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { createClient as createServerSupabase } from '@/lib/supabase/server'
 import { createServiceClient } from '@/lib/supabase/service'
 import { generateCouponCode, normalizeCouponCode, normalizeEmail, type CouponRow } from '@/lib/coupons'
+import { parseCouponFields } from '@/lib/coupon-admin'
 
 /**
  * Coupon desk.
@@ -12,6 +13,7 @@ import { generateCouponCode, normalizeCouponCode, normalizeEmail, type CouponRow
  *   GET   ?q=&status=        list, newest first, with each code's redemptions
  *   POST  { ...fields }      create one (the only place a word code is born)
  *   PATCH { id, action }     pause | resume | void
+ *   PATCH { id, action: 'update', ...fields }   change a live code's rules
  *
  * Nothing here can create an invalid coupon: kind, value, uses, dates and
  * the email binding are validated before the insert, and the row's own
@@ -73,50 +75,23 @@ export async function POST(req: Request) {
   let b: Record<string, unknown> = {}
   try { b = await req.json() } catch { return NextResponse.json({ error: 'Invalid request' }, { status: 400 }) }
 
-  const kind = b.kind === 'fixed' ? 'fixed' : b.kind === 'percent' ? 'percent' : null
-  if (!kind) return NextResponse.json({ error: 'Pick percent or a fixed amount.' }, { status: 400 })
-  const value = Number(b.value)
-  if (!Number.isFinite(value) || value <= 0) return NextResponse.json({ error: 'The value must be a number above zero.' }, { status: 400 })
-  if (kind === 'percent' && (value > 100 || !Number.isInteger(value))) return NextResponse.json({ error: 'A percent is a whole number from 1 to 100.' }, { status: 400 })
-  if (kind === 'fixed' && value > 1000) return NextResponse.json({ error: 'A fixed amount is at most $1,000.' }, { status: 400 })
-
-  // Blank means unlimited. A number is a hard overall ceiling.
-  const maxUses = b.maxUses == null || b.maxUses === '' ? null : Math.round(Number(b.maxUses))
-  if (maxUses != null && (!Number.isFinite(maxUses) || maxUses < 1 || maxUses > 100000)) return NextResponse.json({ error: 'Uses is blank for unlimited, or a number from 1 to 100,000.' }, { status: 400 })
-
-  // How many times one email address may redeem it. Blank means no limit.
-  const usesPerEmail = b.usesPerEmail == null || b.usesPerEmail === '' ? null : Math.round(Number(b.usesPerEmail))
-  if (usesPerEmail != null && (!Number.isFinite(usesPerEmail) || usesPerEmail < 1 || usesPerEmail > 100)) return NextResponse.json({ error: 'Per guest is blank for no limit, or a number from 1 to 100.' }, { status: 400 })
-
-  const appliesTo = b.appliesTo == null || b.appliesTo === '' ? 'both' : b.appliesTo
-  if (appliesTo !== 'tour' && appliesTo !== 'transfer' && appliesTo !== 'both') return NextResponse.json({ error: 'Pick tours, airport rides, or both.' }, { status: 400 })
+  const parsed = parseCouponFields(b)
+  if (!parsed.ok) return NextResponse.json({ error: parsed.error }, { status: 400 })
+  const f = parsed.fields
 
   const emailRaw = typeof b.email === 'string' ? normalizeEmail(b.email) : ''
   if (emailRaw && !EMAIL_RE.test(emailRaw)) return NextResponse.json({ error: 'That email address does not look right.' }, { status: 400 })
-
-  const minTotal = b.minTotal == null || b.minTotal === '' ? null : Number(b.minTotal)
-  if (minTotal != null && (!Number.isFinite(minTotal) || minTotal < 0 || minTotal > 100000)) return NextResponse.json({ error: 'The minimum must be a dollar amount.' }, { status: 400 })
-
-  let expiresAt: string | null = null
-  if (b.expiresAt) {
-    const t = Date.parse(String(b.expiresAt))
-    if (!Number.isFinite(t)) return NextResponse.json({ error: 'The expiry date is not a date.' }, { status: 400 })
-    if (t < Date.now()) return NextResponse.json({ error: 'The expiry date is in the past.' }, { status: 400 })
-    expiresAt = new Date(t).toISOString()
-  }
 
   let code: string | null = null
   if (typeof b.code === 'string' && b.code.trim()) {
     code = normalizeCouponCode(b.code)
     if (!code) return NextResponse.json({ error: 'A code is 4 to 24 letters and digits.' }, { status: 400 })
   }
-  const note = typeof b.note === 'string' ? b.note.slice(0, 300) : null
-
   for (let attempt = 0; attempt < 3; attempt++) {
     const tryCode = code ?? generateCouponCode()
     const { data, error } = await svc
       .from('coupons')
-      .insert({ code: tryCode, kind, value, applies_to: appliesTo, email: emailRaw || null, max_uses: maxUses, uses_per_email: usesPerEmail, min_total: minTotal, expires_at: expiresAt, status: 'active', source: 'admin', note, created_by: gate.user!.id })
+      .insert({ code: tryCode, ...f, email: emailRaw || null, status: 'active', source: 'admin', created_by: gate.user!.id })
       .select(COLS)
       .single<CouponRow>()
     if (!error && data) return NextResponse.json({ coupon: data })
@@ -134,10 +109,30 @@ export async function PATCH(req: Request) {
   if (gate.error) return gate.error
   const svc = gate.svc!
 
-  let b: { id?: unknown; action?: unknown } = {}
+  let b: Record<string, unknown> = {}
   try { b = await req.json() } catch { return NextResponse.json({ error: 'Invalid request' }, { status: 400 }) }
   const id = typeof b.id === 'string' ? b.id : ''
   if (!/^[0-9a-f-]{36}$/i.test(id)) return NextResponse.json({ error: 'Unknown coupon.' }, { status: 400 })
+
+  // Editing a live code's rules. The code itself and its status are not
+  // editable here (a code is an identity; pause/resume/void move status),
+  // and a void code stays void.
+  if (b.action === 'update') {
+    const parsed = parseCouponFields(b)
+    if (!parsed.ok) return NextResponse.json({ error: parsed.error }, { status: 400 })
+    const emailRaw = typeof b.email === 'string' ? normalizeEmail(b.email) : ''
+    if (emailRaw && !EMAIL_RE.test(emailRaw)) return NextResponse.json({ error: 'That email address does not look right.' }, { status: 400 })
+    const { data, error } = await svc
+      .from('coupons')
+      .update({ ...parsed.fields, email: emailRaw || null, updated_at: new Date().toISOString() })
+      .eq('id', id)
+      .neq('status', 'void')
+      .select(COLS)
+      .maybeSingle<CouponRow>()
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+    if (!data) return NextResponse.json({ error: 'That coupon is void or does not exist.' }, { status: 404 })
+    return NextResponse.json({ ok: true, coupon: data })
+  }
 
   const next = b.action === 'pause' ? 'paused' : b.action === 'resume' ? 'active' : b.action === 'void' ? 'void' : null
   if (!next) return NextResponse.json({ error: 'Unknown action.' }, { status: 400 })
