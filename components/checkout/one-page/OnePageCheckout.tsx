@@ -625,6 +625,10 @@ function OrderSummary(p: {
 }) {
   const { items, formatUsd, t } = p
   const [codeOpen, setCodeOpen] = useState(false)
+  // The toggle leaves the DOM when the field opens, so focus has to be moved
+  // to the field or a keyboard user is dropped on the page body.
+  const codeRef = useRef<HTMLInputElement>(null)
+  useEffect(() => { if (codeOpen) codeRef.current?.focus() }, [codeOpen])
   const canApply = !p.codeChecking && p.codeInput.trim().length >= 4
   return (
     <Card>
@@ -717,7 +721,7 @@ function OrderSummary(p: {
         {codeOpen || p.codeError ? (
           <div style={{ marginTop: 10 }}>
             <div style={{ display: 'flex', gap: 8 }}>
-              <input value={p.codeInput} onChange={(e) => { p.setCodeInput(e.target.value) }} onKeyDown={(e) => { if (e.key === 'Enter' && canApply) { e.preventDefault(); p.applyCode() } }} placeholder="Enter your code" aria-label="Coupon or gift card code" className="field-input" autoCapitalize="characters" autoCorrect="off" spellCheck={false}
+              <input ref={codeRef} value={p.codeInput} onChange={(e) => { p.setCodeInput(e.target.value) }} onKeyDown={(e) => { if (e.key === 'Enter' && canApply) { e.preventDefault(); p.applyCode() } }} placeholder="Enter your code" aria-label="Coupon or gift card code" className="field-input" autoCapitalize="characters" autoCorrect="off" spellCheck={false}
                 style={{ flex: 1, minWidth: 0, height: 44, fontSize: 16, background: '#fff', textTransform: 'uppercase' }} />
               <button type="button" onClick={p.applyCode} disabled={!canApply} className="btn-outline"
                 style={{ height: 44, padding: '0 16px', fontSize: 13, fontWeight: 600, whiteSpace: 'nowrap', opacity: canApply ? 1 : 0.5 }}>
