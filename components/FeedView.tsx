@@ -1104,9 +1104,11 @@ export default function FeedView() {
           // edge read grey against the black section that follows it.
           // Measured on the portrait loop (Sept 2026): with the old 26% stop
           // at the headline's height, white text over the surf and sand
-          // came out at 1:1 to 1.9:1. The band under the text now holds
-          // 72 to 90% and the fade to clear happens above the headline.
-          background: 'linear-gradient(0deg, rgb(17,17,16) 0%, rgba(10,10,8,0.92) 18%, rgba(8,8,6,0.84) 40%, rgba(8,8,6,0.74) 62%, rgba(8,8,6,0.4) 84%, transparent 100%)',
+          // came out at 1:1 to 1.9:1. The band under the text then held
+          // 72 to 90%. Eased a step (Sept 19) for the montage, whose clips
+          // are darker than the Negril shallows: the jet-ski shot was
+          // disappearing under the 74 to 84% band.
+          background: 'linear-gradient(0deg, rgb(17,17,16) 0%, rgba(10,10,8,0.88) 18%, rgba(8,8,6,0.74) 40%, rgba(8,8,6,0.6) 62%, rgba(8,8,6,0.3) 84%, transparent 100%)',
           pointerEvents: 'none',
         }} />
         <div className="container" style={{ position: 'relative', zIndex: 1, paddingBottom: 'clamp(40px, 6vw, 72px)' }}>
