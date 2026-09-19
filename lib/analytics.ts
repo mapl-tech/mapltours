@@ -302,7 +302,7 @@ export function trackContactClick(method: 'whatsapp' | 'email', place: string): 
 }
 
 export function trackLead(
-  source: 'contact_form' | 'unlisted_hotel' | 'popup_home' | 'popup_explore',
+  source: 'contact_form' | 'unlisted_hotel' | 'popup_home' | 'popup_explore' | 'popup_transfers',
   /** Same id the server sends to the Conversions API, so Meta counts one lead. */
   eventId?: string,
 ): void {

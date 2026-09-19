@@ -8,7 +8,6 @@ import { Check, Copy, X } from 'lucide-react'
 import { useFocusTrap } from '@/lib/use-focus-trap'
 import { getStoredAttribution, trackingOptedOut } from '@/lib/attribution'
 import { trackLead } from '@/lib/analytics'
-import { HERO_POSTER, HERO_POSTER_PHONE } from '@/lib/images'
 import {
   POPUP_CODE,
   POPUP_DELAY_MS,
@@ -38,12 +37,13 @@ const RETRY_MS = 2000
 const CLOSE_MS = 180
 
 type Phase = 'idle' | 'busy' | 'done'
+type Place = 'home' | 'explore' | 'transfers'
 
 export default function CouponPopup() {
   const pathname = usePathname()
   const [open, setOpen] = useState(false)
   const [closing, setClosing] = useState(false)
-  const place: 'home' | 'explore' = pathname === '/explore' ? 'explore' : 'home'
+  const place: Place = pathname === '/explore' ? 'explore' : pathname === '/transfers' ? 'transfers' : 'home'
 
   useEffect(() => {
     if (!popupPathEligible(pathname)) return
@@ -82,7 +82,7 @@ export default function CouponPopup() {
   return <Sheet place={place} closing={closing} onClose={requestClose} />
 }
 
-function Sheet({ place, closing, onClose }: { place: 'home' | 'explore'; closing: boolean; onClose: () => void }) {
+function Sheet({ place, closing, onClose }: { place: Place; closing: boolean; onClose: () => void }) {
   const titleId = useId()
   const descId = useId()
   const errorId = useId()
@@ -97,6 +97,9 @@ function Sheet({ place, closing, onClose }: { place: 'home' | 'explore'; closing
   const [error, setError] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
   const [code, setCode] = useState(POPUP_CODE)
+  // While the field has focus on a phone the card moves to the top of the
+  // screen, so the keyboard rising from the bottom never covers it.
+  const [typing, setTyping] = useState(false)
 
   useEffect(() => {
     const prev = document.body.style.overflow
@@ -138,7 +141,7 @@ function Sheet({ place, closing, onClose }: { place: 'home' | 'explore'; closing
       }
       if (j.code) setCode(j.code)
       useCouponPopupStore.getState().markDone(Date.now())
-      trackLead(place === 'home' ? 'popup_home' : 'popup_explore', eventId)
+      trackLead(place === 'home' ? 'popup_home' : place === 'explore' ? 'popup_explore' : 'popup_transfers', eventId)
       setPhase('done')
     } catch {
       setError('We could not send it just now. Try again in a moment.')
@@ -166,7 +169,7 @@ function Sheet({ place, closing, onClose }: { place: 'home' | 'explore'; closing
 
   return createPortal(
     <div
-      className={`cpop-scrim${closing ? ' closing' : ''}`}
+      className={`cpop-scrim${closing ? ' closing' : ''}${typing ? ' cpop-scrim--typing' : ''}`}
       onPointerDown={(e) => { scrimPress.current = e.target === e.currentTarget }}
       onClick={(e) => {
         if (scrimPress.current && e.target === e.currentTarget) onClose()
@@ -183,14 +186,14 @@ function Sheet({ place, closing, onClose }: { place: 'home' | 'explore'; closing
         className="cpop-panel"
         data-phase={phase}
       >
-        {/* The home hero's own posters (49 KB phone, 120 KB desktop), so on
-            the home page this costs nothing and on explore it is small. */}
+        {/* The parasail frame from the cold ad, cut for each viewport (12 KB
+            wide, 37 KB tall). The offer sits on it in display type. */}
         <div className="cpop-photo" aria-hidden="true">
           <picture>
-            <source media="(min-width: 720px)" srcSet={HERO_POSTER} type="image/webp" />
-            <img src={HERO_POSTER_PHONE} alt="" width={720} height={540} decoding="async" loading="eager" />
+            <source media="(min-width: 720px)" srcSet="/media/popup/parasail-tall.webp" type="image/webp" />
+            <img src="/media/popup/parasail-wide.webp" alt="" width={720} height={400} decoding="async" loading="eager" />
           </picture>
-          <span className="cpop-pill">{POPUP_PERCENT}% off</span>
+          <span className="cpop-offer"><b>{POPUP_PERCENT}%</b><span>off</span></span>
         </div>
         <button type="button" className="cpop-close" onClick={onClose} aria-label="Close">
           <X size={18} aria-hidden />
@@ -218,6 +221,8 @@ function Sheet({ place, closing, onClose }: { place: 'home' | 'explore'; closing
                   placeholder="you@example.com"
                   value={email}
                   onChange={(e) => { setEmail(e.target.value); if (error) setError(null) }}
+                  onFocus={() => setTyping(true)}
+                  onBlur={() => setTyping(false)}
                   aria-invalid={error ? true : undefined}
                   aria-describedby={error ? errorId : undefined}
                   disabled={phase === 'busy'}
@@ -236,7 +241,7 @@ function Sheet({ place, closing, onClose }: { place: 'home' | 'explore'; closing
                 {error && (
                   <p id={errorId} role="alert" className="cpop-error">{error}</p>
                 )}
-                <button type="submit" className="btn-primary cpop-cta" disabled={phase === 'busy'} aria-busy={phase === 'busy'}>
+                <button type="submit" className="cpop-cta" disabled={phase === 'busy'} aria-busy={phase === 'busy'}>
                   {phase === 'busy' ? 'Sending your code…' : 'Send my code'}
                 </button>
               </form>
@@ -256,9 +261,9 @@ function Sheet({ place, closing, onClose }: { place: 'home' | 'explore'; closing
               </div>
               <span className="visually-hidden" aria-live="polite">{copied ? `${code} copied to the clipboard` : ''}</span>
               {place === 'home' ? (
-                <Link href="/explore" className="btn-primary cpop-cta" onClick={onClose}>Choose a tour</Link>
+                <Link href="/explore" className="cpop-cta" onClick={onClose}>Choose a tour</Link>
               ) : (
-                <button type="button" className="btn-primary cpop-cta" onClick={onClose}>Keep browsing</button>
+                <button type="button" className="cpop-cta" onClick={onClose}>Keep browsing</button>
               )}
               <p className="cpop-trust">Not in your inbox in a minute? Check the promotions or spam folder.</p>
             </div>

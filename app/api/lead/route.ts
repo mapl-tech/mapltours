@@ -20,7 +20,7 @@ export const runtime = 'nodejs'
 
 const UPSTREAM = process.env.LEAD_UPSTREAM_URL || 'https://bio.mapltours.com/api/lead'
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/
-const PLACES = new Set(['home', 'explore'])
+const PLACES = new Set(['home', 'explore', 'transfers'])
 const FALLBACK_CODE = 'JAMAICA5'
 const GENERIC = 'We could not send it just now. Try again in a moment.'
 

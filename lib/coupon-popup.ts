@@ -4,8 +4,8 @@ import { persist } from 'zustand/middleware'
 /**
  * The 5% code popup: when it may appear, and the memory that decides it.
  *
- * The rules, as the owner set them (Sept 2026): only on the home page and
- * the explore page, only after ten seconds on the page, at most once a day,
+ * The rules, as the owner set them (Sept 2026): only on the home page, the
+ * explore page and the transfers page, only after ten seconds on the page, at most once a day,
  * and once it has been shown not again for seven days. The seven-day rest
  * already guarantees the once-a-day rule, so one timestamp carries both.
  * A guest who took the code never sees it again: they have it.
@@ -26,9 +26,10 @@ export interface PopupMemory {
   doneAt: number | null
 }
 
-/** Only the two pages the owner asked for; nothing else, ever. */
+/** Only the three pages the owner asked for; nothing else, ever. The transfers
+ *  checkout and confirm pages are not "the transfers page". */
 export function popupPathEligible(pathname: string): boolean {
-  return pathname === '/' || pathname === '/explore'
+  return pathname === '/' || pathname === '/explore' || pathname === '/transfers'
 }
 
 export function shouldShowPopup(input: {

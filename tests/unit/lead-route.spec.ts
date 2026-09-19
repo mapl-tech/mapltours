@@ -92,6 +92,11 @@ describe('POST /api/lead (the 5% code popup)', () => {
     expect(((await r.json()) as { error: string }).error).toBe('We could not send it just now. Try again in a moment.')
   })
 
+  test('the transfers page is a known place', async () => {
+    await POST(req({ email: 'guest@example.com', place: 'transfers', page: 'https://mapltours.com/transfers' }))
+    expect(calls.find((c) => c.url.includes('bio.mapltours.com'))!.body.source).toBe('popup-transfers')
+  })
+
   test('an unknown place is treated as home; a stray page URL is dropped', async () => {
     await POST(req({ email: 'guest@example.com', place: '../admin', page: 'javascript:alert(1)' }))
     const up = calls.find((c) => c.url.includes('bio.mapltours.com'))!

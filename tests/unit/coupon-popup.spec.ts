@@ -11,10 +11,11 @@ describe('the 5% code popup rules', () => {
     expect(POPUP_COOLDOWN_MS).toBe(7 * DAY)
   })
 
-  test('only the home page and the explore page', () => {
+  test('only the home, explore and transfers pages', () => {
     expect(popupPathEligible('/')).toBe(true)
     expect(popupPathEligible('/explore')).toBe(true)
-    for (const p of ['/checkout', '/transfers', '/experience/ricks-cafe', '/explore/', '/blog', '/admin', '/login']) {
+    expect(popupPathEligible('/transfers')).toBe(true)
+    for (const p of ['/checkout', '/transfers/checkout', '/transfers/confirm', '/transfers/sandals-negril', '/experience/ricks-cafe', '/explore/', '/blog', '/admin', '/login']) {
       expect(popupPathEligible(p), p).toBe(false)
       expect(shouldShowPopup({ pathname: p, memory: fresh, now })).toBe(false)
     }
@@ -23,6 +24,7 @@ describe('the 5% code popup rules', () => {
   test('a first visit on an eligible page shows it', () => {
     expect(shouldShowPopup({ pathname: '/', memory: fresh, now })).toBe(true)
     expect(shouldShowPopup({ pathname: '/explore', memory: fresh, now })).toBe(true)
+    expect(shouldShowPopup({ pathname: '/transfers', memory: fresh, now })).toBe(true)
   })
 
   test('once shown, not again for seven days: this covers once a day too', () => {
