@@ -58,6 +58,8 @@ interface ConfirmData {
   bookingFee: number | null
   transportCost: number | null
   rewardDiscount: number | null
+  couponCode: string | null
+  couponDiscount: number | null
   totalPaid: number | null
   currency: string
   items: ConfirmedItem[]
@@ -79,6 +81,8 @@ function emptyData(): ConfirmData {
     bookingFee: null,
     transportCost: null,
     rewardDiscount: null,
+    couponCode: null,
+    couponDiscount: null,
     totalPaid: null,
     currency: 'USD',
     items: [],
@@ -135,7 +139,7 @@ async function resolveConfirm(
   let { data: booking } = await supabase
     .from('bookings')
     .select(
-      'id, email, first_name, last_name, phone, country, pickup, dropoff, special_requests, subtotal, booking_fee, transport_cost, reward_discount, total_paid, currency, paid_at, booking_type',
+      'id, email, first_name, last_name, phone, country, pickup, dropoff, special_requests, subtotal, booking_fee, transport_cost, reward_discount, coupon_code, coupon_discount, total_paid, currency, paid_at, booking_type',
     )
     .eq('stripe_payment_id', piId)
     .eq('booking_type', 'tour')
@@ -145,7 +149,7 @@ async function resolveConfirm(
     const { data: byMeta } = await supabase
       .from('bookings')
       .select(
-        'id, email, first_name, last_name, phone, country, pickup, dropoff, special_requests, subtotal, booking_fee, transport_cost, reward_discount, total_paid, currency, paid_at, booking_type',
+        'id, email, first_name, last_name, phone, country, pickup, dropoff, special_requests, subtotal, booking_fee, transport_cost, reward_discount, coupon_code, coupon_discount, total_paid, currency, paid_at, booking_type',
       )
       .eq('id', pi.metadata.booking_id)
       .eq('booking_type', 'tour')
@@ -185,6 +189,8 @@ async function resolveConfirm(
     bookingFee: booking?.booking_fee != null ? Number(booking.booking_fee) : null,
     transportCost: booking?.transport_cost != null ? Number(booking.transport_cost) : null,
     rewardDiscount: booking?.reward_discount != null ? Number(booking.reward_discount) : null,
+    couponCode: (booking as { coupon_code?: string | null } | null)?.coupon_code ?? null,
+    couponDiscount: (booking as { coupon_discount?: number | string | null } | null)?.coupon_discount != null ? Number((booking as { coupon_discount?: number | string | null }).coupon_discount) : null,
     totalPaid: booking?.total_paid != null ? Number(booking.total_paid) : pi.amount / 100,
     currency: (booking?.currency ?? pi.currency ?? 'usd').toUpperCase(),
     items: (items ?? []).map((i) => {
@@ -219,7 +225,7 @@ async function resolveConfirmFromBooking(bookingId: string): Promise<ConfirmData
   const { data: booking } = await supabase
     .from('bookings')
     .select(
-      'id, first_name, subtotal, booking_fee, transport_cost, reward_discount, total_paid, currency, paid_at, status, booking_type, gift_card_amount',
+      'id, first_name, subtotal, booking_fee, transport_cost, reward_discount, coupon_code, coupon_discount, total_paid, currency, paid_at, status, booking_type, gift_card_amount',
     )
     .eq('id', bookingId)
     .eq('booking_type', 'tour')
@@ -249,6 +255,8 @@ async function resolveConfirmFromBooking(bookingId: string): Promise<ConfirmData
     bookingFee: booking.booking_fee != null ? Number(booking.booking_fee) : null,
     transportCost: booking.transport_cost != null ? Number(booking.transport_cost) : null,
     rewardDiscount: booking.reward_discount != null ? Number(booking.reward_discount) : null,
+    couponCode: (booking as { coupon_code?: string | null }).coupon_code ?? null,
+    couponDiscount: (booking as { coupon_discount?: number | string | null }).coupon_discount != null ? Number((booking as { coupon_discount?: number | string | null }).coupon_discount) : null,
     totalPaid: booking.total_paid != null ? Number(booking.total_paid) : null,
     currency: (booking.currency ?? 'usd').toUpperCase(),
     items: (items ?? []).map((i) => {
@@ -370,7 +378,8 @@ function Success({ data }: { data: ConfirmData }) {
   // `bookingFee` is MAPL's margin, so neither is shown to the customer.
   const showBreakdown =
     (data.transportCost !== null && data.transportCost > 0) ||
-    (data.rewardDiscount !== null && data.rewardDiscount > 0)
+    (data.rewardDiscount !== null && data.rewardDiscount > 0) ||
+    (data.couponDiscount !== null && data.couponDiscount > 0)
 
   return (
     <div style={{ textAlign: 'center' }}>
@@ -554,6 +563,13 @@ function Success({ data }: { data: ConfirmData }) {
                 <BreakdownRow
                   label="Reward discount"
                   value={`− ${formatMoney(data.rewardDiscount, data.currency)}`}
+                  emphasis="emerald"
+                />
+              )}
+              {data.couponDiscount !== null && data.couponDiscount > 0 && (
+                <BreakdownRow
+                  label={data.couponCode ? `Code ${data.couponCode}` : 'Discount code'}
+                  value={`− ${formatMoney(data.couponDiscount, data.currency)}`}
                   emphasis="emerald"
                 />
               )}

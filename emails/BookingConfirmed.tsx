@@ -16,6 +16,8 @@ export interface BookingConfirmedProps {
   bookingFee?: number | null
   transportCost?: number | null
   rewardDiscount?: number | null
+  couponCode?: string | null
+  couponDiscount?: number | null
   totalPaid: number
   currency: string
   paidAt?: string | null
@@ -84,6 +86,8 @@ export default function BookingConfirmed(props: BookingConfirmedProps) {
     bookingFee,
     transportCost,
     rewardDiscount,
+    couponCode,
+    couponDiscount,
     totalPaid,
     currency,
     paidAt,
@@ -97,7 +101,8 @@ export default function BookingConfirmed(props: BookingConfirmedProps) {
   void bookingFee
   const showBreakdown =
     (transportCost != null && transportCost > 0) ||
-    (rewardDiscount != null && rewardDiscount > 0)
+    (rewardDiscount != null && rewardDiscount > 0) ||
+    (couponDiscount != null && couponDiscount > 0)
   const paidAtPretty = fmtDateTime(paidAt)
   const customerLines = [
     [firstName, props.lastName].filter(Boolean).join(' ').trim() || null,
@@ -183,6 +188,13 @@ export default function BookingConfirmed(props: BookingConfirmedProps) {
                 <BreakdownLine
                   label="Reward discount"
                   value={`− ${fmtMoney(rewardDiscount, currency)}`}
+                  emphasis="emerald"
+                />
+              )}
+              {couponDiscount != null && couponDiscount > 0 && (
+                <BreakdownLine
+                  label={couponCode ? `Code ${couponCode}` : 'Discount code'}
+                  value={`− ${fmtMoney(couponDiscount, currency)}`}
                   emphasis="emerald"
                 />
               )}

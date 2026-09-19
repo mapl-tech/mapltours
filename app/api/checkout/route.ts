@@ -3,7 +3,7 @@ import Stripe from 'stripe'
 import crypto from 'crypto'
 import { createServiceClient } from '@/lib/supabase/service'
 import { createClient as createServerSupabase } from '@/lib/supabase/server'
-import { priceTourCart, assertAmountMatches, PricingError } from '@/lib/checkout-pricing'
+import { priceTourCart, assertAmountMatches, withCouponDiscount, PricingError } from '@/lib/checkout-pricing'
 import { isExperienceDateBookable, LEAD_TIME_MESSAGE } from '@/lib/booking-window'
 import { assertCheckoutSchema, SchemaNotReadyError } from '@/lib/checkout-schema'
 import { rateLimit, getIp } from '@/lib/rate-limit'
@@ -11,6 +11,8 @@ import { DEFAULT_DRIVER } from '@/lib/dispatch'
 import { sanitizeAttribution } from '@/lib/attribution'
 import { claimGiftCard, releaseGiftClaim } from '@/lib/gift-redemption'
 import { normalizeGiftCode } from '@/lib/gift-cards'
+import { applyCoupon, couponBlockedMessage, normalizeCouponCode, type CouponRow } from '@/lib/coupons'
+import { consumeCoupon } from '@/lib/coupon-redemption'
 import { maybeSendTravelerConfirmation, maybeSendOperatorAlert } from '@/lib/email/booking'
 
 /**
@@ -36,6 +38,8 @@ export const runtime = 'nodejs'
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!)
 
+const COUPON_COLS = 'id, code, kind, value, applies_to, email, max_uses, uses, min_total, starts_at, expires_at, status'
+
 interface CartItemIn {
   id: number
   title: string
@@ -50,6 +54,8 @@ interface CheckoutBody {
   items: CartItemIn[]
   /** Gift card code the traveler typed at checkout, if any. */
   giftCode?: string
+  /** Coupon code the traveler typed at checkout, if any. Tours only. */
+  couponCode?: string
   /**
    * Whether the traveler kept their video-upload reward. The PERCENT is never
    * taken from the client, only this yes/no. Omitted (older clients) means
@@ -92,6 +98,8 @@ function hashCart(body: CheckoutBody, serverTotalCents: number): string {
     // cart paid in full, and must not collide with it on the pending-booking
     // index or reuse its PaymentIntent.
     gift: normalizeGiftCode(body.giftCode ?? '') ?? '',
+    // Same for a coupon: the discounted cart is a different charge.
+    coupon: normalizeCouponCode(body.couponCode ?? '') ?? '',
   })
   return crypto.createHash('sha256').update(payload).digest('hex').slice(0, 32)
 }
@@ -159,12 +167,50 @@ export async function POST(request: NextRequest) {
 
     // 1. Server-side pricing, single source of truth. Reward comes from the
     //    server-verified percent above, NOT from the request body.
-    const pricing = priceTourCart(
+    let pricing = priceTourCart(
       body.items.map((i) => ({ id: i.id, travelers: i.travelers, date: i.date })),
       body.breakdown ?? {},
       { rewardPercent },
     )
+    // The client claims the total BEFORE any coupon; a code that dies between
+    // apply and pay is then a clean refusal below, never a cart mismatch.
     assertAmountMatches(body.amount, pricing)
+
+    const supabase = createServiceClient()
+
+    // 1b. Coupon: looked up and checked server-side against that same total
+    //     (after the reward). A price reduction, never tender: total_paid
+    //     becomes net of it. Any rule that fails refuses the checkout with a
+    //     message the page shows, and the page drops the code, rather than
+    //     silently charging full price. Nothing is reserved here; the code is
+    //     counted when the booking is paid.
+    let coupon: CouponRow | null = null
+    if (body.couponCode) {
+      const code = normalizeCouponCode(body.couponCode)
+      const { data: row, error: couponErr } = code
+        ? await supabase.from('coupons').select(COUPON_COLS).eq('code', code).maybeSingle<CouponRow>()
+        : { data: null, error: null }
+      if (couponErr) {
+        console.error('[checkout]', reqId, 'coupon lookup failed', couponErr.message)
+        return NextResponse.json(
+          { error: 'Could not check that code. Please try again.', couponCode: true, requestId: reqId },
+          { status: 503 },
+        )
+      }
+      const check = applyCoupon(row ?? null, {
+        baseCents: Math.round(pricing.totalBeforeCoupon * 100),
+        email: body.customer?.email,
+        bookingType: 'tour',
+      })
+      if (!check.applicable) {
+        return NextResponse.json(
+          { error: couponBlockedMessage(check.reason, row ?? null), couponCode: true, requestId: reqId },
+          { status: 400 },
+        )
+      }
+      coupon = row!
+      pricing = withCouponDiscount(pricing, check.discountCents)
+    }
     const amountInCents = Math.round(pricing.total * 100)
     if (amountInCents < 50) {
       return NextResponse.json({ error: 'Amount must be at least $0.50' }, { status: 400 })
@@ -182,8 +228,6 @@ export async function POST(request: NextRequest) {
         { status: 400 },
       )
     }
-
-    const supabase = createServiceClient()
 
     // 2. Schema guard, fail fast if migrations are missing.
     const schemaFeatures = await assertCheckoutSchema(supabase)
@@ -226,6 +270,10 @@ export async function POST(request: NextRequest) {
       booking_fee: pricing.fee,
       transport_cost: pricing.transport,
       reward_discount: pricing.rewardDiscount,
+      // Gated on migration 031 having run, like attribution and pickup_time.
+      ...(schemaFeatures.hasCoupon
+        ? { coupon_code: coupon?.code ?? null, coupon_discount: coupon ? pricing.couponDiscount : 0 }
+        : {}),
       currency: 'usd',
     } as const
 
@@ -450,6 +498,13 @@ export async function POST(request: NextRequest) {
           .eq('id', rewardId)
           .eq('status', 'available')
       }
+      // And the coupon, for the same reason: no webhook will ever run for
+      // this booking.
+      if (coupon && pricing.couponDiscount > 0) {
+        const used = await consumeCoupon(supabase, { couponId: coupon.id, bookingId: bookingId!, email: customerFields.email, amount: pricing.couponDiscount })
+        if (!used.ok) console.error('[checkout]', reqId, 'CRITICAL: coupon consume failed on gift-covered booking', { booking: bookingId, coupon: coupon.code, error: used.message })
+        else if (used.overRedeemed) console.error('[checkout]', reqId, 'CRITICAL: coupon over-redeemed', { booking: bookingId, coupon: coupon.code })
+      }
 
       const { data: paidBooking } = await supabase
         .from('bookings').select('*').eq('id', bookingId!).maybeSingle()
@@ -574,6 +629,9 @@ export async function POST(request: NextRequest) {
           return NextResponse.json({
             clientSecret: existingPi.client_secret,
             bookingId,
+            giftAmount: giftAmountCents / 100,
+            couponDiscount: pricing.couponDiscount,
+            amountDue: chargeCents / 100,
             requestId: reqId,
           })
         }
@@ -598,6 +656,10 @@ export async function POST(request: NextRequest) {
           // (idempotent), so a 3DS/redirect flow that never runs the
           // client-side consume still can't double-spend the reward.
           ...(rewardId && pricing.rewardDiscount > 0 ? { reward_id: rewardId } : {}),
+          // The webhook counts the coupon on payment success, keyed on this.
+          ...(coupon && pricing.couponDiscount > 0
+            ? { coupon_id: coupon.id, coupon_code: coupon.code, coupon_discount: String(pricing.couponDiscount) }
+            : {}),
           summary: pricing.lines
             .map((l) => `${l.experience.title.slice(0, 30)}|${l.travelers}x$${l.pricePerPerson}`)
             .join(', ')
@@ -656,6 +718,7 @@ export async function POST(request: NextRequest) {
       clientSecret: paymentIntent.client_secret,
       bookingId,
       giftAmount: giftAmountCents / 100,
+      couponDiscount: pricing.couponDiscount,
       amountDue: chargeCents / 100,
       requestId: reqId,
     })

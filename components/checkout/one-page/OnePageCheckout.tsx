@@ -5,6 +5,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { ArrowLeft, Award, CalendarDays, Leaf, MapPin, Users } from 'lucide-react'
 import { useCartStore, DAILY_HOUR_LIMIT } from '@/lib/cart'
+import { couponDiscountCents } from '@/lib/coupons'
 import { tourPrice, perTravelerPrice } from '@/lib/experiences'
 import { earliestBookableExperienceDate } from '@/lib/booking-window'
 import { getStoredAttribution } from '@/lib/attribution'
@@ -65,11 +66,14 @@ export default function OnePageCheckout() {
   const [minDate, setMinDate] = useState('')
   useEffect(() => { setMinDate(earliestBookableExperienceDate(new Date())) }, [])
 
-  // ── Gift card (checked here, spent only server-side) ──
-  const [giftCodeInput, setGiftCodeInput] = useState('')
+  // ── One field for any code: a coupon (a price reduction, tours only) or a
+  //    gift card (prepaid value). Both are checked here and applied only
+  //    server-side; the page never trusts its own arithmetic for the charge. ──
+  const [codeInput, setCodeInput] = useState('')
   const [giftCard, setGiftCard] = useState<{ code: string; balanceCents: number } | null>(null)
-  const [giftChecking, setGiftChecking] = useState(false)
-  const [giftError, setGiftError] = useState<string | null>(null)
+  const [coupon, setCoupon] = useState<{ code: string; kind: 'percent' | 'fixed'; value: number } | null>(null)
+  const [codeChecking, setCodeChecking] = useState(false)
+  const [codeError, setCodeError] = useState<string | null>(null)
 
   // ── Video reward (auto-applied when the guest has one unused) ──
   const availableReward = useAvailableReward()
@@ -80,11 +84,17 @@ export default function OnePageCheckout() {
   const baseTotal = grandTotal()
   const rewardDiscount = activeReward ? Math.round(baseTotal * (activeReward.percent / 100)) : 0
   const afterReward = Math.max(0, baseTotal - rewardDiscount)
-  const giftPreviewLocal = giftCard ? Math.min(giftCard.balanceCents / 100, afterReward) : 0
+  // The coupon comes off after the reward, in the same integer cents the
+  // server computes (lib/coupons), so the preview and the charge agree.
+  const couponPreviewLocal = coupon ? couponDiscountCents(coupon.kind, coupon.value, Math.round(afterReward * 100)) / 100 : 0
+  const [serverCoupon, setServerCoupon] = useState<number | null>(null)
+  const couponPreview = serverCoupon ?? couponPreviewLocal
+  const afterCoupon = Math.max(0, afterReward - couponPreview)
+  const giftPreviewLocal = giftCard ? Math.min(giftCard.balanceCents / 100, afterCoupon) : 0
   const [serverGift, setServerGift] = useState<number | null>(null)
   const [serverDue, setServerDue] = useState<number | null>(null)
   const giftPreview = serverGift ?? giftPreviewLocal
-  const finalTotal = serverDue ?? Math.max(0, afterReward - giftPreview)
+  const finalTotal = serverDue ?? Math.max(0, afterCoupon - giftPreview)
   const amountCents = Math.round(finalTotal * 100)
 
   // The cart is ONE day with ONE party. Older carts could hold mixed lines;
@@ -150,10 +160,11 @@ export default function OnePageCheckout() {
     breakdown: { subtotal: subtotal(), fee: fee(), rewardDiscount },
     applyReward: rewardApplied,
     giftCode: giftCard?.code,
+    couponCode: coupon?.code,
     // The waiver is required client-side today and by the server once the
     // waiver migration ships; sending it now keeps both versions happy.
     waiverAccepted: waiver,
-  }), [afterReward, items, form, pickup, pickupTime, stops, subtotal, fee, rewardDiscount, rewardApplied, giftCard, waiver])
+  }), [afterReward, items, form, pickup, pickupTime, stops, subtotal, fee, rewardDiscount, rewardApplied, giftCard, coupon, waiver])
 
   // Any change to what is bought invalidates the server's last answer.
   /**
@@ -176,8 +187,8 @@ export default function OnePageCheckout() {
   // second one the same booking row but re-run the gift claim and rewrite the
   // line items underneath the first.
   const inflightRef = useRef<{ key: string; promise: Promise<IntentResult> } | null>(null)
-  const pricingKey = orderKey({ items: body.items, amount: body.amount, gift: body.giftCode ?? '', reward: body.applyReward })
-  useEffect(() => { setServerGift(null); setServerDue(null); setServerError(null) }, [pricingKey])
+  const pricingKey = orderKey({ items: body.items, amount: body.amount, gift: body.giftCode ?? '', coupon: body.couponCode ?? '', reward: body.applyReward })
+  useEffect(() => { setServerGift(null); setServerCoupon(null); setServerDue(null); setServerError(null) }, [pricingKey])
 
   const runIntent = useCallback(async (payload: Record<string, unknown>, key: string): Promise<IntentResult> => {
     let data: Record<string, unknown>
@@ -192,7 +203,8 @@ export default function OnePageCheckout() {
       return { error: 'Could not reach the payment service. Please check your connection and try again.' }
     }
     if (typeof data.error === 'string') {
-      if (data.giftCode) { setGiftCard(null); setGiftError(data.error) }
+      if (data.giftCode) { setGiftCard(null); setCodeError(data.error) }
+      if (data.couponCode) { setCoupon(null); setCodeError(data.error) }
       return { error: data.error }
     }
     if (data.alreadyPaid) return { navigate: `/checkout/confirm?booking_id=${data.bookingId}` }
@@ -202,6 +214,7 @@ export default function OnePageCheckout() {
     }
     if (typeof data.clientSecret !== 'string') return { error: 'Could not set up payment. Please try again.' }
     if (typeof data.giftAmount === 'number') setServerGift(data.giftAmount)
+    if (typeof data.couponDiscount === 'number') setServerCoupon(data.couponDiscount)
     if (typeof data.amountDue === 'number') {
       // The page showed a gift card covering everything, and it no longer
       // does. Say so before the card form appears under them.
@@ -293,18 +306,29 @@ export default function OnePageCheckout() {
     if (activeReward) await consumeReward(activeReward.id).catch(() => {})
   }, [activeReward])
 
-  async function applyGiftCode() {
-    const code = giftCodeInput.trim()
+  /**
+   * One field, two kinds of code. A coupon is tried first (it is what the
+   * bio page hands out); a code no coupon knows is then tried as a gift card,
+   * so cards sold before coupons existed keep working. Neither call reserves
+   * anything: the server applies the code for real on the Pay tap.
+   */
+  async function applyCode() {
+    const code = codeInput.trim()
     if (!code) return
-    setGiftChecking(true); setGiftError(null)
+    setCodeChecking(true); setCodeError(null)
     try {
-      const res = await fetch('/api/gifts/validate', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code }) })
+      const res = await fetch('/api/coupons/validate', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code, email: form.email.trim(), amountCents: Math.round(afterReward * 100) }) })
       const data = await res.json()
-      if (!data.valid) { setGiftError(data.message ?? 'That code could not be used.'); return }
-      setGiftCard({ code: data.code, balanceCents: data.balanceCents })
+      if (data.valid) { setCoupon({ code: data.code, kind: data.kind, value: Number(data.value) }); setCodeInput(''); return }
+      if (res.status === 429 || (data.reason && data.reason !== 'not_found')) { setCodeError(data.message ?? 'That code could not be used.'); return }
+      const g = await fetch('/api/gifts/validate', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code }) })
+      const gd = await g.json()
+      if (!gd.valid) { setCodeError(data.message ?? gd.message ?? 'That code could not be used.'); return }
+      setGiftCard({ code: gd.code, balanceCents: gd.balanceCents })
+      setCodeInput('')
     } catch {
-      setGiftError('Could not check that code. Please try again.')
-    } finally { setGiftChecking(false) }
+      setCodeError('Could not check that code. Please try again.')
+    } finally { setCodeChecking(false) }
   }
 
   // ── Sticky bar (mobile): shows while the payment card is off screen ──
@@ -461,8 +485,8 @@ export default function OnePageCheckout() {
                 gift card and total are reachable without leaving the flow. */}
             <div className="opc-mobile-only">
               <OrderSummary items={items} formatUsd={formatUsd} t={t} availableReward={availableReward} rewardApplied={rewardApplied} setRewardApplied={setRewardApplied} rewardDiscount={rewardDiscount}
-                giftCard={giftCard} giftPreview={giftPreview} giftCodeInput={giftCodeInput} setGiftCodeInput={setGiftCodeInput} giftChecking={giftChecking} giftError={giftError} applyGiftCode={applyGiftCode}
-                removeGift={() => { setGiftCard(null); setGiftCodeInput(''); setGiftError(null) }} finalTotal={finalTotal} openPolicy={() => setLegal('cancellation')} facts={summaryFacts} />
+                giftCard={giftCard} giftPreview={giftPreview} coupon={coupon} couponPreview={couponPreview} codeInput={codeInput} setCodeInput={setCodeInput} codeChecking={codeChecking} codeError={codeError} applyCode={applyCode}
+                removeGift={() => { setGiftCard(null); setCodeError(null) }} removeCoupon={() => { setCoupon(null); setCodeError(null) }} finalTotal={finalTotal} openPolicy={() => setLegal('cancellation')} facts={summaryFacts} />
             </div>
 
             {/* ── 3. Payment ── */}
@@ -506,8 +530,8 @@ export default function OnePageCheckout() {
 
           <aside className="opc-rail" aria-label="Order summary">
             <OrderSummary items={items} formatUsd={formatUsd} t={t} availableReward={availableReward} rewardApplied={rewardApplied} setRewardApplied={setRewardApplied} rewardDiscount={rewardDiscount}
-              giftCard={giftCard} giftPreview={giftPreview} giftCodeInput={giftCodeInput} setGiftCodeInput={setGiftCodeInput} giftChecking={giftChecking} giftError={giftError} applyGiftCode={applyGiftCode}
-              removeGift={() => { setGiftCard(null); setGiftCodeInput(''); setGiftError(null) }} finalTotal={finalTotal} openPolicy={() => setLegal('cancellation')} facts={summaryFacts} />
+              giftCard={giftCard} giftPreview={giftPreview} coupon={coupon} couponPreview={couponPreview} codeInput={codeInput} setCodeInput={setCodeInput} codeChecking={codeChecking} codeError={codeError} applyCode={applyCode}
+              removeGift={() => { setGiftCard(null); setCodeError(null) }} removeCoupon={() => { setCoupon(null); setCodeError(null) }} finalTotal={finalTotal} openPolicy={() => setLegal('cancellation')} facts={summaryFacts} />
           </aside>
         </div>
       )}
@@ -586,18 +610,22 @@ function OrderSummary(p: {
   rewardDiscount: number
   giftCard: { code: string; balanceCents: number } | null
   giftPreview: number
-  giftCodeInput: string
-  setGiftCodeInput: (v: string) => void
-  giftChecking: boolean
-  giftError: string | null
-  applyGiftCode: () => void
+  coupon: { code: string; kind: 'percent' | 'fixed'; value: number } | null
+  couponPreview: number
+  codeInput: string
+  setCodeInput: (v: string) => void
+  codeChecking: boolean
+  codeError: string | null
+  applyCode: () => void
   removeGift: () => void
+  removeCoupon: () => void
   finalTotal: number
   openPolicy: () => void
   facts: { label: string; value: string }[]
 }) {
   const { items, formatUsd, t } = p
-  const [giftOpen, setGiftOpen] = useState(false)
+  const [codeOpen, setCodeOpen] = useState(false)
+  const canApply = !p.codeChecking && p.codeInput.trim().length >= 4
   return (
     <Card>
       <div className="opc-pad-x" style={{ paddingTop: 20, paddingBottom: 4 }}>
@@ -671,26 +699,36 @@ function OrderSummary(p: {
           </div>
         )}
 
-        {p.giftCard ? (
+        {p.coupon && (
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 8, fontSize: 13, fontFamily: FONT, fontWeight: 600, color: 'var(--emerald)' }}>
-            <span>Gift card {p.giftCard.code} <button type="button" onClick={p.removeGift} style={{ marginLeft: 8, background: 'none', border: 'none', padding: 0, fontSize: 13, color: 'var(--text-tertiary)', cursor: 'pointer', textDecoration: 'underline', fontFamily: 'inherit', minHeight: 24 }}>remove</button></span>
+            <span>{p.coupon.kind === 'percent' ? `${p.coupon.value}% off` : `${formatUsd(p.coupon.value)} off`} · {p.coupon.code} <button type="button" onClick={p.removeCoupon} aria-label={`Remove code ${p.coupon.code}`} style={{ marginLeft: 8, background: 'none', border: 'none', padding: 0, fontSize: 13, color: 'var(--text-tertiary)', cursor: 'pointer', textDecoration: 'underline', fontFamily: 'inherit', minHeight: 24 }}>remove</button></span>
+            <span>−{formatUsd(p.couponPreview)}</span>
+          </div>
+        )}
+        {p.giftCard && (
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 8, fontSize: 13, fontFamily: FONT, fontWeight: 600, color: 'var(--emerald)' }}>
+            <span>Gift card {p.giftCard.code} <button type="button" onClick={p.removeGift} aria-label={`Remove gift card ${p.giftCard.code}`} style={{ marginLeft: 8, background: 'none', border: 'none', padding: 0, fontSize: 13, color: 'var(--text-tertiary)', cursor: 'pointer', textDecoration: 'underline', fontFamily: 'inherit', minHeight: 24 }}>remove</button></span>
             <span>−{formatUsd(p.giftPreview)}</span>
           </div>
-        ) : giftOpen ? (
+        )}
+        {/* One field for a coupon or a gift card. It stays available after a
+            coupon is applied so a guest can add a gift card too; a second
+            coupon simply replaces the first. */}
+        {codeOpen || p.codeError ? (
           <div style={{ marginTop: 10 }}>
             <div style={{ display: 'flex', gap: 8 }}>
-              <input value={p.giftCodeInput} onChange={(e) => { p.setGiftCodeInput(e.target.value) }} placeholder="Gift card code" aria-label="Gift card code" className="field-input"
+              <input value={p.codeInput} onChange={(e) => { p.setCodeInput(e.target.value) }} onKeyDown={(e) => { if (e.key === 'Enter' && canApply) { e.preventDefault(); p.applyCode() } }} placeholder="Enter your code" aria-label="Coupon or gift card code" className="field-input" autoCapitalize="characters" autoCorrect="off" spellCheck={false}
                 style={{ flex: 1, minWidth: 0, height: 44, fontSize: 16, background: '#fff', textTransform: 'uppercase' }} />
-              <button type="button" onClick={p.applyGiftCode} disabled={p.giftChecking || p.giftCodeInput.trim().length < 4} className="btn-outline"
-                style={{ height: 44, padding: '0 16px', fontSize: 13, fontWeight: 600, whiteSpace: 'nowrap', opacity: p.giftChecking || p.giftCodeInput.trim().length < 4 ? 0.5 : 1 }}>
-                {p.giftChecking ? 'Checking…' : 'Apply'}
+              <button type="button" onClick={p.applyCode} disabled={!canApply} className="btn-outline"
+                style={{ height: 44, padding: '0 16px', fontSize: 13, fontWeight: 600, whiteSpace: 'nowrap', opacity: canApply ? 1 : 0.5 }}>
+                {p.codeChecking ? 'Checking…' : 'Apply'}
               </button>
             </div>
-            {p.giftError && <p role="alert" style={{ marginTop: 6, fontSize: 13, color: '#b00020', fontFamily: FONT }}>{p.giftError}</p>}
+            {p.codeError && <p role="alert" style={{ marginTop: 6, fontSize: 13, color: '#b00020', fontFamily: FONT }}>{p.codeError}</p>}
           </div>
         ) : (
-          <button type="button" onClick={() => setGiftOpen(true)} style={{ background: 'none', border: 'none', padding: '10px 0', minHeight: 44, display: 'inline-flex', alignItems: 'center', fontFamily: FONT, fontSize: 13, color: 'var(--text-secondary)', textDecoration: 'underline', textUnderlineOffset: 3, cursor: 'pointer' }}>
-            Have a gift card?
+          <button type="button" onClick={() => setCodeOpen(true)} style={{ background: 'none', border: 'none', padding: '10px 0', minHeight: 44, display: 'inline-flex', alignItems: 'center', fontFamily: FONT, fontSize: 13, color: 'var(--text-secondary)', textDecoration: 'underline', textUnderlineOffset: 3, cursor: 'pointer' }}>
+            {p.coupon || p.giftCard ? 'Have another code?' : 'Have a code?'}
           </button>
         )}
 

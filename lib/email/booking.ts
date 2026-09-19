@@ -61,6 +61,8 @@ export interface BookingRow {
   booking_fee: number | null
   transport_cost: number | null
   reward_discount: number | null
+  coupon_code?: string | null
+  coupon_discount?: number | string | null
   currency: string
   stripe_payment_id: string | null
   pickup_time: string | null
@@ -175,6 +177,8 @@ export async function maybeSendTravelerConfirmation(
           bookingFee: booking.booking_fee != null ? Number(booking.booking_fee) : null,
           transportCost: booking.transport_cost != null ? Number(booking.transport_cost) : null,
           rewardDiscount: booking.reward_discount != null ? Number(booking.reward_discount) : null,
+          couponCode: booking.coupon_code ?? null,
+          couponDiscount: booking.coupon_discount != null ? Number(booking.coupon_discount) : null,
           totalPaid: Number(booking.total_paid),
           currency: booking.currency.toUpperCase(),
           paidAt: (booking as { paid_at?: string | null }).paid_at ?? null,

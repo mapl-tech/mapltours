@@ -6,6 +6,7 @@ import { reportServerPurchase } from '@/lib/ga4-server'
 import { reportMetaPurchase } from '@/lib/meta-capi'
 import { activateGiftCard } from '@/lib/gift-activation'
 import { settleGiftClaim, releaseGiftClaim, refundToGiftCard } from '@/lib/gift-redemption'
+import { consumeCoupon } from '@/lib/coupon-redemption'
 import { sendEmail, operatorAlertRecipients, confirmationBcc } from '@/lib/email/send'
 import { sendCancellationEmails } from '@/lib/email/cancellation'
 import {
@@ -339,6 +340,23 @@ async function handlePaymentSucceeded(pi: Stripe.PaymentIntent) {
       // Non-fatal: the charge already succeeded. Log for reconciliation.
       console.warn('[stripe-webhook] reward consume failed', { reward_id: rewardId, error: rewardErr.message })
     }
+  }
+
+  // Count the coupon, if one priced this checkout. Same authority as the
+  // reward: this is the only place that sees every successful payment,
+  // including 3DS and wallet flows. Idempotent under redelivery (one ledger
+  // row per booking); a failure never fails the webhook, it is logged for
+  // the desk.
+  const couponId = typeof pi.metadata?.coupon_id === 'string' ? pi.metadata.coupon_id : null
+  if (couponId) {
+    const used = await consumeCoupon(supabase, {
+      couponId,
+      bookingId: booking.id,
+      email: (booking as { email?: string | null }).email ?? null,
+      amount: Number(pi.metadata?.coupon_discount ?? 0) || 0,
+    })
+    if (!used.ok) console.error('[stripe-webhook] CRITICAL: coupon consume failed', { booking_id: booking.id, coupon_id: couponId, error: used.message })
+    else if (used.overRedeemed) console.error('[stripe-webhook] CRITICAL: coupon over-redeemed', { booking_id: booking.id, coupon_id: couponId })
   }
 
   // Emails, gated on per-channel sent-at columns, NOT on booking status.

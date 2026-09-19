@@ -65,6 +65,10 @@ export interface ServerPricing {
   fee: number
   transport: number
   rewardDiscount: number
+  /** Dollars taken off by a coupon, applied after the reward. 0 when none. */
+  couponDiscount: number
+  /** The total before the coupon: what the client claims as `amount`. */
+  totalBeforeCoupon: number
   total: number
 }
 
@@ -150,7 +154,25 @@ export function priceTourCart(
     fee,
     transport,
     rewardDiscount: cappedReward,
+    couponDiscount: 0,
+    totalBeforeCoupon: total,
     total,
+  }
+}
+
+/**
+ * Take a coupon off a priced cart. The discount is server-checked cents from
+ * lib/coupons (applyCoupon on `totalBeforeCoupon`), never a client figure.
+ * total_paid becomes net of it; every reader of total_paid keeps working.
+ */
+export function withCouponDiscount(pricing: ServerPricing, discountCents: number): ServerPricing {
+  const cents = Math.max(0, Math.round(discountCents))
+  const base = Math.round(pricing.totalBeforeCoupon * 100)
+  const applied = Math.min(cents, base)
+  return {
+    ...pricing,
+    couponDiscount: applied / 100,
+    total: (base - applied) / 100,
   }
 }
 
@@ -164,10 +186,11 @@ export function assertAmountMatches(claimed: number, server: ServerPricing): voi
   if (!Number.isFinite(claimedNum)) {
     throw new PricingError('amount_mismatch', `client amount ${claimed} is not a number`)
   }
-  if (Math.abs(claimedNum - server.total) > PRICE_MATCH_TOLERANCE_USD) {
+  const expected = server.totalBeforeCoupon ?? server.total
+  if (Math.abs(claimedNum - expected) > PRICE_MATCH_TOLERANCE_USD) {
     throw new PricingError(
       'amount_mismatch',
-      `client claimed $${claimedNum.toFixed(2)}, server computed $${server.total.toFixed(2)}`,
+      `client claimed $${claimedNum.toFixed(2)}, server computed $${expected.toFixed(2)}`,
     )
   }
 }

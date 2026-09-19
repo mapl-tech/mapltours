@@ -23,12 +23,15 @@ interface SchemaHealth {
   has_attribution?: boolean
   /** Migration 020. Same contract as has_attribution: absence must not throw. */
   has_pickup_time?: boolean
+  /** Migration 031. Same contract: the coupon write is skipped until the columns exist. */
+  has_coupon?: boolean
 }
 
 export interface SchemaFeatures {
   /** True only when bookings.attribution exists, so inserts may include it. */
   hasAttribution: boolean
   hasPickupTime: boolean
+  hasCoupon: boolean
 }
 
 export class SchemaNotReadyError extends Error {
@@ -80,6 +83,7 @@ export async function assertCheckoutSchema(
   cached = {
     hasAttribution: data.has_attribution === true,
     hasPickupTime: data.has_pickup_time === true,
+    hasCoupon: data.has_coupon === true,
   }
   return cached
 }

@@ -237,6 +237,7 @@ function BookingCard({ b, variant, open, onToggle }: { b: Row; variant: 'abandon
               {b.booking_fee != null && <MoneyRow k="Service fee" v={money2(b.booking_fee)} />}
               {b.transport_cost != null && Number(b.transport_cost) > 0 && <MoneyRow k="Transport" v={money2(b.transport_cost)} />}
               {b.reward_discount != null && Number(b.reward_discount) > 0 && <MoneyRow k="Reward" v={`- ${money2(b.reward_discount)}`} em />}
+              {(b as { coupon_discount?: number | string | null }).coupon_discount != null && Number((b as { coupon_discount?: number | string | null }).coupon_discount) > 0 && <MoneyRow k={`Code ${(b as { coupon_code?: string | null }).coupon_code ?? ''}`} v={`- ${money2(Number((b as { coupon_discount?: number | string | null }).coupon_discount))}`} em />}
               <div style={{ display: 'flex', justifyContent: 'space-between', paddingTop: 6, marginTop: 2, borderTop: borderSoft }}>
                 <span style={{ fontSize: 13, fontWeight: 700 }}>{variant === 'paid' ? 'Total paid' : 'Cart total'}</span>
                 <span style={{ fontSize: 15, fontWeight: 800, ...tnum }}>{money(b.total_paid)}</span>
@@ -317,6 +318,9 @@ export default function BookingsDashboard({ bookings }: { bookings: Row[] }) {
           <Link href="/admin/cashflow" style={{ fontSize: 13, fontWeight: 600, color: soft, textDecoration: 'none' }}>Cash flow →</Link>
           <Link href="/admin/driver" style={{ fontSize: 13, fontWeight: 600, color: soft, textDecoration: 'none' }}>Driver portal →</Link>
           <Link href="/admin/videos" style={{ fontSize: 13, fontWeight: 600, color: soft, textDecoration: 'none' }}>Video moderation →</Link>
+          <Link href="/admin/coupons" style={{ fontSize: 13, fontWeight: 600, color: soft, textDecoration: 'none' }}>Coupons →</Link>
+          <Link href="/admin/gift-cards" style={{ fontSize: 13, fontWeight: 600, color: soft, textDecoration: 'none' }}>Gift cards →</Link>
+          <Link href="/admin/refunds" style={{ fontSize: 13, fontWeight: 600, color: soft, textDecoration: 'none' }}>Refunds →</Link>
         </div>
         <Link
           href="/"
