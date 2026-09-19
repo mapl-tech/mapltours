@@ -463,7 +463,10 @@ export const experiences: Experience[] = [
     gradient: 'linear-gradient(170deg, #1A2A00 0%, #3A5A00 52%, #7B9B1A 100%)',
     emoji: '🌿',
     image: '/tours/collins/rasta-safari-entrance.jpg',
-    video: VIDEOS.rastafari,
+    // The ATV on the river trail through the bush, the ride itself. The old
+    // clip was a stock shot of a man with locs smoking in a forest: not the
+    // tour, and not the note this brand strikes.
+    video: VIDEOS.offRoad2,
     about: "An hour on the bush trails behind Ocho Rios on your own ATV, then up to a Rastafari community in the hills. You are walked through the herb garden and the way the food is grown, sit down to an ital tasting, and hear the history and the livity from the people living it, with drumming to finish.",
     ages: "16+ to drive, 8+ to ride",
     fitness: "Drivers need a valid driver's licence, passengers from 8 ride with an adult, and the community visit suits all ages. Moderate. Riding an ATV over rutted trail is physical on the arms and shoulders, and there is a short uphill walk into the community. Not suitable in pregnancy or with back or neck injuries.",
