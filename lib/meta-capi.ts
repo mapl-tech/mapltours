@@ -1,6 +1,7 @@
 import 'server-only'
 import { createHash } from 'node:crypto'
 import { bookingRef } from './dispatch'
+import { readMetaIds } from './attribution'
 
 /**
  * Server-side purchase reporting to Meta (the Conversions API), the exact
@@ -170,6 +171,92 @@ export async function reportMetaPurchase(
     }
   } catch (e) {
     console.warn('[meta-capi] purchase report failed', { booking_id: b.id, error: e instanceof Error ? e.message : String(e) })
+    return 'failed'
+  }
+}
+
+/**
+ * A lead: the guest left an email for the 5% code (components/CouponPopup
+ * through app/api/lead). Same dedup contract as the purchase: the browser
+ * pixel sends `Lead` with `eventID`, this sends the same string as
+ * `event_id`, and Meta counts one. The route only calls this when the
+ * browser produced an event id, which it does only for visitors who have
+ * not asked not to be tracked, so the server never reports what the pixel
+ * would have withheld.
+ */
+export interface LeadInput {
+  email: string
+  eventId: string
+  ip?: string | null
+  userAgent?: string | null
+  /** The raw Cookie header, for the _fbp / _fbc cookies. */
+  cookie?: string | null
+  sourceUrl?: string
+  contentName?: string
+}
+
+export function buildLeadEvent(
+  i: LeadInput,
+  nowMs: number = Date.now(),
+): { url: string; body: Record<string, unknown> } | { skipped: string } {
+  const pixelId = process.env.META_PIXEL_ID
+  const token = process.env.META_CAPI_TOKEN
+  if (!pixelId || !token) return { skipped: 'META_PIXEL_ID/META_CAPI_TOKEN not set' }
+  if (!/^[\w-]{8,64}$/.test(i.eventId)) return { skipped: 'no event id' }
+  const em = hashedEmail(i.email)
+  if (!em) return { skipped: 'no email to match on' }
+
+  const user_data: Record<string, unknown> = { em: [em] }
+  if (i.ip) user_data.client_ip_address = i.ip
+  if (i.userAgent) user_data.client_user_agent = i.userAgent.slice(0, 500)
+  const ids = readMetaIds(i.cookie ?? '')
+  if (ids.fbp) user_data.fbp = ids.fbp
+  if (ids.fbc) user_data.fbc = ids.fbc
+
+  return {
+    url: `https://graph.facebook.com/${GRAPH_VERSION}/${pixelId}/events?access_token=${encodeURIComponent(token)}`,
+    body: {
+      data: [
+        {
+          event_name: 'Lead',
+          event_time: Math.floor(nowMs / 1000),
+          event_id: i.eventId,
+          action_source: 'website',
+          event_source_url: i.sourceUrl && /^https:\/\/(www\.)?mapltours\.com\//.test(i.sourceUrl) ? i.sourceUrl.slice(0, 300) : 'https://mapltours.com/',
+          user_data,
+          custom_data: { content_name: (i.contentName ?? 'popup').slice(0, 40) },
+        },
+      ],
+    },
+  }
+}
+
+export async function reportMetaLead(
+  i: LeadInput,
+  fetchImpl: typeof fetch = fetch,
+): Promise<'sent' | 'skipped' | 'failed'> {
+  try {
+    const p = buildLeadEvent(i)
+    if ('skipped' in p) return 'skipped'
+    const ctrl = new AbortController()
+    const timer = setTimeout(() => ctrl.abort(), TIMEOUT_MS)
+    try {
+      const r = await fetchImpl(p.url, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(p.body),
+        signal: ctrl.signal,
+      })
+      if (!r.ok) {
+        console.warn('[meta-capi] lead report rejected', { status: r.status })
+        return 'failed'
+      }
+      return 'sent'
+    } finally {
+      clearTimeout(timer)
+    }
+  } catch (e) {
+    console.warn('[meta-capi] lead report failed', { error: e instanceof Error ? e.message : String(e) })
     return 'failed'
   }
 }

@@ -301,14 +301,19 @@ export function trackContactClick(method: 'whatsapp' | 'email', place: string): 
   }
 }
 
-export function trackLead(source: 'contact_form' | 'unlisted_hotel'): void {
+export function trackLead(
+  source: 'contact_form' | 'unlisted_hotel' | 'popup_home' | 'popup_explore',
+  /** Same id the server sends to the Conversions API, so Meta counts one lead. */
+  eventId?: string,
+): void {
   try {
     if (typeof window === 'undefined') return
     whenGtagReady((gtag) => {
       gtag('event', 'generate_lead', { lead_source: source })
     })
     whenFbqReady((fbq) => {
-      fbq('track', 'Lead', { content_name: source })
+      if (eventId) fbq('track', 'Lead', { content_name: source }, { eventID: eventId })
+      else fbq('track', 'Lead', { content_name: source })
     })
   } catch {
     /* no-op */

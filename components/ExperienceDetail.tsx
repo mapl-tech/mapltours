@@ -1359,19 +1359,20 @@ export default function ExperienceDetail({ slug }: { slug: string }) {
             {items.length > 0 && (
               <Link
                 href={checkoutHref}
+                className="reel-checkout"
                 style={{
                   display: 'flex', alignItems: 'center', gap: 6,
-                  height: 34, padding: '0 16px',
+                  height: 40, padding: '0 16px',
                   borderRadius: 9999,
-                  background: 'var(--emerald)',
-                  color: '#fff',
-                  fontSize: 12, fontWeight: 600,
+                  background: 'var(--gold)',
+                  color: 'var(--gold-ink)',
+                  fontSize: 13, fontWeight: 700,
                   fontFamily: 'var(--font-dm-sans)',
                   textDecoration: 'none',
                   transition: 'all 0.15s ease',
                 }}
               >
-                <ShoppingBag size={13} />
+                <ShoppingBag size={14} aria-hidden />
                 {`Checkout (${items.length})`}
               </Link>
             )}
@@ -1618,15 +1619,21 @@ export default function ExperienceDetail({ slug }: { slug: string }) {
         {items.length > 0 && (
           <Link
             href={checkoutHref}
-            className="btn-primary"
+            className="reel-checkout"
             style={{
+              // The one money action on the reel. btn-primary's near-black
+              // on the bar's near-black read as a grey pill and guests
+              // missed it; the brand gold with its AAA ink (8:1) is the
+              // brightest thing on the bar, and the glow lifts it off it.
               flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-              minHeight: 46, padding: '0 20px', borderRadius: 9999,
-              fontSize: 15, fontWeight: 700, fontFamily: 'var(--font-dm-sans)',
-              whiteSpace: 'nowrap',
+              minHeight: 48, padding: '0 20px', borderRadius: 9999,
+              background: 'var(--gold)', color: 'var(--gold-ink)',
+              boxShadow: '0 6px 20px rgba(201, 169, 78, 0.35)',
+              fontSize: 16, fontWeight: 700, fontFamily: 'var(--font-dm-sans)',
+              textDecoration: 'none', whiteSpace: 'nowrap',
             }}
           >
-            <ShoppingBag size={16} />
+            <ShoppingBag size={18} aria-hidden />
             {`Checkout (${items.length})`}
           </Link>
         )}

@@ -12,6 +12,10 @@ import PageTransition from './PageTransition'
 // and only in those browsers.
 const WebMcpTools = dynamic(() => import('./WebMcpTools'), { ssr: false })
 import ScrollReveal from './ScrollReveal'
+// The 5% code popup only opens on / and /explore (lib/coupon-popup) and only
+// on the client, ten seconds in; loading it lazily keeps it out of the
+// first paint's JavaScript on every page.
+const CouponPopup = dynamic(() => import('./CouponPopup'), { ssr: false })
 import { AuthProvider } from '@/lib/supabase/auth-context'
 import { SavedProvider } from '@/lib/supabase/saved'
 import { useCartStore } from '@/lib/cart'
@@ -64,6 +68,7 @@ export default function LayoutShell({ children }: { children: React.ReactNode })
         <a href="#main-content" className="skip-link">Skip to main content</a>
         <ScrollReveal />
         {!hideTools && agentBrowser && <WebMcpTools />}
+        {!hideTools && <CouponPopup />}
         {!hideNav && <TopNav onCartClick={() => setDrawerOpen(true)} />}
         <main id="main-content">
           <PageTransition>{children}</PageTransition>
