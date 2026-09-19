@@ -12,18 +12,18 @@ export const HERO = '/media/img/14788935-hero.jpg'
 // 32s) so the hero never depends on a third-party CDN.
 // Replaced Pexels 35684532 (/hero-video.mp4), a hazy roadside shot that read
 // flat and grey behind the headline.
-export const HERO_VIDEO = '/hero-negril-jamaica.mp4'
+export const HERO_VIDEO = '/hero-montage-720.mp4'
 /** 12-second loops of the same footage, one per screen size (see FeedView.HeroVideo). */
-export const HERO_VIDEO_540 = '/hero-negril-jamaica-540.mp4'
-export const HERO_VIDEO_720 = '/hero-negril-jamaica-720.mp4'
-export const HERO_VIDEO_1080 = '/hero-negril-jamaica-1080.mp4'
+export const HERO_VIDEO_540 = '/hero-montage-540.mp4'
+export const HERO_VIDEO_720 = '/hero-montage-720.mp4'
+export const HERO_VIDEO_1080 = '/hero-montage-1080.mp4'
 /**
  * The same loop cropped to 9:16 for phones (720x1280, 30fps, ~1.7 Mbps), with
  * its own first frame as the poster so nothing swaps scene when it starts.
  * The landscape files showed a 363px-wide slice of a 960px frame on a phone,
  * upscaled 3.2x, under a poster of a different road.
  */
-export const HERO_VIDEO_PORTRAIT = '/hero-negril-jamaica-portrait.mp4'
+export const HERO_VIDEO_PORTRAIT = '/hero-montage-portrait.mp4'
 export const HERO_POSTER_PORTRAIT = '/hero-negril-jamaica-portrait.webp'
 
 // All destinations, confirmed Jamaica locations

@@ -67,6 +67,26 @@
     Cache-Control = "public, max-age=86400, stale-while-revalidate=604800"
 
 [[headers]]
+  for = "/hero-montage-portrait.mp4"
+  [headers.values]
+    Cache-Control = "public, max-age=86400, stale-while-revalidate=604800"
+
+[[headers]]
+  for = "/hero-montage-540.mp4"
+  [headers.values]
+    Cache-Control = "public, max-age=86400, stale-while-revalidate=604800"
+
+[[headers]]
+  for = "/hero-montage-720.mp4"
+  [headers.values]
+    Cache-Control = "public, max-age=86400, stale-while-revalidate=604800"
+
+[[headers]]
+  for = "/hero-montage-1080.mp4"
+  [headers.values]
+    Cache-Control = "public, max-age=86400, stale-while-revalidate=604800"
+
+[[headers]]
   for = "/hero-negril-jamaica.mp4"
   [headers.values]
     Cache-Control = "public, max-age=86400, stale-while-revalidate=604800"
