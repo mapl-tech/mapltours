@@ -74,11 +74,22 @@ export default function Trackers() {
 
   return (
     <>
+      {/* Internal traffic: open any page once with ?mapl_internal=1 and a
+          cookie (a year, not localStorage) marks every later hit with
+          traffic_type=internal, before the config calls so the first
+          page_view carries it too. The GA4 property's "Define internal
+          traffic" rule matches traffic_type equals internal, and the owner
+          activates the Internal Traffic data filter in the GA4 admin. */}
       <Script src="https://www.googletagmanager.com/gtag/js?id=G-2JVWPL4GBE" strategy="afterInteractive" />
       <Script id="gtag-init" strategy="afterInteractive">
         {`window.dataLayer = window.dataLayer || [];
 function gtag(){dataLayer.push(arguments);}
 gtag('js', new Date());
+(function(){
+var internal=/(^|; )mapl_internal=1(;|$)/.test(document.cookie);
+if(/[?&]mapl_internal=1(&|$)/.test(location.search)){document.cookie='mapl_internal=1; Max-Age=31536000; Path=/; SameSite=Lax';internal=true;}
+if(internal)gtag('set',{traffic_type:'internal'});
+})();
 gtag('config', 'G-2JVWPL4GBE');
 gtag('config', 'AW-18126709990');`}
       </Script>

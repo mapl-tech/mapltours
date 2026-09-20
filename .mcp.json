@@ -12,7 +12,7 @@
         "--caps", "vision,pdf",
         "--console-level", "warning",
         "--timeout-navigation", "45000",
-        "--blocked-origins", "https://www.googletagmanager.com;https://www.google-analytics.com;https://analytics.google.com;https://region1.google-analytics.com;https://static.hotjar.com;https://script.hotjar.com;https://metrics.hotjar.io;https://content.hotjar.io;https://googleads.g.doubleclick.net"
+        "--blocked-origins", "https://www.googletagmanager.com;https://www.google-analytics.com;https://analytics.google.com;https://region1.google-analytics.com;https://static.hotjar.com;https://script.hotjar.com;https://metrics.hotjar.io;https://content.hotjar.io;https://googleads.g.doubleclick.net;https://connect.facebook.net;https://www.facebook.com"
       ]
     },
     "playwright-mobile": {
@@ -27,7 +27,7 @@
         "--caps", "vision,pdf",
         "--console-level", "warning",
         "--timeout-navigation", "45000",
-        "--blocked-origins", "https://www.googletagmanager.com;https://www.google-analytics.com;https://analytics.google.com;https://region1.google-analytics.com;https://static.hotjar.com;https://script.hotjar.com;https://metrics.hotjar.io;https://content.hotjar.io;https://googleads.g.doubleclick.net"
+        "--blocked-origins", "https://www.googletagmanager.com;https://www.google-analytics.com;https://analytics.google.com;https://region1.google-analytics.com;https://static.hotjar.com;https://script.hotjar.com;https://metrics.hotjar.io;https://content.hotjar.io;https://googleads.g.doubleclick.net;https://connect.facebook.net;https://www.facebook.com"
       ]
     },
     "chrome-devtools": {
@@ -46,7 +46,7 @@
         "--blockedUrlPattern", "https://analytics.google.com/*",
         "--blockedUrlPattern", "https://*.hotjar.com/*",
         "--blockedUrlPattern", "https://*.hotjar.io/*",
-        "--blockedUrlPattern", "https://googleads.g.doubleclick.net/*"
+        "--blockedUrlPattern", "https://googleads.g.doubleclick.net/*", "--blockedUrlPattern", "https://connect.facebook.net/*", "--blockedUrlPattern", "https://www.facebook.com/tr*"
       ]
     }
   }

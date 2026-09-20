@@ -292,6 +292,12 @@ h5, h6 { letter-spacing: -0.01em; }
   bottom: 24px;
 }
 .reel-meta-line { display: none; }
+/* Phone-only lines on the reel: the two included facts and the reason a
+   spent button is spent (desktop says both in .reel-helper). */
+.reel-facts, .reel-blocked-reason { display: none; }
+/* Feedback for a tap caught before React attached (the inline script in
+   app/experience/[slug]/page.tsx); the Reel's mount effect removes it. */
+.reel-cta--pressed { transform: scale(0.97); opacity: 0.85; }
 /* The site's focus ring is the AA-safe olive for light pages; on a video it
    measured 2.2:1 on the overlay band and 1:1 on the green button. A white
    ring with a dark halo reads on sand, sea and the scrim alike. */
@@ -314,6 +320,7 @@ h5, h6 { letter-spacing: -0.01em; }
      screens (and in the details sheet). */
   .reel-desc, .reel-chips, .reel-included, .reel-helper { display: none !important; }
   .reel-meta-line { display: flex; flex-wrap: wrap; }
+  .reel-facts, .reel-blocked-reason { display: block; }
   /* 320px phones: the rail's brand avatar rose into the close button. */
   @media (max-width: 359px) {
     .reel-right-rail { gap: 10px !important; }

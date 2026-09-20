@@ -4,9 +4,10 @@ import { useState, useRef, useEffect, useCallback, useMemo } from 'react'
 import { useFocusTrap } from '@/lib/use-focus-trap'
 import { useRouter } from 'next/navigation'
 import { singleExperiences, packageExperiences, Experience, slugify , priceUnitLabel, mobileVideo, videoPoster } from '@/lib/experiences'
-import { trackViewItem } from '@/lib/analytics'
+import { trackViewItem, trackReelDetailsOpen, trackReelCtaTap } from '@/lib/analytics'
 import { useI18n } from '@/lib/i18n'
 import { useCartStore, DAILY_HOUR_LIMIT } from '@/lib/cart'
+import { roundFive } from '@/lib/day-route'
 import { useHydrated } from '@/lib/use-hydrated'
 import { useTourFit } from '@/lib/use-tour-fit'
 import Link from 'next/link'
@@ -18,6 +19,15 @@ import Avatar from '@/components/Avatar'
 import MaplAvatar from '@/components/MaplAvatar'
 import { isMaplCreator, displayHandle } from '@/lib/creator'
 import TourDetailsSheet from './TourDetailsSheet'
+
+declare global {
+  interface Window {
+    /** Set by the Reel's mount effect; the early-tap script checks it. */
+    __maplHydrated?: boolean
+    /** A tap on .reel-cta caught before React attached, replayed once. */
+    __maplEarlyTap?: { slug: string; at: number }
+  }
+}
 
 // Heavy, only-used-on-demand surfaces, code-split so they never ship with
 // the main reel bundle. `ssr: false` because they are all client-interaction
@@ -44,6 +54,22 @@ function shuffle<T>(arr: T[], seed: string): T[] {
   return out
 }
 
+/**
+ * Clip an included item to about 26 characters without cutting a word: the
+ * word that straddles the limit is kept whole, so "Round-trip private
+ * transport from your hotel" reads "Round-trip private transport".
+ */
+function clipFact(text: string, limit = 26): string {
+  if (text.length <= limit) return text
+  const cut = text.indexOf(' ', limit)
+  return cut === -1 ? text : text.slice(0, cut)
+}
+/** The first two included items on one line for the phone reel. */
+function reelFacts(included: string[] | undefined): string | null {
+  if (!included || included.length === 0) return null
+  return included.slice(0, 2).map((i) => clipFact(i)).join(' · ')
+}
+
 /* ── Single Reel (Snapchat style) ── */
 function Reel({ exp, isActive, near, totalCount, currentIndex, onComments }: { exp: Experience; isActive: boolean; near: boolean; totalCount: number; currentIndex: number; onComments: () => void }) {
   const videoRef = useRef<HTMLVideoElement>(null)
@@ -55,13 +81,77 @@ function Reel({ exp, isActive, near, totalCount, currentIndex, onComments }: { e
   const inCart = hydrated && isInCart(exp.id)
   const tourFit = useTourFit(exp)
   const blocked = !inCart && !tourFit.allowed
-  const toggleCart = () => {
-    if (inCart) removeItem(exp.id)
-    else if (tourFit.allowed) addItem(exp)
+  const slug = slugify(exp.title)
+  // The outcome is read back from the store, not assumed from the button:
+  // addItem returns silently when the day-fit floor refuses (lib/cart), so a
+  // tap that changed nothing is reported as blocked with the reason shown.
+  // A replay (see the mount effect) only ever adds, and reports 'replayed'
+  // only when it did: the caller has checked the cart, so a miss here is a
+  // refusal, reported as blocked like any other.
+  const toggleCart = (replayed = false) => {
+    if (inCart && !replayed) {
+      removeItem(exp.id)
+      trackReelCtaTap(slug, 'removed')
+      return
+    }
+    if (tourFit.allowed) addItem(exp)
+    const gained = useCartStore.getState().isInCart(exp.id)
+    if (gained) trackReelCtaTap(slug, replayed ? 'replayed' : 'added')
+    else trackReelCtaTap(slug, 'blocked', tourFit.reason ?? 'day-fit')
   }
+  const openDetails = () => {
+    setDetailsFor(exp)
+    trackReelDetailsOpen(slug)
+  }
+  // A tap on Add to Trip between first paint and React attaching is caught by
+  // the inline script in app/experience/[slug]/page.tsx and replayed here
+  // once, after the cart store has loaded (LayoutShell rehydrates it in a
+  // parent effect, which runs AFTER this one, so an add made straight away
+  // would be overwritten by the persisted cart).
+  //
+  // The replay yields to React: a tap that lands after hydrateRoot() but
+  // before this effect is hydrated synchronously by React 18 and then
+  // dispatched to onClick in the same turn, AFTER the effects. Deciding here,
+  // synchronously, added the tour and React's dispatch then removed it. So
+  // the check waits a macrotask and adds only if nothing has by then: React's
+  // own add, or the persisted cart, makes it a no-op.
+  useEffect(() => {
+    window.__maplHydrated = true
+    document.querySelectorAll('.reel-cta--pressed').forEach((el) => el.classList.remove('reel-cta--pressed'))
+    let unsubscribe: (() => void) | undefined
+    const replay = () => {
+      if (useCartStore.getState().isInCart(exp.id)) return
+      toggleCart(true)
+    }
+    const timer = setTimeout(() => {
+      const tap = window.__maplEarlyTap
+      if (!tap || tap.slug !== slug || Date.now() - tap.at > 15_000) return
+      // Consumed inside the callback, so StrictMode's dev double-mount (which
+      // clears the timer of the first mount) still replays once.
+      delete window.__maplEarlyTap
+      if (useCartStore.persist.hasHydrated()) replay()
+      else unsubscribe = useCartStore.persist.onFinishHydration(replay)
+    }, 0)
+    return () => {
+      clearTimeout(timer)
+      unsubscribe?.()
+    }
+    // Mount only: the tap is consumed once and the handler is the mount
+    // closure on purpose (inCart is false before hydration, so it adds).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
   // Give the page exactly one <h1>: the active reel's title carries the primary
   // heading; off-screen reels keep <h2> so we never render multiple h1s.
   const TitleTag = isActive ? 'h1' : 'h2'
+  const facts = reelFacts(exp.included)
+  // The phone line under a spent button has one line of about 286px, and
+  // tourFit.reason is a 160-character sentence that ellipsed after the
+  // distance. This says the same from the same fit result in one clause.
+  const shortReason = blocked && tourFit.reason
+    ? (tourFit.minutes !== null && tourFit.nearest
+      ? `${roundFive(tourFit.minutes)} min from ${tourFit.nearest}. Pick another day.`
+      : 'Too far from the rest of your day. Pick another day.')
+    : null
   const [shareToast, setShareToast] = useState<string | null>(null)
   const [detailsFor, setDetailsFor] = useState<Experience | null>(null)
   const [clipsOpen, setClipsOpen] = useState(false)
@@ -173,6 +263,14 @@ function Reel({ exp, isActive, near, totalCount, currentIndex, onComments }: { e
         }
       }
       video.muted = true
+      // The markup carries only the phone clip (see the <source> below).
+      // Desktop gets the original by src, which overrides the <source>
+      // child; load() restarts resource selection. The browser may have
+      // begun the phone clip by now, which costs desktop a few hundred KB.
+      if (exp.video && window.matchMedia('(min-width: 768px)').matches && video.getAttribute('src') !== exp.video) {
+        video.src = exp.video
+        video.load()
+      }
       video.currentTime = 0
       const tryPlay = () => {
         video.play().catch(() => {
@@ -198,7 +296,7 @@ function Reel({ exp, isActive, near, totalCount, currentIndex, onComments }: { e
       video.removeEventListener('play', onPlay)
       video.removeEventListener('pause', onPause)
     }
-  }, [isActive])
+  }, [isActive, exp.video])
 
   const togglePlay = () => {
     if (!videoRef.current) return
@@ -249,27 +347,29 @@ function Reel({ exp, isActive, near, totalCount, currentIndex, onComments }: { e
           style={{ width: '100%', height: '100%', border: 'none' }}
         />
       ) : (
-      // The poster only for this reel and its two neighbours, and at phone
-      // size through the image optimiser: with the raw catalogue file on all
-      // 15 reels a tour page pulled 4 MB of stills before the one on screen
-      // got any bandwidth, so on cellular the video sat dark for 20 s. The
-      // other reels take a poster as they come within one swipe.
+      // The poster is the clip's first frame, or the catalogue image when the
+      // clip is stock footage of the activity and not this place (see
+      // Experience.genericClip). Only for this reel and its two neighbours,
+      // and at phone size through the image optimiser: with the raw
+      // catalogue file on all 15 reels a tour page pulled 4 MB of stills
+      // before the one on screen got any bandwidth, so on cellular the video
+      // sat dark for 20 s. The other reels take a poster as they come within
+      // one swipe.
       <video
         ref={videoRef}
         loop muted playsInline
         preload={isActive ? 'auto' : 'none'}
-        poster={near ? (exp.video ? videoPoster(exp.video) : `/_next/image?url=${encodeURIComponent(exp.image)}&w=750&q=70`) : undefined}
+        poster={near ? (exp.video && !exp.genericClip ? videoPoster(exp.video) : `/_next/image?url=${encodeURIComponent(exp.image)}&w=750&q=70`) : undefined}
         style={{ width: '100%', height: '100%', objectFit: 'cover', willChange: 'opacity', background: '#08080A' }}
       >
-        {/* Two sources, the browser picks by media query before any script
-            runs: the 720x1280 phone clip under 768px, the original above.
+        {/* One source, the 720x1280 phone clip, with no media attribute:
+            with two media-gated sources WebKit on an iPhone profile fetched
+            the 30 MB original. Phones are almost every visitor, so the HTML
+            serves them; the effect above swaps in the original on desktop.
             Rendered only while active; deactivation calls load() with no
             sources, which empties the element and frees the buffer. */}
         {isActive && exp.video && (
-          <>
-            <source src={mobileVideo(exp.video)} type="video/mp4" media="(max-width: 767px)" />
-            <source src={exp.video} type="video/mp4" />
-          </>
+          <source src={mobileVideo(exp.video)} type="video/mp4" />
         )}
       </video>
       )}
@@ -579,7 +679,7 @@ function Reel({ exp, isActive, near, totalCount, currentIndex, onComments }: { e
         <button
           type="button"
           className="reel-meta-line"
-          onClick={(e) => { e.stopPropagation(); setDetailsFor(exp) }}
+          onClick={(e) => { e.stopPropagation(); openDetails() }}
           aria-label={`${exp.destination}, ${exp.duration}. What's included, ages and what to bring`}
           style={{
             alignItems: 'center', gap: 6, minHeight: 44, padding: 0, marginBottom: 8,
@@ -594,6 +694,19 @@ function Reel({ exp, isActive, near, totalCount, currentIndex, onComments }: { e
           <span style={{ textDecoration: 'underline', textUnderlineOffset: 3 }}>What&apos;s included</span>
         </button>
 
+        {/* Phones: the two things the price covers that decide a purchase
+            (the ride and the entry), on one line under the meta line. The
+            full list stays a tap away in the details sheet. */}
+        {facts && (
+          <p className="reel-facts" style={{
+            margin: '0 0 8px', fontSize: 12, lineHeight: '16px',
+            color: 'var(--text-on-dark-2)', fontFamily: 'var(--font-dm-sans)',
+            whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+          }}>
+            {facts}
+          </p>
+        )}
+
         {/* The reel sells the feeling; this answers the questions that decide a
             purchase (transport, entrance fees, minimum age, what to wear). */}
         {/* 44px tall with the old 10px bottom margin folded in, so the reel's
@@ -602,7 +715,7 @@ function Reel({ exp, isActive, near, totalCount, currentIndex, onComments }: { e
             of centring "bring" on its own. */}
         <button
           className="reel-included"
-          onClick={() => setDetailsFor(exp)}
+          onClick={() => openDetails()}
           style={{
             display: 'inline-flex', alignItems: 'center', gap: 6,
             textAlign: 'left', justifyContent: 'flex-start',
@@ -660,6 +773,7 @@ function Reel({ exp, isActive, near, totalCount, currentIndex, onComments }: { e
           </div>
           <button
             className="reel-cta"
+            data-slug={slug}
             onClick={(e) => { e.stopPropagation(); toggleCart() }}
             disabled={blocked}
             title={tourFit.reason ?? undefined}
@@ -680,6 +794,19 @@ function Reel({ exp, isActive, near, totalCount, currentIndex, onComments }: { e
             {inCart ? t('✓ In Trip') : blocked ? t('Another day') : t('Add to Trip')}
           </button>
         </div>
+        {/* Phones have no title tooltip, so the reason a button is spent is
+            written under it, in flow (the bottom bar covers anything hung
+            below the row) and only while blocked, so nothing is reserved
+            otherwise. One line; the details sheet carries the whole reason. */}
+        {shortReason && (
+          <p className="reel-blocked-reason" style={{
+            margin: '6px 0 0', fontSize: 12, lineHeight: '16px',
+            color: 'var(--text-on-dark-2)', fontFamily: 'var(--font-dm-sans)',
+            whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+          }}>
+            {shortReason}
+          </p>
+        )}
         {/* The toggle's result, spoken: the button's label alone is not a
             status message (WCAG 4.1.3). */}
         <p role="status" aria-live="polite" className="visually-hidden">
@@ -706,7 +833,7 @@ function Reel({ exp, isActive, near, totalCount, currentIndex, onComments }: { e
         <TourDetailsSheet
           exp={detailsFor}
           onClose={() => setDetailsFor(null)}
-          cta={{ inCart, blocked, reason: tourFit.reason, onToggle: toggleCart }}
+          cta={{ inCart, blocked, reason: tourFit.reason, onToggle: () => toggleCart() }}
         />
       )}
     </div>

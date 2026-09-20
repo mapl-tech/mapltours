@@ -75,6 +75,22 @@ export async function generateMetadata({ params, searchParams }: {
   }
 }
 
+// A tap on Add to Trip between first paint and React attaching was dropped:
+// React 18 does not replay discrete events. This runs from the server HTML,
+// records the tap on window and presses the button; the Reel's mount effect
+// (components/ExperienceDetail) replays it once and clears the class. Inline
+// and nonce-less: the CSP is report-only today; if a nonce-based CSP is ever
+// enforced this script needs the nonce.
+const EARLY_TAP_SCRIPT = `document.addEventListener('click',function(e){
+if(window.__maplHydrated===true)return;
+var t=e.target&&e.target.closest?e.target.closest('.reel-cta'):null;
+if(!t)return;
+var s=t.getAttribute('data-slug');
+if(!s)return;
+window.__maplEarlyTap={slug:s,at:Date.now()};
+t.classList.add('reel-cta--pressed');
+},true);`
+
 export default function ExperienceRoute({ params }: { params: { slug: string } }) {
   // 404 unknown slugs so they don't render an empty shell and so Google
   // doesn't index junk URLs.
@@ -153,6 +169,7 @@ export default function ExperienceRoute({ params }: { params: { slug: string } }
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
+      <script dangerouslySetInnerHTML={{ __html: EARLY_TAP_SCRIPT }} />
       <ExperienceDetail slug={params.slug} />
     </>
   )

@@ -319,3 +319,41 @@ export function trackLead(
     /* no-op */
   }
 }
+
+/**
+ * The reel's details sheet opened (the "What's included" tap). Measured so
+ * the gap between watching a reel and reading the facts is a number, not a
+ * guess, before the phone surface is judged.
+ */
+export function trackReelDetailsOpen(slug: string): void {
+  try {
+    if (typeof window === 'undefined') return
+    whenGtagReady((gtag) => {
+      gtag('event', 'details_open', { item_id: slug })
+    })
+  } catch {
+    /* no-op */
+  }
+}
+
+/**
+ * A tap on the reel's Add to Trip button, whatever it did. add_to_cart is
+ * reported from the store and only counts a successful add; this counts the
+ * taps that removed, were refused by the day-fit rules ('blocked', with the
+ * reason the button shows) or were caught before React attached and replayed
+ * after hydration. tap minus add is the size of the leak.
+ */
+export function trackReelCtaTap(
+  slug: string,
+  outcome: 'added' | 'removed' | 'blocked' | 'replayed',
+  reason?: string,
+): void {
+  try {
+    if (typeof window === 'undefined') return
+    whenGtagReady((gtag) => {
+      gtag('event', 'cta_tap', { item_id: slug, outcome, reason })
+    })
+  } catch {
+    /* no-op */
+  }
+}

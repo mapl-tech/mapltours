@@ -115,6 +115,13 @@ export interface Experience {
   emoji: string
   image: string
   video: string
+  /**
+   * True when the clip is stock footage of the activity, not of this place:
+   * the reel then paints `image` before the clip instead of the clip's first
+   * frame, so the first thing seen keeps the card's promise even where the
+   * moving picture cannot. Drop the flag when a clip of the place lands.
+   */
+  genericClip?: boolean
   description: string
   tags: string[]
   highlights?: string[]
@@ -908,7 +915,11 @@ export const experiences: Experience[] = [
     gradient: 'linear-gradient(170deg, #3D0A00 0%, #8B1A00 52%, #D4521A 100%)',
     emoji: '🌅',
     image: '/tours/ricks-cafe-sunset.webp',
-    video: VIDEOS.cliffDiving,
+    // Stock cliff jumping in daylight, not Rick's terrace: every frame of
+    // 38902703 was checked (Sept 2026). The card promises the sunset, so the
+    // still is the terrace at golden hour until a clip of Rick's exists.
+    video: VIDEOS.cliffSunset,
+    genericClip: true,
     about: "The drive out to the Negril cliffs for late afternoon, a table at Rick's while the divers work the ledge and the local pros go off the tree above it, and the sun dropping straight into the sea in front of you. Jump from the low ledge yourself if you want to. Plenty of people come purely to watch.",
     ages: "All ages, jumping 16+",
     fitness: "Cliff jumping is for ages 16 and up and is done under the venue's own rules. Light unless you jump, with steps down to the water and back up. Jumping is for strong swimmers only.",
