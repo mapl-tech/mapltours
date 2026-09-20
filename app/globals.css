@@ -1155,6 +1155,11 @@ button:hover > .reel-action-disc {
 }
 
 /* Page transitions */
+/* Every page's wrapper (components/PageTransition). min-height in dvh so a
+   route sized with dvh (the reel) never leaves phantom scroll range under
+   Safari's toolbars; the vh line is the fallback where dvh is unknown. */
+.page-shell { min-height: 100vh; min-height: 100dvh; }
+
 .page-enter {
   animation: pageIn 0.25s ease forwards;
 }
