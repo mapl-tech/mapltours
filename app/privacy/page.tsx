@@ -14,7 +14,7 @@ export default function PrivacyPage() {
   return (
     <EditorialPage slug="privacy" label="Legal" title="Privacy Policy">
       <Section title="Last updated">
-        <p>This Privacy Policy was last updated on May 5, 2026.</p>
+        <p>This Privacy Policy was last updated on September 22, 2026.</p>
       </Section>
 
       <Section title="Our commitment">
@@ -63,6 +63,26 @@ export default function PrivacyPage() {
           <li><strong>Google Analytics &amp; Hotjar</strong>, anonymised usage analytics. You can opt out via your browser&rsquo;s Do Not Track or ad-blocker.</li>
         </ul>
         <p style={{ marginTop: 12 }}>We do not sell your personal information to anyone.</p>
+      </Section>
+
+      <Section title="Advertising with Meta (Facebook and Instagram)">
+        <p>
+          We advertise on Facebook and Instagram, and we use Meta&rsquo;s tools to see which of those ads bring
+          people to us:
+        </p>
+        <ul style={{ marginTop: 12, paddingLeft: 20, display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <li><strong>The Meta pixel</strong> on our site records the pages and tours you view, what you add to your trip, and when you start a checkout or complete a booking.</li>
+          <li><strong>Meta&rsquo;s Conversions API.</strong> When you book with us or ask for a discount code, our server tells Meta about it directly, with your email address in hashed form (scrambled so it cannot be read) and Meta&rsquo;s own cookies from your browser. For a booking we add the amount paid; for a discount code request, your browser details and IP address.</li>
+          <li><strong>Customer lists.</strong> We may share the email address, phone number, name and country of people who have booked with us, in hashed form, so Meta can match them to accounts. We use these lists to offer our tours to past guests, to stop showing ads to people who have already booked, and to find new people with similar interests. Meta uses the hashed details only to match and discards what does not match.</li>
+        </ul>
+        <p style={{ marginTop: 12 }}>
+          If your browser sends Do Not Track or Global Privacy Control, the Meta pixel does not load and we do not
+          send your details to Meta. To be left out of customer lists, email{' '}
+          <a href="mailto:contact@mapltours.com" style={{ color: 'var(--text-primary)', textDecoration: 'underline' }}>
+            contact@mapltours.com
+          </a>{' '}and
+          we will remove you. You can also control the ads you see in your Facebook and Instagram ad preferences.
+        </p>
       </Section>
 
       <Section title="Cookies">
