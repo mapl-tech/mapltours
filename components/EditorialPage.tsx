@@ -34,9 +34,12 @@ export default function EditorialPage({
         position: 'relative', height: 240, overflow: 'hidden',
         display: 'flex', alignItems: 'flex-end',
       }}>
+        {/* The banner is the page's largest paint, so it loads first; it is
+            decorative (the h1 over it names the page), so it has no alt. */}
         <Image
           src={bannerImages[slug] || bannerImages.about}
-          alt={title}
+          alt=""
+          priority
           fill sizes="100vw"
           style={{ objectFit: 'cover', objectPosition: 'center 50%' }}
         />

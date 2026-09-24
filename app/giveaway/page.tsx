@@ -23,20 +23,45 @@ export const metadata: Metadata = {
   description:
     'Ask for your 5% code by November 30, 2026 and you are in the draw for a private bamboo raft for two on the Martha Brae. The full rules.',
   alternates: { canonical: 'https://mapltours.com/giveaway' },
+  openGraph: {
+    title: 'Win a bamboo raft for two on the Martha Brae',
+    description: 'Ask for your 5% code by November 30, 2026 and you are in the draw. One winner, drawn December 1. No purchase needed.',
+    url: 'https://mapltours.com/giveaway',
+  },
 }
 
-const list = { marginTop: 12, paddingLeft: 20, display: 'flex', flexDirection: 'column', gap: 8 } as const
+// The site reset strips list-style, which also hides the lists from VoiceOver in Safari; put the bullets back.
+const list = { marginTop: 16, paddingLeft: 20, listStyle: 'disc', display: 'flex', flexDirection: 'column', gap: 8 } as const
+const ENTER = 'https://bio.mapltours.com/?utm_source=mapltours&utm_medium=giveaway&utm_campaign=raft_2026#coupon'
+const facts: Array<[string, string]> = [
+  ['Entries close', 'November 30, 2026, 11:59 pm Eastern'],
+  ['The draw', 'December 1, 2026'],
+  ['The prize', 'A private raft for two, worth US$128'],
+  ['Open to', 'Adults in Canada (not Quebec), the US and the UK'],
+]
 const a = { color: 'var(--text-primary)', textDecoration: 'underline' } as const
 
 export default function GiveawayPage() {
   return (
     <EditorialPage slug="giveaway" label="Giveaway" title="A raft for two on the Martha Brae">
+      <div style={{ fontSize: 16 }}>
       <Section title="The short version">
         <p>
           Ask for your 5% code before the end of November 30, 2026 and you are in the draw. One winner gets a private
           bamboo raft for two on the Martha Brae: three slow miles of green river, a captain poling you down, and a car
           to and from your hotel. We draw on December 1, 2026 and email the winner the same day. No purchase needed.
         </p>
+        <dl style={{ margin: '24px 0 0', padding: 16, borderRadius: 16, border: '1px solid var(--border)', background: 'var(--surface)', display: 'grid', gap: 12 }}>
+          {facts.map(([k, v]) => (
+            <div key={k} style={{ display: 'grid', gap: 4 }}>
+              <dt style={{ color: 'var(--text-secondary)', fontSize: 14 }}>{k}</dt>
+              <dd style={{ margin: 0, color: 'var(--text-primary)', fontWeight: 600 }}>{v}</dd>
+            </div>
+          ))}
+        </dl>
+        <a href={ENTER} className="btn-primary" style={{ marginTop: 24, height: 48, padding: '0 28px', fontSize: 16, textDecoration: 'none' }}>
+          Get my code and enter
+        </a>
       </Section>
 
       <Section title="How to enter">
@@ -101,6 +126,7 @@ export default function GiveawayPage() {
           <li>Void where prohibited. These rules follow our <Link href="/terms" style={a}>Terms of Service</Link> and the laws of Jamaica, without taking away any rights you have where you live.</li>
         </ul>
       </Section>
+      </div>
     </EditorialPage>
   )
 }
