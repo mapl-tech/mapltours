@@ -28,6 +28,10 @@ export const metadata: Metadata = {
     description: 'Ask for your 5% code by November 30, 2026 and you are in the draw. One winner, drawn December 1. No purchase needed.',
     url: 'https://mapltours.com/giveaway',
   },
+  twitter: {
+    title: 'Win a bamboo raft for two on the Martha Brae',
+    description: 'Ask for your 5% code by November 30, 2026 and you are in the draw. One winner, drawn December 1. No purchase needed.',
+  },
 }
 
 // The site reset strips list-style, which also hides the lists from VoiceOver in Safari; put the bullets back.
@@ -51,7 +55,7 @@ export default function GiveawayPage() {
           bamboo raft for two on the Martha Brae: three slow miles of green river, a captain poling you down, and a car
           to and from your hotel. We draw on December 1, 2026 and email the winner the same day. No purchase needed.
         </p>
-        <dl style={{ margin: '24px 0 0', padding: 16, borderRadius: 16, border: '1px solid var(--border)', background: 'var(--surface)', display: 'grid', gap: 12 }}>
+        <dl style={{ margin: '24px 0 0', padding: 16, borderRadius: 16, border: '1px solid var(--border)', background: 'var(--surface)', display: 'grid', gap: 16 }}>
           {facts.map(([k, v]) => (
             <div key={k} style={{ display: 'grid', gap: 4 }}>
               <dt style={{ color: 'var(--text-secondary)', fontSize: 14 }}>{k}</dt>
