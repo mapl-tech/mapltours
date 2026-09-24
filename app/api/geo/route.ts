@@ -1,17 +1,38 @@
 import { NextResponse } from 'next/server'
+import { countryFromHeaders } from '@/lib/visitor-country'
+import { NO_STORE_HEADERS } from '@/lib/no-store'
 
-// Same-origin proxy for IP-based country detection. The browser-side
-// fetch to https://ipapi.co/json/ is blocked by CORS in production
-// (Playwright caught: "No 'Access-Control-Allow-Origin' header"), so
-// we forward server-side and only return the country code the client
-// actually needs for language detection.
+// The visitor's country, for two readers.
+//
+// `country` is the 5% popup's (components/CouponPopup): it comes ONLY from
+// the headers Netlify stamps on the request, the same source /api/lead
+// relays to the bio function, so the trip-tips box starts ticked on exactly
+// the visitors whose pre-ticked consent the bio will accept (lib/trip-tips).
+// Null when Netlify did not say; the box then starts unticked.
+//
+// `country_code` is the language detector's (lib/i18n): the same answer when
+// Netlify gives one, otherwise the old ipapi.co lookup so local dev still
+// guesses a language. The browser cannot call ipapi.co itself (no CORS
+// headers), which is why this forwards server-side.
+//
+// Every answer is no-store, browser and CDN alike: the URL is the same for
+// everybody and carries no Vary, so any shared cache would hand one
+// visitor's country to every visitor after them.
 
-export const runtime = 'edge'
+// Node, like /api/lead, so both routes read the Netlify geo header from the
+// same kind of request.
+export const runtime = 'nodejs'
+export const dynamic = 'force-dynamic'
 
 export async function GET(request: Request) {
+  const country = countryFromHeaders(request.headers)
+  if (country) {
+    return NextResponse.json({ country, country_code: country }, { headers: NO_STORE_HEADERS })
+  }
+
   // Forward the visitor's IP if a proxy/CDN exposed one. ipapi resolves
-  // by request IP when no path param is supplied, but Edge runtimes can
-  // route through a server IP, pass the explicit address when known.
+  // by request IP when no path param is supplied, but the function can
+  // route through a server IP, so pass the explicit address when known.
   const forwarded =
     request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
     request.headers.get('x-real-ip') ||
@@ -30,30 +51,16 @@ export async function GET(request: Request) {
 
   try {
     const res = await fetch(url, {
-      // revalidate 0 = never serve this lookup from the Data Cache. Declared
-      // via the `next` option (stripped before the platform fetch runs)
-      // rather than `cache: 'no-store'`, which edge runtimes can reject.
-      next: { revalidate: 0 },
+      cache: 'no-store',
       signal: AbortSignal.timeout(3000),
       headers: { 'User-Agent': 'mapltours/1.0' },
     })
     if (!res.ok) {
-      return NextResponse.json({ country_code: null }, { status: 200 })
+      return NextResponse.json({ country: null, country_code: null }, { headers: NO_STORE_HEADERS })
     }
     const data = await res.json()
-    return NextResponse.json(
-      { country_code: data.country_code ?? null },
-      {
-        // PRIVATE, not s-maxage. This answer is derived from the caller's own
-        // IP, but the URL is the same for everybody and carries no Vary, so a
-        // shared CDN cache would hand one visitor's country to every visitor
-        // for the next ten minutes and flip the whole storefront's language.
-        // Browser-only caching keeps the upstream call rate down without ever
-        // letting one visitor's answer be served to another.
-        headers: { 'Cache-Control': 'private, max-age=600' },
-      },
-    )
+    return NextResponse.json({ country: null, country_code: data.country_code ?? null }, { headers: NO_STORE_HEADERS })
   } catch {
-    return NextResponse.json({ country_code: null }, { status: 200 })
+    return NextResponse.json({ country: null, country_code: null }, { headers: NO_STORE_HEADERS })
   }
 }

@@ -14,7 +14,7 @@ export default function PrivacyPage() {
   return (
     <EditorialPage slug="privacy" label="Legal" title="Privacy Policy">
       <Section title="Last updated">
-        <p>This Privacy Policy was last updated on September 22, 2026.</p>
+        <p>This Privacy Policy was last updated on September 24, 2026.</p>
       </Section>
 
       <Section title="Our commitment">
@@ -43,6 +43,7 @@ export default function PrivacyPage() {
         <ul style={{ marginTop: 12, paddingLeft: 20, display: 'flex', flexDirection: 'column', gap: 8 }}>
           <li>Process and confirm your bookings, including sharing the relevant details with the driver or operator delivering your trip.</li>
           <li>Send transactional emails (booking confirmations, transfer details, contact form replies).</li>
+          <li>Send trip tips by email, about twice a month, only if the trip tips box is ticked when you ask for your code (it starts ticked for visitors in the United States) or you tap the link asking for them. We record that choice in HubSpot, send the tips through Resend, and every tips email has a one-tap unsubscribe.</li>
           <li>Provide customer support and respond to your questions.</li>
           <li>Improve the platform, understand which experiences travelers love, fix bugs, and tune the user experience.</li>
           <li>Detect, prevent, and address fraud or abuse on the platform.</li>

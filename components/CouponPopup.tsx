@@ -16,13 +16,16 @@ import {
   shouldShowPopup,
   useCouponPopupStore,
 } from '@/lib/coupon-popup'
+import { TIPS_LABEL, TIPS_ON_LINE, tipsDefaultFor, type TipsDefault } from '@/lib/trip-tips'
 
 /**
  * The 5% code popup on the home and explore pages.
  *
  * One ask, one email. The guest types an address, the code arrives by email
  * and appears on screen with a Copy button, and that is the whole exchange:
- * no newsletter unless they ask, no "no thanks, I like paying more" dismiss.
+ * no "no thanks, I like paying more" dismiss. Trip tips (a newsletter) come
+ * only with the box under the field, which starts ticked for US visitors
+ * alone; lib/trip-tips has the rule and why.
  * The rules for when it may open live in lib/coupon-popup; this component
  * adds the courtesies the rules cannot see: it waits while the tab is
  * hidden, while another dialog is open, or while the guest is typing in a
@@ -97,9 +100,23 @@ function Sheet({ place, closing, onClose }: { place: Place; closing: boolean; on
   const [error, setError] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
   const [code, setCode] = useState(POPUP_CODE)
-  // While the field has focus on a phone the card moves to the top of the
-  // screen, so the keyboard rising from the bottom never covers it.
-  const [typing, setTyping] = useState(false)
+  // Once the field has had focus on a phone the card moves to the top of the
+  // screen, so the keyboard rising from the bottom never covers it, and it
+  // stays there. It must never drop back on blur: the blur fires on the
+  // pointerdown of the tap on "Send my code", and a card that moved then
+  // pulled the button out from under the finger before the click landed, so
+  // the first tap did nothing (measured on a 390px touch profile). The lift
+  // itself waits a tick for the same reason: the tap that focused the field
+  // resolves before anything moves.
+  const [lifted, setLifted] = useState(false)
+  // The trip-tips box starts unticked and stays that way until /api/geo
+  // answers; a US answer ticks it, but only if the guest has not touched it.
+  // `tipsDefault` is what the box showed before they did, sent with the
+  // submit so the bio can tell a pre-tick from a tick.
+  const [optIn, setOptIn] = useState(false)
+  const [tipsDefault, setTipsDefault] = useState<TipsDefault>('unchecked')
+  const [tipsOn, setTipsOn] = useState(false)
+  const boxTouched = useRef(false)
 
   useEffect(() => {
     const prev = document.body.style.overflow
@@ -115,6 +132,26 @@ function Sheet({ place, closing, onClose }: { place: Place; closing: boolean; on
     if (desktop) inputRef.current?.focus({ preventScroll: true })
   }, [])
 
+  useEffect(() => {
+    const ctrl = new AbortController()
+    const timer = window.setTimeout(() => ctrl.abort(), 4000)
+    fetch('/api/geo', { cache: 'no-store', signal: ctrl.signal })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((j: { country?: string | null } | null) => {
+        if (boxTouched.current) return
+        const on = tipsDefaultFor(j?.country)
+        setOptIn(on)
+        setTipsDefault(on ? 'checked' : 'unchecked')
+      })
+      // No answer: the box stays unticked, which is always lawful.
+      .catch(() => {})
+      .finally(() => window.clearTimeout(timer))
+    return () => {
+      window.clearTimeout(timer)
+      ctrl.abort()
+    }
+  }, [])
+
   const submit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (phase === 'busy') return
@@ -126,20 +163,24 @@ function Sheet({ place, closing, onClose }: { place: Place; closing: boolean; on
     }
     setError(null)
     setPhase('busy')
+    // The box as submitted is the box they saw; a late geo answer must not
+    // flip it under them if this send fails and they try again.
+    boxTouched.current = true
     const eventId = trackingOptedOut() ? undefined : safeUuid()
     try {
       const r = await fetch('/api/lead', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: value, website, place, page: window.location.href, eventId }),
+        body: JSON.stringify({ email: value, website, place, page: window.location.href, eventId, optIn, optInDefault: tipsDefault }),
       })
-      const j = (await r.json().catch(() => ({}))) as { ok?: boolean; code?: string; error?: string }
+      const j = (await r.json().catch(() => ({}))) as { ok?: boolean; code?: string; error?: string; tips?: boolean }
       if (!r.ok || !j.ok) {
         setError(j.error || 'We could not send it just now. Try again in a moment.')
         setPhase('idle')
         return
       }
       if (j.code) setCode(j.code)
+      setTipsOn(j.tips === true)
       useCouponPopupStore.getState().markDone(Date.now())
       trackLead(place === 'home' ? 'popup_home' : place === 'explore' ? 'popup_explore' : 'popup_transfers', eventId)
       setPhase('done')
@@ -169,7 +210,7 @@ function Sheet({ place, closing, onClose }: { place: Place; closing: boolean; on
 
   return createPortal(
     <div
-      className={`cpop-scrim${closing ? ' closing' : ''}${typing ? ' cpop-scrim--typing' : ''}`}
+      className={`cpop-scrim${closing ? ' closing' : ''}${lifted ? ' cpop-scrim--lifted' : ''}`}
       onPointerDown={(e) => { scrimPress.current = e.target === e.currentTarget }}
       onClick={(e) => {
         if (scrimPress.current && e.target === e.currentTarget) onClose()
@@ -204,9 +245,15 @@ function Sheet({ place, closing, onClose }: { place: Place; closing: boolean; on
             <>
               <p className="cpop-kicker">MAPL Tours Jamaica</p>
               <h2 id={titleId} className="cpop-title">{POPUP_PERCENT}% off your first ride or tour.</h2>
-              <p id={descId} className="cpop-sub">One email with your code. No newsletter unless you ask.</p>
+              {/* This line is the dialog's description, read out on open, and it
+                  sits over a box that starts ticked in the US: it has to be
+                  true with the box either way. */}
+              <p id={descId} className="cpop-sub">Your code comes by email in a minute.</p>
               <form onSubmit={submit} noValidate className="cpop-form">
-                <label htmlFor={`${titleId}-email`} className="visually-hidden">Email address</label>
+                {/* A floating label: visible at rest and while typing (a placeholder
+                    alone vanishes on the first keystroke), and it needs no extra row,
+                    so the short-phone fit of the card is unchanged. */}
+                <div className="cpop-field">
                 <input
                   ref={inputRef}
                   id={`${titleId}-email`}
@@ -218,15 +265,16 @@ function Sheet({ place, closing, onClose }: { place: Place; closing: boolean; on
                   autoComplete="email"
                   autoCapitalize="off"
                   spellCheck={false}
-                  placeholder="you@example.com"
+                  placeholder=" "
                   value={email}
                   onChange={(e) => { setEmail(e.target.value); if (error) setError(null) }}
-                  onFocus={() => setTyping(true)}
-                  onBlur={() => setTyping(false)}
+                  onFocus={() => { if (!lifted) window.setTimeout(() => setLifted(true), 0) }}
                   aria-invalid={error ? true : undefined}
                   aria-describedby={error ? errorId : undefined}
                   disabled={phase === 'busy'}
                 />
+                <label htmlFor={`${titleId}-email`} className="cpop-field-label">Email address</label>
+                </div>
                 {/* Honeypot: bots fill every field. Off screen, off the tab order, off the reader. */}
                 <input
                   type="text"
@@ -241,6 +289,18 @@ function Sheet({ place, closing, onClose }: { place: Place; closing: boolean; on
                 {error && (
                   <p id={errorId} role="alert" className="cpop-error">{error}</p>
                 )}
+                {/* A real checkbox wrapped in its label, so the whole row is the target. */}
+                <label className="cpop-tips">
+                  <input
+                    type="checkbox"
+                    name="tips"
+                    value="yes"
+                    checked={optIn}
+                    onChange={(e) => { boxTouched.current = true; setOptIn(e.target.checked) }}
+                    disabled={phase === 'busy'}
+                  />
+                  <span>{TIPS_LABEL}</span>
+                </label>
                 <button type="submit" className="cpop-cta" disabled={phase === 'busy'} aria-busy={phase === 'busy'}>
                   {phase === 'busy' ? 'Sending your code…' : 'Send my code'}
                 </button>
@@ -260,6 +320,9 @@ function Sheet({ place, closing, onClose }: { place: Place; closing: boolean; on
                 </button>
               </div>
               <span className="visually-hidden" aria-live="polite">{copied ? `${code} copied to the clipboard` : ''}</span>
+              {tipsOn && (
+                <p className="cpop-tips-on"><Check size={16} aria-hidden />{TIPS_ON_LINE}</p>
+              )}
               {place === 'home' ? (
                 <Link href="/explore" className="cpop-cta" onClick={onClose}>Choose a tour</Link>
               ) : (
