@@ -4,6 +4,7 @@ import { createServiceClient } from '@/lib/supabase/service'
 import { DEFAULT_DRIVER } from '@/lib/dispatch'
 import { reportServerPurchase } from '@/lib/ga4-server'
 import { reportMetaPurchase } from '@/lib/meta-capi'
+import { syncBookingToCalendar, removeBookingFromCalendar } from '@/lib/google-calendar'
 import { activateGiftCard } from '@/lib/gift-activation'
 import { settleGiftClaim, releaseGiftClaim, refundToGiftCard } from '@/lib/gift-redemption'
 import { consumeCoupon } from '@/lib/coupon-redemption'
@@ -12,6 +13,7 @@ import { sendCancellationEmails } from '@/lib/email/cancellation'
 import {
   claimEmailChannel as sharedClaimEmailChannel,
   releaseEmailChannel as sharedReleaseEmailChannel,
+  type ClaimOutcome,
 } from '@/lib/email/claim'
 import BookingConfirmed from '@/emails/BookingConfirmed'
 import OperatorBookingAlert from '@/emails/OperatorBookingAlert'
@@ -86,6 +88,8 @@ interface BookingRow {
   reward_discount: number | null
   currency: string
   stripe_payment_id: string | null
+  /** Portion of total_paid redeemed from a gift card, null when none. */
+  gift_card_amount: number | null
   confirmation_email_sent_at: string | null
   operator_email_sent_at: string | null
 }
@@ -252,6 +256,28 @@ async function handlePaymentSucceeded(pi: Stripe.PaymentIntent) {
     return
   }
 
+  // A SECOND successful intent on an already-paid booking is a double
+  // charge, and it used to be absorbed in silence: the row was already
+  // 'paid', the email claims were already stamped, so the handler fell
+  // through every branch and answered 200 with nothing logged. The guest's
+  // first sign of it was their card statement, and ours was the dispute.
+  // The checkout route now refuses to mint a second intent on a settled
+  // booking, so reaching this line means the guest paid twice through some
+  // path that guard did not cover. It cannot be refunded automatically,
+  // because which of the two charges the guest wants kept is their call,
+  // but it must never again be invisible.
+  if (
+    booking.status === 'paid' &&
+    booking.stripe_payment_id &&
+    booking.stripe_payment_id !== pi.id
+  ) {
+    console.error(
+      '[stripe-webhook] CRITICAL: second successful PaymentIntent on a paid booking, guest likely charged twice, refund one in the dashboard',
+      { booking_id: booking.id, kept_pi: booking.stripe_payment_id, duplicate_pi: pi.id, duplicate_amount: pi.amount },
+    )
+    return
+  }
+
   // Mark paid only if we haven't already. We DO NOT short-circuit when
   // status is already 'paid', instead we fall through to the email step
   // which has its own per-channel idempotency. That way a transient
@@ -259,40 +285,72 @@ async function handlePaymentSucceeded(pi: Stripe.PaymentIntent) {
   if (booking.status !== 'paid') {
     const { data: transitioned, error } = await supabase
       .from('bookings')
-      .update({ status: 'paid', paid_at: new Date().toISOString() })
+      // stripe_payment_id is re-stamped here with the intent that ACTUALLY
+      // paid. The row may still carry a later intent's id (checkout stamps
+      // each mint onto the pending row), and if that later intent then also
+      // succeeded, the double-charge guard above would compare it against
+      // itself and stay silent. Recording the paying intent makes any other
+      // intent's success trip the guard.
+      .update({ status: 'paid', paid_at: new Date().toISOString(), stripe_payment_id: pi.id })
       .eq('id', booking.id)
       .neq('status', 'refunded')
+      // 'paid' is excluded too, so exactly ONE delivery can win this
+      // transition. Two intents on one booking succeeding within the same
+      // second both read 'pending' above, and with only the refund guard
+      // both updates matched (the second re-evaluated against the committed
+      // 'paid' row, which is not 'refunded'), so both claimed the win and the
+      // duplicate charge passed in silence. The loser now gets zero rows and
+      // must find out WHY below.
+      .neq('status', 'paid')
       .select('id')
     if (error) {
       console.error('[stripe-webhook] failed to mark booking paid', error)
       throw new Error(error.message) // → Stripe retries
     }
     if (!transitioned || transitioned.length === 0) {
-      // The refund won the race. Leave the booking dead.
-      console.log('[stripe-webhook] paid transition skipped, booking already refunded', booking.id)
-      return
-    }
+      // Somebody else moved the row between our read and this update. Read
+      // it back: a refund means the booking is dead; a paid row means a
+      // concurrent delivery won, and whether THAT was the same intent (a
+      // Stripe redelivery, harmless) or a different one (a second charge on
+      // the same trip) is the whole question.
+      const { data: after } = await supabase
+        .from('bookings')
+        .select('status, stripe_payment_id')
+        .eq('id', booking.id)
+        .maybeSingle()
+      if (after?.status !== 'paid') {
+        console.log('[stripe-webhook] paid transition skipped, booking no longer payable', { booking_id: booking.id, status: after?.status })
+        return
+      }
+      if (after.stripe_payment_id && after.stripe_payment_id !== pi.id) {
+        console.error(
+          '[stripe-webhook] CRITICAL: second successful PaymentIntent on a paid booking (concurrent), guest likely charged twice, refund one in the dashboard',
+          { booking_id: booking.id, kept_pi: after.stripe_payment_id, duplicate_pi: pi.id, duplicate_amount: pi.amount },
+        )
+        return
+      }
+      // Same intent, concurrent delivery: fall through to the email step,
+      // whose per-channel claims make a second pass harmless.
+      booking.status = 'paid'
+      booking.stripe_payment_id = pi.id
+    } else {
     booking.status = 'paid'
+    booking.stripe_payment_id = pi.id
 
-    // Server-side purchase for GA4/Google Ads and for Meta, exactly once: on
-    // the delivery that flipped this booking to paid, so a Stripe redelivery
-    // never double counts. Each confirm page fires the same id client-side
-    // and both platforms dedupe on it (GA4 on transaction_id, Meta on
-    // event_id), so these land even when the guest never returns from 3DS or
-    // closes the tab.
-    //
-    // Run in PARALLEL, deliberately. Each reporter carries its own 4s
-    // timeout, and everything below still has to happen inside Stripe's
-    // ~10s webhook budget: the driver assign, the traveller and operator
-    // emails, the calendar sync. Awaiting them in sequence would put 8s of
-    // analytics in front of fulfilment and risk a timeout, which Stripe
-    // answers by redelivering. Promise.all cannot reject here because
-    // neither function throws: both resolve to 'sent' | 'skipped' | 'failed'
-    // and swallow their own errors. Never fatal.
-    await Promise.all([
-      reportServerPurchase(booking),
-      reportMetaPurchase(booking),
-    ])
+    // Server-side purchase for GA4 and Google Ads, exactly once: on the
+    // delivery that flipped this booking to paid, so a Stripe redelivery
+    // never double counts. The confirm page fires the same transaction id
+    // client-side and GA4 dedupes on it; this one lands even when the guest
+    // never returns from 3DS or closes the tab. Never fatal.
+    await reportServerPurchase(booking)
+
+    // The same purchase to Meta's Conversions API, deduped against the pixel
+    // by the booking ref as eventID. Matters more here than for GA: iOS and
+    // content blockers suppress the pixel for much of a mobile travel
+    // audience, so without this the Facebook/Instagram optimiser barely
+    // learns which click paid. Dormant until META_PIXEL_ID/META_CAPI_TOKEN
+    // are set; never fatal.
+    await reportMetaPurchase(booking)
 
     // Auto-assign the default driver, exactly once: on the delivery that
     // flipped this booking to paid. Living inside the transition means a
@@ -315,6 +373,7 @@ async function handlePaymentSucceeded(pi: Stripe.PaymentIntent) {
         Object.assign(booking, DEFAULT_DRIVER)
       }
     }
+    }
   }
 
   // Turn any gift-card reservation on this cart into a permanent spend. The
@@ -325,21 +384,90 @@ async function handlePaymentSucceeded(pi: Stripe.PaymentIntent) {
   await settleGiftClaim(supabase, booking.id, pi.amount_received)
 
   // Consume the video-upload reward, if one was applied to this checkout.
-  // This is the authoritative consume point: a 3DS/redirect payment never
-  // runs the client-side consumeReward(), so without this a reward could be
-  // re-applied to a later cart. Idempotent, only flips a still-'available'
-  // row, keyed on this booking.
-  const rewardId = typeof pi.metadata?.reward_id === 'string' ? pi.metadata.reward_id : null
+  // This is THE consume point for card-paid bookings: the client never
+  // touches the reward row (a client-side consume used to race this and
+  // wipe used_on_booking_id), and the gift-covered path settles server-side
+  // in the checkout route. Idempotent, keyed on this booking.
+  const rewardId = typeof pi.metadata?.reward_id === 'string' && pi.metadata.reward_id ? pi.metadata.reward_id : null
+  const usedStamp = { status: 'used', used_on_booking_id: booking.id, used_at: new Date().toISOString() }
+  let consumedId: string | null = null
   if (rewardId) {
-    const { error: rewardErr } = await supabase
+    // 1. The reward the intent names, if this booking holds it. The row
+    //    count is the real check: zero rows with no error means this
+    //    booking does NOT hold that reward any more.
+    const { data: consumed, error: rewardErr } = await supabase
       .from('user_rewards')
-      .update({ status: 'used', used_on_booking_id: booking.id, used_at: new Date().toISOString() })
+      .update(usedStamp)
       .eq('id', rewardId)
-      .eq('status', 'available')
+      .eq('status', 'reserved')
+      .eq('used_on_booking_id', booking.id)
+      .select('id')
     if (rewardErr) {
       // Non-fatal: the charge already succeeded. Log for reconciliation.
       console.warn('[stripe-webhook] reward consume failed', { reward_id: rewardId, error: rewardErr.message })
+    } else if (consumed?.length) {
+      consumedId = consumed[0].id
     }
+  }
+  if (!consumedId) {
+    // 2. Whatever reward this booking holds NOW. A re-POST between the mint
+    //    and the payment can move the booking's reservation to a newer
+    //    reward (all milestones are the same percent, so the intent's
+    //    amount is still right): the discount this charge carried is
+    //    backed by the reward the booking holds, not by the id the intent
+    //    remembers. Consuming the held one keeps "one paid discount, one
+    //    used reward" true; consuming the remembered one would have used a
+    //    released row and left the held one 'reserved' on a paid booking,
+    //    where nothing can ever free it.
+    const { data: heldNow } = await supabase
+      .from('user_rewards')
+      .update(usedStamp)
+      .eq('status', 'reserved')
+      .eq('used_on_booking_id', booking.id)
+      .select('id')
+    if (heldNow?.length) {
+      consumedId = heldNow[0].id
+      if (rewardId && consumedId !== rewardId) {
+        console.warn('[stripe-webhook] consumed the reward the booking holds, not the one the intent named', { booking_id: booking.id, named: rewardId, consumed: consumedId })
+      }
+    }
+  }
+  if (!consumedId && rewardId) {
+    // 3. Nothing held. Either a redelivery already consumed it (routine), or
+    //    ANOTHER booking consumed this reward and the discount this charge
+    //    carried is backed by nothing: the double-spend the reservation
+    //    exists to prevent, and it must never pass in silence.
+    const { data: row } = await supabase
+      .from('user_rewards').select('status, used_on_booking_id').eq('id', rewardId).maybeSingle()
+    if (row?.status === 'used' && row.used_on_booking_id === booking.id) {
+      consumedId = rewardId
+    } else if (row?.status === 'available' && !row.used_on_booking_id) {
+      // Released between mint and payment (intent predates the reservation
+      // shipping, or a takeover freed it): the discount was real, so spend
+      // it rather than hand the guest a free 5%.
+      const { data: late } = await supabase
+        .from('user_rewards').update(usedStamp).eq('id', rewardId).eq('status', 'available').is('used_on_booking_id', null).select('id')
+      if (late?.length) consumedId = rewardId
+    }
+    if (!consumedId) {
+      console.error(
+        '[stripe-webhook] CRITICAL: reward already consumed elsewhere, this charge carried an unbacked discount',
+        { reward_id: rewardId, booking_id: booking.id, holder: row?.used_on_booking_id, holder_status: row?.status },
+      )
+    }
+  }
+  // 4. A paid booking can back exactly ONE reward. Free any other row still
+  //    reserved by it, or it sits there for good: the takeover refuses paid
+  //    holders and no release path runs for a settled booking.
+  {
+    let q = supabase
+      .from('user_rewards')
+      .update({ status: 'available', used_on_booking_id: null })
+      .eq('status', 'reserved')
+      .eq('used_on_booking_id', booking.id)
+    if (consumedId) q = q.neq('id', consumedId)
+    const { data: freed } = await q.select('id')
+    if (freed?.length) console.warn('[stripe-webhook] released extra reward reservation(s) on a paid booking', { booking_id: booking.id, rewards: freed.map((r) => r.id) })
   }
 
   // Count the coupon, if one priced this checkout. Same authority as the
@@ -384,6 +512,15 @@ async function handlePaymentSucceeded(pi: Stripe.PaymentIntent) {
       throw new Error(`transient email failure, retrying via Stripe re-delivery (booking ${booking.id})`)
     }
   }
+
+  // Ops calendar, LAST and best-effort: the paid booking appears on the
+  // shared "MAPL Bookings" Google Calendar. Event ids derive from the
+  // booking id, so a Stripe redelivery re-inserting is a harmless 409, and
+  // a failure here is logged, never thrown — the payment path stays sacred.
+  const calendar = await syncBookingToCalendar(booking, items)
+  if (!calendar.ok && calendar.reason !== 'not configured') {
+    console.warn('[stripe-webhook] ops calendar sync failed', { booking_id: booking.id, reason: calendar.reason })
+  }
 }
 
 async function handlePaymentFailed(pi: Stripe.PaymentIntent) {
@@ -392,6 +529,16 @@ async function handlePaymentFailed(pi: Stripe.PaymentIntent) {
   // late-delivered failure from an earlier attempt must not scrub either.
   // In-memory check plus a status predicate on the write for the race.
   if (!booking || booking.status === 'paid' || booking.status === 'refunded') return
+
+  // Same superseded-intent guard as handlePaymentCanceled: a decline on an
+  // intent the checkout has already replaced must not stamp failed_at onto a
+  // booking whose CURRENT intent the guest is still paying.
+  if (booking.stripe_payment_id && booking.stripe_payment_id !== pi.id) {
+    console.log('[stripe-webhook] ignoring failure of superseded intent', {
+      booking_id: booking.id, failed_pi: pi.id, current_pi: booking.stripe_payment_id,
+    })
+    return
+  }
 
   // DELIBERATELY no releaseGiftClaim here. payment_failed fires on every
   // decline while the PaymentIntent is STILL PAYABLE — Stripe Elements
@@ -427,10 +574,35 @@ async function handlePaymentCanceled(pi: Stripe.PaymentIntent) {
   const { supabase, booking } = await loadBooking(pi)
   if (!booking || booking.status === 'paid' || booking.status === 'refunded') return
 
+  // A SUPERSEDED intent's cancellation says nothing about the booking.
+  //
+  // When checkout replaces a PaymentIntent (cart edited, gift code applied,
+  // a transient retrieve failure), it attaches the NEW intent to the row and
+  // explicitly cancels the old one. That cancellation still finds this
+  // booking through metadata.booking_id, and acting on it released the gift
+  // claim out from under a LIVE intent and flipped a payable booking to
+  // 'canceled' while the guest sat on the Stripe form. Only the intent the
+  // booking currently holds may speak for it.
+  if (booking.stripe_payment_id && booking.stripe_payment_id !== pi.id) {
+    console.log('[stripe-webhook] ignoring cancellation of superseded intent', {
+      booking_id: booking.id, canceled_pi: pi.id, current_pi: booking.stripe_payment_id,
+    })
+    return
+  }
+
   // Mirror handlePaymentFailed: a cancelled intent must hand the reserved
   // gift-card value back, or the balance stays debited for a booking that
   // will never be paid until the stale sweep catches it.
   await releaseGiftClaim(supabase, booking.id)
+
+  // Same for a reserved reward: cancellation is terminal for this intent, so
+  // the discount goes back on the shelf. Conditional on OUR booking holding
+  // it, so a reservation this row has already moved on from is untouched.
+  await supabase
+    .from('user_rewards')
+    .update({ status: 'available', used_on_booking_id: null })
+    .eq('used_on_booking_id', booking.id)
+    .eq('status', 'reserved')
 
   await supabase.from('bookings').update({ status: 'canceled' }).eq('id', booking.id)
     .not('status', 'in', '("paid","refunded")')
@@ -462,7 +634,7 @@ async function claimEmailChannel(
   supabase: ReturnType<typeof createServiceClient>,
   bookingId: string,
   column: 'confirmation_email_sent_at' | 'operator_email_sent_at',
-): Promise<boolean> {
+): Promise<ClaimOutcome> {
   // Implementation lives in lib/email/claim.ts so the cancellation path
   // shares it. The paid-status guard is NON-NEGOTIABLE here: without it a
   // refund racing the handler lets a confirmation email escape for a
@@ -489,8 +661,16 @@ async function maybeSendTravelerConfirmation(
     return { ok: false, reason: 'no_email_on_record', retryable: false }
   }
 
-  if (!(await claimEmailChannel(supabase, booking.id, 'confirmation_email_sent_at'))) {
-    return { ok: true }
+  {
+    // Three outcomes, and only one of them is "someone else is sending".
+    // 'error' used to wear the same boolean as 'lost', so a transient
+    // database blip during the claim was read as a lost race, the handler
+    // answered ok, Stripe got its 200, and a PAID booking's email was
+    // dropped forever. An errored claim is now retryable: nobody holds the
+    // channel, so asking Stripe to redeliver is safe and correct.
+    const claim = await claimEmailChannel(supabase, booking.id, 'confirmation_email_sent_at')
+    if (claim === 'lost') return { ok: true }
+    if (claim === 'error') return { ok: false, reason: 'claim_error', retryable: true }
   }
 
   const bookingRef = humanizeId(booking.id)
@@ -514,6 +694,9 @@ async function maybeSendTravelerConfirmation(
           couponCode: (booking as { coupon_code?: string | null }).coupon_code ?? null,
           couponDiscount: (booking as { coupon_discount?: number | string | null }).coupon_discount != null ? Number((booking as { coupon_discount?: number | string | null }).coupon_discount) : null,
           totalPaid: Number(booking.total_paid),
+          // The gift-funded split. total_paid is the gross cart; the card was
+          // charged total_paid minus this, and the email must match the card.
+          giftApplied: booking.gift_card_amount != null ? Number(booking.gift_card_amount) : null,
           currency: booking.currency.toUpperCase(),
           paidAt: (booking as { paid_at?: string | null }).paid_at ?? null,
           specialRequests: booking.special_requests,
@@ -556,6 +739,9 @@ async function maybeSendTravelerConfirmation(
           couponCode: (booking as { coupon_code?: string | null }).coupon_code ?? null,
           couponDiscount: (booking as { coupon_discount?: number | string | null }).coupon_discount != null ? Number((booking as { coupon_discount?: number | string | null }).coupon_discount) : null,
           totalPaid: Number(booking.total_paid),
+          // The gift-funded split. total_paid is the gross cart; the card was
+          // charged total_paid minus this, and the email must match the card.
+          giftApplied: booking.gift_card_amount != null ? Number(booking.gift_card_amount) : null,
           currency: booking.currency.toUpperCase(),
           paidAt: (booking as { paid_at?: string | null }).paid_at ?? null,
           items: items.map((i) => ({
@@ -622,8 +808,16 @@ async function maybeSendOperatorAlert(
   const opsRecipients = operatorAlertRecipients(resolveOpsRecipients())
   if (opsRecipients.length === 0) return { ok: false, reason: 'no_ops_email_configured', retryable: false }
 
-  if (!(await claimEmailChannel(supabase, booking.id, 'operator_email_sent_at'))) {
-    return { ok: true }
+  {
+    // Three outcomes, and only one of them is "someone else is sending".
+    // 'error' used to wear the same boolean as 'lost', so a transient
+    // database blip during the claim was read as a lost race, the handler
+    // answered ok, Stripe got its 200, and a PAID booking's email was
+    // dropped forever. An errored claim is now retryable: nobody holds the
+    // channel, so asking Stripe to redeliver is safe and correct.
+    const claim = await claimEmailChannel(supabase, booking.id, 'operator_email_sent_at')
+    if (claim === 'lost') return { ok: true }
+    if (claim === 'error') return { ok: false, reason: 'claim_error', retryable: true }
   }
 
   const bookingRef = humanizeId(booking.id)
@@ -827,9 +1021,20 @@ async function handleChargeRefunded(charge: Stripe.Charge) {
   const refundByPi = () => supabase
     .from('bookings').update(refundFields).neq('status', 'refunded')
     .eq('stripe_payment_id', piId!).select('id, dispatch, total_paid, gift_card_amount, gift_card_id, refund_quoted_gift')
-  const refundByMeta = () => supabase
-    .from('bookings').update(refundFields).neq('status', 'refunded')
-    .eq('id', metaBookingId!).select('id, dispatch, total_paid, gift_card_amount, gift_card_id, refund_quoted_gift')
+  // The metadata fallback may only terminate a booking whose current intent
+  // IS this charge's intent, or that never had one stamped (the orphan the
+  // fallback exists for). When the row holds a DIFFERENT intent, the charge
+  // being refunded belongs to a superseded or duplicate intent: the
+  // double-charge CRITICAL log tells ops to refund exactly such a charge,
+  // and this fallback used to answer that refund by marking the real, kept
+  // booking refunded, cancelling the guest and standing the driver down.
+  const refundByMeta = () => {
+    let q = supabase
+      .from('bookings').update(refundFields).neq('status', 'refunded')
+      .eq('id', metaBookingId!)
+    if (piId) q = q.or(`stripe_payment_id.is.null,stripe_payment_id.eq.${piId}`)
+    return q.select('id, dispatch, total_paid, gift_card_amount, gift_card_id, refund_quoted_gift')
+  }
 
   // Two-step lookup, mirroring loadBooking: an orphan booking whose
   // stripe_payment_id was never healed matches zero rows by PI, and the
@@ -844,10 +1049,26 @@ async function handleChargeRefunded(charge: Stripe.Charge) {
     throw new Error(error.message)
   }
   if (!data || data.length === 0) {
-    // Either an idempotent redelivery (already refunded) or a refund for a
-    // booking we cannot resolve. Log it: silence here is how money states
-    // drift apart.
-    console.warn('[stripe-webhook] charge.refunded matched no refundable booking', { pi: piId, meta: metaBookingId })
+    // Either an idempotent redelivery (already refunded), a refund for a
+    // booking we cannot resolve, or a refund of a charge that is NOT the
+    // booking's current intent (see refundByMeta). The last one is the
+    // double-charge cleanup and deserves its own, louder line: the booking
+    // is deliberately left as it is, and the money movement is Stripe's.
+    let foreignIntent = false
+    if (metaBookingId && piId) {
+      const { data: bk } = await supabase
+        .from('bookings').select('status, stripe_payment_id').eq('id', metaBookingId).maybeSingle()
+      foreignIntent = !!bk?.stripe_payment_id && bk.stripe_payment_id !== piId
+      if (foreignIntent) {
+        console.warn('[stripe-webhook] charge.refunded is for a non-current intent on this booking; booking left untouched', {
+          booking_id: metaBookingId, booking_status: bk?.status, booking_pi: bk?.stripe_payment_id, refunded_pi: piId,
+          refunded: refundedCents / 100,
+        })
+      }
+    }
+    if (!foreignIntent) {
+      console.warn('[stripe-webhook] charge.refunded matched no refundable booking', { pi: piId, meta: metaBookingId })
+    }
   }
   if (data?.length) {
     // Record when we learned of the refund, for support conversations.
@@ -902,15 +1123,32 @@ async function handleChargeRefunded(charge: Stripe.Charge) {
         .in('status', ['reserved', 'spent'])
         .maybeSingle()
 
-      if (ledger?.status === 'reserved') {
+      let ledgerStatus = ledger?.status
+      if (ledgerStatus === 'reserved') {
         // Out-of-order delivery: the refund landed before payment_intent
         // .succeeded ever settled the claim. The succeeded handler returns
         // early on refunded bookings, so nothing else will ever release
         // this reservation. Hand the whole claim back now.
         await releaseGiftClaim(supabase, row.id)
-        continue
+        // Then LOOK: a succeeded delivery already past its paid transition
+        // can settle this same row to 'spent' between our read and the
+        // release, in which case the release matched nothing and the value
+        // is still owed. Fall through to the spent path rather than
+        // consuming the refund as done.
+        const { data: again } = await supabase
+          .from('gift_card_redemptions')
+          .select('status')
+          .eq('booking_id', row.id)
+          .in('status', ['reserved', 'spent'])
+          .maybeSingle()
+        ledgerStatus = again?.status
+        if (ledgerStatus === 'spent') {
+          console.warn('[stripe-webhook] gift claim was settled under the refund; crediting it back as a spent claim', { booking: row.id })
+        } else {
+          continue
+        }
       }
-      if (ledger?.status !== 'spent') continue // nothing held, nothing owed
+      if (ledgerStatus !== 'spent') continue // nothing held, nothing owed
 
       const grossCents = Math.round(Number(row.total_paid ?? 0) * 100)
       const capturedCents = Math.max(0, grossCents - giftCents)
@@ -938,6 +1176,15 @@ async function handleChargeRefunded(charge: Stripe.Charge) {
     // the only thing that tells the traveler and stands the driver down.
     for (const row of data) {
       await sendCancellationEmails(row.id, { source: 'dashboard' })
+    }
+    // Ops calendar cleanup LAST, after every money and email step: this
+    // handler runs its critical section exactly once (the status flip is the
+    // gate), so nothing that matters may wait behind a third-party call. The
+    // calendar fetches are individually timeboxed and never throw, but even a
+    // bounded stall belongs behind the gift credit and the emails, not in
+    // front of them. (Audit finding, 2026-08-22.)
+    for (const row of data) {
+      await removeBookingFromCalendar(row.id)
     }
     console.log('[stripe-webhook] booking refunded, dispatch released', data.map((r: { id: string }) => r.id))
   }

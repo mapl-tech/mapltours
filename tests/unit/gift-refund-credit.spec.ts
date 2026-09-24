@@ -24,6 +24,9 @@ interface Row { [k: string]: unknown }
  */
 function fakeDb(tables: Record<string, Row[]>) {
   const calls = { creditAttempts: 0 }
+  // Tables whose reads should fail the way supabase-js reports a PostgREST
+  // failure: resolved { data: null, error }, never a throw.
+  const failures = { select: new Set<string>() }
   const match = (row: Row, filters: [string, unknown][]) =>
     filters.every(([col, val]) => row[col] === val)
 
@@ -35,6 +38,9 @@ function fakeDb(tables: Record<string, Row[]>) {
       maybeSingle() {
         const rows = tables[table] ?? []
         const hit = rows.find((r) => match(r, filters))
+        if (mode === 'select' && failures.select.has(table)) {
+          return Promise.resolve({ data: null, error: { message: 'canceling statement due to statement timeout' } })
+        }
         if (mode === 'select') return Promise.resolve({ data: hit ?? null, error: null })
         if (!hit) return Promise.resolve({ data: null, error: null })
         if (table === 'gift_cards') calls.creditAttempts++
@@ -54,6 +60,7 @@ function fakeDb(tables: Record<string, Row[]>) {
 
   return {
     calls,
+    failures,
     client: {
       from(table: string) {
         return {
@@ -138,6 +145,24 @@ describe('returning gift value on a refund', () => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     expect(await refundToGiftCard(client as any, CARD, BOOKING, 0)).toBe(true)
     expect(tables.gift_cards[0].balance).toBe(40)
+    expect(tables.gift_card_redemptions[0].status).toBe('spent')
+  })
+
+  test('an errored ledger read fails closed: no success, no state change', async () => {
+    const tables = seed(60, 40)
+    const { client, failures } = fakeDb(tables)
+    // The DB hiccups on the opening read (statement timeout, transient 5xx).
+    // supabase resolves that as { data: null, error } without throwing, and
+    // treating it as "no spent row, already processed" reported success to
+    // the admin route — which sent the emails and buried the credit forever.
+    // The read error must come back as failure with the ledger untouched.
+    failures.select.add('gift_card_redemptions')
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const ok = await refundToGiftCard(client as any, CARD, BOOKING, 60)
+
+    expect(ok).toBe(false)
+    expect(tables.gift_cards[0].balance).toBe(40)
+    // The 'spent' row survives: it is the durable marker that credit is owed.
     expect(tables.gift_card_redemptions[0].status).toBe('spent')
   })
 

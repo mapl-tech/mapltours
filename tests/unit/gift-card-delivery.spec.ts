@@ -47,7 +47,7 @@ describe('gift card delivery wiring', () => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const ok = await claim.claimEmailChannel(fakeSupabase as any, 'gift-1', 'delivered_at', 'gift_cards')
 
-    expect(ok).toBe(true)
+    expect(ok).toBe('claimed')
     expect(calls).toHaveLength(1)
     expect(calls[0].table).toBe('gift_cards')
     expect(calls[0].column).toBe('delivered_at')
@@ -85,7 +85,7 @@ describe('gift card delivery wiring', () => {
     expect(calls[0].table).toBe('bookings')
   })
 
-  test('a claim that matches no row reports false rather than sending', async () => {
+  test('a claim that matches no row reports lost rather than sending', async () => {
     const claim = await import('../../lib/email/claim')
     const fakeSupabase = {
       from() {
@@ -105,10 +105,10 @@ describe('gift card delivery wiring', () => {
       },
     }
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    expect(await claim.claimEmailChannel(fakeSupabase as any, 'x', 'delivered_at', 'gift_cards')).toBe(false)
+    expect(await claim.claimEmailChannel(fakeSupabase as any, 'x', 'delivered_at', 'gift_cards')).toBe('lost')
   })
 
-  test('a database error on the claim reports false, it does not throw', async () => {
+  test("a database error on the claim reports 'error', distinct from a lost race, and does not throw", async () => {
     const claim = await import('../../lib/email/claim')
     const fakeSupabase = {
       from() {
@@ -134,7 +134,7 @@ describe('gift card delivery wiring', () => {
       },
     }
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    expect(await claim.claimEmailChannel(fakeSupabase as any, 'x', 'delivered_at', 'gift_cards')).toBe(false)
+    expect(await claim.claimEmailChannel(fakeSupabase as any, 'x', 'delivered_at', 'gift_cards')).toBe('error')
   })
 
   test('release targets the same table it claimed', async () => {

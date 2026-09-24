@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useId, useMemo, useState } from 'react'
+import { useEffect, useId, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
 import dynamic from 'next/dynamic'
 import {
@@ -56,6 +56,11 @@ export default function TransfersCheckoutView() {
   const [form, setForm] = useState<Record<string, string>>({})
   const [formErrors, setFormErrors] = useState<Record<string, boolean>>({})
   const [clientSecret, setClientSecret] = useState<string | null>(null)
+  // True while Stripe is confirming the card; the gift-card controls are
+  // frozen for that window, because removing or applying a code clears
+  // clientSecret, unmounts the payment panel and lets a second booking be
+  // POSTed while the first intent is already settling at Stripe.
+  const [paying, setPaying] = useState(false)
 
   // Gift card. Validated here, but only ever SPENT server-side.
   const [giftCodeInput, setGiftCodeInput] = useState('')
@@ -71,6 +76,19 @@ export default function TransfersCheckoutView() {
   const [legalOpen, setLegalOpen] = useState(false)
   const [confirmed] = useState(false)
   const [intentKey, setIntentKey] = useState(0)
+  // True while the PaymentIntent request is in flight. The Continue button
+  // gave no feedback at all, so the natural move on a slow connection was to
+  // keep tapping and keep fiddling with the cart, and an edit made after the
+  // intent was sized meant the summary showed a price the intent no longer
+  // matched.
+  const [submitting, setSubmitting] = useState(false)
+  // See CheckoutView: the previously issued pending booking id, sent back so
+  // the server can cancel the row this client abandoned by editing its cart.
+  const lastBookingIdRef = useRef<string | null>(null)
+  // Always-current cart shape, readable from inside the intent effect's
+  // closure at RESPONSE time (state captured at send time is what it must be
+  // compared against).
+  const cartShapeRef = useRef('')
   // Earliest bookable pickup as a datetime-local value (YYYY-MM-DDTHH:mm):
   // now plus the 24-hour lead time, NOT now. Computed AFTER mount so SSR and
   // the first client render both emit min="" (no hydration mismatch); the
@@ -159,11 +177,13 @@ export default function TransfersCheckoutView() {
       return
     }
     setFormAnnouncement('')
+    setSubmitting(true)
     setIntentKey((k) => k + 1)
   }
 
   useEffect(() => {
     if (intentKey === 0 || items.length === 0) return
+    const cartShapeAtSend = cartShapeRef.current
     fetch('/api/transfers/checkout', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -190,20 +210,43 @@ export default function TransfersCheckoutView() {
         breakdown: { subtotal: subtotal(), fee: fee() },
         giftCode: giftCard?.code,
         attribution: getStoredAttribution(),
+        supersedeBookingId: lastBookingIdRef.current ?? undefined,
       }),
     })
       .then((r) => r.json())
       .then((data) => {
+        if (typeof data.bookingId === 'string') lastBookingIdRef.current = data.bookingId
+        // SETTLEMENTS NAVIGATE FIRST, before any staleness test. A fully
+        // gift-covered response means the server already debited the card,
+        // marked the booking paid and sent the emails; discarding it because
+        // the guest tapped a stepper mid-request would leave a PAID guest
+        // staring at a checkout form with no confirmation, no navigation and
+        // a gift balance already spent. What the cart looks like now is
+        // irrelevant to money that has already moved.
+        if (data.fullyCoveredByGift || data.alreadyPaid) {
+          // submitting stays TRUE on purpose: the browser is navigating, and
+          // re-enabling Continue for the interim frame allowed a second POST
+          // mid-navigation. Unmount discards the stale state.
+          window.location.href = `/transfers/confirm?booking_id=${data.bookingId}`
+          return
+        }
+        // Discard a clientSecret for a cart that no longer exists. The
+        // request spans a booking insert, gift checks and a Stripe call,
+        // seconds in which the guest can tap a passenger stepper: the
+        // cartShape effect clears clientSecret on the CHANGE, but this
+        // response lands AFTER and would install a secret sized for the old
+        // cart. The abandoned intent stays on the pending row and is
+        // superseded by the next submit.
+        if (cartShapeRef.current !== cartShapeAtSend) {
+          setSubmitting(false)
+          return
+        }
         if (data.error) {
+          setSubmitting(false)
           setStripeError(data.error)
           if (data.giftCode) { setGiftCard(null); setGiftError(data.error) }
-        } else if (data.fullyCoveredByGift || data.alreadyPaid) {
-          // Either the gift covered the whole fare (no card payment, no
-          // webhook, already marked paid and emailed), or this booking was
-          // settled while we were re-entering checkout. Both end at the
-          // confirmation rather than a second charge.
-          window.location.href = `/transfers/confirm?booking_id=${data.bookingId}`
         } else {
+          setSubmitting(false)
           setClientSecret(data.clientSecret)
           // Same rule as the tour checkout: counted when the server has
           // priced it and an intent exists, keyed on the booking id.
@@ -221,13 +264,37 @@ export default function TransfersCheckoutView() {
           })
         }
       })
-      .catch(() =>
+      .catch(() => {
+        setSubmitting(false)
         setStripeError(
           'Could not reach the payment service. Please try again in a moment.',
-        ),
-      )
+        )
+      })
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [intentKey])
+
+  // The intent is sized against the cart as it stood when Continue was
+  // pressed. Any later change to WHAT is being bought (route, direction,
+  // party size, price, legs) must invalidate it, or the guest pays an amount
+  // the summary no longer shows. Serialised so a mere re-render cannot loop.
+  // The gift card is part of the shape: the intent is sized AFTER the gift
+  // comes off, so a code applied or removed while the request is in flight
+  // produces a secret for the wrong amount, and the guest would pay a total
+  // the summary no longer shows.
+  // Flight numbers and contact fields too: they do not change the price,
+  // but they are written onto the booking row and read by the flight
+  // tracker, the driver and the confirmation; the form stays editable while
+  // the request is out, so a response for the old values must be discarded.
+  const cartShape = JSON.stringify([
+    items.map((i) => [i.destinationId, i.tripType, i.fromAirport, i.passengers, i.priceUsd, i.arrivalAt, i.departureAt, i.arrivalFlight, i.departureFlight]),
+    giftCard?.code ?? null,
+    [form['email'], form['firstName'], form['lastName'], form['phone'], form['country'], form['specialRequests']],
+  ])
+  cartShapeRef.current = cartShape
+  useEffect(() => {
+    setClientSecret(null)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cartShape])
 
   const giftApplied = giftCard
     ? Math.min(giftCard.balanceCents / 100, grandTotal())
@@ -458,15 +525,19 @@ export default function TransfersCheckoutView() {
                 type="button"
                 className="btn-primary"
                 onClick={startPayment}
+                disabled={submitting}
+                aria-busy={submitting || undefined}
                 style={{
                   height: 52,
                   padding: '0 34px',
                   fontSize: 14,
                   fontWeight: 600,
                   letterSpacing: '0.02em',
+                  opacity: submitting ? 0.6 : undefined,
+                  cursor: submitting ? 'wait' : undefined,
                 }}
               >
-                Continue to payment · ${dueNow.toFixed(2)} →
+                {submitting ? 'Preparing secure payment…' : `Continue to payment · $${dueNow.toFixed(2)} →`}
               </button>
 
               {/* Flow, not flex. Each run of text between the two icons was
@@ -509,6 +580,7 @@ export default function TransfersCheckoutView() {
             <>
               <StripePaymentPanel
                 clientSecret={clientSecret}
+                onProcessingChange={setPaying}
                 returnUrl="/transfers/confirm"
                 onPaymentSuccess={() => {
                   // No-op: StripePaymentPanel navigates the browser to
@@ -673,6 +745,7 @@ export default function TransfersCheckoutView() {
                   <span>
                     Gift card {giftCard.code}
                     <button
+                      disabled={paying}
                       onClick={() => { setGiftCard(null); setGiftCodeInput(''); setClientSecret(null); setStripeError(null) }}
                       style={{
                         marginLeft: 8, background: 'none', border: 'none', padding: 0,
@@ -703,7 +776,7 @@ export default function TransfersCheckoutView() {
                     />
                     <button
                       onClick={applyGiftCode}
-                      disabled={giftChecking || giftCodeInput.trim().length < 4}
+                      disabled={paying || giftChecking || giftCodeInput.trim().length < 4}
                       style={{
                         height: 36, padding: '0 14px', fontSize: 12.5, fontWeight: 600,
                         borderRadius: 8, border: '1px solid var(--border)',
@@ -1027,9 +1100,9 @@ function TransferCard({
             {/* Passengers are editable here: guests routinely realise at the
                 last screen that the count is wrong, and sending them back to
                 the quote box to fix it loses the booking. The fare is per
-                VEHICLE for 1-4, so changing this never changes the price;
-                the clamp matches the server, which rejects anything outside
-                1-4 outright. */}
+                vehicle for 1-4 and per person from 5 up, so a count change
+                goes through onRevise, which re-prices the line; the clamp
+                matches the server's 1-7 bounds. */}
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
               <Users size={12} />
               <button

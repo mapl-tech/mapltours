@@ -128,7 +128,29 @@ export async function POST(req: Request) {
       { idempotencyKey: `gift:${card.id}` },
     )
 
-    await supabase.from('gift_cards').update({ stripe_payment_id: pi.id }).eq('id', card.id)
+    // Verified attach. A card whose payment id never persisted cannot be
+    // voided when the purchase is refunded — the buyer gets their money back
+    // while the card stays spendable. Fail closed: kill both halves so the
+    // guest retries into a clean pair.
+    const { data: attached, error: attachErr } = await supabase
+      .from('gift_cards')
+      .update({ stripe_payment_id: pi.id })
+      .eq('id', card.id)
+      .eq('status', 'pending')
+      .select('id')
+    if (attachErr || !attached?.length) {
+      console.error('[gift-checkout] PI attach failed, aborting purchase', attachErr?.message ?? 'no pending row matched')
+      try {
+        await stripe.paymentIntents.cancel(pi.id, { cancellation_reason: 'abandoned' })
+      } catch {
+        /* best-effort; an unconfirmed intent nobody holds a secret for is inert */
+      }
+      await supabase.from('gift_cards').delete().eq('id', card.id).eq('status', 'pending')
+      return NextResponse.json(
+        { error: 'Could not start this purchase. Please try again.' },
+        { status: 503 },
+      )
+    }
 
     return NextResponse.json({ clientSecret: pi.client_secret, giftCardId: card.id, amount })
   } catch (err) {

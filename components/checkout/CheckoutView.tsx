@@ -17,7 +17,7 @@ import { CANCELLATION_SUMMARY } from '@/lib/refund-pricing'
 import LegalModal from './LegalModal'
 import DayFlow from '@/components/DayFlow'
 import { planDay } from '@/lib/day-route'
-import { useAvailableReward, consumeReward } from '@/lib/tour-videos'
+import { useAvailableReward } from '@/lib/tour-videos'
 import { Award } from 'lucide-react'
 import { useI18n } from '@/lib/i18n'
 
@@ -783,6 +783,31 @@ export default function CheckoutView() {
   // indistinguishable from a dead control.
   const [formAnnouncement, setFormAnnouncement] = useState('')
   const [stripeError, setStripeError] = useState<string | null>(null)
+  // Explicit retry trigger for the PaymentIntent fetch. "Try again" used to
+  // set clientSecret to null, but after a FAILED create it was already null,
+  // so the effect's dependencies never changed and the button did nothing:
+  // the guest sat on a permanent "Setting up secure payment..." spinner.
+  const [piAttempt, setPiAttempt] = useState(0)
+  // The pending booking id the server issued for the PREVIOUS shape of this
+  // cart. Sent back on the next request so the server can cancel that row's
+  // intent instead of stranding it: an edited cart re-hashes, so without this
+  // the old row sat pending forever and its owner later got an abandoned-cart
+  // email about a trip they had already paid for in its edited form.
+  const lastBookingIdRef = useRef<string | null>(null)
+  const cartShapeRef = useRef('')
+  // One PaymentIntent request at a time. The effect below fires on every
+  // dependency change while clientSecret is null, so "Previous step, edit
+  // travelers, Continue" while a POST was still running sent a SECOND,
+  // concurrent POST for a different cart: with a gift card covering both,
+  // the server settled both rows as paid. Set to true for good once the
+  // browser is navigating to a confirmation, so nothing fires mid-navigation.
+  const piInFlightRef = useRef(false)
+  const navigatingRef = useRef(false)
+  // True while Stripe is confirming the card. The reward checkbox, the gift
+  // controls and Previous step are frozen for that window: any of them
+  // clears clientSecret, which unmounts the payment panel and POSTs a new
+  // booking for a trip whose first intent is already settling at Stripe.
+  const [paying, setPaying] = useState(false)
   const [limitModalOpen, setLimitModalOpen] = useState(false)
   // The cancellation policy, opened from the line under the pay button.
   const [legalOpen, setLegalOpen] = useState(false)
@@ -825,18 +850,42 @@ export default function CheckoutView() {
   // that was no longer displayed. Clearing the secret sends the cart back for
   // re-pricing, and the server resizes the same intent in place rather than
   // minting a second one.
+  // Serialised so the response handler below can tell whether the cart it
+  // was priced for is still the cart on screen. Same trio as the
+  // invalidation deps: what is bought, whether the reward is kept, and which
+  // gift card is attached.
+  // The contact and pickup fields are part of the shape too. They do not
+  // change the price, but they are written onto the booking row at insert
+  // and never refreshed while a secret is held: a guest who went back to fix
+  // an email typo or the pickup hotel during (or after) the request would
+  // otherwise pay against a row carrying the old values, and the
+  // confirmation, the driver sheet and dispatch would all read them.
+  const cartShape = JSON.stringify([
+    items.map((i) => [i.id, i.travelers, i.date]),
+    rewardApplied,
+    giftCard?.code ?? null,
+    [formData['email'], formData['firstName'], formData['lastName'], formData['phone'], formData['country'], formData['pickup'], formData['specialRequests']],
+    pickupTime,
+  ])
+  cartShapeRef.current = cartShape
   useEffect(() => {
     setServerGift(null)
     setServerDue(null)
     setClientSecret(null)
-  }, [items, rewardApplied, giftCard])
+  // Keyed on the serialised shape, not on formData itself: that object is
+  // replaced on every keystroke, and the effect must fire only when a value
+  // the server will store actually changed.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cartShape])
 
   // Create PaymentIntent when moving to step 3. The server inserts a pending
   // `bookings` row (plus line items), hashes the cart for idempotency, and
   // attaches booking_id to the PaymentIntent metadata so the webhook can
   // flip status to 'paid' and dispatch the confirmation email.
   useEffect(() => {
-    if (step === 2 && !clientSecret && items.length > 0) {
+    if (step === 2 && !clientSecret && items.length > 0 && !piInFlightRef.current) {
+      const cartShapeAtSend = cartShapeRef.current
+      piInFlightRef.current = true
       fetch('/api/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -895,13 +944,68 @@ export default function CheckoutView() {
           // traveler who unticked the box sent a full-price amount the server
           // then discounted, failed its own amount check, and 400'd forever.
           applyReward: rewardApplied,
+          // Step 1 refuses to advance until the box is ticked, so this is
+          // always true here — sent so the server can require and stamp it
+          // (waiver_accepted_at); a checkbox that never leaves the browser
+          // is not evidence of anything.
+          waiverAccepted,
+          supersedeBookingId: lastBookingIdRef.current ?? undefined,
           giftCode: giftCard?.code,
           attribution: getStoredAttribution(),
         }),
       })
         .then((res) => res.json())
         .then((data) => {
+          // Clear the in-flight flag FIRST. Any setState in this branch
+          // (the rewardConflict auto-retry) is flushed by React in its own
+          // microtask, ahead of the finally below; if the flag were still
+          // set then, the re-run effect would skip the POST and the retry
+          // would never happen.
+          piInFlightRef.current = false
+          if (typeof data.bookingId === 'string') lastBookingIdRef.current = data.bookingId
+          // SETTLEMENTS NAVIGATE FIRST, before the staleness test below. Both
+          // branches mean the server has already finished the sale: the
+          // booking is paid, the gift or reward is spent, the email is sent.
+          // Whatever the cart looks like NOW, this guest owns a confirmation
+          // and must land on it; discarding the response as stale would strand
+          // a paid guest on the checkout form.
+          if (data.alreadyPaid || data.fullyCoveredByGift) {
+            // alreadyPaid: settled while we were re-entering checkout (the
+            // guest paid and then refreshed); another PaymentIntent would
+            // charge them twice. fullyCoveredByGift: nothing left to charge,
+            // the server already marked the booking paid, consumed the reward
+            // reservation and sent the confirmation email; the client must
+            // not touch the reward row itself. Navigating is the only move,
+            // and the in-flight flag stays set so no further POST fires
+            // during the navigation.
+            navigatingRef.current = true
+            piInFlightRef.current = true
+            window.location.href = `/checkout/confirm?booking_id=${data.bookingId}`
+            return
+          }
+          // Discard a clientSecret priced for a cart that no longer exists.
+          // The request spans a booking insert, reward and gift work and a
+          // Stripe call, seconds in which the guest can go back and edit
+          // travelers or untick the reward: the invalidation effect clears
+          // clientSecret on the CHANGE, but this response lands AFTER and
+          // would install a secret sized for the old cart. The abandoned
+          // intent stays on the pending row and is superseded by the next
+          // submit.
+          // Stale for the cart on screen now: discard. The re-request is
+          // issued from the finally below, once the in-flight flag clears.
+          if (cartShapeRef.current !== cartShapeAtSend) return
           if (data.error) {
+            // The reward this cart was priced with is held by another live
+            // checkout. Untick it and immediately re-request: the server then
+            // prices without it, the totals agree again, and the guest sees
+            // the full-price form with the reward checkbox cleared instead of
+            // an error they cannot act on.
+            if (data.rewardConflict) {
+              setRewardApplied(false)
+              setStripeError(null)
+              setPiAttempt((n) => n + 1)
+              return
+            }
             setStripeError(data.error)
             // The card was rejected server-side (spent elsewhere, expired).
             // Drop it so the summary stops promising a discount we can't give.
@@ -909,18 +1013,6 @@ export default function CheckoutView() {
               setGiftCard(null)
               setGiftError(data.error)
             }
-          } else if (data.alreadyPaid) {
-            // Settled while we were re-entering checkout (the guest paid and
-            // then refreshed). Go to the confirmation they already earned;
-            // creating another PaymentIntent here would charge them twice.
-            window.location.href = `/checkout/confirm?booking_id=${data.bookingId}`
-          } else if (data.fullyCoveredByGift) {
-            // Nothing left to charge, so there is no card payment step and no
-            // PaymentIntent. The server already marked the booking paid and
-            // sent the confirmation email; go straight to the same
-            // confirmation page the card flow lands on, keyed by booking id.
-            if (activeReward) void consumeReward(activeReward.id).catch(() => {})
-            window.location.href = `/checkout/confirm?booking_id=${data.bookingId}`
           } else {
             // Adopt the server's arithmetic before the card form renders, so
             // the total on the pay button is the amount Stripe will take.
@@ -946,10 +1038,27 @@ export default function CheckoutView() {
             })
           }
         })
-        .catch(() => setStripeError('Failed to initialize payment. Please try again.'))
+        .catch(() => {
+          piInFlightRef.current = false
+          setStripeError('Failed to initialize payment. Please try again.')
+        })
+        .finally(() => {
+          if (navigatingRef.current) return
+          piInFlightRef.current = false
+          // The cart changed while this request was out. The invalidation
+          // effect already cleared clientSecret when the shape changed, and
+          // since it was already null during the flight, React saw no change
+          // and this effect did not re-run: without this bump the guest sat
+          // on "Setting up secure payment..." with no retry and no request in
+          // flight. Re-request for the cart as it stands NOW, serialised
+          // behind the response that just landed, and carrying its booking
+          // id as supersedeBookingId.
+          if (cartShapeRef.current !== cartShapeAtSend) setPiAttempt((n) => n + 1)
+        })
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [step, clientSecret, items, grandTotal])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step, clientSecret, items, grandTotal, piAttempt])
 
   async function applyGiftCode() {
     const code = giftCodeInput.trim()
@@ -1069,13 +1178,14 @@ export default function CheckoutView() {
             {clientSecret ? (
               <StripePaymentPanel
                 clientSecret={clientSecret}
+                onProcessingChange={setPaying}
                 onPaymentSuccess={async () => {
-                  // Mark the reward as used. The status flip prevents re-use
-                  // on future checkouts; booking_id can be back-filled once
-                  // bookings are persisted server-side.
-                  if (activeReward) {
-                    await consumeReward(activeReward.id).catch(() => {})
-                  }
+                  // The reward is NOT touched here. The webhook consumes the
+                  // reservation (reserved -> used, stamped with this booking)
+                  // and is the only writer; a client-side consume raced it,
+                  // clobbered used_on_booking_id to NULL and made the
+                  // webhook's own zero-row check scream about a theft that
+                  // never happened.
                   // No setConfirmed(true), StripePaymentPanel navigates the
                   // browser to /checkout/confirm?payment_intent=… which is
                   // the comprehensive server-rendered confirmation view.
@@ -1088,7 +1198,7 @@ export default function CheckoutView() {
             ) : stripeError ? (
               <div style={{ padding: '40px', textAlign: 'center' }}>
                 <p style={{ fontSize: 14, color: '#c00', fontFamily: 'var(--font-dm-sans)', marginBottom: 16 }}>{stripeError}</p>
-                <button className="btn-outline" onClick={() => { setStripeError(null); setClientSecret(null) }}>Try again</button>
+                <button className="btn-outline" onClick={() => { setStripeError(null); setClientSecret(null); setPiAttempt((n) => n + 1) }}>Try again</button>
               </div>
             ) : (
               <div style={{ padding: '60px', textAlign: 'center' }}>
@@ -1103,7 +1213,7 @@ export default function CheckoutView() {
             </button>
           )}
           {step === 2 && (
-            <button className="btn-outline" onClick={() => { setStep(1); setClientSecret(null); window.scrollTo({ top: 0, behavior: 'smooth' }) }} style={{ marginTop: 24, gap: 6 }}>
+            <button className="btn-outline" disabled={paying} onClick={() => { setStep(1); setClientSecret(null); window.scrollTo({ top: 0, behavior: 'smooth' }) }} style={{ marginTop: 24, gap: 6, opacity: paying ? 0.5 : 1 }}>
               <ArrowLeft size={14} /> Previous step
             </button>
           )}
@@ -1191,6 +1301,7 @@ export default function CheckoutView() {
                     <input
                       type="checkbox"
                       checked={rewardApplied}
+                      disabled={paying}
                       onChange={(e) => setRewardApplied(e.target.checked)}
                       style={{ accentColor: 'var(--gold, #FFB300)' }}
                     />
@@ -1228,6 +1339,7 @@ export default function CheckoutView() {
                     <span>
                       Gift card {giftCard.code}
                       <button
+                        disabled={paying}
                         onClick={() => { setGiftCard(null); setGiftCodeInput(''); setClientSecret(null); setStripeError(null) }}
                         style={{
                           marginLeft: 8, background: 'none', border: 'none', padding: 0,
@@ -1259,7 +1371,7 @@ export default function CheckoutView() {
                       />
                       <button
                         onClick={applyGiftCode}
-                        disabled={giftChecking || giftCodeInput.trim().length < 4}
+                        disabled={paying || giftChecking || giftCodeInput.trim().length < 4}
                         className="btn-outline"
                         style={{
                           height: 38, padding: '0 16px', fontSize: 13, fontWeight: 600,

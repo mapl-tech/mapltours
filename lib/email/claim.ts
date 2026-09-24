@@ -10,9 +10,20 @@ import type { createServiceClient } from '@/lib/supabase/service'
  * Extracted from the Stripe webhook so the cancellation path reuses the same
  * proven mechanism rather than reimplementing check-then-act, which under
  * concurrency sends twice.
+ *
+ * THREE outcomes, not two, because two of them used to wear the same boolean.
+ * 'lost' means another delivery holds the claim, which is success: the email
+ * is being sent, just not by us. 'error' means the database never answered,
+ * which is failure: nobody holds the claim and nobody is sending anything.
+ * Collapsing both into `false` meant a transient Supabase blip during a
+ * webhook was read as "the other retry won" and acknowledged to Stripe with a
+ * 200, so the confirmation for a PAID booking was dropped, permanently, with
+ * every log line looking routine.
  */
 
 type ServiceClient = ReturnType<typeof createServiceClient>
+
+export type ClaimOutcome = 'claimed' | 'lost' | 'error'
 
 export async function claimEmailChannel(
   supabase: ServiceClient,
@@ -24,7 +35,7 @@ export async function claimEmailChannel(
   // the recipient's card was never emailed.
   table: 'bookings' | 'gift_cards' = 'bookings',
   opts?: { requireStatus?: string },
-): Promise<boolean> {
+): Promise<ClaimOutcome> {
   let q = supabase
     .from(table)
     .update({ [column]: new Date().toISOString() })
@@ -37,10 +48,12 @@ export async function claimEmailChannel(
   if (opts?.requireStatus) q = q.eq('status', opts.requireStatus)
   const { data, error } = await q.select('id')
   if (error) {
-    console.error('[email-claim] claim failed', { table, bookingId, column, error: error.message })
-    return false
+    console.error('[email-claim] claim ERRORED, nobody holds this channel', {
+      table, bookingId, column, error: error.message,
+    })
+    return 'error'
   }
-  return (data?.length ?? 0) > 0
+  return (data?.length ?? 0) > 0 ? 'claimed' : 'lost'
 }
 
 /** Hand the channel back after a failed send, so a retry can try again. */

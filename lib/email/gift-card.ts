@@ -32,6 +32,8 @@ export interface GiftEmailResult {
 
 export async function sendGiftCardEmails(giftCardId: string): Promise<GiftEmailResult> {
   const result: GiftEmailResult = { recipient: 'skipped', purchaser: 'skipped' }
+  let deliveryClaim: 'claimed' | 'lost' | 'error'
+  let receiptClaim: 'claimed' | 'lost' | 'error'
 
   try {
     const supabase = createServiceClient()
@@ -60,7 +62,14 @@ export async function sendGiftCardEmails(giftCardId: string): Promise<GiftEmailR
     // ── The card, to the recipient ──
     if (card.delivered_at) {
       result.recipient = 'skipped'
-    } else if (await claimEmailChannel(supabase, giftCardId, DELIVERY_CHANNEL, 'gift_cards')) {
+    } else if ((deliveryClaim = await claimEmailChannel(supabase, giftCardId, DELIVERY_CHANNEL, 'gift_cards')) === 'error') {
+      // An errored claim means NOBODY is sending this card. Reporting it as
+      // 'skipped' told activateGiftCard delivery had happened, the webhook
+      // answered 200, and the recipient never got their code. 'failed' keeps
+      // the retry chain alive: the webhook throws, Stripe redelivers, and the
+      // still-null delivered_at lets the next attempt claim and send.
+      result.recipient = 'failed'
+    } else if (deliveryClaim === 'claimed') {
       const res = await sendEmail({
         to: card.recipient_email,
         subject: card.purchaser_name
@@ -91,8 +100,11 @@ export async function sendGiftCardEmails(giftCardId: string): Promise<GiftEmailR
     // time — which reads like a duplicate charge.
     if (!card.purchaser_email || card.receipt_sent_at) {
       result.purchaser = 'skipped'
-    } else if (!(await claimEmailChannel(supabase, giftCardId, RECEIPT_CHANNEL, 'gift_cards'))) {
-      result.purchaser = 'skipped'
+    } else if ((receiptClaim = await claimEmailChannel(supabase, giftCardId, RECEIPT_CHANNEL, 'gift_cards')) !== 'claimed') {
+      // 'lost' is a duplicate delivery already sending it; 'error' is nobody
+      // sending it. The receipt has no retry chain (the buyer already holds
+      // Stripe's own receipt), but the result should still tell the truth.
+      result.purchaser = receiptClaim === 'error' ? 'failed' : 'skipped'
     } else {
       const res = await sendEmail({
         to: card.purchaser_email,

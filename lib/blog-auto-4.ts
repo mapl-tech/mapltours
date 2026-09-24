@@ -65,7 +65,7 @@ export const POSTS_4: BlogPost[] = [
       },
       {
         type: 'p',
-        text: "Book Royalton Negril if you want a newer room, reliable food, and a family-friendly beach. Skip it if you came to Jamaica for Jamaica. Either way, leave the property, our curated Westmoreland experiences at /explore are where the trip actually happens.",
+        text: "Book Royalton Negril if you want a newer room, reliable food, and a family-friendly beach. Skip it if you came to Jamaica for Jamaica. Either way, leave the property, our curated Westmoreland experiences in [the catalogue](/explore) are where the trip actually happens.",
       },
     ],
     relatedSlugs: ['azul-beach-resort-negril-review', 'negril-seven-mile-truth'],
@@ -128,7 +128,7 @@ export const POSTS_4: BlogPost[] = [
       },
       {
         type: 'p',
-        text: "Azul Beach Resort Negril earns its place on a short list for young families. For everyone else, consider the experiences waiting beyond the gate, our Negril picks at /explore cover the cliffs, the jerk, and the sunsets this property only shows you in a brochure.",
+        text: "Azul Beach Resort Negril earns its place on a short list for young families. For everyone else, consider the experiences waiting beyond the gate, our Negril picks in [the catalogue](/explore) cover the cliffs, the jerk, and the sunsets this property only shows you in a brochure.",
       },
     ],
     relatedSlugs: ['royalton-negril-review', 'jamaica-honeymoon-guide'],
@@ -184,7 +184,7 @@ export const POSTS_4: BlogPost[] = [
       { type: 'h2', text: 'Practical notes' },
       {
         type: 'p',
-        text: "All five are on our airport transfer routes from Sangster International (MBJ): Jewel Grande about fifteen minutes, Royalton White Sands about forty, Ocean Coral Spring about forty five, Bahia Principe about seventy, Moon Palace about ninety five. Flat rates, one price per vehicle for up to four people, and we track your flight. Book the hotel first, then the transfer at /transfers, and the week takes care of itself.",
+        text: "All five are on our airport transfer routes from Sangster International (MBJ): Jewel Grande about fifteen minutes, Royalton White Sands about forty, Ocean Coral Spring about forty five, Bahia Principe about seventy, Moon Palace about ninety five. Flat rates, one price per vehicle for up to four people, and we track your flight. Book the hotel first, then the transfer in [airport transfers](/transfers), and the week takes care of itself.",
       },
       {
         type: 'p',
@@ -256,7 +256,7 @@ export const POSTS_4: BlogPost[] = [
       },
       {
         type: 'p',
-        text: "The Jamaica that rewards repeat visitors is the one you build yourself. Our curated experiences at /explore are where most of our readers finally stop booking through a resort concierge and start booking directly with Jamaicans.",
+        text: "The Jamaica that rewards repeat visitors is the one you build yourself. Our curated experiences in [the catalogue](/explore) are where most of our readers finally stop booking through a resort concierge and start booking directly with Jamaicans.",
       },
     ],
     relatedSlugs: ['first-time-jamaica', 'best-time-to-visit-jamaica'],
@@ -320,7 +320,7 @@ export const POSTS_4: BlogPost[] = [
       },
       {
         type: 'p',
-        text: "Use the fast start as a bridge. Once you have a day under your belt, our Montego Bay curated experiences at /explore will point you toward the creators and drivers locals actually hire.",
+        text: "Use the fast start as a bridge. Once you have a day under your belt, our Montego Bay curated experiences in [the catalogue](/explore) will point you toward the creators and drivers locals actually hire.",
       },
     ],
     relatedSlugs: ['montego-bay-beyond-the-strip', 'montego-bay-tours-ranked'],
@@ -388,7 +388,7 @@ export const POSTS_4: BlogPost[] = [
       },
       {
         type: 'p',
-        text: "Give Kingston Jamaica the time. The rest of your trip will make more sense because of it. Our Kingston experiences at /explore go directly to the creators who make the city the capital it is.",
+        text: "Give Kingston Jamaica the time. The rest of your trip will make more sense because of it. Our Kingston experiences in [the catalogue](/explore) go directly to the creators who make the city the capital it is.",
       },
     ],
     relatedSlugs: ['kingston-culture-guide', 'kingston-sound-system-culture'],
@@ -456,7 +456,7 @@ export const POSTS_4: BlogPost[] = [
       },
       {
         type: 'p',
-        text: "Trelawny Jamaica rewards the detour. Our Falmouth-area experiences at /explore, lagoon night tours, Martha Brae rafting, Good Hope horseback, are what make the parish more than a cruise port.",
+        text: "Trelawny Jamaica rewards the detour. Our Falmouth-area experiences in [the catalogue](/explore), lagoon night tours, Martha Brae rafting, Good Hope horseback, are what make the parish more than a cruise port.",
       },
     ],
     relatedSlugs: ['luminous-lagoon-falmouth', 'montego-bay-beyond-the-strip'],
@@ -524,7 +524,7 @@ export const POSTS_4: BlogPost[] = [
       },
       {
         type: 'p',
-        text: "Portland Jamaica is where long-time Jamaica travelers eventually go back. Our Portland experiences at /explore, Rio Grande rafting, Boston Bay jerk, Reach Falls, are the short list a Jamaican would send their own visiting cousin.",
+        text: "Portland Jamaica is where long-time Jamaica travelers eventually go back. Our Portland experiences in [the catalogue](/explore), Rio Grande rafting, Boston Bay jerk, Reach Falls, are the short list a Jamaican would send their own visiting cousin.",
       },
     ],
     relatedSlugs: ['birthplace-of-jerk-boston-bay', 'reach-falls-vs-dunns-river'],
@@ -592,7 +592,7 @@ export const POSTS_4: BlogPost[] = [
       },
       {
         type: 'p',
-        text: "Once you have the month, the rest follows. Our Jamaica experiences at /explore run year-round, pair the right week with the right creator and the trip builds itself.",
+        text: "Once you have the month, the rest follows. Our Jamaica experiences in [the catalogue](/explore) run year-round, pair the right week with the right creator and the trip builds itself.",
       },
     ],
     relatedSlugs: ['jamaica-primer-2026', 'first-time-jamaica'],
@@ -669,7 +669,7 @@ export const POSTS_4: BlogPost[] = [
       },
       {
         type: 'p',
-        text: "Get the money basics right and the rest of your trip gets cheaper and easier. Our Jamaica experiences at /explore price in USD and book direct, so there is no desk commission between you and the operator.",
+        text: "Get the money basics right and the rest of your trip gets cheaper and easier. Our Jamaica experiences in [the catalogue](/explore) price in USD and book direct, so there is no desk commission between you and the operator.",
       },
     ],
     relatedSlugs: ['first-time-jamaica', 'jamaica-on-a-budget'],

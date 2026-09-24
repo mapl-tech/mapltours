@@ -40,7 +40,7 @@ vi.mock('stripe', () => {
 
 vi.mock('@/lib/rate-limit', () => ({ rateLimit: () => false, getIp: () => '203.0.113.9' }))
 vi.mock('@/lib/checkout-schema', () => ({
-  assertCheckoutSchema: async () => ({ hasAttribution: false, hasPickupTime: false, hasCoupon: true }),
+  assertCheckoutSchema: async () => ({ hasAttribution: false, hasPickupTime: false, hasCoupon: true, hasWaiver: false }),
   SchemaNotReadyError: class extends Error {},
 }))
 vi.mock('@/lib/gift-redemption', () => ({
@@ -50,19 +50,26 @@ vi.mock('@/lib/gift-redemption', () => ({
     return { ok: true, claim: { amountCents, amount: amountCents / 100, giftCardId: 'gc_test' } }
   },
   releaseGiftClaim: async () => {},
+  settleGiftClaim: async () => {},
 }))
-vi.mock('@/lib/email/booking', () => ({ maybeSendTravelerConfirmation: async () => ({ ok: true }), maybeSendOperatorAlert: async () => ({ ok: true }) }))
+vi.mock('@/lib/email/booking', () => ({ maybeSendTravelerConfirmation: async () => ({ ok: true }), maybeSendOperatorAlert: async () => ({ ok: true }), resolveOpsRecipients: async () => [] }))
+// The rewritten routes replace booking items atomically and resolve ops recipients; neither touches money here.
+vi.mock('@/lib/booking-items', () => ({ replaceBookingItems: async () => ({ error: null }) }))
+vi.mock('@/lib/email/send', () => ({ sendEmail: async () => ({ ok: true }), operatorAlertRecipients: () => [] }))
 vi.mock('@/lib/coupon-redemption', () => ({ consumeCoupon: async (_db: unknown, input: Record<string, unknown>) => { state.consumed.push(input); return { ok: true, alreadyCounted: false, overRedeemed: false } } }))
 
 function builder(table: string) {
-  const ctx: { op: string; row?: Record<string, unknown> } = { op: 'select' }
+  const ctx: { op: string; row?: Record<string, unknown>; list?: boolean } = { op: 'select' }
   const resolve = () => {
     if (table === 'coupons' && ctx.op === 'select') return { data: state.coupon, error: null }
     if (table === 'coupon_redemptions' && ctx.op === 'select') return { data: null, error: null, count: state.emailUses }
     if (table === 'bookings' && ctx.op === 'insert') { state.inserts.push({ table, row: ctx.row! }); return { data: { id: 'b_test' }, error: null } }
     if (table === 'booking_items' && ctx.op === 'insert') { state.inserts.push({ table, row: ctx.row! }); return { data: null, error: null } }
-    if (table === 'bookings' && ctx.op === 'select') return { data: { gift_card_id: null, gift_card_amount: null, stripe_payment_id: null, status: 'pending' }, error: null }
-    if (table === 'bookings' && ctx.op === 'update') return { data: { id: 'b_test' }, error: null }
+    // The gift-covered settle marks the reserved claim spent and expects the row back.
+    if (table === 'gift_card_redemptions' && ctx.op === 'update') return { data: [{ id: 'r_test' }], error: null }
+    if (table === 'bookings' && ctx.op === 'select') return { data: ctx.list ? [] : { gift_card_id: null, gift_card_amount: null, stripe_payment_id: null, status: 'pending' }, error: null }
+    // The verified attach awaits the update as a list and requires one row back.
+    if (table === 'bookings' && ctx.op === 'update') return { data: ctx.list ? [{ id: 'b_test' }] : { id: 'b_test' }, error: null }
     return { data: null, error: null }
   }
   const b: Record<string, unknown> = {}
@@ -75,7 +82,7 @@ function builder(table: string) {
     eq: chain(), neq: chain(), in: chain(), is: chain(), not: chain(), order: chain(), limit: chain(), gte: chain(),
     maybeSingle: async () => resolve(),
     single: async () => resolve(),
-    then: (onOk: (v: unknown) => unknown, onErr?: (e: unknown) => unknown) => Promise.resolve(resolve()).then(onOk, onErr),
+    then: (onOk: (v: unknown) => unknown, onErr?: (e: unknown) => unknown) => { ctx.list = true; return Promise.resolve(resolve()).then(onOk, onErr) },
   })
   return b
 }

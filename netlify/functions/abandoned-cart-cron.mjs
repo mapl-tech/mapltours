@@ -15,7 +15,11 @@ export default async () => {
   if (!secret) {
     return new Response(JSON.stringify({ error: 'CRON_SECRET not set' }), { status: 500 })
   }
-  const res = await fetch(`${base}/api/abandoned-cart?secret=${encodeURIComponent(secret)}`)
+  // Secret rides in a header, not the query string: URLs land in request
+  // logs and proxy lines, and a leaked ?secret= grants the whole cron API.
+  const res = await fetch(`${base}/api/abandoned-cart`, {
+    headers: { authorization: `Bearer ${secret}` },
+  })
   const body = await res.json().catch(() => null)
   return new Response(JSON.stringify({ ranAt: new Date().toISOString(), status: res.status, result: body }), {
     status: res.status,

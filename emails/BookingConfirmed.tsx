@@ -18,6 +18,8 @@ export interface BookingConfirmedProps {
   rewardDiscount?: number | null
   couponCode?: string | null
   couponDiscount?: number | null
+  /** Portion of totalPaid that came off a gift card. Absent or 0 means none. */
+  giftApplied?: number | null
   totalPaid: number
   currency: string
   paidAt?: string | null
@@ -88,6 +90,7 @@ export default function BookingConfirmed(props: BookingConfirmedProps) {
     rewardDiscount,
     couponCode,
     couponDiscount,
+    giftApplied,
     totalPaid,
     currency,
     paidAt,
@@ -198,6 +201,16 @@ export default function BookingConfirmed(props: BookingConfirmedProps) {
                   emphasis="emerald"
                 />
               )}
+            </>
+          )}
+          {/* OUTSIDE the showBreakdown gate on purpose: that flag only knows
+              about transport and reward, so a booking paid partly by gift
+              card with neither of those would render the gross total alone,
+              contradicting the guest's card statement. */}
+          {giftApplied != null && giftApplied > 0 && (
+            <>
+              <BreakdownLine label="Gift card applied" value={`− ${fmtMoney(giftApplied, currency)}`} />
+              <BreakdownLine label="Charged to your card" value={fmtMoney(Math.max(0, totalPaid - giftApplied), currency)} />
             </>
           )}
           <div style={s.totalRow}>

@@ -17,10 +17,19 @@ import { setPaymentInFlight } from '@/lib/payment-lock'
 export default function StripePaymentPanel({
   clientSecret,
   onPaymentSuccess,
+  onProcessingChange,
   returnUrl = '/checkout/confirm',
 }: {
   clientSecret: string
   onPaymentSuccess: () => void | Promise<void>
+  /**
+   * Fires with true when stripe.confirmPayment is in flight and false when
+   * it settled without navigating. The parent uses it to freeze the reward
+   * checkbox and gift-card controls: toggling one of those mid-confirm
+   * cleared the clientSecret, unmounted this panel and POSTed a SECOND
+   * booking while the first intent was already settling at Stripe.
+   */
+  onProcessingChange?: (busy: boolean) => void
   /** Page to hand users back to after 3DS/bank redirects. Defaults to the
    *  tour-booking confirm page; transfers pass `/transfers/confirm`. */
   returnUrl?: string
@@ -59,7 +68,7 @@ export default function StripePaymentPanel({
         },
       }}
     >
-      <PaymentStep onPaymentSuccess={onPaymentSuccess} returnUrl={returnUrl} />
+      <PaymentStep onPaymentSuccess={onPaymentSuccess} returnUrl={returnUrl} onProcessingChange={onProcessingChange} />
     </Elements>
   )
 }
@@ -67,15 +76,17 @@ export default function StripePaymentPanel({
 function PaymentStep({
   onPaymentSuccess,
   returnUrl,
+  onProcessingChange,
 }: {
   onPaymentSuccess: () => void | Promise<void>
   returnUrl: string
+  onProcessingChange?: (busy: boolean) => void
 }) {
   const stripe = useStripe()
   const elements = useElements()
   const { t } = useI18n()
   const [error, setError] = useState<string | null>(null)
-  const [processing, setProcessing] = useState(false)
+  const [processing, setProcessingState] = useState(false)
   const [legalOpen, setLegalOpen] = useState(false)
   // Tell the WebMCP tools (any page) that a confirm is in flight, so an
   // agent cannot rewrite the cart while the PaymentIntent is settling.
@@ -83,6 +94,10 @@ function PaymentStep({
     setPaymentInFlight(processing)
     return () => setPaymentInFlight(false)
   }, [processing])
+  const setProcessing = (busy: boolean) => {
+    setProcessingState(busy)
+    onProcessingChange?.(busy)
+  }
 
   const handleSubmit = async () => {
     if (!stripe || !elements) return

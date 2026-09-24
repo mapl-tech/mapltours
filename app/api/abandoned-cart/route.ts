@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import Stripe from 'stripe'
 import { createServiceClient } from '@/lib/supabase/service'
-import { sendEmail } from '@/lib/email/send'
+import { sendEmail, operatorAlertRecipients } from '@/lib/email/send'
+import { resolveOpsRecipients } from '@/lib/email/booking'
 import AbandonedCart from '@/emails/AbandonedCart'
+import OpsAlert from '@/emails/OpsAlert'
 
 /**
  * Abandoned-cart recovery.
@@ -131,7 +133,11 @@ async function handle(request: NextRequest) {
     skipped: [] as string[],
     /** Rows this run never reached. Non-zero means a backlog is building. */
     deferred: 0,
+    /** Bookings whose PI SUCCEEDED while the row still says pending: the
+     *  webhook missed them. Ops is paged below; non-empty means incident. */
+    paidButPending: [] as string[],
   }
+  const paidPendingDetails: { ref: string; id: string; pi: string; createdAt: string }[] = []
 
   for (const b of (rows ?? []) as Row[]) {
     // Stop before the platform stops us, so the run ends with a summary
@@ -160,8 +166,35 @@ async function handle(request: NextRequest) {
     if (!b.stripe_payment_id) { summary.skipped.push(`${ref}:no_pi`); continue }
     try {
       const pi = await stripe.paymentIntents.retrieve(b.stripe_payment_id)
-      if (pi.status === 'succeeded') { summary.skipped.push(`${ref}:already_paid`); continue }
+      if (pi.status === 'succeeded') {
+        // The money is captured but the row still says pending, so the
+        // webhook never landed (misconfigured endpoint, dropped delivery,
+        // handler killed mid-run). Fulfillment lives in the webhook alone —
+        // duplicating it here would drift — so the sweep's job is to make
+        // the incident LOUD: collect it for the ops digest sent after the
+        // loop. The 30-minute grace above already filtered ordinary
+        // webhook lag out of cron runs.
+        summary.skipped.push(`${ref}:already_paid`)
+        summary.paidButPending.push(ref)
+        paidPendingDetails.push({ ref, id: b.id, pi: b.stripe_payment_id, createdAt: b.created_at })
+        continue
+      }
       if (pi.status === 'canceled') { summary.skipped.push(`${ref}:canceled`); continue }
+      // In-flight is neither abandoned nor paid (audit 2026-08-22). Deferred
+      // settlement methods (ACH debit, Cash App Pay) leave the intent in
+      // 'processing' for hours-to-days after the guest completed payment, and
+      // 'requires_capture' is authorized money awaiting capture; the booking
+      // row stays 'pending' the whole time because only the webhook flips it.
+      // Nudging here tells a guest who already paid that their trip was never
+      // booked, inviting a second booking and a double charge (checkout's own
+      // guard refuses to mint a second intent for these exact statuses). But
+      // the money is not provably captured either, so the cart cannot be
+      // marked recovered. Skip BEFORE the claim below so recovery_email_sent_at
+      // stays NULL and a later sweep re-evaluates once Stripe resolves the
+      // intent one way or the other.
+      if (pi.status === 'processing' || pi.status === 'requires_capture') {
+        summary.skipped.push(`${ref}:payment_in_flight`); continue
+      }
     } catch {
       summary.skipped.push(`${ref}:stripe_error`); continue
     }
@@ -228,6 +261,46 @@ async function handle(request: NextRequest) {
         .update({ recovery_email_sent_at: null, recovery_email_count: 0 })
         .eq('id', b.id)
       summary.skipped.push(`${ref}:send_failed`)
+    }
+  }
+
+  // Page ops about paid-but-pending rows. One digest per run — the sweep is
+  // hourly, so an unresolved incident nags every hour until someone heals the
+  // booking (re-send the webhook event from the Stripe dashboard, or flip the
+  // row by hand after verifying the charge). Deliberately unclaimed in the
+  // DB: repetition is the feature while money is sitting on an unfulfilled
+  // booking. Best-effort — the sweep's own summary must return regardless.
+  // Also gated on remaining wall-clock: the loop's deadline leaves ~3s of
+  // headroom before Netlify's 10s kill, and the digest's render + Resend
+  // round trip must fit inside it or the run dies mid-send and loses its
+  // summary — the exact failure the deadline exists to prevent. Skipping is
+  // free: the rows are unclaimed, so the next hourly sweep re-alerts.
+  if (paidPendingDetails.length > 0 && Date.now() - startedAt < DEADLINE_MS + 1_000) {
+    // Same validated-recipient path and empty-list guard every other ops
+    // email takes (see maybeSendOperatorAlert) — resolveOpsRecipients()
+    // alone does no address validation, and Resend rejects an empty `to`.
+    const opsTo = operatorAlertRecipients(resolveOpsRecipients())
+    if (opsTo.length === 0) {
+      console.error('[abandoned-cart] paid-but-pending ops alert dropped: no_ops_email_configured', {
+        bookings: paidPendingDetails.map((p) => p.id),
+      })
+      return NextResponse.json({ ok: true, ...summary })
+    }
+    try {
+      await sendEmail({
+        to: opsTo,
+        subject: `ACTION NEEDED: ${plural(paidPendingDetails.length, 'paid booking')} stuck in pending`,
+        react: OpsAlert({
+          title: 'Paid bookings stuck in pending',
+          body: 'Stripe shows these payments as succeeded, but the booking rows still say pending — the webhook never processed them, so no confirmation or dispatch email went out. Re-send the event from Stripe (Dashboard → Webhooks → the endpoint → event → Resend), and check STRIPE_WEBHOOK_SECRET on Netlify if this keeps happening. This alert repeats hourly until the rows are healed.',
+          lines: paidPendingDetails.map(
+            (p) => `${p.ref} · booking ${p.id} · ${p.pi} · created ${p.createdAt}`,
+          ),
+        }),
+        tags: [{ name: 'category', value: 'ops_alert' }],
+      })
+    } catch (alertErr) {
+      console.error('[abandoned-cart] paid-but-pending ops alert failed', alertErr)
     }
   }
 

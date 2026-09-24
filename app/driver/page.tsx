@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { createServiceClient } from '@/lib/supabase/service'
-import { driverTrip, driverTour, isAllowedDriver, nextActionAt, type DriverTrip, type DriverTour } from '@/lib/driver'
+import { driverTrip, driverTour, isAllowedDriver, nextActionAt, type DriverTrip, type DriverTour , transferLegWindow } from '@/lib/driver'
 import DriverDashboard from '@/components/driver/DriverDashboard'
 import DriverShell from '@/components/driver/DriverShell'
 
@@ -22,13 +22,26 @@ export default async function DriverPage() {
   if (!isAllowedDriver(user.email)) redirect('/driver/login?error=not_allowed')
 
   const svc = createServiceClient()
-  const { data: bookings } = await svc
+  // Bounded by LEG TIME, not row age: newest-100-by-created_at let history
+  // crowd upcoming pickups off the list once the table outgrew the cap. One
+  // inner-join query, so no id list to overflow a URL; ordered so the 200 cap
+  // is a deterministic page rather than an arbitrary sample; error LOGGED,
+  // because an outage that renders as "no upcoming trips" strands a driver.
+  // 45 days back, because the list is also the payout ledger: a past leg
+  // stays here until its payout is marked paid, and a one-day window hid
+  // unpaid rides from both the driver and the operator. 500 rows because
+  // created_at ASC pages from the OLDEST booking in the window; at 200, a
+  // long payout backlog could push the newest-booked pickups off the end.
+  const { orFilter } = transferLegWindow(Date.now(), { backDays: 45 })
+  const { data: bookings, error: bookingsErr } = await svc
     .from('bookings')
-    .select('id, first_name, last_name, phone, subtotal, special_requests, dispatch, booking_items(*)')
+    .select('id, first_name, last_name, phone, subtotal, special_requests, dispatch, booking_items!inner(*)')
     .eq('status', 'paid')
     .eq('booking_type', 'transfer')
-    .order('created_at', { ascending: false })
-    .limit(100)
+    .or(orFilter, { referencedTable: 'booking_items' })
+    .order('created_at', { ascending: true })
+    .limit(500)
+  if (bookingsErr) console.error('[driver-portal] window query failed', bookingsErr)
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const trips = ((bookings ?? []) as any[])

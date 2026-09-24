@@ -98,7 +98,15 @@ function priceRangeLabel(zone: TransferZone, tripType: TransferTripType): string
 // surface renders the real aggregates from /api/transfers/activity instead
 // (LiveActivityLine); fabricated counts were purged by owner instruction.
 
-export default function TransfersView() {
+/**
+ * `initialDestinationId` seeds the route picker from the SERVER, for the
+ * per-resort landing pages at /transfers/<Resort>. The ?to= deep link below
+ * still works and still wins for anything that uses it; this is the same
+ * preselection for a URL that carries the resort in its PATH instead of its
+ * query string, so a Google Ads final URL can be a real page rather than a
+ * redirect. Both guard on getDestination, so an unknown id simply does nothing.
+ */
+export default function TransfersView({ initialDestinationId }: { initialDestinationId?: string } = {}) {
   const router = useRouter()
   const addQuote = useTransfersCart((s) => s.addQuote)
   // Two formatters on purpose. formatPrice converts by a hardcoded rate and
@@ -109,7 +117,9 @@ export default function TransfersView() {
   // rate MAPL does not charge in.
   const { formatPrice, formatUsd } = useI18n()
 
-  const [destinationId, setDestinationId] = useState<string>('')
+  const [destinationId, setDestinationId] = useState<string>(
+    initialDestinationId && getDestination(initialDestinationId) ? initialDestinationId : ''
+  )
 
   // "My hotel isn't listed". Held apart from destinationId on purpose: an
   // unlisted property has no zone and therefore no price, so it must never

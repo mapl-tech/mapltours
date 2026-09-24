@@ -103,7 +103,9 @@ export interface DayOfResult {
  * The stamp is claimed BEFORE the send, conditional on it still being unset,
  * so two overlapping runs cannot both mail the guest: the loser's update
  * matches zero rows and it backs out. If the send then fails, the claim is
- * released so the next run can retry.
+ * released so the next run can retry. Between winning the claim and sending,
+ * the booking's status is re-read and the send goes ahead only on a fresh
+ * 'paid'; see the comment at that check for why a skip keeps the stamp.
  *
  * `force` bypasses ONLY the already-sent stamp, for the operator resending to
  * a guest who lost the mail. It never bypasses the driver-assigned guard: a
@@ -150,12 +152,42 @@ export async function sendDayOf(
     return { ...base, ok: false, skipped: 'already sent' }
   }
 
+  // The row in hand is the caller's opening snapshot, and the cron loop's
+  // awaited sends leave it seconds-to-minutes stale — long enough for a
+  // self-serve cancellation or an admin refund to commit AFTER blockedReason
+  // approved it, which would put driver details in a refunded guest's inbox
+  // minutes after ops was told to stand down. So re-read the status now that
+  // the claim is won, and send only on a fresh 'paid'. Anything else keeps
+  // the stamp ON PURPOSE: a booking that stopped being paid must never get
+  // this email from any later run either, and the held stamp is exactly what
+  // guarantees that. An errored or empty re-read fails closed the same way —
+  // we could not prove the booking is still paid, so nobody sends — and the
+  // operator console's force resend is the recovery path once the row
+  // provably reads 'paid' again. This is the same read-to-write race
+  // lib/email/claim.ts closes with requireStatus; merge_dispatch itself has
+  // no status predicate. (Audit 2026-08-22.)
+  const { data: fresh, error: freshErr } = await svc
+    .from('bookings')
+    .select('status')
+    .eq('id', b.id)
+    .maybeSingle()
+  if (freshErr || !fresh || fresh.status !== 'paid') {
+    const reason = freshErr
+      ? `status re-check errored (${freshErr.message}); failing closed, stamp kept`
+      : `booking is ${fresh ? `'${fresh.status}'` : 'missing'} at send time, not paid; stamp kept`
+    // The errored read is the loud one: it may be withholding mail a paid
+    // guest is owed, and the operator resend is how that gets recovered.
+    const log = freshErr ? console.error : console.warn
+    log('[dayof] claim won but send withheld', { bookingId: b.id, leg, reason })
+    return { ...base, ok: false, skipped: reason }
+  }
+
   const res = await sendEmail({
     to: b.email,
     // Operations and the driver hold exactly what the guest holds.
     bcc: opsBcc(b.email),
     subject: isArrival
-      ? `${dayLabel}: your MAPL driver at Montego Bay (${ref})`
+      ? `${dayLabel}: your MAPL Tours driver at Montego Bay (${ref})`
       : `${dayLabel}: your ride to the airport (${ref})`,
     react: TransferDayOf({
       bookingRef: ref,

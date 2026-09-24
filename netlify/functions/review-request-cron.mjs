@@ -16,7 +16,11 @@ export default async () => {
     console.error('[review-request-cron] CRON_SECRET not set')
     return new Response(JSON.stringify({ error: 'CRON_SECRET not set' }), { status: 500 })
   }
-  const res = await fetch(`${base}/api/review-requests?secret=${encodeURIComponent(secret)}`)
+  // Secret rides in a header, not the query string (query strings land in
+  // request logs).
+  const res = await fetch(`${base}/api/review-requests`, {
+    headers: { authorization: `Bearer ${secret}` },
+  })
   const body = await res.text()
   console.log('[review-request-cron]', res.status, body.slice(0, 600))
   return new Response(body, { status: res.status, headers: { 'content-type': 'application/json' } })

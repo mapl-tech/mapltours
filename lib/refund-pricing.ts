@@ -67,6 +67,15 @@ export interface RefundableBooking {
    */
   gift_card_amount?: number | string | null
   /**
+   * The PaymentIntent that captured the cash share of total_paid. NULL means
+   * Stripe captured nothing for this booking (audit 2026-08-22): checkout
+   * absorbs a sub-minimum gift remainder (1-49c) and settles the booking
+   * fully covered with no intent, so total_paid - gift_card_amount can be a
+   * few cents of cash that was never taken. Callers that do not select the
+   * column may leave it undefined, which keeps the legacy derivation.
+   */
+  stripe_payment_id?: string | null
+  /**
    * When the earliest part of the booking starts (ISO), from
    * earliestServiceStart(). Once that moment passes the booking has been
    * delivered and is no longer refundable, even inside the 48 hours.
@@ -171,7 +180,23 @@ export function quoteRefund(booking: RefundableBooking, now: Date = new Date()):
   // it touches the traveler's cash. Real money back beats store credit back,
   // and Stripe can never be asked for more than it captured.
   const giftCents = Math.round(Number(booking.gift_card_amount ?? 0) * 100)
-  const cashCapturedCents = Math.max(0, grossCents - (Number.isFinite(giftCents) ? giftCents : 0))
+  const giftFundedCents = Number.isFinite(giftCents) ? giftCents : 0
+  // The cash share is capped at what Stripe actually CAPTURED, and a booking
+  // with a gift share but NO PaymentIntent captured nothing: that is the
+  // sub-minimum absorption above (checkout ate the 1-49c remainder), where
+  // total_paid - gift_card_amount is cash Stripe never took. Quoting it as
+  // cash wedged the refund forever — the cancel route 409s a cash refund with
+  // no payment reference — so the whole refund rides back as gift credit
+  // instead (audit 2026-08-22). Deliberately scoped to rows that DID use a
+  // gift: a no-gift booking missing its intent is a data anomaly, and keeping
+  // its quote in cash lets the same downstream guard fail loudly to support
+  // rather than quietly "refunding" as credit to a gift card that isn't there.
+  // An UNDEFINED stripe_payment_id (caller never selected it) keeps the
+  // legacy derivation too, so old call sites cannot silently zero a cash quote.
+  const cashCapturedCents =
+    booking.stripe_payment_id === null && giftFundedCents > 0
+      ? 0
+      : Math.max(0, grossCents - giftFundedCents)
   const cashRefundCents = Math.min(refundCents, cashCapturedCents)
   const giftRefundCents = refundCents - cashRefundCents
 

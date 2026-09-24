@@ -62,7 +62,7 @@ export default function PrivacyPage() {
           <li><strong>Stripe</strong>, payment processing.</li>
           <li><strong>Resend</strong>, transactional email delivery.</li>
           <li><strong>Supabase</strong>, secure database hosting (Frankfurt region).</li>
-          <li><strong>Google Analytics &amp; Hotjar</strong>, anonymised usage analytics. You can opt out via your browser&rsquo;s Do Not Track or ad-blocker.</li>
+          <li><strong>Google Analytics &amp; Hotjar</strong>, anonymised usage analytics. We honour your browser&rsquo;s Do Not Track and Global Privacy Control signals: with either enabled, none of these analytics tools load at all.</li>
         </ul>
         <p style={{ marginTop: 12 }}>We do not sell your personal information to anyone.</p>
       </Section>

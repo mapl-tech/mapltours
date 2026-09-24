@@ -107,11 +107,39 @@ export async function releaseStaleGiftClaims(supabase: DB, giftCardId: string): 
       ) {
         const killed = await cancelPaymentIntent(booking.stripe_payment_id)
         if (!killed) continue
-        await supabase
+        // A CAS on the intent that was READ, like every sibling of this flip
+        // (audit finding, 2026-08-22). Between the cancel above and this
+        // write, a re-POST on the same row can find the dead intent and
+        // attach a fresh, discounted one; flipping the row regardless and
+        // falling through to credit the balance would leave that new intent
+        // live at a discount the balance no longer backs — the same value
+        // spendable twice. Zero rows means a concurrent request owns the
+        // transition: the reservation is live again and stays.
+        const { data: claimedCanceled } = await supabase
           .from('bookings')
           .update({ status: 'canceled' })
           .eq('id', row.booking_id as string)
           .in('status', ['pending', 'failed'])
+          .eq('stripe_payment_id', booking.stripe_payment_id)
+          .select('id')
+          .maybeSingle()
+        if (!claimedCanceled) continue
+      } else if (booking?.status === 'pending' || booking?.status === 'failed') {
+        // No intent yet. The booking must still be claimed BEFORE its value
+        // goes back: left 'pending' it stays reusable on the pending index,
+        // and a re-POST landing on it could settle gift-covered, or attach a
+        // discounted intent, against a claim this sweep just credited back.
+        // Zero rows means a re-POST already moved the row (paid, or given an
+        // intent); then the reservation is live again and stays.
+        const { data: claimedDead } = await supabase
+          .from('bookings')
+          .update({ status: 'canceled' })
+          .eq('id', row.booking_id as string)
+          .in('status', ['pending', 'failed'])
+          .is('stripe_payment_id', null)
+          .select('id')
+          .maybeSingle()
+        if (!claimedDead) continue
       }
 
       // Claim the release. If another request already released this row, the
@@ -375,6 +403,20 @@ export async function settleGiftClaim(
       return
     }
 
+    // Only a booking that is still PAID gets its claim spent. A refund can
+    // land in the gap between the succeeded handler's paid transition and
+    // this settle; the refund handler has then already flipped the booking
+    // and is releasing the reserved claim, and spending it here would leave
+    // the row 'spent' on a refunded booking with the value gone for good.
+    {
+      const { data: bk0 } = await supabase
+        .from('bookings').select('status').eq('id', bookingId).maybeSingle()
+      if (bk0?.status !== 'paid') {
+        console.warn('[gift-redemption] settle skipped, booking is not paid', { bookingId, status: bk0?.status })
+        return
+      }
+    }
+
     const { data: settled } = await supabase
       .from('gift_card_redemptions')
       .update({ status: 'spent', settled_at: new Date().toISOString() })
@@ -413,6 +455,17 @@ export async function settleGiftClaim(
       // carried the discount. Re-debiting against a full-price charge would
       // destroy value the guest never received, so absent proof we keep the
       // balance and flag it for a human instead.
+      //
+      // And ONLY while the booking is still paid. A refund handler releases
+      // the claim too, after flipping the booking to 'refunded'; a settle
+      // that lands just behind it must not re-debit the value the refund
+      // just returned.
+      const { data: bk2 } = await supabase
+        .from('bookings').select('status').eq('id', bookingId).maybeSingle()
+      if (bk2?.status !== 'paid') {
+        console.log('[gift-redemption] released claim on a booking that is not paid, not re-debiting', { bookingId, status: bk2?.status })
+        return
+      }
       if (capturedCents == null || !Number.isFinite(capturedCents)) {
         console.error(
           '[gift-redemption] released claim on a paid booking, but captured amount unknown — NOT re-debiting',
@@ -432,7 +485,7 @@ export async function settleGiftClaim(
       if (!reclaimed) return
 
       const amount = Number(row.amount)
-      for (let attempt = 0; attempt < 5; attempt++) {
+      for (let attempt = 0; attempt < 10; attempt++) {
         const { data: card } = await supabase
           .from('gift_cards')
           .select('balance')
@@ -443,12 +496,13 @@ export async function settleGiftClaim(
         const next = Number((Number(card.balance) - amount).toFixed(2))
         if (next < 0) {
           // The credited value was already spent elsewhere. We cannot take it
-          // back without pushing the card negative; this needs a human.
+          // back without pushing the card negative; this needs a human. The
+          // row stays 'spent' on purpose: it is the durable marker.
           console.error(
             '[gift-redemption] DOUBLE-SPEND — released gift value was re-spent before settle',
             { bookingId, giftCardId: row.gift_card_id, amount },
           )
-          break
+          return
         }
 
         const { data: debited } = await supabase
@@ -460,6 +514,21 @@ export async function settleGiftClaim(
           .maybeSingle()
         if (debited) return
       }
+      // Every CAS lost (a busy card) or the card row vanished. The ledger
+      // row was flipped to 'spent' BEFORE the debit as the idempotency
+      // guard, and left like that it would say the value was taken while
+      // the balance still holds it, with no later pass able to repair it
+      // (a 'spent' row short-circuits every subsequent settle). Put the row
+      // back so the debt stays visible to the next delivery, and say so.
+      await supabase
+        .from('gift_card_redemptions')
+        .update({ status: 'released', settled_at: null })
+        .eq('id', row.id)
+        .eq('status', 'spent')
+      console.error(
+        '[gift-redemption] CRITICAL: re-debit of a released claim did not land after retries, row returned to released, retry owed',
+        { bookingId, giftCardId: row.gift_card_id, redemptionId: row.id, amount },
+      )
     }
   } catch (err) {
     console.error('[gift-redemption] settle failed', bookingId, err instanceof Error ? err.message : err)
@@ -523,12 +592,24 @@ export async function refundToGiftCard(
 ): Promise<boolean> {
   if (!(amount > 0)) return true
   try {
-    const { data: row } = await supabase
+    const { data: row, error: readErr } = await supabase
       .from('gift_card_redemptions')
       .select('id, amount, status')
       .eq('booking_id', bookingId)
       .eq('status', 'spent')
       .maybeSingle()
+
+    // A failed read is NOT "nothing owed" (audit finding, 2026-08-22).
+    // Supabase resolves PostgREST failures as { data: null, error } without
+    // throwing, so an errored read used to fall into the !row branch below
+    // and report success — every surface then recorded the credit as
+    // returned while the balance never moved, and nothing ever retried.
+    // Fail closed: the 'spent' row survives untouched as the durable marker
+    // that credit is still owed, and false makes the caller scream.
+    if (readErr) {
+      console.error('[gift-redemption] refund could not read the ledger — retry owed', { giftCardId, bookingId, amount }, readErr.message)
+      return false
+    }
 
     if (!row) {
       // Already processed by the other caller, or nothing was ever spent.

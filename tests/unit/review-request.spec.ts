@@ -2,10 +2,14 @@ import { describe, test, expect } from 'vitest'
 import {
   lastServiceEndMs,
   reviewRequestBlockedReason,
+  reviewRunOverBudget,
   describeForReview,
   REVIEW_STAMP_KEY,
+  REVIEW_STAMP_FILTER,
   REVIEW_DELAY_HOURS,
   REVIEW_WINDOW_DAYS,
+  REVIEW_SEND_BATCH,
+  REVIEW_DEADLINE_MS,
   type ReviewableBooking,
 } from '../../lib/review-request'
 
@@ -181,5 +185,55 @@ describe('it asks about what they actually booked', () => {
       booking_items: [{ item_type: 'experience', title: 'River Tubing', date: '2026-09-20' }],
     })
     expect(describeForReview(b).isTransfer).toBe(false)
+  })
+})
+
+describe('the cron scan window holds only candidates (audit 2026-08-22)', () => {
+  // Wiring, in the spirit of gift-card-delivery.spec.ts: the server-side
+  // filter and the JS already_asked rule must name the SAME dispatch key.
+  // `dispatch->wrong_key IS NULL` is true on every row, so a typo here would
+  // not fail, it would silently exclude nothing and let stamped rows crowd
+  // candidates back out of the newest-BATCH window.
+  test('the SQL stamp filter and the JS already_asked rule read one key', () => {
+    expect(REVIEW_STAMP_FILTER).toBe(`dispatch->${REVIEW_STAMP_KEY}`)
+  })
+
+  test('the filter names the key the stamp is actually written under', () => {
+    // sendReviewRequest claims via merge_dispatch with this literal key; the
+    // string is pinned so a rename of either side breaks a test, not guests.
+    expect(REVIEW_STAMP_FILTER).toBe('dispatch->review_request_sent')
+  })
+})
+
+describe('one run stops itself before the platform kills it (audit 2026-08-22)', () => {
+  // The claim is committed BEFORE the send, so a 10-second platform kill
+  // mid-send strands a stamp with no email behind it, and every later run
+  // reads already_asked. The budget is what guarantees the loop returns
+  // cleanly instead; deferred rows stay unstamped for tomorrow.
+  test('a fresh run has budget', () => {
+    expect(reviewRunOverBudget(0, 0)).toBe(false)
+  })
+
+  test('the send cap is honoured exactly', () => {
+    expect(reviewRunOverBudget(REVIEW_SEND_BATCH - 1, 0)).toBe(false)
+    expect(reviewRunOverBudget(REVIEW_SEND_BATCH, 0)).toBe(true)
+  })
+
+  test('the deadline is honoured to the millisecond', () => {
+    expect(reviewRunOverBudget(0, REVIEW_DEADLINE_MS)).toBe(false)
+    expect(reviewRunOverBudget(0, REVIEW_DEADLINE_MS + 1)).toBe(true)
+  })
+
+  test('either limit alone is enough to stop the run', () => {
+    expect(reviewRunOverBudget(REVIEW_SEND_BATCH, 0)).toBe(true)
+    expect(reviewRunOverBudget(0, REVIEW_DEADLINE_MS + 1)).toBe(true)
+  })
+
+  test('the deadline leaves room inside the 10-second cutoff', () => {
+    // A send in flight when the budget trips still needs seconds to finish
+    // before Netlify's kill. Raising the deadline past this breaks the
+    // guarantee, and this test, first.
+    expect(REVIEW_DEADLINE_MS).toBeLessThanOrEqual(7_000)
+    expect(REVIEW_SEND_BATCH).toBeGreaterThan(0)
   })
 })

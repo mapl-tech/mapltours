@@ -88,6 +88,8 @@ export async function sendCancellationEmails(
   opts: { source?: 'self-serve' | 'dashboard' } = {},
 ): Promise<CancellationEmailResult> {
   const result: CancellationEmailResult = { customer: 'skipped', ops: 'skipped' }
+  let customerClaim: 'claimed' | 'lost' | 'error'
+  let opsClaim: 'claimed' | 'lost' | 'error'
 
   try {
     const supabase = createServiceClient()
@@ -138,10 +140,13 @@ export async function sendCancellationEmails(
       result.customer = 'failed'
     } else if (booking.cancellation_email_sent_at) {
       result.customer = 'skipped'
-    } else if (await claimEmailChannel(supabase, bookingId, CUSTOMER_CHANNEL)) {
+    } else if ((customerClaim = await claimEmailChannel(supabase, bookingId, CUSTOMER_CHANNEL)) === 'error') {
+      // Nobody holds the channel and nothing was sent; say failed, not skipped.
+      result.customer = 'failed'
+    } else if (customerClaim === 'claimed') {
       const res = await sendEmail({
         to: booking.email,
-        subject: `Cancelled: ${bookingRef} · ${currency === 'USD' ? '$' : ''}${refundAmount.toFixed(2)} refunded`,
+        subject: `Cancelled, your ${currency === 'USD' ? '$' : ''}${refundAmount.toFixed(2)} refund is on its way (${bookingRef})`,
         react: BookingCancelled({
           bookingRef, firstName, totalPaid, refundAmount, adminCharge, currency, isTransfer, items,
           cashRefund, giftRefund,
@@ -162,7 +167,9 @@ export async function sendCancellationEmails(
       result.ops = 'failed'
     } else if (booking.ops_cancellation_email_sent_at) {
       result.ops = 'skipped'
-    } else if (await claimEmailChannel(supabase, bookingId, OPS_CHANNEL)) {
+    } else if ((opsClaim = await claimEmailChannel(supabase, bookingId, OPS_CHANNEL)) === 'error') {
+      result.ops = 'failed'
+    } else if (opsClaim === 'claimed') {
       const res = await sendEmail({
         to: opsRecipients,
         subject: `CANCELLED: ${bookingRef} · ${customerName} · stand down`,
@@ -255,7 +262,7 @@ export async function sendRefundRequestEmails(
     if (booking.email) {
       const res = await sendEmail({
         to: booking.email,
-        subject: `Cancellation requested: ${bookingRef}`,
+        subject: `Got your cancellation request (${bookingRef})`,
         react: RefundRequested({
           bookingRef, firstName, totalPaid, refundAmount, adminCharge, currency, isTransfer,
         }),

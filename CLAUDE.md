@@ -12,7 +12,7 @@
 - **Fonts**: `next/font/google` — `Syne` (700, 800) for headings/prices, `DM_Sans` (300–600) for all UI
 - **Animation**: Framer Motion for page transitions and cart slide-ins; CSS keyframes for micro-interactions
 - **Icons**: No icon library — use emoji and Unicode symbols throughout
-- **Payments**: Stripe Elements (UI only at MVP, no real charges)
+- **Payments**: Stripe PaymentIntents + Payment Element — **LIVE, real charges**. Server-priced checkout (`app/api/checkout`, `app/api/transfers/checkout`, `app/api/gifts/checkout` — gift-card purchases mint live PaymentIntents too), fulfillment via the Stripe webhook (`app/api/webhooks/stripe`), Supabase `bookings` as ground truth. Anything touching these paths moves real money — see GO-LIVE.md before changing them.
 
 ---
 
@@ -35,7 +35,7 @@ mapl-tours/
 │   ├── ItineraryPanel.tsx    # 300px right drawer, renders null when cart empty
 │   ├── ProfileView.tsx       # User stats, saved creators, past trips
 │   └── checkout/
-│       └── CheckoutView.tsx  # 3-step: ReviewStep + DetailsStep + PaymentStep + ConfirmedView
+│       └── CheckoutView.tsx  # 2-step: DetailsStep → Stripe Payment Element; confirm lives at /checkout/confirm
 ├── lib/
 │   ├── experiences.ts        # All Jamaica experience data + types + CATEGORY_COLORS
 │   └── cart.ts               # Zustand store
@@ -310,28 +310,30 @@ Layers (bottom to top):
 - **Item rows**: 58px gradient thumbnail + title (truncated) + destination - duration + `$price x travelers` in gold + remove button
 - **Footer** (`border-top`): Subtotal + Booking fee (20%, see `lib/checkout-pricing.ts`) + Total (Syne 800, gold) + "Checkout" `btn-primary` full-width -> href="/checkout" + "Flexible cancellation within 48 hrs of booking" note
 
-### CheckoutView (3-step shell)
-- `'use client'`, state: `step` (1-3), `confirmed` (boolean)
-- If `confirmed`: render `<ConfirmedView />`
-- **Top bar**: back (Link to "/"), "Checkout" (Syne 700), `<StepIndicator step={step} />`
-- **StepIndicator**: 3 circles (done=gold fill, active=gold, future=dim) + "Review / Details / Payment" labels + connector lines
-- **Body**: flex row:
-  - Left (flex-1, scrollable, max-width 640px): `{step === 1 && <ReviewStep />}` etc.
-  - Right (280px, sticky): order summary + CTA button
+### CheckoutView (2-step, REAL payments)
 
-**ReviewStep**: Each cart item card — gradient thumbnail (80px wide) + title + parish + duration + tags + `<input type="date">` + traveler counter (-/n/+, clamp 1-12) + `$price x travelers` in gold. Remove link.
+> The MVP-era description of a 3-step shell with a fake card form and
+> `setConfirmed(true)` is long gone. The current flow moves real money:
 
-**DetailsStep**: 2-col grid inputs — First Name, Last Name, Email (col-span-2), Phone, Country. Textarea for Special Requests (col-span-2). SSL notice with green-tint background.
-
-**PaymentStep**: Dark gradient card (`#1A1A2E to #2D2D4A`) with VISA/MC/AMEX badges, Card Number input (letter-spacing:2), Expiry + CVV side-by-side, Name on Card. Terms copy below.
-
-**Right order summary**: Items list (emoji + title + travelers x price), Subtotal + fee rows, Total (Syne gold), CTA button:
-- Step 1: "Continue to Details"
-- Step 2: "Continue to Payment"
-- Step 3: "Pay $grand"
-- On step 3 click: `setConfirmed(true)`
-
-**ConfirmedView**: "Booking Confirmed!" (Syne 800), body copy ending "No problem.", summary card with all items + dates + travelers + total paid, "Explore More Experiences +" button -> `clearCart()` + redirect to `/`.
+- **Step 1 (details)**: trip date + traveler counters (clamp 1-12), contact
+  fields, special requests, and the **liability waiver checkbox** — the
+  advance to step 2 is blocked until every required field and the waiver
+  validate; `waiverAccepted` is sent to the server, which refuses tour
+  checkouts without it and stamps `waiver_accepted_at` (migration 028).
+- **On entering step 2**: POST `/api/checkout` — the server re-prices the
+  cart from the catalog (never trusts client amounts), enforces the 24h lead
+  time and the 8h/day cap, inserts a `pending` booking row (atomic on the
+  unique `(cart_hash, booking_type)` partial index), mints a PaymentIntent
+  (idempotency-keyed per booking row), and returns its `clientSecret`.
+- **Step 2 (payment)**: Stripe **Payment Element** (`StripePaymentPanel`) —
+  card / Apple Pay, `confirmPayment` with a `return_url` of
+  `/checkout/confirm`. A fully-gift-covered tour cart shortcuts straight to
+  confirmation with no PaymentIntent — but buying a gift card itself
+  (`app/api/gifts/checkout`) always mints one.
+- **Fulfillment** happens in the webhook (`app/api/webhooks/stripe`):
+  pending→paid CAS flip, traveler + operator emails (Resend), reward
+  consumption, calendar sync. The confirm page renders from Stripe +
+  Supabase; GA4 `purchase` fires there, deduped by booking ref.
 
 ### One-page checkout (Sept 2026, REAL payments)
 

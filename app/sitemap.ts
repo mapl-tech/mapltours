@@ -1,6 +1,7 @@
 import { MetadataRoute } from 'next'
 import { experiences, slugify } from '@/lib/experiences'
 import { BLOG_POSTS } from '@/lib/blog'
+import { DESTINATIONS } from '@/lib/airport-transfers'
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const baseUrl = 'https://mapltours.com'
@@ -38,5 +39,17 @@ export default function sitemap(): MetadataRoute.Sitemap {
     priority: post.featured ? 0.75 : 0.65,
   }))
 
-  return [...staticPages, ...experiencePages, ...blogPages]
+  // One URL per transfer destination. These are the pages the Google Ads
+  // campaigns land on, so they need to be crawlable in their own right rather
+  // than living only behind the picker on /transfers. Canonical form is the
+  // lower-case id; the ads' title-cased spelling resolves to the same page and
+  // canonicalises here.
+  const transferPages = DESTINATIONS.map((d) => ({
+    url: `${baseUrl}/transfers/${d.id}`,
+    lastModified: now,
+    changeFrequency: 'monthly' as const,
+    priority: 0.7,
+  }))
+
+  return [...staticPages, ...experiencePages, ...blogPages, ...transferPages]
 }

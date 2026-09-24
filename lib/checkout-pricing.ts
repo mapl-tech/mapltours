@@ -102,7 +102,10 @@ export function priceTourCart(
       throw new PricingError('unknown_experience', `experience id ${raw.id} not in catalog`)
     }
     const travelers = Math.round(raw.travelers)
-    if (!Number.isFinite(travelers) || travelers < 1 || travelers > 20) {
+    // Same ceiling the cart UI enforces (lib/cart.ts clamps to 12). The
+    // server bound used to sit at 20, so a direct POST could book a group
+    // size no vehicle in the fleet actually seats.
+    if (!Number.isFinite(travelers) || travelers < 1 || travelers > 12) {
       throw new PricingError(
         'invalid_travelers',
         `experience ${raw.id} traveler count out of bounds (got ${raw.travelers})`,

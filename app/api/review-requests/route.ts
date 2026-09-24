@@ -5,7 +5,12 @@ import {
   REVIEW_BOOKING_SELECT,
   type ReviewRequestResult,
 } from '@/lib/email/review-request'
-import { reviewRequestBlockedReason, REVIEW_WINDOW_DAYS } from '@/lib/review-request'
+import {
+  reviewRequestBlockedReason,
+  reviewRunOverBudget,
+  REVIEW_STAMP_FILTER,
+  REVIEW_WINDOW_DAYS,
+} from '@/lib/review-request'
 
 /**
  * Daily job: ask guests whose trip has finished to leave a review.
@@ -20,6 +25,10 @@ import { reviewRequestBlockedReason, REVIEW_WINDOW_DAYS } from '@/lib/review-req
  * Daily rather than hourly, unlike the day-of job: there is no time-of-day
  * precision to hit here, and a guest asked at an arbitrary hour of the day
  * after is no worse off than one asked on the hour.
+ *
+ * One run sends at most a small batch and stops itself before Netlify's
+ * 10-second cutoff (see reviewRunOverBudget); whatever it defers stays
+ * unstamped for the next day's run.
  *
  * SAFETY: strictly additive. Reads bookings, writes only the single
  * `dispatch.review_request_sent` key. No money column, booking status, Stripe
@@ -36,7 +45,11 @@ import { reviewRequestBlockedReason, REVIEW_WINDOW_DAYS } from '@/lib/review-req
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
-/** Rows to consider per run. Comfortably above any realistic day's volume. */
+/**
+ * Rows to consider per run. The scan excludes already-stamped rows server
+ * side, so every slot holds a live candidate: paid-but-future trips occupy
+ * slots only until their trip finishes and they are asked (audit 2026-08-22).
+ */
 const BATCH = 200
 
 export async function GET(request: NextRequest) {
@@ -68,8 +81,20 @@ export async function GET(request: NextRequest) {
     // Cheap prefilter. The real decision is reviewRequestBlockedReason, which
     // reads the actual leg times; this only keeps the scan small. Paid dates
     // are a proxy for trip dates, so the window is generous on both sides.
+    //
+    // Already-asked rows are excluded SERVER-SIDE, not only by the JS
+    // already_asked rule. This window is the newest BATCH rows by paid_at;
+    // with stamped rows left in it every one displaced a candidate, so once
+    // lifetime volume passed BATCH an advance-purchase booking (paid months
+    // before its trip) fell out of the window before its review came due and
+    // was never scanned again, while the run reported ok (audit 2026-08-22).
+    // `dispatch->review_request_sent IS NULL` is true exactly when the key is
+    // absent, i.e. never asked.
     const since = new Date(Date.now() - (REVIEW_WINDOW_DAYS + 400) * 24 * 3_600_000).toISOString()
-    query = query.gte('paid_at', since).order('paid_at', { ascending: false })
+    query = query
+      .is(REVIEW_STAMP_FILTER, null)
+      .gte('paid_at', since)
+      .order('paid_at', { ascending: false })
   }
 
   const { data: rows, error } = await query
@@ -79,6 +104,12 @@ export async function GET(request: NextRequest) {
 
   const results: ReviewRequestResult[] = []
   const considered: { bookingId: string; reason: string }[] = []
+  const startedAt = Date.now()
+  let sends = 0
+  // Due rows this run had no budget left for. They are untouched and
+  // unstamped, so the next daily run picks them up; non-zero here means a
+  // backlog is draining, not mail lost.
+  let deferred = 0
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   for (const b of (rows ?? []) as any[]) {
@@ -87,6 +118,18 @@ export async function GET(request: NextRequest) {
       considered.push({ bookingId: b.id, reason: blocked })
       continue
     }
+    // Stop before the platform stops us. A synchronous Netlify function is
+    // cut off at 10 seconds (measured in app/api/abandoned-cart/route.ts),
+    // and a kill here lands inside sendReviewRequest's claim-then-send
+    // window: the stamp commits with no email behind it, and every later run
+    // reads it as already_asked, dropping that guest permanently. Dry runs
+    // spend the same budget so they report what a real run would do
+    // (audit 2026-08-22).
+    if (reviewRunOverBudget(sends, Date.now() - startedAt)) {
+      deferred += 1
+      continue
+    }
+    sends += 1
     if (dry) {
       results.push({ ok: true, bookingId: b.id, sentTo: `${b.email} (dry run, not sent)` })
       continue
@@ -103,6 +146,7 @@ export async function GET(request: NextRequest) {
     dry,
     scanned: (rows ?? []).length,
     sent,
+    deferred,
     results,
     // Only useful when debugging why nothing went out.
     ...(dry ? { considered } : {}),

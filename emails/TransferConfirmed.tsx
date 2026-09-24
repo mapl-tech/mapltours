@@ -15,6 +15,8 @@ export interface TransferConfirmedProps {
   couponCode?: string | null
   couponDiscount?: number | null
   totalPaid: number
+  /** Portion of totalPaid that came off a gift card. Absent or 0 means none. */
+  giftApplied?: number | null
   currency: string
   paidAt?: string | null
   specialRequests?: string | null
@@ -70,6 +72,7 @@ export default function TransferConfirmed(props: TransferConfirmedProps) {
     couponCode,
     couponDiscount,
     totalPaid,
+    giftApplied,
     currency,
     paidAt,
     specialRequests,
@@ -185,6 +188,17 @@ export default function TransferConfirmed(props: TransferConfirmedProps) {
             <>
               <BreakdownLine label="Fare" value={fmtMoney(totalPaid + couponDiscount, currency)} />
               <BreakdownLine label={couponCode ? `Code ${couponCode}` : 'Discount code'} value={`− ${fmtMoney(couponDiscount, currency)}`} emphasis="emerald" />
+            </>
+          )}
+          {/* A gift-funded booking's card was charged LESS than the total.
+              Printing the gross alone as "Total paid" contradicted the
+              guest's own card statement, which is the one number they will
+              check it against. The split says what the gift covered and what
+              the card was actually charged. */}
+          {giftApplied != null && giftApplied > 0 && (
+            <>
+              <BreakdownLine label="Gift card applied" value={`− ${fmtMoney(giftApplied, currency)}`} />
+              <BreakdownLine label="Charged to your card" value={fmtMoney(Math.max(0, totalPaid - giftApplied), currency)} />
             </>
           )}
           <div style={s.totalRow}>

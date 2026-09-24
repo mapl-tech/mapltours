@@ -131,6 +131,76 @@ test('formatCents renders money to two places', () => {
   expect(formatCents(0)).toBe('$0.00')
 })
 
+describe('cash is capped at what Stripe actually captured (audit 2026-08-22)', () => {
+  // Checkout absorbs a sub-minimum gift remainder (1-49c): the booking
+  // settles fully covered with NO PaymentIntent while gift_card_amount stays
+  // a few cents short of total_paid. The quote must not demand cash Stripe
+  // never captured, or the cancel route 409s the missing payment reference
+  // forever and the refund is permanently wedged.
+  test('the $99.80-card-on-a-$100-cart absorption refunds entirely as gift credit', () => {
+    const q = quoteRefund(
+      booking({ total_paid: 100, gift_card_amount: 99.8, stripe_payment_id: null }),
+      hoursAfterBooking(2),
+    )
+    if (!q.refundable) throw new Error('expected refundable')
+    expect(q.refundCents).toBe(8_000)
+    expect(q.cashCapturedCents).toBe(0)
+    expect(q.cashRefundCents).toBe(0)
+    expect(q.giftRefundCents).toBe(8_000)
+  })
+
+  test('absorption at the widest gap, 49 cents, is still all gift credit', () => {
+    const q = quoteRefund(
+      booking({ total_paid: 100, gift_card_amount: 99.51, stripe_payment_id: null }),
+      hoursAfterBooking(2),
+    )
+    if (!q.refundable) throw new Error('expected refundable')
+    expect(q.cashCapturedCents).toBe(0)
+    expect(q.cashRefundCents).toBe(0)
+    expect(q.giftRefundCents).toBe(q.refundCents)
+  })
+
+  test('halves still sum to the total refund when nothing was captured', () => {
+    const q = quoteRefund(
+      booking({ total_paid: 100, gift_card_amount: 99.8, stripe_payment_id: null }),
+      hoursAfterBooking(2),
+    )
+    if (!q.refundable) throw new Error('expected refundable')
+    expect(q.cashRefundCents + q.giftRefundCents).toBe(q.refundCents)
+  })
+
+  test('a part-gift booking WITH an intent keeps the cash-first split', () => {
+    const q = quoteRefund(
+      booking({ total_paid: 500, gift_card_amount: 200, stripe_payment_id: 'pi_live_123' }),
+      hoursAfterBooking(2),
+    )
+    if (!q.refundable) throw new Error('expected refundable')
+    expect(q.cashCapturedCents).toBe(30_000)
+    expect(q.cashRefundCents).toBe(30_000)
+    expect(q.giftRefundCents).toBe(10_000)
+  })
+
+  test('a caller that never selected stripe_payment_id keeps the legacy derivation', () => {
+    const q = quoteRefund(booking({ total_paid: 500, gift_card_amount: 200 }), hoursAfterBooking(2))
+    if (!q.refundable) throw new Error('expected refundable')
+    expect(q.cashCapturedCents).toBe(30_000)
+    expect(q.cashRefundCents).toBe(30_000)
+  })
+
+  test('a NO-gift booking missing its intent still quotes cash, so downstream fails loudly', () => {
+    // A paid booking with neither gift share nor PaymentIntent is a data
+    // anomaly. Quoting its refund as gift credit would let the approval route
+    // mark it refunded while paying out nothing (there is no card to credit);
+    // the cash quote instead trips the cancel route's no_payment_reference
+    // guard and sends the guest to support.
+    const q = quoteRefund(booking({ total_paid: 100, stripe_payment_id: null }), hoursAfterBooking(2))
+    if (!q.refundable) throw new Error('expected refundable')
+    expect(q.cashCapturedCents).toBe(10_000)
+    expect(q.cashRefundCents).toBe(8_000)
+    expect(q.giftRefundCents).toBe(0)
+  })
+})
+
 describe('delivered services are not refundable', () => {
   const BOOKED = '2026-08-01T12:00:00.000Z'
   const b = (over: Partial<RefundableBooking> = {}): RefundableBooking =>

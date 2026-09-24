@@ -379,6 +379,28 @@ export const DESTINATIONS: TransferDestination[] = [
   { id: 'indigo-beach-resort', name: 'Indigo Beach Resort, Treasure Beach', parish: 'St. Elizabeth', zone: 'E', baseRate: 130, estimated: true },
 ]
 
+/**
+ * The slug the Google Ads campaigns use in a path: `sandals-ochi` is written
+ * `Sandals-Ochi` in the ad's final URL. Kept beside the id rather than inlined
+ * in the route so the two can never disagree.
+ */
+export function resortSlug(id: string): string {
+  return id
+    .split('-')
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join('-')
+}
+
+/**
+ * Resolve a path segment back to a destination, whatever its casing. The ads
+ * use title case, the sitemap and internal links use the canonical lower-case
+ * id, and both have to land on the same page.
+ */
+export function destinationFromSlug(slug: string): TransferDestination | undefined {
+  const want = decodeURIComponent(slug).toLowerCase()
+  return DESTINATIONS.find((d) => d.id.toLowerCase() === want)
+}
+
 export function getDestination(id: string): TransferDestination | undefined {
   return DESTINATIONS.find((d) => d.id === id)
 }

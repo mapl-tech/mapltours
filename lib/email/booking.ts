@@ -4,6 +4,7 @@ import { sendEmail, operatorAlertRecipients, confirmationBcc } from '@/lib/email
 import {
   claimEmailChannel as sharedClaimEmailChannel,
   releaseEmailChannel as sharedReleaseEmailChannel,
+  type ClaimOutcome,
 } from '@/lib/email/claim'
 import BookingConfirmed from '@/emails/BookingConfirmed'
 import OperatorBookingAlert from '@/emails/OperatorBookingAlert'
@@ -65,6 +66,8 @@ export interface BookingRow {
   coupon_discount?: number | string | null
   currency: string
   stripe_payment_id: string | null
+  /** Portion of total_paid redeemed from a gift card, null when none. */
+  gift_card_amount: number | null
   pickup_time: string | null
   confirmation_email_sent_at: string | null
   operator_email_sent_at: string | null
@@ -87,7 +90,7 @@ async function claimEmailChannel(
   supabase: ReturnType<typeof createServiceClient>,
   bookingId: string,
   column: 'confirmation_email_sent_at' | 'operator_email_sent_at',
-): Promise<boolean> {
+): Promise<ClaimOutcome> {
   // Implementation lives in lib/email/claim.ts so the cancellation path
   // shares it. Signature kept column-typed for the callers below.
   // The paid-status guard matches the webhook: these senders only ever run
@@ -115,8 +118,16 @@ export async function maybeSendTravelerConfirmation(
     return { ok: false, reason: 'no_email_on_record', retryable: false }
   }
 
-  if (!(await claimEmailChannel(supabase, booking.id, 'confirmation_email_sent_at'))) {
-    return { ok: true }
+  {
+    // Three outcomes, and only one of them is "someone else is sending".
+    // 'error' used to wear the same boolean as 'lost', so a transient
+    // database blip during the claim was read as a lost race, the handler
+    // answered ok, Stripe got its 200, and a PAID booking's email was
+    // dropped forever. An errored claim is now retryable: nobody holds the
+    // channel, so asking Stripe to redeliver is safe and correct.
+    const claim = await claimEmailChannel(supabase, booking.id, 'confirmation_email_sent_at')
+    if (claim === 'lost') return { ok: true }
+    if (claim === 'error') return { ok: false, reason: 'claim_error', retryable: true }
   }
 
   const bookingRef = humanizeId(booking.id)
@@ -140,6 +151,9 @@ export async function maybeSendTravelerConfirmation(
           couponCode: booking.coupon_code ?? null,
           couponDiscount: booking.coupon_discount != null ? Number(booking.coupon_discount) : null,
           totalPaid: Number(booking.total_paid),
+          // The gift-funded split. total_paid is the gross cart; the card was
+          // charged total_paid minus this, and the email must match the card.
+          giftApplied: booking.gift_card_amount != null ? Number(booking.gift_card_amount) : null,
           currency: booking.currency.toUpperCase(),
           paidAt: (booking as { paid_at?: string | null }).paid_at ?? null,
           specialRequests: booking.special_requests,
@@ -182,6 +196,9 @@ export async function maybeSendTravelerConfirmation(
           couponCode: booking.coupon_code ?? null,
           couponDiscount: booking.coupon_discount != null ? Number(booking.coupon_discount) : null,
           totalPaid: Number(booking.total_paid),
+          // The gift-funded split. total_paid is the gross cart; the card was
+          // charged total_paid minus this, and the email must match the card.
+          giftApplied: booking.gift_card_amount != null ? Number(booking.gift_card_amount) : null,
           currency: booking.currency.toUpperCase(),
           paidAt: (booking as { paid_at?: string | null }).paid_at ?? null,
           items: items.map((i) => ({
@@ -217,7 +234,7 @@ const OPS_RECIPIENTS_DEFAULT = [
   'collinsadventuretours@gmail.com',
 ]
 
-function resolveOpsRecipients(): string[] {
+export function resolveOpsRecipients(): string[] {
   // Only OPERATIONS_EMAIL can override. The default is now the same address
   // as EMAIL_SUPPORT by the owner's decision (operator alerts and customer
   // enquiries share one inbox), but it stays written out literally rather
@@ -245,8 +262,16 @@ export async function maybeSendOperatorAlert(
   const opsRecipients = operatorAlertRecipients(resolveOpsRecipients())
   if (opsRecipients.length === 0) return { ok: false, reason: 'no_ops_email_configured', retryable: false }
 
-  if (!(await claimEmailChannel(supabase, booking.id, 'operator_email_sent_at'))) {
-    return { ok: true }
+  {
+    // Three outcomes, and only one of them is "someone else is sending".
+    // 'error' used to wear the same boolean as 'lost', so a transient
+    // database blip during the claim was read as a lost race, the handler
+    // answered ok, Stripe got its 200, and a PAID booking's email was
+    // dropped forever. An errored claim is now retryable: nobody holds the
+    // channel, so asking Stripe to redeliver is safe and correct.
+    const claim = await claimEmailChannel(supabase, booking.id, 'operator_email_sent_at')
+    if (claim === 'lost') return { ok: true }
+    if (claim === 'error') return { ok: false, reason: 'claim_error', retryable: true }
   }
 
   const bookingRef = humanizeId(booking.id)

@@ -24,6 +24,16 @@ export const REVIEW_WINDOW_DAYS = 30
 /** The dispatch key that records the ask, so it can only ever happen once. */
 export const REVIEW_STAMP_KEY = 'review_request_sent'
 
+/**
+ * PostgREST path for excluding stamped rows from the cron scan server-side:
+ * `dispatch->review_request_sent IS NULL` is true exactly when the key is
+ * absent. Derived from REVIEW_STAMP_KEY so the SQL filter and the JS
+ * already_asked rule can never name two different keys; a typo'd path is NULL
+ * on every row and would silently exclude nothing, reopening the scan-window
+ * starvation this filter closes (audit 2026-08-22).
+ */
+export const REVIEW_STAMP_FILTER = `dispatch->${REVIEW_STAMP_KEY}`
+
 export interface ReviewableItem {
   item_type?: 'experience' | 'transfer' | null
   title?: string | null
@@ -212,4 +222,28 @@ export function describeForReview(booking: ReviewableBooking): ReviewSubject {
         : `${toDay(dayStamps[0])} to ${toDay(dayStamps[dayStamps.length - 1])}`
 
   return { isTransfer: false, tripLabel, tripDates }
+}
+
+/**
+ * Budget for one cron run's sends.
+ *
+ * A synchronous Netlify function is cut off at 10 seconds, measured and first
+ * fixed the same way in app/api/abandoned-cart/route.ts (BATCH + DEADLINE).
+ * Each send costs a merge_dispatch claim plus a render and a Resend call
+ * (roughly 350-550 ms), and the claim commits BEFORE the send: a platform
+ * kill between the two leaves the stamp set with no email behind it, which
+ * every later run reads as already_asked, dropping that guest permanently
+ * and invisibly. So a run stops itself while it can still return cleanly;
+ * rows it never reaches stay unstamped and the next daily run picks them up
+ * (audit 2026-08-22).
+ *
+ * The batch is sized so a full batch of worst-case sends still fits inside
+ * the deadline, and the deadline leaves ~3 s for a send already in flight.
+ */
+export const REVIEW_SEND_BATCH = 12
+export const REVIEW_DEADLINE_MS = 7_000
+
+/** True when this run must stop sending and leave the rest for tomorrow. */
+export function reviewRunOverBudget(sendsAttempted: number, elapsedMs: number): boolean {
+  return sendsAttempted >= REVIEW_SEND_BATCH || elapsedMs > REVIEW_DEADLINE_MS
 }

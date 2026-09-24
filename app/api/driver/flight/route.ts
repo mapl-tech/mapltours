@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createServiceClient } from '@/lib/supabase/service'
-import { isAllowedDriver } from '@/lib/driver'
+import { isAllowedDriver , transferLegWindow } from '@/lib/driver'
 import { normalizeFlight } from '@/lib/flight'
 import { lookupFlight } from '@/lib/flightProvider'
 
@@ -32,14 +32,21 @@ export async function GET(request: NextRequest) {
   const rawFlight = url.searchParams.get('flight')
   const date = url.searchParams.get('date')
 
-  // The requested flight must appear on a paid transfer booking.
+  // The requested flight must appear on a paid transfer booking whose leg is
+  // inside the driver's working window. The old scan took the 300 NEWEST
+  // bookings by row age, so once history outgrew the cap a legitimate lookup
+  // for an upcoming pickup started 404ing, the same starvation the portal
+  // itself had. The window query is the one the portal now uses.
   const { iata } = normalizeFlight(rawFlight)
-  const { data: rows } = await svc
+  const { orFilter } = transferLegWindow()
+  const { data: rows, error: flightErr } = await svc
     .from('bookings')
-    .select('id, booking_items(arrival_flight, departure_flight)')
+    .select('id, booking_items!inner(arrival_flight, departure_flight)')
     .eq('status', 'paid')
     .eq('booking_type', 'transfer')
-    .limit(300)
+    .or(orFilter, { referencedTable: 'booking_items' })
+    .limit(500)
+  if (flightErr) console.error('[driver-flight] window query failed', flightErr)
   const known = new Set<string>()
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   for (const b of (rows ?? []) as any[]) {
