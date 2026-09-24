@@ -89,6 +89,13 @@ const nextConfig = {
     { source: '/experience/jerk-pit-master-class-with-devon', destination: '/explore', permanent: true },
     { source: '/experience/devon-house-patty-and-ice-cream-tour', destination: '/explore', permanent: true },
     { source: '/experience/sunrise-fishing-with-local-fishermen', destination: '/explore', permanent: true },
+
+    // White River rafting left the catalogue on Sept 24 2026 on the owner's
+    // instruction, and with it the ATV safari package that ended on that
+    // river. Each goes to the nearest thing still sold: the Martha Brae raft,
+    // and the same safari without the river.
+    { source: '/experience/bamboo-rafting-on-the-white-river', destination: '/experience/bamboo-rafting-on-the-martha-brae', permanent: true },
+    { source: '/experience/rasta-safari-bamboo-rafting', destination: '/experience/rasta-cultural-atv-safari', permanent: true },
   ],
   headers: async () => [
     // Videos — immutable, 1 year

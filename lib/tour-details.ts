@@ -64,16 +64,6 @@ export const TOUR_DETAILS: Record<number, TourDetail> = {
     goodToKnow: ["You stay dry unless you dangle your feet over the side.", "The bench sits low and the raft moves under you. Stepping on and off needs a hand and a bit of balance.", "Vendors sell drinks and crafts at the landing, so bring small bills.", "This is the longer of our two raft trips, and the drive from Ocho Rios is the longer one too."],
     confirmWithOperator: ["A raft bench typically seats two, so a party of three may need two rafts. Confirm how the operator handles this and whether the rate covers it.", "Confirm whether life vests are provided, especially for children.", "Confirm the pickup radius and drive time from Ocho Rios, Runaway Bay and Montego Bay hotels.", "Confirm whether a welcome drink is part of the rate or bought at the landing."],
   },
-  4: {
-    about: "Your driver picks you up at your hotel and takes you a short way east of Ocho Rios to the White River. Your captain poles you downstream on a handmade bamboo raft through a quiet green stretch, with reggae drifting off the bank and space to slip into the water where the river is calm. Your driver is waiting at the landing when you step off.",
-    included: ["Private door-to-door transport from your hotel and back", "River entrance and raft fee", "A licensed raft captain who poles the whole run", "Your driver waits at the landing"],
-    bring: ["Swimwear under your clothes if you plan to get in", "A towel", "Sunscreen and a hat", "Small cash for tips and drinks"],
-    minAge: "No minimum. Small children ride on a parent's lap.",
-    maxGroup: "One price covers a private party of up to 3, in your own vehicle. Larger parties are quoted per person.",
-    fitness: "Easy. You are seated the whole way. Stepping on and off the raft is the only real movement.",
-    goodToKnow: ["Shorter and much closer to Ocho Rios than the Martha Brae run, so it fits easily around another tour.", "You stay dry on the raft itself unless you choose to swim.", "The bench sits low over the water. Getting on and off takes a steady hand.", "Heavy rain upriver can muddy the water or pause rafting for the day."],
-    confirmWithOperator: ["Confirm whether a swim stop is standard on this run or captain's discretion.", "Confirm raft capacity and whether a party of three needs two rafts.", "Confirm whether life vests are provided for children.", "Confirm the operator's rain and high-water policy."],
-  },
   5: {
     about: "Your driver collects you at your hotel and takes you up to the trail base above Ocho Rios, where you get a helmet, a safety briefing and a practice loop before you ride out. The trail runs through bush and farm country to a Rastafari community, where you sit down for ital food, drumming, and a straight talk about the livity from the people who live it. Then you ride back down the hill and we run you home.",
     included: ["Private door-to-door transport from your hotel and back", "ATV, helmet and safety briefing", "Entrance and community fees at the Rastafari village", "A guide for the ride and the village visit"],

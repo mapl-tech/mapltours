@@ -468,7 +468,7 @@ export const POSTS_3: BlogPost[] = [
       },
       {
         type: 'p',
-        text: "MAPL Tours guests at Moon Palace Jamaica often use the resort credit toward an off-property [Dunn's River Falls day](/experience/dunns-river-falls-climb) or the [Nine Mile heritage tour](/experience/bob-marley-nine-mile-pilgrimage), and many add [bamboo rafting on the White River](/experience/bamboo-rafting-on-the-white-river), booked separately from [the catalogue](/explore).",
+        text: "MAPL Tours guests at Moon Palace Jamaica often use the resort credit toward an off-property [Dunn's River Falls day](/experience/dunns-river-falls-climb) or the [Nine Mile heritage tour](/experience/bob-marley-nine-mile-pilgrimage), and many add [bamboo rafting on the Martha Brae](/experience/bamboo-rafting-on-the-martha-brae), booked separately from [the catalogue](/explore).",
       },
     ],
     relatedSlugs: ['bahia-principe-grand-jamaica-review', 'ocho-rios-complete-guide'],

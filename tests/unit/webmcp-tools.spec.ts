@@ -268,7 +268,7 @@ describe('WebMCP tool set', () => {
     const { t, a } = tool('start_tour_booking')
     const r = (await t.execute({ tour: 'ricks-cafe-cliff-diving-and-sunset', guests: 2, date: '2026-10-12', pickup_hotel: 'Azul Beach Resort Negril' })) as R
     expect(r.status).toBe('checkout_opened')
-    expect(r.priceForParty.priceUsd).toBe(tourPrice(experiences[13].pricing, 2))
+    expect(r.priceForParty.priceUsd).toBe(tourPrice(experiences.find((e) => e.id === 14)!.pricing, 2))
     expect(a.calls).toEqual(['addTour:14:2:2026-10-12:Azul Beach Resort Negril', 'onBookingStarted:start_tour_booking', 'navigate:/checkout'])
   })
 

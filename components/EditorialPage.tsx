@@ -13,6 +13,7 @@ const bannerImages: Record<string, string> = {
   safety: DESTINATION_IMAGES['Negril'],
   accessibility: DESTINATION_IMAGES['Treasure Beach'],
   gifts: DESTINATION_IMAGES['Falmouth'],
+  giveaway: DESTINATION_IMAGES['Falmouth'],
 }
 
 export default function EditorialPage({
