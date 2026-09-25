@@ -50,6 +50,32 @@ export function shouldShowPopup(input: {
   return now - memory.lastShownAt >= POPUP_COOLDOWN_MS
 }
 
+/**
+ * One tick of the popup's timer, once the rules above say yes. `busy` is the
+ * guest typing, another dialog open, or the tab hidden: wait and ask again.
+ * After a busy spell it waits one more quiet tick before opening, because
+ * the tap that ends the typing is often the tap that leaves the page (Book
+ * on the fare finder), and the address changes only a few hundred
+ * milliseconds after that tap. A page that is no longer the one the timer
+ * started on, or not an eligible one, stops it for good.
+ */
+export type PopupStep = 'open' | 'wait' | 'stop'
+export function nextPopupStep(input: { startedOn: string; pathNow: string; busy: boolean; wasBusy: boolean }): PopupStep {
+  if (input.pathNow !== input.startedOn || !popupPathEligible(input.pathNow)) return 'stop'
+  if (input.busy || input.wasBusy) return 'wait'
+  return 'open'
+}
+
+/**
+ * A popup that the page left within this long of opening was never really
+ * seen (it opened on a page the guest was already leaving), so its showing
+ * does not start the seven-day rest.
+ */
+export const POPUP_UNSEEN_MS = 3000
+export function popupWasUnseen(openedAt: number, closedAt: number): boolean {
+  return closedAt >= openedAt && closedAt - openedAt < POPUP_UNSEEN_MS
+}
+
 interface PopupStore extends PopupMemory {
   markShown: (now?: number) => void
   markDone: (now?: number) => void

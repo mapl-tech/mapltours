@@ -12,7 +12,9 @@ import {
   POPUP_CODE,
   POPUP_DELAY_MS,
   POPUP_PERCENT,
+  nextPopupStep,
   popupPathEligible,
+  popupWasUnseen,
   shouldShowPopup,
   useCouponPopupStore,
 } from '@/lib/coupon-popup'
@@ -47,11 +49,17 @@ export default function CouponPopup() {
   const [open, setOpen] = useState(false)
   const [closing, setClosing] = useState(false)
   const place: Place = pathname === '/explore' ? 'explore' : pathname === '/transfers' ? 'transfers' : 'home'
+  // The address as of the latest render, for the timer's closure to compare.
+  const pathnameRef = useRef(pathname)
+  pathnameRef.current = pathname
+  // What this showing replaced, so a showing nobody saw can be taken back.
+  const shown = useRef<{ at: number; before: number | null } | null>(null)
 
   useEffect(() => {
     if (!popupPathEligible(pathname)) return
     let cancelled = false
     let timer = 0
+    let wasBusy = false
     const attempt = () => {
       if (cancelled) return
       const store = useCouponPopupStore.getState()
@@ -59,11 +67,17 @@ export default function CouponPopup() {
       if (!shouldShowPopup({ pathname, memory: store, now: Date.now(), cameFromBio })) return
       const typing = ['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement?.tagName ?? '')
       const otherDialog = document.querySelector('[role="dialog"][aria-modal="true"]') !== null
-      if (document.hidden || typing || otherDialog) {
+      const busy = document.hidden || typing || otherDialog
+      const step = nextPopupStep({ startedOn: pathname, pathNow: pathnameRef.current, busy, wasBusy })
+      wasBusy = busy
+      if (step === 'stop') return
+      if (step === 'wait') {
         timer = window.setTimeout(attempt, RETRY_MS)
         return
       }
-      store.markShown(Date.now())
+      const now = Date.now()
+      shown.current = { at: now, before: store.lastShownAt }
+      store.markShown(now)
       setOpen(true)
     }
     timer = window.setTimeout(attempt, POPUP_DELAY_MS)
@@ -72,6 +86,19 @@ export default function CouponPopup() {
       window.clearTimeout(timer)
     }
   }, [pathname])
+
+  // The popup belongs to the page that asked for it. If the address moves to
+  // a page it may not appear on (a Book tap that landed as it opened, or
+  // Back), it closes at once rather than sit over checkout, and a showing
+  // that lasted only a moment does not start the seven-day rest.
+  useEffect(() => {
+    if (!open || popupPathEligible(pathname)) return
+    setOpen(false)
+    setClosing(false)
+    const s = shown.current
+    if (s && popupWasUnseen(s.at, Date.now())) useCouponPopupStore.setState({ lastShownAt: s.before })
+    shown.current = null
+  }, [open, pathname])
 
   const requestClose = useCallback(() => {
     setClosing(true)

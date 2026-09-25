@@ -402,7 +402,7 @@ export default function OnePageCheckout() {
                     </div>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <p style={{ fontFamily: FONT, fontWeight: 700, fontSize: 15, lineHeight: 1.25, color: 'var(--text-primary)' }}>{t(item.title)}</p>
-                      <p style={{ fontFamily: FONT, fontSize: 13, color: 'var(--text-tertiary)', marginTop: 3 }}>{item.destination}, {item.parish} · {item.duration}</p>
+                      <p style={{ fontFamily: FONT, fontSize: 13, color: 'var(--text-tertiary)', marginTop: 3 }}>{item.destination}, {item.parish} · {item.duration.replace(/ /g, '\u00a0')}</p>
                     </div>
                     <div style={{ textAlign: 'right', flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
                       <p className="opc-num" style={{ fontFamily: FONT, fontWeight: 700, fontSize: 15, whiteSpace: 'nowrap' }}>{formatUsd(tourPrice(item.pricing, item.travelers))}</p>
@@ -418,7 +418,7 @@ export default function OnePageCheckout() {
                     <Users size={18} color="var(--text-secondary)" style={{ flexShrink: 0 }} />
                     <div>
                       <span style={{ display: 'block', fontFamily: FONT, fontSize: 15, fontWeight: 600 }}>{t('Guests')}</span>
-                      <span style={{ display: 'block', fontFamily: FONT, fontSize: 13, color: 'var(--text-tertiary)' }}>{items.length > 1 ? 'Applies to every tour' : items[0].pricing.mode === 'group' ? `One price for up to ${items[0].pricing.tierMax}` : 'Priced per guest'}</span>
+                      <span style={{ display: 'block', fontFamily: FONT, fontSize: 13, color: 'var(--text-tertiary)' }}>{items.length > 1 ? 'Applies to every tour' : items[0].pricing.mode === 'group' ? (guests > items[0].pricing.tierMax ? `Groups over ${items[0].pricing.tierMax} are priced per guest` : `One price for up to ${items[0].pricing.tierMax}`) : 'Priced per guest'}</span>
                     </div>
                   </div>
                   <Stepper value={guests} min={1} max={12} onChange={setGuests} label="Guests" />

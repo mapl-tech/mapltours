@@ -108,7 +108,8 @@ export default function ResortTransferPage({ params }: { params: { resort: strin
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
 
-      <section className="mx-auto max-w-5xl px-4 pt-10 pb-2 sm:px-6">
+      {/* The site header is fixed, so the first section clears it (var(--nav-h)), as every other page does. */}
+      <section className="mx-auto max-w-5xl px-4 pb-2 sm:px-6" style={{ paddingTop: 'calc(var(--nav-h) + 2.5rem)' }}>
         <nav aria-label="Breadcrumb" className="mb-4 text-sm opacity-70">
           <Link href="/transfers" className="underline underline-offset-2">
             Airport transfers
