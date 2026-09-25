@@ -78,6 +78,28 @@ export interface BookingRow {
 // address configured) where retrying can never succeed.
 export type EmailResult = { ok: true } | { ok: false; reason: string; retryable: boolean }
 
+/** Stripe refuses to charge less than this, and checkout never asks it to. */
+const STRIPE_MIN_CHARGE = 0.5
+
+/**
+ * What the guest's card was actually charged, for the confirmation's
+ * "Paid by card" line. The gift card's share is `gift_card_amount`; the card
+ * took the rest ONLY if a PaymentIntent took anything. With no
+ * stripe_payment_id there was no card charge at all. The same holds for any
+ * remainder under Stripe's 50-cent minimum, even beside a stale intent id:
+ * checkout absorbs a gift-card remainder that small and marks the booking
+ * paid with no charge (and refuses a card-only charge that small), so
+ * telling the guest their card paid it would be false.
+ */
+export function cardChargedFor(
+  booking: Pick<BookingRow, 'stripe_payment_id' | 'total_paid' | 'gift_card_amount'>,
+): number {
+  if (!booking.stripe_payment_id) return 0
+  const gift = booking.gift_card_amount != null ? Number(booking.gift_card_amount) : 0
+  const rest = Math.round((Number(booking.total_paid) - gift) * 100) / 100
+  return rest >= STRIPE_MIN_CHARGE ? rest : 0
+}
+
 /**
  * Atomically CLAIM one email channel before sending, so two concurrent /
  * duplicate webhook deliveries can't both pass a check-then-act gate and
@@ -151,9 +173,10 @@ export async function maybeSendTravelerConfirmation(
           couponCode: booking.coupon_code ?? null,
           couponDiscount: booking.coupon_discount != null ? Number(booking.coupon_discount) : null,
           totalPaid: Number(booking.total_paid),
-          // The gift-funded split. total_paid is the gross cart; the card was
-          // charged total_paid minus this, and the email must match the card.
+          // The gift-funded split. total_paid is the gross cart; the email
+          // must match the card, which may not have been charged at all.
           giftApplied: booking.gift_card_amount != null ? Number(booking.gift_card_amount) : null,
+          cardCharged: cardChargedFor(booking),
           currency: booking.currency.toUpperCase(),
           paidAt: (booking as { paid_at?: string | null }).paid_at ?? null,
           specialRequests: booking.special_requests,
@@ -196,9 +219,10 @@ export async function maybeSendTravelerConfirmation(
           couponCode: booking.coupon_code ?? null,
           couponDiscount: booking.coupon_discount != null ? Number(booking.coupon_discount) : null,
           totalPaid: Number(booking.total_paid),
-          // The gift-funded split. total_paid is the gross cart; the card was
-          // charged total_paid minus this, and the email must match the card.
+          // The gift-funded split. total_paid is the gross cart; the email
+          // must match the card, which may not have been charged at all.
           giftApplied: booking.gift_card_amount != null ? Number(booking.gift_card_amount) : null,
+          cardCharged: cardChargedFor(booking),
           currency: booking.currency.toUpperCase(),
           paidAt: (booking as { paid_at?: string | null }).paid_at ?? null,
           items: items.map((i) => ({

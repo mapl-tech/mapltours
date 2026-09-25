@@ -318,8 +318,15 @@ Layers (bottom to top):
 - **Step 1 (details)**: trip date + traveler counters (clamp 1-12), contact
   fields, special requests, and the **liability waiver checkbox** — the
   advance to step 2 is blocked until every required field and the waiver
-  validate; `waiverAccepted` is sent to the server, which refuses tour
-  checkouts without it and stamps `waiver_accepted_at` (migration 028).
+  validate. The server check is narrower than it sounds: `/api/checkout`
+  refuses a tour checkout only when `waiverAccepted` is PRESENT and not
+  `true`. A request that leaves the field out is still priced and gets a
+  pending row and a PaymentIntent (or, fully gift-covered, a paid booking),
+  just without the stamp; the one-page
+  quiet save omits it on purpose, and Pay sends `true`.
+  `waiver_accepted_at` (migration 028) is stamped only on a request that
+  carries `waiverAccepted: true`, so the stamp, not a server gate, is the
+  evidence. Making it a hard require would break the quiet save.
 - **On entering step 2**: POST `/api/checkout` — the server re-prices the
   cart from the catalog (never trusts client amounts), enforces the 24h lead
   time and the 8h/day cap, inserts a `pending` booking row (atomic on the
@@ -341,7 +348,8 @@ Layers (bottom to top):
 
 Rules, enforced in code:
 - **The server contract is unchanged.** Both pages POST the same bodies to `/api/checkout` and `/api/transfers/checkout` as the old views did; the server still prices the cart, owns the pending row, mints and reuses the PaymentIntent, and the webhook still flips paid. The only client-side novelty is Stripe's deferred-intent flow: the Payment Element and Apple/Google Pay mount with `{ mode: 'payment', amount, currency }` before any intent exists; on Pay we run our validation, `elements.submit()`, create or reuse the intent, `elements.update({ amount })` to the server's `amountDue`, then `confirmPayment`. Do not pass `paymentMethodTypes` to Elements: the server mints intents with automatic payment methods and Stripe refuses to confirm across the two configurations.
-- **Save early.** Once the details are complete (contact, place, date; legs for transfers) the page quietly creates the pending booking after 2.5 s, so an abandoned checkout is visible in the admin and to the recovery email. The same order key means the Pay tap reuses that intent instead of POSTing again. A server refusal that only says "accept the waiver" is ignored at this stage (the waiver is ticked at Pay).
+- **Save early.** Once the details are complete (contact, place, date; legs for transfers) the page quietly creates the pending booking after 2.5 s, so an abandoned checkout is visible in the admin and to the recovery email. On transfers the same order key means the Pay tap reuses that intent instead of POSTing again. On tours the quiet save leaves `waiverAccepted` out (so the server neither refuses nor stamps it), and the order key includes the waiver, so Pay POSTs once more with `waiverAccepted: true`; the server hands back the same row and intent by cart hash and stamps `waiver_accepted_at` on it.
+- **One POST at a time, and a changed order supersedes.** Both pages send through `components/checkout/one-page/intent-session.ts` and read every answer with `readCheckoutAnswer` (`lib/checkout-form.ts`); do not add a second fetch path. The session reuses the same order's intent, shares a request already on the wire, and sends one POST at a time, so a Pay tap waits for a quiet save in flight. A POST for a changed order (party, date, email, a code, the reward) carries `supersedeBookingId` naming the newest booking any answer issued, success or refusal; it is never part of the order key. The server cancels that row and its intent only if it is still pending or declined and the requester's own, and skips it when it is the row it answers with. On a 409 `rewardConflict` the tour page unticks the reward and shows the repriced total above the Pay button; it never retries for the guest. Before confirming, the panel reads the intent back from Stripe (`payableIntent`): one another tab canceled is asked for once more with `fresh` instead of being confirmed. Tested in `tests/unit/one-page-supersede.spec.ts`, partly against the real tour route.
 - **Never "Your itinerary is empty" before the cart has loaded.** `useHydrated` renders a loading card until zustand persist reports hydration; it is false on the server and on the first client render so SSR and hydration always agree (`store.persist` does not exist without localStorage).
 - **Fewer decisions.** No pickup-time field on tours (the operator sets it; the page says so), no country field (Stripe reads it from the card), the note and the day builder are collapsed. Transfers ask for the time the flight home DEPARTS and derive the hotel pickup from `MIN_PICKUP_LEAD_MIN`; the guest can adjust it. Flight numbers stay required for every leg the ride has because the server requires them.
 - **Mobile.** 16px inputs (no iOS zoom), 44px targets on every standalone control, the order summary inline before payment, and a bottom bar with the total that shows only while the payment card is off screen. From 900px the summary is a sticky rail.

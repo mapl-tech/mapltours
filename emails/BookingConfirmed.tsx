@@ -20,6 +20,13 @@ export interface BookingConfirmedProps {
   couponDiscount?: number | null
   /** Portion of totalPaid that came off a gift card. Absent or 0 means none. */
   giftApplied?: number | null
+  /**
+   * What the card was actually charged. Omitted, it is totalPaid minus
+   * giftApplied, which holds whenever a PaymentIntent took the rest. Pass 0
+   * when the booking has none: checkout absorbs a gift-card remainder under
+   * Stripe's 50-cent minimum and marks the booking paid with no card charge.
+   */
+  cardCharged?: number | null
   totalPaid: number
   currency: string
   paidAt?: string | null
@@ -91,6 +98,7 @@ export default function BookingConfirmed(props: BookingConfirmedProps) {
     couponCode,
     couponDiscount,
     giftApplied,
+    cardCharged,
     totalPaid,
     currency,
     paidAt,
@@ -106,6 +114,7 @@ export default function BookingConfirmed(props: BookingConfirmedProps) {
     (transportCost != null && transportCost > 0) ||
     (rewardDiscount != null && rewardDiscount > 0) ||
     (couponDiscount != null && couponDiscount > 0)
+  const { giftPaid, cardPaid, coveredByUs } = paymentSplit(totalPaid, giftApplied, cardCharged)
   const paidAtPretty = fmtDateTime(paidAt)
   const customerLines = [
     [firstName, props.lastName].filter(Boolean).join(' ').trim() || null,
@@ -203,16 +212,6 @@ export default function BookingConfirmed(props: BookingConfirmedProps) {
               )}
             </>
           )}
-          {/* OUTSIDE the showBreakdown gate on purpose: that flag only knows
-              about transport and reward, so a booking paid partly by gift
-              card with neither of those would render the gross total alone,
-              contradicting the guest's card statement. */}
-          {giftApplied != null && giftApplied > 0 && (
-            <>
-              <BreakdownLine label="Gift card applied" value={`− ${fmtMoney(giftApplied, currency)}`} />
-              <BreakdownLine label="Charged to your card" value={fmtMoney(Math.max(0, totalPaid - giftApplied), currency)} />
-            </>
-          )}
           <div style={s.totalRow}>
             <Text style={s.totalLabel}>
               Total paid
@@ -234,6 +233,20 @@ export default function BookingConfirmed(props: BookingConfirmedProps) {
             </Text>
             <Text style={s.totalValue}>{fmtMoney(totalPaid, currency)}</Text>
           </div>
+          {/* How the total was paid, UNDER it: two parts of the total, not
+              deductions from it, so no minus sign. Outside the showBreakdown
+              gate on purpose, since a gift-card booking with no transport,
+              reward or code would otherwise show the gross total alone and
+              contradict the guest's card statement. No card line when the
+              card was not charged. A sub-minimum remainder checkout absorbed gets
+              its own line, so the parts add up to the total. */}
+          {giftPaid > 0 && (
+            <div style={{ marginTop: 12 }}>
+              <BreakdownLine label="Paid with gift card" value={fmtMoney(giftPaid, currency)} />
+              {cardPaid > 0 && <BreakdownLine label="Paid by card" value={fmtMoney(cardPaid, currency)} />}
+              {coveredByUs > 0 && <BreakdownLine label="Covered by MAPL Tours Jamaica" value={fmtMoney(coveredByUs, currency)} />}
+            </div>
+          )}
         </Section>
       </Section>
 
@@ -317,6 +330,31 @@ export default function BookingConfirmed(props: BookingConfirmedProps) {
       </Section>
     </MaplLayout>
   )
+}
+
+/**
+ * The gift / card split of totalPaid. Every part is 0 unless a gift card
+ * paid something. The card part is `cardCharged` when the caller knows it,
+ * otherwise what the gift left over, rounded to the cent.
+ *
+ * `coveredByUs` is the gap checkout absorbs: a gift card that leaves less
+ * than Stripe's 50-cent minimum settles the booking with no card charge, so
+ * gift and card alone fall up to 49 cents short of the total, and without a
+ * line of its own the parts would not add up. Only that sub-minimum gap is
+ * shown; any larger gap is not something checkout produces, and the email
+ * does not guess at it.
+ */
+function paymentSplit(
+  totalPaid: number,
+  giftApplied: number | null | undefined,
+  cardCharged: number | null | undefined,
+): { giftPaid: number; cardPaid: number; coveredByUs: number } {
+  const giftPaid = giftApplied != null && giftApplied > 0 ? giftApplied : 0
+  if (giftPaid === 0) return { giftPaid: 0, cardPaid: 0, coveredByUs: 0 }
+  const card = cardCharged ?? totalPaid - giftPaid
+  const cardPaid = Math.max(0, Math.round(card * 100) / 100)
+  const gapCents = Math.round((totalPaid - giftPaid - cardPaid) * 100)
+  return { giftPaid, cardPaid, coveredByUs: gapCents > 0 && gapCents < 50 ? gapCents / 100 : 0 }
 }
 
 function BreakdownLine({

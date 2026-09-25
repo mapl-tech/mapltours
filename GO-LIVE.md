@@ -97,13 +97,21 @@ The payments-critical set:
 | 018–019 | gift cards + gift refund split | gift purchases |
 | 020 | `booking_items.line_total` | tour checkout item insert — hard 500 ("Could not persist cart items") without it, and **NOT checked by `bookings_schema_health`** |
 | 025 | `replace_booking_items` RPC | atomic item replacement (degrades to a logged fallback, but the fallback still needs 020) |
-| 028 | `waiver_accepted_at` + view refresh | waiver stamping (optional-write: deploys before it degrade gracefully) |
+| 028 | `waiver_accepted_at` + view refresh | waiver stamping (optional-write: deploys before it degrade gracefully). **Applied in production; never re-run it** (see below) |
+
+**Do not re-run migration 028.** It recreates `bookings_schema_health` with 7
+columns, but 031 and 032 have since added `has_coupon` and
+`has_shared_coupons`, so production's view has 9. `create or replace view`
+cannot drop columns, so a re-run errors. Any later change to the view starts
+from 032's definition.
 
 **Verify:**
 ```sql
 select * from public.bookings_schema_health;
 ```
-Every column must read `true` (including `has_waiver` once 028 is applied).
+Every column must read `true`: 9 of them in production today, from
+`has_booking_type` through `has_waiver` (028), `has_coupon` (031) and
+`has_shared_coupons` (032).
 
 The view does **not** verify `booking_items.line_total` (020) or the recovery
 columns (008) — confirm those two directly:
@@ -137,9 +145,12 @@ Verify the sending domain (SPF, DKIM, DMARC) in Resend → **Domains**.
 1. `npm run dev` + `stripe listen --forward-to localhost:3000/api/webhooks/stripe`.
 2. Add 2 experiences to the cart → `/checkout`.
 3. Step 1: date, travelers, contact fields, **tick the waiver** → continue.
-   (The server now refuses tour checkouts without the waiver tick.)
-4. Supabase table editor: a `bookings` row appears with `status='pending'`
-   and, post-028, `waiver_accepted_at` set.
+   (The server refuses a tour checkout only when `waiverAccepted` is sent
+   and is not `true`. The one-page quiet save leaves the field out on
+   purpose, so the pending row can exist before the tick; Pay sends `true`.)
+4. Supabase table editor: a `bookings` row appears with `status='pending'`.
+   Post-028, `waiver_accepted_at` is set once the request carrying
+   `waiverAccepted: true` (Pay) has reached the server.
 5. Step 2: pay with `4242 4242 4242 4242`, `12/30`, `123`.
 6. After confirmation:
    - `bookings.status` → `paid`, `paid_at` set; `booking_items` rows present

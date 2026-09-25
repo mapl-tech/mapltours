@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { createServiceClient } from '@/lib/supabase/service'
-import { driverTrip, driverTour, isAllowedDriver, nextActionAt, type DriverTrip, type DriverTour , transferLegWindow } from '@/lib/driver'
+import { driverTrip, driverTour, isAllowedDriver, nextActionAt, type DriverTrip, type DriverTour, transferLegWindow } from '@/lib/driver'
 import DriverDashboard from '@/components/driver/DriverDashboard'
 import DriverShell from '@/components/driver/DriverShell'
 
@@ -24,7 +24,7 @@ export default async function DriverPage() {
   const svc = createServiceClient()
   // Bounded by LEG TIME, not row age: newest-100-by-created_at let history
   // crowd upcoming pickups off the list once the table outgrew the cap. One
-  // inner-join query, so no id list to overflow a URL; ordered so the 200 cap
+  // inner-join query, so no id list to overflow a URL; ordered so the 500 cap
   // is a deterministic page rather than an arbitrary sample; error LOGGED,
   // because an outage that renders as "no upcoming trips" strands a driver.
   // 45 days back, because the list is also the payout ledger: a past leg

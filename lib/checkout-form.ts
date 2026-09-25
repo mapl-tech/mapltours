@@ -152,3 +152,157 @@ export function orderKey(payload: unknown): string {
         : v
   return JSON.stringify(sort(payload))
 }
+
+/** A booking id as both checkout routes issue it, and accept it back. */
+const BOOKING_ID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
+/**
+ * The booking id a checkout response issued, or null.
+ *
+ * Both routes return the row's id on success and on the refusals made after
+ * the row exists (a reward conflict, a Stripe outage, a settling intent).
+ * Whichever it is, that row is this page's newest checkout, and the next
+ * POST for a different order has to name it. A refusal made before any row
+ * exists (a coupon or lead-time error, a network failure) carries no id, and
+ * the id the page already holds stays the one to name.
+ */
+export function issuedBookingId(response: unknown): string | null {
+  const id = response && typeof response === 'object' ? (response as { bookingId?: unknown }).bookingId : undefined
+  return typeof id === 'string' && BOOKING_ID_RE.test(id) ? id : null
+}
+
+/**
+ * The booking a checkout POST asks the server to supersede, or undefined.
+ *
+ * Every distinct order (party, date, email, a coupon or gift code) hashes to
+ * its own pending row on the server. Without this, an order changed after the
+ * quiet save left the earlier row pending with a live PaymentIntent: payable,
+ * emailed by the abandoned-cart cron, and, for a signed-in guest, holding the
+ * video reward, so the edited order was refused with rewardConflict and the
+ * only way through was full price. The server cancels the named row only if
+ * it is still pending or declined, of the same type, and the requester's own
+ * (same email, or it holds the requester's reward), so naming it is safe.
+ *
+ * `cachedKey` is the order the page holds an intent for, `lastBookingId` the
+ * newest id any response issued (issuedBookingId). Named whenever this POST
+ * is for a different order. The same order reuses its intent and never
+ * POSTs; an order that hashes to the same row (the tour Pay adds only the
+ * waiver, which the server does not hash) names it, and the server skips a
+ * supersede of the row it is answering with.
+ */
+export function supersedeBookingIdFor(
+  key: string,
+  state: { cachedKey: string | null; lastBookingId: string | null },
+): string | undefined {
+  if (!state.lastBookingId || !BOOKING_ID_RE.test(state.lastBookingId)) return undefined
+  if (state.cachedKey === key) return undefined
+  return state.lastBookingId
+}
+
+/**
+ * What a one-page checkout's pay step resolves to: an intent to confirm, a
+ * page to go to (already paid, or settled by gift card), or a refusal.
+ *
+ * `shownOnPage` on a refusal: the page already says what happened (through
+ * the panel's externalError, with figures that follow its own state), so the
+ * panel shows nothing of its own and only hands the button back.
+ */
+export type CheckoutIntentResult =
+  | { clientSecret: string; bookingId: string; amountDue: number }
+  | { navigate: string }
+  | { error: string; shownOnPage?: boolean }
+
+export const PAYMENT_SERVICE_UNREACHABLE = 'Could not reach the payment service. Please check your connection and try again.'
+export const PAYMENT_NOT_SET_UP = 'Could not set up payment. Please try again.'
+
+/** A checkout route's answer, turned into what the page has to do about it. */
+export interface CheckoutAnswer {
+  result: CheckoutIntentResult
+  /** The booking id the answer issued (issuedBookingId), success or refusal. */
+  bookingId: string | null
+  /** True only for an intent the same order may reuse without another POST. */
+  reusable: boolean
+  /** The gift card code was refused: take it off the page. */
+  dropGift: boolean
+  /** The coupon code was refused: take it off the page. */
+  dropCoupon: boolean
+  /** Shown under the code field when a code was refused. */
+  codeError: string | null
+  /**
+   * Tour page only: another live checkout holds the video reward (409
+   * rewardConflict), so the server priced nothing with it. The page must
+   * untick the reward, which re-prices it, and show its own notice with the
+   * new total. Left ticked, every Pay tap re-sends applyReward: true and
+   * gets the same 409.
+   */
+  untickReward: boolean
+  /** Server-priced figures, each null when the answer did not carry one. */
+  giftAmount: number | null
+  couponDiscount: number | null
+  amountDue: number | null
+  /** The page showed nothing to charge (gift card), and the server now wants a card for the rest. */
+  giftShortfall: boolean
+}
+
+/**
+ * Map a checkout route's JSON answer to the page's next step.
+ *
+ * Pure, so both one-page checkouts share one tested reading of the server
+ * contract (tests/unit/checkout-form.spec.ts). `confirmPath` is the page's
+ * confirmation route; `shownCents` / `shownTotal` are what the page showed
+ * before the answer; `rewardOnPage` is true on the tour page, which has a
+ * reward box to untick. The transfers route has no reward; were it ever to
+ * answer rewardConflict, the refusal is shown as plain text rather than
+ * swallowed by a notice that page does not render.
+ */
+export function readCheckoutAnswer(
+  data: unknown,
+  opts: { confirmPath: string; shownCents: number; shownTotal: number; rewardOnPage: boolean },
+): CheckoutAnswer {
+  const d = (data && typeof data === 'object' ? data : {}) as Record<string, unknown>
+  const num = (v: unknown) => (typeof v === 'number' && Number.isFinite(v) ? v : null)
+  const answer: Omit<CheckoutAnswer, 'result'> = {
+    bookingId: issuedBookingId(d),
+    reusable: false,
+    dropGift: false,
+    dropCoupon: false,
+    codeError: null,
+    untickReward: false,
+    giftAmount: null,
+    couponDiscount: null,
+    amountDue: null,
+    giftShortfall: false,
+  }
+
+  if (typeof d.error === 'string') {
+    const dropGift = !!d.giftCode
+    const dropCoupon = !!d.couponCode
+    const refused = { ...answer, dropGift, dropCoupon, codeError: dropGift || dropCoupon ? d.error : null }
+    if (d.rewardConflict && opts.rewardOnPage) {
+      return { ...refused, untickReward: true, result: { error: d.error, shownOnPage: true } }
+    }
+    return { ...refused, result: { error: d.error } }
+  }
+
+  const confirm = `${opts.confirmPath}?booking_id=${encodeURIComponent(String(d.bookingId ?? ''))}`
+  if (d.alreadyPaid) return { ...answer, result: { navigate: confirm } }
+  if (d.fullyCoveredByGift) return { ...answer, giftAmount: num(d.giftAmount), result: { navigate: confirm } }
+  if (typeof d.clientSecret !== 'string') return { ...answer, result: { error: PAYMENT_NOT_SET_UP } }
+
+  const amountDue = num(d.amountDue)
+  return {
+    ...answer,
+    reusable: true,
+    giftAmount: num(d.giftAmount),
+    couponDiscount: num(d.couponDiscount),
+    amountDue,
+    giftShortfall: amountDue != null && amountDue > 0 && opts.shownCents < 50,
+    result: {
+      clientSecret: d.clientSecret,
+      bookingId: String(d.bookingId ?? ''),
+      // An answer without amountDue falls back to the page's figure; the
+      // panel re-reads the intent's own amount before it confirms anyway.
+      amountDue: amountDue ?? opts.shownTotal,
+    },
+  }
+}

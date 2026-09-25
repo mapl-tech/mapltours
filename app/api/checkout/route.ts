@@ -19,6 +19,7 @@ import { consumeCoupon } from '@/lib/coupon-redemption'
 import { maybeSendTravelerConfirmation, maybeSendOperatorAlert, resolveOpsRecipients } from '@/lib/email/booking'
 import { sendEmail, operatorAlertRecipients } from '@/lib/email/send'
 import OpsAlert from '@/emails/OpsAlert'
+import { addSettledBookingToOpsCalendar } from '@/lib/ops-calendar'
 
 /**
  * Tour checkout, creates (or atomically reuses) a pending booking row
@@ -57,9 +58,12 @@ interface CheckoutBody {
   amount: number
   items: CartItemIn[]
   /**
-   * The guest ticked the liability-waiver box. The form has always required
-   * the tick, but it used to stay client-side; now the server refuses a tour
-   * checkout without it and stamps waiver_accepted_at on the booking.
+   * The guest ticked the liability-waiver box. The server refuses a tour
+   * checkout only when this field is PRESENT and not true, and stamps
+   * waiver_accepted_at only when it is true. A request without the field is
+   * priced and saved unstamped: the one-page quiet save leaves it out on
+   * purpose, and the Pay request that follows sends true and stamps the
+   * same row. See CLAUDE.md, "One-page checkout".
    */
   waiverAccepted?: boolean
   /** Gift card code the traveler typed at checkout, if any. */
@@ -186,13 +190,16 @@ export async function POST(request: NextRequest) {
 
     // The waiver tick must reach the server to be worth anything: activities
     // like cliff jumping need durable evidence of acceptance, not a checkbox
-    // that lived and died in the browser. Enforced only when the field is
-    // PRESENT: a pre-deploy bundle mid-checkout never sends it and has no
-    // way to (its tick lives in client state and its step-2 error surface
-    // has no waiver control), so a hard require would brick every in-flight
-    // session at deploy time. New bundles always send it, so an absent field
-    // ages out with the old bundles.
-    // TODO(2026-09): tighten to a hard require once pre-waiver bundles are gone.
+    // that lived and died in the browser. The evidence is the
+    // waiver_accepted_at stamp, written only for a request carrying true.
+    // This gate refuses only a field that is PRESENT and not true. An absent
+    // field is allowed and left unstamped, and that is permanent, not a
+    // transition: the one-page quiet save omits it on purpose so the pending
+    // row exists before the guest has ticked anything, and the Pay request
+    // then sends true and stamps that same row (same cart hash).
+    // Do NOT hard-require the field. It would 400 every tour quiet save, so
+    // abandoned checkouts would vanish from the admin and the recovery
+    // email, and Pay would lose the saved row and intent it reuses.
     if ('waiverAccepted' in body && body.waiverAccepted !== true) {
       return NextResponse.json(
         { error: 'Please accept the participation waiver to continue.', requestId: reqId },
@@ -314,7 +321,7 @@ export async function POST(request: NextRequest) {
     if (Object.values(hoursByDate).some((h) => h > DAILY_HOUR_LIMIT)) {
       return NextResponse.json(
         {
-          error: `That is more than ${DAILY_HOUR_LIMIT} hours of tours in one day — please split the trip across separate days.`,
+          error: `That is more than ${DAILY_HOUR_LIMIT} hours of tours in one day. Please split the trip across separate days.`,
           requestId: reqId,
         },
         { status: 400 },
@@ -345,7 +352,7 @@ export async function POST(request: NextRequest) {
         ? { pickup_time: c.pickupTime }
         : {}),
       // Stamp WHEN the guest accepted — only for requests that actually
-      // carried the tick (an old-bundle request without the field must not
+      // carried the tick (a quiet save, which leaves the field out, must not
       // be stamped as accepted). Optional-write contract like pickup_time:
       // a deploy that lands before migration 028 skips the stamp instead of
       // 500ing.
@@ -361,7 +368,7 @@ export async function POST(request: NextRequest) {
     // this is the boundary that actually holds.
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customerFields.email)) {
       return NextResponse.json(
-        { error: 'A valid email address is required — your confirmation is sent there.', requestId: reqId },
+        { error: 'A valid email address is required, your confirmation is sent there.', requestId: reqId },
         { status: 400 },
       )
     }
@@ -522,7 +529,14 @@ export async function POST(request: NextRequest) {
               // the first one is settling: tell them the truth about the
               // old one instead, and drop the row this request just made.
               const live = await stripe.paymentIntents.retrieve(prev.stripe_payment_id).catch(() => null)
-              if (live && (live.status === 'succeeded' || live.status === 'processing' || live.status === 'requires_capture')) {
+              if (live?.status === 'canceled') {
+                // Already dead (canceled out of band, its webhook not landed
+                // yet): Stripe refuses to cancel it twice, but it is exactly
+                // as dead as one we just killed. Same rule as the declined-
+                // twin sweep below; without it the row stayed pending and
+                // kept its gift claim and reward hold.
+                intentGone = true
+              } else if (live && (live.status === 'succeeded' || live.status === 'processing' || live.status === 'requires_capture')) {
                 if (bookingId && bookingId !== prev.id) {
                   await supabase.from('bookings').update({ status: 'canceled' })
                     .eq('id', bookingId).eq('status', 'pending').is('stripe_payment_id', null)
@@ -1195,6 +1209,9 @@ export async function POST(request: NextRequest) {
           }
           await new Promise((r) => setTimeout(r, 1200 * (attempt + 1)))
         }
+        // Ops calendar, last and best-effort, as in the webhook: no intent
+        // means no webhook, so this is the only sync this booking gets.
+        await addSettledBookingToOpsCalendar(paidBooking as never, (paidItems ?? []) as never, `[checkout] ${reqId}`)
       }
 
       return NextResponse.json({

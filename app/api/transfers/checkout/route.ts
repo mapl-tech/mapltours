@@ -23,6 +23,7 @@ import { maybeSendTravelerConfirmation, maybeSendOperatorAlert } from '@/lib/ema
 import { rateLimit, getIp } from '@/lib/rate-limit'
 import { DEFAULT_DRIVER } from '@/lib/dispatch'
 import { sanitizeAttribution } from '@/lib/attribution'
+import { addSettledBookingToOpsCalendar } from '@/lib/ops-calendar'
 
 /**
  * Transfers checkout, sibling of /api/checkout, with the same hardening:
@@ -358,7 +359,7 @@ export async function POST(request: NextRequest) {
     // junk email must never reach a payable booking.
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customerFields.email)) {
       return NextResponse.json(
-        { error: 'A valid email address is required — your confirmation is sent there.', requestId: reqId },
+        { error: 'A valid email address is required, your confirmation is sent there.', requestId: reqId },
         { status: 400 },
       )
     }
@@ -532,7 +533,12 @@ export async function POST(request: NextRequest) {
           .select('id, email, stripe_payment_id, status, booking_type')
           .eq('id', supersedeId)
           .eq('booking_type', 'transfer')
-          .eq('status', 'pending')
+          // 'failed' matches too, as on the tour route (audit 2026-08-22). A
+          // declined intent is not dead: Stripe leaves it at
+          // requires_payment_method and the guest's still-mounted form can
+          // retry it to success, so a failed row handed to us gets the same
+          // cancel-intent-first treatment as a pending one.
+          .in('status', ['pending', 'failed'])
           .maybeSingle()
         // customerFields.email is already trimmed and lowercased; rows
         // inserted before that normalization shipped carry the raw form, so
@@ -553,7 +559,13 @@ export async function POST(request: NextRequest) {
               // the first one is settling: tell them the truth about the
               // old one instead, and drop the row this request just made.
               const live = await stripe.paymentIntents.retrieve(prev.stripe_payment_id).catch(() => null)
-              if (live && (live.status === 'succeeded' || live.status === 'processing' || live.status === 'requires_capture')) {
+              if (live?.status === 'canceled') {
+                // Already dead (canceled out of band, its webhook not landed
+                // yet): Stripe refuses to cancel it twice, but it is exactly
+                // as dead as one we just killed. Without this the row stayed
+                // pending and kept its gift claim.
+                intentGone = true
+              } else if (live && (live.status === 'succeeded' || live.status === 'processing' || live.status === 'requires_capture')) {
                 if (bookingId && bookingId !== prev.id) {
                   await supabase.from('bookings').update({ status: 'canceled' })
                     .eq('id', bookingId).eq('status', 'pending').is('stripe_payment_id', null)
@@ -574,11 +586,12 @@ export async function POST(request: NextRequest) {
             // fresh, payable intent; cancelling the row then (and releasing
             // its gift claim) would leave that intent live at a discount the
             // balance no longer backs. Zero rows: leave the row alone.
+            // 'failed' is flippable for the same reason the lookup matches it.
             const flipQ = supabase
               .from('bookings')
               .update({ status: 'canceled' })
               .eq('id', prev.id)
-              .eq('status', 'pending')
+              .in('status', ['pending', 'failed'])
             const { data: flipped } = await (prev.stripe_payment_id
               ? flipQ.eq('stripe_payment_id', prev.stripe_payment_id)
               : flipQ.is('stripe_payment_id', null)
@@ -594,6 +607,81 @@ export async function POST(request: NextRequest) {
         // Cleanup, not correctness: this checkout proceeds on its own row.
         console.warn('[transfer-supersede]', reqId, 'failed', err)
       }
+    }
+
+    // 3a-bis. Terminate DECLINED twins of this exact ride, mirroring the tour
+    //     route (audit 2026-08-22).
+    //
+    //     The pending unique index covers only status='pending', so after a
+    //     card decline (the webhook flips the row to 'failed' while Stripe
+    //     leaves its intent payable at requires_payment_method) a re-POST of
+    //     the same ride inserts a brand-new row without colliding, and a
+    //     fresh tab never sends supersedeBookingId, so the supersede above
+    //     cannot help. Left alone, the guest pays the new intent AND can
+    //     later retry the old tab's declined form to success: one ride, two
+    //     charges. Keyed on the server-derived cart_hash, which embeds the
+    //     normalized email, so a matching row is this same guest's same ride.
+    //     Cancel-intent-first: only an intent Stripe let us kill (or reports
+    //     already canceled) proves the row is dead.
+    try {
+      const { data: declinedTwins, error: twinsErr } = await supabase
+        .from('bookings')
+        .select('id, stripe_payment_id')
+        .eq('cart_hash', cartHash)
+        .eq('booking_type', 'transfer')
+        .eq('status', 'failed')
+        .neq('id', bookingId!)
+      if (twinsErr) {
+        // Unread twins are unproven-dead twins. Do not guess an empty set;
+        // the declined intent stays for the next POST or the stale sweep.
+        console.error('[transfers/checkout]', reqId, 'declined-twin sweep read failed', twinsErr)
+      }
+      for (const twin of declinedTwins ?? []) {
+        let intentGone = !twin.stripe_payment_id
+        if (twin.stripe_payment_id) {
+          try {
+            await stripe.paymentIntents.cancel(twin.stripe_payment_id, {
+              cancellation_reason: 'duplicate',
+            })
+            intentGone = true
+          } catch {
+            // "Already canceled" is fine; already succeeded means money moved
+            // and the row belongs to the webhook's paid path; anything
+            // unprovable is treated as live. Only Stripe can say which.
+            const live = await stripe.paymentIntents.retrieve(twin.stripe_payment_id).catch(() => null)
+            if (live?.status === 'canceled') {
+              intentGone = true
+            } else if (live && (live.status === 'succeeded' || live.status === 'processing' || live.status === 'requires_capture')) {
+              console.error('[transfers/checkout]', reqId, "CRITICAL: declined twin's intent has settled, leaving the row to the webhook", {
+                twin: twin.id, pi: live.id, status: live.status,
+              })
+            } else {
+              console.warn('[transfers/checkout]', reqId, "could not prove declined twin's intent dead, leaving it", { twin: twin.id })
+            }
+          }
+        }
+        if (!intentGone) continue
+        // CAS on the exact state that was read, like the supersede flip:
+        // zero rows back means a concurrent request moved the row (retried
+        // it, attached a fresh intent), so it is live again and not ours.
+        const flipQ = supabase
+          .from('bookings')
+          .update({ status: 'canceled' })
+          .eq('id', twin.id)
+          .eq('status', 'failed')
+        const { data: flipped } = await (twin.stripe_payment_id
+          ? flipQ.eq('stripe_payment_id', twin.stripe_payment_id)
+          : flipQ.is('stripe_payment_id', null)
+        ).select('id')
+        // The dead row's gift value comes back NOW: this very request may be
+        // about to claim the same card, and with the old claim still debited
+        // the guest's own balance reads as spent.
+        if (flipped?.length) await releaseGiftClaim(supabase, twin.id)
+      }
+    } catch (err) {
+      // Cleanup, not correctness: this checkout proceeds on its own row and
+      // any surviving declined intent waits for the next POST or the sweep.
+      console.error('[transfers/checkout]', reqId, 'declined-twin sweep failed', err)
     }
 
     // 3. Persist line items (server-priced).
@@ -848,6 +936,9 @@ export async function POST(request: NextRequest) {
           }
           await new Promise((r) => setTimeout(r, 1200 * (attempt + 1)))
         }
+        // Ops calendar, last and best-effort, as in the webhook: no intent
+        // means no webhook, so this is the only sync this ride gets.
+        await addSettledBookingToOpsCalendar(paidBooking as never, (paidItems ?? []) as never, `[transfers-checkout] ${reqId}`)
       }
 
       return NextResponse.json({

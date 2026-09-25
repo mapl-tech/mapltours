@@ -395,9 +395,16 @@ export function resortSlug(id: string): string {
  * Resolve a path segment back to a destination, whatever its casing. The ads
  * use title case, the sitemap and internal links use the canonical lower-case
  * id, and both have to land on the same page.
+ *
+ * No decodeURIComponent here: Next's route matcher has already decoded the
+ * segment, and every id is plain [a-z0-9-], so a second decode can only turn
+ * a real slug into itself. What it could do was throw: /transfers/%25E0
+ * reaches the page as "%E0", and decoding that raised URIError, a 500 in
+ * both generateMetadata and the page. Anything that is not an id is simply
+ * no match, which the page turns into a 404.
  */
 export function destinationFromSlug(slug: string): TransferDestination | undefined {
-  const want = decodeURIComponent(slug).toLowerCase()
+  const want = slug.toLowerCase()
   return DESTINATIONS.find((d) => d.id.toLowerCase() === want)
 }
 

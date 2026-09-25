@@ -15,7 +15,9 @@ import OpsAlert from '@/emails/OpsAlert'
  *
  * SAFETY: this route is strictly additive. It never creates a charge, never
  * mutates money columns, and never touches the confirmation/webhook path. It
- * only reads bookings and writes the two recovery_* bookkeeping columns.
+ * only reads bookings and writes the two recovery_* bookkeeping columns, plus
+ * one informational `dispatch.paid_but_pending_at` key (through
+ * merge_dispatch) on a row whose payment it finds stuck.
  *
  * Auth: a shared secret in `?secret=` or `Authorization: Bearer`. Fails
  * closed if CRON_SECRET is unset.
@@ -55,6 +57,24 @@ const MAX_AGE_DAYS = 7 // don't chase stale carts
  */
 const BATCH = 12
 const DEADLINE_MS = 7_000
+
+/**
+ * Paid-but-pending bookings (Stripe took the money, the webhook never flipped
+ * the row) are found by the Stripe check in the candidate loop, which only
+ * sees the newest BATCH unrecovered rows. Found once, a row is flagged under
+ * this dispatch key, and every later run re-reads flagged rows in their own
+ * query, with no age limit and no dependence on the candidate window, until
+ * the row stops saying pending. That is what makes the digest's "repeats
+ * hourly until the rows are healed" true: before, a row stopped alerting
+ * after 7 days, or as soon as 12 newer pending rows pushed it out of the
+ * window. Informational bookkeeping like the webhook's `refunded_at`; no
+ * dispatch step reads it. A succeeded intent never un-succeeds, so a flagged
+ * row needs no second Stripe call.
+ */
+const PAID_PENDING_KEY = 'paid_but_pending_at'
+/** Bounds the flagged query. Each row is an incident, so real counts are
+ *  tiny; past this many the digest is already on fire. */
+const PAID_PENDING_MAX = 50
 
 function humanizeId(id: string): string {
   return 'MAPL-' + id.slice(0, 8).toUpperCase()
@@ -138,6 +158,31 @@ async function handle(request: NextRequest) {
     paidButPending: [] as string[],
   }
   const paidPendingDetails: { ref: string; id: string; pi: string; createdAt: string }[] = []
+  const notePaidPending = (p: { ref: string; id: string; pi: string; createdAt: string }) => {
+    if (paidPendingDetails.some((q) => q.id === p.id)) return
+    paidPendingDetails.push(p)
+    summary.paidButPending.push(p.ref)
+  }
+
+  // Paid-but-pending rows an earlier run already caught: their own bounded
+  // query, with no age limit and no recovery filter, so they keep alerting
+  // until someone heals them however far they have fallen out of the
+  // candidate window. Cron mode only; a targeted run is about one row.
+  if (!bookingId) {
+    const { data: flagged, error: flaggedErr } = await supabase
+      .from('bookings')
+      .select('id, stripe_payment_id, created_at')
+      .eq('status', 'pending')
+      .not(`dispatch->${PAID_PENDING_KEY}`, 'is', null)
+      .order('created_at', { ascending: true })
+      .limit(PAID_PENDING_MAX)
+    if (flaggedErr) {
+      console.error('[abandoned-cart] flagged paid-but-pending query failed', flaggedErr.message)
+    }
+    for (const f of (flagged ?? []) as Row[]) {
+      notePaidPending({ ref: humanizeId(f.id), id: f.id, pi: f.stripe_payment_id ?? 'no intent id', createdAt: f.created_at })
+    }
+  }
 
   for (const b of (rows ?? []) as Row[]) {
     // Stop before the platform stops us, so the run ends with a summary
@@ -154,12 +199,12 @@ async function handle(request: NextRequest) {
     const items = (b.booking_items ?? []) as Row[]
     if (items.length === 0) { summary.skipped.push(`${ref}:no_items`); continue }
 
-    // Time window (skipped in targeted mode).
-    if (!bookingId) {
-      const age = now - new Date(b.created_at).getTime()
-      if (age < graceMs) { summary.skipped.push(`${ref}:too_fresh`); continue }
-      if (age > maxAgeMs) { summary.skipped.push(`${ref}:too_old`); continue }
-    }
+    // Time window (skipped in targeted mode). Only the grace applies before
+    // the Stripe check: a row younger than it is ordinary webhook lag. The
+    // 7-day limit is about not nudging stale carts, and is applied after the
+    // check, so it can never hide a paid-but-pending row from the digest.
+    const age = now - new Date(b.created_at).getTime()
+    if (!bookingId && age < graceMs) { summary.skipped.push(`${ref}:too_fresh`); continue }
 
     // Verify with Stripe that this was genuinely NOT paid. Never nudge someone
     // who actually completed payment (protects against any status lag).
@@ -172,11 +217,17 @@ async function handle(request: NextRequest) {
         // handler killed mid-run). Fulfillment lives in the webhook alone —
         // duplicating it here would drift — so the sweep's job is to make
         // the incident LOUD: collect it for the ops digest sent after the
-        // loop. The 30-minute grace above already filtered ordinary
-        // webhook lag out of cron runs.
+        // loop, and flag the row so every later run re-alerts until it is
+        // healed, wherever it sits (see PAID_PENDING_KEY). The 30-minute
+        // grace above already filtered ordinary webhook lag out of cron runs.
         summary.skipped.push(`${ref}:already_paid`)
-        summary.paidButPending.push(ref)
-        paidPendingDetails.push({ ref, id: b.id, pi: b.stripe_payment_id, createdAt: b.created_at })
+        notePaidPending({ ref, id: b.id, pi: b.stripe_payment_id, createdAt: b.created_at })
+        const { error: flagErr } = await supabase.rpc('merge_dispatch', {
+          p_booking_id: b.id,
+          p_patch: { [PAID_PENDING_KEY]: new Date().toISOString() },
+          p_only_if_absent: PAID_PENDING_KEY,
+        })
+        if (flagErr) console.error('[abandoned-cart] paid-but-pending flag failed', { booking: b.id, error: flagErr.message })
         continue
       }
       if (pi.status === 'canceled') { summary.skipped.push(`${ref}:canceled`); continue }
@@ -198,6 +249,8 @@ async function handle(request: NextRequest) {
     } catch {
       summary.skipped.push(`${ref}:stripe_error`); continue
     }
+
+    if (!bookingId && age > maxAgeMs) { summary.skipped.push(`${ref}:too_old`); continue }
 
     // Atomic claim: only one worker wins the NULL → now() transition.
     const nowIso = new Date().toISOString()
@@ -267,14 +320,16 @@ async function handle(request: NextRequest) {
   // Page ops about paid-but-pending rows. One digest per run — the sweep is
   // hourly, so an unresolved incident nags every hour until someone heals the
   // booking (re-send the webhook event from the Stripe dashboard, or flip the
-  // row by hand after verifying the charge). Deliberately unclaimed in the
-  // DB: repetition is the feature while money is sitting on an unfulfilled
-  // booking. Best-effort — the sweep's own summary must return regardless.
+  // row by hand after verifying the charge). Deliberately never marked as
+  // alerted: repetition is the feature while money is sitting on an
+  // unfulfilled booking, and the PAID_PENDING_KEY flag keeps every caught row
+  // in this digest until its status leaves pending, however old it gets.
+  // Best-effort — the sweep's own summary must return regardless.
   // Also gated on remaining wall-clock: the loop's deadline leaves ~3s of
   // headroom before Netlify's 10s kill, and the digest's render + Resend
   // round trip must fit inside it or the run dies mid-send and loses its
   // summary — the exact failure the deadline exists to prevent. Skipping is
-  // free: the rows are unclaimed, so the next hourly sweep re-alerts.
+  // free: nothing is marked alerted, so the next hourly sweep re-alerts.
   if (paidPendingDetails.length > 0 && Date.now() - startedAt < DEADLINE_MS + 1_000) {
     // Same validated-recipient path and empty-list guard every other ops
     // email takes (see maybeSendOperatorAlert) — resolveOpsRecipients()

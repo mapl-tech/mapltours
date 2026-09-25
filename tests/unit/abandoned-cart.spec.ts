@@ -1,4 +1,6 @@
 import { describe, test, expect, beforeAll, beforeEach, vi } from 'vitest'
+import type { ReactElement } from 'react'
+import { render } from '@react-email/render'
 
 /**
  * The abandoned-cart sweep's Stripe verification gate (audit 2026-08-22).
@@ -28,6 +30,12 @@ const state = vi.hoisted(() => ({
   updates: [] as Array<{ patch: Record<string, unknown>; filters: Array<[string, string, unknown]> }>,
   /** Every email handed to sendEmail. */
   emails: [] as Array<{ to: string; subject: string }>,
+  /** The rendered template of every email, in the same order. */
+  reacts: [] as unknown[],
+  /** Rows carrying the paid-but-pending flag, for the flagged query. */
+  flagged: [] as Record<string, unknown>[],
+  /** Every RPC the route issued. */
+  rpcs: [] as Array<{ fn: string; args: Record<string, unknown> }>,
 }))
 
 vi.mock('stripe', () => ({
@@ -44,20 +52,30 @@ vi.mock('stripe', () => ({
 
 vi.mock('@/lib/supabase/service', () => ({
   createServiceClient: () => ({
-    from: (_table: string) => {
+    rpc: async (fn: string, args: Record<string, unknown>) => {
+      state.rpcs.push({ fn, args })
+      return { data: [{ id: args.p_booking_id }], error: null }
+    },
+    from: (table: string) => {
+      if (table !== 'bookings') throw new Error(`unexpected table ${table}`)
       let record: { patch: Record<string, unknown>; filters: Array<[string, string, unknown]> } | null = null
+      // A read's filters, applied to the synthetic rows like PostgREST would.
+      const where: Array<[string, string, unknown]> = []
+      let flaggedQuery = false
       const chain: Record<string, unknown> = {}
       const self = () => chain
+      const filter = (op: string) => (col: string, val: unknown) => {
+        ;(record ? record.filters : where).push([op, col, val])
+        return chain
+      }
       Object.assign(chain, {
         select: self,
         order: self,
         limit: self,
-        eq: (col: string, val: unknown) => {
-          record?.filters.push(['eq', col, val])
-          return chain
-        },
-        is: (col: string, val: unknown) => {
-          record?.filters.push(['is', col, val])
+        eq: filter('eq'),
+        is: filter('is'),
+        not: (col: string, op: string, val: unknown) => {
+          if (col.startsWith('dispatch->') && op === 'is' && val === null) flaggedQuery = true
           return chain
         },
         update: (patch: Record<string, unknown>) => {
@@ -71,10 +89,13 @@ vi.mock('@/lib/supabase/service', () => ({
           const id = record?.filters.find(([, col]) => col === 'id')?.[2]
           return Promise.resolve({ data: id ? { id } : null, error: null })
         },
-        then: (resolve: (v: unknown) => unknown) =>
-          Promise.resolve(
-            record ? { data: null, error: null } : { data: state.rows, error: null }
-          ).then(resolve),
+        then: (resolve: (v: unknown) => unknown) => {
+          if (record) return Promise.resolve({ data: null, error: null }).then(resolve)
+          const source = flaggedQuery ? state.flagged : state.rows
+          const hits = source.filter((r) =>
+            where.every(([op, col, val]) => (op === 'is' ? r[col] == null : r[col] === val)))
+          return Promise.resolve({ data: hits, error: null }).then(resolve)
+        },
       })
       return chain
     },
@@ -82,8 +103,9 @@ vi.mock('@/lib/supabase/service', () => ({
 }))
 
 vi.mock('@/lib/email/send', () => ({
-  sendEmail: async (args: { to: string; subject: string }) => {
+  sendEmail: async (args: { to: string; subject: string; react?: unknown }) => {
     state.emails.push({ to: args.to, subject: args.subject })
+    state.reacts.push(args.react)
     return { ok: true }
   },
   // Pass-through: the route feeds it resolveOpsRecipients(), and the spec
@@ -109,6 +131,9 @@ beforeEach(() => {
   state.piStatuses = {}
   state.updates = []
   state.emails = []
+  state.flagged = []
+  state.rpcs = []
+  state.reacts = []
 })
 
 const request = () =>
@@ -247,5 +272,106 @@ describe('the existing gates still hold', () => {
     expect(body.skipped).toContain('MAPL-BBBBBBBB:payment_in_flight')
     expect(touched(inFlight.id)).toHaveLength(0)
     expect(touched(abandoned.id)).toHaveLength(1)
+  })
+})
+
+/**
+ * The paid-but-pending digest says it "repeats hourly until the rows are
+ * healed" (batch review, Sept 2026). It used to stop after 7 days (the age
+ * skip ran before the Stripe check) or as soon as 12 newer pending rows
+ * pushed the row out of the candidate window. A caught row is now flagged,
+ * and flagged rows are re-read by their own query, with no age limit, every
+ * run until their status leaves pending.
+ */
+describe('a paid-but-pending row keeps alerting until it is healed', () => {
+  const DAY = 24 * HOUR
+  const STUCK_ID = 'eeeeeeee-1111-2222-3333-444444444444'
+
+  const digestIndex = () => state.emails.findIndex((e) => e.subject.includes('stuck in pending'))
+  const digestText = async () => {
+    const i = digestIndex()
+    if (i < 0) return ''
+    return (await render(state.reacts[i] as ReactElement)).replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ')
+  }
+
+  test('the sweep that catches it flags the row, atomically and only once', async () => {
+    state.rows = [row()]
+    state.piStatuses = { pi_1: 'succeeded' }
+    await sweep()
+
+    expect(state.rpcs).toEqual([{
+      fn: 'merge_dispatch',
+      args: {
+        p_booking_id: state.rows[0].id,
+        p_patch: { paid_but_pending_at: expect.any(String) },
+        p_only_if_absent: 'paid_but_pending_at',
+      },
+    }])
+  })
+
+  test('a flagged row long out of the candidate window still pages ops, run after run', async () => {
+    // A month old, and not among the candidates at all.
+    state.flagged = [row({
+      id: STUCK_ID, stripe_payment_id: 'pi_stuck',
+      created_at: new Date(Date.now() - 30 * DAY).toISOString(),
+      dispatch: { paid_but_pending_at: new Date(Date.now() - 29 * DAY).toISOString() },
+    })]
+
+    for (let run = 0; run < 2; run++) {
+      state.emails = []
+      state.reacts = []
+      const body = await sweep()
+      expect(body.paidButPending).toEqual(['MAPL-EEEEEEEE'])
+      expect(digestIndex()).toBeGreaterThanOrEqual(0)
+      const t = await digestText()
+      expect(t).toContain(STUCK_ID)
+      expect(t).toContain('pi_stuck')
+    }
+  })
+
+  test('once the row is healed it drops out of the digest', async () => {
+    const stuck = row({ id: STUCK_ID, stripe_payment_id: 'pi_stuck', dispatch: { paid_but_pending_at: 'x' } })
+    state.flagged = [stuck]
+    await sweep()
+    expect(digestIndex()).toBeGreaterThanOrEqual(0)
+
+    // The webhook event is re-sent from Stripe and flips the row.
+    stuck.status = 'paid'
+    state.emails = []
+    const body = await sweep()
+    expect(body.paidButPending).toEqual([])
+    expect(digestIndex()).toBe(-1)
+  })
+
+  test('a row older than 7 days in the window is still checked with Stripe, and caught', async () => {
+    state.rows = [row({ created_at: new Date(Date.now() - 10 * DAY).toISOString() })]
+    state.piStatuses = { pi_1: 'succeeded' }
+
+    const body = await sweep()
+    expect(body.paidButPending).toEqual(['MAPL-AAAAAAAA'])
+    expect(body.skipped).not.toContain('MAPL-AAAAAAAA:too_old')
+  })
+
+  test('an old abandoned cart is still never nudged', async () => {
+    state.rows = [row({ created_at: new Date(Date.now() - 10 * DAY).toISOString() })]
+    state.piStatuses = { pi_1: 'requires_payment_method' }
+
+    const body = await sweep()
+    expect(body.emailed).toBe(0)
+    expect(body.skipped).toContain('MAPL-AAAAAAAA:too_old')
+    expect(state.updates).toHaveLength(0)
+    expect(state.emails).toHaveLength(0)
+  })
+
+  test('a row caught in the window AND already flagged is listed once', async () => {
+    const r = row({ dispatch: { paid_but_pending_at: 'x' } })
+    state.rows = [r]
+    state.flagged = [r]
+    state.piStatuses = { pi_1: 'succeeded' }
+
+    const body = await sweep()
+    expect(body.paidButPending).toEqual(['MAPL-AAAAAAAA'])
+    expect(state.emails.filter((e) => e.subject.includes('stuck in pending'))).toHaveLength(1)
+    expect(state.emails[digestIndex()].subject).toContain('1 paid booking stuck')
   })
 })

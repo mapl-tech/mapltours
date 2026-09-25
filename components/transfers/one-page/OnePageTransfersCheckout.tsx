@@ -12,10 +12,11 @@ import { couponDiscountCents } from '@/lib/coupons'
 import CodeField from '@/components/checkout/one-page/CodeField'
 import { useI18n } from '@/lib/i18n'
 import {
-  validateTransferForm, orderKey, legsFor, pickupFromFlight, flightFromPickup, formatWallClock, PICKUP_LEAD_TEXT, LEG_TIME_RE, type FieldErrors,
+  validateTransferForm, orderKey, readCheckoutAnswer, PAYMENT_SERVICE_UNREACHABLE, legsFor, pickupFromFlight, flightFromPickup, formatWallClock, PICKUP_LEAD_TEXT, LEG_TIME_RE, type FieldErrors,
 } from '@/lib/checkout-form'
 import LegalModal from '@/components/checkout/LegalModal'
 import DeferredPaymentPanel, { type IntentResult } from '@/components/checkout/one-page/DeferredPaymentPanel'
+import { createIntentSession, type PostOutcome, type SendOptions } from '@/components/checkout/one-page/intent-session'
 import AskFirst from '@/components/AskFirst'
 import { Card, SectionTitle, TextField, Stepper, Reassurance, LinkButton, focusFirstError } from '@/components/checkout/one-page/fields'
 import { useHydrated } from '@/components/checkout/one-page/useHydrated'
@@ -149,45 +150,37 @@ export default function OnePageTransfersCheckout() {
     couponCode: coupon?.code,
   }), [total, item, legs, form, subtotal, fee, giftCard, coupon])
 
-  const intentRef = useRef<{ key: string; result: { clientSecret: string; bookingId: string; amountDue: number } } | null>(null)
-  // A request already on the wire for this exact order, so the quiet save and
-  // a Pay tap a moment later share one POST instead of racing on the server.
-  const inflightRef = useRef<{ key: string; promise: Promise<IntentResult> } | null>(null)
+  // What this page has been issued so far: the intent to reuse, the request
+  // on the wire, and the booking a POST for a changed ride must supersede
+  // (see components/checkout/one-page/intent-session.ts).
+  const [session] = useState(() => createIntentSession<IntentResult>())
   const pricingKey = orderKey({ items: body.items, amount: body.amount, gift: body.giftCode ?? '', coupon: body.couponCode ?? '' })
   useEffect(() => { setServerGift(null); setServerCoupon(null); setServerDue(null); setServerError(null) }, [pricingKey])
 
-  const runIntent = useCallback(async (payload: Record<string, unknown>, key: string): Promise<IntentResult> => {
-    let data: Record<string, unknown>
+  const runIntent = useCallback(async (payload: Record<string, unknown>): Promise<PostOutcome<IntentResult>> => {
+    let data: unknown
     try {
       const res = await fetch('/api/transfers/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...payload, attribution: getStoredAttribution() }),
       })
-      data = (await res.json()) as Record<string, unknown>
+      data = await res.json()
     } catch {
-      return { error: 'Could not reach the payment service. Please check your connection and try again.' }
+      return { result: { error: PAYMENT_SERVICE_UNREACHABLE }, bookingId: null, reusable: false }
     }
-    if (typeof data.error === 'string') {
-      if (data.giftCode) { setGiftCard(null); setCodeError(data.error) }
-      if (data.couponCode) { setCoupon(null); setCodeError(data.error) }
-      return { error: data.error }
-    }
-    if (data.alreadyPaid || data.fullyCoveredByGift) return { navigate: `/transfers/confirm?booking_id=${data.bookingId}` }
-    if (typeof data.clientSecret !== 'string') return { error: 'Could not set up payment. Please try again.' }
-    if (typeof data.giftAmount === 'number') setServerGift(data.giftAmount)
-    if (typeof data.couponDiscount === 'number') setServerCoupon(data.couponDiscount)
-    if (typeof data.amountDue === 'number') {
-      if (amountCents < 50 && data.amountDue > 0) setServerError('Your gift card no longer covers the whole amount. The card form below is ready for the rest.')
-      setServerDue(data.amountDue)
-    }
-    const result = {
-      clientSecret: data.clientSecret,
-      bookingId: String(data.bookingId ?? ''),
-      amountDue: typeof data.amountDue === 'number' ? data.amountDue : finalTotal,
-    }
-    intentRef.current = { key, result }
-    if (item) {
+    // Same tested reading of the answer as the tour page (readCheckoutAnswer).
+    // Rides carry no reward, so there is no reward box to untick.
+    const answer = readCheckoutAnswer(data, { confirmPath: '/transfers/confirm', shownCents: amountCents, shownTotal: finalTotal, rewardOnPage: false })
+    if (answer.dropGift) setGiftCard(null)
+    if (answer.dropCoupon) setCoupon(null)
+    if (answer.codeError) setCodeError(answer.codeError)
+    if (answer.giftAmount != null) setServerGift(answer.giftAmount)
+    if (answer.couponDiscount != null) setServerCoupon(answer.couponDiscount)
+    if (answer.giftShortfall) setServerError('Your gift card no longer covers the whole amount. The card form below is ready for the rest.')
+    if (answer.amountDue != null) setServerDue(answer.amountDue)
+    const result = answer.result
+    if ('clientSecret' in result && item) {
       trackBeginCheckout({
         key: result.bookingId,
         value: result.amountDue,
@@ -195,22 +188,16 @@ export default function OnePageTransfersCheckout() {
         items: [{ id: item.destinationId, name: `Airport transfer, ${item.destinationName}`, category: item.tripType === 'round_trip' ? 'transfer round trip' : 'transfer one way', price: item.priceUsd, quantity: 1 }],
       })
     }
-    return result
+    return answer
   }, [item, finalTotal, amountCents])
 
-  /** One request per distinct order, shared by whoever asks first. */
-  const createIntent = useCallback((): Promise<IntentResult> => {
-    const key = orderKey(body)
-    const cached = intentRef.current
-    if (cached && cached.key === key) return Promise.resolve(cached.result)
-    const live = inflightRef.current
-    if (live && live.key === key) return live.promise
-    const promise = runIntent(body, key).finally(() => {
-      if (inflightRef.current?.key === key) inflightRef.current = null
-    })
-    inflightRef.current = { key, promise }
-    return promise
-  }, [body, runIntent])
+  /**
+   * One request per distinct order, shared by whoever asks first, one POST
+   * at a time, each naming the booking it replaces (intent-session.ts): a
+   * ride changed after the quiet save (a code, passengers, times) cancels
+   * the earlier pending row and its intent instead of stranding them.
+   */
+  const createIntent = useCallback((opts?: SendOptions): Promise<IntentResult> => session.send(body, runIntent, opts), [session, body, runIntent])
 
   // ── Save quietly, once, so an abandoned checkout is visible and can be
   //    recovered. Once per page load (each distinct order is its own cart
@@ -226,7 +213,7 @@ export default function OnePageTransfersCheckout() {
       if (autoSaved.current) return
       autoSaved.current = true
       void createIntent().then((res) => {
-        if ('error' in res && !/reach the payment service/.test(res.error)) setServerError(res.error)
+        if ('error' in res && res.error !== PAYMENT_SERVICE_UNREACHABLE) setServerError(res.error)
       })
     }, AUTO_SAVE_DELAY_MS)
     return () => window.clearTimeout(timer)

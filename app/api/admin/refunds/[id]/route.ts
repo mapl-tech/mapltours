@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import { createServiceClient } from '@/lib/supabase/service'
 import { sendCancellationEmails, sendRefundDeclinedEmail } from '@/lib/email/cancellation'
 import { refundToGiftCard } from '@/lib/gift-redemption'
+import { removeBookingFromCalendar } from '@/lib/google-calendar'
 
 /**
  * Admin decision on a pending cancellation request.
@@ -27,6 +28,47 @@ export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!)
+
+/**
+ * The most the ops-calendar cleanup may add to an approval's response. It
+ * runs after the money has moved and the emails have gone, and a Google
+ * stall (a token fetch plus a timed-out delete is about 7 s) must not push
+ * the response past the function limit, which would show the admin an error
+ * for a refund that succeeded. The booking's own events sit in the first
+ * slots the sweep deletes, so a cut-off run loses only the tail of 404s.
+ */
+const CALENDAR_BUDGET_MS = 3_000
+
+/**
+ * Take a refunded booking off the shared ops calendar.
+ *
+ * This route sets status 'refunded' BEFORE it calls Stripe (the claim), so
+ * the charge.refunded webhook that follows matches no row it can flip and
+ * never reaches its own calendar removal. Without this, ops got "CANCELLED ·
+ * stand down" by email while the calendar still showed the pickup with the
+ * guest's name, phone and hotel. Best-effort and never a gate: failure is
+ * logged for a human and the refund's response goes out regardless.
+ */
+async function removeFromOpsCalendar(bookingId: string): Promise<void> {
+  let timer: ReturnType<typeof setTimeout> | undefined
+  try {
+    const res = await Promise.race([
+      removeBookingFromCalendar(bookingId),
+      new Promise<{ ok: false; reason: string }>((resolve) => {
+        timer = setTimeout(() => resolve({ ok: false, reason: `no answer within ${CALENDAR_BUDGET_MS} ms` }), CALENDAR_BUDGET_MS)
+      }),
+    ])
+    if (!res.ok && res.reason !== 'not configured') {
+      console.error('[admin-refund] ops calendar event NOT removed, delete it by hand', { booking: bookingId, reason: res.reason })
+    }
+  } catch (err) {
+    console.error('[admin-refund] ops calendar event NOT removed, delete it by hand', {
+      booking: bookingId, error: err instanceof Error ? err.message : String(err),
+    })
+  } finally {
+    if (timer) clearTimeout(timer)
+  }
+}
 
 interface PendingRow {
   id: string
@@ -227,7 +269,11 @@ export async function POST(req: Request, { params }: { params: { id: string } })
         console.error('[admin-refund] CRITICAL: gift credit failed after cash refund', {
           booking: booking.id, gift_card: booking.gift_card_id, owed: giftRefundCents / 100,
         })
-        await sendCancellationEmails(booking.id, { source: 'self-serve' })
+        // The guest still gets their receipt (the booking IS cancelled and
+        // any cash has left), but it says the credit is being added, not
+        // that it is available now: ops is putting it on by hand.
+        await sendCancellationEmails(booking.id, { source: 'self-serve', giftCreditPending: true })
+        await removeFromOpsCalendar(booking.id)
         return NextResponse.json(
           {
             error: 'gift_credit_failed',
@@ -242,6 +288,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
     }
 
     const emails = await sendCancellationEmails(booking.id, { source: 'self-serve' })
+    await removeFromOpsCalendar(booking.id)
     return NextResponse.json({
       ok: true,
       state: 'approved',
@@ -268,6 +315,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
         if (landed) {
           console.error('[admin-refund] stripe threw but the refund EXISTS — keeping booking refunded', booking.id, msg)
           await sendCancellationEmails(booking.id, { source: 'self-serve' })
+          await removeFromOpsCalendar(booking.id)
           return NextResponse.json(
             {
               error: 'refund_uncertain_but_landed',
@@ -280,6 +328,9 @@ export async function POST(req: Request, { params }: { params: { id: string } })
         // Cannot prove either way. Fail CLOSED: leave the booking refunded
         // rather than resurrecting a trip whose money may already be gone.
         console.error('[admin-refund] refund state unprovable, leaving booking refunded', booking.id, probeErr instanceof Error ? probeErr.message : probeErr)
+        // The booking ends refunded here too, so the calendar follows it: the
+        // guest asked to cancel, and no webhook will match this row later.
+        await removeFromOpsCalendar(booking.id)
         return NextResponse.json(
           {
             error: 'refund_state_unknown',

@@ -10,6 +10,12 @@ export interface BookingCancelledProps {
   cashRefund?: number | null
   /** Store credit returned to a gift card. Null when none was used. */
   giftRefund?: number | null
+  /**
+   * The gift-card credit did not land when the refund was approved, and
+   * operations is adding it by hand. The receipt then says the credit is on
+   * its way, never that it is available now.
+   */
+  giftCreditPending?: boolean
   /** What we are sending back. */
   refundAmount: number
   /** What we retained, per the published 20% administration charge. */
@@ -55,18 +61,28 @@ export default function BookingCancelled({
   adminCharge,
   cashRefund,
   giftRefund,
+  giftCreditPending = false,
   currency,
   isTransfer = false,
   items,
 }: BookingCancelledProps) {
   const noun = isTransfer ? 'transfer' : 'booking'
 
-  // A refund paid partly in store credit must say so. Quoting one number and
-  // calling it "back to your card" is what produces "my bank never got it"
-  // support tickets, and chargebacks, on every gift-funded cancellation.
+  // A refund paid partly or wholly in store credit must say so. Quoting one
+  // number and calling it "back to your card" is what produces "my bank never
+  // got it" support tickets, and chargebacks, on every gift-funded
+  // cancellation. Three cases, never mixed up: both halves (a split), gift
+  // credit only (a gift-covered booking with no card charge refunds entirely
+  // as credit), or card only, which is also every older row with no stored
+  // split. A split needs BOTH halves above zero, or it prints "$0.00 back to
+  // the card you paid with".
   const cashPart = Number(cashRefund ?? 0)
   const giftPart = Number(giftRefund ?? 0)
-  const hasSplit = giftPart > 0 && cashPart + giftPart > 0
+  const hasSplit = cashPart > 0 && giftPart > 0
+  const giftOnly = giftPart > 0 && !(cashPart > 0)
+  // Only meaningful when there is gift credit to add.
+  const giftPending = giftCreditPending && giftPart > 0
+  const who = firstName ? `${firstName}, we` : 'We'
 
   return (
     <MaplLayout
@@ -78,13 +94,43 @@ export default function BookingCancelled({
         Your {noun} is cancelled
       </Heading>
       <Text style={s.heroLead}>
-        {firstName ? `${firstName}, we` : 'We'}&rsquo;ve cancelled {bookingRef} and sent{' '}
-        {hasSplit
-          ? <>{fmtMoney(cashPart, currency)} back to the card you paid with and{' '}
-              {fmtMoney(giftPart, currency)} back onto your gift card</>
-          : <>{fmtMoney(refundAmount, currency)} back to the card you paid with</>}
-        . Card refunds usually appear within 5&ndash;10 business days, depending on
-        your bank; gift-card credit is available straight away.
+        {hasSplit && giftPending ? (
+          <>
+            {who}&rsquo;ve cancelled {bookingRef} and sent{' '}
+            {fmtMoney(cashPart, currency)} back to the card you paid with. We are
+            also adding {fmtMoney(giftPart, currency)} back onto your gift card:
+            our team is putting that credit on by hand, so it is not there yet.
+            Card refunds usually appear within 5&ndash;10 business days,
+            depending on your bank.
+          </>
+        ) : hasSplit ? (
+          <>
+            {who}&rsquo;ve cancelled {bookingRef} and sent{' '}
+            {fmtMoney(cashPart, currency)} back to the card you paid with and{' '}
+            {fmtMoney(giftPart, currency)} back onto your gift card. Card refunds
+            usually appear within 5&ndash;10 business days, depending on your
+            bank; gift-card credit is available straight away.
+          </>
+        ) : giftOnly && giftPending ? (
+          <>
+            {who}&rsquo;ve cancelled {bookingRef} and are adding{' '}
+            {fmtMoney(giftPart, currency)} back onto your gift card. Our team is
+            putting the credit on by hand, so it is not there yet.
+          </>
+        ) : giftOnly ? (
+          <>
+            {who}&rsquo;ve cancelled {bookingRef} and put{' '}
+            {fmtMoney(giftPart, currency)} back onto your gift card. The credit
+            is available straight away.
+          </>
+        ) : (
+          <>
+            {who}&rsquo;ve cancelled {bookingRef} and sent{' '}
+            {fmtMoney(refundAmount, currency)} back to the card you paid with.
+            Card refunds usually appear within 5&ndash;10 business days,
+            depending on your bank.
+          </>
+        )}
       </Text>
 
       <Section style={s.card} className="mapl-card">
@@ -107,13 +153,13 @@ export default function BookingCancelled({
                 <Column align="right"><Text style={s.rowValue}>{fmtMoney(cashPart, currency)}</Text></Column>
               </Row>
               <Row style={s.rowFlex}>
-                <Column><Text style={s.rowLabel}>Back to your gift card</Text></Column>
+                <Column><Text style={s.rowLabel}>{giftPending ? 'Being added to your gift card' : 'Back to your gift card'}</Text></Column>
                 <Column align="right"><Text style={s.rowValue}>{fmtMoney(giftPart, currency)}</Text></Column>
               </Row>
             </>
           ) : null}
           <Row style={s.totalRow}>
-            <Column><Text style={s.totalLabel}>{hasSplit ? 'Total refunded' : 'Refunded to your card'}</Text></Column>
+            <Column><Text style={s.totalLabel}>{hasSplit ? 'Total refunded' : giftOnly ? (giftPending ? 'Being added to your gift card' : 'Refunded to your gift card') : 'Refunded to your card'}</Text></Column>
             <Column align="right"><Text style={s.totalValue}>{fmtMoney(refundAmount, currency)}</Text></Column>
           </Row>
         </Section>
@@ -145,10 +191,14 @@ export default function BookingCancelled({
         </Section>
       )}
 
+      {/* The card wording (10 business days) belongs to a card refund only:
+          gift credit does not travel through a bank. */}
       <Text style={s.note}>
         Booking reference {bookingRef}. Keep this email as your record of the
-        refund. If the amount looks wrong, or the refund has not arrived after
-        10 business days, reply to this email and we will chase it with you.
+        refund.{' '}
+        {giftOnly
+          ? 'If the amount looks wrong, or the credit is not on your gift card, reply to this email and we will chase it with you.'
+          : 'If the amount looks wrong, or the refund has not arrived after 10 business days, reply to this email and we will chase it with you.'}
       </Text>
 
       <Section style={s.ctaWrap}>

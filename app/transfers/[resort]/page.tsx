@@ -90,7 +90,7 @@ export default function ResortTransferPage({ params }: { params: { resort: strin
     serviceType: 'Airport transfer',
     name: `Montego Bay (MBJ) to ${dest.name} private transfer`,
     areaServed: { '@type': 'Place', name: `${dest.parish}, Jamaica` },
-    provider: { '@type': 'Organization', name: 'MAPL Tours', url: SITE_URL },
+    provider: { '@type': 'Organization', name: 'MAPL Tours Jamaica', url: SITE_URL },
     url: `${SITE_URL}/transfers/${dest.id}`,
     offers: offers.map((o) => ({
       '@type': 'Offer',
@@ -123,7 +123,7 @@ export default function ResortTransferPage({ params }: { params: { resort: strin
 
         <p className="mt-3 max-w-2xl text-base opacity-80">
           Private transfer from Sangster International (MBJ) to {dest.name} in {dest.parish}
-          {oneWay ? <> , from <strong>${oneWay}</strong> per vehicle one way</> : null}
+          {oneWay ? <>, from <strong>${oneWay}</strong> per vehicle one way</> : null}
           {roundTrip ? <> and <strong>${roundTrip}</strong> round trip</> : null}. The fare is per
           vehicle, not per person, and it is locked at checkout. We track your flight, so a late
           landing is still met at arrivals with a name sign.

@@ -62,6 +62,7 @@ export default function PrivacyPage() {
           <li><strong>Stripe</strong>, payment processing.</li>
           <li><strong>Resend</strong>, transactional email delivery.</li>
           <li><strong>Supabase</strong>, secure database hosting (Frankfurt region).</li>
+          <li><strong>Google</strong>, a private Google Calendar our operations team uses to schedule your trip. When a booking is paid, we add it there with your name, phone number, hotel or pickup place, party size, trip date and times, and, for airport transfers, your flight numbers.</li>
           <li><strong>Google Analytics &amp; Hotjar</strong>, anonymised usage analytics. We honour your browser&rsquo;s Do Not Track and Global Privacy Control signals: with either enabled, none of these analytics tools load at all.</li>
         </ul>
         <p style={{ marginTop: 12 }}>We do not sell your personal information to anyone.</p>

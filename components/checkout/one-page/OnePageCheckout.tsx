@@ -13,14 +13,15 @@ import { earliestBookableExperienceDate } from '@/lib/booking-window'
 import { getStoredAttribution } from '@/lib/attribution'
 import { trackBeginCheckout } from '@/lib/analytics'
 import { planDay } from '@/lib/day-route'
-import { useAvailableReward, consumeReward } from '@/lib/tour-videos'
+import { useAvailableReward } from '@/lib/tour-videos'
 import { useI18n } from '@/lib/i18n'
 import { useFocusTrap } from '@/lib/use-focus-trap'
-import { validateTourForm, validateContact, orderKey, formatDate, type FieldErrors } from '@/lib/checkout-form'
+import { validateTourForm, validateContact, orderKey, readCheckoutAnswer, formatDate, PAYMENT_SERVICE_UNREACHABLE, type FieldErrors } from '@/lib/checkout-form'
 import LegalModal from '@/components/checkout/LegalModal'
 import TripTimeBar from '@/components/TripTimeBar'
 import DayFlow from '@/components/DayFlow'
 import DeferredPaymentPanel, { type IntentResult } from './DeferredPaymentPanel'
+import { createIntentSession, type PostOutcome, type SendOptions } from './intent-session'
 import AskFirst from '@/components/AskFirst'
 import { Card, SectionTitle, TextField, SelectField, Stepper, Disclosure, Reassurance, LinkButton, focusFirstError } from './fields'
 import { useHydrated } from './useHydrated'
@@ -81,6 +82,11 @@ export default function OnePageCheckout() {
   const availableReward = useAvailableReward()
   const [rewardApplied, setRewardApplied] = useState(true)
   const activeReward = rewardApplied ? availableReward : null
+  // The server refused the reward because another live checkout holds it
+  // (409 rewardConflict). The box is unticked for them and this says why;
+  // a change the guest makes to the box themselves clears it.
+  const [rewardConflict, setRewardConflict] = useState(false)
+  const chooseReward = useCallback((b: boolean) => { setRewardApplied(b); setRewardConflict(false) }, [])
 
   // ── Money, computed exactly as the server will ──
   const baseTotal = grandTotal()
@@ -191,6 +197,8 @@ export default function OnePageCheckout() {
    * the Pay request (which does carry `waiverAccepted: true`) reuses that
    * same row by cart hash and stamps the acceptance on it. The hash covers
    * items, total, email and gift code, never the waiver, so this is one row.
+   * (The Pay request names that row as supersedeBookingId, being a new order
+   * key; the server skips superseding the row it answers with.)
    */
   const quietBody = useMemo(() => {
     const rest: Record<string, unknown> = { ...body }
@@ -198,82 +206,71 @@ export default function OnePageCheckout() {
     return rest
   }, [body])
 
-  const intentRef = useRef<{ key: string; result: { clientSecret: string; bookingId: string; amountDue: number } } | null>(null)
-  // A request already on the wire for this exact order. Without it, the quiet
-  // save and a Pay tap a moment later both POST: the server would hand the
-  // second one the same booking row but re-run the gift claim and rewrite the
-  // line items underneath the first.
-  const inflightRef = useRef<{ key: string; promise: Promise<IntentResult> } | null>(null)
+  // What this page has been issued so far: the intent to reuse, the request
+  // on the wire, and the booking a POST for a changed order must supersede
+  // (see intent-session.ts).
+  const [session] = useState(() => createIntentSession<IntentResult>())
   const pricingKey = orderKey({ items: body.items, amount: body.amount, gift: body.giftCode ?? '', coupon: body.couponCode ?? '', reward: body.applyReward })
   useEffect(() => { setServerGift(null); setServerCoupon(null); setServerDue(null); setServerError(null) }, [pricingKey])
 
-  const runIntent = useCallback(async (payload: Record<string, unknown>, key: string): Promise<IntentResult> => {
-    let data: Record<string, unknown>
+  const runIntent = useCallback(async (payload: Record<string, unknown>): Promise<PostOutcome<IntentResult>> => {
+    let data: unknown
     try {
       const res = await fetch('/api/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...payload, attribution: getStoredAttribution() }),
       })
-      data = (await res.json()) as Record<string, unknown>
+      data = await res.json()
     } catch {
-      return { error: 'Could not reach the payment service. Please check your connection and try again.' }
+      return { result: { error: PAYMENT_SERVICE_UNREACHABLE }, bookingId: null, reusable: false }
     }
-    if (typeof data.error === 'string') {
-      if (data.giftCode) { setGiftCard(null); setCodeError(data.error) }
-      if (data.couponCode) { setCoupon(null); setCodeError(data.error) }
-      return { error: data.error }
+    // What the answer means is decided in one pure, tested place
+    // (readCheckoutAnswer); this only applies it to the page.
+    const answer = readCheckoutAnswer(data, { confirmPath: '/checkout/confirm', shownCents: amountCents, shownTotal: finalTotal, rewardOnPage: true })
+    if (answer.dropGift) setGiftCard(null)
+    if (answer.dropCoupon) setCoupon(null)
+    if (answer.codeError) setCodeError(answer.codeError)
+    if (answer.untickReward) {
+      // Another live checkout holds the reward, so the server will not
+      // price this one with it. Take it off here too, which re-prices the
+      // page, and say so beside the button with the new total. Nothing is
+      // retried: the guest sees the higher figure and taps Pay themselves.
+      setRewardApplied(false)
+      setRewardConflict(true)
     }
-    if (data.alreadyPaid) return { navigate: `/checkout/confirm?booking_id=${data.bookingId}` }
-    if (data.fullyCoveredByGift) {
-      if (typeof data.giftAmount === 'number') setServerGift(data.giftAmount)
-      return { navigate: `/checkout/confirm?booking_id=${data.bookingId}` }
+    if (answer.giftAmount != null) setServerGift(answer.giftAmount)
+    if (answer.couponDiscount != null) setServerCoupon(answer.couponDiscount)
+    // The page showed a gift card covering everything, and it no longer
+    // does. Say so before the card form appears under them.
+    if (answer.giftShortfall) setServerError('Your gift card no longer covers the whole amount. The card form below is ready for the rest.')
+    if (answer.amountDue != null) setServerDue(answer.amountDue)
+    const result = answer.result
+    if ('clientSecret' in result) {
+      // Priced and ready without the reward the server refused: the notice
+      // has done its job.
+      setRewardConflict(false)
+      // Counted once the server has priced the cart and an intent exists,
+      // keyed on the booking id so a retry cannot count twice.
+      trackBeginCheckout({
+        key: result.bookingId,
+        value: result.amountDue,
+        currency: 'USD',
+        items: items.map((i) => ({ id: String(i.id), name: i.title, category: 'tour', price: tourPrice(i.pricing, i.travelers), quantity: 1 })),
+      })
     }
-    if (typeof data.clientSecret !== 'string') return { error: 'Could not set up payment. Please try again.' }
-    if (typeof data.giftAmount === 'number') setServerGift(data.giftAmount)
-    if (typeof data.couponDiscount === 'number') setServerCoupon(data.couponDiscount)
-    if (typeof data.amountDue === 'number') {
-      // The page showed a gift card covering everything, and it no longer
-      // does. Say so before the card form appears under them.
-      if (amountCents < 50 && data.amountDue > 0) setServerError('Your gift card no longer covers the whole amount. The card form below is ready for the rest.')
-      setServerDue(data.amountDue)
-    }
-    const result = {
-      clientSecret: data.clientSecret,
-      bookingId: String(data.bookingId ?? ''),
-      amountDue: typeof data.amountDue === 'number' ? data.amountDue : finalTotal,
-    }
-    intentRef.current = { key, result }
-    // Counted once the server has priced the cart and an intent exists,
-    // keyed on the booking id so a retry cannot count twice.
-    trackBeginCheckout({
-      key: result.bookingId,
-      value: result.amountDue,
-      currency: 'USD',
-      items: items.map((i) => ({ id: String(i.id), name: i.title, category: 'tour', price: tourPrice(i.pricing, i.travelers), quantity: 1 })),
-    })
-    return result
+    return answer
   }, [items, finalTotal, amountCents])
 
   /**
-   * One request per distinct order, shared by whoever asks first. The key
-   * includes the waiver, so the tick invalidates an intent created by the
-   * quiet save and the Pay request reaches the server carrying it.
+   * One request per distinct order, shared by whoever asks first, one POST
+   * at a time, each naming the booking it replaces (intent-session.ts). The
+   * key includes the waiver, so the tick invalidates an intent created by
+   * the quiet save and the Pay request reaches the server carrying it.
    */
-  const send = useCallback((payload: Record<string, unknown>): Promise<IntentResult> => {
-    const key = orderKey(payload)
-    const cached = intentRef.current
-    if (cached && cached.key === key) return Promise.resolve(cached.result)
-    const live = inflightRef.current
-    if (live && live.key === key) return live.promise
-    const promise = runIntent(payload, key).finally(() => {
-      if (inflightRef.current?.key === key) inflightRef.current = null
-    })
-    inflightRef.current = { key, promise }
-    return promise
-  }, [runIntent])
+  const send = useCallback((payload: Record<string, unknown>, opts?: SendOptions): Promise<IntentResult> => session.send(payload, runIntent, opts), [session, runIntent])
 
-  const createIntent = useCallback(() => send(body), [send, body])
+  const createIntent = useCallback((opts?: SendOptions) => send(body, opts), [send, body])
 
   // ── Save quietly, once, so an abandoned checkout is visible and can be
   //    recovered. Deliberately narrow:
@@ -297,8 +294,8 @@ export default function OnePageCheckout() {
       autoSaved.current = true
       void send(quietBody).then((res) => {
         // A server refusal worth seeing before they reach for a card; a
-        // network blip is not.
-        if ('error' in res && !/reach the payment service/i.test(res.error)) setServerError(res.error)
+        // network blip is not, and a reward conflict has its own notice.
+        if ('error' in res && !res.shownOnPage && res.error !== PAYMENT_SERVICE_UNREACHABLE) setServerError(res.error)
       })
     }, AUTO_SAVE_DELAY_MS)
     return () => window.clearTimeout(timer)
@@ -318,10 +315,6 @@ export default function OnePageCheckout() {
     setAnnouncement('')
     return true
   }, [form, pickup, tripDate, waiver, isDayOverLimit])
-
-  const onPaid = useCallback(async () => {
-    if (activeReward) await consumeReward(activeReward.id).catch(() => {})
-  }, [activeReward])
 
   /**
    * One field, two kinds of code. A coupon is tried first (it is what the
@@ -363,6 +356,11 @@ export default function OnePageCheckout() {
   const registerPay = useCallback((fn: (() => void) | null) => { payRef.current = fn }, [])
 
   const contactName = `${form.firstName.trim()} ${form.lastName.trim()}`.trim()
+  // Rendered from the live total, so the figure is the one on the Pay
+  // button under it, however the page re-prices after the reward comes off.
+  const rewardNotice = rewardConflict && !rewardApplied
+    ? `Your reward is already in use on another checkout, so this booking is priced without it. The total is now ${formatUsd(finalTotal)}.`
+    : null
   const dateError = errors.tripDate ?? (dateTooSoon ? `Too soon. The earliest we can run this is ${formatDate(minDate)}.` : undefined)
   // What was booked, beside what it costs. A column that only repeats the
   // price reassures nobody.
@@ -501,7 +499,7 @@ export default function OnePageCheckout() {
             {/* Mobile: the summary sits between the details and payment so the
                 gift card and total are reachable without leaving the flow. */}
             <div className="opc-mobile-only">
-              <OrderSummary items={items} formatUsd={formatUsd} t={t} availableReward={availableReward} rewardApplied={rewardApplied} setRewardApplied={setRewardApplied} rewardDiscount={rewardDiscount}
+              <OrderSummary items={items} formatUsd={formatUsd} t={t} availableReward={availableReward} rewardApplied={rewardApplied} setRewardApplied={chooseReward} rewardDiscount={rewardDiscount}
                 giftCard={giftCard} giftPreview={giftPreview} coupon={coupon} couponPreview={couponPreview} codeInput={codeInput} setCodeInput={setCodeInput} codeChecking={codeChecking} codeError={codeError} applyCode={applyCode}
                 removeGift={() => { setGiftCard(null); setCodeError(null) }} removeCoupon={() => { setCoupon(null); setCodeError(null) }} finalTotal={finalTotal} openPolicy={() => setLegal('cancellation')} facts={summaryFacts} />
             </div>
@@ -516,10 +514,9 @@ export default function OnePageCheckout() {
                   payLabel={amountCents >= 50 ? `Pay ${formatUsd(finalTotal)}` : 'Complete booking'}
                   validate={validate}
                   createIntent={createIntent}
-                  onPaid={onPaid}
                   registerPay={registerPay}
                   billing={{ name: contactName || undefined, email: form.email.trim() || undefined, phone: form.phone.trim() || undefined }}
-                  externalError={serverError}
+                  externalError={serverError ?? rewardNotice}
                   onAmountResolved={(usd) => setServerDue(usd)}
                   footer={<><Reassurance lines={['Stripe takes the payment. We never see your card number.', 'We confirm your pickup time with you before the day.']} /><AskFirst place="tour_checkout" context={askContext} /></>}
                 >
@@ -546,7 +543,7 @@ export default function OnePageCheckout() {
           </div>
 
           <aside className="opc-rail" aria-label="Order summary">
-            <OrderSummary items={items} formatUsd={formatUsd} t={t} availableReward={availableReward} rewardApplied={rewardApplied} setRewardApplied={setRewardApplied} rewardDiscount={rewardDiscount}
+            <OrderSummary items={items} formatUsd={formatUsd} t={t} availableReward={availableReward} rewardApplied={rewardApplied} setRewardApplied={chooseReward} rewardDiscount={rewardDiscount}
               giftCard={giftCard} giftPreview={giftPreview} coupon={coupon} couponPreview={couponPreview} codeInput={codeInput} setCodeInput={setCodeInput} codeChecking={codeChecking} codeError={codeError} applyCode={applyCode}
               removeGift={() => { setGiftCard(null); setCodeError(null) }} removeCoupon={() => { setCoupon(null); setCodeError(null) }} finalTotal={finalTotal} openPolicy={() => setLegal('cancellation')} facts={summaryFacts} />
           </aside>

@@ -12,9 +12,11 @@ import { isDue, blockedReason, sendDayOf, jaDateKey, jaHour, legInstantMs, type 
  * `lib/dayof.ts`: it will not mail a booking twice, will not mail before a
  * driver is assigned, and will not mail after the pickup has passed.
  *
- * SAFETY: strictly additive. Reads bookings, writes only the two
- * `dispatch.dayof_*_sent` keys. No money column, booking status, Stripe call or
- * webhook is touched on this path.
+ * SAFETY: strictly additive. Reads bookings, writes only the
+ * `dispatch.dayof_*_sent` and `dispatch.dayof_*_withheld` keys, through
+ * merge_dispatch. No money column, booking status, Stripe call or webhook is
+ * touched on this path. A send whose claim could not be released comes back
+ * with `error` and lands in the failed list below.
  *
  * Auth: shared secret via `?secret=` or `Authorization: Bearer`. Fails closed
  * when CRON_SECRET is unset.

@@ -71,6 +71,40 @@ function shapeItems(booking: Row, rows: Row[]): CancellationItem[] {
   )
 }
 
+/**
+ * The traveler's cancellation subject, chosen from where the refund went.
+ * "Your refund is on its way" is only true of a card refund: gift-card
+ * credit is back on the card straight away, and a gift-covered booking with
+ * no PaymentIntent refunds entirely as credit (lib/refund-pricing). A subject
+ * that promised money heading to a card that was never charged is how
+ * "my bank never got it" tickets start.
+ */
+export function cancellationSubject(p: {
+  bookingRef: string
+  currency: string
+  cashRefund: number
+  giftRefund: number
+  isTransfer?: boolean
+  /** The gift credit has not landed yet; ops is adding it by hand. */
+  giftCreditPending?: boolean
+}): string {
+  const money = (n: number) => `${p.currency === 'USD' ? '$' : `${p.currency} `}${n.toFixed(2)}`
+  const cash = Number.isFinite(p.cashRefund) ? p.cashRefund : 0
+  const gift = Number.isFinite(p.giftRefund) ? p.giftRefund : 0
+  if (cash > 0 && gift > 0) {
+    return p.giftCreditPending
+      ? `Cancelled, ${money(cash)} back to your card and ${money(gift)} being added to your gift card (${p.bookingRef})`
+      : `Cancelled, ${money(cash)} back to your card and ${money(gift)} to your gift card (${p.bookingRef})`
+  }
+  if (gift > 0) {
+    return p.giftCreditPending
+      ? `Cancelled, ${money(gift)} is being added to your gift card (${p.bookingRef})`
+      : `Cancelled, ${money(gift)} is back on your gift card (${p.bookingRef})`
+  }
+  if (cash > 0) return `Cancelled, your ${money(cash)} refund is on its way (${p.bookingRef})`
+  return `Your ${p.isTransfer ? 'transfer' : 'booking'} is cancelled (${p.bookingRef})`
+}
+
 export interface CancellationEmailResult {
   customer: 'sent' | 'skipped' | 'failed'
   ops: 'sent' | 'skipped' | 'failed'
@@ -85,7 +119,15 @@ export interface CancellationEmailResult {
  */
 export async function sendCancellationEmails(
   bookingId: string,
-  opts: { source?: 'self-serve' | 'dashboard' } = {},
+  opts: {
+    source?: 'self-serve' | 'dashboard'
+    /**
+     * The gift-card share of this refund did NOT land (the admin refund's
+     * gift credit failed, and ops is adding it by hand). The guest is told
+     * it is being added, never that it is available now.
+     */
+    giftCreditPending?: boolean
+  } = {},
 ): Promise<CancellationEmailResult> {
   const result: CancellationEmailResult = { customer: 'skipped', ops: 'skipped' }
   let customerClaim: 'claimed' | 'lost' | 'error'
@@ -146,10 +188,10 @@ export async function sendCancellationEmails(
     } else if (customerClaim === 'claimed') {
       const res = await sendEmail({
         to: booking.email,
-        subject: `Cancelled, your ${currency === 'USD' ? '$' : ''}${refundAmount.toFixed(2)} refund is on its way (${bookingRef})`,
+        subject: cancellationSubject({ bookingRef, currency, cashRefund, giftRefund, isTransfer, giftCreditPending: opts.giftCreditPending }),
         react: BookingCancelled({
           bookingRef, firstName, totalPaid, refundAmount, adminCharge, currency, isTransfer, items,
-          cashRefund, giftRefund,
+          cashRefund, giftRefund, giftCreditPending: opts.giftCreditPending,
         }),
         tags: [{ name: 'type', value: 'booking-cancelled' }],
       })

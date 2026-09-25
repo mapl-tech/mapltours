@@ -10,9 +10,10 @@ export { legInstantMs }
  * paths send byte-identical mail and share one idempotency stamp. A guest can
  * therefore never get two copies, whichever path fires first.
  *
- * SAFETY: strictly additive. This reads bookings and writes only the two
- * `dispatch.dayof_*_sent` bookkeeping keys. It never touches money columns,
- * booking status, or the Stripe/webhook path.
+ * SAFETY: strictly additive. This reads bookings and writes only its own
+ * `dispatch.dayof_*_sent` / `dispatch.dayof_*_withheld` bookkeeping keys,
+ * always through merge_dispatch. It never touches money columns, booking
+ * status, or the Stripe/webhook path.
  */
 
 export const AIRPORT = 'Sangster International Airport (MBJ), Montego Bay'
@@ -53,6 +54,25 @@ export function isDue(legIso: string, nowMs: number): boolean {
 }
 
 export const stampKey = (leg: Leg) => (leg === 'arrival' ? 'dayof_arrival_sent' : 'dayof_departure_sent')
+
+/**
+ * Pause before the one retry of a claim release. The re-read that fails in a
+ * database blip is milliseconds before the release, so an immediate second
+ * call usually fails in the same blip.
+ */
+export const RELEASE_RETRY_MS = 500
+
+/**
+ * Where a withheld send is recorded: a claim that was won, then not sent
+ * because the booking had stopped being paid. Deliberately NOT the sent key.
+ * Everything that reports "sent" reads only `dayof_*_sent`: the dispatch
+ * console's "✓ Day-of email sent" button and lib/dispatch autoStepDone's
+ * driver_reconfirmed / departure_reminded ticks ("day-of email BCCed to the
+ * driver"). Neither may claim a send that never happened. Informational only:
+ * nothing gates on this key, since the status checks already block every
+ * later send to a booking that is not paid.
+ */
+export const withheldKey = (leg: Leg) => (leg === 'arrival' ? 'dayof_arrival_withheld' : 'dayof_departure_withheld')
 
 /**
  * Why this booking+leg cannot be mailed, or null if it can.
@@ -105,7 +125,10 @@ export interface DayOfResult {
  * matches zero rows and it backs out. If the send then fails, the claim is
  * released so the next run can retry. Between winning the claim and sending,
  * the booking's status is re-read and the send goes ahead only on a fresh
- * 'paid'; see the comment at that check for why a skip keeps the stamp.
+ * 'paid'; see the comment at that check for what each other answer does.
+ * No exit that did not send leaves this attempt's claim behind as "sent"
+ * without saying so: a release that fails twice returns `error` (the cron's
+ * failed list, a 502 from the console route) and logs CRITICAL.
  *
  * `force` bypasses ONLY the already-sent stamp, for the operator resending to
  * a guest who lost the mail. It never bypasses the driver-assigned guard: a
@@ -139,6 +162,8 @@ export async function sendDayOf(
   const dayLabel: 'Today' | 'Tomorrow' =
     jaDateKey(legInstantMs(at)) === jaDateKey(Date.now()) ? 'Today' : 'Tomorrow'
   const claimedAt = new Date().toISOString()
+  // Read before claiming: a forced claim overwrites it.
+  const prior = (b.dispatch ?? {})[key]
 
   // Claim first, and only if nobody else holds it. merge_dispatch is an
   // atomic jsonb merge in one statement, so this can never erase keys a
@@ -152,33 +177,86 @@ export async function sendDayOf(
     return { ...base, ok: false, skipped: 'already sent' }
   }
 
+  // Undo this attempt's claim on every exit that did not send, so the stamp
+  // only ever records a real send. A forced resend overwrote the stamp of an
+  // earlier REAL send; undoing it puts that stamp back rather than erasing
+  // the record that the guest was mailed. Otherwise the key is removed, which
+  // frees it for the next hourly run. `patch` lands in the same atomic
+  // merge_dispatch statement (p_remove applies before p_patch).
+  //
+  // supabase-js RETURNS errors rather than throwing them, and the release
+  // runs milliseconds after whatever just failed, so it is checked, retried
+  // once after a pause, and a release that still fails is reported as an
+  // error. A stamp left behind reads as "✓ Day-of email sent" on the
+  // console and 'already sent' to every later run, so the one exit that
+  // must never pass quietly is this one. Resolves true once released.
+  const undoClaim = async (patch: Record<string, string>, ifStuck: string): Promise<boolean> => {
+    const args = opts.force && typeof prior === 'string' && prior
+      ? { p_booking_id: b.id, p_patch: { ...patch, [key]: prior } }
+      : { p_booking_id: b.id, p_remove: [key], p_patch: patch }
+    let last = ''
+    for (let attempt = 0; attempt < 2; attempt++) {
+      if (attempt > 0) await new Promise((r) => setTimeout(r, RELEASE_RETRY_MS))
+      try {
+        const res = await svc.rpc('merge_dispatch', args)
+        if (!res?.error) return true
+        last = res.error.message ?? String(res.error)
+      } catch (err) {
+        last = err instanceof Error ? err.message : String(err)
+      }
+    }
+    console.error(`[dayof] CRITICAL: day-of stamp NOT released for ${b.id}/${leg}. It reads as sent, but nothing was sent. ${ifStuck}`, {
+      bookingId: b.id, leg, error: last,
+    })
+    return false
+  }
+  const RESEND = 'Resend from the dispatch console.'
+  const NOT_RELEASED = 'claim NOT released, resend from the dispatch console'
+
   // The row in hand is the caller's opening snapshot, and the cron loop's
-  // awaited sends leave it seconds-to-minutes stale — long enough for a
+  // awaited sends leave it seconds-to-minutes stale, long enough for a
   // self-serve cancellation or an admin refund to commit AFTER blockedReason
   // approved it, which would put driver details in a refunded guest's inbox
   // minutes after ops was told to stand down. So re-read the status now that
-  // the claim is won, and send only on a fresh 'paid'. Anything else keeps
-  // the stamp ON PURPOSE: a booking that stopped being paid must never get
-  // this email from any later run either, and the held stamp is exactly what
-  // guarantees that. An errored or empty re-read fails closed the same way —
-  // we could not prove the booking is still paid, so nobody sends — and the
-  // operator console's force resend is the recovery path once the row
-  // provably reads 'paid' again. This is the same read-to-write race
-  // lib/email/claim.ts closes with requireStatus; merge_dispatch itself has
-  // no status predicate. (Audit 2026-08-22.)
+  // the claim is won, and send only on a fresh 'paid'. This is the same
+  // read-to-write race lib/email/claim.ts closes with requireStatus;
+  // merge_dispatch itself has no status predicate. (Audit 2026-08-22.)
   const { data: fresh, error: freshErr } = await svc
     .from('bookings')
     .select('status')
     .eq('id', b.id)
     .maybeSingle()
-  if (freshErr || !fresh || fresh.status !== 'paid') {
-    const reason = freshErr
-      ? `status re-check errored (${freshErr.message}); failing closed, stamp kept`
-      : `booking is ${fresh ? `'${fresh.status}'` : 'missing'} at send time, not paid; stamp kept`
-    // The errored read is the loud one: it may be withholding mail a paid
-    // guest is owed, and the operator resend is how that gets recovered.
+
+  // Unreadable or missing: we cannot prove either way, so nobody sends now,
+  // and the claim is RELEASED so the next hourly run tries again. Keeping it
+  // turned one transient database error into a paid guest never getting
+  // their driver's name and number, while the console showed "✓ Day-of
+  // email sent" and auto-ticked the driver reminder. Releasing is safe for a
+  // booking that has meanwhile stopped being paid: the cron only selects
+  // paid rows, blockedReason refuses anything not paid, and the next attempt
+  // re-reads the status here again before it sends.
+  if (freshErr || !fresh) {
+    const released = await undoClaim({}, RESEND)
+    const why = freshErr ? `status re-check errored (${freshErr.message})` : 'booking is missing at send time'
+    if (!released) return { ...base, ok: false, error: `${why}; ${NOT_RELEASED}` }
+    const reason = freshErr ? `${why}; claim released, the next run retries` : `${why}; claim released`
+    // The errored read is the loud one: mail a paid guest is owed is late.
     const log = freshErr ? console.error : console.warn
     log('[dayof] claim won but send withheld', { bookingId: b.id, leg, reason })
+    return { ...base, ok: false, skipped: reason }
+  }
+
+  // Definitely not paid (refunded, canceled, failed): withhold, and record
+  // that under its own key instead of leaving the claim looking like a send.
+  // What stops a later run mailing this booking is its status, checked three
+  // times over (the cron's paid-only query, blockedReason, this re-read), not
+  // the stamp. So a booking that genuinely becomes paid again, such as a
+  // failed payment later retried, still gets its email.
+  if (fresh.status !== 'paid') {
+    const reason = `booking is '${fresh.status}' at send time, not paid; email withheld`
+    const released = await undoClaim({ [withheldKey(leg)]: claimedAt }, 'The booking is not paid, so do not resend.')
+    if (!released) return { ...base, ok: false, error: `${reason}, but the claim was NOT released and reads as sent` }
+    console.warn('[dayof] claim won but send withheld', { bookingId: b.id, leg, reason })
     return { ...base, ok: false, skipped: reason }
   }
 
@@ -210,9 +288,10 @@ export async function sendDayOf(
 
   if (!res?.ok) {
     // Release the claim so the next run retries rather than silently
-    // dropping. Removing only OUR key atomically: nothing else is touched.
-    await svc.rpc('merge_dispatch', { p_booking_id: b.id, p_remove: [key] })
-    return { ...base, ok: false, error: res?.error ?? 'send failed' }
+    // dropping. Only OUR key is touched, atomically.
+    const sendError = res?.error ?? 'send failed'
+    const released = await undoClaim({}, RESEND)
+    return { ...base, ok: false, error: released ? sendError : `${sendError}; ${NOT_RELEASED}` }
   }
 
   return { ...base, ok: true, sentTo: b.email }

@@ -19,6 +19,7 @@ import BookingConfirmed from '@/emails/BookingConfirmed'
 import OperatorBookingAlert from '@/emails/OperatorBookingAlert'
 import TransferConfirmed from '@/emails/TransferConfirmed'
 import TransferOperatorAlert from '@/emails/TransferOperatorAlert'
+import OpsAlert, { type OpsAlertProps } from '@/emails/OpsAlert'
 
 /**
  * Stripe webhook, single source of truth for payment status.
@@ -275,6 +276,7 @@ async function handlePaymentSucceeded(pi: Stripe.PaymentIntent) {
       '[stripe-webhook] CRITICAL: second successful PaymentIntent on a paid booking, guest likely charged twice, refund one in the dashboard',
       { booking_id: booking.id, kept_pi: booking.stripe_payment_id, duplicate_pi: pi.id, duplicate_amount: pi.amount },
     )
+    await alertDoubleCharge(booking.id, booking.stripe_payment_id, pi)
     return
   }
 
@@ -327,6 +329,7 @@ async function handlePaymentSucceeded(pi: Stripe.PaymentIntent) {
           '[stripe-webhook] CRITICAL: second successful PaymentIntent on a paid booking (concurrent), guest likely charged twice, refund one in the dashboard',
           { booking_id: booking.id, kept_pi: after.stripe_payment_id, duplicate_pi: pi.id, duplicate_amount: pi.amount },
         )
+        await alertDoubleCharge(booking.id, after.stripe_payment_id, pi)
         return
       }
       // Same intent, concurrent delivery: fall through to the email step,
@@ -334,45 +337,50 @@ async function handlePaymentSucceeded(pi: Stripe.PaymentIntent) {
       booking.status = 'paid'
       booking.stripe_payment_id = pi.id
     } else {
-    booking.status = 'paid'
-    booking.stripe_payment_id = pi.id
+      booking.status = 'paid'
+      booking.stripe_payment_id = pi.id
 
-    // Server-side purchase for GA4 and Google Ads, exactly once: on the
-    // delivery that flipped this booking to paid, so a Stripe redelivery
-    // never double counts. The confirm page fires the same transaction id
-    // client-side and GA4 dedupes on it; this one lands even when the guest
-    // never returns from 3DS or closes the tab. Never fatal.
-    await reportServerPurchase(booking)
+      // Server-side purchase for GA4/Google Ads and for Meta, exactly once: on
+      // the delivery that flipped this booking to paid, so a Stripe redelivery
+      // never double counts. Each confirm page fires the same id client-side
+      // and both platforms dedupe on it (GA4 on transaction_id, Meta on
+      // event_id), so these land even when the guest never returns from 3DS or
+      // closes the tab.
+      //
+      // Run in PARALLEL, deliberately. Each reporter carries its own 4s
+      // timeout, and everything below still has to happen inside Stripe's
+      // ~10s webhook budget: the driver assign, the traveller and operator
+      // emails, the calendar sync. Awaiting them in sequence would put 8s of
+      // analytics in front of fulfilment and risk a timeout, which Stripe
+      // answers by redelivering. Promise.all cannot reject here because
+      // neither function throws: both resolve to 'sent' | 'skipped' | 'failed'
+      // and swallow their own errors. Never fatal.
+      await Promise.all([
+        reportServerPurchase(booking),
+        reportMetaPurchase(booking),
+      ])
 
-    // The same purchase to Meta's Conversions API, deduped against the pixel
-    // by the booking ref as eventID. Matters more here than for GA: iOS and
-    // content blockers suppress the pixel for much of a mobile travel
-    // audience, so without this the Facebook/Instagram optimiser barely
-    // learns which click paid. Dormant until META_PIXEL_ID/META_CAPI_TOKEN
-    // are set; never fatal.
-    await reportMetaPurchase(booking)
-
-    // Auto-assign the default driver, exactly once: on the delivery that
-    // flipped this booking to paid. Living inside the transition means a
-    // Stripe redelivery can never re-stamp a driver an operator deliberately
-    // cleared, and a fresh paid transfer always has null driver columns, so
-    // nothing manual can be overwritten. Non-fatal: the charge already
-    // succeeded, so a failure here is logged for the console rather than
-    // failing the webhook; the dispatch console shows the missing driver.
-    if (booking.booking_type === 'transfer' && !booking.driver_name && !booking.driver_phone) {
-      const { error: driverErr } = await supabase
-        .from('bookings')
-        .update(DEFAULT_DRIVER)
-        .eq('id', booking.id)
-        .is('driver_name', null)
-        .is('driver_phone', null)
-        .eq('status', 'paid')
-      if (driverErr) {
-        console.warn('[stripe-webhook] default driver assign failed', { booking_id: booking.id, error: driverErr.message })
-      } else {
-        Object.assign(booking, DEFAULT_DRIVER)
+      // Auto-assign the default driver, exactly once: on the delivery that
+      // flipped this booking to paid. Living inside the transition means a
+      // Stripe redelivery can never re-stamp a driver an operator deliberately
+      // cleared, and a fresh paid transfer always has null driver columns, so
+      // nothing manual can be overwritten. Non-fatal: the charge already
+      // succeeded, so a failure here is logged for the console rather than
+      // failing the webhook; the dispatch console shows the missing driver.
+      if (booking.booking_type === 'transfer' && !booking.driver_name && !booking.driver_phone) {
+        const { error: driverErr } = await supabase
+          .from('bookings')
+          .update(DEFAULT_DRIVER)
+          .eq('id', booking.id)
+          .is('driver_name', null)
+          .is('driver_phone', null)
+          .eq('status', 'paid')
+        if (driverErr) {
+          console.warn('[stripe-webhook] default driver assign failed', { booking_id: booking.id, error: driverErr.message })
+        } else {
+          Object.assign(booking, DEFAULT_DRIVER)
+        }
       }
-    }
     }
   }
 
@@ -527,8 +535,13 @@ async function handlePaymentFailed(pi: Stripe.PaymentIntent) {
   const { supabase, booking } = await loadBooking(pi)
   // 'paid' and 'refunded' are both ahead of 'failed' in the lifecycle: a
   // late-delivered failure from an earlier attempt must not scrub either.
+  // 'canceled' is too: checkout only cancels a row once its intent is proven
+  // dead (a supersede or twin sweep cancels the intent first), so a decline
+  // arriving afterwards is stale. Reviving the row to 'failed' made a
+  // superseded checkout read as a declined one in the admin and put it back
+  // in reach of the supersede lookup and the declined-twin sweep.
   // In-memory check plus a status predicate on the write for the race.
-  if (!booking || booking.status === 'paid' || booking.status === 'refunded') return
+  if (!booking || booking.status === 'paid' || booking.status === 'refunded' || booking.status === 'canceled') return
 
   // Same superseded-intent guard as handlePaymentCanceled: a decline on an
   // intent the checkout has already replaced must not stamp failed_at onto a
@@ -567,7 +580,7 @@ async function handlePaymentFailed(pi: Stripe.PaymentIntent) {
       failed_at: new Date().toISOString(),
     })
     .eq('id', booking.id)
-    .not('status', 'in', '("paid","refunded")')
+    .not('status', 'in', '("paid","refunded","canceled")')
 }
 
 async function handlePaymentCanceled(pi: Stripe.PaymentIntent) {
@@ -794,6 +807,65 @@ function resolveOpsRecipients(): string[] {
     .map((s) => s.trim())
     .filter(Boolean)
   return parsed.length > 0 ? parsed : OPS_RECIPIENTS_DEFAULT
+}
+
+// An ops alert may cost the webhook this long at most. Resend has no timeout
+// of its own, and the refund path still has calendar cleanup to run after it.
+const OPS_ALERT_TIMEOUT_MS = 4_000
+
+/**
+ * Page operations about something only a human can fix, through the same
+ * validated recipient list the operator alert uses. Best-effort by contract:
+ * it never throws and is time-boxed, because what the webhook answers Stripe
+ * must not depend on whether the alert went out. Every caller has already
+ * written its own CRITICAL log line, so a failed alert still leaves a trace.
+ */
+async function sendOpsAlert(
+  subject: string,
+  alert: OpsAlertProps,
+  tags: { name: string; value: string }[],
+): Promise<void> {
+  try {
+    const to = operatorAlertRecipients(resolveOpsRecipients())
+    if (to.length === 0) {
+      console.error('[stripe-webhook] ops alert dropped: no_ops_email_configured', { subject })
+      return
+    }
+    let timer: ReturnType<typeof setTimeout> | undefined
+    const timedOut = new Promise<{ ok: false; error: string }>((resolve) => {
+      timer = setTimeout(() => resolve({ ok: false, error: 'timeout' }), OPS_ALERT_TIMEOUT_MS)
+    })
+    const res = await Promise.race([
+      sendEmail({ to, subject, react: OpsAlert(alert), tags: [{ name: 'category', value: 'ops_alert' }, ...tags] }),
+      timedOut,
+    ]).finally(() => clearTimeout(timer))
+    if (!res.ok) console.error('[stripe-webhook] ops alert not sent', { subject, error: res.error })
+  } catch (err) {
+    console.error('[stripe-webhook] ops alert threw', { subject, error: err instanceof Error ? err.message : err })
+  }
+}
+
+/**
+ * A second intent succeeded on a booking that another intent already paid.
+ * Nothing refunds it automatically (which charge the guest keeps is their
+ * call), so a person has to be told, not just a log.
+ */
+async function alertDoubleCharge(bookingId: string, keptPi: string, duplicate: Stripe.PaymentIntent): Promise<void> {
+  const ref = humanizeId(bookingId)
+  const amount = `${((duplicate.amount_received || duplicate.amount) / 100).toFixed(2)} ${(duplicate.currency ?? 'usd').toUpperCase()}`
+  await sendOpsAlert(
+    `ACTION NEEDED: ${ref} was paid twice, refund the duplicate charge`,
+    {
+      title: 'A guest was charged twice for one booking',
+      body: 'A second payment succeeded on a booking that was already paid, so the guest has most likely been charged twice for the same trip. Open the duplicate payment below in the Stripe Dashboard and refund it in full. Refunding the duplicate leaves the booking, its emails and its dispatch as they are. Refunding the kept payment instead would cancel the booking.',
+      lines: [
+        `Booking: ${ref} (${bookingId})`,
+        `Kept payment: ${keptPi}`,
+        `Duplicate payment: ${duplicate.id}, ${amount}`,
+      ],
+    },
+    [{ name: 'booking_id', value: bookingId }],
+  )
 }
 
 async function maybeSendOperatorAlert(
@@ -1174,8 +1246,33 @@ async function handleChargeRefunded(charge: Stripe.Charge) {
     // Notify on BOTH paths. A self-serve cancellation already sent these and
     // the claimed columns make this a no-op; for a Dashboard refund this is
     // the only thing that tells the traveler and stands the driver down.
+    //
+    // The result is READ, not dropped. The status flip above already
+    // happened, so no redelivery will ever retry a failed send: a guest who
+    // is not told their refund is coming, or a driver not stood down, is
+    // only fixed by a person, and a person only knows if we page one.
+    const undelivered: { id: string; line: string }[] = []
     for (const row of data) {
-      await sendCancellationEmails(row.id, { source: 'dashboard' })
+      const sent = await sendCancellationEmails(row.id, { source: 'dashboard' })
+      if (sent.customer === 'failed' || sent.ops === 'failed') {
+        undelivered.push({
+          id: row.id,
+          line: `${humanizeId(row.id)} (${row.id}): guest email ${sent.customer}, ops stand-down email ${sent.ops}`,
+        })
+      }
+    }
+    if (undelivered.length) {
+      console.error('[stripe-webhook] CRITICAL: refund cancellation emails undelivered', { bookings: undelivered.map((u) => u.line) })
+      const single = undelivered.length === 1
+      await sendOpsAlert(
+        `ACTION NEEDED: refund emails undelivered for ${single ? humanizeId(undelivered[0].id) : `${undelivered.length} bookings`}`,
+        {
+          title: 'Refund emails did not go out',
+          body: `A refund from the Stripe Dashboard cancelled ${single ? 'the booking' : 'the bookings'} below, but the cancellation email to the guest or the stand-down email to operations failed. Nothing will retry it. Tell the guest their refund is on its way, and make sure the driver or operator knows the trip is off.`,
+          lines: undelivered.map((u) => u.line),
+        },
+        single ? [{ name: 'booking_id', value: undelivered[0].id }] : [],
+      )
     }
     // Ops calendar cleanup LAST, after every money and email step: this
     // handler runs its critical section exactly once (the status flip is the

@@ -6,6 +6,8 @@ import type { StripeElementsOptions, StripeExpressCheckoutElementClickEvent, Str
 import { Lock } from 'lucide-react'
 import { getStripe } from '@/lib/stripe'
 import { setPaymentInFlight } from '@/lib/payment-lock'
+import type { CheckoutIntentResult } from '@/lib/checkout-form'
+import { payableIntent, type SendOptions } from './intent-session'
 
 /**
  * Card fields and wallet buttons that are on the page BEFORE anything exists
@@ -25,10 +27,8 @@ import { setPaymentInFlight } from '@/lib/payment-lock'
  * browser actually offers one, so nobody sees an empty row.
  */
 
-export type IntentResult =
-  | { clientSecret: string; bookingId: string; amountDue: number }
-  | { navigate: string }
-  | { error: string }
+/** An intent to confirm, a page to go to, or a refusal (lib/checkout-form). */
+export type IntentResult = CheckoutIntentResult
 
 export interface DeferredPaymentPanelProps {
   /** What the guest will be charged, in cents. Below Stripe's $0.50 minimum means "nothing to charge". */
@@ -37,8 +37,12 @@ export interface DeferredPaymentPanelProps {
   payLabel: string
   /** The page's own form gate. Must focus its own errors. False aborts the tap. */
   validate: () => boolean
-  /** Creates (or reuses) the pending booking and PaymentIntent on the server. */
-  createIntent: () => Promise<IntentResult>
+  /**
+   * Creates (or reuses) the pending booking and PaymentIntent on the server.
+   * `fresh` asks again past the page's cached intent, which Stripe has
+   * reported it will no longer confirm (see payableIntent).
+   */
+  createIntent: (opts?: SendOptions) => Promise<IntentResult>
   /** Runs after Stripe confirms, before navigating to the confirmation page. */
   onPaid?: () => Promise<void> | void
   /** Hands the pay action to the page so a sticky bar can trigger it. */
@@ -163,7 +167,10 @@ function NothingToCharge({ payLabel, validate, createIntent, onPaid, registerPay
     try {
       const res = await createIntent()
       if ('navigate' in res) { await onPaid?.(); window.location.assign(res.navigate); return }
-      if ('error' in res) { setError(res.error); return }
+      // A refusal hands the button back. It used to stay on "Confirming…"
+      // for good, and a reward conflict on a cart the gift card still covers
+      // keeps this component mounted, so the guest could never tap again.
+      if ('error' in res) { setError(res.shownOnPage ? null : res.error); setBusy(false); return }
       // The server found something left to charge (the gift balance moved
       // underneath us). This component is about to be replaced by the card
       // form, so the page says so through externalError rather than here.
@@ -211,17 +218,22 @@ function PayForm({ amountCents, returnUrl, payLabel, validate, createIntent, onP
       // Stripe validates the card fields and shows its own inline messages.
       const { error: submitError } = await elements.submit()
       if (submitError) { fail(submitError.message ?? 'Please check your card details.'); return }
-      const res = await createIntent()
+      // The intent is read back from Stripe before anything else happens to
+      // it. An intent another tab canceled since this page cached it is
+      // asked for once more instead of being confirmed and refused on every
+      // tap (payableIntent, intent-session.ts).
+      const { res, intent } = await payableIntent(createIntent, async (secret) => {
+        const { paymentIntent } = await stripe.retrievePaymentIntent(secret)
+        return paymentIntent ? { status: paymentIntent.status, amount: paymentIntent.amount } : null
+      })
       if ('navigate' in res) { leaving.current = true; await onPaid?.(); window.location.assign(res.navigate); return }
-      if ('error' in res) { fail(res.error); return }
+      if ('error' in res) { fail(res.shownOnPage ? null : res.error); return }
       // What Stripe will really charge, read from the intent rather than from
-      // the page's arithmetic. Two server responses carry no amountDue at all
-      // (the transfers route, and either route's reuse-an-existing-intent
-      // branch), and a gift card is claimed server-side against a live
-      // balance, so the page's figure can be stale. Elements must carry the
-      // intent's amount or the confirm is refused.
-      const retrieved = await stripe.retrievePaymentIntent(res.clientSecret)
-      const due = retrieved.paymentIntent?.amount ?? Math.round(res.amountDue * 100)
+      // the page's arithmetic. An answer can carry no amountDue, and a gift
+      // card is claimed server-side against a live balance, so the page's
+      // figure can be stale. Elements must carry the intent's amount or the
+      // confirm is refused.
+      const due = intent?.amount ?? Math.round(res.amountDue * 100)
       if (due !== amountCents) {
         await elements.update({ amount: Math.max(50, due) })
         onAmountResolved?.(due / 100)
