@@ -2537,23 +2537,39 @@ a.pf-stat:hover { background: var(--surface); }
 /* The panel takes focus on open so the trap has somewhere to start; it is a
    region, not a control, so the global ring is wrong on it. */
 .cpop-panel:focus, .cpop-panel:focus-visible { outline: none !important; }
+/* The photo is the Martha Brae raft (see the component). Until it arrives
+   the strip is the photo's own mean colour, darkened, so the offer never
+   sits on an empty box. 45% keeps the captain's head in a 135px strip (a 13
+   in Safari with its toolbars). */
 .cpop-photo {
   position: relative;
   flex: 0 0 auto;
   height: 200px;
   overflow: hidden;
-  background: #1c2a3a;
+  background: #34392e;
 }
 .cpop-photo img {
   display: block; width: 100%; height: 100%;
-  object-fit: cover; object-position: center 40%;
-  transform-origin: 50% 40%;
+  object-fit: cover; object-position: center 45%;
+  transform-origin: 50% 45%;
   animation: cpopDrift 12s ease-out both;
+  opacity: 0;
+  transition: opacity 0.3s ease;
 }
+/* Set by the component's onLoad: a slow photo fades in over the placeholder
+   instead of snapping in mid-entrance. */
+.cpop-photo img[data-loaded] { opacity: 1; }
+/* The offer's shade is anchored to its own corner and the rest of the photo
+   is only lightly dimmed, so the river and the flowers keep their colour.
+   White on the photo pixels behind the glyphs, measured at 320 to 390 wide
+   in Chromium and WebKit with the drift at both ends: 5.0:1 at the single
+   worst pixel under "off", 5.2:1 under "5%". The phone cut keeps the captain
+   right of the offer, so the words never sit on him, even in the 80px
+   strip. */
 .cpop-photo::after {
   content: '';
   position: absolute; inset: 0;
-  background: linear-gradient(180deg, rgba(17,17,16,0.10) 0%, rgba(17,17,16,0) 32%, rgba(17,17,16,0.32) 62%, rgba(17,17,16,0.78) 100%);
+  background: radial-gradient(240px 120px at 0% 100%, rgba(17,17,16,0.62) 0%, rgba(17,17,16,0.5) 50%, rgba(17,17,16,0) 100%), linear-gradient(180deg, rgba(17,17,16,0.10) 0%, rgba(17,17,16,0) 32%, rgba(17,17,16,0.12) 62%, rgba(17,17,16,0.45) 100%);
 }
 .cpop-offer {
   position: absolute; left: 20px; bottom: 14px; z-index: 1;
@@ -2587,7 +2603,8 @@ a.pf-stat:hover { background: var(--surface); }
 }
 .cpop-kicker {
   font-family: var(--font-dm-sans);
-  font-size: 12px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase;
+  /* The brand is written in mixed case, never all caps (the logo is not the copy). */
+  font-size: 13px; font-weight: 700; letter-spacing: 0.01em;
   color: var(--gold-text);
   margin: 0 0 8px;
 }
@@ -2732,15 +2749,14 @@ a.pf-stat:hover { background: var(--surface); }
    tightens too, so the button and "Not now" both fit without scrolling. */
 @media (max-width: 719px) {
   .cpop-photo { height: clamp(80px, calc(92vh - 476px), 200px); height: clamp(80px, calc(92dvh - 476px), 200px); }
-  /* In a short strip the offer sits on bright sky and sail, where white
-     measured 1.97:1 at its worst; a soft shade anchored to its corner keeps
-     it at 4.5:1 or better without darkening the rest of the photo. */
-  .cpop-photo::after { background: radial-gradient(240px 120px at 0% 100%, rgba(17,17,16,0.66) 0%, rgba(17,17,16,0.6) 50%, rgba(17,17,16,0) 100%), linear-gradient(180deg, rgba(17,17,16,0.10) 0%, rgba(17,17,16,0) 32%, rgba(17,17,16,0.32) 62%, rgba(17,17,16,0.78) 100%); }
   /* A two-line error adds about 56px; the strip gives that back too (down to
      64px) so the button and the error stay in view together. */
   .cpop-panel:has(.cpop-error) .cpop-photo { height: clamp(64px, calc(92vh - 532px), 200px); height: clamp(64px, calc(92dvh - 532px), 200px); }
 }
 @media (max-width: 719px) and (max-height: 600px) {
+  /* The strip is 80px here; aimed higher so it shows the captain's head and
+     shoulders rather than his knees. */
+  .cpop-photo img { object-position: center 28%; transform-origin: 50% 28%; }
   .cpop-offer { bottom: 10px; }
   .cpop-offer b { font-size: 40px; }
   .cpop-body { padding: 16px 20px 12px; }
@@ -2790,8 +2806,9 @@ a.pf-stat:hover { background: var(--surface); }
     flex-direction: row;
   }
   .cpop-photo { flex: 0 0 300px; height: auto; min-height: 460px; }
-  .cpop-photo img { object-position: 50% 45%; }
-  .cpop-photo::after { background: linear-gradient(180deg, rgba(17,17,16,0.12) 0%, rgba(17,17,16,0) 30%, rgba(17,17,16,0.3) 60%, rgba(17,17,16,0.8) 100%); }
+  /* 64px type on the raft's sunlit bamboo: 6.6:1 at the worst pixel behind
+     "5%", 8.7:1 behind "off" (1440x900 and 1024x540). */
+  .cpop-photo::after { background: radial-gradient(320px 200px at 0% 100%, rgba(17,17,16,0.55) 0%, rgba(17,17,16,0.4) 50%, rgba(17,17,16,0) 100%), linear-gradient(180deg, rgba(17,17,16,0.12) 0%, rgba(17,17,16,0) 30%, rgba(17,17,16,0.12) 60%, rgba(17,17,16,0.55) 100%); }
   .cpop-offer { left: 24px; bottom: 22px; }
   .cpop-offer b { font-size: 64px; }
   .cpop-offer span { font-size: 15px; }
@@ -2831,6 +2848,7 @@ a.pf-stat:hover { background: var(--surface); }
 }
 @media (prefers-reduced-motion: reduce) {
   .cpop-scrim, .cpop-panel, .cpop-photo img, .cpop-scrim.closing, .cpop-scrim.closing .cpop-panel { animation: none; }
+  .cpop-photo img { transition: none; }
   .cpop-cta, .cpop-cta:hover { transform: none; transition: none; }
 }
 

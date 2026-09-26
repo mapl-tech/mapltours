@@ -254,12 +254,29 @@ function Sheet({ place, closing, onClose }: { place: Place; closing: boolean; on
         className="cpop-panel"
         data-phase={phase}
       >
-        {/* The parasail frame from the cold ad, cut for each viewport (12 KB
-            wide, 37 KB tall). The offer sits on it in display type. */}
+        {/* The Martha Brae raft (public/tours/bamboo-rafting.webp): the captain
+            poling past the raft-village umbrellas. Two cuts, both starting
+            below the sunshade at the top of the original so its logo is never
+            in frame: a 1.8:1 band for phones (33 KB) and a 3:5 panel for the
+            desktop card (44 KB), the background softened around a sharp
+            captain to keep them light. The offer sits on it in display type.
+            It is fetched when the card mounts, so it asks for high priority
+            rather than queue behind the home page's video, and it fades in
+            when it lands: about 0.2 s after the card on fast 4G, 0.8 s on
+            slow 4G, where it used to snap in over the placeholder. */}
         <div className="cpop-photo" aria-hidden="true">
           <picture>
-            <source media="(min-width: 720px)" srcSet="/media/popup/parasail-tall.webp" type="image/webp" />
-            <img src="/media/popup/parasail-wide.webp" alt="" width={720} height={400} decoding="async" loading="eager" />
+            <source media="(min-width: 720px)" srcSet="/media/popup/raft-tall.webp" type="image/webp" />
+            <img
+              src="/media/popup/raft-wide.webp"
+              alt=""
+              width={660}
+              height={367}
+              decoding="async"
+              loading="eager"
+              fetchPriority="high"
+              onLoad={(e) => { e.currentTarget.dataset.loaded = 'true' }}
+            />
           </picture>
           <span className="cpop-offer"><b>{POPUP_PERCENT}%</b><span>off</span></span>
         </div>
