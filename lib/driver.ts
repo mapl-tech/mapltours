@@ -24,9 +24,14 @@ export function isAllowedDriver(email: string | null | undefined): boolean {
 
 /**
  * The driver's working window over transfer legs: backDays ago (default one,
- * a late-running pickup) through 90 days out, in the Jamaica wall-clock convention
- * the leg columns are stored in (real instant minus five hours, see
- * lib/dispatch.ts legInstantMs).
+ * a late-running pickup) with NO upper bound unless the caller passes
+ * forwardDays, in the Jamaica wall-clock convention the leg columns are
+ * stored in (real instant minus five hours, see lib/dispatch.ts legInstantMs).
+ *
+ * The default used to stop 90 days out, but checkout has no booking horizon:
+ * a guest booked in September for a March arrival, the paid ride never
+ * appeared on the driver's list, and nothing said a trip was missing. Every
+ * paid upcoming leg is work the driver has to plan for, however far out.
  *
  * The portal used to select the 100 NEWEST paid transfers by created_at with
  * no date bound at all. Completed trips never leave status 'paid', so history
@@ -51,10 +56,13 @@ export function transferLegWindow(
   // bound erased any trip the operator had not marked paid within a day of
   // the ride, silently zeroing money still owed to the driver.
   opts: { backDays?: number; forwardDays?: number } = {},
-): { from: string; to: string; orFilter: string } {
-  const { backDays = 1, forwardDays = 90 } = opts
+): { from: string; to: string | null; orFilter: string } {
+  const { backDays = 1, forwardDays } = opts
   const wall = (ms: number) => new Date(ms - 5 * 3_600_000).toISOString()
   const from = wall(nowMs - backDays * 24 * 3_600_000)
+  if (forwardDays === undefined) {
+    return { from, to: null, orFilter: `arrival_at.gte.${from},departure_at.gte.${from}` }
+  }
   const to = wall(nowMs + forwardDays * 24 * 3_600_000)
   return {
     from,
