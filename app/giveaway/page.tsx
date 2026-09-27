@@ -36,7 +36,7 @@ export const metadata: Metadata = {
 
 // The site reset strips list-style, which also hides the lists from VoiceOver in Safari; put the bullets back.
 const list = { marginTop: 16, paddingLeft: 20, listStyle: 'disc', display: 'flex', flexDirection: 'column', gap: 8 } as const
-const ENTER = 'https://bio.mapltours.com/?utm_source=mapltours&utm_medium=giveaway&utm_campaign=raft_2026#coupon'
+const ENTER = 'https://bio.mapltours.com/?utm_source=mapltours&utm_medium=giveaway&utm_campaign=raft_2026'
 const facts: Array<[string, string]> = [
   ['Entries close', 'November 30, 2026, 11:59 pm Eastern'],
   ['The draw', 'December 1, 2026'],

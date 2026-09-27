@@ -1,23 +1,23 @@
 import { describe, test, expect } from 'vitest'
-import { TIPS_LABEL, TIPS_ON_LINE, normaliseCountry, tipsConsentValid, tipsDefaultFor } from '../../lib/trip-tips'
+import { TIPS_LABEL, TIPS_ON_LINE, normaliseCountry, pretickLawful, tipsConsentValid, tipsDefaultFor } from '../../lib/trip-tips'
 
 describe('the trip-tips box default', () => {
-  test('ticked for the US only', () => {
-    expect(tipsDefaultFor('US')).toBe(true)
-    for (const c of ['CA', 'GB', 'JM', 'DE', '', null, undefined]) {
+  test('starts unticked for everyone, the US included', () => {
+    for (const c of ['US', 'us', ' Us ', 'CA', 'GB', 'JM', 'DE', '', null, undefined]) {
       expect(tipsDefaultFor(c), String(c)).toBe(false)
     }
   })
 
-  test('a lower-case or padded code is read as the country it names', () => {
-    expect(tipsDefaultFor('us')).toBe(true)
-    expect(tipsDefaultFor(' Us ')).toBe(true)
-    expect(tipsDefaultFor('ca')).toBe(false)
+  test('a pre-tick from a page cached before the change is lawful in the US only', () => {
+    expect(pretickLawful('US')).toBe(true)
+    expect(pretickLawful('us')).toBe(true)
+    expect(pretickLawful(' Us ')).toBe(true)
+    for (const c of ['CA', 'ca', 'GB', 'JM', 'DE', '', null, undefined]) expect(pretickLawful(c), String(c)).toBe(false)
   })
 
-  test('anything that is not a two-letter code is unknown, and unknown is unticked', () => {
+  test('anything that is not a two-letter code is unknown, and unknown is never the US', () => {
     for (const c of ['USA', 'U', 'U S', '12', 'U1', 'us-east']) {
-      expect(tipsDefaultFor(c), c).toBe(false)
+      expect(pretickLawful(c), c).toBe(false)
       expect(normaliseCountry(c), c).toBeNull()
     }
     expect(normaliseCountry(42)).toBeNull()

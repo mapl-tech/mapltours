@@ -18,7 +18,7 @@ import {
   shouldShowPopup,
   useCouponPopupStore,
 } from '@/lib/coupon-popup'
-import { TIPS_LABEL, TIPS_ON_LINE, tipsDefaultFor, type TipsDefault } from '@/lib/trip-tips'
+import { TIPS_LABEL, TIPS_ON_LINE, type TipsDefault } from '@/lib/trip-tips'
 
 /**
  * The 5% code popup on the home and explore pages.
@@ -136,14 +136,12 @@ function Sheet({ place, closing, onClose }: { place: Place; closing: boolean; on
   // itself waits a tick for the same reason: the tap that focused the field
   // resolves before anything moves.
   const [lifted, setLifted] = useState(false)
-  // The trip-tips box starts unticked and stays that way until /api/geo
-  // answers; a US answer ticks it, but only if the guest has not touched it.
-  // `tipsDefault` is what the box showed before they did, sent with the
-  // submit so the bio can tell a pre-tick from a tick.
+  // The trip-tips box starts unticked for everyone (lib/trip-tips.ts) and
+  // only the guest ticks it. `tipsDefault` is what it showed before they
+  // touched it, sent with the submit so the bio can tell a pre-tick from a tick.
   const [optIn, setOptIn] = useState(false)
-  const [tipsDefault, setTipsDefault] = useState<TipsDefault>('unchecked')
+  const tipsDefault: TipsDefault = 'unchecked'
   const [tipsOn, setTipsOn] = useState(false)
-  const boxTouched = useRef(false)
 
   useEffect(() => {
     const prev = document.body.style.overflow
@@ -159,26 +157,6 @@ function Sheet({ place, closing, onClose }: { place: Place; closing: boolean; on
     if (desktop) inputRef.current?.focus({ preventScroll: true })
   }, [])
 
-  useEffect(() => {
-    const ctrl = new AbortController()
-    const timer = window.setTimeout(() => ctrl.abort(), 4000)
-    fetch('/api/geo', { cache: 'no-store', signal: ctrl.signal })
-      .then((r) => (r.ok ? r.json() : null))
-      .then((j: { country?: string | null } | null) => {
-        if (boxTouched.current) return
-        const on = tipsDefaultFor(j?.country)
-        setOptIn(on)
-        setTipsDefault(on ? 'checked' : 'unchecked')
-      })
-      // No answer: the box stays unticked, which is always lawful.
-      .catch(() => {})
-      .finally(() => window.clearTimeout(timer))
-    return () => {
-      window.clearTimeout(timer)
-      ctrl.abort()
-    }
-  }, [])
-
   const submit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (phase === 'busy') return
@@ -190,9 +168,6 @@ function Sheet({ place, closing, onClose }: { place: Place; closing: boolean; on
     }
     setError(null)
     setPhase('busy')
-    // The box as submitted is the box they saw; a late geo answer must not
-    // flip it under them if this send fails and they try again.
-    boxTouched.current = true
     const eventId = trackingOptedOut() ? undefined : safeUuid()
     try {
       const r = await fetch('/api/lead', {
@@ -340,7 +315,7 @@ function Sheet({ place, closing, onClose }: { place: Place; closing: boolean; on
                     name="tips"
                     value="yes"
                     checked={optIn}
-                    onChange={(e) => { boxTouched.current = true; setOptIn(e.target.checked) }}
+                    onChange={(e) => setOptIn(e.target.checked)}
                     disabled={phase === 'busy'}
                   />
                   <span>{TIPS_LABEL}</span>

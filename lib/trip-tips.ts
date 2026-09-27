@@ -1,10 +1,13 @@
 /**
  * The "trip tips" box beside the 5% code (owner-approved, Sept 24 2026).
  *
- * The owner wants the box ticked by default. Canada's CASL and the UK's PECR
- * do not accept a pre-ticked box as consent, and the ads run in both, so the
- * box starts ticked only for a visitor Netlify places in the US. Everyone
- * else, and anyone we cannot place, starts unticked and ticks it themselves.
+ * The box starts unticked for everyone (owner, Sept 26 2026). From Sept 24 to
+ * 26 it started ticked for visitors Netlify placed in the US; a pre-ticked
+ * box is consent by default, which the design review scores as a
+ * manipulative pattern. Only the guest's own tick is a yes from a current
+ * page. A pre-tick arriving from a page cached before the change still counts
+ * where it was lawful (the US) and nowhere else: Canada's CASL and the UK's
+ * PECR never accept one.
  *
  * The bio page's lead function keeps the same two rules and is the one that
  * records consent (HubSpot, the Resend list). This copy decides what the popup
@@ -23,8 +26,15 @@ export function normaliseCountry(country: unknown): string | null {
   return /^[A-Z]{2}$/.test(c) ? c : null
 }
 
-/** Whether the box starts ticked. Exactly the US; unknown is never the US. */
-export function tipsDefaultFor(country: string | null | undefined): boolean {
+/** Whether the box starts ticked: never, for any country. The argument is
+ *  kept so a call site reads the same whichever way the rule points. */
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export function tipsDefaultFor(_country?: string | null): boolean {
+  return false
+}
+
+/** Where a box that arrived ticked may still count as consent: exactly the US; unknown is never the US. */
+export function pretickLawful(country: string | null | undefined): boolean {
   return normaliseCountry(country) === 'US'
 }
 
@@ -39,5 +49,5 @@ export function tipsConsentValid(input: {
   defaultShown: unknown
   country: string | null | undefined
 }): boolean {
-  return input.optIn === true && (input.defaultShown === 'unchecked' || tipsDefaultFor(input.country))
+  return input.optIn === true && (input.defaultShown === 'unchecked' || pretickLawful(input.country))
 }
