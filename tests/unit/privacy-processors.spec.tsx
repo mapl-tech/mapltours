@@ -55,3 +55,22 @@ describe('privacy policy processor list', () => {
     expect(html).not.toContain('&mdash;')
   })
 })
+
+describe('privacy policy on trip tips', () => {
+  const uses = text(html.match(/<section data-title="How we use your information">([\s\S]*?)<\/section>/)?.[1] ?? '').replace(/\u2019/g, "'")
+
+  test('the tips box starts unticked for everyone, as lib/trip-tips.ts has it since Sept 26 2026', () => {
+    expect(uses).toContain('only if you tick the trip tips box when you ask for your code (it starts unticked for everyone)')
+    expect(uses).not.toMatch(/starts ticked/)
+  })
+
+  test('a booking changes the tips to ones about the trip, it does not stop them', () => {
+    expect(uses).toContain("the tips change: instead of the general ones, we send a few about your own trip, using your first name and your booking's dates, flights, hotel or pickup place, party size and tours, until the trip ends.")
+  })
+
+  test('it names every booking field the trip tips print (lib/trip-tips/plan.ts TripFacts)', () => {
+    // TripFacts: firstName, hotel (a ride's hotel, or a tour's pickup), arrival/departure (dates, times, flights), tours, passengers.
+    for (const field of ['first name', 'dates', 'flights', 'hotel or pickup place', 'party size', 'tours']) expect(uses).toContain(field)
+    expect(uses).not.toMatch(/welcome tips stop/)
+  })
+})

@@ -60,7 +60,7 @@ describe('what counts as consent', () => {
 describe('the copy', () => {
   test('the words the owner approved, with no em dashes and the brand in mixed case', () => {
     expect(TIPS_LABEL).toBe('Send me Jamaica trip tips from MAPL Tours Jamaica, about twice a month. Unsubscribe anytime.')
-    expect(TIPS_ON_LINE).toBe('Trip tips are on. The first one comes in a couple of weeks.')
+    expect(TIPS_ON_LINE).toBe('Trip tips are on. The first one comes in a couple of days.')
     for (const s of [TIPS_LABEL, TIPS_ON_LINE]) {
       expect(s).not.toMatch(/—/)
       expect(s).not.toMatch(/MAPL TOURS/)

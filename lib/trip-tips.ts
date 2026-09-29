@@ -14,7 +14,12 @@
  * shows and whether the site tells the guest tips are on. Change them together.
  */
 export const TIPS_LABEL = 'Send me Jamaica trip tips from MAPL Tours Jamaica, about twice a month. Unsubscribe anytime.'
-export const TIPS_ON_LINE = 'Trip tips are on. The first one comes in a couple of weeks.'
+/**
+ * The first tip (lib/trip-tips/plan.ts) goes two days after the yes; the bio's
+ * TIPS_ON says the same. True only once the daily job sends: ship this line in
+ * the release that sets TRIP_TIPS_ENABLED=1, not before (CLAUDE.md, Trip tips v2).
+ */
+export const TIPS_ON_LINE = 'Trip tips are on. The first one comes in a couple of days.'
 
 /** What the box looked like before the visitor touched it. */
 export type TipsDefault = 'checked' | 'unchecked'
