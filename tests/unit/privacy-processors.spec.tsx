@@ -47,7 +47,7 @@ describe('privacy policy processor list', () => {
   })
 
   test('keeps the last-updated line on or after the change', () => {
-    expect(text(html)).toContain('This Privacy Policy was last updated on September 24, 2026.')
+    expect(text(html)).toContain('This Privacy Policy was last updated on September 27, 2026.')
   })
 
   test('has no em dashes', () => {

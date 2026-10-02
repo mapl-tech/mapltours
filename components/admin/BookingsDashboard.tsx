@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { progress } from '@/lib/dispatch'
-import { attributionLabel } from '@/lib/attribution'
+import { AI_ASSISTANT_GROUP, aiAssistantLabel, attributionLabel, browserLabel, firstTouchLabel } from '@/lib/attribution'
 
 /**
  * Client dashboard for the admin bookings page. The parent server component
@@ -87,7 +87,8 @@ function MoneyRow({ k, v, em }: { k: string; v: string | null; em?: boolean }) {
   )
 }
 
-function BookingCard({ b, variant, open, onToggle }: { b: Row; variant: 'abandoned' | 'paid'; open: boolean; onToggle: () => void }) {
+// Exported for tests/unit/attribution-first-touch-dashboard.spec.tsx only.
+export function BookingCard({ b, variant, open, onToggle }: { b: Row; variant: 'abandoned' | 'paid'; open: boolean; onToggle: () => void }) {
   // Smooth-scroll the card into view when it opens (honors reduced motion).
   const cardRef = useRef<HTMLDivElement>(null)
   useEffect(() => {
@@ -114,6 +115,10 @@ function BookingCard({ b, variant, open, onToggle }: { b: Row; variant: 'abandon
   const prog = progress(b)
   const dispatchDone = prog.done
   const dispatchTotal = prog.total
+  // The first outside touch, shown only when it differs from "Found via".
+  const firstVia = b.attribution ? firstTouchLabel(b.attribution) : null
+  // "Found via" an AI assistant (ChatGPT, Muse, ...) says so, so they read as one group.
+  const viaAi = b.attribution ? aiAssistantLabel(b.attribution) : null
 
   return (
     <div ref={cardRef} style={{ background: '#fff', border, borderRadius: 14, overflow: 'hidden', scrollMarginTop: 20 }}>
@@ -260,8 +265,9 @@ function BookingCard({ b, variant, open, onToggle }: { b: Row; variant: 'abandon
               )}
               {b.stripe_payment_id ? <Field k="Stripe" v={<span style={tnum}>{b.stripe_payment_id.slice(0, 20)}…</span>} /> : null}
               <Field k="Found via" v={b.attribution
-                ? <span style={{ fontWeight: 600 }}>{attributionLabel(b.attribution)}{b.attribution.landing ? <span style={{ color: faint, fontWeight: 400 }}> · landed on {String(b.attribution.landing).slice(0, 40)}</span> : null}</span>
+                ? <span style={{ fontWeight: 600 }}>{attributionLabel(b.attribution)}{viaAi ? <span style={{ color: faint, fontWeight: 400 }}> · {AI_ASSISTANT_GROUP}</span> : null}{firstVia ? <span style={{ fontWeight: 400 }}> (first: {firstVia})</span> : null}{b.attribution.landing ? <span style={{ color: faint, fontWeight: 400 }}> · landed on {String(b.attribution.landing).slice(0, 40)}</span> : null}</span>
                 : <span style={{ color: faint }}>not captured</span>} />
+              <Field k="Browser" v={browserLabel(b.attribution?.ua)} />
             </div>
           </div>
         </div>

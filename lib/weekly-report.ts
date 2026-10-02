@@ -9,6 +9,8 @@
  * the email is read solely to drop our own test bookings.
  */
 
+import { AI_ASSISTANT_GROUP, aiAssistantLabel } from './attribution'
+
 export interface ReportBookingRow {
   id: string
   email: string | null
@@ -77,10 +79,20 @@ function inWindow(iso: string | null | undefined, sinceMs: number, untilMs: numb
   return Number.isFinite(t) && t >= sinceMs && t < untilMs
 }
 
+/**
+ * The report's "source / medium" row for a booking. Every AI assistant
+ * groups under the medium "AI assistant" with its label as the source
+ * ("chatgpt.com", "Muse (Meta AI)"), whether it arrived tagged or only as the
+ * referrer; everything else groups by source and medium exactly as before.
+ * Reads the stored attribution, never changes it.
+ */
 function attrKey(attribution: unknown): { source: string; medium: string } {
   const a = attribution && typeof attribution === 'object' ? (attribution as Record<string, unknown>) : {}
   const clean = (v: unknown) => (typeof v === 'string' && v.trim() ? v.trim().slice(0, 80) : null)
-  return { source: clean(a.source) ?? '(direct)', medium: clean(a.medium) ?? '(none)' }
+  const source = clean(a.source)
+  const ai = aiAssistantLabel(source ? { source } : { referrer: a.referrer })
+  if (ai) return { source: ai, medium: AI_ASSISTANT_GROUP }
+  return { source: source ?? '(direct)', medium: clean(a.medium) ?? '(none)' }
 }
 
 export function aggregateBookings(rows: ReportBookingRow[], since: string, until: string): BookingsReport {
