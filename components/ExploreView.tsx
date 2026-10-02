@@ -3,7 +3,7 @@
 import { useState, useMemo, useEffect, useRef, useId } from 'react'
 import { Search } from 'lucide-react'
 import { singleExperiences } from '@/lib/experiences'
-import { displayHandle } from '@/lib/creator'
+import { filterExperiences } from '@/lib/explore-search'
 import { useI18n } from '@/lib/i18n'
 import type { ExperienceCategory } from '@/lib/experiences'
 import ExpCard from './ExpCard'
@@ -75,31 +75,12 @@ export default function ExploreView({ initialQuery = '' }: { initialQuery?: stri
     return () => window.removeEventListener('scroll', onScroll)
   }, [])
 
-  const filtered = useMemo(() => {
-    return singleExperiences.filter((exp) => {
-      if (activeCat !== 'All' && exp.category !== activeCat) return false
-      // Parish only. The old clause also matched `destination`, which was
-      // needed while towns were mixed into this control; now that it offers
-      // parishes exclusively, matching destination too would let a town name
-      // that happens to equal a parish name pull in the wrong rows.
-      if (activeParish !== 'All Parishes' && exp.parish !== activeParish) return false
-      if (search) {
-        const q = search.toLowerCase()
-        if (
-          !exp.title.toLowerCase().includes(q) &&
-          !exp.destination.toLowerCase().includes(q) &&
-          !exp.parish.toLowerCase().includes(q) &&
-          !exp.category.toLowerCase().includes(q) &&
-          !displayHandle(exp.creator).toLowerCase().includes(q) &&
-          !exp.description.toLowerCase().includes(q) &&
-          !exp.tags.some((tag) => tag.toLowerCase().includes(q))
-        ) {
-          return false
-        }
-      }
-      return true
-    })
-  }, [search, activeCat, activeParish])
+  // lib/explore-search: every word of the search, in any order, so a tour
+  // typed in the guest's own words ("bamboo rafting Martha Brae") is found.
+  const filtered = useMemo(
+    () => filterExperiences(singleExperiences, { search, cat: activeCat, parish: activeParish }),
+    [search, activeCat, activeParish],
+  )
 
   const filtering = activeCat !== 'All' || activeParish !== 'All Parishes' || search.trim() !== ''
   const clearAll = () => { setSearch(''); setActiveCat('All'); setActiveParish('All Parishes') }
@@ -157,6 +138,9 @@ export default function ExploreView({ initialQuery = '' }: { initialQuery?: stri
               }} />
               <input
                 type="search"
+                // The page draws its own Clear search button; this class hides
+                // the browser's, which showed a second × beside it.
+                className="explore-search-input"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder={t('Search experiences...')}
@@ -164,17 +148,18 @@ export default function ExploreView({ initialQuery = '' }: { initialQuery?: stri
                 style={{
                   width: '100%', height: 44, borderRadius: 9999,
                   border: '1px solid var(--border)', background: 'var(--surface)',
-                  padding: '0 40px 0 42px', fontSize: 16,
+                  padding: '0 44px 0 42px', fontSize: 16,
                   fontFamily: 'var(--font-dm-sans)', color: 'var(--text-primary)',
                   outline: 'none',
                 }}
               />
               {search && (
                 <button
+                  type="button"
                   onClick={() => setSearch('')}
                   aria-label="Clear search"
                   style={{
-                    position: 'absolute', right: 2, width: 40, height: 40,
+                    position: 'absolute', right: 0, width: 44, height: 44,
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                     background: 'none', border: 'none', cursor: 'pointer',
                     color: 'var(--text-secondary)', fontSize: 16, borderRadius: 9999,
@@ -237,7 +222,7 @@ export default function ExploreView({ initialQuery = '' }: { initialQuery?: stri
               type="button"
               onClick={clearAll}
               style={{
-                minHeight: 32, padding: '0 12px', borderRadius: 9999,
+                minHeight: 44, padding: '0 16px', borderRadius: 9999,
                 border: '1px solid var(--border)', background: 'transparent',
                 cursor: 'pointer', fontFamily: 'var(--font-dm-sans)',
                 fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)',

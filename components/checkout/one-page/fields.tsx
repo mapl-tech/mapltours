@@ -1,6 +1,6 @@
 'use client'
 
-import { useId, type ReactNode, type CSSProperties, type InputHTMLAttributes } from 'react'
+import { useId, useState, type ReactNode, type CSSProperties, type InputHTMLAttributes } from 'react'
 import { ChevronDown, Lock, ShieldCheck } from 'lucide-react'
 
 /**
@@ -55,33 +55,56 @@ interface TextFieldProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'on
   onChange: (v: string) => void
   error?: string
   hint?: string
+  /**
+   * The exact value format, for a native date or time field (DATE_VALUE_FORMAT
+   * or DATETIME_VALUE_FORMAT). Not shown, since the picker speaks for itself
+   * to a person, but always part of the field's description, error or not, so
+   * an agent or a screen reader learns it before typing.
+   */
+  format?: string
+  /**
+   * Shown when the field is left with some parts filled and some not (the
+   * browser's badInput), which otherwise reads as an empty value with no
+   * message anywhere (incompleteDateMessage).
+   */
+  incompleteMessage?: string
   /** Stable key used by the focus-first-error routine (defaults to id). */
   fieldKey?: string
 }
 
-export function TextField({ id, label, value, onChange, error, hint, fieldKey, style, ...rest }: TextFieldProps) {
+export function TextField({ id, label, value, onChange, error, hint, format, incompleteMessage, fieldKey, style, onBlur, ...rest }: TextFieldProps) {
   const errId = `${id}-error`
   const hintId = `${id}-hint`
+  const formatId = `${id}-format`
+  const [incomplete, setIncomplete] = useState(false)
+  // A half-filled field reads as empty, so Pay's check calls it missing; the
+  // half-filled message is the accurate one and wins while it applies.
+  const shownError = (incomplete ? incompleteMessage : undefined) || error
   return (
     <div data-field={fieldKey ?? id} style={{ minWidth: 0 }}>
-      <label htmlFor={id} style={{ display: 'block', fontFamily: FONT, fontSize: 13, fontWeight: 600, color: error ? '#b00020' : 'var(--text-secondary)', marginBottom: 6 }}>
+      <label htmlFor={id} style={{ display: 'block', fontFamily: FONT, fontSize: 13, fontWeight: 600, color: shownError ? '#b00020' : 'var(--text-secondary)', marginBottom: 6 }}>
         {label}
       </label>
       <input
         id={id}
         value={value}
-        onChange={(e) => onChange(e.target.value)}
-        aria-invalid={error ? true : undefined}
-        aria-describedby={[error ? errId : null, hint ? hintId : null].filter(Boolean).join(' ') || undefined}
+        onChange={(e) => { if (incomplete) setIncomplete(false); onChange(e.target.value) }}
+        onBlur={(e) => {
+          if (incompleteMessage) setIncomplete(!!e.currentTarget.validity?.badInput)
+          onBlur?.(e)
+        }}
+        aria-invalid={shownError ? true : undefined}
+        aria-describedby={[shownError ? errId : hint ? hintId : null, format ? formatId : null].filter(Boolean).join(' ') || undefined}
         className="field-input"
-        style={{ height: 50, fontSize: 16, width: '100%', background: '#fff', borderColor: error ? 'rgba(176,0,32,0.55)' : 'rgba(23,22,20,0.16)', ...style }}
+        style={{ height: 50, fontSize: 16, width: '100%', background: '#fff', borderColor: shownError ? 'rgba(176,0,32,0.55)' : 'rgba(23,22,20,0.16)', ...style }}
         {...rest}
       />
-      {error ? (
-        <p id={errId} style={{ fontFamily: FONT, fontSize: 13, color: '#b00020', marginTop: 6, lineHeight: 1.4 }}>{error}</p>
+      {shownError ? (
+        <p id={errId} style={{ fontFamily: FONT, fontSize: 13, color: '#b00020', marginTop: 6, lineHeight: 1.4 }}>{shownError}</p>
       ) : hint ? (
         <p id={hintId} style={{ fontFamily: FONT, fontSize: 13, color: 'var(--text-tertiary)', marginTop: 6, lineHeight: 1.4 }}>{hint}</p>
       ) : null}
+      {format && <span id={formatId} className="visually-hidden">{format}</span>}
     </div>
   )
 }

@@ -135,12 +135,23 @@ const nextConfig = {
         { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
         // Turn off browser features this site never uses, so a script that
         // does get injected cannot reach for the camera, the microphone or
-        // the visitor's location. Zero risk: nothing here is used by Stripe,
-        // Hotjar or the tag manager, and the site asks for none of it.
+        // the visitor's location. Nothing here is used by Hotjar or the tag
+        // manager, and the site asks for none of it.
+        //
+        // `payment` is the exception, and it must name js.stripe.com. The
+        // Apple Pay / Google Pay button is Stripe's Express Checkout Element,
+        // an iframe served from js.stripe.com; with `payment=(self)` Chrome
+        // refuses to delegate the Payment Request API to that frame
+        // (document.featurePolicy.allowsFeature('payment',
+        // 'https://js.stripe.com') is false), so the wallet button cannot
+        // appear however the Stripe Dashboard is set. *.js.stripe.com is
+        // there because Stripe says Stripe.js may start its frames on those
+        // origins (the CSP list in docs.stripe.com/security/guide); a frame
+        // moved there would lose the wallets the same silent way.
         {
           key: 'Permissions-Policy',
           value: [
-            'camera=()', 'microphone=()', 'geolocation=()', 'payment=(self)',
+            'camera=()', 'microphone=()', 'geolocation=()', 'payment=(self "https://js.stripe.com" "https://*.js.stripe.com")',
             'usb=()', 'magnetometer=()', 'gyroscope=()', 'accelerometer=()',
             'interest-cohort=()',
           ].join(', '),
@@ -162,6 +173,11 @@ const nextConfig = {
         // inlines hydration scripts and the tag manager evaluates its
         // container. Removing them needs per-request nonces, which is a
         // separate piece of work.
+        //
+        // The Stripe origins are Stripe's own list for Stripe.js and Link
+        // (docs.stripe.com/security/guide, "Content Security Policy").
+        // fonts.googleapis.com is in connect-src because Stripe.js fetches the
+        // Elements `fonts` cssSrc with fetch(), which that directive governs.
         {
           key: 'Content-Security-Policy-Report-Only',
           value: [
@@ -170,13 +186,13 @@ const nextConfig = {
             "object-src 'none'",
             "frame-ancestors 'none'",
             "form-action 'self'",
-            "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com https://www.googletagmanager.com https://static.hotjar.com https://script.hotjar.com https://www.google-analytics.com https://www.googleadservices.com https://googleads.g.doubleclick.net",
+            "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com https://*.js.stripe.com https://www.googletagmanager.com https://static.hotjar.com https://script.hotjar.com https://www.google-analytics.com https://www.googleadservices.com https://googleads.g.doubleclick.net",
             "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
             "font-src 'self' data: https://fonts.gstatic.com https://script.hotjar.com",
             "img-src 'self' data: blob: https:",
             "media-src 'self' blob:",
-            "frame-src https://js.stripe.com https://hooks.stripe.com https://www.youtube.com https://www.youtube-nocookie.com https://vars.hotjar.com",
-            "connect-src 'self' https://api.stripe.com https://*.supabase.co wss://*.supabase.co https://www.google-analytics.com https://*.analytics.google.com https://www.googletagmanager.com https://*.hotjar.com https://*.hotjar.io wss://*.hotjar.com https://api.supabase.com",
+            "frame-src https://js.stripe.com https://*.js.stripe.com https://hooks.stripe.com https://link.com https://*.link.com https://www.youtube.com https://www.youtube-nocookie.com https://vars.hotjar.com",
+            "connect-src 'self' https://api.stripe.com https://link.com https://*.link.com https://fonts.googleapis.com https://*.supabase.co wss://*.supabase.co https://www.google-analytics.com https://*.analytics.google.com https://www.googletagmanager.com https://*.hotjar.com https://*.hotjar.io wss://*.hotjar.com https://api.supabase.com",
             "worker-src 'self' blob:",
             "upgrade-insecure-requests",
           ].join('; '),

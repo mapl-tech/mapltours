@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState, useId, isValidElement, cloneElement, useEffect } from 'react'
+import { useMemo, useState, useId, isValidElement, cloneElement, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
@@ -217,6 +217,41 @@ export default function TransfersView({ initialDestinationId }: { initialDestina
     () => (destinationId ? buildQuote(destinationId, tripType, passengers) : null),
     [destinationId, tripType, passengers],
   )
+
+  // The phone's sticky "Booking shortcut" bar must never sit over a field
+  // being filled. On a 390px screen it covered the top of the Drop-off box on
+  // the first screen, and while the hotel list was open it floated over the
+  // list. So it hides while a field in the fare card has focus, and while the
+  // card is on screen with no fare yet, when its only job ("Book now", a
+  // scroll to this card) is already done. With a fare it stays, as the Book
+  // shortcut for a guest who has scrolled on. Starts hidden: on a phone the
+  // card is on the first screen, and a bar that flashed in and out would
+  // shift the eye for nothing.
+  const quoteCardRef = useRef<HTMLDivElement>(null)
+  const [cardInView, setCardInView] = useState(true)
+  const [cardFieldFocus, setCardFieldFocus] = useState(false)
+  useEffect(() => {
+    const card = quoteCardRef.current
+    if (!card) return
+    const isField = (el: EventTarget | null) => el instanceof Element && el.matches('input, select, textarea')
+    const onIn = (e: FocusEvent) => { if (isField(e.target)) setCardFieldFocus(true) }
+    const onOut = (e: FocusEvent) => {
+      if (!(isField(e.relatedTarget) && card.contains(e.relatedTarget as Node))) setCardFieldFocus(false)
+    }
+    card.addEventListener('focusin', onIn)
+    card.addEventListener('focusout', onOut)
+    // In view means above the strip the bar itself occupies.
+    const io = typeof IntersectionObserver === 'undefined'
+      ? null
+      : new IntersectionObserver(([entry]) => setCardInView(entry.isIntersecting), { rootMargin: '0px 0px -96px 0px' })
+    io?.observe(card)
+    return () => {
+      card.removeEventListener('focusin', onIn)
+      card.removeEventListener('focusout', onOut)
+      io?.disconnect()
+    }
+  }, [])
+  const stickyHidden = cardFieldFocus || (!quote && cardInView)
 
   // A fare seen for a chosen hotel is the transfer equivalent of viewing a
   // product. Once per hotel, not per toggle of trip type or passengers.
@@ -523,7 +558,9 @@ export default function TransfersView({ initialDestinationId }: { initialDestina
       {/* ───────────── QUOTE CARD ───────────── */}
       <section id="quote" className="xfer-quote-section" tabIndex={-1} style={{ outline: 'none' }}>
         <div className="container" style={{ maxWidth: 820 }}>
-          <div className="xfer-quote-card">
+          {/* data-booking-form: the 5% popup waits while this is being filled
+              (components/CouponPopup.tsx). */}
+          <div className="xfer-quote-card" ref={quoteCardRef} data-booking-form="">
             {/* Gold hairline, prestige cue matching the email templates */}
             <div
               aria-hidden
@@ -655,7 +692,7 @@ export default function TransfersView({ initialDestinationId }: { initialDestina
             />}
 
             <Field label="Trip type">
-              <div className="xfer-trip-toggles">
+              <div className="xfer-trip-toggles" role="group" aria-label="Trip type">
                 <TripToggle
                   active={tripType === 'round_trip'}
                   onClick={() => chooseTripType('round_trip')}
@@ -673,7 +710,7 @@ export default function TransfersView({ initialDestinationId }: { initialDestina
             </Field>
 
             <Field label="Passengers">
-              <div className="xfer-pax-row">
+              <div className="xfer-pax-row" role="group" aria-label="Passengers">
                 <button
                   type="button"
                   className="btn-outline"
@@ -1152,10 +1189,12 @@ export default function TransfersView({ initialDestinationId }: { initialDestina
         </div>
       </section>
 
-      {/* ───────────── Sticky mobile CTA, always present ─────────────
+      {/* ───────────── Sticky mobile CTA ─────────────
            Quote selected → "Book · $X" goes straight to checkout.
-           No quote yet → "Book now →" scrolls to the calculator. */}
-      <div className="xfer-sticky-cta" role="region" aria-label="Booking shortcut">
+           No quote yet → "Book now →" scrolls to the calculator.
+           Hidden while a fare-card field has focus, and while the card is on
+           screen with no fare yet (stickyHidden above). */}
+      <div className="xfer-sticky-cta" role="region" aria-label="Booking shortcut" data-hidden={stickyHidden ? 'true' : undefined}>
         {quote ? (
           <>
             <div>
@@ -1417,7 +1456,9 @@ export default function TransfersView({ initialDestinationId }: { initialDestina
           border-radius: 50%;
           background: var(--emerald);
           box-shadow: 0 0 0 0 rgba(29, 122, 80, 0.45);
-          animation: maplPulse 2s ease-in-out infinite;
+          /* Two pulses (4s), then still: motion that runs past five seconds
+             beside the form needs a pause control (WCAG 2.2.2). */
+          animation: maplPulse 2s ease-in-out 2;
         }
         @keyframes maplPulse {
           0%, 100% { box-shadow: 0 0 0 0 rgba(29, 122, 80, 0.45); }
@@ -1971,7 +2012,9 @@ export default function TransfersView({ initialDestinationId }: { initialDestina
           position: fixed;
           left: 16px;
           right: 16px;
-          bottom: 16px;
+          /* viewport-fit=cover puts the page under the home indicator; keep
+             the bar (and its Book button) above it. */
+          bottom: calc(16px + env(safe-area-inset-bottom, 0px));
           z-index: 40;
           background: #fff;
           border: 1px solid var(--border-strong);
@@ -2065,6 +2108,7 @@ export default function TransfersView({ initialDestinationId }: { initialDestina
           .xfer-quote-readout-price-block { text-align: left; }
           .xfer-zone-prices { gap: 20px; }
           .xfer-sticky-cta { display: flex; }
+          .xfer-sticky-cta[data-hidden='true'] { display: none; }
           .xfer-contact-cta { flex-direction: column; align-items: flex-start; }
           .xfer-final-cta { padding-bottom: 120px; }
           .xfer-savings-row { grid-template-columns: minmax(0, 1fr); gap: 14px; }
@@ -2335,6 +2379,9 @@ function TripToggle({
     <button
       type="button"
       onClick={onClick}
+      // Which of the two is chosen, for a screen reader and a browsing agent;
+      // the colour alone said it only to someone looking.
+      aria-pressed={active}
       style={{
         flex: 1,
         padding: '14px 18px',
@@ -2344,10 +2391,35 @@ function TripToggle({
         color: active ? '#fff' : 'var(--text-primary)',
         cursor: 'pointer',
         textAlign: 'left',
-        transition: 'all 0.18s ease',
+        transition: 'background-color 0.18s ease, color 0.18s ease, border-color 0.18s ease',
         position: 'relative',
       }}
     >
+      <span
+        style={{
+          display: 'block',
+          fontFamily: 'var(--font-dm-sans)',
+          fontWeight: 700,
+          fontSize: 15,
+          letterSpacing: '-0.005em',
+          marginBottom: 2,
+        }}
+      >
+        {title}
+      </span>
+      <span
+        style={{
+          display: 'block',
+          fontFamily: 'var(--font-dm-sans)',
+          fontSize: 13,
+          color: active ? 'rgba(255,255,255,0.7)' : 'var(--text-tertiary)',
+        }}
+      >
+        {sub}
+      </span>
+      {/* The badge comes last in the DOM (it is absolutely positioned, so it
+          still sits on the top edge): the button's name then starts with its
+          visible label, "Round-trip", not "10% off". */}
       {badge && (
         <span
           style={{
@@ -2368,26 +2440,6 @@ function TripToggle({
           {badge}
         </span>
       )}
-      <p
-        style={{
-          fontFamily: 'var(--font-dm-sans)',
-          fontWeight: 700,
-          fontSize: 15,
-          letterSpacing: '-0.005em',
-          marginBottom: 2,
-        }}
-      >
-        {title}
-      </p>
-      <p
-        style={{
-          fontFamily: 'var(--font-dm-sans)',
-          fontSize: 13,
-          color: active ? 'rgba(255,255,255,0.7)' : 'var(--text-tertiary)',
-        }}
-      >
-        {sub}
-      </p>
     </button>
   )
 }

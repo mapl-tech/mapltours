@@ -13,6 +13,7 @@ import {
   POPUP_DELAY_MS,
   POPUP_PERCENT,
   nextPopupStep,
+  popupBusy,
   popupPathEligible,
   popupWasUnseen,
   shouldShowPopup,
@@ -30,8 +31,9 @@ import { TIPS_LABEL, TIPS_ON_LINE, type TipsDefault } from '@/lib/trip-tips'
  * alone; lib/trip-tips has the rule and why.
  * The rules for when it may open live in lib/coupon-popup; this component
  * adds the courtesies the rules cannot see: it waits while the tab is
- * hidden, while another dialog is open, or while the guest is typing in a
- * field, and tries again a couple of seconds later.
+ * hidden, while another dialog is open, while focus is in a field or an open
+ * list of options, and for a while after the guest last used a booking form
+ * (popupBusy), and tries again a couple of seconds later.
  *
  * A bottom sheet on phones, a two-panel card on wider screens, both portaled
  * to <body> for the same reason the tour sheets are: inside the page's
@@ -40,6 +42,13 @@ import { TIPS_LABEL, TIPS_ON_LINE, type TipsDefault } from '@/lib/trip-tips'
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/
 const RETRY_MS = 2000
 const CLOSE_MS = 180
+/** What counts as filling a booking form: any field, any list of options,
+ *  and every control inside a region marked data-booking-form (the fare
+ *  finder's trip-type and passenger buttons are buttons, not fields). */
+const FORM_TARGET = 'input, select, textarea, [contenteditable="true"], [role="combobox"], [role="listbox"], [role="option"], [data-booking-form]'
+/** Where focus means the guest is mid-entry. */
+const FIELD_FOCUS = 'input, select, textarea, [contenteditable="true"], [role="combobox"], [role="listbox"]'
+const FORM_EVENTS = ['pointerdown', 'keydown', 'input', 'change', 'focusin'] as const
 
 type Phase = 'idle' | 'busy' | 'done'
 type Place = 'home' | 'explore' | 'transfers'
@@ -54,6 +63,20 @@ export default function CouponPopup() {
   pathnameRef.current = pathname
   // What this showing replaced, so a showing nobody saw can be taken back.
   const shown = useRef<{ at: number; before: number | null } | null>(null)
+  // The last moment the guest typed, tapped or clicked in a booking form.
+  // Listened for on the whole document in the capture phase, once for the
+  // life of the layout, so a form that stops an event's propagation still
+  // counts, and the popup's own form (portaled into <body>) never does.
+  const lastFormActivity = useRef<number | null>(null)
+  useEffect(() => {
+    const mark = (e: Event) => {
+      const el = e.target
+      if (!(el instanceof Element) || el.closest('.cpop-scrim')) return
+      if (el.closest(FORM_TARGET)) lastFormActivity.current = Date.now()
+    }
+    for (const type of FORM_EVENTS) document.addEventListener(type, mark, true)
+    return () => { for (const type of FORM_EVENTS) document.removeEventListener(type, mark, true) }
+  }, [])
 
   useEffect(() => {
     if (!popupPathEligible(pathname)) return
@@ -65,9 +88,17 @@ export default function CouponPopup() {
       const store = useCouponPopupStore.getState()
       const cameFromBio = getStoredAttribution()?.source === 'bio'
       if (!shouldShowPopup({ pathname, memory: store, now: Date.now(), cameFromBio })) return
-      const typing = ['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement?.tagName ?? '')
-      const otherDialog = document.querySelector('[role="dialog"][aria-modal="true"]') !== null
-      const busy = document.hidden || typing || otherDialog
+      const active = document.activeElement
+      const focusInField = (active instanceof Element && active.closest(FIELD_FOCUS) !== null)
+        // A suggestion list left open (the hotel box) is mid-entry too.
+        || document.querySelector('[role="combobox"][aria-expanded="true"]') !== null
+      const busy = popupBusy({
+        hidden: document.hidden,
+        otherDialog: document.querySelector('[role="dialog"][aria-modal="true"]') !== null,
+        focusInField,
+        lastFormActivityAt: lastFormActivity.current,
+        now: Date.now(),
+      })
       const step = nextPopupStep({ startedOn: pathname, pathNow: pathnameRef.current, busy, wasBusy })
       wasBusy = busy
       if (step === 'stop') return

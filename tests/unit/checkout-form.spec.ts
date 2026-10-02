@@ -3,6 +3,7 @@ import {
   validateContact, validateTourForm, validateTransferForm, flightOk, pickupFromFlight, flightFromPickup,
   formatWallClock, formatDate, orderKey, legsFor, PICKUP_LEAD_TEXT,
   readCheckoutAnswer, PAYMENT_NOT_SET_UP,
+  DATE_VALUE_FORMAT, DATETIME_VALUE_FORMAT, LEG_TIME_RE, incompleteDateMessage, attentionLine, shiftWallClock,
 } from '../../lib/checkout-form'
 
 const NOW = new Date('2026-09-05T15:00:00Z') // 10:00 Jamaica, Sep 5
@@ -50,6 +51,51 @@ describe('transfer form', () => {
   test('flight numbers are permissive but not empty', () => {
     expect(flightOk('AA1234')).toBe(true); expect(flightOk('521')).toBe(true); expect(flightOk('vs165')).toBe(true)
     expect(flightOk('')).toBe(false); expect(flightOk('AA')).toBe(false); expect(flightOk('12345678901')).toBe(false)
+  })
+})
+
+/**
+ * What a browsing agent reads before it types into a native date field. The
+ * pickers refuse every spelling but one ("Dec 5, 12:54 PM" throws "Malformed
+ * value"), so the example in each description must be exactly that one.
+ */
+describe('date field formats an agent can read', () => {
+  const example = (text: string) => text.match(/\d{4}-\d{2}-\d{2}(T\d{2}:\d{2})?/)?.[0] ?? ''
+
+  test('the date-and-time example is a value the field and the validators accept', () => {
+    const v = example(DATETIME_VALUE_FORMAT)
+    expect(v).toBe('2026-12-05T14:30')
+    expect(LEG_TIME_RE.test(v)).toBe(true)
+    // A real calendar time that survives the zone-free arithmetic.
+    expect(shiftWallClock(v, 0)).toBe(v)
+    expect(DATETIME_VALUE_FORMAT).toMatch(/24-hour/)
+  })
+
+  test('the date example is a value the tour date field accepts', () => {
+    const v = example(DATE_VALUE_FORMAT)
+    expect(v).toBe('2026-12-05')
+    expect(validateTourForm({ contact, pickup: 'x', tripDate: v, waiverAccepted: true, now: NOW })).toEqual({})
+  })
+
+  test('a half-filled date names the field and what to fill in', () => {
+    expect(incompleteDateMessage('Flight lands', 'datetime')).toBe('Flight lands is missing part of the date or time. Fill in the day, month, year and time.')
+    expect(incompleteDateMessage('Trip date', 'date')).toBe('Trip date is missing part of the date. Fill in the day, month and year.')
+  })
+
+  test('the Pay announcement names every field that needs fixing, in page order', () => {
+    const labels = { arrivalAt: 'Flight lands', arrivalFlight: 'Arrival flight', email: 'Email' }
+    const order = ['arrivalAt', 'arrivalFlight', 'email']
+    expect(attentionLine({}, labels, order)).toBe('')
+    expect(attentionLine({ email: 'x' }, labels, order)).toBe('1 thing needs attention before you can pay: Email.')
+    expect(attentionLine({ email: 'x', arrivalAt: 'y' }, labels, order)).toBe('2 things need attention before you can pay: Flight lands, Email.')
+    // A key the page did not list still counts, by its key, at the end.
+    expect(attentionLine({ other: 'z', arrivalFlight: 'y' }, labels, order)).toBe('2 things need attention before you can pay: Arrival flight, other.')
+  })
+
+  test('no em dashes in any of it', () => {
+    for (const text of [DATE_VALUE_FORMAT, DATETIME_VALUE_FORMAT, incompleteDateMessage('A', 'date'), incompleteDateMessage('A', 'datetime'), attentionLine({ a: 'x' }, {}, [])]) {
+      expect(text).not.toMatch(/\u2014/)
+    }
   })
 })
 

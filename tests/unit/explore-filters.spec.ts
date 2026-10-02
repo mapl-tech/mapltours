@@ -1,10 +1,13 @@
 import { describe, test, expect } from 'vitest'
-import { singleExperiences, type Experience, type ExperienceCategory } from '../../lib/experiences'
+import { singleExperiences, type ExperienceCategory } from '../../lib/experiences'
+// The real predicate the explore page runs (it used to be mirrored here by
+// hand and kept in step with the component).
+import { filterExperiences, searchTerms, experienceMatchesSearch, normalizeSearchText } from '../../lib/explore-search'
 
 /**
  * The explore filters and search.
  *
- * These mirror the exact predicates in components/ExploreView.tsx. The bug they
+ * These run the exact predicate components/ExploreView.tsx uses. The bug they
  * guard against: the control labelled "Parish" was built from destinations AND
  * parishes flattened together, so it offered town names under a parish label
  * and two different options filtered to overlapping sets.
@@ -22,31 +25,6 @@ const parishes = [
   'All Parishes',
   ...Array.from(new Set(singleExperiences.map((e) => e.parish))).sort(),
 ]
-
-/** The ExploreView predicate, kept in step with the component. */
-function filterExperiences(
-  items: Experience[],
-  { search = '', cat = 'All', parish = 'All Parishes' }:
-    { search?: string; cat?: string; parish?: string },
-): Experience[] {
-  return items.filter((exp) => {
-    if (cat !== 'All' && exp.category !== cat) return false
-    if (parish !== 'All Parishes' && exp.parish !== parish) return false
-    if (search) {
-      const q = search.toLowerCase()
-      if (
-        !exp.title.toLowerCase().includes(q) &&
-        !exp.destination.toLowerCase().includes(q) &&
-        !exp.parish.toLowerCase().includes(q) &&
-        !exp.category.toLowerCase().includes(q) &&
-        !exp.creator.toLowerCase().includes(q) &&
-        !exp.description.toLowerCase().includes(q) &&
-        !exp.tags.some((t) => t.toLowerCase().includes(q))
-      ) return false
-    }
-    return true
-  })
-}
 
 describe('the parish control offers parishes, and only parishes', () => {
   test('every option is a real parish on a real experience', () => {
@@ -140,6 +118,38 @@ describe('search behaves', () => {
     const culture = singleExperiences.find((e) => e.category === 'Culture')
     if (!water || !culture) return
     expect(filterExperiences(singleExperiences, { cat: 'Water', search: culture.title })).toHaveLength(0)
+  })
+})
+
+describe('search takes the words a guest or an agent actually types', () => {
+  const raft = singleExperiences.find((e) => /martha brae/i.test(e.title))
+
+  test('the user\u2019s own phrase finds the Martha Brae raft', () => {
+    // A phone agent on Sept 27 searched "bamboo rafting Martha Brae", got
+    // "0 of 14 experiences" and nearly concluded the tour did not exist.
+    expect(raft).toBeTruthy()
+    for (const q of ['bamboo rafting Martha Brae', 'Martha Brae bamboo rafting', 'martha brae rafting tour', 'Bamboo raft, Martha Brae, Jamaica']) {
+      expect(filterExperiences(singleExperiences, { search: q }).map((e) => e.id), q).toContain(raft!.id)
+    }
+  })
+
+  test('every word must match: a word no tour has still rules everything out', () => {
+    expect(filterExperiences(singleExperiences, { search: 'bamboo rafting Kingston submarine' })).toHaveLength(0)
+  })
+
+  test('each tour is found by its title words in reverse order', () => {
+    for (const exp of singleExperiences) {
+      const reversed = exp.title.split(/\s+/).reverse().join(' ')
+      expect(filterExperiences(singleExperiences, { search: reversed }).map((e) => e.id), reversed).toContain(exp.id)
+    }
+  })
+
+  test('case, accents and apostrophes do not matter; filler words do not filter', () => {
+    expect(normalizeSearchText("Rick\u2019s Caf\u00e9")).toBe('ricks cafe')
+    expect(searchTerms('The tour of Jamaica')).toEqual([])
+    expect(searchTerms('Negril sunset tour')).toEqual(['negril', 'sunset'])
+    const any = singleExperiences[0]
+    expect(experienceMatchesSearch(any, 'tours')).toBe(true)
   })
 })
 

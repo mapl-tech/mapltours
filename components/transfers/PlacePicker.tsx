@@ -161,6 +161,39 @@ export default function PlacePicker({
 
   useEffect(() => { setActive(0) }, [query])
 
+  // The list opens under the box, and on a phone the box can sit low on the
+  // first screen (or the keyboard rises over the lower half): the hotel list
+  // opened below the visible area, and a guest or a browsing agent saw an
+  // empty-looking box. Scroll just enough to bring the list's bottom into
+  // view, again as it grows and as the keyboard changes the visible area,
+  // but never so far that the box itself slides under the site header.
+  const popRef = useRef<HTMLDivElement>(null)
+  const rowCount = rows.length
+  useEffect(() => {
+    if (!open) return
+    const fit = () => {
+      const pop = popRef.current
+      const wrap = wrapRef.current
+      if (!pop || !wrap) return
+      const vv = window.visualViewport
+      const visibleBottom = vv ? vv.offsetTop + vv.height : window.innerHeight
+      const header = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--nav-h')) || 56
+      const visibleTop = Math.max(header, vv?.offsetTop ?? 0) + 8
+      const overflow = pop.getBoundingClientRect().bottom + 8 - visibleBottom
+      const room = wrap.getBoundingClientRect().top - visibleTop
+      const by = Math.min(overflow, room)
+      if (by <= 1) return
+      const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+      window.scrollBy({ top: by, behavior: reduce ? 'auto' : 'smooth' })
+    }
+    const raf = requestAnimationFrame(fit)
+    window.visualViewport?.addEventListener('resize', fit)
+    return () => {
+      cancelAnimationFrame(raf)
+      window.visualViewport?.removeEventListener('resize', fit)
+    }
+  }, [open, rowCount])
+
   // Click-away closes and restores the chosen label, so a half-typed query
   // never lingers as if it were a selection.
   useEffect(() => {
@@ -280,7 +313,7 @@ export default function PlacePicker({
       </div>
 
       {open && (
-        <div className="pp-pop">
+        <div className="pp-pop" ref={popRef}>
         <ul
           id={listId}
           ref={listRef}

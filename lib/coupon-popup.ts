@@ -51,8 +51,9 @@ export function shouldShowPopup(input: {
 }
 
 /**
- * One tick of the popup's timer, once the rules above say yes. `busy` is the
- * guest typing, another dialog open, or the tab hidden: wait and ask again.
+ * One tick of the popup's timer, once the rules above say yes. `busy` is
+ * popupBusy below (the guest filling a form, another dialog open, or the tab
+ * hidden): wait and ask again.
  * After a busy spell it waits one more quiet tick before opening, because
  * the tap that ends the typing is often the tap that leaves the page (Book
  * on the fare finder), and the address changes only a few hundred
@@ -64,6 +65,41 @@ export function nextPopupStep(input: { startedOn: string; pathNow: string; busy:
   if (input.pathNow !== input.startedOn || !popupPathEligible(input.pathNow)) return 'stop'
   if (input.busy || input.wasBusy) return 'wait'
   return 'open'
+}
+
+/**
+ * How long after the guest last typed, tapped or clicked in a booking form
+ * (the fare finder, a hotel or tour search) the popup keeps waiting.
+ *
+ * Focus alone was not enough. Between two steps of filling the fare finder
+ * focus sits on a button (Round trip, Add passenger) or on nothing, and the
+ * popup opened over the form mid-booking: on a phone it covered the widget
+ * and swallowed the next tap, and on a desktop it took focus from the hotel
+ * box, which clears what was typed. People pause for a few seconds between
+ * fields and browsing agents for longer (each step is a read and a think),
+ * so the window is generous. A guest who has stopped for this long is
+ * hesitating, which is when 5% off is worth showing.
+ */
+export const POPUP_FORM_QUIET_MS = 15_000
+
+/**
+ * True while the popup must not open: the tab is hidden, another dialog is
+ * open, focus is in a field or an open list of options, or the guest used a
+ * booking form within POPUP_FORM_QUIET_MS. A timestamp from the future is a
+ * clock that moved; it counts only if it is within the window either way, so
+ * a clock set back an hour cannot hold the popup for an hour.
+ */
+export function popupBusy(input: {
+  hidden: boolean
+  otherDialog: boolean
+  focusInField: boolean
+  /** When the guest last typed, tapped or clicked in a booking form, epoch ms. Null: never on this visit. */
+  lastFormActivityAt: number | null
+  now: number
+}): boolean {
+  if (input.hidden || input.otherDialog || input.focusInField) return true
+  if (input.lastFormActivityAt == null) return false
+  return Math.abs(input.now - input.lastFormActivityAt) < POPUP_FORM_QUIET_MS
 }
 
 /**

@@ -1725,6 +1725,9 @@ body:has(.xfer-unlisted-panel) .xfer-sticky-cta {
   color: #fff;
 }
 .explore-chip:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+/* The explore search draws its own Clear search button; hide the browser's
+   type=search cancel control so the box never shows two. */
+.explore-search-input::-webkit-search-cancel-button { -webkit-appearance: none; appearance: none; display: none; }
 /* 44px tap height below the sm breakpoint, per the chip-target rule. */
 @media (max-width: 1023px) { .explore-chip { height: 44px; padding: 0 16px; font-size: 14px; } }
 
@@ -1769,6 +1772,18 @@ body:has(.xfer-unlisted-panel) .xfer-sticky-cta {
 }
 /* 16px stops iOS Safari zooming the viewport when the field takes focus. */
 @media (max-width: 767px) { .explore-select { height: 48px; font-size: 16px; width: 100%; } }
+/* Tablets get the desktop filter bar and header search; below 16px iOS zooms
+   the page when a field takes focus, so touch screens get 16px at any width. */
+@media (pointer: coarse) {
+  .explore-select { font-size: 16px; }
+  .nav-where-input { font-size: 16px !important; }
+}
+/* These three search boxes have no .field-input, so they fell back to the
+   Tailwind default placeholder grey (#9CA3AF), 2.3-2.5:1 on their grounds.
+   Placeholder text is text (WCAG 1.4.3): the tertiary token measures 7.3-8.2:1. */
+.nav-where-input::placeholder,
+.nav-sheet-input::placeholder,
+.explore-search-input::placeholder { color: var(--text-tertiary); opacity: 1; }
 
 .explore-controls { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 @media (max-width: 767px) { .explore-controls { gap: 8px; } .explore-controls > * { flex: 1 1 100%; } }

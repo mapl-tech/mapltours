@@ -53,6 +53,43 @@ export function validateTourForm(input: TourFormInput): FieldErrors {
   return e
 }
 
+/**
+ * The one value a native date or date-and-time field accepts when it is set
+ * by anything other than its picker: a browsing agent, autofill, a paste.
+ * A person on a phone never needs it (the picker shows "Sat, Dec 5, 2:30 PM"),
+ * but the field refuses every other spelling. Chrome throws on "Dec 5, 12:54
+ * PM", typing a sentence into it leaves it silently empty, and the format was
+ * stated only in a console warning, so an agent had to guess the year order
+ * and the 24-hour clock. Each checkout date field carries one of these as its
+ * accessible description, with an example in exactly the accepted form.
+ */
+export const DATE_VALUE_FORMAT = 'Value format: 2026-12-05 (year-month-day).'
+export const DATETIME_VALUE_FORMAT = 'Value format: 2026-12-05T14:30 (year-month-day, the letter T, then the time on a 24-hour clock).'
+
+/**
+ * The message for a date field the browser holds as unreadable (some parts
+ * filled, some not: `validity.badInput`, while its value reads as empty).
+ * Names the field and says what is missing, in words a person can act on.
+ */
+export function incompleteDateMessage(label: string, kind: 'date' | 'datetime'): string {
+  return kind === 'date'
+    ? `${label} is missing part of the date. Fill in the day, month and year.`
+    : `${label} is missing part of the date or time. Fill in the day, month, year and time.`
+}
+
+/**
+ * The line announced when Pay finds problems, naming each field in page
+ * order, so a screen reader or an agent reading the page learns which fields
+ * to fix, not only how many. `labels` maps a field key to its visible label.
+ */
+export function attentionLine(errors: FieldErrors, labels: Record<string, string>, order: string[]): string {
+  const keys = [...order.filter((k) => errors[k]), ...Object.keys(errors).filter((k) => !order.includes(k))]
+  if (!keys.length) return ''
+  const names = keys.map((k) => labels[k] ?? k)
+  const n = keys.length
+  return `${n} ${n === 1 ? 'thing needs' : 'things need'} attention before you can pay: ${names.join(', ')}.`
+}
+
 /** Flight numbers: non-empty, at least one digit, at most 10 chars (matches the server). */
 export function flightOk(v: string | undefined | null): boolean {
   const t = (v ?? '').trim()

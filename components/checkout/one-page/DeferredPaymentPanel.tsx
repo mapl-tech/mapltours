@@ -22,8 +22,8 @@ import { payableIntent, type SendOptions } from './intent-session'
  * path changed: the server still prices the cart, owns the booking row and
  * mints the intent; this only moves when the card fields appear.
  *
- * Apple Pay and Google Pay sit above the card fields (a wallet collapses the
- * card form into one biometric confirmation), and only render when the
+ * Apple Pay, Google Pay and Link sit above the card fields (a wallet collapses
+ * the card form into one confirmation), and the row only renders when the
  * browser actually offers one, so nobody sees an empty row.
  */
 
@@ -79,6 +79,8 @@ const APPEARANCE: StripeElementsOptions['appearance'] = {
     '.Tab--selected': { borderColor: '#171614', backgroundColor: '#171614', color: '#fff' },
   },
 }
+
+const usd = (cents: number) => (cents / 100).toLocaleString('en-US', { style: 'currency', currency: 'USD' })
 
 const FONTS: StripeElementsOptions['fonts'] = [
   { cssSrc: 'https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&display=swap' },
@@ -203,10 +205,21 @@ function PayForm({ amountCents, returnUrl, payLabel, validate, createIntent, onP
   const [walletReady, setWalletReady] = useState(false)
   const [cardReady, setCardReady] = useState(false)
   const busyRef = useRef(false)
+  // The total each wallet's sheet showed when it was opened (see
+  // onWalletClick), by wallet: Link's window can stay open while the guest
+  // taps Apple Pay or Google Pay at a newer total, and an approval in Link
+  // must still be held to what Link showed. lastWalletAmount covers a confirm
+  // whose wallet type was never seen at a tap.
+  const walletAmount = useRef<Record<string, number>>({})
+  const lastWalletAmount = useRef<number | null>(null)
 
   const leaving = useRef(false)
   const pay = useCallback(async (wallet?: StripeExpressCheckoutElementConfirmEvent) => {
-    if (!stripe || !elements || busyRef.current || leaving.current) return
+    // A wallet that arrives while another payment is running (or has already
+    // gone through) must still be told no. Link opens in its own window, so
+    // the page stays usable behind it: a guest can pay by card there and then
+    // approve in Link, and without this the Link window spins forever.
+    if (!stripe || !elements || busyRef.current || leaving.current) { wallet?.paymentFailed({ reason: 'fail' }); return }
     setError(null)
     if (!validate()) { wallet?.paymentFailed({ reason: 'fail', message: 'Some details are missing on the page.' }); return }
     busyRef.current = true
@@ -241,9 +254,19 @@ function PayForm({ amountCents, returnUrl, payLabel, validate, createIntent, onP
         // card covered more than the preview showed); more has to be seen
         // and accepted first.
         if (due > amountCents) {
-          fail(`The total is now ${(due / 100).toLocaleString('en-US', { style: 'currency', currency: 'USD' })}. Check it, then tap the button again.`)
+          fail(`The total is now ${usd(due)}. Check it, then tap the button again.`)
           return
         }
+      }
+      // A wallet approves the total its sheet showed at the tap. Link opens in
+      // its own window and leaves the page editable behind it, so the order
+      // can grow after the guest approved a smaller amount there; the check
+      // above then passes, because the page already shows the new total.
+      // Never charge a wallet more than its sheet showed.
+      const approved = wallet ? (walletAmount.current[wallet.expressPaymentType] ?? lastWalletAmount.current) : null
+      if (approved !== null && due > approved) {
+        fail(`The total is now ${usd(due)}. Check it, then tap the button again.`)
+        return
       }
       const result = await stripe.confirmPayment({
         elements,
@@ -290,10 +313,14 @@ function PayForm({ amountCents, returnUrl, payLabel, validate, createIntent, onP
   const onWalletClick = useCallback((event: StripeExpressCheckoutElementClickEvent) => {
     // The sheet opens only when our form is complete. Stripe needs one of
     // these two calls within a second of the tap; returning without either
-    // leaves the button in a dead state until the page is reloaded.
-    if (validate()) event.resolve()
-    else event.reject()
-  }, [validate])
+    // leaves the button in a dead state until the page is reloaded. Nor does
+    // it open while a payment is already running or done.
+    if (!busyRef.current && !leaving.current && validate()) {
+      walletAmount.current[event.expressPaymentType] = amountCents
+      lastWalletAmount.current = amountCents
+      event.resolve()
+    } else event.reject()
+  }, [validate, amountCents])
 
   const onWalletReady = useCallback((event: StripeExpressCheckoutElementReadyEvent) => {
     const methods = event.availablePaymentMethods
@@ -314,7 +341,11 @@ function PayForm({ amountCents, returnUrl, payLabel, validate, createIntent, onP
             buttonType: { applePay: 'book', googlePay: 'book' },
             buttonHeight: 48,
             layout: { maxColumns: 2, maxRows: 1, overflow: 'auto' },
-            paymentMethods: { link: 'never', paypal: 'never', amazonPay: 'never', klarna: 'never' },
+            // Link is a button here, not a form: a returning Link customer
+            // (or an AI agent paying from its user's Link wallet, such as
+            // Meta's Muse) pays in one tap, and nobody else sees more than
+            // the button. It stays out of the card form below.
+            paymentMethods: { link: 'auto', paypal: 'never', amazonPay: 'never', klarna: 'never' },
           }}
         />
         <div aria-hidden style={{ display: 'flex', alignItems: 'center', gap: 12, margin: '14px 0 2px', color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-sans)', fontSize: 13 }}>
@@ -336,9 +367,10 @@ function PayForm({ amountCents, returnUrl, payLabel, validate, createIntent, onP
             layout: 'tabs',
             defaultValues: { billingDetails: { name: billing?.name || undefined, email: billing?.email || undefined, phone: billing?.phone || undefined } },
             business: { name: 'MAPL Tours Jamaica' },
-            // Link is off because it re-asks for the email and phone the guest
-            // already gave in step 2 and offers to create an account, which is
-            // roughly 400px of the wrong conversation on a first booking.
+            // Link is off in the card form because there it re-asks for the
+            // email and phone the guest already gave and offers to create an
+            // account, which is roughly 400px of the wrong conversation on a
+            // first booking. It is offered as a button above instead.
             // Apple and Google Pay are off HERE because they are already
             // rendered above the card form by the Express Checkout Element;
             // leaving them on would show the same wallet twice.

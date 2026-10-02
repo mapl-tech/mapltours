@@ -16,7 +16,7 @@ import { planDay } from '@/lib/day-route'
 import { useAvailableReward } from '@/lib/tour-videos'
 import { useI18n } from '@/lib/i18n'
 import { useFocusTrap } from '@/lib/use-focus-trap'
-import { validateTourForm, validateContact, orderKey, readCheckoutAnswer, formatDate, PAYMENT_SERVICE_UNREACHABLE, type FieldErrors } from '@/lib/checkout-form'
+import { validateTourForm, validateContact, orderKey, readCheckoutAnswer, formatDate, PAYMENT_SERVICE_UNREACHABLE, DATE_VALUE_FORMAT, incompleteDateMessage, attentionLine, type FieldErrors } from '@/lib/checkout-form'
 import LegalModal from '@/components/checkout/LegalModal'
 import TripTimeBar from '@/components/TripTimeBar'
 import DayFlow from '@/components/DayFlow'
@@ -48,6 +48,11 @@ import { PICKUP_PLACES, OTHER_PLACE } from './pickup-places'
 
 const FONT = 'var(--font-dm-sans)'
 const FIELD_ORDER = ['tripDate', 'pickup', 'firstName', 'lastName', 'email', 'phone', 'waiver']
+/** The visible label of each field, for the line announced when Pay finds problems. */
+const FIELD_LABELS: Record<string, string> = {
+  tripDate: 'Trip date', pickup: 'Where we pick you up', firstName: 'First name', lastName: 'Last name',
+  email: 'Email', phone: 'Phone', waiver: 'the Activity Waiver box',
+}
 const AUTO_SAVE_DELAY_MS = 2500
 
 type Form = { firstName: string; lastName: string; email: string; phone: string; specialRequests: string }
@@ -305,10 +310,12 @@ export default function OnePageCheckout() {
   const validate = useCallback((): boolean => {
     if (isDayOverLimit()) { setLimitOpen(true); return false }
     const errs = validateTourForm({ contact: form, pickup, tripDate, waiverAccepted: waiver })
+    // A half-filled date reads as empty, so the rule above calls it missing;
+    // the half-filled message is the accurate one (same as on blur).
+    if (errs.tripDate && (document.getElementById('opc-date') as HTMLInputElement | null)?.validity?.badInput) errs.tripDate = incompleteDateMessage('Trip date', 'date')
     setErrors(errs)
-    const n = Object.keys(errs).length
-    if (n) {
-      setAnnouncement(`${n} ${n === 1 ? 'thing needs' : 'things need'} attention before you can pay.`)
+    if (Object.keys(errs).length) {
+      setAnnouncement(attentionLine(errs, FIELD_LABELS, FIELD_ORDER))
       focusFirstError(errs, FIELD_ORDER)
       return false
     }
@@ -424,17 +431,26 @@ export default function OnePageCheckout() {
                   <Stepper value={guests} min={1} max={12} onChange={setGuests} label="Guests" />
                 </div>
 
-                <div className="opc-row" data-field="tripDate">
+                {/* Wraps so the error can take a full-width line under the row,
+                    like every other field's, instead of squeezing into the
+                    label column beside the 168px input (five lines at 390).
+                    The "From <date>" hint stays, since it is the fix. */}
+                <div className="opc-row" data-field="tripDate" style={{ flexWrap: 'wrap' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
                     <CalendarDays size={18} color={dateError ? '#b00020' : 'var(--text-secondary)'} style={{ flexShrink: 0 }} />
                     <div>
                       <label htmlFor="opc-date" style={{ display: 'block', fontFamily: FONT, fontSize: 15, fontWeight: 600, color: dateError ? '#b00020' : undefined }}>{t('Trip date')}</label>
-                      <span style={{ display: 'block', fontFamily: FONT, fontSize: 13, color: dateError ? '#b00020' : 'var(--text-tertiary)' }}>{dateError ?? (minDate ? `From ${formatDate(minDate)}` : 'One day, every tour on it')}</span>
+                      <span id="opc-date-hint" style={{ display: 'block', fontFamily: FONT, fontSize: 13, color: 'var(--text-tertiary)' }}>{minDate ? `From ${formatDate(minDate)}` : 'One day, every tour on it'}</span>
+                      <span id="opc-date-format" className="visually-hidden">{DATE_VALUE_FORMAT}</span>
                     </div>
                   </div>
                   <input id="opc-date" type="date" className="field-input" value={tripDate} min={minDate} onChange={(e) => setDate(e.target.value)}
-                    aria-invalid={dateError ? true : undefined}
+                    // Some parts filled and some not reads as an empty value
+                    // with no message at all; say which field and what is missing.
+                    onBlur={(e) => { if (e.currentTarget.validity?.badInput) setErrors((er) => ({ ...er, tripDate: incompleteDateMessage('Trip date', 'date') })) }}
+                    aria-invalid={dateError ? true : undefined} aria-describedby={dateError ? 'opc-date-error opc-date-hint opc-date-format' : 'opc-date-hint opc-date-format'}
                     style={{ width: 168, height: 48, fontSize: 16, flexShrink: 0, background: '#fff', borderColor: dateError ? 'rgba(176,0,32,0.55)' : undefined }} />
+                  {dateError && <p id="opc-date-error" style={{ flexBasis: '100%', fontFamily: FONT, fontSize: 13, lineHeight: 1.4, color: '#b00020', marginTop: -4 }}>{dateError}</p>}
                 </div>
 
                 <div style={{ padding: '14px 0 16px' }}>
@@ -526,8 +542,11 @@ export default function OnePageCheckout() {
                         it spans the whole sentence, which is far larger than 24px in
                         both directions. A 24px box next to 13px text read as a
                         checkbox that had wandered in from another form. */}
-                    <label style={{ display: 'flex', gap: 10, alignItems: 'flex-start', cursor: 'pointer', padding: '6px 0' }}>
-                      <input type="checkbox" checked={waiver}
+                    {/* A native checkbox, named by its label and marked required,
+                        so a keyboard, a screen reader and a browsing agent all
+                        find it by its words and know Pay needs it ticked. */}
+                    <label htmlFor="opc-waiver" style={{ display: 'flex', gap: 10, alignItems: 'flex-start', cursor: 'pointer', padding: '6px 0' }}>
+                      <input id="opc-waiver" name="waiver" type="checkbox" checked={waiver} aria-required="true"
                         onChange={(e) => { setWaiver(e.target.checked); if (errors.waiver) setErrors((er) => { const n = { ...er }; delete n.waiver; return n }) }}
                         aria-invalid={errors.waiver ? true : undefined} aria-describedby={errors.waiver ? 'opc-waiver-error' : undefined}
                         style={{ width: 20, height: 20, marginTop: 1, flexShrink: 0, accentColor: 'var(--accent)' }} />

@@ -4,10 +4,11 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { usePathname, useRouter } from 'next/navigation'
 import { useCartStore } from '@/lib/cart'
-import { useState, useEffect, useRef } from 'react'
-import { Search, Lock, MapPin, ShoppingBag, Car, Menu, X, Heart } from 'lucide-react'
+import { useState, useEffect, useRef, useMemo } from 'react'
+import { Search, Lock, MapPin, ShoppingBag, Car, Menu, X, Heart, Compass } from 'lucide-react'
 import { DESTINATIONS as TRANSFER_DESTINATIONS } from '@/lib/airport-transfers'
-import { TOUR_DESTINATIONS } from '@/lib/experiences'
+import { TOUR_DESTINATIONS, singleExperiences, slugify } from '@/lib/experiences'
+import { experienceMatchesSearch } from '@/lib/explore-search'
 import LanguageSwitcher from './LanguageSwitcher'
 import { useI18n } from '@/lib/i18n'
 import { useSaved } from '@/lib/supabase/saved'
@@ -28,10 +29,23 @@ export default function TopNav({ onCartClick }: { onCartClick?: () => void }) {
   const [scrolled, setScrolled] = useState(false)
   const [hidden, setHidden] = useState(false)
   const [where, setWhere] = useState('')
+  // Tours the typed words find (lib/explore-search). Offered only where the
+  // list would otherwise say "No destinations found": a tour typed by name
+  // ("bamboo rafting Martha Brae") met that line, and a browsing agent read
+  // it as the tour not existing.
+  const whereMatchesPlace = !!where && destinations.some((d) => d.name.toLowerCase().includes(where.toLowerCase()) || d.parish.toLowerCase().includes(where.toLowerCase()))
+  const tourHits = useMemo(
+    () => (where.trim() && !whereMatchesPlace ? singleExperiences.filter((e) => experienceMatchesSearch(e, where)).slice(0, 4) : []),
+    [where, whereMatchesPlace],
+  )
   const [showWhere, setShowWhere] = useState(false)
   const [guests, setGuests] = useState(0)
   const [showGuests, setShowGuests] = useState(false)
   const [showSearch, setShowSearch] = useState(false)
+  // The phone search sheet covers the whole page: Tab stays inside it, and
+  // closing it (Escape or Close) puts focus back on the pill that opened it.
+  const searchSheetRef = useRef<HTMLDivElement>(null)
+  const searchPillRef = useRef<HTMLButtonElement>(null)
   const lastScrollY = useRef(0)
   const { t } = useI18n()
   const { user } = useAuth()
@@ -86,7 +100,21 @@ export default function TopNav({ onCartClick }: { onCartClick?: () => void }) {
   useEffect(() => {
     if (!showMenu && !showSearch) return
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') { setShowMenu(false); setShowSearch(false) }
+      if (e.key === 'Escape') {
+        if (showSearch) searchPillRef.current?.focus({ preventScroll: true })
+        setShowMenu(false); setShowSearch(false)
+        return
+      }
+      // Focus that walked out of the full-screen search sheet landed on page
+      // controls hidden behind it (WCAG 2.4.11); cycle it inside instead.
+      const sheet = showSearch ? searchSheetRef.current : null
+      if (e.key !== 'Tab' || !sheet) return
+      const f = Array.from(sheet.querySelectorAll<HTMLElement>('a[href], button:not([disabled]), input:not([disabled])'))
+      if (!f.length) return
+      const first = f[0]
+      const last = f[f.length - 1]
+      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus() }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus() }
     }
     document.addEventListener('keydown', onKey)
     const prev = document.body.style.overflow
@@ -247,11 +275,17 @@ export default function TopNav({ onCartClick }: { onCartClick?: () => void }) {
             </span>
             <input
               type="text"
+              // nav-where-input: 16px on touch screens (globals.css), so a
+              // tablet does not zoom the page when the field takes focus.
+              className="nav-where-input"
               aria-label="Where to?"
               value={where}
               onChange={(e) => { setWhere(e.target.value); setShowWhere(true) }}
               onFocus={() => setShowWhere(true)}
               onKeyDown={(e) => {
+                // The list opens on focus and covers the page, so Escape has to
+                // put it away without moving focus (WCAG 1.4.13); typing opens it again.
+                if (e.key === 'Escape') { setShowWhere(false); return }
                 if (e.key === 'Enter') {
                   setShowWhere(false)
                   router.push(`/explore?q=${encodeURIComponent(where)}`)
@@ -300,7 +334,7 @@ export default function TopNav({ onCartClick }: { onCartClick?: () => void }) {
                             display: 'flex', alignItems: 'center', gap: 10,
                             width: '100%', padding: '10px 16px',
                             background: 'none', border: 'none', cursor: 'pointer',
-                            textAlign: 'left', transition: 'background 0.1s ease',
+                            textAlign: 'left', transition: 'background 0.1s ease', outlineOffset: -2,
                             fontFamily: 'var(--font-dm-sans)',
                           }}
                           onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--surface)' }}
@@ -327,7 +361,7 @@ export default function TopNav({ onCartClick }: { onCartClick?: () => void }) {
                   letterSpacing: '0.06em', color: 'var(--text-tertiary)',
                   fontFamily: 'var(--font-dm-sans)', padding: '8px 16px 6px',
                 }}>
-                  {where ? t('Results') : t('Popular destinations')}
+                  {!where ? t('Popular destinations') : tourHits.length ? t('Tours') : t('Results')}
                 </p>
                 {destinations
                   .filter((d) => !where || d.name.toLowerCase().includes(where.toLowerCase()) || d.parish.toLowerCase().includes(where.toLowerCase()))
@@ -342,7 +376,7 @@ export default function TopNav({ onCartClick }: { onCartClick?: () => void }) {
                         display: 'flex', alignItems: 'center', gap: 10,
                         width: '100%', padding: '10px 16px',
                         background: 'none', border: 'none', cursor: 'pointer',
-                        textAlign: 'left', transition: 'background 0.1s ease',
+                        textAlign: 'left', transition: 'background 0.1s ease', outlineOffset: -2,
                         fontFamily: 'var(--font-dm-sans)',
                       }}
                       onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--surface)' }}
@@ -362,7 +396,40 @@ export default function TopNav({ onCartClick }: { onCartClick?: () => void }) {
                       </div>
                     </button>
                   ))}
-                {where && destinations.filter((d) => d.name.toLowerCase().includes(where.toLowerCase()) || d.parish.toLowerCase().includes(where.toLowerCase())).length === 0 && (
+                {/* Rows draw the focus ring inside themselves (outlineOffset -2):
+                    this list scrolls, and a ring outside the row lost its sides. */}
+                {tourHits.map((exp) => (
+                  <button
+                    key={exp.id}
+                    onClick={() => {
+                      setShowWhere(false)
+                      router.push(`/experience/${slugify(exp.title)}`)
+                    }}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: 10,
+                      width: '100%', padding: '10px 16px',
+                      background: 'none', border: 'none', cursor: 'pointer',
+                      textAlign: 'left', transition: 'background 0.1s ease', outlineOffset: -2,
+                      fontFamily: 'var(--font-dm-sans)',
+                    }}
+                    onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--surface)' }}
+                    onMouseLeave={(e) => { e.currentTarget.style.background = 'none' }}
+                  >
+                    <div style={{
+                      width: 34, height: 34, borderRadius: 'var(--r-sm)',
+                      background: 'var(--surface)',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      flexShrink: 0,
+                    }}>
+                      <Compass size={15} color="var(--text-tertiary)" />
+                    </div>
+                    <div>
+                      <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>{exp.title}</p>
+                      <p style={{ fontSize: 12, color: 'var(--text-tertiary)', marginTop: 1 }}>{t('Tour')} · {exp.destination}, {exp.parish}</p>
+                    </div>
+                  </button>
+                ))}
+                {where && !whereMatchesPlace && tourHits.length === 0 && (
                   <p style={{ padding: '12px 16px', fontSize: 13, color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-sans)' }}>
                     {t('No destinations found')}
                   </p>
@@ -471,6 +538,7 @@ export default function TopNav({ onCartClick }: { onCartClick?: () => void }) {
             search sheet. Shown on the same routes as the desktop bar. ── */}
         {searchVisible && (
           <button
+            ref={searchPillRef}
             className="hide-desktop"
             onClick={() => setShowSearch(true)}
             style={{
@@ -483,7 +551,7 @@ export default function TopNav({ onCartClick }: { onCartClick?: () => void }) {
               color: 'var(--text-secondary)', whiteSpace: 'nowrap', overflow: 'hidden',
             }}
           >
-            <Search size={15} strokeWidth={2.5} color="var(--text-primary)" />
+            <Search size={15} strokeWidth={2.5} color="var(--text-primary)" aria-hidden style={{ flexShrink: 0 }} />
             {t('Start your search')}
           </button>
         )}
@@ -766,8 +834,10 @@ export default function TopNav({ onCartClick }: { onCartClick?: () => void }) {
         viewport. Same containing-block rule as the menu sheet below. */}
     {showSearch && (
       <div
+        ref={searchSheetRef}
         className="hide-desktop nav-sheet"
         role="dialog"
+        aria-modal="true"
         aria-label="Search"
         style={{
           position: 'fixed', inset: 0, zIndex: 120,
@@ -778,15 +848,18 @@ export default function TopNav({ onCartClick }: { onCartClick?: () => void }) {
           display: 'flex', alignItems: 'center', gap: 8,
           padding: '10px 12px 10px 16px', borderBottom: '1px solid var(--border)',
         }}>
-          <div style={{
+          {/* A label, so a tap anywhere on the 44px pill focuses the 24px
+              input inside it. */}
+          <label style={{
             flex: 1, display: 'flex', alignItems: 'center', gap: 10,
-            height: 44, borderRadius: 9999, padding: '0 16px',
+            height: 44, borderRadius: 9999, padding: '0 16px', cursor: 'text',
             border: '1px solid var(--border-strong)', background: 'var(--surface)',
           }}>
-            <Search size={16} strokeWidth={2.5} color="var(--text-primary)" />
+            <Search size={16} strokeWidth={2.5} color="var(--text-primary)" aria-hidden />
             <input
               type="text"
               autoFocus
+              className="nav-sheet-input"
               aria-label="Where to?"
               value={where}
               onChange={(e) => setWhere(e.target.value)}
@@ -804,9 +877,10 @@ export default function TopNav({ onCartClick }: { onCartClick?: () => void }) {
                 color: 'var(--text-primary)',
               }}
             />
-          </div>
+          </label>
           <button
-            onClick={() => setShowSearch(false)}
+            type="button"
+            onClick={() => { searchPillRef.current?.focus({ preventScroll: true }); setShowSearch(false) }}
             aria-label="Close search"
             style={{
               width: 44, height: 44, flexShrink: 0,
@@ -844,7 +918,7 @@ export default function TopNav({ onCartClick }: { onCartClick?: () => void }) {
                       display: 'flex', alignItems: 'center', gap: 12,
                       width: '100%', minHeight: 56, padding: '8px 20px',
                       background: 'none', border: 'none', cursor: 'pointer',
-                      textAlign: 'left', fontFamily: 'var(--font-dm-sans)',
+                      textAlign: 'left', fontFamily: 'var(--font-dm-sans)', outlineOffset: -2,
                     }}
                   >
                     <span style={{
@@ -868,7 +942,7 @@ export default function TopNav({ onCartClick }: { onCartClick?: () => void }) {
             letterSpacing: '0.06em', color: 'var(--text-tertiary)',
             fontFamily: 'var(--font-dm-sans)', padding: '10px 20px 6px',
           }}>
-            {where ? t('Results') : t('Popular destinations')}
+            {!where ? t('Popular destinations') : tourHits.length ? t('Tours') : t('Results')}
           </p>
           {destinations
             .filter((d) => !where || d.name.toLowerCase().includes(where.toLowerCase()) || d.parish.toLowerCase().includes(where.toLowerCase()))
@@ -884,7 +958,7 @@ export default function TopNav({ onCartClick }: { onCartClick?: () => void }) {
                   display: 'flex', alignItems: 'center', gap: 12,
                   width: '100%', minHeight: 56, padding: '8px 20px',
                   background: 'none', border: 'none', cursor: 'pointer',
-                  textAlign: 'left', fontFamily: 'var(--font-dm-sans)',
+                  textAlign: 'left', fontFamily: 'var(--font-dm-sans)', outlineOffset: -2,
                 }}
               >
                 <span style={{
@@ -901,7 +975,35 @@ export default function TopNav({ onCartClick }: { onCartClick?: () => void }) {
                 </span>
               </button>
             ))}
-          {where && destinations.filter((d) => d.name.toLowerCase().includes(where.toLowerCase()) || d.parish.toLowerCase().includes(where.toLowerCase())).length === 0 && !TRANSFER_DESTINATIONS.some((d) => d.name.toLowerCase().includes(where.toLowerCase())) && (
+          {tourHits.map((exp) => (
+            <button
+              key={exp.id}
+              onClick={() => {
+                setShowSearch(false)
+                router.push(`/experience/${slugify(exp.title)}`)
+              }}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 12,
+                width: '100%', minHeight: 56, padding: '8px 20px',
+                background: 'none', border: 'none', cursor: 'pointer',
+                textAlign: 'left', fontFamily: 'var(--font-dm-sans)', outlineOffset: -2,
+              }}
+            >
+              <span style={{
+                width: 40, height: 40, borderRadius: 'var(--r-sm)',
+                background: 'var(--surface)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                flexShrink: 0,
+              }}>
+                <Compass size={16} color="var(--text-tertiary)" />
+              </span>
+              <span>
+                <span style={{ display: 'block', fontSize: 15, fontWeight: 600, color: 'var(--text-primary)' }}>{exp.title}</span>
+                <span style={{ display: 'block', fontSize: 13, color: 'var(--text-tertiary)', marginTop: 1 }}>{t('Tour')} · {exp.destination}, {exp.parish}</span>
+              </span>
+            </button>
+          ))}
+          {where && !whereMatchesPlace && tourHits.length === 0 && !TRANSFER_DESTINATIONS.some((d) => d.name.toLowerCase().includes(where.toLowerCase())) && (
             <p style={{ padding: '14px 20px', fontSize: 14, color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-sans)' }}>
               {t('No destinations found')}
             </p>
