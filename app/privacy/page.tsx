@@ -14,7 +14,7 @@ export default function PrivacyPage() {
   return (
     <EditorialPage slug="privacy" label="Legal" title="Privacy Policy">
       <Section title="Last updated">
-        <p>This Privacy Policy was last updated on September 27, 2026.</p>
+        <p>This Privacy Policy was last updated on October 1, 2026.</p>
       </Section>
 
       <Section title="Our commitment">
@@ -35,6 +35,7 @@ export default function PrivacyPage() {
           <li><strong>Payment information</strong>, handled directly by Stripe. We never see or store your full card number; we only receive a token plus the last four digits and card brand for receipt display.</li>
           <li><strong>Usage data</strong>, pages you view, experiences you save, and basic device information (browser, OS, screen size) collected through analytics cookies.</li>
           <li><strong>How you found us</strong>, the website, ad or email link that first and most recently brought you here, and the general kind of browser you booked with (for example, Chrome on Linux, never its version or your device), which we save with your booking.</li>
+          <li><strong>Requests from AI assistants</strong>, the trip details an assistant sends through our connector (mapltours.com/mcp) when you ask it to price or book a ride or tour: the hotel or tour, dates, flight numbers and party size. We use them only to answer that request and prepare your booking link. Our logs record which tool was used, never what you asked, and nothing is kept unless you book.</li>
           <li><strong>Communication</strong>, anything you send us through the contact form or email.</li>
           <li><strong>Photographs and video</strong>, images and recordings captured during experiences and transfers, which may include you. See the photography section of our <a href="/terms" style={{ color: 'var(--text-primary)', textDecoration: 'underline' }}>Terms of Service</a> for how these are used.</li>
         </ul>

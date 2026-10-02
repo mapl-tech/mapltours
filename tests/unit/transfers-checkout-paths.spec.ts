@@ -331,16 +331,41 @@ describe('POST /api/transfers/checkout: declined twins of the same ride', () => 
     expect(db.released).toContain(aj.bookingId)
   })
 
-  it('leaves a twin whose intent has settled to its webhook', async () => {
+  it('a twin whose intent has settled: answered as paid, no second payable intent (was a second charge)', async () => {
+    const a = await post(order(2))
+    const aj = await a.json()
+    // A retry on the old form went through, but a late decline webhook from
+    // the attempt before it flipped the row to 'failed' first.
+    bookingRow(aj.bookingId).status = 'failed'
+    intentOf(aj.bookingId).status = 'succeeded'
+    const intentsBefore = db.intents.size
+
+    const b = await post(order(2))
+    const bj = await b.json()
+    expect(b.status).toBe(200)
+    expect(bj).toMatchObject({ alreadyPaid: true, bookingId: aj.bookingId })
+    expect(bj.clientSecret).toBeUndefined()
+    // Nothing new to pay: no intent minted, the twin left to its webhook.
+    expect(db.intents.size).toBe(intentsBefore)
+    expect(bookingRow(aj.bookingId).status).toBe('failed')
+    expect(db.released).not.toContain(aj.bookingId)
+    // The row this request made is dropped, not left pending for the recovery email.
+    const fresh = db.tables.bookings.filter((r) => r.id !== aj.bookingId)
+    expect(fresh.every((r) => r.status === 'canceled')).toBe(true)
+  })
+
+  it('a twin whose intent is still processing: 409 paymentProcessing, no second payable intent', async () => {
     const a = await post(order(2))
     const aj = await a.json()
     bookingRow(aj.bookingId).status = 'failed'
-    intentOf(aj.bookingId).status = 'succeeded' // a retry on the old form went through
+    intentOf(aj.bookingId).status = 'processing'
+    const intentsBefore = db.intents.size
 
     const b = await post(order(2))
-    expect(b.status).toBe(200)
-    expect(bookingRow(aj.bookingId).status).toBe('failed')
-    expect(db.released).not.toContain(aj.bookingId)
+    const bj = await b.json()
+    expect(b.status).toBe(409)
+    expect(bj).toMatchObject({ paymentProcessing: true, bookingId: aj.bookingId })
+    expect(db.intents.size).toBe(intentsBefore)
   })
 
   it('leaves a twin for a different ride alone', async () => {

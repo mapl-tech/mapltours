@@ -196,6 +196,25 @@ Verify the sending domain (SPF, DKIM, DMARC) in Resend → **Domains**.
 
 ---
 
+## 8. Agent payments (`book_and_pay_transfer`, Stripe Shared Payment Tokens)
+
+The connector's paying tool stays unlisted until `AGENT_PAYMENTS_ENABLED=1`. Before setting it:
+
+1. **Stripe Dashboard (owner):** create the account's **Stripe profile** (agents grant tokens to it) and accept the **Agentic Commerce Seller Services (Preview)** terms. SPT sellers must be in the US, Canada or listed European countries; this account is Canadian.
+2. **Test mode, locally** (test keys only, see section 1): run the dev server with `AGENT_PAYMENTS_ENABLED=1`, grant a token with Stripe's test helper and call the tool through the MCP endpoint:
+   ```
+   curl https://api.stripe.com/v1/test_helpers/shared_payment/granted_tokens \
+     -u "sk_test_...:" -H "Stripe-Version: 2026-04-22.preview" \
+     -d payment_method=pm_card_visa -d "usage_limits[currency]=usd" \
+     -d "usage_limits[max_amount]=19900" -d "usage_limits[expires_at]=<now+3600>"
+   ```
+   Then `book_and_pay_transfer` with that `spt_...`, `approved_total_usd` equal to the quote and an `@example.com` guest. Expect `status: paid`, the row `paid` after the webhook (`stripe listen`), the TransferConfirmed email, and the attribution `ai_agent / connector`. Repeat with `pm_card_chargeDeclined` (expect `payment_declined`, nothing charged) and `pm_card_threeDSecure2Required` (expect `needs_authentication` with a link). Remove the rows afterwards.
+3. **Live, once:** with the owner's own Link account, `npx @stripe/link-cli spend-request create --credential-type shared_payment_token --network-id <profile id> --amount <fare in cents> --request-approval`, book a real ride, then refund it from the Dashboard and confirm the row flips to `refunded`.
+4. **Update the words first.** `/connect` (app/connect, components/connect) promises, while payments are off, that every tool is read-only, that the connector never charges and that names, emails and phones never pass through it; mcp/server.json and the Muse submission say it does not accept payments. Reword those for the paying tool (and switch the Muse listing to "accepts payments") in the same release.
+5. Set `AGENT_PAYMENTS_ENABLED=1` on Netlify and redeploy. `tools/list` on `/mcp?via=muse` now shows the tool; `?via=claude` and `?via=chatgpt` never do.
+
+---
+
 ## Fast reference — env vars
 
 | Var | Scope | Purpose |

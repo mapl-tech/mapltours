@@ -47,12 +47,18 @@ describe('privacy policy processor list', () => {
   })
 
   test('keeps the last-updated line on or after the change', () => {
-    expect(text(html)).toContain('This Privacy Policy was last updated on September 27, 2026.')
+    expect(text(html)).toContain('This Privacy Policy was last updated on October 1, 2026.')
   })
 
   test('has no em dashes', () => {
     expect(html).not.toContain('—')
     expect(html).not.toContain('&mdash;')
+  })
+
+  test('says what the AI assistant connector receives and keeps', () => {
+    const t = text(html)
+    expect(t).toContain('Requests from AI assistants')
+    expect(t).toContain('Our logs record which tool was used, never what you asked')
   })
 })
 

@@ -469,6 +469,55 @@ describe('POST /api/checkout: supersedeBookingId', () => {
   })
 })
 
+describe('POST /api/checkout: declined twins of the same cart', () => {
+  it('a fresh tab re-POSTing a declined cart cancels the old row and its still-payable intent', async () => {
+    const a = await post({ amount: total(2), items: cart(2), customer, waiverAccepted: true })
+    const aj = await a.json()
+    bookingRow(aj.bookingId).status = 'failed' // declined; Stripe leaves the intent payable
+
+    const b = await post({ amount: total(2), items: cart(2), customer, waiverAccepted: true })
+    const bj = await b.json()
+    expect(b.status).toBe(200)
+    expect(bj.bookingId).not.toBe(aj.bookingId)
+    expect(bookingRow(aj.bookingId).status).toBe('canceled')
+    expect(intentOf(aj.bookingId).status).toBe('canceled')
+    const payable = Array.from(db.intents.values()).filter((p) => p.status === 'requires_payment_method')
+    expect(payable.map((p) => p.id)).toEqual([bookingRow(bj.bookingId).stripe_payment_id])
+  })
+
+  it('a twin whose intent has settled: answered as paid, no second payable intent (was a second charge)', async () => {
+    const a = await post({ amount: total(2), items: cart(2), customer, waiverAccepted: true })
+    const aj = await a.json()
+    bookingRow(aj.bookingId).status = 'failed' // a late decline webhook, after the retry paid
+    intentOf(aj.bookingId).status = 'succeeded'
+    const intentsBefore = db.intents.size
+
+    const b = await post({ amount: total(2), items: cart(2), customer, waiverAccepted: true })
+    const bj = await b.json()
+    expect(b.status).toBe(200)
+    expect(bj).toMatchObject({ alreadyPaid: true, bookingId: aj.bookingId })
+    expect(bj.clientSecret).toBeUndefined()
+    expect(db.intents.size).toBe(intentsBefore)
+    expect(bookingRow(aj.bookingId).status).toBe('failed') // the webhook's to settle
+    const fresh = (db.tables.bookings ?? []).filter((r) => r.id !== aj.bookingId)
+    expect(fresh.every((r) => r.status === 'canceled')).toBe(true)
+  })
+
+  it('a twin whose intent is still processing: 409 paymentProcessing, no second payable intent', async () => {
+    const a = await post({ amount: total(2), items: cart(2), customer, waiverAccepted: true })
+    const aj = await a.json()
+    bookingRow(aj.bookingId).status = 'failed'
+    intentOf(aj.bookingId).status = 'processing'
+    const intentsBefore = db.intents.size
+
+    const b = await post({ amount: total(2), items: cart(2), customer, waiverAccepted: true })
+    const bj = await b.json()
+    expect(b.status).toBe(409)
+    expect(bj).toMatchObject({ paymentProcessing: true, bookingId: aj.bookingId })
+    expect(db.intents.size).toBe(intentsBefore)
+  })
+})
+
 describe('POST /api/checkout: the verified attach', () => {
   beforeEach(() => {
     db.user = { id: 'u1' }

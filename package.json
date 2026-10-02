@@ -12,6 +12,7 @@
     "sync:places": "node scripts/sync-google-places.mjs"
   },
   "dependencies": {
+    "@modelcontextprotocol/server": "2.2.0",
     "@react-email/components": "^1.0.12",
     "@react-email/render": "^2.0.6",
     "@stripe/react-stripe-js": "^6.1.0",
@@ -30,6 +31,7 @@
     "zustand": "^4.5.7"
   },
   "devDependencies": {
+    "@modelcontextprotocol/client": "2.2.0",
     "@netlify/plugin-nextjs": "^5.15.9",
     "@playwright/test": "^1.59.1",
     "@types/node": "^20",

@@ -32,15 +32,30 @@ export function popupPathEligible(pathname: string): boolean {
   return pathname === '/' || pathname === '/explore' || pathname === '/transfers'
 }
 
+/**
+ * A browser driven by software (navigator.webdriver): an AI agent booking for
+ * someone (Meta's Muse, ChatGPT's agent...) or a test runner. Not a person,
+ * so the popup would only interrupt the booking it is making and put an
+ * agent's address on the list. `?popup=show` overrides it, for checks of the
+ * popup itself.
+ */
+export function isAutomatedVisit(nav: { webdriver?: boolean } | undefined, search: string): boolean {
+  if (new URLSearchParams(search).get('popup') === 'show') return false
+  return nav?.webdriver === true
+}
+
 export function shouldShowPopup(input: {
   pathname: string
   memory: PopupMemory
   now: number
   /** The visit started on the bio page, which hands out the same code. */
   cameFromBio?: boolean
+  /** isAutomatedVisit: an agent's or a test runner's browser. */
+  automated?: boolean
 }): boolean {
-  const { pathname, memory, now, cameFromBio } = input
+  const { pathname, memory, now, cameFromBio, automated } = input
   if (!popupPathEligible(pathname)) return false
+  if (automated) return false
   if (cameFromBio) return false
   if (memory.doneAt != null) return false
   if (memory.lastShownAt == null) return true

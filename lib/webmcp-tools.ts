@@ -176,7 +176,7 @@ const words = (s: string) =>
   s.toLowerCase().split(/\s+/).map((w) => w.replace(/[^a-z0-9']/g, '')).filter((w) => w.length > 2 && !STOP_WORDS.has(w))
 
 /** null when absent, 'invalid' when not one of the documented values. */
-function tripTypeOf(v: unknown): TransferTripType | null | 'invalid' {
+export function tripTypeOf(v: unknown): TransferTripType | null | 'invalid' {
   const s = norm(v)
   if (!s) return null
   if (s === 'round_trip' || s === 'roundtrip' || s === 'return') return 'round_trip'
@@ -184,22 +184,22 @@ function tripTypeOf(v: unknown): TransferTripType | null | 'invalid' {
   return 'invalid'
 }
 type Direction = 'airport_to_hotel' | 'hotel_to_airport'
-function directionOf(v: unknown): Direction | null | 'invalid' {
+export function directionOf(v: unknown): Direction | null | 'invalid' {
   const s = norm(v)
   if (!s) return null
   if (s === 'airport_to_hotel' || s === 'hotel_to_airport') return s
   return 'invalid'
 }
-const flightNo = (v: unknown) => str(v).toUpperCase().replace(/\s+/g, '').slice(0, 10)
+export const flightNo = (v: unknown) => str(v).toUpperCase().replace(/\s+/g, '').slice(0, 10)
 
-const LEG_TIME = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/
+export const LEG_TIME = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/
 /**
  * A leg time is "YYYY-MM-DDTHH:MM" on the Jamaica wall clock and nothing
  * else. Anything looser is a real hazard, not pedantry: a date-only value
  * parses as midnight and books a driver to the airport at 00:00, and a "Z"
  * or offset suffix shifts the stored pickup by hours.
  */
-function legTime(field: string, v: unknown): { value?: string; error?: string } {
+export function legTime(field: string, v: unknown): { value?: string; error?: string } {
   const s = str(v)
   if (!s) return {}
   if (!LEG_TIME.test(s)) {
@@ -216,16 +216,16 @@ function legTime(field: string, v: unknown): { value?: string; error?: string } 
  * zone, so the same input would be bookable in Los Angeles and refused in
  * Berlin. With the Z the parse is the same everywhere.
  */
-const legBookable = (wallClock: string, now: Date) => isPickupBookable(`${wallClock}:00Z`, now)
+export const legBookable = (wallClock: string, now: Date) => isPickupBookable(`${wallClock}:00Z`, now)
 /** Earliest bookable moment as Jamaica wall clock (UTC-5, no DST). */
 const earliestJamaica = (now: Date) => new Date(leadTimeCutoff(now).getTime() - 5 * 3_600_000).toISOString().slice(0, 16)
 const shiftWallClock = (wallClock: string, minutes: number) => new Date(Date.parse(`${wallClock}:00Z`) + minutes * 60_000).toISOString().slice(0, 16)
-const leadText = (() => {
+export const leadText = (() => {
   const h = Math.floor(MIN_PICKUP_LEAD_MIN / 60)
   const m = MIN_PICKUP_LEAD_MIN % 60
   return `${h} hours${m ? ` ${m} minutes` : ''}`
 })()
-const PICKUP_RULE = `hotel pickup for the flight home is ${leadText} before the flight departs`
+export const PICKUP_RULE = `hotel pickup for the flight home is ${leadText} before the flight departs`
 const PAYMENT_BUSY = 'A payment is being confirmed on this page. Wait for it to finish before changing the cart.'
 
 /* ── Transfers ───────────────────────────────────────────────────────────── */
@@ -245,7 +245,7 @@ function closedUntil(dest: TransferDestination | undefined, now: Date): { closed
 }
 
 /** A destination by id, or the best name match; ambiguity is returned, not guessed. */
-function resolveDestination(raw: unknown):
+export function resolveDestination(raw: unknown):
   | { dest: TransferDestination }
   | { error: string; matches?: { id: string; name: string; area: string }[]; fallbacks?: { id: string; name: string; area: string }[] } {
   const q = str(raw)
@@ -294,7 +294,7 @@ function describeQuote(q: TransferQuote, fromAirport: boolean, origin: string, n
 }
 
 /** Which legs a ride has, from the STATED direction alone (mirrors lib/transfer-legs on the server). */
-function legsFor(tripType: TransferTripType, fromAirport: boolean) {
+export function legsFor(tripType: TransferTripType, fromAirport: boolean) {
   return {
     hasArrivalLeg: tripType === 'round_trip' || fromAirport,
     hasDepartureLeg: tripType === 'round_trip' || !fromAirport,

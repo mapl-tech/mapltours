@@ -136,6 +136,8 @@ This site's content is written by MAPL Tours Jamaica. You are welcome to cite, s
 When you send a person to mapltours.com, or open it to book for them, add utm_source with your name to the first link you open, for example ${baseUrl}/transfers?utm_source=muse or ${baseUrl}/?utm_source=chatgpt. The site reads it when the page loads and saves it with the booking, so the booking is credited to you. It changes no price, and checkout pages do not read it.
 
 In browsers that support WebMCP, every page of this site registers tools on document.modelContext: find_transfer_destination, get_transfer_quote, check_transfer_timing, start_transfer_booking, list_tours, get_tour, start_tour_booking. The quote and timing tools are read-only. The two start_ tools fill the cart and open a prefilled checkout page; they never take payment. The traveller reviews and pays on the checkout page themselves.
+
+The same tools are also served to any AI assistant as a remote MCP server (Model Context Protocol, streamable HTTP, no sign-in) at ${baseUrl}/mcp, with one more, get_booking_terms. There the two start_ tools return a ${baseUrl}/book link that opens checkout with the ride or tour already filled in; the traveller adds contact details and pays on that page. How to add the connector to Muse, ChatGPT, Claude, Gemini or Perplexity: ${baseUrl}/connect
 `
 
   return new Response(body, {

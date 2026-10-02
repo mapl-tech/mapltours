@@ -17,6 +17,7 @@ import {
   popupPathEligible,
   popupWasUnseen,
   shouldShowPopup,
+  isAutomatedVisit,
   useCouponPopupStore,
 } from '@/lib/coupon-popup'
 import { TIPS_LABEL, TIPS_ON_LINE, type TipsDefault } from '@/lib/trip-tips'
@@ -87,7 +88,8 @@ export default function CouponPopup() {
       if (cancelled) return
       const store = useCouponPopupStore.getState()
       const cameFromBio = getStoredAttribution()?.source === 'bio'
-      if (!shouldShowPopup({ pathname, memory: store, now: Date.now(), cameFromBio })) return
+      const automated = isAutomatedVisit(navigator, window.location.search)
+      if (!shouldShowPopup({ pathname, memory: store, now: Date.now(), cameFromBio, automated })) return
       const active = document.activeElement
       const focusInField = (active instanceof Element && active.closest(FIELD_FOCUS) !== null)
         // A suggestion list left open (the hotel box) is mid-entry too.

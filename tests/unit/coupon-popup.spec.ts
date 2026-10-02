@@ -1,5 +1,5 @@
 import { describe, test, expect } from 'vitest'
-import { POPUP_COOLDOWN_MS, POPUP_DELAY_MS, POPUP_FORM_QUIET_MS, POPUP_UNSEEN_MS, nextPopupStep, popupBusy, popupPathEligible, popupWasUnseen, shouldShowPopup } from '../../lib/coupon-popup'
+import { POPUP_COOLDOWN_MS, POPUP_DELAY_MS, POPUP_FORM_QUIET_MS, POPUP_UNSEEN_MS, nextPopupStep, popupBusy, popupPathEligible, popupWasUnseen, shouldShowPopup, isAutomatedVisit } from '../../lib/coupon-popup'
 
 const DAY = 24 * 60 * 60 * 1000
 const now = Date.UTC(2026, 8, 19, 15, 0, 0)
@@ -133,5 +133,23 @@ describe('the popup never opens over someone filling a booking form', () => {
     const later = popupBusy({ ...quiet, lastFormActivityAt: now - 5_000, now: now + 12_000 })
     expect(tick(later, b)).toBe('wait')
     expect(tick(later, later)).toBe('open')
+  })
+})
+
+describe('automated browsers', () => {
+  test('isAutomatedVisit: navigator.webdriver is an agent or a test runner, unless ?popup=show', () => {
+    expect(isAutomatedVisit({ webdriver: true }, '')).toBe(true)
+    expect(isAutomatedVisit({ webdriver: true }, '?utm_source=muse')).toBe(true)
+    expect(isAutomatedVisit({ webdriver: true }, '?popup=show')).toBe(false)
+    expect(isAutomatedVisit({ webdriver: false }, '')).toBe(false)
+    expect(isAutomatedVisit({}, '')).toBe(false)
+    expect(isAutomatedVisit(undefined, '')).toBe(false)
+  })
+
+  test('shouldShowPopup never opens for an automated visit, and still opens for a person', () => {
+    const memory = { lastShownAt: null, doneAt: null }
+    expect(shouldShowPopup({ pathname: '/transfers', memory, now: 1_000, automated: true })).toBe(false)
+    expect(shouldShowPopup({ pathname: '/transfers', memory, now: 1_000, automated: false })).toBe(true)
+    expect(shouldShowPopup({ pathname: '/transfers', memory, now: 1_000 })).toBe(true)
   })
 })

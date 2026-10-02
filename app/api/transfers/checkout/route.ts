@@ -24,6 +24,7 @@ import { rateLimit, getIp } from '@/lib/rate-limit'
 import { DEFAULT_DRIVER } from '@/lib/dispatch'
 import { sanitizeAttribution } from '@/lib/attribution'
 import { addSettledBookingToOpsCalendar } from '@/lib/ops-calendar'
+import { hashTransferCart as hashCart } from '@/lib/transfer-cart-hash'
 
 /**
  * Transfers checkout, sibling of /api/checkout, with the same hardening:
@@ -88,28 +89,6 @@ interface CheckoutBody {
   }
 }
 
-function hashCart(items: TransferItemIn[], amountCents: number, email: string, giftCode = '', couponCode = ''): string {
-  const payload = JSON.stringify({
-    items: items
-      .map(
-        (i) =>
-          // Direction is part of the cart's identity: two one-ways between
-          // the same pair differ only by it, and without it they would share
-          // an idempotency key and a pending-booking row.
-          `${i.destinationId}:${i.tripType}:${i.fromAirport === false ? 'to-mbj' : 'from-mbj'}:${i.passengers}:${i.arrivalAt ?? ''}:${i.departureAt ?? ''}`,
-      )
-      .sort(),
-    cents: amountCents,
-    email: (email ?? '').toLowerCase().trim(),
-    // A transfer paid partly by gift card is a different charge from the same
-    // transfer paid in full; it must not reuse the other's PaymentIntent.
-    gift: giftCode,
-    // Same for a coupon: the net cents above already differ, the code makes
-    // the identity explicit.
-    coupon: couponCode,
-  })
-  return crypto.createHash('sha256').update(payload).digest('hex').slice(0, 32)
-}
 
 const PI_REUSABLE_STATUSES: Stripe.PaymentIntent.Status[] = [
   'requires_payment_method',
@@ -652,9 +631,26 @@ export async function POST(request: NextRequest) {
             if (live?.status === 'canceled') {
               intentGone = true
             } else if (live && (live.status === 'succeeded' || live.status === 'processing' || live.status === 'requires_capture')) {
-              console.error('[transfers/checkout]', reqId, "CRITICAL: declined twin's intent has settled, leaving the row to the webhook", {
+              // Money moved (or is moving) on this same ride while its row
+              // still reads 'failed': a late decline webhook from an earlier
+              // attempt on the same intent landed before the success one. The
+              // row is the webhook's to settle, but this request must NOT mint
+              // a second payable intent for the trip: that was a second charge.
+              // Same answer as the supersede block above: drop the row this
+              // request made and tell the truth about the twin.
+              console.error('[transfers/checkout]', reqId, "CRITICAL: declined twin's intent has settled, refusing a second intent", {
                 twin: twin.id, pi: live.id, status: live.status,
               })
+              if (bookingId && bookingId !== twin.id) {
+                await supabase.from('bookings').update({ status: 'canceled' })
+                  .eq('id', bookingId).eq('status', 'pending').is('stripe_payment_id', null)
+              }
+              return live.status === 'succeeded'
+                ? NextResponse.json({ alreadyPaid: true, bookingId: twin.id, requestId: reqId })
+                : NextResponse.json(
+                    { paymentProcessing: true, bookingId: twin.id, error: 'Your payment is still being confirmed. Give it a moment, we will email your confirmation as soon as it clears.', requestId: reqId },
+                    { status: 409 },
+                  )
             } else {
               console.warn('[transfers/checkout]', reqId, "could not prove declined twin's intent dead, leaving it", { twin: twin.id })
             }
