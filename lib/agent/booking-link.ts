@@ -30,6 +30,21 @@ export const BOOK_PATH = '/book'
 export const MAX_TOUR_GUESTS = 12
 const HOTEL_MAX = 120
 
+/** Where every link the connector hands out points. */
+export const SITE = 'https://mapltours.com'
+
+/**
+ * The origin for the connector's links: always the public site, except a local
+ * dev server, whose links tests follow. Behind the custom domain the function
+ * sees Netlify's per-deploy host (<deploy id>--mapltours.netlify.app); a link
+ * to it would pin the guest to that one deploy, on a domain Apple Pay is not
+ * registered for.
+ */
+export function linkOrigin(requestUrl: URL): string {
+  const h = requestUrl.hostname
+  return h === 'localhost' || h === '127.0.0.1' ? requestUrl.origin : SITE
+}
+
 /** Assistants with their own connector address (/mcp?via=...). Anything else reads as 'mcp'. */
 export const VIAS = ['muse', 'chatgpt', 'claude', 'gemini', 'perplexity', 'copilot', 'grok'] as const
 export type Via = (typeof VIAS)[number] | 'mcp'

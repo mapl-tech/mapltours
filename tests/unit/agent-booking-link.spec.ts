@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest'
-import { bookingLink, parseHandoff, pickupText, viaOf, type Handoff } from '@/lib/agent/booking-link'
+import { bookingLink, linkOrigin, parseHandoff, pickupText, viaOf, type Handoff } from '@/lib/agent/booking-link'
 
 const NOW = new Date('2026-10-01T12:00:00Z')
 const O = 'https://mapltours.com'
@@ -11,6 +11,20 @@ describe('viaOf', () => {
     ['muse', 'muse'], ['MUSE', 'muse'], [' claude ', 'claude'], ['chatgpt', 'chatgpt'], ['gemini', 'gemini'],
     ['evil', 'mcp'], ['', 'mcp'], [undefined, 'mcp'], [42, 'mcp'],
   ])('%s -> %s', (raw, want) => expect(viaOf(raw)).toBe(want))
+})
+
+describe('linkOrigin: links always name the public site', () => {
+  test.each([
+    // What the function sees behind the custom domain on Netlify (Oct 2 2026).
+    ['https://6abfa9bd03b6d300087ad7f1--mapltours.netlify.app/mcp?via=muse', O],
+    ['https://deploy-preview-12--mapltours.netlify.app/mcp', O],
+    ['https://mapltours.netlify.app/mcp', O],
+    ['https://www.mapltours.com/mcp', O],
+    ['https://mapltours.com/mcp', O],
+    ['https://evil.example/mcp', O],
+    ['http://localhost:3180/mcp', 'http://localhost:3180'],
+    ['http://127.0.0.1:3100/mcp', 'http://127.0.0.1:3100'],
+  ])('%s -> %s', (url, want) => expect(linkOrigin(new URL(url))).toBe(want))
 })
 
 describe('bookingLink then parseHandoff round-trips', () => {

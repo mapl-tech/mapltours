@@ -17,7 +17,7 @@
  *   arguments, which can hold a traveller's name, email or flight.
  */
 import { createMcpHandler, fromJsonSchema, McpServer, type JsonSchemaType } from '@modelcontextprotocol/server'
-import { viaOf } from '@/lib/agent/booking-link'
+import { linkOrigin, SITE, viaOf } from '@/lib/agent/booking-link'
 import { buildConnectorTools, CONNECTOR_VERSION } from '@/lib/agent/connector'
 import { agentPayDeps } from '@/lib/agent/pay-deps'
 import { getIp, rateLimit } from '@/lib/rate-limit'
@@ -30,23 +30,14 @@ const INSTRUCTIONS =
   'A ride: find_transfer_destination, get_transfer_quote (its bookingUrl opens checkout with that ride filled in), check_transfer_timing, then start_transfer_booking for a checkout link with flights and times too. A tour: list_tours, get_tour, then start_tour_booking. ' +
   'Times are Jamaica local time (UTC-5, no daylight saving) written "YYYY-MM-DDTHH:MM". Tell the traveller the price and the cancellation terms (get_booking_terms) and get their yes before booking.'
 
-/** The canonical site for links: production, a Netlify preview, or a local dev server. Never a spoofed host. */
-function siteOrigin(url: URL): string {
-  const h = url.hostname
-  if (h === 'mapltours.com' || h === 'www.mapltours.com') return 'https://mapltours.com'
-  if (h.endsWith('--mapltours.netlify.app') || h === 'mapltours.netlify.app') return `https://${h}`
-  if (h === 'localhost' || h === '127.0.0.1') return url.origin
-  return 'https://mapltours.com'
-}
-
 function buildServer(request?: Request): McpServer {
-  const url = new URL(request?.url ?? 'https://mapltours.com/mcp')
+  const url = new URL(request?.url ?? `${SITE}/mcp`)
   const via = viaOf(url.searchParams.get('via'))
-  const origin = siteOrigin(url)
+  const origin = linkOrigin(url)
   const ip = request ? getIp(request) : 'unknown'
   const arrived = Number(request?.headers.get(RECEIVED_AT) ?? '')
   const server = new McpServer(
-    { name: 'mapltours-jamaica', title: 'MAPL Tours Jamaica', version: CONNECTOR_VERSION, websiteUrl: 'https://mapltours.com' },
+    { name: 'mapltours-jamaica', title: 'MAPL Tours Jamaica', version: CONNECTOR_VERSION, websiteUrl: SITE },
     {
       instructions: INSTRUCTIONS,
       // The tool list never changes while a client is connected; say so, so

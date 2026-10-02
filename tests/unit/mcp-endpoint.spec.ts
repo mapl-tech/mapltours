@@ -22,12 +22,12 @@ const NAMES = [
 
 const routeFetch = (url: string | URL, init?: RequestInit) => POST(new Request(url, init))
 
-async function connect(via: string, era: 'legacy' | 'modern') {
+async function connect(via: string, era: 'legacy' | 'modern', host = 'mapltours.com') {
   const client = new Client(
     { name: 'mapl-test', version: '1.0.0' },
     era === 'modern' ? { versionNegotiation: { mode: { pin: '2026-07-28' } } } : {},
   )
-  const transport = new StreamableHTTPClientTransport(new URL(`https://mapltours.com/mcp?via=${via}`), { fetch: routeFetch as never })
+  const transport = new StreamableHTTPClientTransport(new URL(`https://${host}/mcp?via=${via}`), { fetch: routeFetch as never })
   await client.connect(transport)
   return client
 }
@@ -102,6 +102,18 @@ describe.each(['legacy', 'modern'] as const)('%s-era client', (era) => {
         departureFlight: 'AA1235',
       },
     })
+    await client.close()
+  })
+
+  test("links name mapltours.com even when the function sees Netlify's per-deploy host", async () => {
+    // Behind the custom domain the request URL is <deploy id>--mapltours.netlify.app.
+    const client = await connect('muse', era, '6abfa9bd03b6d300087ad7f1--mapltours.netlify.app')
+    const quote = await client.callTool({ name: 'get_transfer_quote', arguments: { destination: 'riu-negril', trip_type: 'round_trip', passengers: 2 } })
+    const tour = await client.callTool({ name: 'start_tour_booking', arguments: { tour: 'bamboo-rafting-on-the-martha-brae', guests: 2, date: '2027-03-07' } })
+    for (const r of [quote, tour]) {
+      const url = new URL(String(struct(r).bookingUrl))
+      expect(url.origin + url.pathname).toBe('https://mapltours.com/book')
+    }
     await client.close()
   })
 
