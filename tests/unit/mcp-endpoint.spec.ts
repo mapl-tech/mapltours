@@ -5,7 +5,7 @@
  */
 import { afterEach, describe, expect, test, vi } from 'vitest'
 import { Client, StreamableHTTPClientTransport } from '@modelcontextprotocol/client'
-import { DELETE, GET, OPTIONS, POST } from '@/app/mcp/route'
+import { DELETE, GET, HEAD, OPTIONS, POST } from '@/app/mcp/route'
 import { getTransferPrice } from '@/lib/airport-transfers'
 import { parseHandoff } from '@/lib/agent/booking-link'
 
@@ -156,12 +156,23 @@ describe('the payment tool', () => {
 })
 
 describe('HTTP edges', () => {
-  test('GET and DELETE are 405 with a pointer to the connect page', async () => {
-    for (const res of [GET(), DELETE()]) {
+  test('a client asking GET for a stream, and DELETE, get 405 with a pointer to the connect page', async () => {
+    for (const res of [GET(new Request('https://mapltours.com/mcp', { headers: { accept: 'text/event-stream' } })), DELETE()]) {
       expect(res.status).toBe(405)
       expect(res.headers.get('Allow')).toBe('POST, OPTIONS')
       expect(await res.text()).toContain('https://mapltours.com/connect')
     }
+  })
+
+  test('a person or a reachability check reading the address gets 200 and what it is', async () => {
+    for (const accept of ['text/html', '*/*', '']) {
+      const res = GET(new Request('https://mapltours.com/mcp', { headers: accept ? { accept } : {} }))
+      expect(res.status, accept).toBe(200)
+      expect(await res.text()).toContain('https://mapltours.com/connect')
+    }
+    const head = HEAD(new Request('https://mapltours.com/mcp'))
+    expect(head.status).toBe(200)
+    expect(await head.text()).toBe('')
   })
 
   test('CORS preflight is answered for browser-based MCP clients', () => {
@@ -199,5 +210,53 @@ describe('HTTP edges', () => {
     const body = await res.json()
     expect(JSON.stringify(body)).toContain('mapltours-jamaica')
     expect(JSON.stringify(body)).toContain('2026-07-28')
+  })
+})
+
+describe('simple clients and directory checkers', () => {
+  // Spec clients accept JSON and SSE; checkers often send one, the fetch default, or nothing.
+  const rpc = (accept: string | null, method: string, params: Record<string, unknown> = {}, id: number | null = 1) =>
+    POST(
+      new Request('https://mapltours.com/mcp?via=muse', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', ...(accept === null ? {} : { accept }) },
+        body: JSON.stringify(id === null ? { jsonrpc: '2.0', method, params } : { jsonrpc: '2.0', id, method, params }),
+      }),
+    )
+  const init = { capabilities: {}, clientInfo: { name: 'checker', version: '1' } }
+
+  test.each([
+    ['application/json', '2025-06-18'],
+    ['*/*', '2025-06-18'],
+    [null, '2025-03-26'],
+    ['application/json, text/event-stream', '2024-11-05'],
+  ])('initialize with Accept %s (%s) is answered in plain JSON', async (accept, protocolVersion) => {
+    const res = await rpc(accept, 'initialize', { protocolVersion, ...init })
+    expect(res.status).toBe(200)
+    expect(res.headers.get('content-type')).toContain('application/json')
+    const body = await res.json()
+    expect(body.result.serverInfo.name).toBe('mapltours-jamaica')
+    expect(body.result.protocolVersion).toBe(protocolVersion)
+  })
+
+  test('tools/list and tools/call answer a checker that accepts only JSON', async () => {
+    const list = await (await rpc('application/json', 'tools/list')).json()
+    expect(list.result.tools.map((t: { name: string }) => t.name)).toEqual(NAMES)
+    const call = await (await rpc('application/json', 'tools/call', { name: 'get_transfer_quote', arguments: { destination: 'riu-negril', trip_type: 'round_trip', passengers: 2 } })).json()
+    expect(call.result.structuredContent.priceUsd).toBe(getTransferPrice('riu-negril', 'round_trip', 2))
+    expect(String(call.result.structuredContent.bookingUrl)).toMatch(/^https:\/\/mapltours\.com\/book\?/)
+  })
+
+  test('a client that asks for SSE alone still gets SSE', async () => {
+    const res = await rpc('text/event-stream', 'tools/list')
+    expect(res.status).toBe(200)
+    expect(res.headers.get('content-type')).toContain('text/event-stream')
+    expect(await res.text()).toContain('get_transfer_quote')
+  })
+
+  test('a notification is acknowledged with 202 and no body', async () => {
+    const res = await rpc('application/json', 'notifications/initialized', {}, null)
+    expect(res.status).toBe(202)
+    expect(await res.text()).toBe('')
   })
 })

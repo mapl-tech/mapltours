@@ -107,31 +107,78 @@ function withCors(res: Response): Response {
 /** Set here, on arrival, for the payment tool's time budget; a caller's own value is replaced. */
 const RECEIVED_AT = 'x-mapl-received-at'
 
+/**
+ * The SDK answers 2025-era requests over SSE and refuses (406) any request
+ * that does not accept both JSON and SSE, as the spec asks of clients. Simple
+ * clients and directory checkers often send only application/json, or the
+ * any-type wildcard (fetch's default), or nothing. Nothing here streams (no progress, no
+ * notifications, no subscriptions), so accept both on the caller's behalf and
+ * send the one message as plain JSON, which every MCP client must also read.
+ */
+const ACCEPT_BOTH = 'application/json, text/event-stream'
+
+async function plainJson(res: Response, accept: string): Promise<Response> {
+  if (!(res.headers.get('content-type') ?? '').includes('text/event-stream') || !res.body) return res
+  // A caller that asked for SSE alone keeps it.
+  if (accept.includes('text/event-stream') && !accept.includes('application/json')) return res
+  const [mine, theirs] = res.body.tee()
+  let timer: ReturnType<typeof setTimeout> | undefined
+  let text: string | null
+  try {
+    // A stream still open after 5 s is not a single answer; pass it through.
+    text = await Promise.race([new Response(mine).text(), new Promise<null>((r) => (timer = setTimeout(() => r(null), 5_000)))])
+  } catch {
+    text = null
+  } finally {
+    clearTimeout(timer)
+  }
+  if (text === null) return new Response(theirs, { status: res.status, headers: res.headers })
+  theirs.cancel().catch(() => {})
+  const messages = text
+    .split(/\r?\n\r?\n/)
+    .map((event) => event.split(/\r?\n/).filter((l) => l.startsWith('data:')).map((l) => l.slice(5).trimStart()).join('\n'))
+    .filter(Boolean)
+  if (messages.length !== 1) return new Response(text, { status: res.status, headers: res.headers })
+  const headers = new Headers(res.headers)
+  headers.set('Content-Type', 'application/json')
+  headers.delete('Content-Length')
+  return new Response(messages[0], { status: res.status, headers })
+}
+
 export async function POST(incoming: Request): Promise<Response> {
+  const accept = incoming.headers.get('accept') ?? ''
   const headers = new Headers(incoming.headers)
   headers.set(RECEIVED_AT, String(Date.now()))
+  headers.set('Accept', ACCEPT_BOTH)
   const request = new Request(incoming, { headers })
   // Generous: every user of one assistant can arrive from the same addresses.
   if (rateLimit(getIp(request), { windowMs: 60_000, max: 240, bucket: 'mcp' })) {
     return withCors(new Response(JSON.stringify({ error: 'Too many requests. Wait a moment and try again.' }), { status: 429, headers: { 'Content-Type': 'application/json', 'Retry-After': '30' } }))
   }
-  return withCors(await handler.fetch(request))
+  return withCors(await plainJson(await handler.fetch(request), accept))
 }
 
 export function OPTIONS(): Response {
   return withCors(new Response(null, { status: 204 }))
 }
 
-const notHere = () =>
-  withCors(
-    new Response('This is the MAPL Tours Jamaica connector for AI assistants (Model Context Protocol, POST only). How to add it: https://mapltours.com/connect\n', {
-      status: 405,
-      headers: { Allow: 'POST, OPTIONS', 'Content-Type': 'text/plain; charset=utf-8' },
-    }),
-  )
+const ABOUT = 'This is the MAPL Tours Jamaica connector for AI assistants (Model Context Protocol, POST only). How to add it: https://mapltours.com/connect\n'
 
-export function GET(): Response {
-  return notHere()
+const notHere = () => withCors(new Response(ABOUT, { status: 405, headers: { Allow: 'POST, OPTIONS', 'Content-Type': 'text/plain; charset=utf-8' } }))
+
+/**
+ * An MCP client opens a stream with GET and Accept: text/event-stream; this
+ * server offers none, so it gets 405, as the spec asks. Anyone else reading
+ * the address (a person, a directory's reachability check) is told what it is.
+ */
+export function GET(request: Request): Response {
+  if ((request.headers.get('accept') ?? '').includes('text/event-stream')) return notHere()
+  return withCors(new Response(ABOUT, { status: 200, headers: { 'Content-Type': 'text/plain; charset=utf-8' } }))
+}
+
+export function HEAD(request: Request): Response {
+  const res = GET(request)
+  return new Response(null, { status: res.status, headers: res.headers })
 }
 
 export function DELETE(): Response {
