@@ -390,7 +390,7 @@ export function buildWebMcpTools(actions: WebMcpActions): WebMcpTool[] {
 
   const get_transfer_quote: WebMcpTool = {
     name: 'get_transfer_quote',
-    description: 'Exact all-in price in USD for a private airport transfer between Sangster International Airport (MBJ) and a hotel or villa, per vehicle for up to 4 passengers (5 to 7 priced per person). Round trip or one way, either direction. Also says how long before the flight home the hotel pickup should be. Use before start_transfer_booking. Read-only.',
+    description: 'Exact all-in price in USD for a private airport transfer between Sangster International Airport (MBJ) and a hotel or villa, per vehicle for up to 4 passengers (5 to 7 priced per person; 8 or more are quoted by email at contact@mapltours.com). Round trip or one way, either direction. Also says how long before the flight home the hotel pickup should be. Use before start_transfer_booking. Read-only.',
     inputSchema: {
       type: 'object',
       properties: {

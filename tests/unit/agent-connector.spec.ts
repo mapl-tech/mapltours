@@ -103,6 +103,11 @@ describe('every tool', () => {
     }
   })
 
+  test('a group too big to book online learns where to go before it asks', () => {
+    // Through /mcp the SDK's schema check answers 8+ passengers with only "must be <= 7".
+    expect(tool('get_transfer_quote').description).toContain('8 or more are quoted by email at contact@mapltours.com')
+  })
+
   test('nothing listed without the payment switch can charge', () => {
     expect(tools.map((t) => t.name)).not.toContain('book_and_pay_transfer')
     for (const t of tools) expect(t.annotations.readOnlyHint, t.name).toBe(true)
