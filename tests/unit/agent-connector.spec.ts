@@ -114,6 +114,20 @@ describe('every tool', () => {
   })
 })
 
+describe('every result that hands over a booking link states the cancellation terms', () => {
+  // Muse's policies: no non-refundable transaction without notice of the cancellation terms and penalties.
+  test.each([
+    ['get_transfer_quote', { destination: 'riu-negril', trip_type: 'round_trip', passengers: 2 }],
+    ['start_transfer_booking', { destination: 'riu-negril', trip_type: 'round_trip', passengers: 2 }],
+    ['start_tour_booking', { tour: 'bamboo-rafting-on-the-martha-brae', guests: 2, date: '2027-03-07' }],
+  ])('%s', async (name, input) => {
+    const r = await tool(name).execute(input)
+    expect(typeof r.bookingUrl).toBe('string')
+    expect(r.cancellation).toEqual({ summary: CANCELLATION_SUMMARY.short, detail: CANCELLATION_SUMMARY.detail })
+    expect(CANCELLATION_SUMMARY.detail).toContain('non-refundable')
+  })
+})
+
 describe('get_transfer_quote carries a booking link for exactly the quoted ride', () => {
   test.each([
     [{ destination: 'riu-negril' }, { tripType: 'round_trip', passengers: 2, fromAirport: true }],

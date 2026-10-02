@@ -70,6 +70,11 @@ const READ_TOOLS: ReadonlyArray<[string, string]> = [
   ['get_tour', 'Tour details and price'],
 ]
 
+// .short, as every site surface: .lead alone says "free" and leaves out the
+// admin charge. .detail says when the booking stops being refundable, which
+// Muse's policies want stated before a traveller commits to pay.
+const CANCELLATION = { summary: CANCELLATION_SUMMARY.short, detail: CANCELLATION_SUMMARY.detail }
+
 const readOnly = (title: string): ConnectorAnnotations => ({ title, readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false })
 
 export function buildConnectorTools(ctx: ConnectorContext): ConnectorTool[] {
@@ -99,7 +104,7 @@ export function buildConnectorTools(ctx: ConnectorContext): ConnectorTool[] {
       if (!('dest' in d)) return r
       const tripType = r.tripType === 'one_way' ? 'one_way' : 'round_trip'
       const h: Handoff = { kind: 'ride', destinationId: d.dest.id, tripType, passengers: Number(r.passengers), fromAirport: r.direction !== 'hotel_to_airport' }
-      return { ...r, bookingUrl: bookingLink(origin, h, ctx.via, 'get_transfer_quote') }
+      return { ...r, cancellation: CANCELLATION, bookingUrl: bookingLink(origin, h, ctx.via, 'get_transfer_quote') }
     },
   }
 
@@ -123,9 +128,10 @@ export function buildConnectorTools(ctx: ConnectorContext): ConnectorTool[] {
         prefilled: result.prefilled,
         ...(result.departurePickupSet ? { departurePickupSet: result.departurePickupSet } : {}),
         ...(result.warning ? { warning: result.warning } : {}),
+        cancellation: CANCELLATION,
         nextStep: payOn
-          ? `Give the traveller bookingUrl. On that page they add contact details and pay; nothing is charged until they do. If they would rather you pay for them with a Stripe shared payment token, use ${PAY_TOOL_NAME} instead.`
-          : 'Give the traveller bookingUrl. On that page they add contact details and pay; nothing is charged until they do.',
+          ? `Give the traveller bookingUrl with the price and the cancellation terms. On that page they add contact details and pay; nothing is charged until they do. If they would rather you pay for them with a Stripe shared payment token, use ${PAY_TOOL_NAME} instead.`
+          : 'Give the traveller bookingUrl with the price and the cancellation terms. On that page they add contact details and pay; nothing is charged until they do.',
       }
     },
   }
@@ -156,7 +162,8 @@ export function buildConnectorTools(ctx: ConnectorContext): ConnectorTool[] {
         tour: result.tour,
         priceForParty: result.priceForParty,
         date: t.date,
-        nextStep: 'Give the traveller bookingUrl. On that page they confirm the pickup, add contact details, accept the activity waiver and pay; nothing is charged until they do.',
+        cancellation: CANCELLATION,
+        nextStep: 'Give the traveller bookingUrl with the price and the cancellation terms. On that page they confirm the pickup, add contact details, accept the activity waiver and pay; nothing is charged until they do.',
       }
     },
   }
@@ -186,8 +193,7 @@ export function buildConnectorTools(ctx: ConnectorContext): ConnectorTool[] {
         notice: `${MIN_LEAD_TIME_HOURS} hours' notice, counted from midnight Jamaica time`,
         waiver: 'Every tour needs the activity waiver, which the traveller accepts on the checkout page.',
       },
-      // .short, as every site surface: .lead alone says "free" and leaves out the admin charge.
-      cancellation: { summary: CANCELLATION_SUMMARY.short, detail: CANCELLATION_SUMMARY.detail },
+      cancellation: CANCELLATION,
       payment: 'Paid in US dollars when booking, by card, or by Apple Pay, Google Pay or Link where the device offers them. Stripe processes the payment.',
       currency: 'USD',
       contact: 'contact@mapltours.com',
