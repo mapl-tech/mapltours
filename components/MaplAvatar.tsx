@@ -16,8 +16,11 @@ export default function MaplAvatar({ size, border }: { size: number; border?: st
         flexShrink: 0, overflow: 'hidden',
       }}
     >
+      {/* Lazy: React preloads the first eager <img> it renders on the server,
+          and on a tour page that made this 2 KB logo the head's only image
+          preload, ahead of the reel's poster. */}
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src="/mapl-logo.svg" alt="" style={{ width: '84%', height: 'auto', display: 'block' }} />
+      <img src="/mapl-logo.svg" alt="" loading="lazy" decoding="async" style={{ width: '84%', height: 'auto', display: 'block' }} />
     </span>
   )
 }

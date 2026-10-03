@@ -1,7 +1,9 @@
+/// <reference types="react-dom/canary" />
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
+import { preload } from 'react-dom'
 import ExperienceDetail from '@/components/ExperienceDetail'
-import { getExperienceBySlug } from '@/lib/experiences'
+import { getExperienceBySlug, reelPoster } from '@/lib/experiences'
 import { createServiceClient } from '@/lib/supabase/service'
 
 const SITE_URL = 'https://mapltours.com'
@@ -96,6 +98,13 @@ export default function ExperienceRoute({ params }: { params: { slug: string } }
   // doesn't index junk URLs.
   const exp = getExperienceBySlug(params.slug)
   if (!exp) notFound()
+
+  // The requested tour opens the feed, and its poster is the first large
+  // paint. Nothing pointed the browser at it: the only image preload in the
+  // head was the rail's 2 KB logo. reelPoster is the reel's own rule, so this
+  // is the same request the <video poster> makes.
+  const poster = reelPoster(exp)
+  if (poster) preload(poster, { as: 'image', fetchPriority: 'high' })
 
   // Per-experience structured data so each landing page is eligible for rich
   // results (price, rating). Modelled as a schema.org TouristTrip with an

@@ -353,7 +353,7 @@ h5, h6 { letter-spacing: -0.01em; }
 .reel-meta-line:focus-visible,
 [data-mobile-bottom-bar] a:focus-visible,
 [data-mobile-bottom-bar] button:focus-visible,
-.reel-item:focus-visible {
+.reel-play-toggle:focus-visible {
   outline: 2px solid #fff !important;
   outline-offset: 2px;
   box-shadow: 0 0 0 6px rgba(0, 0, 0, 0.6);
@@ -361,6 +361,18 @@ h5, h6 { letter-spacing: -0.01em; }
 /* The white arrows carry an inline drop shadow, which beat the halo above
    and left a white ring on a bright sky with nothing dark under it. */
 .reel-top-btn:focus-visible { box-shadow: 0 0 0 6px rgba(0, 0, 0, 0.6) !important; }
+/* The reel's play/pause button (components/ExperienceDetail): centred on the
+   video, shown while paused or when focused from a keyboard, otherwise
+   invisible (a tap on it still toggles, like a tap anywhere). */
+.reel-play-toggle {
+  position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 5;
+  width: 56px; height: 56px; padding: 0; border: none; border-radius: 50%; cursor: pointer;
+  display: flex; align-items: center; justify-content: center; color: #fff;
+  background: rgba(0, 0, 0, 0.45); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+  opacity: 0; transition: opacity 0.15s ease;
+}
+.reel-play-toggle--paused, .reel-play-toggle:focus-visible { opacity: 1; }
+@media (prefers-reduced-motion: reduce) { .reel-play-toggle { transition: none; } }
 /* The reel's side panel is a dark ground: the site's olive ring measured
    under 2:1 on it. The brighter gold is 10:1 on #111110. */
 .reel-panel :focus-visible { outline-color: var(--gold-warm) !important; }

@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react'
 import { useFocusTrap } from '@/lib/use-focus-trap'
 import { useRouter } from 'next/navigation'
-import { singleExperiences, packageExperiences, Experience, slugify , priceUnitLabel, mobileVideo, mobileHevcVideo, videoPoster, HEVC_SOURCE_TYPE } from '@/lib/experiences'
+import { singleExperiences, packageExperiences, Experience, slugify , priceUnitLabel, mobileVideo, mobileHevcVideo, reelPoster, HEVC_SOURCE_TYPE } from '@/lib/experiences'
 import { trackViewItem, trackReelDetailsOpen, trackReelCtaTap } from '@/lib/analytics'
 import { useI18n } from '@/lib/i18n'
 import { useCartStore, DAILY_HOUR_LIMIT } from '@/lib/cart'
@@ -15,7 +15,7 @@ import { useTourFit } from '@/lib/use-tour-fit'
 import { useCtaSwap } from '@/lib/use-cta-swap'
 import Link from 'next/link'
 import dynamic from 'next/dynamic'
-import { Heart, MessageCircle, Play, ChevronLeft, ChevronRight, ChevronUp, X, ThumbsUp, Send, MapPin, Star, Clock, ShoppingBag, Film, Check } from 'lucide-react'
+import { Heart, MessageCircle, Play, Pause, ChevronLeft, ChevronRight, ChevronUp, X, ThumbsUp, Send, MapPin, Star, Clock, ShoppingBag, Film, Check } from 'lucide-react'
 import { useExperienceLike, useComments, DisplayComment } from '@/lib/supabase/hooks'
 import { useAuth } from '@/lib/supabase/auth-context'
 import Avatar from '@/components/Avatar'
@@ -367,20 +367,17 @@ function Reel({ exp, isActive, near, ahead, onComments }: { exp: Experience; isA
 
   return (
     <div
+      // Tap anywhere pauses or plays, for pointers. Keyboard and screen-reader
+      // users get the same control as a real button (.reel-play-toggle
+      // below): this root used to be the focus stop and the toggle, but as a
+      // role=group it never said it was one or whether the video was playing.
       onClick={togglePlay}
-      // Keyboard users get the same tap-anywhere pause (WCAG 2.2.2): the reel
-      // root is focusable and Space or Enter toggles playback.
-      tabIndex={isActive ? 0 : -1}
       role="group"
       className="reel-item"
       aria-label={`${exp.title} reel`}
-      // The tour's description stands in for the video (it has no sound and
-      // no text of its own), then how to pause it.
-      aria-describedby={`reel-desc-${slug} reel-hint`}
-      onKeyDown={(e) => {
-        if (e.target !== e.currentTarget) return
-        if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); togglePlay() }
-      }}
+      // The tour's description stands in for the video, which has no sound
+      // and no text of its own.
+      aria-describedby={`reel-desc-${slug}`}
       // Off-screen reels are visually stacked out of view but their buttons
       // and inputs were still in the tab order; inert removes the whole
       // subtree from focus and the accessibility tree until it is active.
@@ -395,10 +392,10 @@ function Reel({ exp, isActive, near, ahead, onComments }: { exp: Experience; isA
         overflow: 'hidden', background: '#000',
       }}
     >
-      {/* No visible controls on the video, by explicit product decision
-          (2026-08-24): tap-anywhere is the pause mechanism. Removing the
-          on-screen button trades away the WCAG 2.2.2 keyboard-reachable
-          pause it used to provide. */}
+      {/* No visible controls on the playing video, by explicit product
+          decision (2026-08-24): tap-anywhere is the pause. The play/pause
+          button below keeps that: it shows only while paused or when a
+          keyboard puts focus on it (WCAG 2.2.2, 4.1.2). */}
       {exp.youtubeId ? (
         <iframe
           src={`https://www.youtube.com/embed/${exp.youtubeId}?autoplay=1&mute=1&loop=1&controls=0&showinfo=0&modestbranding=1&playlist=${exp.youtubeId}&playsinline=1`}
@@ -419,7 +416,7 @@ function Reel({ exp, isActive, near, ahead, onComments }: { exp: Experience; isA
         ref={videoRef}
         loop muted playsInline
         preload={isActive ? 'auto' : near ? 'metadata' : 'none'}
-        poster={near ? (exp.video && !exp.genericClip ? videoPoster(exp.video) : `/_next/image?url=${encodeURIComponent(exp.image)}&w=750&q=70`) : undefined}
+        poster={near ? reelPoster(exp) ?? undefined : undefined}
         style={{ width: '100%', height: '100%', objectFit: 'cover', willChange: 'opacity', background: '#08080A' }}
       >
         {/* The 720x1280 phone clip, never a media attribute: with two
@@ -440,20 +437,27 @@ function Reel({ exp, isActive, near, ahead, onComments }: { exp: Experience; isA
       </video>
       )}
 
-      {/* Pause overlay */}
+      {/* Paused: the frame dims under the play button. */}
       {paused && (
-        <div style={{
-          position: 'absolute', inset: 0,
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          background: 'rgba(0,0,0,0.2)', pointerEvents: 'none',
-        }}>
-          <div style={{
-            width: 56, height: 56, borderRadius: '50%',
-            background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(12px)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-          }}><Play size={24} fill="white" strokeWidth={0} /></div>
-        </div>
+        <div aria-hidden style={{
+          position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.2)', pointerEvents: 'none',
+        }} />
       )}
+      {/* Play/pause as a real button: named for what it will do, so its name
+          carries the state. Visible while paused (the play glyph the reel
+          always showed) or when focused from a keyboard; otherwise invisible,
+          and a tap on it does what a tap anywhere does. Dark disc, not the old
+          white one: its white glyph measured 1.5:1 over a bright frame. */}
+      <button
+        type="button"
+        className={paused ? 'reel-play-toggle reel-play-toggle--paused' : 'reel-play-toggle'}
+        aria-label={paused ? 'Play video' : 'Pause video'}
+        onClick={(e) => { e.stopPropagation(); togglePlay() }}
+      >
+        {paused
+          ? <Play size={24} fill="white" strokeWidth={0} aria-hidden />
+          : <Pause size={22} fill="white" strokeWidth={0} aria-hidden />}
+      </button>
 
       {/* ── Playback progress for this clip ──
           Replaces 14 hair-thin position segments that repeated the "1 / 14"
@@ -877,15 +881,19 @@ function Reel({ exp, isActive, near, ahead, onComments }: { exp: Experience; isA
               onClick={(e) => e.stopPropagation()}
               className={justAdded ? 'reel-in-trip reel-in-trip--fresh' : 'reel-in-trip'}
               aria-label={`${t('In your trip')}: ${exp.title}. Go to checkout`}
+              // A status, quietly: once something is in the trip the gold
+              // Checkout in the bar is the one loud way on (a filled green
+              // pill here made two). The ring is an inset shadow, not a
+              // border, so the box stays 48px and nothing moves.
               style={{
                 minHeight: 48, minWidth: Math.max(140, cta.minWidth), padding: '0 18px', borderRadius: 9999,
-                background: 'var(--emerald)', color: 'white',
+                background: 'rgba(255,255,255,0.14)', boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.32)', color: 'white',
                 fontSize: 15, fontWeight: 700, fontFamily: 'var(--font-dm-sans)',
                 textDecoration: 'none', whiteSpace: 'nowrap', flexShrink: 0,
                 display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6,
               }}
             >
-              <Check size={16} strokeWidth={3} aria-hidden /> {t('In your trip')}
+              <Check size={16} strokeWidth={3} color="#4ADE80" aria-hidden /> {t('In your trip')}
             </Link>
           ) : (
             <button
@@ -976,13 +984,15 @@ function DesktopTourPanel({ exp }: { exp: Experience }) {
             ref={cta.ref}
             href="/checkout"
             aria-label={`${t('In your trip')}: ${exp.title}. Go to checkout`}
+            // Quiet like the reel's: the panel header's gold Checkout is the
+            // money action.
             style={{
               minHeight: 48, minWidth: Math.max(140, cta.minWidth), padding: '0 20px', borderRadius: 9999, flexShrink: 0,
-              background: 'var(--emerald)', color: 'white', textDecoration: 'none',
+              background: 'rgba(255,255,255,0.08)', boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.24)', color: 'white', textDecoration: 'none',
               fontSize: 15, fontWeight: 700, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6,
             }}
           >
-            <Check size={16} strokeWidth={3} aria-hidden /> {t('In your trip')}
+            <Check size={16} strokeWidth={3} color="#4ADE80" aria-hidden /> {t('In your trip')}
           </Link>
         ) : (
           <button
@@ -1643,8 +1653,6 @@ export default function ExperienceDetail({ slug }: { slug: string }) {
           </div>
         </button>
 
-
-        <p id="reel-hint" className="sr-only">Press Space or Enter to pause or play the video.</p>
 
         {/* Scrollable reels */}
         <div

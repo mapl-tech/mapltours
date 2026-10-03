@@ -264,6 +264,18 @@ export const HEVC_SOURCE_TYPE = 'video/mp4; codecs="hvc1.1.6.L93.B0"'
 export function videoPoster(video: string): string {
   return video.replace(/^\/media\/video\/([^/]+)\.mp4$/, '/media/video/m/$1.webp')
 }
+/**
+ * The still a reel shows before its clip plays: the clip's own first frame,
+ * or the catalogue image (at phone width through the image optimiser) when
+ * the clip is stock footage of the activity rather than this place (see
+ * Experience.genericClip). One rule for the reel's poster and for the tour
+ * page's preload, so the two URLs are always the same request. Null for a
+ * YouTube reel, which has no poster.
+ */
+export function reelPoster(exp: Pick<Experience, 'video' | 'genericClip' | 'image' | 'youtubeId'>): string | null {
+  if (exp.youtubeId) return null
+  return exp.video && !exp.genericClip ? videoPoster(exp.video) : `/_next/image?url=${encodeURIComponent(exp.image)}&w=750&q=70`
+}
 
 /**
  * ── DRAFT DETAIL CONTENT ────────────────────────────────────────────────
