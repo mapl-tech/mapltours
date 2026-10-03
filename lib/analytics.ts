@@ -321,6 +321,25 @@ export function trackLead(
 }
 
 /**
+ * The reel's guest clips: the sheet opened, a clip played, a guest started
+ * or finished posting one. Counted so the clips' part in a booking (and
+ * whether past guests post at all) is a number before anyone invests more.
+ */
+export function trackClipsEvent(
+  name: 'clips_open' | 'clip_play' | 'clip_post_start' | 'clip_posted',
+  slug: string,
+): void {
+  try {
+    if (typeof window === 'undefined') return
+    whenGtagReady((gtag) => {
+      gtag('event', name, { item_id: slug })
+    })
+  } catch {
+    /* no-op */
+  }
+}
+
+/**
  * The reel's details sheet opened (the "What's included" tap). Measured so
  * the gap between watching a reel and reading the facts is a number, not a
  * guess, before the phone surface is judged.

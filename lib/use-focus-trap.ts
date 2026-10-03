@@ -27,13 +27,25 @@ const FOCUSABLE =
  * Lifted verbatim from ItineraryPanel, which already did all of this
  * correctly, so the drawer and the two sheets now share one implementation
  * rather than one good copy and two absent ones.
+ *
+ * Dialogs can stack (the guest clips sheet opens a clip viewer and an upload
+ * sheet over itself), and every trap listens on the document. Only the most
+ * recently opened one acts on a key, so Escape closes the top dialog alone
+ * and Tab cycles inside it; before, one Escape closed the viewer and the
+ * sheet under it together.
  */
+const openTraps: symbol[] = []
+
 export function useFocusTrap(
   ref: RefObject<HTMLElement | null>,
   onClose: () => void,
   active = true,
 ) {
   const previous = useRef<HTMLElement | null>(null)
+  // Read through a ref so a new onClose identity never re-registers the
+  // trap, which would move it to the top of the stack above a child.
+  const close = useRef(onClose)
+  close.current = onClose
 
   useEffect(() => {
     if (!active) return
@@ -46,9 +58,12 @@ export function useFocusTrap(
 
   useEffect(() => {
     if (!active) return
+    const id = Symbol('focus-trap')
+    openTraps.push(id)
     const onKeyDown = (e: KeyboardEvent) => {
+      if (openTraps[openTraps.length - 1] !== id) return
       if (e.key === 'Escape') {
-        onClose()
+        close.current()
         return
       }
       if (e.key !== 'Tab') return
@@ -69,6 +84,10 @@ export function useFocusTrap(
       }
     }
     document.addEventListener('keydown', onKeyDown)
-    return () => document.removeEventListener('keydown', onKeyDown)
-  }, [active, onClose, ref])
+    return () => {
+      document.removeEventListener('keydown', onKeyDown)
+      const at = openTraps.indexOf(id)
+      if (at >= 0) openTraps.splice(at, 1)
+    }
+  }, [active, ref])
 }

@@ -29,6 +29,16 @@ describe('post-login redirects', () => {
     expect(getSafeRedirect('/profile#x')).toBe('/profile')
   })
 
+  test('a guest who signed in to post a clip lands back on the upload sheet', () => {
+    expect(getSafeRedirect('/experience/ricks-cafe-cliff-diving-and-sunset?clips=post'))
+      .toBe('/experience/ricks-cafe-cliff-diving-and-sunset?clips=post')
+    // Only that exact query, only on a tour, and nothing appended survives.
+    expect(getSafeRedirect('/experience/x?clips=post&next=//evil.com')).toBe('/experience/x')
+    expect(getSafeRedirect('/experience/x?clips=other')).toBe('/experience/x')
+    expect(getSafeRedirect('/saved?clips=post')).toBe('/saved')
+    expect(getSafeRedirect('//evil.com/experience/?clips=post')).toBe('/profile')
+  })
+
   test('an unknown path falls back rather than 404ing the guest', () => {
     expect(getSafeRedirect('/does-not-exist')).toBe('/profile')
   })

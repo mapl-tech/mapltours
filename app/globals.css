@@ -417,9 +417,11 @@ h5, h6 { letter-spacing: -0.01em; }
   }
 }
 
-/* "Watch the tours": the stories row under the home hero (ReelStories). It
-   continues the hero's dark ground so the circles read as part of the first
-   screen. A gold-to-green ring marks a video not yet watched here; watched
+/* "Watch the tours": the stories row under the home hero (ReelStories), for
+   phones and tablets only (owner's call, Oct 3 2026): it hides from 768px
+   when the main pointer is a mouse or trackpad, so an iPad in landscape
+   (1024 to 1366px wide) still gets it. It continues the hero's dark ground so
+   the circles read as part of the first screen. A gold-to-green ring marks a video not yet watched here; watched
    ones go quiet. */
 .reel-stories { background: var(--bg-dark); padding: 4px 0 24px; }
 .reel-stories-title {
@@ -457,6 +459,7 @@ h5, h6 { letter-spacing: -0.01em; }
   .reel-stories { padding: 8px 0 32px; }
   .reel-stories-row { gap: 20px; }
 }
+@media (min-width: 768px) and (pointer: fine) { .reel-stories { display: none; } }
 @media (prefers-reduced-motion: reduce) {
   .reel-story-ring { transition: none; }
 }
@@ -3081,3 +3084,301 @@ a.pf-stat:hover { background: var(--surface); }
    states for the gold surface; the colours live inline beside the markup. */
 @media (hover: hover) { .reel-checkout:hover { background: var(--gold-warm) !important; } }
 .reel-checkout:focus-visible { outline: 2px solid #fff; outline-offset: 3px; }
+
+/* ── Guest clips (components/UserTourVideos) ─────────────────────────────
+   A dark sheet over the reel, like its comments: the guests' clips first,
+   the invitation to post under them, and the tour's price and Add to Trip
+   pinned at the foot. A bottom sheet on phones, a centred dialog from
+   768px. Text colours are the reel's measured set on #1A1917: white
+   (17:1), var(--text-on-dark-2) (11:1) and --gold-warm (9:1). */
+.clips-overlay {
+  position: fixed; inset: 0; z-index: 2100;
+  display: flex; align-items: flex-end; justify-content: center;
+  background: rgba(8, 8, 10, 0.72);
+  animation: fadeIn 0.2s ease both;
+}
+.clips-overlay--top { z-index: 2150; }
+.clips-sheet {
+  position: relative; width: 100%; max-width: 720px;
+  max-height: calc(100dvh - 24px - env(safe-area-inset-top));
+  display: flex; flex-direction: column;
+  background: var(--bg-dark-warm); color: #fff;
+  border-radius: 20px 20px 0 0;
+  box-shadow: 0 -20px 60px rgba(0, 0, 0, 0.45);
+  font-family: var(--font-dm-sans);
+  animation: clipsSheetIn 0.28s var(--ease-out) both;
+  outline: none;
+}
+.clips-upload { max-width: 520px; }
+@keyframes clipsSheetIn { from { transform: translateY(24px); opacity: 0; } to { transform: none; opacity: 1; } }
+@keyframes clipsOut { to { opacity: 0; } }
+@keyframes clipsSheetOut { to { opacity: 0; transform: translateY(16px); } }
+.clips-overlay.closing { animation: clipsOut 0.16s ease both; pointer-events: none; }
+.clips-overlay.closing > .clips-sheet { animation: clipsSheetOut 0.16s ease both; }
+@media (min-width: 768px) {
+  .clips-overlay { align-items: center; padding: 24px; }
+  .clips-sheet { border-radius: 20px; max-height: min(88dvh, 880px); }
+}
+.clips-dark :focus-visible { outline-color: var(--gold-warm) !important; }
+/* The dialogs themselves take focus on open (so a screen reader starts in
+   them); they are not controls, and a ring round the whole sheet is noise. */
+.clips-sheet:focus-visible, .clip-viewer:focus-visible { outline: none !important; box-shadow: none !important; }
+.clips-head {
+  display: flex; align-items: flex-start; justify-content: space-between; gap: 12px;
+  padding: 16px 12px 12px 20px; border-bottom: 1px solid var(--border-on-dark); flex-shrink: 0;
+}
+.clips-title { margin: 0; font-size: 20px; font-weight: 700; letter-spacing: -0.01em; line-height: 1.2; color: #fff; }
+.clips-sub {
+  margin: 4px 0 0; font-size: 14px; line-height: 1.45; color: var(--text-on-dark-2);
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+}
+.clips-x {
+  width: 44px; height: 44px; flex-shrink: 0; border-radius: 50%; border: none; cursor: pointer;
+  background: rgba(255, 255, 255, 0.08); color: #fff;
+  display: flex; align-items: center; justify-content: center;
+}
+.clips-x:disabled { opacity: 0.5; cursor: default; }
+@media (hover: hover) { .clips-x:not(:disabled):hover { background: rgba(255, 255, 255, 0.14); } }
+/* overscroll contain: a swipe past the end of the clips must not scroll
+   the feed behind the sheet. */
+.clips-body { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 16px 16px 24px; }
+.clips-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin: 0; padding: 0; list-style: none; }
+@media (min-width: 600px) { .clips-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; } }
+
+.clip-card {
+  position: relative; display: block; width: 100%; aspect-ratio: 9 / 16; padding: 0; border: none;
+  border-radius: 12px; overflow: hidden; background: #000; color: #fff; text-align: left; cursor: pointer;
+  font-family: var(--font-dm-sans);
+}
+.clip-card img, .clip-card video {
+  width: 100%; height: 100%; object-fit: cover; display: block;
+  transition: transform 0.4s var(--ease-out);
+}
+@media (hover: hover) { .clip-card:hover img, .clip-card:hover video { transform: scale(1.04); } }
+/* Held dark under the byline: white 13px measures 5.7:1 or better even over
+   a white frame. */
+.clip-card-scrim {
+  position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.4) 0%, rgba(0, 0, 0, 0) 22%, rgba(0, 0, 0, 0) 48%, rgba(0, 0, 0, 0.62) 70%, rgba(0, 0, 0, 0.85) 100%);
+}
+.clip-card-time {
+  position: absolute; top: 8px; left: 8px; display: inline-flex; align-items: center; gap: 4px;
+  padding: 2px 8px; border-radius: 9999px; background: rgba(0, 0, 0, 0.62); font-size: 12px; font-weight: 600;
+}
+.clip-card-by { position: absolute; left: 0; right: 0; bottom: 0; padding: 10px; display: flex; flex-direction: column; gap: 4px; }
+.clip-card-name { display: flex; align-items: center; gap: 6px; min-width: 0; font-size: 13px; font-weight: 700; }
+.clip-card-name > span:last-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.clip-card-cap {
+  font-size: 12px; line-height: 1.35; color: #fff;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+}
+.clip-skeleton {
+  aspect-ratio: 9 / 16; border-radius: 12px;
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05));
+  background-size: 200% 100%; animation: clipShimmer 1.6s ease-in-out infinite;
+}
+@keyframes clipShimmer { from { background-position: 100% 0; } to { background-position: -100% 0; } }
+
+.clips-empty {
+  padding: 28px 20px; text-align: center; border-radius: 16px;
+  background: rgba(255, 255, 255, 0.04); border: 1px solid var(--border-on-dark);
+}
+.clips-empty h3 { margin: 0 0 6px; font-size: 17px; font-weight: 700; color: #fff; }
+.clips-empty p { margin: 0 auto; max-width: 360px; font-size: 14px; line-height: 1.5; color: var(--text-on-dark-2); }
+.clips-empty-icon {
+  width: 48px; height: 48px; margin: 0 auto 12px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(214, 187, 99, 0.14); color: var(--gold-warm);
+}
+
+.clips-invite {
+  margin-top: 24px; padding: 16px; border-radius: 16px;
+  border: 1px solid rgba(214, 187, 99, 0.3); background: rgba(214, 187, 99, 0.06);
+  display: flex; flex-direction: column; gap: 12px;
+}
+.clips-invite h3 { margin: 0; font-size: 16px; font-weight: 700; color: #fff; }
+.clips-invite p { margin: 4px 0 0; font-size: 14px; line-height: 1.5; color: var(--text-on-dark-2); }
+.clips-invite .clips-reward { margin: 0; color: #fff; }
+.clips-invite .clips-reward strong { color: var(--gold-warm); letter-spacing: 0.02em; }
+.clips-progress { height: 6px; border-radius: 9999px; background: rgba(255, 255, 255, 0.14); overflow: hidden; }
+.clips-progress > span { display: block; height: 100%; border-radius: inherit; background: var(--gold-warm); transition: width 0.5s var(--ease-out); }
+.clips-invite .clips-progress-text { margin-top: 8px; font-size: 13px; }
+.clips-btn-ghost {
+  align-self: flex-start; min-height: 48px; padding: 0 20px; border-radius: 9999px;
+  border: 1px solid var(--gold-warm); background: transparent; color: var(--gold-warm);
+  font: 700 15px/1.2 var(--font-dm-sans); text-decoration: none; cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+}
+@media (hover: hover) { .clips-btn-ghost:hover { background: rgba(214, 187, 99, 0.12); } }
+@media (max-width: 479px) { .clips-btn-ghost { align-self: stretch; } }
+
+.clips-foot {
+  flex-shrink: 0; border-top: 1px solid var(--border-on-dark);
+  padding: 12px 20px calc(12px + env(safe-area-inset-bottom));
+}
+@media (min-width: 768px) { .clips-foot { padding-bottom: 16px; } }
+.clips-buy { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.clips-price { display: flex; align-items: baseline; flex-wrap: wrap; column-gap: 4px; min-width: 0; }
+.clips-price b { font-size: 19px; font-weight: 800; letter-spacing: -0.02em; color: #fff; }
+.clips-price span { font-size: 14px; color: var(--text-on-dark-2); white-space: nowrap; }
+.clips-add {
+  min-height: 48px; min-width: 140px; padding: 0 22px; border-radius: 9999px; border: none; cursor: pointer;
+  background: #fff; color: #000; font: 700 15px/1.2 var(--font-dm-sans);
+  white-space: nowrap; flex-shrink: 0; text-decoration: none;
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+}
+.clips-add--in { background: rgba(255, 255, 255, 0.14); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.32); color: #fff; }
+.clips-terms { margin: 8px 0 0; font-size: 13px; line-height: 1.4; color: var(--text-on-dark-2); }
+.clips-terms--why { color: #fff; }
+
+/* Upload sheet */
+.clips-pick {
+  width: 100%; min-height: 220px; padding: 24px 20px; border-radius: 16px; cursor: pointer;
+  border: 2px dashed rgba(214, 187, 99, 0.45); background: rgba(255, 255, 255, 0.03); color: #fff;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px;
+  font-family: var(--font-dm-sans); text-align: center;
+}
+@media (hover: hover) { .clips-pick:hover { border-color: var(--gold-warm); background: rgba(214, 187, 99, 0.06); } }
+.clips-pick-icon {
+  width: 52px; height: 52px; border-radius: 50%; background: var(--gold); color: var(--gold-ink);
+  display: flex; align-items: center; justify-content: center;
+}
+.clips-pick-title { font-size: 17px; font-weight: 700; }
+.clips-pick-rules { max-width: 300px; font-size: 14px; line-height: 1.45; color: var(--text-on-dark-2); }
+.clips-preview {
+  /* Narrower on a short phone so the caption field shows under it. */
+  position: relative; width: 100%; max-width: min(200px, 40vw, 24dvh); aspect-ratio: 9 / 16; margin: 0 auto;
+  border-radius: 14px; overflow: hidden; background: #000;
+}
+.clips-preview video { width: 100%; height: 100%; object-fit: cover; display: block; }
+.clips-preview-meta {
+  position: absolute; left: 8px; top: 8px; padding: 2px 8px; border-radius: 9999px;
+  background: rgba(0, 0, 0, 0.62); font-size: 12px; font-weight: 600;
+}
+.clips-preview-change {
+  position: absolute; left: 8px; right: 8px; bottom: 8px; min-height: 44px; border-radius: 9999px; cursor: pointer;
+  border: 1px solid rgba(255, 255, 255, 0.3); background: rgba(0, 0, 0, 0.62); color: #fff;
+  font: 600 14px/1.2 var(--font-dm-sans);
+}
+.clips-fields { margin-top: 20px; display: flex; flex-direction: column; }
+.clips-label { margin: 0 0 8px; font-size: 14px; font-weight: 600; color: #fff; }
+.clips-label span { font-weight: 400; color: var(--text-on-dark-2); }
+.clips-fields .clips-input + .clips-label { margin-top: 16px; }
+/* 16px so iOS does not zoom the page when the field takes focus. */
+.clips-input {
+  width: 100%; min-height: 48px; padding: 12px 14px; border-radius: 12px; resize: none; box-sizing: border-box;
+  border: 1px solid rgba(255, 255, 255, 0.24); background: rgba(255, 255, 255, 0.05); color: #fff;
+  font: 400 16px/1.4 var(--font-dm-sans);
+}
+.clips-input::placeholder { color: rgba(255, 255, 255, 0.6); }
+.clips-input:focus { border-color: var(--gold-warm); }
+.clips-help { margin: 8px 0 0; font-size: 13px; line-height: 1.5; color: var(--text-on-dark-2); }
+.clips-error {
+  margin: 16px 0 0; padding: 12px 14px; border-radius: 12px; font-size: 14px; line-height: 1.45;
+  background: rgba(255, 120, 100, 0.12); border: 1px solid rgba(255, 140, 120, 0.4); color: #FFB4A6;
+}
+.clips-primary {
+  width: 100%; min-height: 52px; border-radius: 9999px; border: none; cursor: pointer;
+  background: var(--gold); color: var(--gold-ink); font: 700 16px/1.2 var(--font-dm-sans);
+  display: inline-flex; align-items: center; justify-content: center; text-decoration: none;
+}
+@media (hover: hover) { .clips-primary:not(:disabled):hover { background: var(--gold-warm); } }
+.clips-primary:disabled { background: rgba(255, 255, 255, 0.12); color: var(--text-on-dark-2); cursor: default; }
+.clips-done { padding: 12px 4px 4px; text-align: center; display: flex; flex-direction: column; gap: 16px; }
+.clips-done p { margin: 0; font-size: 15px; line-height: 1.55; color: var(--text-on-dark-2); }
+
+/* Full-screen viewer */
+.clip-viewer {
+  position: fixed; inset: 0; z-index: 2150; background: #000; color: #fff;
+  display: flex; flex-direction: column; font-family: var(--font-dm-sans); outline: none;
+  animation: fadeIn 0.2s ease both;
+}
+.clip-stage { position: relative; flex: 1; min-height: 0; display: flex; }
+.clip-rail {
+  flex: 1; display: flex; overflow-x: auto; overflow-y: hidden; scroll-snap-type: x mandatory;
+  overscroll-behavior-x: contain; scrollbar-width: none;
+}
+.clip-rail::-webkit-scrollbar { display: none; }
+.clip-slide {
+  position: relative; flex: 0 0 100%; height: 100%; scroll-snap-align: start; scroll-snap-stop: always;
+  display: flex; align-items: center; justify-content: center; background: #000;
+}
+.clip-frame { position: relative; width: 100%; height: 100%; }
+.clip-slide video { width: 100%; height: 100%; object-fit: contain; background: #000; cursor: pointer; }
+/* From 768px a clip plays in an upright column with its byline, and the
+   sound and send controls sit beside it rather than at the window's edge. */
+@media (min-width: 768px) {
+  .clip-frame { width: auto; max-width: 100%; aspect-ratio: 9 / 16; }
+}
+.clip-loading { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 14px; color: var(--text-on-dark-2); pointer-events: none; }
+.clip-slide-scrim {
+  position: absolute; left: 0; right: 0; bottom: 0; height: 45%; pointer-events: none;
+  background: linear-gradient(0deg, rgba(0, 0, 0, 0.82) 0%, rgba(0, 0, 0, 0.6) 40%, rgba(0, 0, 0, 0) 100%);
+}
+.clip-byline { position: absolute; left: 16px; right: 84px; bottom: 16px; z-index: 2; display: flex; align-items: flex-start; gap: 10px; }
+.clip-byline p { margin: 0; }
+.clip-byline-name { font-size: 15px; font-weight: 700; }
+.clip-byline-meta { margin-top: 2px !important; font-size: 13px; color: #e6e6e6; }
+.clip-byline-cap { margin-top: 6px !important; font-size: 14px; line-height: 1.45; }
+.clip-top {
+  position: absolute; top: 0; left: 0; right: 0; z-index: 4; pointer-events: none;
+  display: flex; align-items: center; gap: 12px;
+  padding: calc(10px + env(safe-area-inset-top)) 12px 28px 16px;
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.55), rgba(0, 0, 0, 0));
+}
+.clip-segs { flex: 1; display: flex; gap: 4px; }
+.clip-segs span { flex: 1; height: 3px; border-radius: 2px; background: rgba(255, 255, 255, 0.38); overflow: hidden; }
+/* The played part of each clip: whole for clips already seen, filling for
+   the one on screen (timeupdate, about four times a second, eased). */
+.clip-segs i { display: block; height: 100%; background: #fff; transform-origin: left; transition: transform 0.25s linear; }
+.clip-ctl {
+  pointer-events: auto; width: 44px; height: 44px; flex-shrink: 0; border-radius: 50%; cursor: pointer;
+  border: 1px solid rgba(255, 255, 255, 0.14); background: rgba(20, 18, 16, 0.55); color: #fff;
+  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+  display: flex; align-items: center; justify-content: center;
+}
+.clip-side { position: absolute; right: 12px; bottom: 16px; z-index: 3; display: flex; flex-direction: column; gap: 16px; }
+.clip-side button {
+  min-width: 48px; padding: 0; border: none; background: none; color: #fff; cursor: pointer;
+  display: flex; flex-direction: column; align-items: center; gap: 4px; font: 700 12px/1.3 var(--font-dm-sans);
+}
+.clip-side-label { padding: 1px 8px; border-radius: 9999px; background: rgba(0, 0, 0, 0.6); }
+/* Beside the upright column (its half-width is the stage height x 9/32;
+   72px is the booking bar), not at the window's edge. */
+@media (min-width: 768px) { .clip-side { right: max(16px, calc(50% - (100dvh - 72px) * 9 / 32 - 76px)); } }
+.clip-arrow {
+  position: absolute; top: 50%; z-index: 3; transform: translateY(-50%);
+  width: 48px; height: 48px; border-radius: 50%; cursor: pointer;
+  border: 1px solid rgba(255, 255, 255, 0.14); background: rgba(20, 18, 16, 0.55); color: #fff;
+  display: none; align-items: center; justify-content: center;
+}
+.clip-arrow--prev { left: 24px; }
+.clip-arrow--next { right: 24px; }
+.clip-arrow:disabled { opacity: 0.35; cursor: default; }
+@media (min-width: 768px) and (hover: hover) { .clip-arrow { display: flex; } }
+.clip-toast {
+  position: absolute; left: 50%; bottom: 24px; z-index: 5; transform: translateX(-50%);
+  width: max-content; max-width: calc(100% - 32px); margin: 0; padding: 10px 16px; border-radius: 9999px;
+  background: rgba(17, 17, 16, 0.92); font-size: 14px; font-weight: 600; text-align: center;
+}
+.clip-bar {
+  flex-shrink: 0; background: var(--bg-dark); border-top: 1px solid var(--border-on-dark);
+  padding: 10px 16px calc(10px + env(safe-area-inset-bottom));
+}
+.clip-bar-inner { max-width: 560px; margin: 0 auto; }
+.clip-bar-title { margin: 0 0 2px; font-size: 14px; font-weight: 700; color: #fff; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.clip-bar .clips-price b { font-size: 17px; }
+.clip-bar-why { margin: 2px 0 0; font-size: 13px; line-height: 1.35; color: var(--text-on-dark-2); }
+/* The cancellation terms under the add, where there is room for a line. */
+.clip-bar-terms { display: none; margin: 6px 0 0; font-size: 13px; line-height: 1.4; color: var(--text-on-dark-2); }
+@media (min-width: 768px) { .clip-bar-terms { display: block; } }
+/* Over video: the reel's white ring with a dark halo (technique C40). */
+.clip-viewer :focus-visible {
+  outline: 2px solid #fff !important; outline-offset: 2px;
+  box-shadow: 0 0 0 6px rgba(0, 0, 0, 0.6) !important;
+}
+@media (prefers-reduced-motion: reduce) {
+  .clips-overlay, .clips-sheet, .clip-viewer, .clip-skeleton,
+  .clips-overlay.closing, .clips-overlay.closing > .clips-sheet { animation: none; }
+  .clip-card img, .clip-card video, .clips-progress > span, .clip-segs i { transition: none; }
+}

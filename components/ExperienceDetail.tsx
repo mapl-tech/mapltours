@@ -1,10 +1,10 @@
 'use client'
 
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react'
-import { useFocusTrap } from '@/lib/use-focus-trap'
 import { useRouter } from 'next/navigation'
 import { singleExperiences, packageExperiences, Experience, slugify , priceUnitLabel, mobileVideo, mobileHevcVideo, reelPoster, HEVC_SOURCE_TYPE } from '@/lib/experiences'
-import { trackViewItem, trackReelDetailsOpen, trackReelCtaTap } from '@/lib/analytics'
+import { trackViewItem, trackReelDetailsOpen, trackReelCtaTap, trackClipsEvent } from '@/lib/analytics'
+import { CLIPS_POST_QUERY } from '@/lib/safe-redirect'
 import { useI18n } from '@/lib/i18n'
 import { useCartStore, DAILY_HOUR_LIMIT } from '@/lib/cart'
 import { orderFeed, closeTarget, swapReason } from '@/lib/reel-feed'
@@ -190,30 +190,47 @@ function Reel({ exp, isActive, near, ahead, onComments }: { exp: Experience; isA
   // clips overlay on that clip. Consumed once by the active reel, then
   // scrubbed from the URL so closing the overlay does not re-trigger it.
   const [initialClipId, setInitialClipId] = useState<string | null>(null)
+  // ?clips=post: a guest back from signing in to post a clip.
+  const [clipsUpload, setClipsUpload] = useState(false)
   const clipParamConsumed = useRef(false)
-  // aria-modal promises the page behind is unreachable, so keep that
-  // promise: this overlay had neither a focus trap nor an Escape key.
-  const clipsRef = useRef<HTMLDivElement>(null)
   // Closing also clears any deep-linked clip id: UserTourVideos unmounts
   // with the overlay, so a surviving id would force the shared clip open
-  // again on every manual reopen for the life of the page.
+  // again on every manual reopen for the life of the page. The sheet owns
+  // its focus trap and Escape (it stacks a viewer and an upload sheet).
   const closeClips = useCallback(() => {
     setClipsOpen(false)
     setInitialClipId(null)
+    setClipsUpload(false)
   }, [])
-  useFocusTrap(clipsRef, closeClips, clipsOpen)
+  const openClips = () => {
+    setClipsOpen(true)
+    trackClipsEvent('clips_open', slug)
+  }
 
   useEffect(() => {
     if (!isActive || clipParamConsumed.current) return
     clipParamConsumed.current = true
-    const clip = new URLSearchParams(window.location.search).get('clip')
-    if (!clip) return
-    setInitialClipId(clip)
+    const params = new URLSearchParams(window.location.search)
+    const clip = params.get('clip')
+    const post = `clips=${params.get('clips')}` === CLIPS_POST_QUERY
+    if (!clip && !post) return
+    if (clip) setInitialClipId(clip)
+    if (post) setClipsUpload(true)
     setClipsOpen(true)
     const url = new URL(window.location.href)
     url.searchParams.delete('clip')
+    url.searchParams.delete('clips')
     window.history.replaceState({}, '', url.toString())
   }, [isActive])
+
+  // The clips cover the reel: pause it underneath (one moving picture, and
+  // no second soundtrack once a clip has sound) and carry on at close.
+  useEffect(() => {
+    const video = videoRef.current
+    if (!clipsOpen || !video || video.paused) return
+    video.pause()
+    return () => { video.play().catch(() => {}) }
+  }, [clipsOpen])
 
   // Robust copy-to-clipboard with a fallback for non-secure contexts
   // (navigator.clipboard only exists on HTTPS / localhost).
@@ -570,8 +587,9 @@ function Reel({ exp, isActive, near, ahead, onComments }: { exp: Experience; isA
 
         {/* Guest clips, opens UserTourVideos overlay */}
         <button
-          onClick={(e) => { e.stopPropagation(); setClipsOpen(true) }}
+          onClick={(e) => { e.stopPropagation(); openClips() }}
           aria-label="Clips from guests on this tour"
+          aria-haspopup="dialog"
           style={{
             display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2,
             background: 'none', border: 'none', cursor: 'pointer', color: 'white',
@@ -588,61 +606,16 @@ function Reel({ exp, isActive, near, ahead, onComments }: { exp: Experience; isA
 
       </div>
 
-      {/* Full-screen Guest Clips overlay (gallery + upload + reward) */}
+      {/* Guest clips: a dark sheet portaled to <body> (components/UserTourVideos),
+          booking through the reel's own add. */}
       {clipsOpen && (
-        <div
-          onClick={closeClips}
-          role="dialog" aria-modal="true"
-          aria-label="Guest clips"
-          style={{
-            position: 'fixed', inset: 0, zIndex: 1200,
-            background: 'rgba(8, 8, 10, 0.88)',
-            backdropFilter: 'blur(10px)',
-            display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
-            animation: 'fadeUp 0.22s ease',
-          }}
-        >
-          <div
-            ref={clipsRef}
-            tabIndex={-1}
-            onClick={(e) => e.stopPropagation()}
-            style={{
-              width: '100%', maxWidth: 680,
-              maxHeight: '92vh', overflowY: 'auto',
-              background: 'var(--bg, #fff)',
-              borderRadius: 'var(--r-xl, 20px) var(--r-xl, 20px) 0 0',
-              boxShadow: '0 -20px 60px rgba(0,0,0,0.35)',
-              padding: '14px 12px 24px',
-              WebkitOverflowScrolling: 'touch',
-            }}
-          >
-            <div style={{
-              display: 'flex', justifyContent: 'center', marginBottom: 8,
-            }}>
-              <div style={{
-                width: 44, height: 4, borderRadius: 9999,
-                background: 'rgba(0,0,0,0.15)',
-              }} />
-            </div>
-            <div style={{
-              display: 'flex', justifyContent: 'flex-end', marginBottom: 4,
-            }}>
-              <button
-                onClick={closeClips}
-                aria-label="Close"
-                style={{
-                  width: 36, height: 36, borderRadius: '50%',
-                  background: 'rgba(0,0,0,0.06)', border: 'none', cursor: 'pointer',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  color: 'var(--text-secondary)',
-                }}
-              >
-                <X size={16} />
-              </button>
-            </div>
-            <UserTourVideos experienceId={exp.id} experienceTitle={exp.title} initialVideoId={initialClipId} />
-          </div>
-        </div>
+        <UserTourVideos
+          exp={exp}
+          initialVideoId={initialClipId}
+          startUpload={clipsUpload}
+          cta={{ inCart, blocked, swapLine: shortReason, onAdd: () => addToTrip() }}
+          onClose={closeClips}
+        />
       )}
 
       {/* Share toast, MAPL Tours brand: gold accent on ink-black, Syne label */}

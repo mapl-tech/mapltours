@@ -99,14 +99,14 @@ export interface ValidationResult {
 export function validateVideoFile(file: File): ValidationResult {
   if (!file) return { ok: false, error: 'No file selected' }
   if (!VIDEO_ALLOWED_TYPES.includes(file.type as typeof VIDEO_ALLOWED_TYPES[number])) {
-    return { ok: false, error: 'Only MP4, MOV, or WebM videos are supported' }
+    return { ok: false, error: 'That file is not a video we can post. Pick an MP4, MOV or WebM clip.' }
   }
   if (file.size > VIDEO_MAX_BYTES) {
     const mb = Math.round(file.size / (1024 * 1024))
-    return { ok: false, error: `File is ${mb} MB, maximum is 100 MB` }
+    return { ok: false, error: `This clip is ${mb} MB and the limit is 100 MB. Trim it or pick a shorter one.` }
   }
   if (file.size < 50_000) {
-    return { ok: false, error: 'Video is too short or empty' }
+    return { ok: false, error: 'That clip looks empty. Pick another one.' }
   }
   return { ok: true }
 }
@@ -212,7 +212,7 @@ export async function uploadTourVideo({
   if (!validation.ok) return { ok: false, error: validation.error }
 
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return { ok: false, error: 'Please sign in to upload' }
+  if (!user) return { ok: false, error: 'Sign in again to post your clip.' }
 
   // Hash: blocks identical re-uploads at the DB layer.
   let hash: string | null = null
@@ -231,7 +231,7 @@ export async function uploadTourVideo({
       .eq('content_hash', hash)
       .maybeSingle()
     if (existing) {
-      return { ok: false, error: 'You’ve already submitted this video' }
+      return { ok: false, error: 'You have already sent us this clip. It shows here once it is approved.' }
     }
   }
 

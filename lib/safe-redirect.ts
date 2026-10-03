@@ -38,5 +38,15 @@ export function getSafeRedirect(raw: string | null): string {
     ALLOWED_PREFIXES.some((p) => pathname.startsWith(p))
   if (!allowed) return fallback
 
+  // One query survives, as a fixed literal rather than anything read from
+  // the input: a guest who signs in to post a clip lands back on the tour
+  // with the upload sheet open (components/UserTourVideos).
+  if (pathname.startsWith('/experience/') && raw.slice(pathname.length).split('#')[0] === `?${CLIPS_POST_QUERY}`) {
+    return `${pathname}?${CLIPS_POST_QUERY}`
+  }
+
   return pathname
 }
+
+/** `/experience/<slug>?clips=post` opens the guest clips on the upload sheet. */
+export const CLIPS_POST_QUERY = 'clips=post'
