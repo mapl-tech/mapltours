@@ -1950,34 +1950,15 @@ export default function ExperienceDetail({ slug }: { slug: string }) {
           the button 61px up from under the thumb. With an empty trip it
           names the next tour (teaching the swipe, and doing the same on a
           tap); at the end of the 14 it says so and goes back to the first,
-          a stopping point rather than an endless feed. With a trip: comments
-          as an icon, and Checkout, the one money action. */}
+          a stopping point rather than an endless feed. With a trip: Checkout,
+          the one money action, full width. Comments are the rail's button
+          only; a second speech bubble here opened the same sheet. */}
       <div ref={mobileBarRef} data-mobile-bottom-bar className="hide-desktop" style={{
         position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 310,
         background: 'var(--bg-dark)', borderTop: '1px solid rgba(255,255,255,0.08)',
         padding: '10px 16px', paddingBottom: 'max(10px, env(safe-area-inset-bottom))',
         display: 'flex', alignItems: 'center', gap: 10,
       }}>
-        {(isLoggedIn || items.length > 0) && (
-          <button
-            onClick={() => {
-              if (!isLoggedIn && activeExp) {
-                window.location.href = `/login?redirect=/experience/${slugify(activeExp.title)}`
-                return
-              }
-              setMobileComments(true)
-            }}
-            aria-label={isLoggedIn ? 'Add a comment' : 'Sign in to comment'}
-            style={{
-              flex: '0 0 auto', display: 'flex', alignItems: 'center', justifyContent: 'center',
-              background: 'rgba(255,255,255,0.08)', border: 'none',
-              borderRadius: 9999, padding: '0 14px', minHeight: 44, minWidth: 44,
-              cursor: 'pointer', color: 'rgba(255,255,255,0.78)',
-            }}
-          >
-            <MessageCircle size={20} aria-hidden />
-          </button>
-        )}
         {items.length === 0 && (() => {
           const last = activeIndex >= feedExperiences.length - 1
           const next = feedExperiences[activeIndex + 1]
