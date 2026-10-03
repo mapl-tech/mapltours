@@ -13,7 +13,7 @@ interface DayBuilderProps {
 
 /**
  * "Build Your Perfect Day", the evolution of the old 8-hour bar. Shows:
- *  • A stage label (Getting Started → Great Flow → Perfect Day)
+ *  • A stage label (Relaxed day → Great Flow → Perfect Day)
  *  • A gold→emerald→coral progress bar tracking hours / 8
  *  • An encouraging action-oriented nudge
  *

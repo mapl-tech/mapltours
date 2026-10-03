@@ -105,7 +105,7 @@ export default function ItineraryPanel({ open, onClose }: { open: boolean; onClo
             </p>
           </div>
           <button onClick={onClose} aria-label="Close itinerary" style={{
-            width: 40, height: 40, borderRadius: '50%',
+            width: 44, height: 44, borderRadius: '50%', flexShrink: 0,
             border: '1px solid var(--border)', background: '#fff',
             cursor: 'pointer', fontSize: 16, display: 'flex',
             alignItems: 'center', justifyContent: 'center',

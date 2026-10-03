@@ -7,6 +7,7 @@ import { X, Check, Backpack, Users, Activity, Info, MapPin, Clock } from 'lucide
 import type { Experience } from '@/lib/experiences'
 import { priceUnitLabel } from '@/lib/experiences'
 import { useI18n } from '@/lib/i18n'
+import { CANCELLATION_SUMMARY } from '@/lib/refund-pricing'
 
 /**
  * Everything a guest needs before committing to a tour: what happens, what the
@@ -75,9 +76,11 @@ const Fact = ({ icon, label, children }: { icon: React.ReactNode; label?: string
 
 export interface TourDetailsCta {
   inCart: boolean
+  /** The tour cannot join the day in the cart: adding books it in that day's place. */
   blocked: boolean
-  reason?: string | null
-  onToggle: () => void
+  /** One line saying why, shown under the button while blocked. */
+  swapLine?: string | null
+  onAdd: () => void
 }
 
 export default function TourDetailsSheet({ exp, onClose, cta }: { exp: Experience; onClose: () => void; cta?: TourDetailsCta }) {
@@ -286,30 +289,61 @@ export default function TourDetailsSheet({ exp, onClose, cta }: { exp: Experienc
           <div style={{
             flexShrink: 0, borderTop: '1px solid var(--border)',
             padding: '12px 22px calc(12px + env(safe-area-inset-bottom))',
-            display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
           }}>
-            <div style={{ display: 'flex', alignItems: 'baseline', gap: 4, fontFamily: 'var(--font-dm-sans)' }}>
-              <span style={{ fontWeight: 800, fontSize: 19, letterSpacing: '-0.02em', color: 'var(--text-primary)' }}>
-                {formatPrice(exp.price)}
-              </span>
-              <span style={{ fontSize: 13, color: 'var(--text-tertiary)' }}>{priceUnitLabel(exp.pricing)}</span>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+              <div style={{ display: 'flex', alignItems: 'baseline', columnGap: 4, flexWrap: 'wrap', minWidth: 0, fontFamily: 'var(--font-dm-sans)' }}>
+                <span style={{ fontWeight: 800, fontSize: 19, letterSpacing: '-0.02em', color: 'var(--text-primary)' }}>
+                  {formatPrice(exp.price)}
+                </span>
+                {/* Drops to its own line as a whole phrase beside a wide button. */}
+                <span style={{ fontSize: 14, color: 'var(--text-tertiary)', whiteSpace: 'nowrap' }}>{priceUnitLabel(exp.pricing)}</span>
+              </div>
+              {/* Every state has a next step: in the trip it is checkout, and a
+                  tour that cannot join the day books in that day's place (with
+                  an undo on the reel) instead of a grey button that did nothing. */}
+              {cta.inCart ? (
+                <a
+                  href="/checkout"
+                  aria-label={`${t('In your trip')}: ${exp.title}. Go to checkout`}
+                  style={{
+                    minHeight: 48, padding: '0 22px', borderRadius: 9999,
+                    background: 'var(--emerald)', color: '#fff',
+                    fontSize: 15, fontWeight: 700, fontFamily: 'var(--font-dm-sans)',
+                    textDecoration: 'none', whiteSpace: 'nowrap', flexShrink: 0,
+                    display: 'inline-flex', alignItems: 'center', gap: 6,
+                  }}
+                >
+                  ✓ {t('In your trip')}
+                </a>
+              ) : (
+                <button
+                  // Added from in here, the sheet closes: the notice with its
+                  // Undo, and the reel's new "In your trip", are what to see.
+                  onClick={() => { cta.onAdd(); requestClose() }}
+                  aria-describedby={cta.blocked && cta.swapLine ? 'sheet-swap-line' : undefined}
+                  style={{
+                    minHeight: 48, padding: '0 24px', borderRadius: 9999,
+                    background: 'var(--accent)', color: '#fff',
+                    fontSize: 15, fontWeight: 700, fontFamily: 'var(--font-dm-sans)',
+                    border: 'none', cursor: 'pointer',
+                    whiteSpace: 'nowrap', flexShrink: 0,
+                    display: 'inline-flex', alignItems: 'center',
+                  }}
+                >
+                  {cta.blocked ? t('Book this instead') : t('Add to Trip')}
+                </button>
+              )}
             </div>
-            <button
-              onClick={cta.onToggle}
-              disabled={cta.blocked}
-              title={cta.blocked ? cta.reason ?? undefined : undefined}
-              style={{
-                minHeight: 48, padding: '0 24px', borderRadius: 9999,
-                background: cta.inCart ? 'var(--emerald)' : cta.blocked ? 'var(--surface)' : 'var(--accent)',
-                color: cta.inCart ? '#fff' : cta.blocked ? 'var(--text-tertiary)' : '#fff',
-                fontSize: 15, fontWeight: 700, fontFamily: 'var(--font-dm-sans)',
-                border: 'none', cursor: cta.blocked ? 'not-allowed' : 'pointer',
-                whiteSpace: 'nowrap', flexShrink: 0,
-                display: 'inline-flex', alignItems: 'center',
-              }}
-            >
-              {cta.inCart ? t('✓ In Trip') : cta.blocked ? t('Another day') : t('Add to Trip')}
-            </button>
+            {cta.blocked && !cta.inCart && cta.swapLine && (
+              <p id="sheet-swap-line" style={{ margin: '8px 0 0', fontSize: 13, lineHeight: 1.4, color: 'var(--text-secondary)', fontFamily: 'var(--font-dm-sans)' }}>
+                {cta.swapLine}
+              </p>
+            )}
+            {/* The terms where the decision is made, not only at the end of
+                a 3.5-screen scroll. */}
+            <p style={{ margin: '8px 0 0', fontSize: 13, lineHeight: 1.4, color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-sans)' }}>
+              {CANCELLATION_SUMMARY.short}.
+            </p>
           </div>
         )}
       </div>

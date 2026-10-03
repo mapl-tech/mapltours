@@ -69,10 +69,14 @@ export default function CouponPopup() {
   // life of the layout, so a form that stops an event's propagation still
   // counts, and the popup's own form (portaled into <body>) never does.
   const lastFormActivity = useRef<number | null>(null)
+  // The last tap or click anywhere outside the popup: it never opens under a
+  // finger (POPUP_TAP_QUIET_MS).
+  const lastTap = useRef<number | null>(null)
   useEffect(() => {
     const mark = (e: Event) => {
       const el = e.target
       if (!(el instanceof Element) || el.closest('.cpop-scrim')) return
+      if (e.type === 'pointerdown') lastTap.current = Date.now()
       if (el.closest(FORM_TARGET)) lastFormActivity.current = Date.now()
     }
     for (const type of FORM_EVENTS) document.addEventListener(type, mark, true)
@@ -99,6 +103,7 @@ export default function CouponPopup() {
         otherDialog: document.querySelector('[role="dialog"][aria-modal="true"]') !== null,
         focusInField,
         lastFormActivityAt: lastFormActivity.current,
+        lastTapAt: lastTap.current,
         now: Date.now(),
       })
       const step = nextPopupStep({ startedOn: pathname, pathNow: pathnameRef.current, busy, wasBusy })

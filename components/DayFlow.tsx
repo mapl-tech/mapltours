@@ -281,7 +281,7 @@ export default function DayFlow({ compact = false }: { compact?: boolean }) {
                   aria-label={`Remove ${n.title} from your day`}
                   style={{
                     background: 'none', border: 'none', padding: 0,
-                    width: 36, height: 36, flexShrink: 0,
+                    width: 44, height: 44, flexShrink: 0, marginRight: -4,
                     display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
                     cursor: 'pointer', color: n.warn ? WARN : 'var(--text-tertiary)', lineHeight: 0,
                   }}
@@ -385,7 +385,7 @@ export default function DayFlow({ compact = false }: { compact?: boolean }) {
       }}>
         {totalHours > 0 && <>About {formatHours(totalHours)} in the day. </>}
         Your driver handles everything between these stops, and times are confirmed
-        before the day. Food stops are free to add &mdash; you pay the restaurant
+        before the day. Food stops are free to add: you pay the restaurant
         directly, at their price.
       </p>
     </div>

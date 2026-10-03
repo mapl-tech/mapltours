@@ -60,6 +60,12 @@ export function parseDurationHours(duration: string): number {
   return match ? parseFloat(match[1]) : 3
 }
 
+/** The day a swap replaced, kept so the guest can undo it. */
+export interface DaySnapshot {
+  items: CartItem[]
+  stops: FoodStop[]
+}
+
 interface CartStore {
   items: CartItem[]
   stops: FoodStop[]
@@ -73,6 +79,17 @@ interface CartStore {
    */
   pickupTime: string
   addItem: (exp: Experience) => void
+  /**
+   * Book this tour in place of the day in the cart. For a tour that cannot
+   * join the day (more than MAX_TOUR_GAP_MIN from every tour in it): the cart
+   * is ONE day, so the honest choice is this tour or that day, never a dead
+   * button. Keeps the day's date and party size, drops its food stops (named
+   * in droppedStops), and returns what it replaced for restoreDay. Null, and
+   * nothing changed, when the tour is already in the cart.
+   */
+  swapDayFor: (exp: Experience) => DaySnapshot | null
+  /** Put back exactly the day a swap replaced. */
+  restoreDay: (snapshot: DaySnapshot) => void
   conflictsInCart: (exp: Experience) => CartItem[]
   removeItem: (id: number) => void
   addStop: (stop: Omit<FoodStop, 'afterId'> & { afterId?: number | null }) => void
@@ -134,6 +151,24 @@ function defaultDate(): string {
   const d = new Date()
   d.setDate(d.getDate() + 14)
   return d.toISOString().split('T')[0]
+}
+
+// Reported from the store, not from a button, because five surfaces add tours
+// (the reel, explore, the detail page, package cards and the day builder) and
+// instrumenting each one is five chances to miss one. Called only after the
+// line is really in the cart, so a refused add is never counted as an add.
+function reportAdd(line: CartItem): void {
+  trackAddToCart({
+    value: tourPrice(line.pricing, line.travelers),
+    currency: 'USD',
+    items: [{
+      id: String(line.id),
+      name: line.title,
+      category: line.kind === 'package' ? 'tour package' : 'tour',
+      price: tourPrice(line.pricing, line.travelers),
+      quantity: 1,
+    }],
+  })
 }
 
 export const useCartStore = create<CartStore>()(
@@ -237,23 +272,28 @@ export const useCartStore = create<CartStore>()(
         const next = [...kept]
         next.splice(at, 0, line)
         set({ items: next, droppedStops: [] })
-        // Reported from the store, not from a button, because five surfaces
-        // add tours (the reel, explore, the detail page, package cards and
-        // the day builder) and instrumenting each one is five chances to miss
-        // one. Deliberately after the fit checks above, so a refused add is
-        // not counted as an add.
-        trackAddToCart({
-          value: tourPrice(line.pricing, line.travelers),
-          currency: 'USD',
-          items: [{
-            id: String(line.id),
-            name: line.title,
-            category: line.kind === 'package' ? 'tour package' : 'tour',
-            price: tourPrice(line.pricing, line.travelers),
-            quantity: 1,
-          }],
-        })
+        reportAdd(line)
       },
+
+      swapDayFor: (exp: Experience) => {
+        const { items, stops } = get()
+        if (items.some((i) => i.id === exp.id)) return null
+        const snapshot: DaySnapshot = { items, stops }
+        // The day keeps the date and party the guest already set; only what
+        // happens on it changes. Stops ride along a tour of the old day, so
+        // they leave with it and are named for the checkout to mention.
+        const line: CartItem = {
+          ...exp,
+          travelers: items[0]?.travelers ?? 1,
+          date: items[0]?.date || defaultDate(),
+        }
+        set({ items: [line], stops: [], droppedStops: stops.map((s) => s.name) })
+        reportAdd(line)
+        return snapshot
+      },
+
+      restoreDay: (snapshot: DaySnapshot) =>
+        set({ items: snapshot.items, stops: snapshot.stops, droppedStops: [] }),
 
       /**
        * Cart items this experience would replace if added now.

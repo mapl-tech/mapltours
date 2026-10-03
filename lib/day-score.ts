@@ -109,7 +109,7 @@ export function computeDayScore(items: CartItem[], stopHours = 0): DayScoreBreak
   if (isOver) { stage = 'over'; stageLabel = 'Over capacity' }
   else if (hours > 6) { stage = 'perfect'; stageLabel = 'Perfect Day' }
   else if (hours > 3) { stage = 'flowing'; stageLabel = 'Great Flow' }
-  else if (hours > 0) { stage = 'starting'; stageLabel = 'Getting Started' }
+  else if (hours > 0) { stage = 'starting'; stageLabel = 'Relaxed day' }
 
   // ── Nudge: most actionable next step (order matters) ─────────────────────
   const nudge = buildNudge({
@@ -173,7 +173,11 @@ function buildNudge({
   if (total >= 95) return 'You’ve built a perfect day ✨'
 
   if (hours < 3.5) {
-    return `Add ${fmtHours(remaining)} more to hit a great flow`
+    // An invitation, not a verdict: a one-tour day is a fine thing to book,
+    // and the old "Add 7 more to hit a great flow" (no unit) read as if it
+    // were not good enough yet.
+    const unit = Math.round(remaining * 2) / 2 === 1 ? 'hour' : 'hours'
+    return `Room for ${fmtHours(remaining)} more ${unit} in your day, or book it as it is`
   }
   if (hours < 6) {
     // Usually variety is the limiting factor at 4–5 hrs with 1–2 tours

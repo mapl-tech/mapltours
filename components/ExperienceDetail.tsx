@@ -3,22 +3,26 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react'
 import { useFocusTrap } from '@/lib/use-focus-trap'
 import { useRouter } from 'next/navigation'
-import { singleExperiences, packageExperiences, Experience, slugify , priceUnitLabel, mobileVideo, videoPoster } from '@/lib/experiences'
+import { singleExperiences, packageExperiences, Experience, slugify , priceUnitLabel, mobileVideo, mobileHevcVideo, videoPoster, HEVC_SOURCE_TYPE } from '@/lib/experiences'
 import { trackViewItem, trackReelDetailsOpen, trackReelCtaTap } from '@/lib/analytics'
 import { useI18n } from '@/lib/i18n'
 import { useCartStore, DAILY_HOUR_LIMIT } from '@/lib/cart'
-import { roundFive } from '@/lib/day-route'
+import { orderFeed, closeTarget, swapReason } from '@/lib/reel-feed'
+import { addTourToTrip } from '@/lib/add-to-trip'
+import { useSeenReels } from '@/lib/seen-reels'
 import { useHydrated } from '@/lib/use-hydrated'
 import { useTourFit } from '@/lib/use-tour-fit'
+import { useCtaSwap } from '@/lib/use-cta-swap'
 import Link from 'next/link'
 import dynamic from 'next/dynamic'
-import { Heart, MessageCircle, Play, ChevronLeft, ChevronRight, X, ThumbsUp, Send, MapPin, Star, Clock, ShoppingBag, Film } from 'lucide-react'
+import { Heart, MessageCircle, Play, ChevronLeft, ChevronRight, ChevronUp, X, ThumbsUp, Send, MapPin, Star, Clock, ShoppingBag, Film, Check } from 'lucide-react'
 import { useExperienceLike, useComments, DisplayComment } from '@/lib/supabase/hooks'
 import { useAuth } from '@/lib/supabase/auth-context'
 import Avatar from '@/components/Avatar'
 import MaplAvatar from '@/components/MaplAvatar'
 import { isMaplCreator, displayHandle } from '@/lib/creator'
 import TourDetailsSheet from './TourDetailsSheet'
+import { CANCELLATION_SUMMARY } from '@/lib/refund-pricing'
 
 declare global {
   interface Window {
@@ -71,10 +75,25 @@ function reelFacts(included: string[] | undefined): string | null {
 }
 
 /* ── Single Reel (Snapchat style) ── */
-function Reel({ exp, isActive, near, totalCount, currentIndex, onComments }: { exp: Experience; isActive: boolean; near: boolean; totalCount: number; currentIndex: number; onComments: () => void }) {
+/**
+ * The next reel starts buffering ahead of the swipe only on a phone whose
+ * connection can spare it: not with Save-Data, not on 2G or 3G. Safari has no
+ * connection information and is treated as able.
+ */
+function canBufferAhead(): boolean {
+  if (!window.matchMedia('(max-width: 767px)').matches) return false
+  const c = (navigator as unknown as { connection?: { saveData?: boolean; effectiveType?: string } }).connection
+  if (!c) return true
+  return !c.saveData && !['slow-2g', '2g', '3g'].includes(c.effectiveType ?? '4g')
+}
+
+function Reel({ exp, isActive, near, ahead, onComments }: { exp: Experience; isActive: boolean; near: boolean; ahead: boolean; onComments: () => void }) {
   const videoRef = useRef<HTMLVideoElement>(null)
+  const progressRef = useRef<HTMLDivElement>(null)
   const [paused, setPaused] = useState(false)
-  const { addItem, removeItem, isInCart } = useCartStore()
+  const isInCart = useCartStore((s) => s.isInCart)
+  // Subscribed to items so the button follows the cart when it changes.
+  useCartStore((s) => s.items)
   const { t, formatPrice } = useI18n()
   const { liked, likeCount, toggleLike } = useExperienceLike(exp.id, isActive)
   const hydrated = useHydrated()
@@ -82,22 +101,39 @@ function Reel({ exp, isActive, near, totalCount, currentIndex, onComments }: { e
   const tourFit = useTourFit(exp)
   const blocked = !inCart && !tourFit.allowed
   const slug = slugify(exp.title)
-  // The outcome is read back from the store, not assumed from the button:
-  // addItem returns silently when the day-fit floor refuses (lib/cart), so a
-  // tap that changed nothing is reported as blocked with the reason shown.
-  // A replay (see the mount effect) only ever adds, and reports 'replayed'
-  // only when it did: the caller has checked the cart, so a miss here is a
-  // refusal, reported as blocked like any other.
-  const toggleCart = (replayed = false) => {
-    if (inCart && !replayed) {
-      removeItem(exp.id)
-      trackReelCtaTap(slug, 'removed')
-      return
+  const cta = useCtaSwap(inCart)
+  // A beat of feedback where the thumb is: the new "In your trip" pill pops
+  // in, and phones that can (Android) give one short tick.
+  const [justAdded, setJustAdded] = useState(false)
+  const celebrate = () => {
+    setJustAdded(true)
+    window.setTimeout(() => setJustAdded(false), 700)
+    try { navigator.vibrate?.(12) } catch { /* not every phone can */ }
+  }
+  // Same add as every surface (lib/add-to-trip): into the day, or in that
+  // day's place when it cannot join it, with a notice naming the day and an
+  // Undo. The notice sits at the top here (the phone bar already offers
+  // Checkout). A second tap on an added tour no longer removes it: the pill
+  // becomes the way to checkout, and Undo is the way back.
+  const addToTrip = (replayed = false) => {
+    const result = addTourToTrip(exp, tourFit, {
+      placement: 'reel',
+      checkout: false,
+      replayed,
+      onUndo: () => {
+        trackReelCtaTap(slug, 'undone')
+        cta.afterUndo()
+      },
+    })
+    if (result === 'added') {
+      trackReelCtaTap(slug, replayed ? 'replayed' : 'added')
+      celebrate()
+    } else if (result === 'swapped') {
+      trackReelCtaTap(slug, 'swapped', tourFit.reason ?? 'day-fit')
+      celebrate()
+    } else if (result === 'blocked') {
+      trackReelCtaTap(slug, 'blocked', tourFit.reason ?? 'day-fit')
     }
-    if (tourFit.allowed) addItem(exp)
-    const gained = useCartStore.getState().isInCart(exp.id)
-    if (gained) trackReelCtaTap(slug, replayed ? 'replayed' : 'added')
-    else trackReelCtaTap(slug, 'blocked', tourFit.reason ?? 'day-fit')
   }
   const openDetails = () => {
     setDetailsFor(exp)
@@ -121,7 +157,7 @@ function Reel({ exp, isActive, near, totalCount, currentIndex, onComments }: { e
     let unsubscribe: (() => void) | undefined
     const replay = () => {
       if (useCartStore.getState().isInCart(exp.id)) return
-      toggleCart(true)
+      addToTrip(true)
     }
     const timer = setTimeout(() => {
       const tap = window.__maplEarlyTap
@@ -144,14 +180,9 @@ function Reel({ exp, isActive, near, totalCount, currentIndex, onComments }: { e
   // heading; off-screen reels keep <h2> so we never render multiple h1s.
   const TitleTag = isActive ? 'h1' : 'h2'
   const facts = reelFacts(exp.included)
-  // The phone line under a spent button has one line of about 286px, and
-  // tourFit.reason is a 160-character sentence that ellipsed after the
-  // distance. This says the same from the same fit result in one clause.
-  const shortReason = blocked && tourFit.reason
-    ? (tourFit.minutes !== null && tourFit.nearest
-      ? `${roundFive(tourFit.minutes)} min from ${tourFit.nearest}. Pick another day.`
-      : 'Too far from the rest of your day. Pick another day.')
-    : null
+  // The phone line under "Book this instead" has one line of about 286px:
+  // how far this tour is from the day, and what booking it does.
+  const shortReason = blocked ? swapReason(tourFit) : null
   const [shareToast, setShareToast] = useState<string | null>(null)
   const [detailsFor, setDetailsFor] = useState<Experience | null>(null)
   const [clipsOpen, setClipsOpen] = useState(false)
@@ -286,17 +317,42 @@ function Reel({ exp, isActive, near, totalCount, currentIndex, onComments }: { e
       }
     } else {
       video.pause()
-      // Free memory for off-screen videos: the <source> children are gone
-      // from this render, so load() empties the element.
-      video.removeAttribute('src')
-      video.load()
+      if (!near) {
+        // Far off screen: the <source> children are gone from this render,
+        // so load() empties the element and frees its buffer.
+        video.removeAttribute('src')
+        video.load()
+      } else if (ahead && canBufferAhead()) {
+        // The next reel buffers now, so the swipe starts it at once instead
+        // of on a black frame. The one just left stays loaded too: swiping
+        // back used to re-buffer it from nothing.
+        video.preload = 'auto'
+      }
     }
 
     return () => {
       video.removeEventListener('play', onPlay)
       video.removeEventListener('pause', onPause)
     }
-  }, [isActive, exp.video])
+  }, [isActive, near, ahead, exp.video])
+
+  // TikTok's thin line: how far into the clip, so a visitor sees it is short
+  // and loops. Written straight to the element each frame, not through state.
+  useEffect(() => {
+    const video = videoRef.current
+    const bar = progressRef.current
+    if (!isActive || !video || !bar) return
+    let raf = 0
+    const tick = () => {
+      if (video.duration > 0) bar.style.transform = `scaleX(${Math.min(1, video.currentTime / video.duration)})`
+      raf = requestAnimationFrame(tick)
+    }
+    raf = requestAnimationFrame(tick)
+    return () => {
+      cancelAnimationFrame(raf)
+      bar.style.transform = 'scaleX(0)'
+    }
+  }, [isActive])
 
   const togglePlay = () => {
     if (!videoRef.current) return
@@ -316,7 +372,11 @@ function Reel({ exp, isActive, near, totalCount, currentIndex, onComments }: { e
       // root is focusable and Space or Enter toggles playback.
       tabIndex={isActive ? 0 : -1}
       role="group"
-      aria-label={`${exp.title} reel. Press Space to pause or play the video.`}
+      className="reel-item"
+      aria-label={`${exp.title} reel`}
+      // The tour's description stands in for the video (it has no sound and
+      // no text of its own), then how to pause it.
+      aria-describedby={`reel-desc-${slug} reel-hint`}
       onKeyDown={(e) => {
         if (e.target !== e.currentTarget) return
         if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); togglePlay() }
@@ -358,18 +418,24 @@ function Reel({ exp, isActive, near, totalCount, currentIndex, onComments }: { e
       <video
         ref={videoRef}
         loop muted playsInline
-        preload={isActive ? 'auto' : 'none'}
+        preload={isActive ? 'auto' : near ? 'metadata' : 'none'}
         poster={near ? (exp.video && !exp.genericClip ? videoPoster(exp.video) : `/_next/image?url=${encodeURIComponent(exp.image)}&w=750&q=70`) : undefined}
         style={{ width: '100%', height: '100%', objectFit: 'cover', willChange: 'opacity', background: '#08080A' }}
       >
-        {/* One source, the 720x1280 phone clip, with no media attribute:
-            with two media-gated sources WebKit on an iPhone profile fetched
-            the 30 MB original. Phones are almost every visitor, so the HTML
-            serves them; the effect above swaps in the original on desktop.
-            Rendered only while active; deactivation calls load() with no
-            sources, which empties the element and frees the buffer. */}
-        {isActive && exp.video && (
-          <source src={mobileVideo(exp.video)} type="video/mp4" />
+        {/* The 720x1280 phone clip, never a media attribute: with two
+            media-gated sources WebKit on an iPhone profile fetched the 30 MB
+            original. Two codecs instead, chosen by type: HEVC (~1.3 Mbps,
+            every iPhone and most Android phones) and the H.264 file for any
+            browser that cannot play it. Phones are almost every visitor, so
+            the HTML serves them; the effect above swaps in the original on
+            desktop. Rendered for this reel and its neighbours; a reel that
+            leaves the neighbourhood calls load() with no sources, which
+            empties the element and frees the buffer. */}
+        {near && exp.video && (
+          <>
+            <source src={mobileHevcVideo(exp.video)} type={HEVC_SOURCE_TYPE} />
+            <source src={mobileVideo(exp.video)} type="video/mp4" />
+          </>
         )}
       </video>
       )}
@@ -389,20 +455,18 @@ function Reel({ exp, isActive, near, totalCount, currentIndex, onComments }: { e
         </div>
       )}
 
-      {/* ── Snapchat-style story segments ── */}
-      <div style={{
-        // env(): the site opts into viewport-fit=cover, so without the inset
-        // this strip renders under the iPhone Dynamic Island.
+      {/* ── Playback progress for this clip ──
+          Replaces 14 hair-thin position segments that repeated the "1 / 14"
+          counter below them. env(): the site opts into viewport-fit=cover,
+          so without the inset this line renders under the Dynamic Island. */}
+      <div aria-hidden style={{
         position: 'absolute', top: 'max(calc(env(safe-area-inset-top, 0px) + 8px), 50px)', left: 12, right: 12, zIndex: 15,
-        display: 'flex', gap: 3,
+        height: 2.5, borderRadius: 2, overflow: 'hidden', background: 'rgba(255,255,255,0.25)',
       }}>
-        {Array.from({ length: totalCount }).map((_, i) => (
-          <div key={i} style={{
-            flex: 1, height: 2.5, borderRadius: 2,
-            background: i <= currentIndex ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.25)',
-            transition: 'background 0.3s ease',
-          }} />
-        ))}
+        <div ref={progressRef} style={{
+          height: '100%', width: '100%', background: 'rgba(255,255,255,0.92)',
+          transform: 'scaleX(0)', transformOrigin: 'left center',
+        }} />
       </div>
 
       {/* Top gradient */}
@@ -458,7 +522,7 @@ function Reel({ exp, isActive, near, totalCount, currentIndex, onComments }: { e
             // than the client's first paint. Suppress the warning, the
             // client value is the correct one and renders within ms.
             suppressHydrationWarning
-            style={{ fontSize: 12, fontWeight: 700, fontFamily: 'var(--font-dm-sans)', padding: '1px 8px', borderRadius: 9999, background: 'rgba(0,0,0,0.5)', visibility: exp.reviews + likeCount > 0 ? 'visible' : 'hidden' }}
+            style={{ fontSize: 12, fontWeight: 700, fontFamily: 'var(--font-dm-sans)', padding: '1px 8px', borderRadius: 9999, background: 'rgba(0,0,0,0.6)', visibility: exp.reviews + likeCount > 0 ? 'visible' : 'hidden' }}
           >
             {(exp.reviews + likeCount).toLocaleString('en-US')}
           </span>
@@ -477,7 +541,7 @@ function Reel({ exp, isActive, near, totalCount, currentIndex, onComments }: { e
           <span className="reel-action-disc">
             <MessageCircle size={24} strokeWidth={1.8} />
           </span>
-          <span style={{ fontSize: 12, fontWeight: 700, fontFamily: 'var(--font-dm-sans)', padding: '1px 8px', borderRadius: 9999, background: 'rgba(0,0,0,0.5)', visibility: exp.comments.length > 0 ? 'visible' : 'hidden' }}>
+          <span style={{ fontSize: 12, fontWeight: 700, fontFamily: 'var(--font-dm-sans)', padding: '1px 8px', borderRadius: 9999, background: 'rgba(0,0,0,0.6)', visibility: exp.comments.length > 0 ? 'visible' : 'hidden' }}>
             {exp.comments.length}
           </span>
         </button>
@@ -485,7 +549,7 @@ function Reel({ exp, isActive, near, totalCount, currentIndex, onComments }: { e
         {/* Share */}
         <button
           onClick={(e) => { e.stopPropagation(); handleShare() }}
-          aria-label="Share this experience"
+          aria-label="Send this tour"
           style={{
             display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2,
             background: 'none', border: 'none', cursor: 'pointer', color: 'white',
@@ -495,7 +559,7 @@ function Reel({ exp, isActive, near, totalCount, currentIndex, onComments }: { e
           <span className="reel-action-disc">
             <Send size={22} strokeWidth={1.8} />
           </span>
-          <span style={{ fontSize: 12, fontWeight: 700, fontFamily: 'var(--font-dm-sans)', textShadow: '0 1px 3px rgba(0,0,0,0.6)' }}>
+          <span style={{ fontSize: 12, fontWeight: 700, fontFamily: 'var(--font-dm-sans)', padding: '1px 8px', borderRadius: 9999, background: 'rgba(0,0,0,0.6)' }}>
             Send
           </span>
         </button>
@@ -503,7 +567,7 @@ function Reel({ exp, isActive, near, totalCount, currentIndex, onComments }: { e
         {/* Guest clips, opens UserTourVideos overlay */}
         <button
           onClick={(e) => { e.stopPropagation(); setClipsOpen(true) }}
-          aria-label="Guest tour videos"
+          aria-label="Clips from guests on this tour"
           style={{
             display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2,
             background: 'none', border: 'none', cursor: 'pointer', color: 'white',
@@ -513,7 +577,7 @@ function Reel({ exp, isActive, near, totalCount, currentIndex, onComments }: { e
           <span className="reel-action-disc">
             <Film size={22} strokeWidth={1.8} />
           </span>
-          <span style={{ fontSize: 12, fontWeight: 700, fontFamily: 'var(--font-dm-sans)', textShadow: '0 1px 3px rgba(0,0,0,0.6)' }}>
+          <span style={{ fontSize: 12, fontWeight: 700, fontFamily: 'var(--font-dm-sans)', padding: '1px 8px', borderRadius: 9999, background: 'rgba(0,0,0,0.6)' }}>
             Clips
           </span>
         </button>
@@ -640,11 +704,12 @@ function Reel({ exp, isActive, near, totalCount, currentIndex, onComments }: { e
       }}>
         {/* The block's own shade: travels with the mobile 96px lift, so the
             text never depends on the viewport-anchored scrim below it.
-            Uniform 0.55 core, feathered by blur; with the base scrim the
-            title computes >= 4.5:1 over a white frame. */}
+            Uniform 0.6 core, feathered by blur, reaching 32px above the
+            creator line so that line sits on the core, not the feather (at
+            20px it computed 4.54:1 over a white frame on a tall overlay). */}
         <div aria-hidden style={{
-          position: 'absolute', inset: '-20px -28px -12px -28px', zIndex: -1,
-          background: 'rgba(0,0,0,0.55)', borderRadius: 32, filter: 'blur(28px)',
+          position: 'absolute', inset: '-32px -28px -12px -28px', zIndex: -1,
+          background: 'rgba(0,0,0,0.6)', borderRadius: 32, filter: 'blur(28px)',
           pointerEvents: 'none',
         }} />
         {/* Creator name */}
@@ -658,7 +723,7 @@ function Reel({ exp, isActive, near, totalCount, currentIndex, onComments }: { e
         {/* Title */}
         <TitleTag style={{
           fontFamily: 'var(--font-dm-sans)', fontWeight: 700, fontSize: 18,
-          color: 'white', lineHeight: 1.2, marginBottom: 6,
+          color: 'white', lineHeight: 1.2, marginBottom: 8,
         }}>
           {t(exp.title)}
         </TitleTag>
@@ -666,7 +731,7 @@ function Reel({ exp, isActive, near, totalCount, currentIndex, onComments }: { e
         {/* Description, 2 line clamp. Phones hide it (class): with it, the
             chips and the helper line, the overlay covered more than half the
             video; the same words are one tap away in the details sheet. */}
-        <p className="reel-desc" style={{
+        <p id={`reel-desc-${slug}`} className="reel-desc" style={{
           fontSize: 15, color: '#fff',
           fontFamily: 'var(--font-dm-sans)', lineHeight: 1.45, marginBottom: 10,
           display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden',
@@ -688,9 +753,9 @@ function Reel({ exp, isActive, near, totalCount, currentIndex, onComments }: { e
           }}
         >
           <MapPin size={13} aria-hidden /> {exp.destination}
-          <span aria-hidden style={{ opacity: 0.6 }}>·</span>
+          <span aria-hidden style={{ opacity: 0.8 }}>·</span>
           <Clock size={13} aria-hidden /> {exp.duration}
-          <span aria-hidden style={{ opacity: 0.6 }}>·</span>
+          <span aria-hidden style={{ opacity: 0.8 }}>·</span>
           <span style={{ textDecoration: 'underline', textUnderlineOffset: 3 }}>What&apos;s included</span>
         </button>
 
@@ -699,7 +764,7 @@ function Reel({ exp, isActive, near, totalCount, currentIndex, onComments }: { e
             full list stays a tap away in the details sheet. */}
         {facts && (
           <p className="reel-facts" style={{
-            margin: '0 0 8px', fontSize: 12, lineHeight: '16px',
+            margin: '0 0 8px', fontSize: 13, lineHeight: '17px',
             color: 'var(--text-on-dark-2)', fontFamily: 'var(--font-dm-sans)',
             whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
           }}>
@@ -759,81 +824,222 @@ function Reel({ exp, isActive, near, totalCount, currentIndex, onComments }: { e
           </span>
         </div>
 
-        {/* Price + CTA row */}
-        <div style={{
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        }}>
-          {/* flexWrap + nowrap unit: when the row is too narrow beside the
-              CTA, "up to 3 people" drops to its own line as a whole phrase
-              instead of breaking mid-phrase into a ragged "up to 3 / people". */}
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: 4, flexWrap: 'wrap', minWidth: 0, paddingRight: 8 }}>
-            <span style={{ fontSize: 13, fontWeight: 500, color: '#fff', fontFamily: 'var(--font-dm-sans)' }}>{t('From')}</span>
-            <span style={{ fontFamily: 'var(--font-dm-sans)', fontWeight: 800, fontSize: 22, color: 'white', letterSpacing: '-0.02em' }}>{formatPrice(exp.price)}</span>
-            <span style={{ fontSize: 13, color: '#fff', fontFamily: 'var(--font-dm-sans)', whiteSpace: 'nowrap' }}>{priceUnitLabel(exp.pricing)}</span>
-          </div>
-          <button
-            className="reel-cta"
-            data-slug={slug}
-            onClick={(e) => { e.stopPropagation(); toggleCart() }}
-            disabled={blocked}
-            title={tourFit.reason ?? undefined}
-            aria-pressed={inCart}
-            aria-label={inCart ? `Remove ${exp.title} from your trip` : blocked ? `${exp.title}: another day` : `Add ${exp.title} to your trip`}
-            style={{
-              minHeight: 48, padding: '0 22px', borderRadius: 9999,
-              // Spent, not merely inert: a white CTA that does nothing when
-              // pressed reads as a broken page.
-              background: inCart ? 'var(--emerald)' : blocked ? 'rgba(255,255,255,0.18)' : 'white',
-              color: inCart ? 'white' : blocked ? 'rgba(255,255,255,0.75)' : '#000',
-              fontSize: 15, fontWeight: 700, fontFamily: 'var(--font-dm-sans)',
-              border: 'none', cursor: blocked ? 'not-allowed' : 'pointer',
-              whiteSpace: 'nowrap', flexShrink: 0,
-              display: 'inline-flex', alignItems: 'center',
-            }}
-          >
-            {inCart ? t('✓ In Trip') : blocked ? t('Another day') : t('Add to Trip')}
-          </button>
-        </div>
-        {/* Phones have no title tooltip, so the reason a button is spent is
-            written under it, in flow (the bottom bar covers anything hung
-            below the row) and only while blocked, so nothing is reserved
-            otherwise. One line; the details sheet carries the whole reason. */}
+        {/* Why "Book this instead": ABOVE the price row, never below it. The
+            block is anchored to the bottom, so a line under the button that
+            appeared or went away moved the button (22px on a phone after a
+            swap, 29px on desktop after an add). Phones get the short line,
+            wider screens the whole reason; only while it applies. */}
         {shortReason && (
-          <p className="reel-blocked-reason" style={{
-            margin: '6px 0 0', fontSize: 12, lineHeight: '16px',
+          <p id={`swap-${slug}`} className="reel-blocked-reason" style={{
+            margin: '0 0 8px', fontSize: 13, lineHeight: '17px',
             color: 'var(--text-on-dark-2)', fontFamily: 'var(--font-dm-sans)',
             whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
           }}>
             {shortReason}
           </p>
         )}
-        {/* The toggle's result, spoken: the button's label alone is not a
-            status message (WCAG 4.1.3). */}
-        <p role="status" aria-live="polite" className="visually-hidden">
-          {hydrated ? (inCart ? `${exp.title} added to your trip.` : '') : ''}
-        </p>
+        {blocked && (
+          <p className="reel-helper" style={{
+            margin: '0 0 10px', fontSize: 13, lineHeight: 1.5,
+            color: 'rgba(255,255,255,0.78)', fontFamily: 'var(--font-dm-sans)',
+          }}>
+            {`${tourFit.reason} Booking it here takes that day's place, and you can undo it.`}
+          </p>
+        )}
 
-        {/* Points at where the detail actually lives. The reel is the
-            browsing surface and stays uncluttered; what to bring, group size
-            and what the price covers sit in checkout, where they change a
-            decision. Wording flips once it is in the trip so it reads as a
-            next step rather than a repeated instruction. */}
-        <p className="reel-helper" style={{
-          marginTop: 10, fontSize: 12.5, lineHeight: 1.5,
-          color: 'rgba(255,255,255,0.72)', fontFamily: 'var(--font-dm-sans)',
+        {/* Price + CTA row. Under 360px it stacks (globals.css): beside the
+            button the price had 70px and broke into three lines, and the
+            button moved 12px when it became "In your trip". */}
+        <div className="reel-price-row" style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         }}>
-          {blocked
-            ? tourFit.reason
-            : inCart
-              ? t('Full details, what to bring and group size are in your itinerary.')
-              : t('Add to your trip to see full details and what to bring.')}
-        </p>
+          {/* flexWrap + nowrap unit: when the row is too narrow beside the
+              CTA, "up to 3 people" drops to its own line as a whole phrase
+              instead of breaking mid-phrase into a ragged "up to 3 / people". */}
+          <div className="reel-price" style={{ display: 'flex', alignItems: 'baseline', gap: 4, flexWrap: 'wrap', minWidth: 0, paddingRight: 8 }}>
+            <span style={{ fontSize: 13, fontWeight: 500, color: '#fff', fontFamily: 'var(--font-dm-sans)' }}>{t('From')}</span>
+            <span style={{ fontFamily: 'var(--font-dm-sans)', fontWeight: 800, fontSize: 22, color: 'white', letterSpacing: '-0.02em' }}>{formatPrice(exp.price)}</span>
+            <span style={{ fontSize: 14, fontWeight: 600, color: '#fff', fontFamily: 'var(--font-dm-sans)', whiteSpace: 'nowrap' }}>{priceUnitLabel(exp.pricing)}</span>
+          </div>
+          {/* Every state has a next step. In the trip it is checkout (a
+              second tap used to remove the tour, and the bar arriving under
+              the thumb made that easy); a tour that cannot join the day books
+              in that day's place, with an Undo, instead of a grey button
+              that did nothing on 11 of 14 reels once one tour was added. */}
+          {/* Both states are at least 140px ("In your trip" is the wider
+              label) and never narrower than the button just pressed, so the
+              price beside them never reflows on an add or a swap. Names start
+              with the visible words, for speech control (WCAG 2.5.3). */}
+          {inCart ? (
+            <Link
+              ref={cta.ref}
+              href="/checkout"
+              onClick={(e) => e.stopPropagation()}
+              className={justAdded ? 'reel-in-trip reel-in-trip--fresh' : 'reel-in-trip'}
+              aria-label={`${t('In your trip')}: ${exp.title}. Go to checkout`}
+              style={{
+                minHeight: 48, minWidth: Math.max(140, cta.minWidth), padding: '0 18px', borderRadius: 9999,
+                background: 'var(--emerald)', color: 'white',
+                fontSize: 15, fontWeight: 700, fontFamily: 'var(--font-dm-sans)',
+                textDecoration: 'none', whiteSpace: 'nowrap', flexShrink: 0,
+                display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+              }}
+            >
+              <Check size={16} strokeWidth={3} aria-hidden /> {t('In your trip')}
+            </Link>
+          ) : (
+            <button
+              ref={cta.ref}
+              className="reel-cta"
+              data-slug={slug}
+              onClick={(e) => { e.stopPropagation(); cta.press(e.currentTarget); addToTrip() }}
+              aria-label={`${blocked ? t('Book this instead') : t('Add to Trip')}: ${exp.title}`}
+              aria-describedby={shortReason ? `swap-${slug}` : undefined}
+              style={{
+                minHeight: 48, minWidth: Math.max(140, cta.minWidth), padding: '0 22px', borderRadius: 9999,
+                background: 'white', color: '#000',
+                fontSize: 15, fontWeight: 700, fontFamily: 'var(--font-dm-sans)',
+                border: 'none', cursor: 'pointer',
+                whiteSpace: 'nowrap', flexShrink: 0,
+                display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+              }}
+            >
+              {blocked ? t('Book this instead') : t('Add to Trip')}
+            </button>
+          )}
+        </div>
       </div>
       {detailsFor && (
         <TourDetailsSheet
           exp={detailsFor}
           onClose={() => setDetailsFor(null)}
-          cta={{ inCart, blocked, reason: tourFit.reason, onToggle: () => toggleCart() }}
+          cta={{ inCart, blocked, swapLine: shortReason, onAdd: () => addToTrip() }}
+        />
+      )}
+    </div>
+  )
+}
+
+/**
+ * Desktop only: the reel's right panel when the tour has no comments yet,
+ * which today is every tour. It held "No comments yet. Be the first!" across
+ * two thirds of the screen; it now carries what decides a booking (price,
+ * the add, the cancellation terms, what is included) beside the video, with
+ * the full details one click away.
+ */
+function DesktopTourPanel({ exp }: { exp: Experience }) {
+  const { t, formatPrice } = useI18n()
+  const hydrated = useHydrated()
+  const isInCart = useCartStore((s) => s.isInCart)
+  useCartStore((s) => s.items)
+  const inCart = hydrated && isInCart(exp.id)
+  const tourFit = useTourFit(exp)
+  const blocked = !inCart && !tourFit.allowed
+  const slug = slugify(exp.title)
+  const swapLine = blocked ? swapReason(tourFit) : null
+  const [details, setDetails] = useState(false)
+  const cta = useCtaSwap(inCart)
+  const add = () => {
+    const result = addTourToTrip(exp, tourFit, {
+      placement: 'reel',
+      checkout: false,
+      onUndo: () => {
+        trackReelCtaTap(slug, 'undone')
+        cta.afterUndo()
+      },
+    })
+    if (result === 'added') trackReelCtaTap(slug, 'added')
+    else if (result === 'swapped') trackReelCtaTap(slug, 'swapped', tourFit.reason ?? 'day-fit')
+  }
+  return (
+    <div style={{ padding: '4px 0 24px', fontFamily: 'var(--font-dm-sans)', color: 'white' }}>
+      <p style={{ fontSize: 12, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--gold-warm)' }}>
+        {exp.category}
+      </p>
+      <h2 style={{ fontSize: 22, fontWeight: 700, lineHeight: 1.2, letterSpacing: '-0.02em', margin: '6px 0 8px' }}>
+        {t(exp.title)}
+      </h2>
+      <p style={{ fontSize: 14, color: '#cccccc', display: 'flex', gap: 14, flexWrap: 'wrap' }}>
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}><MapPin size={14} aria-hidden /> {exp.destination}, {exp.parish}</span>
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}><Clock size={14} aria-hidden /> {exp.duration}</span>
+      </p>
+      {/* Under 420px of panel (a 768px tablet gives it about 300) the
+          price and the button stack, see .reel-panel in globals.css. */}
+      <div className="reel-panel-price-row" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, margin: '20px 0 0' }}>
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, flexWrap: 'wrap' }}>
+          <span style={{ fontSize: 14, color: '#cccccc' }}>{t('From')}</span>
+          <span style={{ fontSize: 26, fontWeight: 800, letterSpacing: '-0.02em' }}>{formatPrice(exp.price)}</span>
+          <span style={{ fontSize: 14, fontWeight: 600, whiteSpace: 'nowrap' }}>{priceUnitLabel(exp.pricing)}</span>
+        </div>
+        {inCart ? (
+          <Link
+            ref={cta.ref}
+            href="/checkout"
+            aria-label={`${t('In your trip')}: ${exp.title}. Go to checkout`}
+            style={{
+              minHeight: 48, minWidth: Math.max(140, cta.minWidth), padding: '0 20px', borderRadius: 9999, flexShrink: 0,
+              background: 'var(--emerald)', color: 'white', textDecoration: 'none',
+              fontSize: 15, fontWeight: 700, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+            }}
+          >
+            <Check size={16} strokeWidth={3} aria-hidden /> {t('In your trip')}
+          </Link>
+        ) : (
+          <button
+            ref={cta.ref}
+            type="button"
+            onClick={(e) => { cta.press(e.currentTarget); add() }}
+            aria-label={`${blocked ? t('Book this instead') : t('Add to Trip')}: ${exp.title}`}
+            aria-describedby={swapLine ? `panel-swap-${slug}` : undefined}
+            style={{
+              minHeight: 48, minWidth: Math.max(140, cta.minWidth), padding: '0 22px', borderRadius: 9999, flexShrink: 0,
+              background: 'white', color: '#000', border: 'none', cursor: 'pointer',
+              fontSize: 15, fontWeight: 700, fontFamily: 'var(--font-dm-sans)',
+            }}
+          >
+            {blocked ? t('Book this instead') : t('Add to Trip')}
+          </button>
+        )}
+      </div>
+      {swapLine && (
+        <p id={`panel-swap-${slug}`} style={{ marginTop: 8, fontSize: 13, color: '#cccccc' }}>{swapLine}</p>
+      )}
+      <p style={{ marginTop: 10, fontSize: 13, lineHeight: 1.5, color: '#cccccc' }}>
+        {CANCELLATION_SUMMARY.short}.{' '}
+        <a href="/terms" target="_blank" rel="noopener noreferrer" aria-label={`${t('Full policy')} (opens in a new tab)`} style={{ color: 'white', textDecoration: 'underline' }}>
+          {t('Full policy')}
+        </a>
+      </p>
+      {exp.included?.length ? (
+        <div style={{ marginTop: 22, paddingTop: 18, borderTop: '1px solid rgba(255,255,255,0.08)' }}>
+          <h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 10 }}>{t('What is included')}</h3>
+          <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {exp.included.slice(0, 5).map((line) => (
+              <li key={line} style={{ display: 'flex', gap: 8, fontSize: 14, lineHeight: 1.45, color: '#e8e6e1' }}>
+                <Check size={15} strokeWidth={2.5} color="var(--emerald)" style={{ flexShrink: 0, marginTop: 2 }} aria-hidden /> {line}
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+      <button
+        type="button"
+        className="reel-panel-details"
+        onClick={() => setDetails(true)}
+        style={{
+          marginTop: 18, minHeight: 44, padding: '0 16px', borderRadius: 9999,
+          background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.16)',
+          color: 'white', fontSize: 14, fontWeight: 600, fontFamily: 'var(--font-dm-sans)', cursor: 'pointer',
+        }}
+      >
+        {t('All details, ages and what to bring')}
+      </button>
+      <p style={{ marginTop: 26, fontSize: 13, color: '#a9a9a9' }}>{t('No comments yet. Be the first below.')}</p>
+      {details && (
+        <TourDetailsSheet
+          exp={exp}
+          onClose={() => setDetails(false)}
+          cta={{ inCart, blocked, swapLine, onAdd: add }}
         />
       )}
     </div>
@@ -1040,7 +1246,7 @@ function MobileCommentsSheet({ comments, commentText, setCommentText, addComment
                         <div style={{ flex: 1 }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 }}>
                             <span style={{ fontSize: 12, fontWeight: 600, fontFamily: 'var(--font-dm-sans)', color: 'white' }}>{reply.isHandle ? '@' : ''}{reply.user}</span>
-                            <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.25)', fontFamily: 'var(--font-dm-sans)' }}>{reply.time}</span>
+                            <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.66)', fontFamily: 'var(--font-dm-sans)' }}>{reply.time}</span>
                           </div>
                           <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.6)', fontFamily: 'var(--font-dm-sans)', lineHeight: 1.5 }}>{reply.text}</p>
                         </div>
@@ -1058,7 +1264,7 @@ function MobileCommentsSheet({ comments, commentText, setCommentText, addComment
           {replyingTo && (
             <div style={{
               padding: '6px 20px 0', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-              fontSize: 12, color: 'rgba(255,255,255,0.4)', fontFamily: 'var(--font-dm-sans)',
+              fontSize: 12, color: 'rgba(255,255,255,0.72)', fontFamily: 'var(--font-dm-sans)',
             }}>
               <span>Replying to <span style={{ color: 'white', fontWeight: 600 }}>{replyingTo.user}</span></span>
               <button onClick={() => { setReplyingTo(null); setCommentText('') }} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 12, color: 'rgba(255,255,255,0.6)', fontFamily: 'var(--font-dm-sans)' }}>Cancel</button>
@@ -1089,7 +1295,7 @@ function MobileCommentsSheet({ comments, commentText, setCommentText, addComment
               }}
             />
             {commentText.trim() && (
-              <button onClick={submitAndBlur} aria-label="Post comment" style={{ width: 34, height: 34, borderRadius: '50%', background: '#FFFC00', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <button onClick={submitAndBlur} aria-label="Post comment" style={{ width: 44, height: 44, flexShrink: 0, borderRadius: '50%', background: '#FFFC00', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <Send size={15} color="#000" />
               </button>
             )}
@@ -1126,11 +1332,10 @@ export default function ExperienceDetail({ slug }: { slug: string }) {
     // same order, so the tour a visitor tapped (an ad, a search result) is on
     // screen from the first paint instead of appearing only after hydration
     // scrolls a 15-reel list to it, which on a slow phone took 6 to 10 s of
-    // showing the wrong tour at the wrong price.
-    const requestedFirst = (list: Experience[]) => {
-      const i = list.findIndex((e) => slugify(e.title) === slug)
-      return i > 0 ? [list[i], ...list.slice(0, i), ...list.slice(i + 1)] : list
-    }
+    // showing the wrong tour at the wrong price. The rest follow nearest
+    // first (lib/reel-feed), so the next swipe is usually a tour that can
+    // join the same day.
+    const requestedFirst = (list: Experience[]) => orderFeed(list, slug)
     if (!dayIsFull || items.length === 0) return requestedFirst(singleExperiences)
     const cartIdSet = new Set(items.map((i) => i.id))
     const cartExps = singleExperiences.filter((e) => cartIdSet.has(e.id))
@@ -1165,6 +1370,8 @@ export default function ExperienceDetail({ slug }: { slug: string }) {
   useEffect(() => {
     if (!activeExp) return
     const t = window.setTimeout(() => {
+      // Watched, for the home row's rings (lib/seen-reels).
+      useSeenReels.getState().markSeen(activeExp.id)
       trackViewItem({
         value: activeExp.price,
         currency: 'USD',
@@ -1174,9 +1381,6 @@ export default function ExperienceDetail({ slug }: { slug: string }) {
     return () => window.clearTimeout(t)
   }, [activeExp])
   const { addComment: addSupabaseComment, toDisplayComments, isLoggedIn, user: currentUser, replyingTo, setReplyingTo } = useComments(activeExp?.id || 0)
-  // The phone bottom bar exists only with a checkout link or a signed-in
-  // commenter; without it the overlay and rail sit on the safe-area edge.
-  const mobileBarShown = isLoggedIn || items.length > 0
   const activeComments = activeExp ? toDisplayComments(activeExp.comments) : []
 
   // Checkout requires an account. Rather than a silent 307 → /login after the
@@ -1257,13 +1461,31 @@ export default function ExperienceDetail({ slug }: { slug: string }) {
     setActiveIndex(clampedIdx)
   }, [feedExperiences.length])
 
-  const scrollToReel = (direction: 'prev' | 'next') => {
+  // Back only when the visitor reached the reel from another page of this
+  // site in this tab (lib/reel-feed closeTarget). A reel opened from an ad or
+  // a shared link goes to /explore: after a trip to checkout and back, Back
+  // there left the site for the ad or a blank in-app webview.
+  const closeReel = () => {
+    let entry: string | null = null
+    try {
+      const nav = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming | undefined
+      entry = nav ? new URL(nav.name).pathname : null
+    } catch {
+      entry = null
+    }
+    if (closeTarget(entry, window.history.length) === 'back') router.back()
+    else router.push('/explore')
+  }
+
+  const scrollToReel = (direction: 'prev' | 'next' | 'first') => {
     if (!scrollRef.current) return
     const children = scrollRef.current.children
     const childHeight = children.length ? (children[0] as HTMLElement).offsetHeight : window.innerHeight
-    const target = direction === 'prev'
-      ? Math.max(0, activeIndex - 1)
-      : Math.min(feedExperiences.length - 1, activeIndex + 1)
+    const target = direction === 'first'
+      ? 0
+      : direction === 'prev'
+        ? Math.max(0, activeIndex - 1)
+        : Math.min(feedExperiences.length - 1, activeIndex + 1)
     scrollRef.current.scrollTo({ top: target * childHeight, behavior: 'smooth' })
   }
 
@@ -1300,7 +1522,7 @@ export default function ExperienceDetail({ slug }: { slug: string }) {
     // had nowhere to live. One viewport of immersive reel, then the page
     // continues: the internal scroll-snap feed is unaffected because it sizes
     // against this box, which is still exactly one viewport tall.
-    <div className={mobileBarShown ? undefined : 'reel-no-bar'} style={{
+    <div style={{
       position: 'relative', zIndex: 1,
       height: '100dvh', width: '100%',
       background: '#000', display: 'flex',
@@ -1310,62 +1532,33 @@ export default function ExperienceDetail({ slug }: { slug: string }) {
         flex: '1 1 auto', width: '100%', maxWidth: 480,
         height: '100%', position: 'relative',
       }}>
-        {/* Top bar: close, large touch target for mobile */}
-        <button
-          type="button"
-          aria-label="Close and return to explore"
-          onClick={(e) => {
-            e.stopPropagation()
-            // Direct entries (shared links, search) have no in-app history:
-            // router.back() would land on about:blank. Fall back to /explore.
-            if (window.history.length > 2) router.back()
-            else router.push('/explore')
-          }}
-          style={{
-            // A 52px floor: iPhones report a 0 safe-area inset while Safari's
-            // collapsed chrome still lets the status bar overlay the top 47px.
-            position: 'absolute', top: 'max(calc(env(safe-area-inset-top, 0px) + 10px), 52px)', right: 10, zIndex: 30,
-            width: 48, height: 48, padding: 0,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            cursor: 'pointer', background: 'none', border: 'none',
-          }}
-        >
-          <div style={{
-            width: 38, height: 38, borderRadius: '50%',
-            background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(16px)',
-            border: '1px solid rgba(255,255,255,0.12)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            color: 'white',
-          }}>
-            <X size={18} strokeWidth={2.5} />
-          </div>
-        </button>
-
         {/* ── Prev / Next arrows, top, beside close button ── */}
         <div style={{
-          position: 'absolute', top: 'max(calc(env(safe-area-inset-top, 0px) + 18px), 60px)', left: 14, right: 58,
+          position: 'absolute', top: 'max(calc(env(safe-area-inset-top, 0px) + 18px), 60px)', left: 14, right: 60,
           zIndex: 20, display: 'flex', alignItems: 'center', gap: 8,
           pointerEvents: 'none',
         }}>
           {activeIndex > 0 ? (
             <button
               onClick={() => scrollToReel('prev')}
+              className="reel-top-btn"
               aria-label="Previous experience"
               style={{
                 width: 44, height: 44, borderRadius: '50%',
-                background: 'rgba(255,255,255,0.92)',
-                border: 'none', cursor: 'pointer', pointerEvents: 'auto',
+                background: 'rgba(0,0,0,0.5)',
+                backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)',
+                border: '1px solid rgba(255,255,255,0.12)', cursor: 'pointer', pointerEvents: 'auto',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                color: '#111', boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
+                color: '#fff', boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
                 transition: 'all 0.2s ease',
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.background = '#fff'
+                e.currentTarget.style.background = 'rgba(0,0,0,0.68)'
                 e.currentTarget.style.transform = 'scale(1.08)'
                 e.currentTarget.style.boxShadow = '0 6px 28px rgba(0,0,0,0.4)'
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.background = 'rgba(255,255,255,0.92)'
+                e.currentTarget.style.background = 'rgba(0,0,0,0.5)'
                 e.currentTarget.style.transform = ''
                 e.currentTarget.style.boxShadow = '0 4px 20px rgba(0,0,0,0.3)'
               }}
@@ -1383,29 +1576,34 @@ export default function ExperienceDetail({ slug }: { slug: string }) {
             padding: '6px 12px', borderRadius: 9999,
             background: 'rgba(0,0,0,0.55)', border: '1px solid rgba(255,255,255,0.18)',
           }}>
-            {activeIndex + 1}
-            <span style={{ color: '#fff', fontWeight: 500 }}> / {feedExperiences.length}</span>
+            <span aria-hidden="true">
+              {activeIndex + 1}
+              <span style={{ color: '#fff', fontWeight: 500 }}> / {feedExperiences.length}</span>
+            </span>
+            <span className="sr-only">{`Tour ${activeIndex + 1} of ${feedExperiences.length}`}</span>
           </span>
 
           {activeIndex < feedExperiences.length - 1 ? (
             <button
               onClick={() => scrollToReel('next')}
+              className="reel-top-btn"
               aria-label="Next experience"
               style={{
                 width: 44, height: 44, borderRadius: '50%',
-                background: 'rgba(255,255,255,0.92)',
-                border: 'none', cursor: 'pointer', pointerEvents: 'auto',
+                background: 'rgba(0,0,0,0.5)',
+                backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)',
+                border: '1px solid rgba(255,255,255,0.12)', cursor: 'pointer', pointerEvents: 'auto',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                color: '#111', boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
+                color: '#fff', boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
                 transition: 'all 0.2s ease',
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.background = '#fff'
+                e.currentTarget.style.background = 'rgba(0,0,0,0.68)'
                 e.currentTarget.style.transform = 'scale(1.08)'
                 e.currentTarget.style.boxShadow = '0 6px 28px rgba(0,0,0,0.4)'
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.background = 'rgba(255,255,255,0.92)'
+                e.currentTarget.style.background = 'rgba(0,0,0,0.5)'
                 e.currentTarget.style.transform = ''
                 e.currentTarget.style.boxShadow = '0 4px 20px rgba(0,0,0,0.3)'
               }}
@@ -1415,6 +1613,38 @@ export default function ExperienceDetail({ slug }: { slug: string }) {
           ) : <div style={{ width: 44 }} />}
         </div>
 
+        {/* Close, top right. After the arrows in the DOM so Tab follows the
+            screen, left to right. */}
+        <button
+          type="button"
+          className="reel-top-btn"
+          aria-label="Close the reel"
+          onClick={(e) => {
+            e.stopPropagation()
+            closeReel()
+          }}
+          style={{
+            // A 52px floor: iPhones report a 0 safe-area inset while Safari's
+            // collapsed chrome still lets the status bar overlay the top 47px.
+            position: 'absolute', top: 'max(calc(env(safe-area-inset-top, 0px) + 10px), 52px)', right: 11, zIndex: 30,
+            width: 48, height: 48, padding: 0,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            cursor: 'pointer', background: 'none', border: 'none',
+          }}
+        >
+          <div style={{
+            width: 38, height: 38, borderRadius: '50%',
+            background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(16px)',
+            border: '1px solid rgba(255,255,255,0.12)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            color: 'white',
+          }}>
+            <X size={18} strokeWidth={2.5} />
+          </div>
+        </button>
+
+
+        <p id="reel-hint" className="sr-only">Press Space or Enter to pause or play the video.</p>
 
         {/* Scrollable reels */}
         <div
@@ -1435,8 +1665,7 @@ export default function ExperienceDetail({ slug }: { slug: string }) {
               exp={exp}
               isActive={i === activeIndex}
               near={Math.abs(i - activeIndex) <= 1}
-              totalCount={feedExperiences.length}
-              currentIndex={activeIndex}
+              ahead={i === activeIndex + 1}
               onComments={() => {
                 const mobile = window.matchMedia('(max-width: 767px)').matches
                 if (mobile) { setMobileComments(true); return }
@@ -1450,7 +1679,7 @@ export default function ExperienceDetail({ slug }: { slug: string }) {
       </div>
 
       {/* ── RIGHT: Comments panel (hidden on mobile) ── */}
-      <div className="hide-mobile" style={{
+      <div className="hide-mobile reel-panel" style={{
         flex: 1,
         // Warm "jewel-box" ground with a top-right light source + a gold seam,
         // instead of a flat black slab.
@@ -1464,7 +1693,7 @@ export default function ExperienceDetail({ slug }: { slug: string }) {
           padding: '16px 24px', borderBottom: '1px solid rgba(255,255,255,0.06)',
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         }}>
-          <div>
+          <div style={{ minWidth: 0 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 3 }}>
               <h2 style={{ fontFamily: 'var(--font-dm-sans)', fontWeight: 700, fontSize: 17, color: 'white' }}>
                 Comments
@@ -1478,39 +1707,39 @@ export default function ExperienceDetail({ slug }: { slug: string }) {
                 {activeComments.length}
               </span>
             </div>
-            <p style={{ fontSize: 12, color: '#cccccc', fontFamily: 'var(--font-dm-sans)' }}>
+            <p className="reel-panel-sub" style={{ fontSize: 12, color: '#cccccc', fontFamily: 'var(--font-dm-sans)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
               {activeExp.title}
             </p>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
             {items.length > 0 && (
               <Link
                 href={checkoutHref}
                 className="reel-checkout"
+                aria-label={`Checkout (${items.length})`}
                 style={{
                   display: 'flex', alignItems: 'center', gap: 6,
-                  height: 40, padding: '0 16px',
+                  height: 44, padding: '0 16px',
                   borderRadius: 9999,
                   background: 'var(--gold)',
                   color: 'var(--gold-ink)',
                   fontSize: 13, fontWeight: 700,
                   fontFamily: 'var(--font-dm-sans)',
-                  textDecoration: 'none',
+                  textDecoration: 'none', whiteSpace: 'nowrap',
                   transition: 'all 0.15s ease',
                 }}
               >
                 <ShoppingBag size={14} aria-hidden />
-                {`Checkout (${items.length})`}
+                {/* A narrow panel keeps the bag and the count. */}
+                <span className="reel-checkout-word">Checkout</span>
+                {`(${items.length})`}
               </Link>
             )}
             <button
-              onClick={() => {
-                if (window.history.length > 2) router.back()
-                else router.push('/explore')
-              }}
+              onClick={closeReel}
               aria-label="Close comments and return"
               style={{
-                width: 34, height: 34, borderRadius: '50%',
+                width: 44, height: 44, borderRadius: '50%', flexShrink: 0,
                 border: '1px solid rgba(255,255,255,0.08)', background: 'rgba(255,255,255,0.05)',
                 cursor: 'pointer', display: 'flex',
                 alignItems: 'center', justifyContent: 'center',
@@ -1556,9 +1785,7 @@ export default function ExperienceDetail({ slug }: { slug: string }) {
         {/* Comments list */}
         <div className="no-scrollbar" style={{ flex: 1, overflowY: 'auto', padding: '16px 24px' }}>
           {activeComments.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '48px 0', color: '#cccccc', fontFamily: 'var(--font-dm-sans)', fontSize: 13 }}>
-              No comments yet. Be the first!
-            </div>
+            <DesktopTourPanel key={activeExp.id} exp={activeExp} />
           ) : (
             activeComments.map((comment) => (
               <div key={comment.id} style={{ marginBottom: 22 }}>
@@ -1619,7 +1846,7 @@ export default function ExperienceDetail({ slug }: { slug: string }) {
                             <span style={{ fontSize: 12, fontWeight: 600, fontFamily: 'var(--font-dm-sans)', color: 'white' }}>
                               {reply.isHandle ? '@' : ''}{reply.user}
                             </span>
-                            <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.25)', fontFamily: 'var(--font-dm-sans)' }}>
+                            <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.66)', fontFamily: 'var(--font-dm-sans)' }}>
                               {reply.time}
                             </span>
                           </div>
@@ -1646,7 +1873,7 @@ export default function ExperienceDetail({ slug }: { slug: string }) {
             <div style={{
               display: 'flex', alignItems: 'center', justifyContent: 'space-between',
               padding: '6px 0 8px',
-              fontSize: 12, color: 'rgba(255,255,255,0.4)', fontFamily: 'var(--font-dm-sans)',
+              fontSize: 12, color: 'rgba(255,255,255,0.72)', fontFamily: 'var(--font-dm-sans)',
             }}>
               <span>Replying to <span style={{ color: 'white', fontWeight: 600 }}>{replyingTo.user}</span></span>
               <button
@@ -1687,7 +1914,7 @@ export default function ExperienceDetail({ slug }: { slug: string }) {
                 flex: 1, background: 'rgba(255,255,255,0.06)',
                 border: replyingTo ? '1px solid rgba(255,179,0,0.3)' : '1px solid rgba(255,255,255,0.06)',
                 borderRadius: 9999,
-                padding: '9px 14px', fontSize: 13,
+                minHeight: 44, padding: '0 16px', fontSize: 16,
                 fontFamily: 'var(--font-dm-sans)',
                 color: 'white', outline: 'none',
               }}
@@ -1697,7 +1924,7 @@ export default function ExperienceDetail({ slug }: { slug: string }) {
                 onClick={addComment}
                 aria-label="Post comment"
                 style={{
-                  width: 34, height: 34, borderRadius: '50%',
+                  width: 44, height: 44, borderRadius: '50%', flexShrink: 0,
                   background: '#FFFC00', border: 'none', cursor: 'pointer',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                 }}
@@ -1710,39 +1937,62 @@ export default function ExperienceDetail({ slug }: { slug: string }) {
       </div>
 
       {/* ── Mobile bottom bar (YouTube Shorts style) ──
-          Shown only when it has a job: a checkout link, or a signed-in
-          commenter. A bare "Sign in to comment" bar took 65px off every
-          reel for a feature with no comments yet; the comment icon on the
-          rail opens the sheet either way. */}
-      {(isLoggedIn || items.length > 0) && (
+          Always there on phones, with a job in every state, so adding a tour
+          never moves the screen: it used to appear on the first add and push
+          the button 61px up from under the thumb. With an empty trip it
+          names the next tour (teaching the swipe, and doing the same on a
+          tap); at the end of the 14 it says so and goes back to the first,
+          a stopping point rather than an endless feed. With a trip: comments
+          as an icon, and Checkout, the one money action. */}
       <div ref={mobileBarRef} data-mobile-bottom-bar className="hide-desktop" style={{
         position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 310,
         background: 'var(--bg-dark)', borderTop: '1px solid rgba(255,255,255,0.08)',
         padding: '10px 16px', paddingBottom: 'max(10px, env(safe-area-inset-bottom))',
         display: 'flex', alignItems: 'center', gap: 10,
       }}>
-        <button
-          onClick={() => {
-            if (!isLoggedIn && activeExp) {
-              window.location.href = `/login?redirect=/experience/${slugify(activeExp.title)}`
-              return
-            }
-            setMobileComments(true)
-          }}
-          aria-label={isLoggedIn ? 'Add a comment' : 'Sign in to comment'}
-          style={{
-            // With a Checkout link beside it the field shrinks to an icon
-            // button; the booking action is the one that deserves the width.
-            flex: items.length > 0 ? '0 0 auto' : 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-            background: 'rgba(255,255,255,0.08)', border: 'none',
-            borderRadius: 9999, padding: items.length > 0 ? '0 14px' : '10px 16px', minHeight: 44, minWidth: 44,
-            cursor: 'pointer', color: 'rgba(255,255,255,0.66)',
-            fontSize: 13, fontFamily: 'var(--font-dm-sans)',
-            textAlign: 'left',
-          }}
-        >
-          {items.length > 0 ? <MessageCircle size={20} aria-hidden /> : (isLoggedIn ? 'Add a comment...' : 'Sign in to comment...')}
-        </button>
+        {(isLoggedIn || items.length > 0) && (
+          <button
+            onClick={() => {
+              if (!isLoggedIn && activeExp) {
+                window.location.href = `/login?redirect=/experience/${slugify(activeExp.title)}`
+                return
+              }
+              setMobileComments(true)
+            }}
+            aria-label={isLoggedIn ? 'Add a comment' : 'Sign in to comment'}
+            style={{
+              flex: '0 0 auto', display: 'flex', alignItems: 'center', justifyContent: 'center',
+              background: 'rgba(255,255,255,0.08)', border: 'none',
+              borderRadius: 9999, padding: '0 14px', minHeight: 44, minWidth: 44,
+              cursor: 'pointer', color: 'rgba(255,255,255,0.78)',
+            }}
+          >
+            <MessageCircle size={20} aria-hidden />
+          </button>
+        )}
+        {items.length === 0 && (() => {
+          const last = activeIndex >= feedExperiences.length - 1
+          const next = feedExperiences[activeIndex + 1]
+          return (
+            <button
+              type="button"
+              className="reel-next"
+              onClick={() => scrollToReel(last ? 'first' : 'next')}
+              style={{
+                flex: 1, minWidth: 0, minHeight: 48, padding: '0 16px', borderRadius: 9999,
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.18)',
+                color: 'white', fontSize: 15, fontWeight: 600, fontFamily: 'var(--font-dm-sans)',
+                cursor: 'pointer',
+              }}
+            >
+              <ChevronUp size={18} strokeWidth={2.5} className="reel-next-chevron" aria-hidden />
+              <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                {last ? `That's all ${feedExperiences.length}. Back to the first` : `Next: ${next?.title ?? ''}`}
+              </span>
+            </button>
+          )
+        })()}
         {items.length > 0 && (
           <Link
             href={checkoutHref}
@@ -1765,7 +2015,6 @@ export default function ExperienceDetail({ slug }: { slug: string }) {
           </Link>
         )}
       </div>
-      )}
 
       {/* ── Mobile comments sheet, draggable, half → full → close ── */}
       {mobileComments && (

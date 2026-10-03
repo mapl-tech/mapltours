@@ -29,7 +29,7 @@ export default function LanguageSwitcher({ variant = 'header', dark = false }: {
           display: 'flex', alignItems: 'center', gap: 6,
           padding: isFooter ? '8px 14px' : '6px 12px',
           borderRadius: 9999,
-          background: isFooter ? 'rgba(255,255,255,0.06)' : dark ? 'rgba(255,255,255,0.1)' : 'transparent',
+          background: isFooter ? 'rgba(255,255,255,0.06)' : dark ? 'rgba(0,0,0,0.38)' : 'transparent',
           border: isFooter ? '1px solid rgba(255,255,255,0.1)' : dark ? '1px solid rgba(255,255,255,0.15)' : '1px solid var(--border)',
           cursor: 'pointer',
           color: isFooter ? '#cccccc' : dark ? 'white' : 'var(--text-secondary)',

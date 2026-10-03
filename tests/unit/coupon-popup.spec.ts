@@ -1,5 +1,5 @@
 import { describe, test, expect } from 'vitest'
-import { POPUP_COOLDOWN_MS, POPUP_DELAY_MS, POPUP_FORM_QUIET_MS, POPUP_UNSEEN_MS, nextPopupStep, popupBusy, popupPathEligible, popupWasUnseen, shouldShowPopup, isAutomatedVisit } from '../../lib/coupon-popup'
+import { POPUP_COOLDOWN_MS, POPUP_DELAY_MS, POPUP_FORM_QUIET_MS, POPUP_TAP_QUIET_MS, POPUP_UNSEEN_MS, nextPopupStep, popupBusy, popupPathEligible, popupWasUnseen, shouldShowPopup, isAutomatedVisit } from '../../lib/coupon-popup'
 
 const DAY = 24 * 60 * 60 * 1000
 const now = Date.UTC(2026, 8, 19, 15, 0, 0)
@@ -119,6 +119,16 @@ describe('the popup never opens over someone filling a booking form', () => {
   test('once the guest has stopped for the whole window, it may open', () => {
     expect(popupBusy({ ...quiet, lastFormActivityAt: now - POPUP_FORM_QUIET_MS })).toBe(false)
     expect(popupBusy({ ...quiet, lastFormActivityAt: now - 60_000 })).toBe(false)
+  })
+
+  test('it never opens under a finger: any tap holds it for a few seconds', () => {
+    // Seen on the home page (Oct 2 2026): a tap on a tour card landed on the
+    // popup's scrim because the popup opened in the same instant.
+    expect(POPUP_TAP_QUIET_MS).toBe(3_000)
+    expect(popupBusy({ ...quiet, lastTapAt: now - 500 })).toBe(true)
+    expect(popupBusy({ ...quiet, lastTapAt: now - 2_999 })).toBe(true)
+    expect(popupBusy({ ...quiet, lastTapAt: now - POPUP_TAP_QUIET_MS })).toBe(false)
+    expect(popupBusy({ ...quiet, lastTapAt: null })).toBe(false)
   })
 
   test('a clock that moved backwards holds it only as long as the window, not for good', () => {

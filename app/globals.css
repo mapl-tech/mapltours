@@ -298,18 +298,91 @@ h5, h6 { letter-spacing: -0.01em; }
 /* Feedback for a tap caught before React attached (the inline script in
    app/experience/[slug]/page.tsx); the Reel's mount effect removes it. */
 .reel-cta--pressed { transform: scale(0.97); opacity: 0.85; }
+/* A press that reads as a press, and the new "In your trip" pill arriving
+   with a small pop: the add is the moment the reel exists for. */
+.reel-cta { transition: transform 0.12s ease; }
+.reel-cta:active { transform: scale(0.96); }
+.reel-in-trip--fresh { animation: reelPop 0.45s cubic-bezier(0.2, 0.9, 0.3, 1.3); }
+@keyframes reelPop {
+  0% { transform: scale(0.82); opacity: 0.6; }
+  60% { transform: scale(1.06); opacity: 1; }
+  100% { transform: scale(1); }
+}
+/* The add notice (components/TripNotice). Pages, phones: near the top, so it
+   never sits on the card or button just tapped (on the home rail it covered
+   the card's new "Checkout"); wider screens: bottom right.
+   The reel, every width: under the close and the counter, and left of the
+   right rail (86px = the rail's 66 and a gap). Full width it covered the
+   save button on a 568px-tall phone, and bottom right at 768px it sat on
+   the reel's own button. 380px fits the 480px video column on desktop. */
+.trip-notice { animation: fadeUp 0.28s ease; left: 12px; right: 12px; margin: 0 auto; max-width: 456px; }
+.trip-notice--reel {
+  top: max(calc(env(safe-area-inset-top, 0px) + 112px), 116px);
+  right: auto; margin: 0; max-width: none; width: min(380px, calc(100vw - 86px));
+}
+@media (max-width: 767px) {
+  .trip-notice--page { top: calc(env(safe-area-inset-top, 0px) + 12px); }
+}
+@media (min-width: 768px) {
+  .trip-notice--page { left: auto; right: 24px; bottom: 24px; margin: 0; max-width: 440px; }
+}
+.trip-notice a:focus-visible, .trip-notice button:focus-visible {
+  outline: 2px solid #fff; outline-offset: 2px; box-shadow: 0 0 0 6px rgba(0, 0, 0, 0.6);
+}
+/* The "Next" chevron in the phone bar nudges upward three times to teach the
+   swipe, then rests: a hint, not motion that keeps going. */
+.reel-next-chevron { animation: reelNudge 1.4s ease-in-out 0.6s 3; }
+@keyframes reelNudge {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .reel-cta, .reel-cta:active { transition: none; transform: none; }
+  .reel-in-trip--fresh, .trip-notice, .reel-next-chevron { animation: none; }
+}
 /* The site's focus ring is the AA-safe olive for light pages; on a video it
    measured 2.2:1 on the overlay band and 1:1 on the green button. A white
-   ring with a dark halo reads on sand, sea and the scrim alike. */
+   ring with a dark halo reads on sand, sea and the scrim alike. The halo's
+   6px spread shows on BOTH sides of the 2px ring at a 2px offset (dark,
+   white, dark), so one of the two always meets whatever is behind it
+   (WCAG technique C40). */
+.reel-top-btn:focus-visible,
 .reel-right-rail button:focus-visible,
 .reel-bottom-info button:focus-visible,
+.reel-bottom-info a:focus-visible,
 .reel-meta-line:focus-visible,
 [data-mobile-bottom-bar] a:focus-visible,
 [data-mobile-bottom-bar] button:focus-visible,
-[role="group"][aria-label$="video."]:focus-visible {
+.reel-item:focus-visible {
   outline: 2px solid #fff !important;
   outline-offset: 2px;
-  box-shadow: 0 0 0 4px rgba(0, 0, 0, 0.6);
+  box-shadow: 0 0 0 6px rgba(0, 0, 0, 0.6);
+}
+/* The white arrows carry an inline drop shadow, which beat the halo above
+   and left a white ring on a bright sky with nothing dark under it. */
+.reel-top-btn:focus-visible { box-shadow: 0 0 0 6px rgba(0, 0, 0, 0.6) !important; }
+/* The reel's side panel is a dark ground: the site's olive ring measured
+   under 2:1 on it. The brighter gold is 10:1 on #111110. */
+.reel-panel :focus-visible { outline-color: var(--gold-warm) !important; }
+/* The panel lays itself out by its own width. At 768px (a tablet in
+   portrait) it gets about 300px: the header's Checkout pushed the close
+   button 13px off screen, and the price beside the button broke into four
+   lines. Under 420px the tour title leaves the header (the panel shows it
+   below), Checkout keeps its bag and count, and price and button stack. */
+.reel-panel { container: reelpanel / inline-size; }
+@container reelpanel (max-width: 420px) {
+  .reel-panel-sub, .reel-checkout-word { display: none; }
+  .reel-panel-price-row { flex-direction: column; align-items: stretch !important; }
+  .reel-panel-price-row > a, .reel-panel-price-row > button { justify-content: center; }
+  .reel-panel-details { width: 100%; border-radius: 14px !important; padding: 10px 16px !important; }
+}
+/* Under 360px the reel's price row stacks: price on one line, the button
+   the full width under it. Side by side the price had 70px and the button
+   moved when its label changed. */
+@media (max-width: 359px) {
+  .reel-price-row { flex-direction: column; align-items: stretch !important; gap: 8px; }
+  .reel-price-row .reel-price { padding-right: 0 !important; }
+  .reel-price-row > .reel-cta, .reel-price-row > .reel-in-trip { width: 100%; }
 }
 @media (max-width: 767px) {
   .reel-right-rail {
@@ -327,13 +400,53 @@ h5, h6 { letter-spacing: -0.01em; }
     .reel-right-rail > div:first-child { display: none; }
     .reel-cta { padding: 0 16px !important; }
   }
-  /* No bottom bar on this reel: sit on the safe-area edge instead of the
-     96px reserved for it. */
-  .reel-no-bar .reel-bottom-mobile-pad { padding-bottom: calc(20px + env(safe-area-inset-bottom)) !important; }
-  .reel-no-bar .reel-right-rail { bottom: calc(28px + env(safe-area-inset-bottom)) !important; }
   .reel-bottom-mobile-pad {
     padding-bottom: var(--reel-bottom-offset, max(96px, calc(76px + env(safe-area-inset-bottom)))) !important;
   }
+}
+
+/* "Watch the tours": the stories row under the home hero (ReelStories). It
+   continues the hero's dark ground so the circles read as part of the first
+   screen. A gold-to-green ring marks a video not yet watched here; watched
+   ones go quiet. */
+.reel-stories { background: var(--bg-dark); padding: 4px 0 24px; }
+.reel-stories-title {
+  margin: 0 0 12px; font-family: var(--font-dm-sans); font-size: 13px; font-weight: 600;
+  letter-spacing: 0.08em; text-transform: uppercase; color: rgba(255, 255, 255, 0.82);
+}
+.reel-stories-row {
+  display: flex; gap: 14px; overflow-x: auto; list-style: none; margin: 0; padding: 2px 0 4px;
+  scroll-snap-type: x proximity; overscroll-behavior-x: contain;
+}
+.reel-stories-row > li { flex: 0 0 auto; scroll-snap-align: start; }
+.reel-story {
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+  width: 78px; text-decoration: none; border-radius: 12px;
+}
+.reel-story-ring {
+  display: inline-flex; width: 72px; height: 72px; padding: 3px; border-radius: 50%;
+  background: conic-gradient(from 210deg, var(--gold), #009B3A, var(--gold));
+  transition: transform 0.15s ease;
+}
+.reel-story-ring img {
+  width: 100%; height: 100%; border-radius: 50%; object-fit: cover;
+  border: 2px solid var(--bg-dark); background: #000;
+}
+.reel-story-ring--seen { background: rgba(255, 255, 255, 0.3); }
+.reel-story:active .reel-story-ring { transform: scale(0.95); }
+.reel-story-label {
+  width: 100%; text-align: center; font-family: var(--font-dm-sans);
+  font-size: 13px; font-weight: 600; line-height: 1.25; color: #fff;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+}
+.reel-story:focus-visible { outline: 2px solid #fff !important; outline-offset: 2px; border-radius: 12px; }
+@media (hover: hover) { .reel-story:hover .reel-story-ring { transform: scale(1.05); } }
+@media (min-width: 768px) {
+  .reel-stories { padding: 8px 0 32px; }
+  .reel-stories-row { gap: 20px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .reel-story-ring { transition: none; }
 }
 
 /* Responsive grids */
@@ -391,6 +504,20 @@ h5, h6 { letter-spacing: -0.01em; }
    needed) with a 12px gap, so touch targets never overlap. Hover and
    keyboard focus lift the same way the text links brighten muted->white; the
    gold focus ring comes from the footer's own :focus-visible rule above. */
+/* Footer link lists: 44px rows on touch screens, where the 21px links sat
+   12px apart; a mouse keeps the tighter list. */
+.footer-link { display: block; margin-bottom: 12px; }
+@media (pointer: coarse) {
+  .footer-link { display: flex; align-items: center; min-height: 44px; margin-bottom: 0; }
+  .footer-legal a { display: inline-flex; align-items: center; min-height: 44px; }
+}
+/* A touch screen at tablet width gets the desktop header, whose controls
+   were 32 to 38px tall and 6px apart. */
+@media (pointer: coarse) and (min-width: 768px) {
+  .nav-right { gap: 8px !important; }
+  .nav-transfers { min-height: 44px !important; }
+  .nav-avatar { width: 44px !important; height: 44px !important; }
+}
 .footer-social {
   display: flex;
   flex-wrap: wrap;
@@ -872,9 +999,49 @@ h5, h6 { letter-spacing: -0.01em; }
    the brighter gold measures 7.88:1. */
 .footer :focus-visible,
 [style*="--bg-dark"] :focus-visible,
-.fare-section :focus-visible,
-.pkg-band .pkg-media:focus-visible {
+.fare-section :focus-visible {
   outline-color: var(--gold-warm) !important;
+}
+
+/* Controls drawn over photos and video: the home header while it sits on the
+   hero (not the white search bar inside it), the hero, the skip link that
+   appears over it, the tour cards' photo buttons and the Trending cards.
+   The olive ring measured 1.0 to 2.4:1 there. White with a dark halo, the
+   reel's ring: the 6px halo frames the 2px ring on both sides, so one of
+   the two meets sky, sand or shade (WCAG technique C40). After the
+   dark-ground rule, which it must beat at the same specificity. */
+.on-media :focus-visible,
+.photo-card :focus-visible,
+.hero-section :focus-visible,
+.nav-header--on-media :focus-visible:not(.nav-search-wrap *),
+.nav-search-btn:focus-visible,
+.skip-link:focus-visible {
+  outline: 2px solid #fff !important;
+  outline-offset: 2px;
+  box-shadow: 0 0 0 6px rgba(0, 0, 0, 0.6) !important;
+}
+/* The search bar's suggestion rows run to the edge of their panel; an inset
+   ring stays on the white panel instead of spilling onto the page behind. */
+.nav-search-wrap [data-dropdown] button:focus-visible { outline-offset: -4px !important; }
+/* A link that fills a photo with rounded, clipped corners: a ring outside it
+   was cut away (under the package photos only a 2px line showed), so the
+   ring goes inside, drawn whole by a pseudo-element above the photo (dark,
+   white, dark, 2px each). An outline would paint under that pseudo-element,
+   and an inset shadow on the link itself under the package photo. */
+.media-fill-link:focus-visible,
+.pkg-media:focus-visible {
+  outline: none !important;
+  box-shadow: none !important;
+  /* The photo's own corners, so the ring follows them instead of being cut
+     off by them (the site's focus rule otherwise sets 3px). */
+  border-radius: inherit;
+}
+.pkg-media:focus-visible { border-radius: var(--r-xl) var(--r-xl) 0 0; }
+.media-fill-link:focus-visible::after,
+.pkg-media:focus-visible::after {
+  content: ''; position: absolute; inset: 0; z-index: 3; pointer-events: none;
+  border-radius: inherit;
+  box-shadow: inset 0 0 0 2px rgba(0, 0, 0, 0.6), inset 0 0 0 4px #fff, inset 0 0 0 6px rgba(0, 0, 0, 0.6);
 }
 
 /* 44px minimum hit area without changing the visual box. The pseudo
@@ -1115,7 +1282,10 @@ html.js-reveal [data-reveal].is-in {
   width: 46px;
   height: 46px;
   border-radius: 50%;
-  background: rgba(20, 18, 16, 0.34);
+  /* 0.5, not 0.34: over a white frame the top disc (the heart, where the
+     scrim has faded out) measured 2.37:1 against its white icon; WCAG 1.4.11
+     wants 3:1 for an icon that is the button's only label. */
+  background: rgba(20, 18, 16, 0.5);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
   border: 1px solid rgba(255, 255, 255, 0.14);
@@ -1123,7 +1293,7 @@ html.js-reveal [data-reveal].is-in {
 }
 button:hover > .reel-action-disc {
   transform: scale(1.08);
-  background: rgba(20, 18, 16, 0.5);
+  background: rgba(20, 18, 16, 0.62);
 }
 
 /* Overlay gradient utility */
@@ -1144,6 +1314,34 @@ button:hover > .reel-action-disc {
    grey stroke that rendered pixelated. Vector-sharp at any size; the Playfair
    italic + drop-shadow make it the signature brand moment. Pure black is
    intentionally omitted so every letter stays legible over the dark hero. */
+/* The hero copy's own shade. The montage runs bright frames (sky, sand,
+   white water) through the headline: on the real footage the old scrims
+   left "Discover" at 1.77:1 and the flag-green "Jamaica" at 1.04:1 at their
+   lightest point (phone, 2.9 s and 12.7 s in). A soft dark ellipse behind
+   the copy grounds it without dimming the top of the frame or the empty
+   side of a wide screen. It sits inside the copy's own stacking layer, so
+   above both scrims and under the words. */
+.hero-copy::before {
+  content: ''; position: absolute; z-index: -1; pointer-events: none;
+  /* Reaches well above the headline and fades in from its top edge: a
+     radial gradient cut off by its own box showed a hard line across the
+     frame. The sides and bottom already end off screen or in the scrim's
+     opaque base. */
+  left: -14%; right: -14%; top: -45%; bottom: 0;
+  -webkit-mask-image: linear-gradient(180deg, transparent 0%, #000 28%);
+  mask-image: linear-gradient(180deg, transparent 0%, #000 28%);
+  background: radial-gradient(ellipse 76% 62% at 34% 40%,
+    rgba(6, 6, 5, 0.64) 0%, rgba(6, 6, 5, 0.56) 50%, rgba(6, 6, 5, 0.26) 74%, transparent 90%);
+}
+/* Phones set the headline across the full width, with "Jamaica" at the
+   right end of the first line, so the shade is wider and centred further
+   right. */
+@media (max-width: 767px) {
+  .hero-copy::before {
+    background: radial-gradient(ellipse 100% 64% at 50% 38%,
+      rgba(6, 6, 5, 0.68) 0%, rgba(6, 6, 5, 0.6) 52%, rgba(6, 6, 5, 0.28) 78%, transparent 94%);
+  }
+}
 .flag-text {
   /* Green stops brightened to a measured >= 3.0:1 against the scrim-blended
      worst-case bright video frame (was 2.38 at #00A650). Large display text,

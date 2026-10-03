@@ -98,11 +98,23 @@ export function nextPopupStep(input: { startedOn: string; pathNow: string; busy:
 export const POPUP_FORM_QUIET_MS = 15_000
 
 /**
+ * How long after ANY tap or click the popup keeps waiting. A visitor tapping
+ * a tour card or a video when it opened had the tap land on the popup's
+ * scrim instead (measured Oct 2 2026 on the home page): it must arrive in a
+ * pause, never under a finger.
+ */
+export const POPUP_TAP_QUIET_MS = 3_000
+
+const within = (now: number, at: number | null | undefined, ms: number) =>
+  at != null && Math.abs(now - at) < ms
+
+/**
  * True while the popup must not open: the tab is hidden, another dialog is
- * open, focus is in a field or an open list of options, or the guest used a
- * booking form within POPUP_FORM_QUIET_MS. A timestamp from the future is a
- * clock that moved; it counts only if it is within the window either way, so
- * a clock set back an hour cannot hold the popup for an hour.
+ * open, focus is in a field or an open list of options, the guest used a
+ * booking form within POPUP_FORM_QUIET_MS, or tapped anything within
+ * POPUP_TAP_QUIET_MS. A timestamp from the future is a clock that moved; it
+ * counts only if it is within the window either way, so a clock set back an
+ * hour cannot hold the popup for an hour.
  */
 export function popupBusy(input: {
   hidden: boolean
@@ -110,11 +122,13 @@ export function popupBusy(input: {
   focusInField: boolean
   /** When the guest last typed, tapped or clicked in a booking form, epoch ms. Null: never on this visit. */
   lastFormActivityAt: number | null
+  /** When the guest last tapped or clicked anything, epoch ms. Null or absent: never on this visit. */
+  lastTapAt?: number | null
   now: number
 }): boolean {
   if (input.hidden || input.otherDialog || input.focusInField) return true
-  if (input.lastFormActivityAt == null) return false
-  return Math.abs(input.now - input.lastFormActivityAt) < POPUP_FORM_QUIET_MS
+  return within(input.now, input.lastFormActivityAt, POPUP_FORM_QUIET_MS)
+    || within(input.now, input.lastTapAt, POPUP_TAP_QUIET_MS)
 }
 
 /**

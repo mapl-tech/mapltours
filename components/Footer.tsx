@@ -69,7 +69,7 @@ export default function Footer() {
           <span style={{ fontSize: 12, color: 'var(--text-on-dark-3)', fontFamily: 'var(--font-dm-sans)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
             {t('Find us on')}
           </span>
-          <a href="https://www.tripadvisor.ca/Attraction_Review-g147311-d34605425-Reviews-MAPL_Tours_Jamaica-Montego_Bay_Saint_James_Parish_Jamaica.html" target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', gap: 8, opacity: 0.8 }}>
+          <a href="https://www.tripadvisor.ca/Attraction_Review-g147311-d34605425-Reviews-MAPL_Tours_Jamaica-Montego_Bay_Saint_James_Parish_Jamaica.html" target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', gap: 8, minHeight: 44, opacity: 0.8 }}>
             <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
               <circle cx="12" cy="12" r="12" fill="#34E0A1" />
               <circle cx="8.5" cy="13" r="2.5" stroke="white" strokeWidth="1.5" fill="none" />
@@ -123,10 +123,13 @@ export default function Footer() {
                   <a
                     key={l.label}
                     href={l.href}
+                    // Rows and spacing are CSS (.footer-link): 44px rows on
+                    // touch screens, where 21px links sat 12px apart.
+                    className="footer-link"
                     {...(isExternal ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
                     style={{
-                      display: 'block', fontSize: 14, color: 'var(--text-on-dark-2)',
-                      fontFamily: 'var(--font-dm-sans)', marginBottom: 12,
+                      fontSize: 14, color: 'var(--text-on-dark-2)',
+                      fontFamily: 'var(--font-dm-sans)',
                       cursor: 'pointer', transition: 'color 0.15s ease',
                     }}
                     onMouseEnter={(e) => { e.currentTarget.style.color = 'white' }}

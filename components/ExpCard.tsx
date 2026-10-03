@@ -11,23 +11,25 @@ import { Plus, Check, Play, MapPin, Star } from 'lucide-react'
 import { useI18n } from '@/lib/i18n'
 import SaveButton from './SaveButton'
 import { useTourFit } from '@/lib/use-tour-fit'
+import { addTourToTrip } from '@/lib/add-to-trip'
+import { useCtaSwap } from '@/lib/use-cta-swap'
 
 export default memo(function ExpCard({ exp }: { exp: Experience }) {
-  const { addItem, removeItem, isInCart } = useCartStore()
+  const isInCart = useCartStore((s) => s.isInCart)
+  useCartStore((s) => s.items)
   const { t, formatPrice } = useI18n()
   const hydrated = useHydrated()
   // Cart-derived markup must render the SSR (empty-cart) state during the
   // hydration pass, see useHydrated.
   const inCart = hydrated && isInCart(exp.id)
   // A day's tours have to be drivable between each other, so a tour on the
-  // far side of the island cannot join this cart. Refused here with the
-  // reason rather than swallowed by the store.
+  // far side of the island cannot join the day in the cart: the button then
+  // books it in that day's place (lib/add-to-trip, with an Undo), and says so
+  // on the card, instead of a grey button that did nothing.
   const tourFit = useTourFit(exp)
   const blocked = !inCart && !tourFit.allowed
-  const toggleCart = () => {
-    if (inCart) removeItem(exp.id)
-    else if (tourFit.allowed) addItem(exp)
-  }
+  const cta = useCtaSwap(inCart)
+  const add = () => { addTourToTrip(exp, tourFit, { placement: 'page', checkout: true, onUndo: cta.afterUndo }) }
   const videoRef = useRef<HTMLVideoElement | null>(null)
   const [hovering, setHovering] = useState(false)
   // The clip element exists only once a pointer has been over the card. The
@@ -121,6 +123,7 @@ export default memo(function ExpCard({ exp }: { exp: Experience }) {
           <Link
             href={`/experience/${slugify(exp.title)}`}
             aria-label={t(exp.title)}
+            className="media-fill-link"
             style={{ position: 'absolute', inset: 0, zIndex: 2 }}
           />
 
@@ -146,54 +149,62 @@ export default memo(function ExpCard({ exp }: { exp: Experience }) {
             <SaveButton experienceId={exp.id} title={exp.title} />
           </div>
 
-          {/* Add button */}
-          <button
-            /* Same 46px hit area as the save heart beside it; both sit 12px
-               in from the card edge, so the expanded area is not clipped by
-               .photo-card's overflow. */
-            className="tap-target"
-            onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleCart() }}
-            disabled={blocked}
-            title={tourFit.reason ?? undefined}
-            aria-label={
-              inCart
-                ? `Remove ${exp.title} from your trip`
-                : blocked
-                  ? `${exp.title} is too far from the day you are building`
-                  : `Add ${exp.title} to your trip`
-            }
-            onMouseEnter={(e) => { if (!blocked) e.currentTarget.style.transform = 'scale(1.08)' }}
-            onMouseLeave={(e) => { e.currentTarget.style.transform = 'scale(1)' }}
-            style={{
-              position: 'absolute', top: 12, right: 12, zIndex: 3,
-              width: 36, height: 36, borderRadius: '50%',
-              // Greyed, not merely inert. A control that looks live and does
-              // nothing reads as a bug; this one has to look spent.
-              background: inCart ? 'var(--emerald)' : blocked ? 'rgba(255,255,255,0.35)' : 'rgba(255,255,255,0.92)',
-              backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)',
-              border: 'none', cursor: blocked ? 'not-allowed' : 'pointer',
-              opacity: blocked ? 0.75 : 1,
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              color: inCart ? '#fff' : blocked ? 'rgba(23,22,20,0.45)' : 'var(--accent)',
-              boxShadow: blocked ? 'none' : '0 2px 8px rgba(0,0,0,0.18)',
-              transition: 'all 0.2s ease',
-            }}
-          >
-            {inCart ? <Check size={15} strokeWidth={2.5} /> : <Plus size={15} strokeWidth={2.5} />}
-          </button>
+          {/* Add, or once added the way to checkout. Same 46px hit area as
+              the save heart beside it; both sit 12px in from the card edge,
+              so the expanded area is not clipped by .photo-card's overflow. */}
+          {inCart ? (
+            <Link
+              ref={cta.ref}
+              href="/checkout"
+              className="tap-target"
+              aria-label={`${exp.title} is in your trip. Go to checkout`}
+              title="In your trip. Go to checkout"
+              style={{
+                position: 'absolute', top: 12, right: 12, zIndex: 3,
+                width: 36, height: 36, borderRadius: '50%',
+                background: 'var(--emerald)', color: '#fff',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.18)',
+              }}
+            >
+              <Check size={15} strokeWidth={2.5} />
+            </Link>
+          ) : (
+            <button
+              ref={cta.ref}
+              className="tap-target"
+              onClick={(e) => { e.preventDefault(); e.stopPropagation(); cta.press(e.currentTarget); add() }}
+              title={blocked ? 'Book this in place of the day in your trip' : undefined}
+              aria-label={blocked ? `Book ${exp.title} in place of the day in your trip` : `Add ${exp.title} to your trip`}
+              onMouseEnter={(e) => { e.currentTarget.style.transform = 'scale(1.08)' }}
+              onMouseLeave={(e) => { e.currentTarget.style.transform = 'scale(1)' }}
+              style={{
+                position: 'absolute', top: 12, right: 12, zIndex: 3,
+                width: 36, height: 36, borderRadius: '50%',
+                background: 'rgba(255,255,255,0.92)',
+                backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)',
+                border: 'none', cursor: 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                color: 'var(--accent)',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.18)',
+                transition: 'all 0.2s ease',
+              }}
+            >
+              <Plus size={15} strokeWidth={2.5} />
+            </button>
+          )}
 
-          {/* Why the button is spent, on the card rather than in a tooltip.
-              "Unavailable" would be a lie — the tour is bookable, just not on
-              the day being built — so it says which day it belongs to. */}
+          {/* What the add does for a tour that cannot join the day, on the
+              card rather than in a tooltip. */}
           {blocked && (
             <span style={{
               position: 'absolute', top: 12, left: 12, zIndex: 3, pointerEvents: 'none',
               padding: '4px 10px', borderRadius: 9999,
               background: 'rgba(0,0,0,0.62)', backdropFilter: 'blur(8px)',
-              fontSize: 11.5, fontWeight: 600, color: 'rgba(255,255,255,0.92)',
+              fontSize: 12, fontWeight: 600, color: 'rgba(255,255,255,0.92)',
               fontFamily: 'var(--font-dm-sans)',
             }}>
-              {t('Another day')}
+              {t('Replaces your day')}
             </span>
           )}
 
@@ -236,8 +247,10 @@ export default memo(function ExpCard({ exp }: { exp: Experience }) {
           {exp.duration} · @{displayHandle(exp.creator)}
         </p>
         <p style={{ fontSize: 13, fontFamily: 'var(--font-dm-sans)', fontWeight: 600, marginTop: 4 }}>
-          {t('From')} {formatPrice(exp.price)}
-          <span style={{ fontWeight: 400, color: 'var(--text-tertiary)', fontSize: 12 }}> {priceUnitLabel(exp.pricing)}</span>
+          {`${t('From')} ${formatPrice(exp.price)}`}
+          {/* Whole strings, not "From", " ", "$351": Chrome drops a space that
+              stands alone as a text node from the link's name. */}
+          <span style={{ fontWeight: 400, color: 'var(--text-tertiary)', fontSize: 12 }}>{` ${priceUnitLabel(exp.pricing)}`}</span>
         </p>
       </Link>
     </article>

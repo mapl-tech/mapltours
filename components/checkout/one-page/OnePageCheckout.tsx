@@ -440,7 +440,7 @@ export default function OnePageCheckout() {
                     <CalendarDays size={18} color={dateError ? '#b00020' : 'var(--text-secondary)'} style={{ flexShrink: 0 }} />
                     <div>
                       <label htmlFor="opc-date" style={{ display: 'block', fontFamily: FONT, fontSize: 15, fontWeight: 600, color: dateError ? '#b00020' : undefined }}>{t('Trip date')}</label>
-                      <span id="opc-date-hint" style={{ display: 'block', fontFamily: FONT, fontSize: 13, color: 'var(--text-tertiary)' }}>{minDate ? `From ${formatDate(minDate)}` : 'One day, every tour on it'}</span>
+                      <span id="opc-date-hint" style={{ display: 'block', fontFamily: FONT, fontSize: 13, color: 'var(--text-tertiary)' }}>{minDate ? `Check this is your day. The earliest is ${formatDate(minDate)}.` : 'One day, every tour on it'}</span>
                       <span id="opc-date-format" className="visually-hidden">{DATE_VALUE_FORMAT}</span>
                     </div>
                   </div>

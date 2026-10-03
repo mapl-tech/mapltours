@@ -242,6 +242,24 @@ const VIDEOS = {
 export function mobileVideo(video: string): string {
   return video.replace(/^\/media\/video\/([^/]+)\.mp4$/, '/media/video/m/$1.mp4')
 }
+/**
+ * The same phone clip in HEVC (hvc1), about half the bytes of the H.264 file
+ * at the same look: every iPhone and most Android phones play it, and a
+ * browser that cannot skips to the H.264 <source> after it. On a weak hotel or
+ * roaming connection the H.264 clip (~2.5 Mbps) stalled; this one (~1.3 Mbps)
+ * keeps up. Built by scripts/encode-reel-hevc.mjs for every catalogue video.
+ */
+export function mobileHevcVideo(video: string): string {
+  return video.replace(/^\/media\/video\/([^/]+)\.mp4$/, '/media/video/m/$1.hevc.mp4')
+}
+/**
+ * The exact type of those twins: HEVC Main, level 3.1, the hvc1 tag (what
+ * scripts/encode-reel-hevc.mjs writes for a 720x1280 30 fps clip). Chrome
+ * refuses the bare 'codecs="hvc1"' and so never chose the smaller file even
+ * where it can decode HEVC; it answers "probably" to the full string, as
+ * Safari does.
+ */
+export const HEVC_SOURCE_TYPE = 'video/mp4; codecs="hvc1.1.6.L93.B0"'
 /** The first frame of the phone clip, so the still and the video are one shot. */
 export function videoPoster(video: string): string {
   return video.replace(/^\/media\/video\/([^/]+)\.mp4$/, '/media/video/m/$1.webp')

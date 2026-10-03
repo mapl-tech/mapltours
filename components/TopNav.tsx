@@ -79,19 +79,25 @@ export default function TopNav({ onCartClick }: { onCartClick?: () => void }) {
     return () => window.removeEventListener('scroll', onScroll)
   }, [])
 
-  // Close dropdowns on outside click
+  // Close dropdowns on an outside click, and when keyboard focus moves
+  // outside them: tabbing on past "Where" left its list open over the page,
+  // covering the cards being focused (WCAG 2.4.11).
   useEffect(() => {
-    if (!showGuests && !showWhere && !showProfileMenu) return // eslint-disable-line react-hooks/exhaustive-deps
-    const close = (e: MouseEvent) => {
+    if (!showGuests && !showWhere && !showProfileMenu) return
+    const close = (e: Event) => {
       const target = e.target as HTMLElement
-      if (target.closest('[data-dropdown]')) return
+      if (target.closest?.('[data-dropdown]')) return
       setShowGuests(false)
       setShowWhere(false)
       setShowProfileMenu(false)
     }
     document.addEventListener('mousedown', close)
-    return () => document.removeEventListener('mousedown', close)
-  }, [showGuests, showWhere])
+    document.addEventListener('focusin', close)
+    return () => {
+      document.removeEventListener('mousedown', close)
+      document.removeEventListener('focusin', close)
+    }
+  }, [showGuests, showWhere, showProfileMenu])
 
   // Mobile menu / search sheets: close on navigation and Escape, lock the
   // page scroll while either is open so the sheet never scrolls the content
@@ -177,7 +183,10 @@ export default function TopNav({ onCartClick }: { onCartClick?: () => void }) {
   return (
     <>
     <header
-      className={`nav-header${isCheckout ? ' nav-checkout' : ''}`}
+      className={`nav-header${isCheckout ? ' nav-checkout' : ''}${dark ? ' nav-header--on-media' : ''}`}
+      // Hidden on scroll down; a keyboard user tabbing into it must see where
+      // focus went, so focus inside brings it back (WCAG 2.4.11).
+      onFocus={() => setHidden(false)}
       style={{
         position: 'fixed',
         top: 0,
@@ -259,13 +268,21 @@ export default function TopNav({ onCartClick }: { onCartClick?: () => void }) {
             transition: 'box-shadow 0.3s ease',
           }}
         >
-          {/* Where */}
-          <div data-dropdown style={{
-            flex: 1.4, padding: '0 18px', cursor: 'text',
-            borderRight: '1px solid var(--border)',
-            height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center',
-            position: 'relative',
-          }}>
+          {/* Where. A tap anywhere on the field focuses the input, which on
+              its own was a 24px-tall target under the label. */}
+          <div
+            data-dropdown
+            onClick={(e) => {
+              if ((e.target as HTMLElement).closest('button, a, input')) return
+              e.currentTarget.querySelector('input')?.focus()
+            }}
+            style={{
+              flex: 1.4, padding: '0 18px', cursor: 'text',
+              borderRight: '1px solid var(--border)',
+              height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center',
+              position: 'relative',
+            }}
+          >
             <span style={{
               fontSize: 12, fontWeight: 600, textTransform: 'uppercase',
               letterSpacing: '0.08em', color: 'var(--text-tertiary)',
@@ -519,6 +536,7 @@ export default function TopNav({ onCartClick }: { onCartClick?: () => void }) {
           <button
             onClick={() => router.push(`/explore?q=${encodeURIComponent(where)}`)}
             aria-label="Search"
+            className="nav-search-btn"
             style={{
               width: 44, height: 44, borderRadius: '50%',
               background: 'var(--accent)', color: '#fff',
@@ -557,7 +575,7 @@ export default function TopNav({ onCartClick }: { onCartClick?: () => void }) {
         )}
 
         {/* ── Right ── */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+        <div className="nav-right" style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
           {/* Explore steps aside while the search bar is on screen: the bar
               already routes to /explore, so the link would be a duplicate. */}
           {!searchVisible && (
@@ -595,6 +613,7 @@ export default function TopNav({ onCartClick }: { onCartClick?: () => void }) {
               position: 'relative',
               display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
               width: 38, height: 38, borderRadius: 9999,
+              background: dark ? 'rgba(0,0,0,0.38)' : 'transparent',
               color: isSaved ? (dark ? '#fff' : 'var(--accent)') : linkColor,
               transition: 'color 0.15s ease',
             }}
@@ -630,7 +649,7 @@ export default function TopNav({ onCartClick }: { onCartClick?: () => void }) {
           {!isTransfers && (
             <Link
               href="/transfers"
-              className={searchVisible ? 'hide-mobile' : undefined}
+              className={searchVisible ? 'nav-transfers hide-mobile' : 'nav-transfers'}
               style={{
                 display: 'inline-flex', alignItems: 'center',
                 minHeight: 38, padding: '0 16px', fontSize: 13, fontWeight: 700,
@@ -659,7 +678,7 @@ export default function TopNav({ onCartClick }: { onCartClick?: () => void }) {
                 minHeight: 44, padding: '0 14px',
                 borderRadius: 9999, fontSize: 12, fontWeight: 600,
                 fontFamily: 'var(--font-dm-sans)', cursor: 'pointer',
-                background: dark ? 'rgba(255,255,255,0.12)' : 'var(--accent)',
+                background: dark ? 'rgba(0,0,0,0.38)' : 'var(--accent)',
                 color: '#fff',
                 border: dark ? '1px solid rgba(255,255,255,0.16)' : 'none',
                 backdropFilter: dark ? 'blur(16px)' : 'none',
@@ -689,13 +708,14 @@ export default function TopNav({ onCartClick }: { onCartClick?: () => void }) {
                 aria-label="Account menu"
                 aria-haspopup="menu"
                 aria-expanded={showProfileMenu}
+                className="nav-avatar"
                 style={{
                   width: 32, height: 32, borderRadius: '50%',
                   overflow: 'hidden', flexShrink: 0,
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   background: user.user_metadata?.avatar_url
                     ? 'transparent'
-                    : dark ? 'rgba(255,255,255,0.1)' : 'var(--surface)',
+                    : dark ? 'rgba(0,0,0,0.38)' : 'var(--surface)',
                   border: dark ? '1.5px solid rgba(255,255,255,0.2)' : '1.5px solid var(--border-strong)',
                   cursor: 'pointer', padding: 0,
                   transition: 'all 0.15s ease',
@@ -704,7 +724,7 @@ export default function TopNav({ onCartClick }: { onCartClick?: () => void }) {
                 {user.user_metadata?.avatar_url ? (
                   <Image src={user.user_metadata.avatar_url} alt="" width={32} height={32} style={{ objectFit: 'cover' }} />
                 ) : (
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={dark ? 'rgba(255,255,255,0.7)' : 'var(--text-secondary)'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={dark ? '#fff' : 'var(--text-secondary)'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
                     <circle cx="12" cy="7" r="4" />
                   </svg>
@@ -714,16 +734,17 @@ export default function TopNav({ onCartClick }: { onCartClick?: () => void }) {
               <Link
                 href="/login"
                 aria-label="Sign in"
+                className="nav-avatar"
                 style={{
                   width: 32, height: 32, borderRadius: '50%',
                   overflow: 'hidden', flexShrink: 0,
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  background: dark ? 'rgba(255,255,255,0.1)' : 'var(--surface)',
+                  background: dark ? 'rgba(0,0,0,0.38)' : 'var(--surface)',
                   border: dark ? '1.5px solid rgba(255,255,255,0.2)' : '1.5px solid var(--border-strong)',
                   transition: 'all 0.15s ease',
                 }}
               >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={dark ? 'rgba(255,255,255,0.7)' : 'var(--text-secondary)'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={dark ? '#fff' : 'var(--text-secondary)'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
                   <circle cx="12" cy="7" r="4" />
                 </svg>

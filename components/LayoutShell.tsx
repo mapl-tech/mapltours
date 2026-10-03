@@ -5,6 +5,7 @@ import dynamic from 'next/dynamic'
 import { usePathname } from 'next/navigation'
 import TopNav from './TopNav'
 import ItineraryPanel from './ItineraryPanel'
+import TripNotice from './TripNotice'
 import PageTransition from './PageTransition'
 // The WebMCP tool registrations pull the whole rate card and catalogue into
 // the layout chunk (about 105 KB before gzip) for a feature only browsers
@@ -21,6 +22,7 @@ import { SavedProvider } from '@/lib/supabase/saved'
 import { useCartStore } from '@/lib/cart'
 import { useI18nStore } from '@/lib/i18n'
 import { usePlacesCart } from '@/lib/places-cart'
+import { useSeenReels } from '@/lib/seen-reels'
 import { captureAttribution } from '@/lib/attribution'
 
 export default function LayoutShell({ children }: { children: React.ReactNode }) {
@@ -58,6 +60,7 @@ export default function LayoutShell({ children }: { children: React.ReactNode })
     useCartStore.persist.rehydrate()
     useI18nStore.persist.rehydrate()
     usePlacesCart.persist.rehydrate()
+    useSeenReels.persist.rehydrate()
     // Record where this visit came from (referrer/UTM); never throws.
     captureAttribution()
   }, [])
@@ -74,6 +77,7 @@ export default function LayoutShell({ children }: { children: React.ReactNode })
           <PageTransition>{children}</PageTransition>
         </main>
         {!hideNav && <ItineraryPanel open={drawerOpen} onClose={() => setDrawerOpen(false)} />}
+        {!hideTools && <TripNotice />}
         <style jsx>{`
           .skip-link {
             position: absolute;

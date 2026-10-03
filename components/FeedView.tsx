@@ -11,6 +11,7 @@ import { useHydrated } from '@/lib/use-hydrated'
 import { CULTURE_IMAGE, HERO_VIDEO_540, HERO_VIDEO_720, HERO_VIDEO_1080, HERO_VIDEO_PHONE, HERO_POSTER_PHONE, HERO_POSTER } from '@/lib/images'
 import ExpCard from './ExpCard'
 import MobileShort from './MobileShort'
+import ReelStories from './ReelStories'
 import InView from './InView'
 import Footer from './Footer'
 import { useI18n } from '@/lib/i18n'
@@ -287,7 +288,7 @@ function FoodSection() {
               onClick={() => scroll('left')}
               aria-label="Previous"
               style={{
-                width: 42, height: 42, borderRadius: '50%',
+                width: 44, height: 44, borderRadius: '50%',
                 background: 'transparent',
                 border: '1px solid rgba(255,255,255,0.15)',
                 cursor: 'pointer',
@@ -419,7 +420,7 @@ function FoodSection() {
                 lineHeight: 1.4, minHeight: 16,
                 color: added
                   ? 'var(--emerald)'
-                  : fit.allowed ? 'var(--gold-warm)' : 'rgba(255,255,255,0.45)',
+                  : fit.allowed ? 'var(--gold-warm)' : 'rgba(255,255,255,0.72)',
               }}>
                 {added
                   ? fit.label
@@ -450,7 +451,7 @@ function FoodSection() {
                       fontFamily: 'var(--font-dm-sans)',
                     }}
                   >
-                    {t('Add a tour first')}
+                    {t('Choose a tour')}
                   </Link>
                 ) : !added && !fit.allowed ? (
                   <button
@@ -617,7 +618,7 @@ function PackagesSection() {
               <Link
                 href={`/experience/${slugify(pkg.title)}`}
                 className="pkg-media"
-                aria-label={t(pkg.title)}
+                aria-label={`${t(pkg.title)}, ${(pkg.includes ?? []).length} ${t('in one day')}`}
               >
 <InView>                <Image
                   src={pkg.image}
@@ -712,7 +713,7 @@ function PackagesSection() {
                   ) : (
                     <button
                       onClick={() => addItem(pkg)}
-                      aria-label={`Add ${pkg.title} to your itinerary`}
+                      aria-label={`${t('Add this day')}: ${t(pkg.title)}`}
                       style={{
                         width: '100%', minHeight: 44, borderRadius: 9999,
                         background: 'var(--gold)', color: '#1A1508',
@@ -1034,7 +1035,6 @@ function MobilePosterCard({ exp }: { exp: Experience }) {
   return (
     <Link
       href={`/experience/${slugify(exp.title)}`}
-      aria-label={`${exp.title}, from ${formatPrice(exp.price)}`}
       style={{
         position: 'relative', display: 'block', aspectRatio: '3 / 4',
         borderRadius: 'var(--r-xl)', overflow: 'hidden', background: 'var(--card-bg)',
@@ -1126,8 +1126,12 @@ export default function FeedView() {
       <section className="hero-section">
         {/* Video background */}
         <HeroVideo poster={HERO_POSTER} />
-        {/* Top scrim for nav readability */}
-        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 140, background: 'linear-gradient(180deg, rgba(0,0,0,0.5) 0%, transparent 100%)', pointerEvents: 'none' }} />
+        {/* Top scrim for nav readability. Both scrims sit at z 2, above the
+            poster (z 1): without it the poster covered them until the loop
+            started, and the headline read 2.1:1 over the white sand. 0.6 at
+            the top: the header's white menu icon sits on it, and over a
+            bright sky it computed 2.84:1 at 0.5. */}
+        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 140, zIndex: 2, background: 'linear-gradient(180deg, rgba(0,0,0,0.6) 0%, transparent 100%)', pointerEvents: 'none' }} />
         {/* Bottom-anchored warm scrim, keeps the footage vivid up top while
             grounding the headline. Legibility also comes from the flag
             drop-shadow + the headline text-shadow below. */}
@@ -1149,8 +1153,11 @@ export default function FeedView() {
           // disappearing under the 74 to 84% band.
           background: 'linear-gradient(0deg, rgb(17,17,16) 0%, rgba(10,10,8,0.88) 18%, rgba(8,8,6,0.74) 40%, rgba(8,8,6,0.6) 62%, rgba(8,8,6,0.3) 84%, transparent 100%)',
           pointerEvents: 'none',
+          zIndex: 2,
         }} />
-        <div className="container" style={{ position: 'relative', zIndex: 1, paddingBottom: 'clamp(40px, 6vw, 72px)' }}>
+        {/* hero-copy: the copy's own shade (globals.css), for the montage's
+            bright frames. */}
+        <div className="container hero-copy" style={{ position: 'relative', zIndex: 3, paddingBottom: 'clamp(40px, 6vw, 72px)' }}>
           <h1 className="animate-fade-up stagger-1" style={{
             fontFamily: 'var(--font-dm-sans)',
             fontWeight: 700,
@@ -1219,6 +1226,9 @@ export default function FeedView() {
           </p>
         </div>
       </section>
+
+      {/* ═══ WATCH THE TOURS: the reels, one tap from the first screen ═══ */}
+      <ReelStories lead={viralExperiences} />
 
       {/* ═══ CONCIERGE PROMISE ═══ */}
       {/* No .reveal here: this section starts at the fold on a phone, and a
@@ -1599,7 +1609,7 @@ export default function FeedView() {
                 { icon: <Users size={18} />, title: 'Jamaican drivers and hosts', desc: 'The people who run your day live here and drive these roads every week. You get their name before pickup.' },
                 { icon: <Headphones size={18} />, title: 'A person on email', desc: 'Write to us any time and a person replies within 24 hours. On the day, your driver is a WhatsApp away.' },
                 { icon: <ShieldCheck size={18} />, title: 'Flexible cancellation', desc: 'Change of plans? Cancel within 48 hours of booking for a refund, less a 20% administration charge. No stress.' },
-                { icon: <Star size={18} />, title: 'One price per vehicle', desc: 'Tours and transfers are priced for your party, not per person, with nothing added at checkout.' },
+                { icon: <Star size={18} />, title: 'Rides priced per vehicle', desc: 'Airport rides are one price for the whole vehicle, and most tours one price for your party. Every price is all-in, with nothing added at checkout.' },
                 { icon: <Heart size={18} />, title: 'Paid to the people who drive it', desc: 'Every trip you book is driven and hosted by Jamaicans, and they are paid for every one.' },
               ].map((item) => (
                 <div key={item.title}>

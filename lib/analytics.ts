@@ -345,7 +345,9 @@ export function trackReelDetailsOpen(slug: string): void {
  */
 export function trackReelCtaTap(
   slug: string,
-  outcome: 'added' | 'removed' | 'blocked' | 'replayed',
+  // 'swapped': booked in place of a day it could not join; 'undone': the
+  // add or swap was taken back from its notice.
+  outcome: 'added' | 'removed' | 'blocked' | 'replayed' | 'swapped' | 'undone',
   reason?: string,
 ): void {
   try {
