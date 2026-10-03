@@ -489,7 +489,7 @@ export default function TransfersView({ initialDestinationId }: { initialDestina
               </button>
               <div className="xfer-hero-rating">
                 <span className="xfer-hero-rating-text">
-                  Flat rate per vehicle for up to 4; parties of 5 or more price per person
+                  One fare covers 1 to 4. Seats up to 7, priced per person from 5
                 </span>
               </div>
             </div>
@@ -762,7 +762,7 @@ export default function TransfersView({ initialDestinationId }: { initialDestina
                 <span className="xfer-pax-note">
                   {passengers > 4
                     ? `Priced per person for your party of ${passengers}.`
-                    : 'Flat rate per vehicle for up to 4 passengers.'}{' '}
+                    : 'One fare covers 1 to 4. Seats up to 7.'}{' '}
                   <Link href="/contact" style={{ color: 'var(--text-primary)', textDecoration: 'underline' }}>
                     Groups of 8+ get a custom quote
                   </Link>
@@ -779,7 +779,7 @@ export default function TransfersView({ initialDestinationId }: { initialDestina
                 commit as its text is never announced. */}
             <div role="status" aria-live="polite" className="visually-hidden">
               {quote
-                ? `${formatUsd(quote.priceUsd)} ${quote.tripType === 'round_trip' ? 'round trip' : 'one way'} to ${quote.destinationName}, zone ${quote.zone}, ${quote.zoneDuration}. ${quote.passengers > 4 ? `Price covers all ${quote.passengers} passengers.` : 'Price is per vehicle for up to 4 passengers.'}`
+                ? `${formatUsd(quote.priceUsd)} ${quote.tripType === 'round_trip' ? 'round trip' : 'one way'} to ${quote.destinationName}, zone ${quote.zone}, ${quote.zoneDuration}. ${quote.passengers > 4 ? `Price covers all ${quote.passengers} passengers.` : 'One fare covers 1 to 4 passengers.'}`
                 : ''}
             </div>
 
@@ -917,11 +917,12 @@ export default function TransfersView({ initialDestinationId }: { initialDestina
             <h2 className="xfer-section-h2">
               Priced{' '}
               <span style={{ fontStyle: 'italic', fontWeight: 500 }}>per vehicle</span>
-              , up to 4 guests.
+              , not per person.
             </h2>
             <p className="xfer-section-sub">
               Flat fares to every major resort in Jamaica served by Sangster
-              International. Five zones, no surge, no surprises.
+              International, each covering 1 to 4 guests. The vehicle seats 7;
+              from 5 it is priced per person. Five zones, no surge, no surprises.
             </p>
           </div>
 
@@ -1051,8 +1052,8 @@ export default function TransfersView({ initialDestinationId }: { initialDestina
           <div className="xfer-review-stats">
             <StatBlock
               icon={<TrendingUp size={16} />}
-              label="One price per vehicle"
-              value="1 to 4 passengers"
+              label="One fare for 1 to 4 passengers"
+              value="Seats up to 7"
             />
             <StatBlock
               icon={<Check size={16} />}
@@ -1201,7 +1202,7 @@ export default function TransfersView({ initialDestinationId }: { initialDestina
               <p className="xfer-sticky-dest">{quote.destinationName}</p>
               <p className="xfer-sticky-meta">
                 {quote.tripType === 'round_trip' ? 'Round-trip' : 'One-way'} ·{' '}
-                Zone {quote.zone} · 1–4 passengers
+                Zone {quote.zone} · {quote.passengers} {quote.passengers === 1 ? 'passenger' : 'passengers'}
               </p>
             </div>
             <button
@@ -1217,7 +1218,7 @@ export default function TransfersView({ initialDestinationId }: { initialDestina
           <>
             <div>
               <p className="xfer-sticky-dest">Airport transfer · MBJ</p>
-              <p className="xfer-sticky-meta">From {formatPrice(zoneFromPrice('A', 'one_way'))} · 1–4 passengers · flight tracked</p>
+              <p className="xfer-sticky-meta">From {formatPrice(zoneFromPrice('A', 'one_way'))} · seats up to 7 · flight tracked</p>
             </div>
             <button
               type="button"

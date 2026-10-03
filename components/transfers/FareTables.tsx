@@ -71,7 +71,7 @@ export default function FareTables({ onPick }: { onPick: (destinationId: string,
             <p className="fare-eyebrow">Rate card</p>
             <h2 id="every-fare" className="fare-h2">Every fare from Sangster (MBJ)</h2>
             <p className="fare-intro">
-              One flat price per vehicle for one to four passengers, nothing added at checkout. Tap a hotel to book it.
+              One flat price per vehicle covers one to four passengers, with nothing added at checkout. The vehicle seats seven; from five it is priced per person. Tap a hotel to book it.
             </p>
           </div>
           <label className="fare-search">

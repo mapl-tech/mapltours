@@ -322,7 +322,7 @@ export default function OnePageTransfersCheckout() {
                   <p style={{ fontFamily: FONT, fontWeight: 700, fontSize: 19, flexShrink: 0 }}>{formatUsd(item.priceUsd)}</p>
                 </div>
                 <p style={{ fontFamily: FONT, fontSize: 13, color: 'var(--text-tertiary)', marginTop: 6, display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}><Car size={13} /> {item.passengers <= 4 ? 'Private vehicle, one price for up to 4' : 'Private vehicle, priced per person'}</span>
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}><Car size={13} /> {item.passengers <= 4 ? 'Private vehicle, seats up to 7' : 'Private vehicle, priced per person'}</span>
                   <Link href={`/transfers?to=${item.destinationId}`} aria-label="Change hotel, back to the fare page" style={{ textDecoration: 'underline', textUnderlineOffset: 2, color: 'var(--text-secondary)', minHeight: 44, padding: '0 4px', display: 'inline-flex', alignItems: 'center' }}>Change hotel</Link>
                 </p>
               </div>
@@ -333,7 +333,7 @@ export default function OnePageTransfersCheckout() {
                     <Users size={18} color="var(--text-secondary)" style={{ flexShrink: 0 }} />
                     <div>
                       <span style={{ display: 'block', fontFamily: FONT, fontSize: 15, fontWeight: 600 }}>Passengers</span>
-                      <span style={{ display: 'block', fontFamily: FONT, fontSize: 13, color: 'var(--text-tertiary)' }}>{item.passengers <= 4 ? 'Flat fare for 1 to 4' : 'Priced per person from 5'}</span>
+                      <span style={{ display: 'block', fontFamily: FONT, fontSize: 13, color: 'var(--text-tertiary)' }}>{item.passengers <= 4 ? 'Same fare for 1 to 4 · seats 7' : 'Priced per person from 5'}</span>
                     </div>
                   </div>
                   <Stepper value={item.passengers} min={1} max={MAX_TRANSFER_PASSENGERS} onChange={(n) => reviseItem(item.id, { passengers: n })} label="Passengers" />

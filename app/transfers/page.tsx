@@ -146,7 +146,7 @@ function buildStructuredData() {
           priceCurrency: 'USD',
           availability: 'https://schema.org/InStock',
           areaServed: z.label,
-          description: `${z.duration}. Flat price per vehicle for 1–4 passengers; exact price depends on the resort.`,
+          description: `${z.duration}. Flat price per vehicle for 1 to 4 passengers; the vehicle seats 7, priced per person from 5. Exact price depends on the resort.`,
         },
         {
           '@type': 'Offer',
@@ -159,7 +159,7 @@ function buildStructuredData() {
           priceCurrency: 'USD',
           availability: 'https://schema.org/InStock',
           areaServed: z.label,
-          description: `${z.duration}. Flat price per vehicle for 1–4 passengers, both legs; exact price depends on the resort.`,
+          description: `${z.duration}. Flat price per vehicle for 1 to 4 passengers, both legs; the vehicle seats 7, priced per person from 5. Exact price depends on the resort.`,
         },
       ]),
     },

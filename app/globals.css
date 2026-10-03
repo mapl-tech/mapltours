@@ -1849,7 +1849,7 @@ img[alt="Devon House Patty & Ice Cream Tour"] {
    without touching that component. Selectors are one step more specific
    than the component's own, because its global styles load after this file.
    ══════════════════════════════════════════════════════════════ */
-/* One line of meta, not three. "From $22 · 1–4 passengers · flight tracked"
+/* One line of meta, not three. "From $22 · seats up to 7 · flight tracked"
    wrapped to three lines at 360px and made the fixed bar 108px tall. The text
    column must be allowed to shrink (min-width: 0) for the ellipsis to engage. */
 .xfer-sticky-cta > div:first-child {
