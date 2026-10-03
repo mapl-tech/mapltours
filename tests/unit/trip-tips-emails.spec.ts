@@ -684,7 +684,7 @@ describe('t1: the ride fare reads true for every party size', () => {
   test('8 or more: the 1 to 4 zone fares, the quote a second vehicle needs, and the way to ask for it', () => {
     for (const n of [8, 12]) {
       const t = t1For(n)
-      expect(t.text).toContain('here’s what a round trip costs for 1 to 4 people, by where you’re staying.')
+      expect(t.text).toContain('here’s what a round trip costs for 1 to 4 people (the vehicle seats 7), by where you’re staying.')
       expect(t.text).toContain('Groups of 8 or more get a custom quote with a second vehicle.')
       expect(t.text).toContain(`For ${n} of you, reply with your hotel and your dates, and one of us will quote the ride within 24 hours.`)
       expect(t.preheader).not.toMatch(/up to 4|\$/)
@@ -757,7 +757,7 @@ describe('every ride fare leads with the round trip (owner, Sept 27 2026: "it sh
     expect(priced).toBe(2 + 1 + 8)
     expect(pick('p2_tours').preheader).not.toMatch(/round trip|one[ -]way/i)
     expect(lede(pick('p1_ride_costs'))).toMatch(/Here’s the round trip, by where you’re staying:$/)
-    for (const i of [1, 2]) expect(lede(pick('t1_airport_ride', i))).toMatch(/here’s what a round trip costs for 1 to 4 people, by where you’re staying\.$/)
+    for (const i of [1, 2]) expect(lede(pick('t1_airport_ride', i))).toMatch(/here’s what a round trip costs for 1 to 4 people \(the vehicle seats 7\), by where you’re staying\.$/)
   })
 
   test('the one-way fare is second everywhere a tip gives one: under a zone table, and under the round trip at a known hotel', () => {

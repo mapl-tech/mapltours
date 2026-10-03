@@ -958,7 +958,7 @@ function p1(): Draft {
       // per person. A family of four pays the same as a solo traveler";
       // TransfersView.tsx:840 "Fixed zone price, paid up front" (so "fixed",
       // and known before they land).
-      { t: 'p', text: 'Walk out of Sangster (MBJ) already knowing what your ride costs. One fixed fare covers the whole vehicle, for 1 to 4 people. Here’s the round trip, by where you’re staying:' },
+      { t: 'p', text: 'Walk out of Sangster (MBJ) already knowing what your ride costs. One fixed fare covers the whole vehicle for 1 to 4 people, and it seats up to 7. Here’s the round trip, by where you’re staying:' },
       fareTable(),
       { t: 'small', text: fareNotes() },
       // The late-landing answer sits at the button (the risk a first-timer
@@ -1231,7 +1231,7 @@ function t1(ctx: TipContext): Draft {
     : // The zone table's fares are the 1 to 4 fares (zonePriceRange), so the
       // lede says so; the table's own header cannot. "A round trip" as a
       // noun, the one form the emails use (see the header).
-      `${booked} If you still need a ride from Sangster (MBJ), here’s what a round trip costs for 1 to 4 people, by where you’re staying.`
+      `${booked} If you still need a ride from Sangster (MBJ), here’s what a round trip costs for 1 to 4 people (the vehicle seats 7), by where you’re staying.`
   const body: Block[] = [
     { t: 'eyebrow', text: tours.length > 1 ? 'Your tours are booked' : 'Your tour is booked' },
     // Their open question, not "Your ride from the airport": under a
