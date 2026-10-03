@@ -1510,9 +1510,10 @@ export default function ExperienceDetail({ slug }: { slug: string }) {
       height: '100dvh', width: '100%',
       background: '#000', display: 'flex',
     }}>
-      {/* ── LEFT: Scrollable reels ── */}
-      <div style={{
-        flex: '1 1 auto', width: '100%', maxWidth: 480,
+      {/* ── LEFT: Scrollable reels (.reel-column: the full width on phones
+          and small tablets, a 480px column beside the panel from 768px) ── */}
+      <div className="reel-column" style={{
+        flex: '1 1 auto', width: '100%',
         height: '100%', position: 'relative',
       }}>
         {/* ── Prev / Next arrows, top, beside close button ── */}

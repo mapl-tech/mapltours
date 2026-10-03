@@ -308,6 +308,11 @@ h5, h6 { letter-spacing: -0.01em; }
   60% { transform: scale(1.06); opacity: 1; }
   100% { transform: scale(1); }
 }
+/* The reel's video column (components/ExperienceDetail). From 768px it is
+   480px wide beside the tour panel; below that the panel is hidden, and a
+   480px cap left an iPad mini held upright (744px) with a black band down
+   its right side, so there it takes the whole width like a phone. */
+@media (min-width: 768px) { .reel-column { max-width: 480px; } }
 /* The add notice (components/TripNotice). Pages, phones: near the top, so it
    never sits on the card or button just tapped (on the home rail it covered
    the card's new "Checkout"); wider screens: bottom right.
