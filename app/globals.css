@@ -297,7 +297,7 @@ h5, h6 { letter-spacing: -0.01em; }
    height, where a tap on Save landed on Close. Below 760px it drops its
    avatar and tightens; below 620px every rail does, and the counts and
    words under the discs go too (each button keeps its name), except
-   "2 clips" under the disc that carries the "Save 5%" bubble. */
+   "2 clips" under the disc that carries the "Earn 5%" bubble. */
 @media (max-height: 760px) {
   .reel-right-rail--clip { gap: 12px !important; }
   .reel-right-rail--clip > div:first-child { display: none; }
@@ -307,11 +307,11 @@ h5, h6 { letter-spacing: -0.01em; }
   .reel-right-rail > div:first-child { display: none; }
   .reel-right-rail > button:not(:last-child) > span:last-child { display: none; }
 }
-/* A phone on its side: room kept for the "Save 5%" bubble, the clips count
+/* A phone on its side: room kept for the "Earn 5%" bubble, the clips count
    goes after all, and Comments (from 768px the panel beside the reel holds
-   them). Under 768px the
-   bar below the reel leaves less, so Send goes too, and on the shortest
-   screens at any width; all are back the moment the phone is upright. */
+   them). Under 768px the bar below the reel leaves less, so Send goes too,
+   and on the shortest screens at any width; all are back the moment the
+   phone is upright. */
 @media (max-height: 440px) {
   .reel-right-rail { gap: 8px !important; }
   .reel-right-rail > button:last-child { margin-top: 6px; }
@@ -399,7 +399,7 @@ h5, h6 { letter-spacing: -0.01em; }
 .reel-top-btn:focus-visible { box-shadow: 0 0 0 6px rgba(0, 0, 0, 0.6) !important; }
 /* The reel's play/pause button (components/ExperienceDetail): centred on the
    video, shown while paused or when focused from a keyboard, otherwise
-   invisible (a tap on it still toggles, like a tap anywhere). */
+   invisible. It takes pointer clicks only while paused (below). */
 .reel-play-toggle {
   position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 5;
   width: 56px; height: 56px; padding: 0; border: none; border-radius: 50%; cursor: pointer;
@@ -407,7 +407,21 @@ h5, h6 { letter-spacing: -0.01em; }
   background: rgba(0, 0, 0, 0.45); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
   opacity: 0; transition: opacity 0.15s ease;
 }
-.reel-play-toggle--paused, .reel-play-toggle:focus-visible { opacity: 1; }
+/* Shown on focus only after keyboard use (data-reel-keys on <html>, set by
+   the reel on Tab, Enter, Space, arrows and Page keys, cleared by any
+   pointer): WebKit counts script focus as keyboard focus, and the focus the
+   reel moves for everyone drew this disc over playing reels on a phone. */
+.reel-play-toggle--paused, [data-reel-keys] .reel-play-toggle:focus-visible { opacity: 1; }
+/* Its ring too: without a key pressed, a paused reel's Play disc otherwise
+   wore Safari's script-focus ring after a tap in the clips sheet. */
+:root:not([data-reel-keys]) .reel-play-toggle:focus-visible { outline: none !important; box-shadow: none !important; }
+/* A pointer never pauses a playing reel (owner, Oct 4 2026): while it plays
+   the button takes no clicks, even shown with a keyboard's focus, and a
+   click there reaches the reel, which only ever starts a reel that is not
+   playing. A key press still pauses it (WCAG 2.2.2: a way to pause what
+   moves by itself); pointer-events never stops a keyboard. */
+.reel-play-toggle { pointer-events: none; }
+.reel-play-toggle--paused { pointer-events: auto; }
 /* Round when focused too: the site-wide ring's 3px corner made it a square. */
 .reel-play-toggle:focus-visible { border-radius: 50%; }
 @media (prefers-reduced-motion: reduce) { .reel-play-toggle { transition: none; } }
@@ -1651,12 +1665,31 @@ img[alt="Devon House Patty & Ice Cream Tour"] {
   box-shadow: var(--shadow-sm);
   transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
 }
-.pkg-card:hover {
-  transform: translateY(-3px);
-  box-shadow: var(--shadow-lg);
-  border-color: var(--border-strong);
+/* A mouse only: a tap leaves :hover stuck on, which lifted the card 3px
+   under the finger after an add. */
+@media (hover: hover) and (pointer: fine) {
+  .pkg-card:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-lg);
+    border-color: var(--border-strong);
+  }
 }
-.pkg-media { position: relative; height: 190px; flex-shrink: 0; }
+/* The photo and its note share one grid cell: the photo keeps its height,
+   and grows only when the note would not fit on it (large text: Safari's
+   and Firefox's text-only zoom grow the words, not the photo). */
+.pkg-photo { display: grid; flex-shrink: 0; }
+.pkg-media { position: relative; display: block; min-height: 190px; grid-area: 1 / 1; }
+/* What adding the day would change in the itinerary, laid over the foot of
+   the photo (components/FeedView): white on a dark glass panel, 10.6:1
+   even over a white frame. Clear of the "N IN ONE DAY" badge at any text
+   size (its top margin is in em). Taps go through to the photo's link. */
+.pkg-note {
+  grid-area: 1 / 1; align-self: end; position: relative; z-index: 2;
+  margin: 3.75em 10px 10px; padding: 7px 12px; border-radius: 12px; pointer-events: none;
+  background: rgba(8, 8, 10, 0.78);
+  backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+  color: #fff; font-family: var(--font-dm-sans); font-size: 14px; font-weight: 600; line-height: 1.4;
+}
 .pkg-body { padding: 16px 18px 18px; display: flex; flex-direction: column; flex: 1; }
 .pkg-lede { display: none; }
 
@@ -1695,7 +1728,7 @@ img[alt="Devon House Patty & Ice Cream Tour"] {
 @media (max-width: 767px) {
   .pkg-rail { gap: 12px; padding-left: 16px; scroll-padding-left: 16px; }
   .pkg-card { flex-basis: 84vw; }
-  .pkg-media { height: 170px; }
+  .pkg-media { min-height: 170px; }
 }
 @media (prefers-reduced-motion: reduce) {
   .pkg-card { transition: none; }
@@ -1711,6 +1744,9 @@ img[alt="Devon House Patty & Ice Cream Tour"] {
 }
 
 .pkg-buy button { transition: background-color 0.22s ease, color 0.22s ease, filter 0.15s ease; }
+/* Remove's 44px box reaches to within 4px of the Checkout link under it
+   (negative margins): its ring sits on the box, not 2px out onto the link. */
+.pkg-remove:focus-visible { outline-offset: 0; }
 @keyframes pkgReplaceIn { from { opacity: 0; transform: translateY(-3px); } to { opacity: 1; transform: none; } }
 .pkg-replaces { animation: pkgReplaceIn 0.22s ease both; }
 @media (prefers-reduced-motion: reduce) {
@@ -3183,7 +3219,7 @@ a.pf-stat:hover { background: var(--surface); }
   padding: 16px 12px 12px 20px; border-bottom: 1px solid var(--border-on-dark); flex-shrink: 0;
 }
 .clips-title { margin: 0; font-size: 20px; font-weight: 700; letter-spacing: -0.01em; line-height: 1.2; color: #fff; }
-/* The terms behind the reel's "Save 5%" bubble: gold text on the dark sheet
+/* The terms behind the reel's "Earn 5%" bubble: gold text on the dark sheet
    (--gold-warm, 10:1 on #111110). */
 .clips-reward { margin: 6px 0 0; font-size: 14px; line-height: 1.4; font-weight: 600; color: var(--gold-warm); }
 .clips-sub {
@@ -3225,7 +3261,12 @@ a.pf-stat:hover { background: var(--surface); }
 }
 .clip-card-by { position: absolute; left: 0; right: 0; bottom: 0; padding: 10px; display: flex; flex-direction: column; gap: 4px; }
 .clip-card-name { display: flex; align-items: center; gap: 6px; min-width: 0; font-size: 13px; font-weight: 700; }
-.clip-card-name > span:last-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* Up to two lines, then cut: on one line "MAPL Tours Jamaica" lost its last
+   word on a phone's two-column grid. */
+.clip-card-name > span:last-child {
+  min-width: 0; line-height: 1.25; overflow-wrap: anywhere;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+}
 .clip-card-cap {
   font-size: 12px; line-height: 1.35; color: #fff;
   display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
@@ -3356,29 +3397,30 @@ a.pf-stat:hover { background: var(--surface); }
   .clip-card img, .clip-card video, .clips-progress > span { transition: none; }
 }
 
-/* "Save 5%": a speech bubble over the reel's Clips icon, the reward for
-   posting clips (the sheet it opens states the terms). Centred on the icon
+/* "Earn 5%": a speech bubble over the reel's Clips icon, the reward for
+   posting clips (the sheet it opens states the terms). Earn, not Save: beside
+   the reel's price, "Save 5%" could read as 5% off that tour. Centred on the icon
    and inside the rail's own column, like a badge: off to the icon's left it
    sat on the tour's facts line on a 360x640 phone (the text column reaches
    88px from the edge, the rail starts at 68px). Its top clears the label
    above by 6px. Gold surface with its own ink (8:1). Part of the button, so a
    tap on it is a tap on Clips. */
 .reel-clips-disc { position: relative; }
-.reel-save-bubble {
+.reel-earn-bubble {
   position: absolute; left: 50%; bottom: calc(100% - 8px); z-index: 1;
   transform: translateX(-50%);
   padding: 3px 7px; border-radius: 9999px;
   background: var(--gold); color: var(--gold-ink);
   font: 700 12px/16px var(--font-dm-sans); white-space: nowrap;
   box-shadow: 0 3px 10px rgba(0, 0, 0, 0.35);
-  animation: saveBubbleIn 0.32s cubic-bezier(0.22, 1, 0.36, 1) 0.15s both;
+  animation: earnBubbleIn 0.32s cubic-bezier(0.22, 1, 0.36, 1) 0.15s both;
 }
-.reel-save-bubble::after {
+.reel-earn-bubble::after {
   content: ''; position: absolute; left: 50%; bottom: -3px; width: 8px; height: 8px;
   margin-left: -4px; background: var(--gold); border-radius: 0 0 2px 0; transform: rotate(45deg);
 }
-@keyframes saveBubbleIn {
+@keyframes earnBubbleIn {
   from { opacity: 0; transform: translate(-50%, 4px) scale(0.7); }
   to { opacity: 1; transform: translateX(-50%); }
 }
-@media (prefers-reduced-motion: reduce) { .reel-save-bubble { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .reel-earn-bubble { animation: none; } }

@@ -10,11 +10,11 @@
  * the decision it supports share one screen. With no clips yet (every tour,
  * at the time of writing) it says so plainly instead of pretending.
  *
- * Three dialogs, each portaled to <body>: the sheet, the full-screen clip
- * viewer and the upload sheet. Rendered in place they lived inside the
- * reel's scroller, whose stacking context capped them and whose scroll
- * caught the swipes; the shared focus trap closes only the top one on
- * Escape (lib/use-focus-trap).
+ * Two dialogs, each portaled to <body>: the sheet and the upload sheet (a
+ * clip tapped in the sheet plays in the reel itself). Rendered in place
+ * they lived inside the reel's scroller, whose stacking context capped them
+ * and whose scroll caught the swipes; the shared focus trap closes only the
+ * top one on Escape (lib/use-focus-trap).
  */
 
 import { useCallback, useEffect, useId, useRef, useState } from 'react'
@@ -36,7 +36,7 @@ import {
 import { priceUnitLabel, slugify, type Experience } from '@/lib/experiences'
 import { useAuth } from '@/lib/supabase/auth-context'
 import { createClient } from '@/lib/supabase/client'
-import { formatGuestLabel, normalizeSocialHandle } from '@/lib/social-handle'
+import { normalizeSocialHandle } from '@/lib/social-handle'
 import { useFocusTrap } from '@/lib/use-focus-trap'
 import { useI18n } from '@/lib/i18n'
 import { CANCELLATION_SUMMARY } from '@/lib/refund-pricing'
@@ -44,6 +44,8 @@ import { CLIPS_POST_QUERY } from '@/lib/safe-redirect'
 import { trackClipsEvent } from '@/lib/analytics'
 import type { TourDetailsCta } from '@/components/TourDetailsSheet'
 import Avatar from '@/components/Avatar'
+import MaplAvatar from '@/components/MaplAvatar'
+import { clipCredit, clipsInReelOrder } from '@/lib/creator'
 
 interface Props {
   exp: Experience
@@ -115,8 +117,9 @@ export default function UserTourVideos({ exp, startUpload, cta, onPlay, onClose 
       onPointerDown={(e) => { scrimPress.current = e.target === e.currentTarget }}
       onClick={(e) => {
         // Portaled in the DOM, but React still bubbles this click through
-        // the reel, whose root toggles its video: a tap in here (or in the
-        // viewer and upload sheet, which render inside) must stop here.
+        // the reel, whose root starts a paused video, and the sheet holds it
+        // paused: a tap in here (or in the upload sheet, which renders
+        // inside) must stop here.
         e.stopPropagation()
         if (scrimPress.current && e.target === e.currentTarget) requestClose()
       }}
@@ -131,17 +134,17 @@ export default function UserTourVideos({ exp, startUpload, cta, onPlay, onClose 
       >
         <div className="clips-head">
           <div style={{ minWidth: 0 }}>
-            <h2 id={titleId} className="clips-title">Guest clips</h2>
+            <h2 id={titleId} className="clips-title">Clips</h2>
             <p className="clips-sub">
               {loading || count === 0
                 ? exp.title
-                : `${count} ${count === 1 ? 'clip' : 'clips'} filmed by guests on ${exp.title}`}
+                : `${count} ${count === 1 ? 'clip' : 'clips'} from ${exp.title}`}
             </p>
-            {/* The terms of the reel's "Save 5%" bubble, on the first screen
+            {/* The terms of the reel's "Earn 5%" bubble, on the first screen
                 whatever the sheet holds, so the tap always shows them. */}
             <p className="clips-reward">{`Post clips from your trip: ${VIDEO_REWARD_MILESTONE} approved get you 5% off your next tour.`}</p>
           </div>
-          <button type="button" className="clips-x" onClick={requestClose} aria-label="Close guest clips">
+          <button type="button" className="clips-x" onClick={requestClose} aria-label="Close clips">
             <X size={20} aria-hidden />
           </button>
         </div>
@@ -159,12 +162,13 @@ export default function UserTourVideos({ exp, startUpload, cta, onPlay, onClose 
           ) : count === 0 ? (
             <div className="clips-empty">
               <div className="clips-empty-icon" aria-hidden><Film size={22} /></div>
-              <h3>No guest clips here yet</h3>
+              <h3>No clips here yet</h3>
               <p>When guests post clips from this tour, you will see them here, straight from their phones.</p>
             </div>
           ) : (
             <ul className="clips-grid" aria-label="Clips">
-              {videos.map((v) => (
+              {/* In the order the reel plays them. */}
+              {clipsInReelOrder(videos).map(({ video: v }) => (
                 <li key={v.id}>
                   <ClipCard video={v} onOpen={() => openClip(v)} />
                 </li>
@@ -246,7 +250,8 @@ function clipTime(sec: number | null | undefined): string | null {
 }
 
 function ClipCard({ video, onOpen }: { video: TourVideo; onOpen: () => void }) {
-  const by = formatGuestLabel(video.uploader_handle, video.uploader_name, 'A guest')
+  // MAPL Tours Jamaica, with its mark, for our own clips (by account id).
+  const { by, mapl } = clipCredit(video)
   const time = clipTime(video.duration_seconds)
   return (
     <button
@@ -266,7 +271,9 @@ function ClipCard({ video, onOpen }: { video: TourVideo; onOpen: () => void }) {
       <span className="clip-card-scrim" aria-hidden />
       <span className="clip-card-by" aria-hidden>
         <span className="clip-card-name">
-          <Avatar src={video.uploader_avatar_url} name={video.uploader_name} size={24} ring />
+          {mapl
+            ? <MaplAvatar size={24} border="1px solid rgba(255,255,255,0.6)" />
+            : <Avatar src={video.uploader_avatar_url} name={by.replace(/^@/, '')} size={24} ring />}
           <span>{by}</span>
         </span>
         {video.caption && <span className="clip-card-cap">{video.caption}</span>}
@@ -445,7 +452,7 @@ function UploadSheet({ exp, onClose, onUploaded }: {
           {done ? (
             <div className="clips-done" role="status">
               <div className="clips-empty-icon" aria-hidden><Check size={22} strokeWidth={2.5} /></div>
-              <p>We post it once it has been checked. Once approved it counts toward your 5% off, and your progress shows under Guest clips on any tour.</p>
+              <p>We post it once it has been checked. Once approved it counts toward your 5% off, and your progress shows under Clips on any tour.</p>
               <button type="button" className="clips-primary" onClick={onClose}>Done</button>
             </div>
           ) : !user ? (

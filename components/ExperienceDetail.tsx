@@ -20,11 +20,11 @@ import { useExperienceLike, useComments, DisplayComment } from '@/lib/supabase/h
 import { useAuth } from '@/lib/supabase/auth-context'
 import Avatar from '@/components/Avatar'
 import MaplAvatar from '@/components/MaplAvatar'
-import { isMaplCreator, displayHandle } from '@/lib/creator'
+import { isMaplCreator, displayHandle, clipCredit, clipsInReelOrder, isMaplAccount } from '@/lib/creator'
 import TourDetailsSheet from './TourDetailsSheet'
 import { CANCELLATION_SUMMARY } from '@/lib/refund-pricing'
 import { useApprovedClips, clipDateLabel, type TourVideo } from '@/lib/tour-videos'
-import { formatGuestLabel } from '@/lib/social-handle'
+import { isKeyOrReaderClick } from '@/lib/press'
 
 declare global {
   interface Window {
@@ -135,23 +135,28 @@ function useStatusBarFloor() {
   }, [])
 }
 
+/** Keys that move focus or press a control: a keyboard user's (lastInputKey). */
+const NAV_KEYS = new Set(['Tab', 'Enter', ' ', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'PageUp', 'PageDown', 'Home', 'End'])
+
 /** A guest's clip of a tour, played as its own reel right after the tour. */
 interface ReelClip { video: TourVideo; n: number; of: number }
 
-function Reel({ exp, clip, isActive, near, ahead, last, clipCount, muted, onMuted, onEnded, canAdvance, onPlayClip, onComments }: {
+function Reel({ exp, clip, isActive, near, ahead, advancesAtEnd, clipCount, muted, onMuted, onEnded, canAdvance, onPlayClip, onComments }: {
   exp: Experience
   clip?: ReelClip
   isActive: boolean
   near: boolean
   ahead: boolean
-  /** The feed's final reel: a guest clip there loops instead of moving on. */
-  last: boolean
+  /** Whether this reel's video, once played through, gives way to the next
+   *  reel: a guest clip (but not the feed's last reel), and a tour whose
+   *  guest clips follow it. Everything else loops. */
+  advancesAtEnd: boolean
   /** This tour's approved guest clips, for the Clips button. */
   clipCount: number
   /** Guest clips have sound; one choice covers all of them (the feed's). */
   muted: boolean
   onMuted: (muted: boolean) => void
-  /** A guest clip that plays to its end moves the feed to the next reel. */
+  /** A reel that plays to its end moves the feed on (advancesAtEnd). */
   onEnded: () => void
   /** False while the visitor writes or reads on top of the feed (it holds still). */
   canAdvance: () => boolean
@@ -176,7 +181,11 @@ function Reel({ exp, clip, isActive, near, ahead, last, clipCount, muted, onMute
   // A guest's footage may be landscape: shown whole rather than cropped to a
   // third of its width. Portrait phone footage fills the reel like the tour's.
   const [clipFit, setClipFit] = useState<'cover' | 'contain'>('cover')
-  const clipBy = clip ? formatGuestLabel(clip.video.uploader_handle, clip.video.uploader_name, 'A guest') : ''
+  // Who the clip is from: MAPL Tours Jamaica for our own (lib/creator, by
+  // account id), otherwise the guest. Ours are never called a guest clip.
+  const credit = clip ? clipCredit(clip.video) : null
+  const clipBy = credit?.by ?? ''
+  const clipKind = credit?.mapl ? 'Clip' : 'Guest clip'
   const clipId = clip?.video.id
   // Read by the play effect without restarting playback when they change.
   const mutedRef = useRef(muted)
@@ -269,11 +278,41 @@ function Reel({ exp, clip, isActive, near, ahead, last, clipCount, muted, onMute
   const [shareToast, setShareToast] = useState<string | null>(null)
   const [detailsFor, setDetailsFor] = useState<Experience | null>(null)
   const [clipsOpen, setClipsOpen] = useState(false)
-  // Whether this clip, once it ends, gives way to the next reel: read by the
-  // video's own listeners, so always the current answer.
+  // At its end this reel gives way to the next one (a tour to its first guest
+  // clip, a clip to the next reel), unless the visitor is writing or reading
+  // on top of the feed. Read by the video's own listeners, so always the
+  // current answer.
   const advancesRef = useRef<() => boolean>(() => false)
-  advancesRef.current = () => !!clipId && isActive && !last && !detailsFor && !clipsOpen
-    && !window.matchMedia('(prefers-reduced-motion: reduce)').matches && canAdvance()
+  advancesRef.current = () => isActive && advancesAtEnd && !detailsFor && !clipsOpen && canAdvance()
+  // Whether its end goes on playing at all: it moves on, or, while the feed
+  // is held, plays again. It never stops on its last frame.
+  const continuesRef = useRef<() => boolean>(() => false)
+  continuesRef.current = () => isActive && advancesAtEnd
+  // Only two things may hold a reel that is on screen paused: the keyboard
+  // pause (WCAG 2.2.2) and the clips sheet covering it.
+  const keyboardPausedRef = useRef(false)
+  const clipsOpenRef = useRef(clipsOpen)
+  clipsOpenRef.current = clipsOpen
+  const isActiveRef = useRef(isActive)
+  isActiveRef.current = isActive
+  const atEnd = (video: HTMLVideoElement) => {
+    if (advancesRef.current()) {
+      onEnded()
+      // A swipe that takes the feed back before the move lands leaves this
+      // reel on screen at its end: it plays again instead of freezing on its
+      // last frame. Never once the reel is gone: a removed element still
+      // plays, sound and all, unseen.
+      window.setTimeout(() => {
+        if (isActiveRef.current && video.isConnected && video.ended) {
+          video.currentTime = 0
+          video.play().catch(() => {})
+        }
+      }, 1200)
+    } else if (continuesRef.current()) {
+      video.currentTime = 0
+      video.play().catch(() => {})
+    }
+  }
   // ?clips=post: a guest back from signing in to post a clip.
   const [clipsUpload, setClipsUpload] = useState(false)
   const clipParamConsumed = useRef(false)
@@ -302,12 +341,19 @@ function Reel({ exp, clip, isActive, near, ahead, last, clipCount, muted, onMute
   }, [isActive, clip])
 
   // The clips cover the reel: pause it underneath (one moving picture, and
-  // no second soundtrack once a clip has sound) and carry on at close.
+  // no second soundtrack once a clip has sound) and carry on at close, unless
+  // the visitor paused it from the keyboard. Also when the sheet opened
+  // before the video had loaded (the start waits on clipsOpenRef). Not when
+  // the sheet goes because the page did (its Checkout and Sign in links):
+  // this cleanup then runs after the reel has left the page, and a removed
+  // clip played on unseen, with its sound.
   useEffect(() => {
     const video = videoRef.current
-    if (!clipsOpen || !video || video.paused) return
+    if (!clipsOpen || !video) return
     video.pause()
-    return () => { video.play().catch(() => {}) }
+    return () => {
+      if (isActiveRef.current && video.isConnected && !keyboardPausedRef.current) video.play().catch(() => {})
+    }
   }, [clipsOpen])
 
   // Robust copy-to-clipboard with a fallback for non-secure contexts
@@ -342,7 +388,7 @@ function Reel({ exp, clip, isActive, near, ahead, last, clipCount, muted, onMute
     const url = `${window.location.origin}/experience/${slugify(exp.title)}${clip ? `?clip=${clip.video.id}` : ''}`
     const shareData: ShareData = {
       title: exp.title,
-      text: clip ? `A guest's clip from ${exp.title}, Jamaica` : `${exp.title}, ${exp.destination}, Jamaica`,
+      text: clip ? `${credit?.mapl ? 'A clip' : "A guest's clip"} from ${exp.title}, Jamaica` : `${exp.title}, ${exp.destination}, Jamaica`,
       url,
     }
     const showToast = (msg: string) => {
@@ -377,26 +423,41 @@ function Reel({ exp, clip, isActive, near, ahead, last, clipCount, muted, onMute
     const onPlay = () => setPaused(false)
     // A clip that has ended and is about to give way to the next reel is not
     // "paused": the Play button flashed on it for ~100 ms as it slid away.
-    const onPause = () => { if (!(video.ended && advancesRef.current())) setPaused(true) }
+    const onPause = () => { if (!(video.ended && continuesRef.current())) setPaused(true) }
     video.addEventListener('play', onPlay)
     video.addEventListener('pause', onPause)
     // A play still waiting for data (loadeddata, canplay, the retry) when
     // this reel stops being the one on screen must never start it: a guest
     // clip swiped past before it loaded played on off screen, with sound.
+    // Nor once the reel has left the page (isConnected): React removes it
+    // before this effect's cleanup runs.
     let cancelled = false
     let retry: number | undefined
     const tryPlay = () => {
-      if (cancelled) return
+      if (cancelled || clipsOpenRef.current || !video.isConnected) return
       video.play().catch((err: DOMException) => {
-        if (cancelled) return
+        if (cancelled || clipsOpenRef.current || !video.isConnected) return
         if (clipId && err?.name === 'NotAllowedError' && !video.muted) {
           video.muted = true
           onMutedRef.current(true)
           video.play().catch(() => {})
           return
         }
-        retry = window.setTimeout(() => { if (!cancelled) video.play().catch(() => {}) }, 300)
+        retry = window.setTimeout(() => { if (!cancelled && !clipsOpenRef.current && video.isConnected) video.play().catch(() => {}) }, 300)
       })
+    }
+    // Every reel autoplays and keeps playing (owner, Oct 4 2026), reduced
+    // motion included (it still makes the feed's moves instant). A browser
+    // that refused to start it, as iOS Low Power Mode does until a touch, or
+    // that paused it with the tab, is asked again at the next touch and when
+    // the tab comes back. A touch on the Play button is left to the button:
+    // started here first, its own click then saw a playing reel and paused
+    // it again.
+    const resume = (e?: Event) => {
+      if (cancelled || document.visibilityState === 'hidden' || !video.isConnected) return
+      if ((e?.target as Element | null)?.closest?.('.reel-play-toggle')) return
+      if (!video.paused || video.ended || keyboardPausedRef.current || clipsOpenRef.current) return
+      video.play().catch(() => {})
     }
     const cleanup = () => {
       cancelled = true
@@ -405,14 +466,16 @@ function Reel({ exp, clip, isActive, near, ahead, last, clipCount, muted, onMute
       video.removeEventListener('pause', onPause)
       video.removeEventListener('loadeddata', tryPlay)
       video.removeEventListener('canplay', tryPlay)
+      document.removeEventListener('visibilitychange', resume)
+      document.removeEventListener('touchend', resume)
+      document.removeEventListener('pointerup', resume)
     }
 
     if (isActive) {
-      // Motion preference wins: poster + explicit Play control, no autoplay.
-      if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-        setPaused(true)
-        return cleanup
-      }
+      keyboardPausedRef.current = false
+      document.addEventListener('visibilitychange', resume)
+      document.addEventListener('touchend', resume, { passive: true })
+      document.addEventListener('pointerup', resume, { passive: true })
       // Tour reels have no sound. A guest clip follows the feed's one sound
       // choice; a phone that refuses sound without a fresh tap plays it
       // muted, and the Sound button says so.
@@ -475,24 +538,39 @@ function Reel({ exp, clip, isActive, near, ahead, last, clipCount, muted, onMute
   const togglePlay = () => {
     if (!videoRef.current) return
     if (videoRef.current.paused) {
+      keyboardPausedRef.current = false
       videoRef.current.play().catch(() => {})
       setPaused(false)
     } else {
+      // Reachable only from a keyboard while the reel plays: it stays paused
+      // until played again, never resumed behind the visitor's back.
+      keyboardPausedRef.current = true
       videoRef.current.pause()
       setPaused(true)
     }
   }
+  // When a pointer last went down on the play button (below).
+  const togglePointerAt = useRef(0)
+  // A tap or click never pauses (owner, Oct 4 2026): it only starts a reel
+  // that is not playing, when the browser refused autoplay.
+  const playIfPaused = () => {
+    const video = videoRef.current
+    if (!video || !video.paused) return
+    keyboardPausedRef.current = false
+    video.play().catch(() => {})
+    setPaused(false)
+  }
 
   return (
     <div
-      // Tap anywhere pauses or plays, for pointers. Keyboard and screen-reader
-      // users get the same control as a real button (.reel-play-toggle
-      // below): this root used to be the focus stop and the toggle, but as a
-      // role=group it never said it was one or whether the video was playing.
-      onClick={togglePlay}
+      // A tap anywhere starts a reel that is not playing and never pauses one
+      // that is (owner, Oct 4 2026). Keyboard and screen-reader users have a
+      // real button (.reel-play-toggle below), which can also pause: a way to
+      // stop what moves by itself (WCAG 2.2.2).
+      onClick={playIfPaused}
       role="group"
       className="reel-item"
-      aria-label={clip ? `${exp.title}, guest clip ${clip.n} of ${clip.of} by ${clipBy}` : `${exp.title} reel`}
+      aria-label={clip ? `${exp.title}, ${clipKind.toLowerCase()} ${clip.n} of ${clip.of} by ${clipBy}` : `${exp.title} reel`}
       // The tour's description stands in for its video, which has no sound
       // and no text of its own; a guest clip is described by its caption, or
       // without one by a line saying whose footage it is.
@@ -506,15 +584,16 @@ function Reel({ exp, clip, isActive, near, ahead, last, clipCount, muted, onMute
       inert={isActive ? undefined : ''}
       style={{
         height: '100dvh', width: '100%',
-        position: 'relative', cursor: 'pointer',
+        position: 'relative', cursor: paused ? 'pointer' : 'default',
         scrollSnapAlign: 'start', scrollSnapStop: 'always',
         overflow: 'hidden', background: '#000',
       }}
     >
       {/* No visible controls on the playing video, by explicit product
-          decision (2026-08-24): tap-anywhere is the pause. The play/pause
-          button below keeps that: it shows only while paused or when a
-          keyboard puts focus on it (WCAG 2.2.2, 4.1.2). */}
+          decision (2026-08-24), and since Oct 4 2026 nothing a pointer does
+          pauses it. The play/pause button below shows only while paused or
+          when a keyboard puts focus on it, and takes pointer clicks only
+          while paused (WCAG 2.2.2, 4.1.2). */}
       {clip ? (
         // A guest's own upload: one file (mp4, mov or webm as posted), its
         // poster the thumbnail made at upload. It plays to its end and the
@@ -523,16 +602,14 @@ function Reel({ exp, clip, isActive, near, ahead, last, clipCount, muted, onMute
           ref={videoRef}
           playsInline
           muted={muted}
-          loop={last}
+          loop={!advancesAtEnd}
           preload={isActive ? 'auto' : near ? 'metadata' : 'none'}
           src={near ? clip.video.video_url : undefined}
           poster={near ? clip.video.thumbnail_url ?? undefined : undefined}
           onLoadedMetadata={(e) => setClipFit(e.currentTarget.videoWidth > e.currentTarget.videoHeight ? 'contain' : 'cover')}
-          // With reduced motion the feed never moves by itself: the clip
-          // stops at its end and the Play button comes back.
-          // Nor from under the reel's own sheets (details, clips): the feed
-          // waits while the visitor reads on top of it.
-          onEnded={() => { if (advancesRef.current()) onEnded() }}
+          // Under the reel's own sheets, or while a comment is written, it
+          // plays again instead of moving on.
+          onEnded={(e) => atEnd(e.currentTarget)}
           style={{ width: '100%', height: '100%', objectFit: clipFit, background: '#000' }}
         />
       ) : exp.youtubeId ? (
@@ -551,9 +628,12 @@ function Reel({ exp, clip, isActive, near, ahead, last, clipCount, muted, onMute
       // before the one on screen got any bandwidth, so on cellular the video
       // sat dark for 20 s. The other reels take a poster as they come within
       // one swipe.
+      // Loops, unless guest clips follow it: then it plays once and the first
+      // clip takes over (owner, Oct 4 2026).
       <video
         ref={videoRef}
-        loop muted playsInline
+        loop={!advancesAtEnd} muted playsInline
+        onEnded={(e) => atEnd(e.currentTarget)}
         preload={isActive ? 'auto' : near ? 'metadata' : 'none'}
         poster={near ? reelPoster(exp) ?? undefined : undefined}
         style={{ width: '100%', height: '100%', objectFit: 'cover', willChange: 'opacity', background: '#08080A' }}
@@ -583,14 +663,27 @@ function Reel({ exp, clip, isActive, near, ahead, last, clipCount, muted, onMute
       )}
       {/* Play/pause as a real button: named for what it will do, so its name
           carries the state. Visible while paused (the play glyph the reel
-          always showed) or when focused from a keyboard; otherwise invisible,
-          and a tap on it does what a tap anywhere does. Dark disc, not the old
-          white one: its white glyph measured 1.5:1 over a bright frame. */}
+          always showed) or when focused from a keyboard. A pointer reaches it
+          only while the reel is paused (globals.css), and its click then only
+          plays; any other click is a key or a screen reader's press, which
+          may pause. A click is a pointer's when a pointer went down on the
+          button while the reel was paused, not by detail alone: NVDA and
+          JAWS in Firefox press with detail 1, and Chrome's screen readers
+          send a pointerdown of their own, which on a playing reel no pointer
+          could have. Dark disc, not the old white one: its white glyph
+          measured 1.5:1 over a bright frame. */}
       <button
         type="button"
         className={paused ? 'reel-play-toggle reel-play-toggle--paused' : 'reel-play-toggle'}
         aria-label={paused ? 'Play video' : 'Pause video'}
-        onClick={(e) => { e.stopPropagation(); togglePlay() }}
+        onPointerDown={() => { if (videoRef.current?.paused) togglePointerAt.current = Date.now() }}
+        onClick={(e) => {
+          e.stopPropagation()
+          const byPointer = !isKeyOrReaderClick(e) && Date.now() - togglePointerAt.current < 1000
+          togglePointerAt.current = 0
+          if (byPointer) playIfPaused()
+          else togglePlay()
+        }}
       >
         {paused
           ? <Play size={24} fill="white" strokeWidth={0} aria-hidden />
@@ -628,7 +721,7 @@ function Reel({ exp, clip, isActive, near, ahead, last, clipCount, muted, onMute
       {/* ── Right action column (Snapchat style, tight, no labels) ── */}
       {/* Above the bottom info (11 over its 10): that block's soft shade
           reaches under the rail and was dimming its discs and the gold
-          "Save 5%" bubble. The two never share any width. */}
+          "Earn 5%" bubble. The two never share any width. */}
       <div className={clip ? 'reel-right-rail reel-right-rail--clip' : 'reel-right-rail'} style={{
         position: 'absolute', right: 12, zIndex: 11,
         display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16,
@@ -636,14 +729,14 @@ function Reel({ exp, clip, isActive, near, ahead, last, clipCount, muted, onMute
         {/* Creator avatar, MAPL Tours logo when posted by us, otherwise the
             creator's initial disk (coloured by handle). No follow badge. */}
         <div style={{ marginBottom: 4 }}>
-          {clip ? (
+          {clip && !credit?.mapl ? (
             <Avatar
               src={clip.video.uploader_avatar_url}
-              name={clipBy}
+              name={clipBy.replace(/^@/, '')}
               size={44}
               style={{ boxShadow: '0 0 0 2px #fff' }}
             />
-          ) : isMaplCreator(exp.creator) ? (
+          ) : clip || isMaplCreator(exp.creator) ? (
             <MaplAvatar size={44} border="2px solid white" />
           ) : (
             <Avatar
@@ -742,17 +835,19 @@ function Reel({ exp, clip, isActive, near, ahead, last, clipCount, muted, onMute
           </button>
         )}
 
-        {/* Guest clips: opens the sheet, every clip of this tour (a tap plays
+        {/* Clips: opens the sheet, every clip of this tour (a tap plays
             it here, in the feed) and the way to post one. The count says how
-            many there are; the clips also come up by swiping on. "Save 5%" is
-            the reward for posting them, and every tap on it lands on the
-            sheet, whose header states the terms (5 approved clips, 5% off a
-            next tour), so the bubble never promises more than the tap shows.
-            Shown on the reel on screen, so it pops in as each one arrives. */}
+            many there are; the clips also come up by swiping on. "Earn 5%" is
+            the reward for posting them: earned, not taken off, so it never
+            reads as 5% off the price beside it ("Save 5%" could; the owner's
+            call, Oct 4 2026). Every tap on it lands on the sheet, whose header
+            states the terms (5 approved clips, 5% off a next tour), so the
+            bubble never promises more than the tap shows. Shown on the reel
+            on screen, so it pops in as each one arrives. */}
         <button
           onClick={(e) => { e.stopPropagation(); openClips() }}
           // Starts with the visible words, for speech control (WCAG 2.5.3).
-          aria-label={`${clipCount > 0 ? `${clipCount} ${clipCount === 1 ? 'clip' : 'clips'}` : 'Clips'} from guests on this tour. Save 5%: 5 approved clips from your trip get you 5% off your next tour`}
+          aria-label={`${clipCount > 0 ? `${clipCount} ${clipCount === 1 ? 'clip' : 'clips'}` : 'Clips'} on this tour. Earn 5%: 5 approved clips from your trip get you 5% off your next tour`}
           aria-haspopup="dialog"
           style={{
             display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2,
@@ -762,7 +857,7 @@ function Reel({ exp, clip, isActive, near, ahead, last, clipCount, muted, onMute
         >
           <span className="reel-action-disc reel-clips-disc">
             <Film size={22} strokeWidth={1.8} />
-            {isActive && <span className="reel-save-bubble" aria-hidden="true">Save 5%</span>}
+            {isActive && <span className="reel-earn-bubble" aria-hidden="true">Earn 5%</span>}
           </span>
           <span style={{ fontSize: 12, fontWeight: 700, fontFamily: 'var(--font-dm-sans)', padding: '1px 8px', borderRadius: 9999, background: 'rgba(0,0,0,0.6)', whiteSpace: 'nowrap' }}>
             {clipCount > 0 ? `${clipCount} ${clipCount === 1 ? 'clip' : 'clips'}` : 'Clips'}
@@ -865,7 +960,7 @@ function Reel({ exp, clip, isActive, near, ahead, last, clipCount, muted, onMute
                 padding: '3px 10px', borderRadius: 9999, background: 'rgba(0,0,0,0.45)',
                 border: '1px solid rgba(255,255,255,0.28)', fontSize: 12, fontWeight: 700, color: 'white',
               }}>
-                {`Guest clip ${clip.n} of ${clip.of}`}
+                {`${clipKind} ${clip.n} of ${clip.of}`}
               </span>
               <span style={{ fontSize: 13, fontWeight: 600, color: 'white' }}>
                 {clipBy}{clipDateLabel(clip.video.created_at) ? ` · ${clipDateLabel(clip.video.created_at)}` : ''}
@@ -880,7 +975,7 @@ function Reel({ exp, clip, isActive, near, ahead, last, clipCount, muted, onMute
               </p>
             )}
             {!clip.video.caption && (
-              <p id={`clip-desc-${clip.video.id}`} className="sr-only">{`${clipBy}'s own video from ${exp.title}.`}</p>
+              <p id={`clip-desc-${clip.video.id}`} className="sr-only">{`${clipBy}’s own video from ${exp.title}.`}</p>
             )}
           </div>
         ) : (
@@ -960,7 +1055,7 @@ function Reel({ exp, clip, isActive, near, ahead, last, clipCount, muted, onMute
             of centring "bring" on its own. */}
         {!clip && <button
           className="reel-included"
-          onClick={() => openDetails()}
+          onClick={(e) => { e.stopPropagation(); openDetails() }}
           style={{
             display: 'inline-flex', alignItems: 'center', gap: 6,
             textAlign: 'left', justifyContent: 'flex-start',
@@ -1534,10 +1629,11 @@ export default function ExperienceDetail({ slug }: { slug: string }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dayIsFull, cartIdsKey, slug])
 
-  // Guest clips play as reels right after their tour, newest first, so they
-  // are watched by swiping on, like everything else here. They join only
-  // after hydration: the list comes from a client cache the server never
-  // saw, and the first render has to match its HTML.
+  // A tour's clips play as reels right after it, MAPL Tours Jamaica's own
+  // first, then guests', each newest first (lib/creator clipsInReelOrder),
+  // so they are watched by swiping on, like everything else here. They
+  // join only after hydration: the list comes from a client cache the
+  // server never saw, and the first render has to match its HTML.
   const { clips, loading: clipsLoading, revalidating: clipsRevalidating, refresh: refreshClips } = useApprovedClips()
   const clipsByTour = useMemo(() => {
     const byTour = new Map<number, TourVideo[]>()
@@ -1553,7 +1649,7 @@ export default function ExperienceDetail({ slug }: { slug: string }) {
     const list = clipsByTour.get(exp.id) ?? []
     return [
       { key: `tour-${exp.id}`, exp, clip: undefined as ReelClip | undefined },
-      ...list.map((video, i) => ({ key: `clip-${video.id}`, exp, clip: { video, n: i + 1, of: list.length } as ReelClip | undefined })),
+      ...clipsInReelOrder(list).map((clip) => ({ key: `clip-${clip.video.id}`, exp, clip: clip as ReelClip | undefined })),
     ]
   }), [feedExperiences, clipsByTour])
 
@@ -1587,10 +1683,12 @@ export default function ExperienceDetail({ slug }: { slug: string }) {
   const tourNumber = activeExp ? feedExperiences.indexOf(activeExp) + 1 : 0
   // Said by screen readers when the reel on screen changes, including when a
   // clip ends and the next one takes over without anyone touching anything.
+  // "Guest clip" for a guest's, "clip" for MAPL Tours Jamaica's own.
+  const clipWord = (c: ReelClip) => (isMaplAccount(c.video.user_id) ? 'clip' : 'guest clip')
   const nowShowing = !activeEntry
     ? ''
     : activeEntry.clip
-      ? `Guest clip ${activeEntry.clip.n} of ${activeEntry.clip.of} from ${activeEntry.exp.title}, by ${formatGuestLabel(activeEntry.clip.video.uploader_handle, activeEntry.clip.video.uploader_name, 'a guest')}`
+      ? `${clipWord(activeEntry.clip).replace(/^./, (m) => m.toUpperCase())} ${activeEntry.clip.n} of ${activeEntry.clip.of} from ${activeEntry.exp.title}, by ${clipCredit(activeEntry.clip.video, 'a guest').by}`
       : `${activeEntry.exp.title}, tour ${tourNumber} of ${feedExperiences.length}`
   // Wider screens have no phone bar: the reel after this one, when it is a
   // guest clip, gets its own button beside the arrows (which move by tour).
@@ -1741,9 +1839,16 @@ export default function ExperienceDetail({ slug }: { slug: string }) {
   // ?clip=<id> share links, and clips picked in the sheet before the feed has
   // them: the reel goes to the clip once it is in (effect below).
   const pendingClip = useRef<string | null>(null)
+  // The arm lapses after 4 s, and is not set for the clip already on screen
+  // (nothing scrolls, so it would have fired later, at some other change,
+  // pulling focus off Add to Trip or out of the comment box).
+  const activeIndexRef = useRef(0)
   const playClip = useCallback((id: string) => {
-    focusOnArrive.current = `clip-${id}`
-    const idx = entries.findIndex((e) => e.key === `clip-${id}`)
+    const key = `clip-${id}`
+    const idx = entries.findIndex((e) => e.key === key)
+    if (idx >= 0 && idx === activeIndexRef.current) return
+    focusOnArrive.current = key
+    window.setTimeout(() => { if (focusOnArrive.current === key) focusOnArrive.current = null }, 4000)
     if (idx < 0) {
       // Approved since the feed loaded: fetch the clips again and go to it
       // when it arrives, as a share link does.
@@ -1754,31 +1859,64 @@ export default function ExperienceDetail({ slug }: { slug: string }) {
     window.setTimeout(() => scrollToEntry(idx), 60)
   }, [entries, scrollToEntry, refreshClips])
   useEffect(() => {
+    activeIndexRef.current = activeIndex
     const key = focusOnArrive.current
     if (!key || entries[activeIndex]?.key !== key) return
     focusOnArrive.current = null
+    // Only focus that is lost or still in the reels moves; never out of a
+    // field, the panel or a sheet.
+    const active = document.activeElement
+    const lost = !active || active === document.body || !!active.closest('[inert]')
+    if (!lost && !scrollRef.current?.parentElement?.contains(active)) return
+    if (active?.closest('input, textarea, select, [contenteditable="true"]')) return
     const reel = scrollRef.current?.children[activeIndex] as HTMLElement | undefined
     reel?.querySelector<HTMLElement>('.reel-play-toggle')?.focus({ preventScroll: true })
   }, [activeIndex, entries])
 
   // Focus that the feed takes away (its reel went inert on a swipe or at a
   // clip's end, or the arrow pressed is gone on the reel it led to) moves to
-  // the reel now on screen, not to the page. Only focus that was in the
-  // reels or their controls: a visitor who never focused anything there is
-  // left alone.
-  const lastFocus = useRef<Element | null>(null)
+  // the reel now on screen, not to the page, when it was in the reels or
+  // their controls (a closed sheet's buttons used to count as "in the
+  // reels"). For everyone, screen readers included, as before tours moved
+  // on by themselves. What only keyboard use earns is the play/pause disc
+  // drawn on that focus ([data-reel-keys] in globals.css): on an iPhone,
+  // focus moved by script after a touch drew it over every playing reel
+  // (WebKit counts script focus as keyboard focus).
+  // lastInputKey also lets a keyboard user's focus hold the feed (holdFeed).
+  // Only keys that move focus or press count: Escape closing a sheet, or a
+  // shortcut such as Cmd+C, turned a mouse user into a keyboard user, and
+  // the tour never moved on into its clip.
+  const lastInputKey = useRef(false)
+  const lastFocusInFeed = useRef(false)
   useEffect(() => {
-    const onFocusIn = (e: FocusEvent) => { lastFocus.current = e.target as Element }
+    const root = document.documentElement
+    const onKey = (e: KeyboardEvent) => {
+      // Option+Tab is how Safari, by default, tabs to buttons and links.
+      if (e.metaKey || e.ctrlKey || (e.altKey && e.key !== 'Tab') || !NAV_KEYS.has(e.key)) return
+      lastInputKey.current = true
+      root.setAttribute('data-reel-keys', '')
+    }
+    const onPointer = () => {
+      lastInputKey.current = false
+      root.removeAttribute('data-reel-keys')
+    }
+    const onFocusIn = (e: FocusEvent) => {
+      lastFocusInFeed.current = !!scrollRef.current?.parentElement?.contains(e.target as Node)
+    }
+    document.addEventListener('keydown', onKey, true)
+    document.addEventListener('pointerdown', onPointer, true)
     document.addEventListener('focusin', onFocusIn)
-    return () => document.removeEventListener('focusin', onFocusIn)
+    return () => {
+      document.removeEventListener('keydown', onKey, true)
+      document.removeEventListener('pointerdown', onPointer, true)
+      document.removeEventListener('focusin', onFocusIn)
+      root.removeAttribute('data-reel-keys')
+    }
   }, [])
   useEffect(() => {
-    const column = scrollRef.current?.parentElement
-    const prev = lastFocus.current
     const active = document.activeElement
     const lost = !active || active === document.body || !!active.closest('[inert]')
-    if (!column || !prev || !lost) return
-    if (prev.isConnected && !column.contains(prev)) return
+    if (!lost || !lastFocusInFeed.current) return
     const reel = scrollRef.current?.children[activeIndex] as HTMLElement | undefined
     reel?.querySelector<HTMLElement>('.reel-play-toggle')?.focus({ preventScroll: true })
   }, [activeIndex])
@@ -1861,12 +1999,18 @@ export default function ExperienceDetail({ slug }: { slug: string }) {
   const prevTarget = activeEntry?.clip ? tourEntryIndex(activeExp) : tourEntryIndex(feedExperiences[tourNumber - 2])
   const nextTarget = tourEntryIndex(feedExperiences[tourNumber])
 
-  // A clip's end moves the feed on, but not from under someone writing a
+  // A reel's end moves the feed on, but not from under someone writing a
   // comment or reading a sheet: the comment box follows the reel on screen,
-  // so a comment half-written for one tour was posted to the next.
+  // so a comment half-written for one tour was posted to the next. Nor from
+  // under a keyboard user on the reel's own controls or the panel beside it
+  // (Add to Trip, Like, Clips): a tour moved on to its clip after 8 s, and
+  // the next Enter paused that clip instead of adding the tour. The play
+  // button follows the feed (focus moves to the next reel's).
   const holdFeed = () => {
     if (mobileComments || commentText.trim() !== '') return true
-    if (document.activeElement?.closest('input, textarea, select, [contenteditable="true"]')) return true
+    const focused = document.activeElement
+    if (focused?.closest('input, textarea, select, [contenteditable="true"]')) return true
+    if (lastInputKey.current && focused?.closest('.reel-item:not([inert]), .reel-panel') && !focused.closest('.reel-play-toggle')) return true
     return Array.from(document.querySelectorAll('[role="dialog"]')).some((d) => d.getClientRects().length > 0)
   }
 
@@ -1963,7 +2107,7 @@ export default function ExperienceDetail({ slug }: { slug: string }) {
               {tourNumber}
               <span style={{ color: '#fff', fontWeight: 500 }}> / {feedExperiences.length}</span>
             </span>
-            <span className="sr-only">{`Tour ${tourNumber} of ${feedExperiences.length}${activeEntry?.clip ? `, guest clip ${activeEntry.clip.n} of ${activeEntry.clip.of}` : ''}`}</span>
+            <span className="sr-only">{`Tour ${tourNumber} of ${feedExperiences.length}${activeEntry?.clip ? `, ${clipWord(activeEntry.clip)} ${activeEntry.clip.n} of ${activeEntry.clip.of}` : ''}`}</span>
           </span>
 
           {nextTarget >= 0 ? (
@@ -2020,7 +2164,7 @@ export default function ExperienceDetail({ slug }: { slug: string }) {
               }}
             >
               <ChevronDown size={18} strokeWidth={2.5} aria-hidden />
-              {`Next: guest clip ${nextClip.n} of ${nextClip.of}`}
+              {`Next: ${clipWord(nextClip)} ${nextClip.n} of ${nextClip.of}`}
             </button>
           )}
         </div>
@@ -2077,7 +2221,9 @@ export default function ExperienceDetail({ slug }: { slug: string }) {
               isActive={i === activeIndex}
               near={Math.abs(i - activeIndex) <= 1}
               ahead={i === activeIndex + 1}
-              last={i === entries.length - 1}
+              // A clip moves on unless it is the feed's last reel; a tour moves
+              // on into its guest clips when it has them.
+              advancesAtEnd={entry.clip ? i < entries.length - 1 : !!entries[i + 1]?.clip}
               clipCount={clipsByTour.get(entry.exp.id)?.length ?? 0}
               muted={clipsMuted}
               onMuted={setClipsMuted}
@@ -2126,7 +2272,7 @@ export default function ExperienceDetail({ slug }: { slug: string }) {
               </span>
             </div>
             <p className="reel-panel-sub" style={{ fontSize: 12, color: '#cccccc', fontFamily: 'var(--font-dm-sans)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-              {activeEntry?.clip ? `${activeExp.title} · guest clip ${activeEntry.clip.n} of ${activeEntry.clip.of}` : activeExp.title}
+              {activeEntry?.clip ? `${activeExp.title} · ${clipWord(activeEntry.clip)} ${activeEntry.clip.n} of ${activeEntry.clip.of}` : activeExp.title}
             </p>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
@@ -2390,7 +2536,7 @@ export default function ExperienceDetail({ slug }: { slug: string }) {
                 {last
                   ? `That's all ${feedExperiences.length}. Back to the first`
                   : next.clip
-                    ? `Next: guest clip ${next.clip.n} of ${next.clip.of}`
+                    ? `Next: ${clipWord(next.clip)} ${next.clip.n} of ${next.clip.of}`
                     : `Next: ${next.exp.title}`}
               </span>
             </button>

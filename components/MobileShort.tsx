@@ -86,17 +86,6 @@ export default memo(function MobileShort({
   // otherwise answer by restarting a card nobody is looking at. React state
   // updates too late to prevent that; this ref does not.
   const visibleRef = useRef(false)
-  // Whether this device asks for less motion. Read once, on the client.
-  const [allowMotion, setAllowMotion] = useState(false)
-
-  useEffect(() => {
-    const mq = window.matchMedia('(prefers-reduced-motion: reduce)')
-    const apply = () => setAllowMotion(!mq.matches)
-    apply()
-    mq.addEventListener('change', apply)
-    return () => mq.removeEventListener('change', apply)
-  }, [])
-
   // Undefined means "nobody is driving me", which is every stacked caller.
   const videoAllowed = active !== false
 
@@ -158,11 +147,11 @@ export default memo(function MobileShort({
    * The previous version also latched a playAttempted flag BEFORE calling
    * play(), which meant one rejection retired the card for good.
    *
-   * A visitor who asks for reduced motion keeps the still photograph: that is
-   * what the setting means, and the card is designed to read well either way.
+   * Reduced motion plays too: the owner's rule is that the videos autoplay
+   * (Oct 4 2026), and the card is designed to read well either way.
    */
   useEffect(() => {
-    if (!isVisible || !videoMounted || !allowMotion || !videoAllowed) return
+    if (!isVisible || !videoMounted || !videoAllowed) return
     const video = videoRef.current
     if (!video) return
 
@@ -212,7 +201,7 @@ export default memo(function MobileShort({
       document.removeEventListener('pointerdown', tryPlay)
       document.removeEventListener('touchstart', tryPlay)
     }
-  }, [isVisible, videoMounted, allowMotion, videoAllowed])
+  }, [isVisible, videoMounted, videoAllowed])
 
   return (
     <div ref={containerRef} className="on-media">
@@ -255,15 +244,10 @@ export default memo(function MobileShort({
               ref={videoRef}
               src={clipFor(exp.video)}
               muted
-              /* autoPlay is gated on allowMotion rather than always-on. It was
-                 removed entirely once because a bare attribute let the browser
-                 start playback on its own, straight past the reduced-motion
-                 guard in the effect above, making that guard dead code. Tying
-                 the attribute to the same flag keeps the guard honest AND lets
-                 the browser's own autoplay machinery start the video, which
-                 succeeds on some mobile builds before any script runs. The
-                 effect then handles every case where it does not. */
-              {...(allowMotion ? { autoPlay: true } : {})}
+              /* The browser's own autoplay machinery starts the video, which
+                 succeeds on some mobile builds before any script runs; the
+                 effect above handles every case where it does not. */
+              autoPlay
               loop
               playsInline
               preload={isVisible ? 'auto' : 'metadata'}

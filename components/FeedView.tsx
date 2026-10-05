@@ -7,6 +7,7 @@ import { EATS } from '@/lib/eats'
 import { priceUnitLabel } from '@/lib/experiences'
 import { useCartStore } from '@/lib/cart'
 import { addPackageToTrip } from '@/lib/add-to-trip'
+import { isKeyOrReaderClick } from '@/lib/press'
 import { fitCandidateStop, MAX_STOP_GAP_MIN } from '@/lib/day-route'
 import { useHydrated } from '@/lib/use-hydrated'
 import { CULTURE_IMAGE, HERO_VIDEO_540, HERO_VIDEO_720, HERO_VIDEO_1080, HERO_VIDEO_PHONE, HERO_POSTER_PHONE, HERO_POSTER } from '@/lib/images'
@@ -16,7 +17,7 @@ import ReelStories from './ReelStories'
 import InView from './InView'
 import Footer from './Footer'
 import { useI18n } from '@/lib/i18n'
-import { useRef, useState, useEffect } from 'react'
+import { useRef, useState, useEffect, type MouseEvent } from 'react'
 import { Award, Users, Headphones, ShieldCheck, Star, Heart, UtensilsCrossed, TrendingUp, ChevronLeft, ChevronRight, MapPin, PlaneLanding, Route, ArrowRight } from 'lucide-react'
 
 
@@ -27,11 +28,10 @@ function HeroVideo({ poster }: { poster: string }) {
   const [isPlaying, setIsPlaying] = useState(false)
 
   useEffect(() => {
-    // Motion preference first: a user who asked for reduced motion gets the
-    // poster, full stop. Then data constraints: Data Saver and 2g keep the
-    // still. 3g (Chrome's label for a 270 ms+ round trip, common on real
-    // phone networks) gets the loop, only later, once the page has settled.
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
+    // The video autoplays for everyone, reduced motion included (owner, Oct 4
+    // 2026). Only data constraints keep the still: Data Saver and 2g. 3g
+    // (Chrome's label for a 270 ms+ round trip, common on real phone
+    // networks) gets the loop, only later, once the page has settled.
     const nav = navigator as Navigator & { connection?: { effectiveType?: string; saveData?: boolean } }
     const conn = nav.connection
     if (conn?.saveData || conn?.effectiveType === '2g' || conn?.effectiveType === 'slow-2g') return
@@ -548,20 +548,29 @@ function PackagesSection() {
   const singleTours = hydrated ? items.filter((i) => i.kind !== 'package') : []
   const singles = singleTours.length
   const days = hydrated ? items.filter((i) => i.kind === 'package') : []
-  // While any card can carry a note (tours in the itinerary) or a day is in
-  // it, every card keeps two lines for one: the note leaving a card on an
-  // add shrank the tallest card, and the rail's buttons moved under the
-  // pointer.
-  const noteSlot = singles > 0 || days.length > 0
   // After an add the card's button becomes its Checkout link: focus goes
   // there, not to the page.
   const addedLinks = useRef(new Map<number, HTMLAnchorElement>())
   // And after Undo, back to the card's Add this day.
   const addButtons = useRef(new Map<number, HTMLButtonElement>())
-  // A second click or tap straight after an add lands on the card again: it
-  // must never be the one that removes the day just added.
+  // A pointer's second click or tap straight after an add lands on the card
+  // again: it must never be the one that removes the day just added. Nor,
+  // straight after a Remove, the one that adds it back: emptying the
+  // itinerary takes the line above the rail away, and the rail moved Add
+  // this day up under the pointer. A key press is always meant (a held key
+  // is stopped below, on keydown).
   const addedAt = useRef(new Map<number, number>())
-  const addDay = (pkg: Experience) => {
+  const removedAt = useRef(new Map<number, number>())
+  const justAdded = (pkg: Experience) => Date.now() - (addedAt.current.get(pkg.id) ?? 0) < 700
+  const justRemoved = (pkg: Experience) => Date.now() - (removedAt.current.get(pkg.id) ?? 0) < 700
+  // The button pressed is replaced by the other one in its place, so focus
+  // follows it there, already on screen (no scroll), when the press was made
+  // where focus was: a key, a screen reader, a mouse in Chrome. Not after a
+  // tap that left focus elsewhere: Safari rings any element script focuses.
+  const focusFollows = (e: MouseEvent<HTMLElement>) => document.activeElement === e.currentTarget || isKeyOrReaderClick(e)
+  const addDay = (pkg: Experience, e: MouseEvent<HTMLButtonElement>) => {
+    if (!isKeyOrReaderClick(e) && justRemoved(pkg)) return
+    const follow = focusFollows(e)
     const result = addPackageToTrip(pkg, {
       placement: 'page',
       checkout: true,
@@ -569,12 +578,20 @@ function PackagesSection() {
     })
     if (result === 'blocked' || result === 'already') return
     addedAt.current.set(pkg.id, Date.now())
-    // In the button's own place, so already on screen: no scroll.
-    requestAnimationFrame(() => addedLinks.current.get(pkg.id)?.focus({ preventScroll: true }))
+    if (follow) requestAnimationFrame(() => addedLinks.current.get(pkg.id)?.focus({ preventScroll: true }))
   }
-  const justAdded = (pkg: Experience) => Date.now() - (addedAt.current.get(pkg.id) ?? 0) < 700
-  const removeDay = (pkg: Experience) => {
-    if (!justAdded(pkg)) removeItem(pkg.id)
+  const removeDay = (pkg: Experience, e: MouseEvent<HTMLButtonElement>) => {
+    if (!isKeyOrReaderClick(e) && justAdded(pkg)) return
+    const follow = focusFollows(e)
+    removedAt.current.set(pkg.id, Date.now())
+    removeItem(pkg.id)
+    if (follow) requestAnimationFrame(() => addButtons.current.get(pkg.id)?.focus({ preventScroll: true }))
+  }
+  // A held Enter repeats: never onto the button that takes the pressed one's
+  // place. Space presses a button only when let go, and scrolls from a link,
+  // so a held Space, like any other held key, carries on as usual.
+  const noHeldPress = (e: { repeat: boolean; key: string; preventDefault: () => void }) => {
+    if (e.repeat && e.key === 'Enter') e.preventDefault()
   }
 
   const scroll = (dir: 'left' | 'right') => {
@@ -685,29 +702,42 @@ function PackagesSection() {
             .filter(Boolean) as string[]
           return (
             <article key={pkg.id} className="pkg-card">
-              <Link
-                href={`/experience/${slugify(pkg.title)}`}
-                className="pkg-media"
-                aria-label={`${t(pkg.title)}, ${(pkg.includes ?? []).length} ${t('in one day')}`}
-              >
-<InView>                <Image
-                  src={pkg.image}
-                  alt=""
-                  fill
-                  sizes="(max-width: 767px) 84vw, 320px"
-                  style={{ objectFit: 'cover' }}
-                /></InView>
-                <span style={{
-                  position: 'absolute', top: 12, left: 12,
-                  padding: '4px 11px', borderRadius: 9999,
-                  background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(8px)',
-                  fontSize: 13, fontWeight: 600, color: '#fff',
-                  fontFamily: 'var(--font-dm-sans)', letterSpacing: '0.04em',
-                  textTransform: 'uppercase',
-                }}>
-                  {(pkg.includes ?? []).length} {t('in one day')}
-                </span>
-              </Link>
+              <div className="pkg-photo">
+                <Link
+                  href={`/experience/${slugify(pkg.title)}`}
+                  className="pkg-media"
+                  aria-label={`${t(pkg.title)}, ${(pkg.includes ?? []).length} ${t('in one day')}`}
+                >
+                  <InView>
+                    <Image
+                      src={pkg.image}
+                      alt=""
+                      fill
+                      sizes="(max-width: 767px) 84vw, 320px"
+                      style={{ objectFit: 'cover' }}
+                    />
+                  </InView>
+                  <span style={{
+                    position: 'absolute', top: 12, left: 12,
+                    padding: '4px 11px', borderRadius: 9999,
+                    background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(8px)',
+                    fontSize: 13, fontWeight: 600, color: '#fff',
+                    fontFamily: 'var(--font-dm-sans)', letterSpacing: '0.04em',
+                    textTransform: 'uppercase',
+                  }}>
+                    {(pkg.includes ?? []).length} {t('in one day')}
+                  </span>
+                </Link>
+                {/* What adding this day would change, over the foot of its
+                    photo: in the card's body it made every card in the rail as
+                    tall as the longest note, an empty band on all the others
+                    (66 to 96px measured). Taps pass through to the photo. */}
+                {note && (
+                  <p id={`pkg-note-${pkg.id}`} className="pkg-replaces pkg-note">
+                    {note}
+                  </p>
+                )}
+              </div>
 
               <div className="pkg-body">
                 <p style={{
@@ -737,15 +767,8 @@ function PackagesSection() {
                 </ol>
 
                 <div className="pkg-buy" style={{ marginTop: 'auto', display: 'flex', flexDirection: 'column', gap: 10 }}>
-                  {/* Above the price, so every card's price and button stay
-                      level across the rail. */}
-                  {(note || noteSlot) && (
-                    <p id={note ? `pkg-note-${pkg.id}` : undefined} className={note ? 'pkg-replaces' : undefined} style={{ fontSize: 14, fontWeight: 600, color: 'var(--gold-text)', fontFamily: 'var(--font-dm-sans)', lineHeight: '20px', minHeight: noteSlot ? 40 : undefined }}>
-                      {note}
-                    </p>
-                  )}
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, minHeight: 44 }}>
-                    <p style={{ margin: 0 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+                    <p style={{ margin: 0, lineHeight: '28px' }}>
                       <span style={{
                         fontFamily: 'var(--font-dm-sans)', fontWeight: 700,
                         fontSize: 20, color: 'var(--text-primary)', letterSpacing: '-0.01em',
@@ -762,10 +785,14 @@ function PackagesSection() {
                         then emptied the itinerary. */}
                     {inCart && (
                       <button
-                        onClick={() => removeDay(pkg)}
+                        className="pkg-remove"
+                        onClick={(e) => removeDay(pkg, e)}
+                        onKeyDown={noHeldPress}
                         aria-label={`Remove ${pkg.title} from your itinerary`}
+                        // A 44px target that the row does not grow for: the
+                        // negative margins give its height back.
                         style={{
-                          minHeight: 44, padding: '0 2px', background: 'none', border: 'none', cursor: 'pointer',
+                          minHeight: 44, margin: '-8px 0', padding: '0 2px', background: 'none', border: 'none', cursor: 'pointer',
                           fontSize: 13, fontWeight: 600, color: 'var(--text-tertiary)', flexShrink: 0,
                           fontFamily: 'var(--font-dm-sans)', textDecoration: 'underline',
                         }}
@@ -787,7 +814,8 @@ function PackagesSection() {
                         // The second click of a double click lands here, in
                         // the button's place: it stays an add, not a trip
                         // to checkout.
-                        onClick={(e) => { if (justAdded(pkg)) e.preventDefault() }}
+                        onClick={(e) => { if (!isKeyOrReaderClick(e) && justAdded(pkg)) e.preventDefault() }}
+                        onKeyDown={noHeldPress}
                         style={{
                           width: '100%', minHeight: 44, borderRadius: 9999,
                           background: 'var(--emerald)', color: '#fff',
@@ -804,7 +832,8 @@ function PackagesSection() {
                   ) : (
                     <button
                       ref={(el) => { if (el) addButtons.current.set(pkg.id, el); else addButtons.current.delete(pkg.id) }}
-                      onClick={() => addDay(pkg)}
+                      onClick={(e) => addDay(pkg, e)}
+                      onKeyDown={noHeldPress}
                       aria-label={`${t('Add this day')}: ${t(pkg.title)}`}
                       aria-describedby={noteId}
                       style={{
@@ -955,7 +984,7 @@ function TrendingRail({ items }: { items: Experience[] }) {
   const [videoOk, setVideoOk] = useState(false)
 
   useEffect(() => {
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
+    // Reduced motion plays too (owner, Oct 4 2026); Data Saver and 2g do not.
     const nav = navigator as Navigator & {
       connection?: { effectiveType?: string; saveData?: boolean }
     }

@@ -5,6 +5,7 @@ import { preload } from 'react-dom'
 import ExperienceDetail from '@/components/ExperienceDetail'
 import { getExperienceBySlug, reelPoster } from '@/lib/experiences'
 import { createServiceClient } from '@/lib/supabase/service'
+import { isMaplAccount } from '@/lib/creator'
 
 const SITE_URL = 'https://mapltours.com'
 
@@ -21,24 +22,26 @@ export async function generateMetadata({ params, searchParams }: {
     return { title: 'Experience not found', robots: { index: false, follow: false } }
   }
 
-  // A shared guest clip (?clip=<id>) unfurls with the clip's own poster
-  // frame. Only approved clips belonging to this experience qualify, the
-  // canonical stays the clean experience URL so the variant never competes
-  // in search, and any failure here quietly falls back to the standard
-  // experience metadata.
+  // A shared clip (?clip=<id>) unfurls with the clip's own poster frame,
+  // described as a guest's unless MAPL's own account posted it. Only
+  // approved clips belonging to this experience qualify, the canonical stays
+  // the clean experience URL so the variant never competes in search, and
+  // any failure here quietly falls back to the standard experience metadata.
   let clipImage: string | undefined
+  let clipAlt = `Guest clip from ${exp.title}`
   const clipId = searchParams?.clip
   if (clipId && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(clipId)) {
     try {
       const svc = createServiceClient()
       const { data: clip } = await svc
         .from('user_tour_videos')
-        .select('thumbnail_path, status, experience_id')
+        .select('thumbnail_path, status, experience_id, user_id')
         .eq('id', clipId)
         .maybeSingle()
       if (clip && clip.status === 'approved' && clip.experience_id === exp.id && clip.thumbnail_path) {
         const { data: pub } = svc.storage.from('tour-videos').getPublicUrl(clip.thumbnail_path)
         if (pub?.publicUrl) clipImage = pub.publicUrl
+        if (isMaplAccount(clip.user_id)) clipAlt = `Clip from ${exp.title}`
       }
     } catch {
       // Metadata falls back to the experience defaults.
@@ -65,7 +68,7 @@ export async function generateMetadata({ params, searchParams }: {
       description,
       siteName: 'MAPL Tours Jamaica',
       images: clipImage
-        ? [{ url: clipImage, alt: `Guest clip from ${exp.title}` }]
+        ? [{ url: clipImage, alt: clipAlt }]
         : exp.image ? [{ url: exp.image, alt: exp.title }] : undefined,
     },
     twitter: {
