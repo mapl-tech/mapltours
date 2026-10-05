@@ -26,7 +26,7 @@ const VALUES = [
   },
   {
     title: 'Honest about what you pay',
-    body: 'One price per vehicle for your party, not per person, and nothing added at checkout. You pay MAPL Tours for the tours we run and the driving we do; restaurants and attractions you settle directly at their own price. Cancellations are flexible within 48 hours of booking, less a 20% administration charge.',
+    body: 'Most tours are one price per vehicle for your party, and nothing is added at checkout. You pay MAPL Tours for the tours we run and the driving we do; restaurants and attractions you settle directly at their own price. Cancellations are flexible within 48 hours of booking, less a 20% administration charge.',
   },
 ]
 
