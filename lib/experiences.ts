@@ -229,7 +229,18 @@ const VIDEOS = {
   offRoad2:    '/media/video/5319274.mp4',
   rasta2:      '/media/video/37177249.mp4',
   raftZip:     '/media/video/38230652.mp4',
+  // Stock cliff jumping in daylight, not Rick's, and no sunset in any frame
+  // despite the name: every frame was checked (Sept 2026). Only the Triple
+  // Pack plays it since Rick's got Collin's clip.
   cliffSunset: '/media/video/38902703.mp4',
+  // Collin's own footage of Rick's itself (Oct 2026): the first 12 s of
+  // Images/Pictures from Collin's/Collins Videos/Rick's Cafe.mov (gitignored),
+  // 30 fps, CRF 22. That file is a macOS screen recording of the clip with
+  // the capture's selection outline and handles burned into its edges, so
+  // the master is cut 12 px in from every side (2482x1376). The overhead
+  // jumps sit left of centre, so unlike the other clips its 9:16 window is
+  // placed per shot (see mobileVideo).
+  ricksCafe:   '/media/video/ricks-cafe-cliff-diving.mp4',
 } as const
 
 /**
@@ -238,6 +249,17 @@ const VIDEOS = {
  * the files in /media/video (scratch script, Sept 2026); a unit test checks
  * every clip has both files. The desktop files run 3 to 54 MB at up to
  * 23 Mbps, which on cellular stalled or never started.
+ *
+ * ricksCafe's overhead jumps sit left of centre (about 37% of the width), so
+ * its 9:16 window (774x1376, the full height) sits where the action is in
+ * each shot instead of the centre: x=695 while the camera looks down on the
+ * terrace, x=835 from the cut at 6.75 s (the platform, its flag and the
+ * splash). Same x264 settings as the others:
+ *   ffmpeg -i ricks-cafe-cliff-diving.mp4 -t 12 -vf "fps=30,crop=w=774:h=1376:
+ *     x='if(lt(t,6.75),695,835)':y=0,scale=720:1280:flags=lanczos,setsar=1"
+ *     -c:v libx264 -preset medium -crf 27 -maxrate 2500k -bufsize 5000k
+ *     -profile:v high -level 4.0 -pix_fmt yuv420p -movflags +faststart -an
+ *     m/ricks-cafe-cliff-diving.mp4
  */
 export function mobileVideo(video: string): string {
   return video.replace(/^\/media\/video\/([^/]+)\.mp4$/, '/media/video/m/$1.mp4')
@@ -906,11 +928,10 @@ export const experiences: Experience[] = [
     gradient: 'linear-gradient(170deg, #3D0A00 0%, #8B1A00 52%, #D4521A 100%)',
     emoji: '🌅',
     image: '/tours/ricks-cafe-sunset.webp',
-    // Stock cliff jumping in daylight, not Rick's terrace: every frame of
-    // 38902703 was checked (Sept 2026). The card promises the sunset, so the
-    // still is the terrace at golden hour until a clip of Rick's exists.
-    video: VIDEOS.cliffSunset,
-    genericClip: true,
+    // Collin's clip of Rick's itself: jumps off the terrace ledge, then the
+    // high platform and the splash in the cove. It is this place, so the
+    // reel opens on the clip's own first frame (no genericClip).
+    video: VIDEOS.ricksCafe,
     about: "The drive out to the Negril cliffs for late afternoon, a table at Rick's while the divers work the ledge and the local pros go off the tree above it, and the sun dropping straight into the sea in front of you. Jump from the low ledge yourself if you want to. Plenty of people come purely to watch.",
     ages: "All ages, jumping 16+",
     fitness: "Cliff jumping is for ages 16 and up and is done under the venue's own rules. Light unless you jump, with steps down to the water and back up. Jumping is for strong swimmers only.",
