@@ -871,7 +871,7 @@ describe('photos: from the site, email-safe, and of what the email is about', ()
     // The coast road is in four tips (p1, r1, t1, and b1's fallback): the lightest of the full-width photos.
     expect(readFileSync(join(DIR, PHOTOS.coastRoad.file)).length).toBeLessThanOrEqual(90 * 1024)
     expect(PHOTOS.coastRoad.width).toBeGreaterThanOrEqual(2 * PHOTO_WIDTH)
-    // Nothing in the folder that no tip uses.
+    // Nothing in the folder that PHOTOS does not list (an entry no tour picks any more stays only so tips already sent keep their picture).
     expect(readdirSync(DIR).sort()).toEqual(Object.values(PHOTOS).map((p) => p.file).sort())
   })
 

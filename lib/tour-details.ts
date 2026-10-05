@@ -135,14 +135,16 @@ export const TOUR_DETAILS: Record<number, TourDetail> = {
     confirmWithOperator: ["Minimum age, and whether a child must fly tandem with an adult rather than solo.", "Minimum and maximum flyer weight for solo and tandem flights. Boat operators set these themselves and the numbers are safety-critical, so we should print theirs or none.", "Flight length per person, and whether all three people in a private party get airborne inside the booked hour.", "Whether the crew shoots photos or video and what they charge for them."],
   },
   12: {
-    about: "Your driver takes you from the hotel to the launch, where your guide fits your life vest and shows you the paddle stroke. You push off in a see-through kayak and head out over the reef, watching the coral and the fish move under the hull the whole way. Your guide holds you over the best patches and you can slip in for a swim before you paddle back.",
-    included: ["Private door-to-door transport from your hotel and back", "All entrance and beach fees", "Clear kayak, paddle, and life vest", "A guide on the water with you"],
-    bring: ["Swimwear under your clothes", "Water shoes or sandals with a strap", "Reef safe sunscreen and a hat", "A dry bag or waterproof case for your phone", "Small cash for tips"],
-    minAge: "Ages 5 and up, sharing a kayak with an adult",
+    // Collin, Oct 5 2026: a drone photoshoot in a clear kayak on a river
+    // stream, not the reef paddle this entry first described.
+    about: "Your driver takes you from the hotel to the river, where you get your life vest and settle into a see-through kayak on calm, clear water. You float and paddle while the drone shoots from above, and the photos and video of your shoot come to you afterwards.",
+    included: ["Private door-to-door transport from your hotel and back", "Clear kayak and life vest", "Drone photos and video of your shoot"],
+    bring: ["Swimwear, or an outfit you would like to be photographed in", "A towel and a dry change of clothes", "Sunscreen, a hat and sunglasses", "A waterproof case for your phone", "Small cash for tips"],
+    minAge: "Ages 6 and up. Under-12s share the kayak with an adult",
     maxGroup: "One flat rate covers a private party of up to 3. Larger parties are priced per head.",
-    fitness: "Light. Steady paddling in calm water, and your guide can tow you if your arms give out.",
-    goodToKnow: ["You sit in a little water in the kayak, so expect a wet backside and a wet phone if it is not in a case.", "There is no shade out on the reef. The hat and the sunscreen matter more than you think.", "You do not need to be a strong swimmer to paddle, but you do to get in over the reef.", "Flat water is the whole point of this one. A rough sea moves it to another slot."],
-    confirmWithOperator: ["Whether snorkel masks are provided, or whether the water stop is a swim only. The tour tags say Snorkel, so this needs settling before the page goes live.", "Minimum age, and whether young children must share an adult's kayak rather than paddle their own.", "How many kayaks the flat rate covers for a party of three, since clear kayaks are usually singles or doubles.", "Whether the operator supplies dry bags or guests must bring their own.", "Whether the reef site sits inside a marine park with its own fee, and that MAPL is covering it."],
+    fitness: "Light. You sit or lie back in the kayak on calm water, and no kayaking experience is needed.",
+    goodToKnow: ["Drones cannot fly in strong wind or heavy rain, so the weather can move a shoot to another slot.", "Anyone who would rather not be filmed can say so to the guide before the drone goes up."],
+    confirmWithOperator: ["Which river, and where guests meet the guide.", "How long the shoot runs on the water, and how long the whole stop takes.", "What is delivered (how many photos, how much video, edited or not), how, and how soon.", "Life vests in every size, the minimum age, and any weight or swimming requirement.", "Whether the $180 is per person or covers the party, and how many people one clear kayak takes.", "Whether the Tubing + Clear Kayak combo includes this drone shoot or a plain paddle.", "The original files of the two photos Collin sent, and the guest's consent before either goes on the site."],
   },
   13: {
     about: "Your driver collects you at the hotel and runs you up to the river. You get a tube and a life vest, walk down to the water with the guides, and they set you off into the current. You float down through the quiet stretches and the little rapids with guides in the water beside you, and the van meets you at the take out.",

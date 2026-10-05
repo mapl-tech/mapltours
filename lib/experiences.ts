@@ -244,7 +244,7 @@ const VIDEOS = {
   beachSwim:   '/media/video/10904849.mp4',
   jetSki:      '/media/video/15290251.mp4',
   parasail:    '/media/video/2523901.mp4',
-  snorkeling:  '/media/video/38809773.mp4',
+  clearKayak:  '/media/video/38809773.mp4',
   river:       '/media/video/11598677.mp4',
   cliffDiving: '/media/video/27952003.mp4',
   culture:     '/media/video/37177393.mp4',
@@ -285,6 +285,13 @@ const VIDEOS = {
  *     -c:v libx264 -preset medium -crf 27 -maxrate 2500k -bufsize 5000k
  *     -profile:v high -level 4.0 -pix_fmt yuv420p -movflags +faststart -an
  *     m/ricks-cafe-cliff-diving.mp4
+ *
+ * The clear kayak's clip (38809773) starts 5 s in, so it runs about 6 s:
+ * before that the kayak is still coming up from under the bottom edge, where
+ * the reel's title sits, and the poster (its first frame) showed only water.
+ * `ffmpeg -ss 5 -i 38809773.mp4 -vf "fps=30,scale=720:1280:flags=lanczos,
+ * setsar=1"` with the same x264 settings; its card clip starts at the same
+ * second (START in scripts/encode-card-clips.mjs).
  */
 export function mobileVideo(video: string): string {
   return video.replace(/^\/media\/video\/([^/]+)\.mp4$/, '/media/video/m/$1.mp4')
@@ -852,10 +859,13 @@ export const experiences: Experience[] = [
     id: 12,
     destination: "Montego Bay",
     parish: "St. James",
-    title: "Clear Kayak Reef Tour",
+    // Collin, Oct 5 2026: his clear kayak is a drone photoshoot on a river
+    // stream, not a reef paddle (his own page sells "Clear Kayak Drone
+    // Photoshoot"). The old reef-tour URL redirects here (next.config.mjs).
+    title: "Clear Kayak Drone Photoshoot",
     pricing: { mode: 'group', baseRate: 180, tierMax: 3, extraPerPerson: 160 },
     price: 230,
-    duration: "1 hr at the beach",
+    duration: "1 hr at the river",
     rating: 0,
     reviews: 0,
     category: 'Water',
@@ -863,38 +873,35 @@ export const experiences: Experience[] = [
     followers: '',
     gradient: 'linear-gradient(170deg, #002B5B 0%, #0066A0 52%, #00B4D8 100%)',
     emoji: '🛶',
-    image: '/media/img/1430672.jpg',
-    video: VIDEOS.snorkeling,
-    about: "A transparent-hull kayak straight over the reef, so the coral heads, sea fans and fish are under you for the whole paddle rather than just at the snorkel stop. A guide leads the loop out along the reef line and into a quiet cove, with time in the water with mask and fins at the turn.",
+    image: '/media/img/clear-kayak-river.jpg',
+    video: VIDEOS.clearKayak,
+    about: "A photoshoot in a see-through kayak on a calm, clear river. You float while the drone shoots from above, so the pictures show you, the kayak and the water under it, and you go home with drone photos and video of your own.",
     ages: "6 and up",
-    fitness: "Under-12s share a kayak with an adult. Light. Flat, sheltered water at a slow pace, with no kayaking experience needed. Basic swimming ability is required for the snorkel stop.",
+    fitness: "Under-12s share the kayak with an adult. Light. You sit or lie back in the kayak on calm water, so no kayaking experience is needed, and life vests are provided.",
     meetingPoint: "Hotel pickup",
-    fromHotel: "Allow about 2 hours from Montego Bay and Rose Hall, 3.5 to 4.5 from Negril, and 4 to 6.5 from Ocho Rios.",
+    fromHotel: "Allow about 2 to 4 hours from Montego Bay and Rose Hall, and longer from Negril or Ocho Rios.",
     included: [
       "Round-trip private transport from your hotel",
-      "Clear kayak, paddle and life vest",
-      "Mask and snorkel",
-      "Guided paddle and reef briefing",
+      "Clear kayak and life vest",
+      "Drone photos and video of your shoot",
     ],
     notIncluded: [
-      "Photos",
       "Food and drinks",
       "Gratuities",
     ],
     bring: [
-      "Swimwear worn under your clothes",
-      "Reef-safe sunscreen, since ordinary sunscreen damages coral",
-      "A hat and sunglasses with a strap",
+      "Swimwear or an outfit you would like to be photographed in",
       "A towel and a dry change of clothes",
+      "Sunscreen, a hat and sunglasses",
       "A waterproof phone case",
     ],
     additionalInfo: [
-      "Morning slots have the flattest water and the best visibility.",
-      "Nothing is taken from the reef and nothing is stood on; your guide will show you where to put your fins.",
-      "Chop or poor visibility means a free reschedule or a full refund.",
+      "Morning slots usually have the calmest water and the softest light.",
+      "Drones cannot fly in strong wind or heavy rain, so a shoot called off for weather is rescheduled free or refunded in full.",
+      "Tell your guide if anyone in your party would rather not be filmed.",
     ],
-    description: "Paddle a crystal-clear kayak straight over the reef and watch the coral and fish move underneath you the whole way out.",
-    tags: ["Clear Kayak", "Coral Reef", "Snorkel"],
+    description: "Float a crystal-clear kayak on a calm river while a drone shoots from above, and go home with photos and video of your own.",
+    tags: ["Clear Kayak", "Photoshoot", "Drone"],
     kind: 'single',
     comments: [],
   },
@@ -1070,16 +1077,16 @@ export const experiences: Experience[] = [
     emoji: '🛶',
     image: '/media/img/4511090.jpg',
     video: VIDEOS.tubing,
-    about: "Two of the calmest ways to see this coast, back to back. The river first, floating down on a tube with the current doing the work, then out over the reef in a clear-hulled kayak with the coral moving underneath you. Transport between the two and a break in the middle are built into the day.",
+    about: "Two of the calmest ways to spend a day on the water, back to back. The river first, floating down on a tube with the current doing the work, then out in a clear kayak on calm water. Transport between the two and a break in the middle are built into the day.",
     ages: "6 and up",
-    fitness: "Under-12s tube and paddle with an adult. Light. Flat water on both legs, short walks at each entry point, and life vests worn throughout. Water confidence is enough.",
+    fitness: "Under-12s tube and kayak with an adult. Light. Flat water on both legs, short walks at each entry point, and life vests worn throughout. Water confidence is enough.",
     meetingPoint: "Hotel pickup",
     fromHotel: "Allow 6 to 9 hours from Montego Bay, Rose Hall or Ocho Rios, and 9 to 13 from Negril. The river is near Ocho Rios and the kayak is in Montego Bay.",
     included: [
       "Round-trip private transport from your hotel and between both sites",
       "River entry, tube and life vest",
-      "Clear kayak, paddle, mask and snorkel",
-      "River guides and a reef guide",
+      "Clear kayak and life vest",
+      "River guides",
     ],
     notIncluded: [
       "Water shoe rental",
@@ -1091,15 +1098,15 @@ export const experiences: Experience[] = [
       "Swimwear worn under your clothes",
       "Water shoes or strapped sandals",
       "Two towels and a dry change of clothes",
-      "Reef-safe sunscreen and a hat",
+      "Sunscreen and a hat",
       "A dry bag or waterproof phone case",
     ],
     additionalInfo: [
-      "We usually run the river first and the reef after, but the order flips to follow the water and the weather.",
+      "We usually tube first and kayak after, but the order flips to follow the water and the weather.",
       "There is a break between the two with time to buy lunch, which is not included.",
       "If conditions close one half, that half is rescheduled free or refunded in full.",
     ],
-    description: "A lazy river tube run, then a guided clear-kayak paddle through hidden coves. Two of the calmest ways to see the coast, back to back.",
+    description: "A lazy river tube run, then a clear kayak on calm water. Two of the calmest ways to spend a day on the water.",
     tags: ["Combo", "Tubing", "Kayak"],
     kind: 'package',
     includes: [13, 12],
@@ -1120,9 +1127,12 @@ export const experiences: Experience[] = [
     followers: '',
     gradient: 'linear-gradient(170deg, #002B5B 0%, #0066A0 52%, #00B4D8 100%)',
     emoji: '📸',
-    image: '/media/img/7763506.jpg',
+    // A still from the clear kayak's stock clip (Pexels 38809773) until
+    // photos of this day come in. The old image (7763506.jpg) showed sit-on-top
+    // sea kayaks, and the kayak half is a clear kayak on a river.
+    image: '/media/img/clear-kayak-river-side.jpg',
     video: VIDEOS.droneKayak,
-    about: "A raft down the river, a clear kayak out over the reef, and a drone operator following both so you go home with footage of your own day rather than stock. The edited clips and stills land by download link a few days later.",
+    about: "A raft down the river, then a photoshoot in a clear kayak on calm water with a drone overhead, so you go home with footage of your own day rather than stock. The edited clips and stills land by download link a few days later.",
     ages: "6 and up",
     fitness: "Under-12s raft and paddle with an adult. Light throughout. Seated on the raft, flat water in the kayak, and short walks at each entry point.",
     meetingPoint: "Hotel pickup",
@@ -1130,7 +1140,7 @@ export const experiences: Experience[] = [
     included: [
       "Round-trip private transport from your hotel and between both sites",
       "Private bamboo raft and licensed captain",
-      "Clear kayak, paddle, mask and snorkel",
+      "Clear kayak and life vest",
       "Drone operator, with edited video and stills delivered by link",
     ],
     notIncluded: [
@@ -1140,7 +1150,7 @@ export const experiences: Experience[] = [
     bring: [
       "Swimwear worn under your clothes",
       "A towel and a dry change of clothes",
-      "Reef-safe sunscreen, a hat and sunglasses with a strap",
+      "Sunscreen, a hat and sunglasses with a strap",
       "Something you would happily be filmed in",
       "Small US cash for drinks and tips",
     ],
@@ -1149,7 +1159,7 @@ export const experiences: Experience[] = [
       "Drones cannot fly in strong wind or heavy rain. If the aerial half is grounded we reshoot it at no cost.",
       "Tell the operator if anyone in your party would rather not be filmed.",
     ],
-    description: "Raft the river, paddle the reef in a clear kayak, and go home with professional drone footage of both.",
+    description: "Raft the river, then float a clear kayak while a drone films you from above.",
     tags: ["Combo", "Rafting", "Drone"],
     kind: 'package',
     includes: [3, 12],

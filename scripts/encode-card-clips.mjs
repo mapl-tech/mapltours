@@ -13,7 +13,8 @@
  *
  * The card shows a 4:3 centre crop of the clip (object-fit: cover), so that
  * crop is all this keeps: at most 960x720, which a 2x screen draws at about
- * its own size, no faster than 30 fps, the first 10 seconds, H.264 High at
+ * its own size, no faster than 30 fps, the first 10 seconds (counted from
+ * START where a clip has one), H.264 High at
  * CRF 23 capped at 2.5 Mbps, moov first, one unfragmented file, no audio.
  *
  *   FFMPEG=/path/to/ffmpeg node scripts/encode-card-clips.mjs [--force]
@@ -32,9 +33,17 @@ const ffmpeg = process.env.FFMPEG || 'ffmpeg'
 const force = process.argv.includes('--force')
 const only = process.env.ONLY ? new Set(process.env.ONLY.split(',')) : null
 
-function encode(src, out) {
+// Seconds to skip where a clip's subject is not yet in frame at 0 s. The
+// phone clip is cut from the same second (lib/experiences mobileVideo), so
+// the reel and the card open on the same picture.
+const START = {
+  // The clear kayak is still coming up from under the bottom edge.
+  '38809773': 5,
+}
+
+function encode(src, out, start = 0) {
   return spawnSync(ffmpeg, [
-    '-y', '-v', 'error', '-i', src, '-t', '10',
+    '-y', '-v', 'error', ...(start ? ['-ss', String(start)] : []), '-i', src, '-t', '10',
     '-vf', "crop='min(iw,ih*4/3)':'min(ih,iw*3/4)',scale='min(960,iw)':-2:flags=lanczos,setsar=1",
     '-fpsmax', '30',
     '-c:v', 'libx264', '-preset', 'slow', '-crf', '23',
@@ -66,7 +75,7 @@ for (const id of ids) {
     console.log(`skip ${id} (up to date)`)
     continue
   }
-  if (encode(src, out).status !== 0) {
+  if (encode(src, out, START[id]).status !== 0) {
     console.error(`failed: ${id}`)
     failed++
     continue

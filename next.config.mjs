@@ -96,6 +96,10 @@ const nextConfig = {
     // and the same safari without the river.
     { source: '/experience/bamboo-rafting-on-the-white-river', destination: '/experience/bamboo-rafting-on-the-martha-brae', permanent: true },
     { source: '/experience/rasta-safari-bamboo-rafting', destination: '/experience/rasta-cultural-atv-safari', permanent: true },
+
+    // Collin's clear kayak is a drone photoshoot on a river, not a reef tour
+    // (Oct 5 2026), so the listing was renamed and its old address follows.
+    { source: '/experience/clear-kayak-reef-tour', destination: '/experience/clear-kayak-drone-photoshoot', permanent: true },
   ],
   headers: async () => [
     // Videos — immutable, 1 year
