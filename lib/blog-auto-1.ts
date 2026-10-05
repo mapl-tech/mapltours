@@ -71,7 +71,7 @@ export const POSTS_1: BlogPost[] = [
       },
       {
         type: 'p',
-        text: "If you want the climb without any of the planning, we pair it with the blue hole an hour inland on a single day: [Dunn's River and the Blue Hole](/experience/dunns-river-blue-hole), with hotel pickup and both entries handled. If you only want the falls, [the climb on its own](/experience/dunns-river-falls-climb) is the shorter day. Dates and prices for both are in [the catalogue](/explore).",
+        text: "If you want the climb without any of the planning, we pair it with the Blue Hole, about half an hour inland, on a single day: [Dunn's River and the Blue Hole](/experience/dunns-river-blue-hole), with hotel pickup and both entries handled. If you only want the falls, [the climb on its own](/experience/dunns-river-falls-climb) is the shorter day. Dates and prices for both are in [the catalogue](/explore).",
       },
     ],
     relatedSlugs: ['reach-falls-vs-dunns-river', 'ocho-rios-complete-guide'],
@@ -164,7 +164,7 @@ export const POSTS_1: BlogPost[] = [
       { type: 'h2', text: "The ranking" },
       {
         type: 'p',
-        text: "At the top: the Martha Brae River bamboo raft at sunrise. Ninety minutes, one raft captain, about $75. It's slower and quieter than the Rio Grande raft in Portland, and closer to MoBay. You'll see more birds than tourists.",
+        text: "At the top: the Martha Brae River bamboo raft, first thing after the rafting village opens at 9am. An hour and a quarter on the river, one raft captain, about $75. It's slower and quieter than the Rio Grande raft in Portland, and closer to MoBay. You'll see more birds than tourists.",
       },
       {
         type: 'p',

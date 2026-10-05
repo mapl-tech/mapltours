@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { ArrowLeft, Award, CalendarDays, Leaf, MapPin, Users } from 'lucide-react'
-import { useCartStore, DAILY_HOUR_LIMIT } from '@/lib/cart'
+import { useCartStore, DAILY_HOUR_LIMIT, parseDurationHours } from '@/lib/cart'
 import { couponDiscountCents } from '@/lib/coupons'
 import { priceTourCart } from '@/lib/checkout-pricing'
 import CodeField from './CodeField'
@@ -409,7 +409,7 @@ export default function OnePageCheckout() {
                     </div>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <p style={{ fontFamily: FONT, fontWeight: 700, fontSize: 15, lineHeight: 1.25, color: 'var(--text-primary)' }}>{t(item.title)}</p>
-                      <p style={{ fontFamily: FONT, fontSize: 13, color: 'var(--text-tertiary)', marginTop: 3 }}>{placeLabel(item)} · {item.duration.replace(/ /g, '\u00a0')}</p>
+                      <p style={{ fontFamily: FONT, fontSize: 13, color: 'var(--text-tertiary)', marginTop: 3 }}>{placeLabel(item)}<br />{item.duration.replace(/ /g, '\u00a0')}</p>
                     </div>
                     <div style={{ textAlign: 'right', flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
                       <p className="opc-num" style={{ fontFamily: FONT, fontWeight: 700, fontSize: 15, whiteSpace: 'nowrap' }}>{formatUsd(tourPrice(item.pricing, item.travelers))}</p>
@@ -474,6 +474,7 @@ export default function OnePageCheckout() {
                   </p>
                 </div>
 
+                <div id="opc-day-more" style={{ scrollMarginTop: 16 }}>
                 <Disclosure summary="Add more to your day" detail={stops.length ? `${stops.length} food stop${stops.length === 1 ? '' : 's'} added` : 'A second tour or a free food stop, in driving order'} open={dayOpen} onToggle={() => setDayOpen((o) => !o)}>
                   <div style={{ paddingTop: 4 }}>
                     <TripTimeBar compact hideHeading />
@@ -485,6 +486,7 @@ export default function OnePageCheckout() {
                     </Link>
                   </div>
                 </Disclosure>
+                </div>
               </div>
             </Card>
 
@@ -588,7 +590,24 @@ export default function OnePageCheckout() {
       {legal === 'waiver' && <LegalModal kind="waiver" onClose={() => setLegal(null)} />}
       {legal === 'terms' && <LegalModal kind="terms" onClose={() => setLegal(null)} />}
       {legal === 'cancellation' && <LegalModal kind="terms" answer="cancellation" onClose={() => setLegal(null)} />}
-      {limitOpen && <DailyLimitModal hoursByDate={hoursByDate()} onClose={() => setLimitOpen(false)} />}
+      {limitOpen && (
+        <DailyLimitModal
+          hoursByDate={hoursByDate()}
+          // The tours alone fit and only the free food stops tip the day over:
+          // say so, and show the stops, rather than ask for a tour to go.
+          stopsOnly={stops.length > 0 && Object.values(items.reduce<Record<string, number>>((m, i) => {
+            const k = i.date || 'unset'
+            m[k] = (m[k] ?? 0) + parseDurationHours(i.duration)
+            return m
+          }, {})).every((h) => h <= DAILY_HOUR_LIMIT)}
+          onShowStops={() => {
+            setLimitOpen(false)
+            setDayOpen(true)
+            requestAnimationFrame(() => document.getElementById('opc-day-more')?.scrollIntoView({ block: 'start' }))
+          }}
+          onClose={() => setLimitOpen(false)}
+        />
+      )}
     </div>
   )
 }
@@ -750,7 +769,7 @@ function OrderSummary(p: {
   )
 }
 
-function DailyLimitModal({ hoursByDate, onClose }: { hoursByDate: Record<string, number>; onClose: () => void }) {
+function DailyLimitModal({ hoursByDate, stopsOnly = false, onShowStops, onClose }: { hoursByDate: Record<string, number>; stopsOnly?: boolean; onShowStops?: () => void; onClose: () => void }) {
   const overDays = Object.entries(hoursByDate).filter(([, hrs]) => hrs > DAILY_HOUR_LIMIT).sort((a, b) => b[1] - a[1])
   const panelRef = useRef<HTMLDivElement>(null)
   useFocusTrap(panelRef, onClose)
@@ -759,9 +778,11 @@ function DailyLimitModal({ hoursByDate, onClose }: { hoursByDate: Record<string,
       style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(8,8,10,0.72)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
       <div ref={panelRef} tabIndex={-1} onClick={(e) => e.stopPropagation()}
         style={{ width: '100%', maxWidth: 440, background: '#fff', border: '1px solid rgba(255,179,0,0.25)', borderRadius: 'var(--r-xl)', boxShadow: '0 24px 72px rgba(0,0,0,0.25)', padding: '28px 26px 24px', maxHeight: 'calc(100vh - 32px)', overflowY: 'auto' }}>
-        <h3 style={{ fontFamily: FONT, fontWeight: 700, fontSize: 22, letterSpacing: '-0.02em', marginBottom: 8, lineHeight: 1.2 }}>Let’s build two perfect days</h3>
+        <h3 style={{ fontFamily: FONT, fontWeight: 700, fontSize: 22, letterSpacing: '-0.02em', marginBottom: 8, lineHeight: 1.2 }}>{stopsOnly ? 'One food stop too many' : 'Let’s build two perfect days'}</h3>
         <p style={{ fontFamily: FONT, fontSize: 15, lineHeight: 1.55, color: 'var(--text-secondary)', marginBottom: 20 }}>
-          A day tops out at {DAILY_HOUR_LIMIT} hours so every experience lands with full energy, and one checkout books one day. Remove an experience to continue, then book the rest as a second day.
+          {stopsOnly
+            ? `Your tours fit in the day, but the free food stops take it past ${DAILY_HOUR_LIMIT} hours. Remove a food stop to continue.`
+            : `A day tops out at ${DAILY_HOUR_LIMIT} hours so every experience lands with full energy, and one checkout books one day. Remove an experience to continue, then book the rest as a second day.`}
         </p>
         {overDays.length > 0 && (
           <div style={{ padding: '14px 16px', borderRadius: 'var(--r-md)', background: 'var(--bg-warm)', border: '1px solid rgba(255,179,0,0.18)', marginBottom: 22 }}>
@@ -773,7 +794,7 @@ function DailyLimitModal({ hoursByDate, onClose }: { hoursByDate: Record<string,
             ))}
           </div>
         )}
-        <button type="button" onClick={onClose} className="btn-primary" style={{ width: '100%', height: 48, fontSize: 15, fontFamily: FONT, fontWeight: 700 }}>Adjust my trip</button>
+        <button type="button" onClick={stopsOnly && onShowStops ? onShowStops : onClose} className="btn-primary" style={{ width: '100%', height: 48, fontSize: 15, fontFamily: FONT, fontWeight: 700 }}>{stopsOnly ? 'Show my food stops' : 'Adjust my trip'}</button>
       </div>
     </div>
   )

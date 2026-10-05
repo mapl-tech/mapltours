@@ -1169,7 +1169,7 @@ function MobilePosterCard({ exp }: { exp: Experience }) {
           {exp.title}
         </p>
         <p style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 13, fontWeight: 500, margin: '4px 0 0', color: 'rgba(255,255,255,0.88)' }}>
-          From {formatPrice(exp.price)} · {exp.duration}
+          From {formatPrice(exp.price)}<br />{exp.duration}
         </p>
       </div>
     </Link>

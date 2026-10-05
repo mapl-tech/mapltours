@@ -277,7 +277,7 @@ export const POSTS_2: BlogPost[] = [
       },
       {
         type: 'p',
-        text: "For the hills, take a morning drive up to Croydon Plantation for a working-farm tour, Blue Mountain-adjacent coffee, pimento, fruit tastings for about 75 USD. Or book a river experience on the Martha Brae in nearby Trelawny, a 30-minute river bamboo-raft float that locals rate above the better-known Rio Grande.",
+        text: "For the hills, take a morning drive up to Croydon Plantation for a working-farm tour, Blue Mountain-adjacent coffee, pimento, fruit tastings for about 75 USD. Or book a river experience on the Martha Brae in nearby Trelawny, an hour-and-a-quarter bamboo-raft float that locals rate above the better-known Rio Grande.",
       },
       {
         type: 'p',

@@ -69,7 +69,8 @@ export function GET() {
   const experienceLines = experiences
     .map((exp) => {
       const url = `${baseUrl}/experience/${slugify(exp.title)}`
-      const summary = `${placeLabel(exp)}. ${exp.category}. ${exp.duration}. $${exp.price} ${priceUnitLabel(exp.pricing)}. ${exp.description}`
+      const fromHotel = exp.fromHotel ? ` From your hotel and back: ${exp.fromHotel.charAt(0).toLowerCase()}${exp.fromHotel.slice(1)}` : ''
+      const summary = `${placeLabel(exp)}. ${exp.category}. ${exp.duration}. $${exp.price} ${priceUnitLabel(exp.pricing)}. ${exp.description}${fromHotel}`
       return `- [${exp.title}](${url}): ${summary}`
     })
     .join('\n')

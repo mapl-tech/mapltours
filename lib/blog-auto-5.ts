@@ -188,7 +188,7 @@ export const POSTS_5: BlogPost[] = [
       { type: 'h2', text: 'Getting there from Montego Bay, Ocho Rios and Negril' },
       {
         type: 'p',
-        text: "This is where the comparison is decided for most people. Dunn's River is a short drive from any Ocho Rios hotel, about 98 km and an hour and forty minutes from Montego Bay, and around 173 km and close to three hours from Negril. Reach Falls is on the far side of the island: about 133 km and nearly three hours from Ocho Rios, roughly 234 km and four and a half hours from Montego Bay, and more than 300 km and over five hours from Negril. Those are map times, and Jamaican roads are slower than the map.",
+        text: "This is where the comparison is decided for most people. Dunn's River is a short drive from any Ocho Rios hotel, about 98 km and an hour and forty minutes from Montego Bay, and around 173 km and three to four hours from Negril. Reach Falls is on the far side of the island: about 133 km and nearly three hours from Ocho Rios, roughly 234 km and four and a half hours from Montego Bay, and more than 300 km and over five hours from Negril. Those are map times, and Jamaican roads are slower than the map.",
       },
       {
         type: 'p',
@@ -223,7 +223,7 @@ export const POSTS_5: BlogPost[] = [
       },
       {
         type: 'p',
-        text: "Reach Falls is in Portland, which is outside the parishes we drive, so we will not pretend to run it; [our Portland guide](/blog/portland-parish-guide) covers the east end properly. What MAPL Tours Jamaica does run is the other side of this comparison: [the Dunn's River Falls climb](/experience/dunns-river-falls-climb) with hotel pickup and a licensed falls guide, or [Dunn's River and the Blue Hole in one half day](/experience/dunns-river-blue-hole), $192 for up to three people, which runs the falls first to stay ahead of the ships. If you are landing at Montego Bay for an Ocho Rios stay, [a private airport transfer](/transfers) is 90 to 120 minutes and one flat price per vehicle. Either way, bring reef shoes. No problem.",
+        text: "Reach Falls is in Portland, which is outside the parishes we drive, so we will not pretend to run it; [our Portland guide](/blog/portland-parish-guide) covers the east end properly. What MAPL Tours Jamaica does run is the other side of this comparison: [the Dunn's River Falls climb](/experience/dunns-river-falls-climb) with hotel pickup and a licensed falls guide, or [Dunn's River and the Blue Hole in one day](/experience/dunns-river-blue-hole), five to six hours from an Ocho Rios hotel and $192 for up to three people, which runs the falls first to stay ahead of the ships. If you are landing at Montego Bay for an Ocho Rios stay, [a private airport transfer](/transfers) is 90 to 120 minutes and one flat price per vehicle. Either way, bring reef shoes. No problem.",
       },
       {
         type: 'faq',
@@ -234,7 +234,7 @@ export const POSTS_5: BlogPost[] = [
           },
           {
             q: "How much is Dunn's River Falls?",
-            a: "US$25 per adult and US$17 per child for non-residents, with lockers, water shoe rental and photos extra. [Our Dunn's River and Blue Hole half day](/experience/dunns-river-blue-hole) includes both entries and transport for $192 for up to three people.",
+            a: "US$25 per adult and US$17 per child for non-residents, with lockers, water shoe rental and photos extra. [Our Dunn's River and Blue Hole day](/experience/dunns-river-blue-hole) includes both entries and transport for $192 for up to three people.",
           },
           {
             q: 'How much does Reach Falls cost?',
@@ -480,7 +480,7 @@ export const POSTS_5: BlogPost[] = [
       { type: 'h2', text: 'How to get to Nine Mile from Montego Bay, Ocho Rios and Negril' },
       {
         type: 'p',
-        text: "Ocho Rios is the closest base. Nine Mile is about 38 km away by road, and the hill road turns that into a drive of an hour to an hour and a half. From Montego Bay it is roughly 97 km and around two hours each way. From Negril it is about 171 km and close to three hours each way, which makes for a very long day. Do not trust a map app's cheerful estimate. The last stretch above Brown's Town is narrow, steep and full of blind corners, and it is slow in any vehicle.",
+        text: "Ocho Rios is the closest base. Nine Mile is about 45 km away by road, and the hill road turns that into a drive of about an hour and a half. From Montego Bay it is roughly 97 km and around two hours each way. From Negril it is about 171 km and three and a half to four hours each way, which makes for a very long day. Do not trust a map app's cheerful estimate. The last stretch above Brown's Town is narrow, steep and full of blind corners, and it is slow in any vehicle.",
       },
       {
         type: 'p',

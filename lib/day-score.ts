@@ -119,6 +119,7 @@ export function computeDayScore(items: CartItem[], stopHours = 0): DayScoreBreak
     total,
     distinctCategories: categories.size,
     distinctDestinations: destinations.size,
+    soleKind: topItems.length === 1 ? (topItems[0].kind === 'package' ? 'package' : 'tour') : null,
   })
 
   return {
@@ -143,6 +144,7 @@ function buildNudge({
   total,
   distinctCategories,
   distinctDestinations,
+  soleKind = null,
 }: {
   hours: number
   isOver: boolean
@@ -150,6 +152,8 @@ function buildNudge({
   total: number
   distinctCategories: number
   distinctDestinations: number
+  /** Set when the day is one tour or one ready-made package: there is nothing to swap or mix. */
+  soleKind?: 'package' | 'tour' | null
 }): string {
   if (hours === 0) return 'Pick a tour to start your perfect day'
   if (isOver) {
@@ -164,10 +168,11 @@ function buildNudge({
   // would refuse to honour — so when the day is full the only honest moves
   // are a swap or a second day.
   if (remaining < SHORTEST_TOUR_HOURS) {
+    if (soleKind) return `This ${soleKind} fills your day`
     if (total >= 95) return 'You’ve built a perfect day ✨'
     if (distinctCategories < 3) return 'Your day is full, swap a tour for a different category to mix it up'
     if (distinctDestinations >= 4) return 'Your day is full, tours closer together would cut the driving'
-    return 'Your day is full, a perfect eight hours'
+    return 'Your day is full: eight hours of tours'
   }
 
   if (total >= 95) return 'You’ve built a perfect day ✨'
@@ -177,7 +182,7 @@ function buildNudge({
     // and the old "Add 7 more to hit a great flow" (no unit) read as if it
     // were not good enough yet.
     const unit = Math.round(remaining * 2) / 2 === 1 ? 'hour' : 'hours'
-    return `Room for ${fmtHours(remaining)} more ${unit} in your day, or book it as it is`
+    return `Room for ${fmtHours(remaining)} more ${unit} of tours in your day, or book it as it is`
   }
   if (hours < 6) {
     // Usually variety is the limiting factor at 4–5 hrs with 1–2 tours

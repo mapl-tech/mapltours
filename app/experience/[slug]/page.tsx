@@ -123,6 +123,9 @@ export default function ExperienceRoute({ params }: { params: { slug: string } }
       exp.about ?? exp.description,
       exp.included?.length ? `Included: ${exp.included.join('; ')}.` : null,
       exp.notIncluded?.length ? `Not included: ${exp.notIncluded.join('; ')}.` : null,
+      // The guest's whole outing, as llms.txt and get_tour give it: the
+      // duration alone is only the time at the activity.
+      exp.fromHotel ? `Time at the activity: ${exp.duration}. From your hotel and back: ${exp.fromHotel.charAt(0).toLowerCase()}${exp.fromHotel.slice(1)}` : null,
     ].filter(Boolean).join(' '),
     // Absolute: Google discards relative image URLs in structured data.
     image: exp.image?.startsWith('http') ? exp.image : `${SITE_URL}${exp.image}`,

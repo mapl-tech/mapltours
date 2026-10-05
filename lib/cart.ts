@@ -60,6 +60,20 @@ export function parseDurationHours(duration: string): number {
   return match ? parseFloat(match[1]) : 3
 }
 
+/**
+ * The hours a day's free food stops add. A full day (a ready-made package or
+ * Nine Mile, each "Full day") already has its meal break inside it, so the
+ * first stop on such a day IS that lunch and adds nothing; every further stop
+ * costs STOP_HOURS as on any day. Without this, one lunch on a full-day
+ * package (8 hours) took the day to 9.5 and blocked Pay for a free stop.
+ * Everything that totals a day calls this, so the bar, the day list and the
+ * checkout gate agree. The server never counts stops at all.
+ */
+export function stopHoursFor(items: { duration: string }[], stopCount: number): number {
+  const fullDay = items.some((i) => parseDurationHours(i.duration) >= DAILY_HOUR_LIMIT)
+  return Math.max(0, stopCount - (fullDay ? 1 : 0)) * STOP_HOURS
+}
+
 /** The day a swap replaced, kept so the guest can undo it. */
 export interface DaySnapshot {
   items: CartItem[]
@@ -240,8 +254,13 @@ export const useCartStore = create<CartStore>()(
         // and the ATV). Holding both charged the guest twice for one ride and
         // sent the operator a day with the same attraction on it twice, so an
         // incoming item also evicts anything it overlaps with.
+        //
+        // And since Oct 2026 a package is a day on its own: every package but
+        // the half-day Raft + Kayak + Drone counts "Full day" against the
+        // 8-hour cap, so no two fit in the one day a checkout books. Two that
+        // shared nothing used to sit side by side and fail only at Pay.
         const incoming = new Set<number>([exp.id, ...(exp.includes ?? [])])
-        const kept = items.filter(
+        const kept = exp.kind === 'package' ? [] : items.filter(
           (i) =>
             i.kind === exp.kind &&
             ![i.id, ...(i.includes ?? [])].some((id) => incoming.has(id)),
@@ -307,6 +326,7 @@ export const useCartStore = create<CartStore>()(
           (i) =>
             i.id !== exp.id &&
             (i.kind !== exp.kind ||
+              exp.kind === 'package' ||
               [i.id, ...(i.includes ?? [])].some((id) => incoming.has(id))),
         )
       },
@@ -390,7 +410,7 @@ export const useCartStore = create<CartStore>()(
         // built, which is now a single date per checkout. Charge them to the
         // day that has experiences on it; with an empty cart they land on
         // 'unset', which is the same bucket the UI already reads.
-        const extra = stops.length * STOP_HOURS
+        const extra = stopHoursFor(items, stops.length)
         if (extra > 0) {
           const dayKeys = Object.keys(map)
           const key = dayKeys.length === 1 ? dayKeys[0] : (items[0]?.date || 'unset')

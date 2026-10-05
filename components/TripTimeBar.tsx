@@ -1,6 +1,6 @@
 'use client'
 
-import { DAILY_HOUR_LIMIT, STOP_HOURS, parseDurationHours, useCartStore } from '@/lib/cart'
+import { DAILY_HOUR_LIMIT, parseDurationHours, stopHoursFor, useCartStore } from '@/lib/cart'
 import { computeDayScore, type DayStage } from '@/lib/day-score'
 
 interface DayBuilderProps {
@@ -26,7 +26,7 @@ interface DayBuilderProps {
 export default function DayBuilder({ compact = false, hideHeading, style }: DayBuilderProps) {
   const items = useCartStore((s) => s.items)
   const stops = useCartStore((s) => s.stops)
-  const score = computeDayScore(items, stops.length * STOP_HOURS)
+  const score = computeDayScore(items, stopHoursFor(items, stops.length))
 
   const { hours, stage, stageLabel, nudge, isOver, isPerfect } = score
   const pct = Math.min(100, (hours / DAILY_HOUR_LIMIT) * 100)

@@ -113,6 +113,13 @@ export interface Experience {
    * tour it is one traveler. Derived from `pricing`, never set by hand.
    */
   price: number
+  /**
+   * Time AT the activity, saying where it is spent ("2 hrs at the falls"),
+   * or "Half day" / "Full day" for a package the day revolves around. Not the
+   * guest's whole outing: that is `fromHotel`. parseDurationHours reads the
+   * first number before "hr" (or the day words) for the 8-hour daily cap in
+   * the cart and at checkout, so the words after the number are free text.
+   */
   duration: string
   youtubeId?: string
   rating: number
@@ -167,6 +174,15 @@ export interface Experience {
   additionalInfo?: string[]
   /** Where the day starts, when it is not simply hotel pickup. */
   meetingPoint?: string
+  /**
+   * How long the outing takes from the guest's hotel and back, by resort
+   * area, written to follow "From your hotel and back:" ("Allow about 3
+   * hours from Ocho Rios..."). Researched Oct 2026 from operators' published
+   * itineraries and Google Maps midday drive times, with no lunch stop
+   * unless the line says so. Shown in the details sheet, llms.txt and the
+   * agent tools' get_tour.
+   */
+  fromHotel?: string
   comments: Comment[]
 }
 
@@ -335,7 +351,7 @@ export const experiences: Experience[] = [
     title: "Dunn's River Falls Climb",
     pricing: { mode: 'group', baseRate: 275, tierMax: 3, extraPerPerson: 75 },
     price: 351,
-    duration: "2 hrs",
+    duration: "2 hrs at the falls",
     rating: 0,
     reviews: 0,
     category: 'Adventure',
@@ -349,6 +365,7 @@ export const experiences: Experience[] = [
     ages: "6 and up",
     fitness: 'A moderate climb over wet limestone terraces, roughly 45 minutes of continuous ascent with rest points. Guests link hands in a chain led by a guide. Not suitable for anyone with limited mobility, a heart condition, or in late pregnancy.',
     meetingPoint: 'Hotel pickup',
+    fromHotel: "Allow about 3 hours from Ocho Rios or Runaway Bay, 5 to 6 from Rose Hall, 6 to 7 from the Hip Strip and west Montego Bay, and 8 to 10 from Negril.",
     included: [
       'Round-trip private transport from your hotel',
       'Park entry',
@@ -384,7 +401,7 @@ export const experiences: Experience[] = [
     title: "Blue Hole & Secret Falls",
     pricing: { mode: 'group', baseRate: 275, tierMax: 3, extraPerPerson: 75 },
     price: 351,
-    duration: "2 hrs",
+    duration: "2 hrs at the falls",
     rating: 0,
     reviews: 0,
     category: 'Water',
@@ -398,6 +415,7 @@ export const experiences: Experience[] = [
     ages: "8 and up",
     fitness: "Confident swimmers only: the pools are deep with no standing bottom. About an hour in and out of the water, with short scrambles over wet rock and timber ladders between pools. Comfortable for most active guests; not suitable with limited mobility, a heart condition, or in pregnancy.",
     meetingPoint: "Hotel pickup",
+    fromHotel: "Allow about 3 hours from Ocho Rios, 4 from Runaway Bay, 6 to 7 from Rose Hall, 6.5 to 8 from the Hip Strip and west Montego Bay, and 9 to 10 from Negril.",
     included: [
       "Round-trip private transport from your hotel",
       "Blue Hole entry",
@@ -434,7 +452,7 @@ export const experiences: Experience[] = [
     title: "Bamboo Rafting on the Martha Brae",
     pricing: { mode: 'group', baseRate: 100, tierMax: 3, extraPerPerson: 90 },
     price: 128,
-    duration: "1.5 hrs",
+    duration: "1.5 hrs at the river",
     rating: 0,
     reviews: 0,
     category: 'Nature',
@@ -448,6 +466,7 @@ export const experiences: Experience[] = [
     ages: "All ages",
     fitness: "Under-12s ride with an adult, and infants ride on a parent's lap. Easy. You are seated for the whole float; the only effort is stepping on and off the raft at the bank.",
     meetingPoint: "Hotel pickup",
+    fromHotel: "Allow 2.5 to 3.5 hours from Montego Bay and Rose Hall, 4 to 5.5 from Ocho Rios, and 5.5 to 7.5 from Negril.",
     included: [
       "Round-trip private transport from your hotel",
       "Raft village entry",
@@ -483,7 +502,7 @@ export const experiences: Experience[] = [
     title: "Rasta Cultural ATV Safari",
     pricing: { mode: 'group', baseRate: 150, tierMax: 3, extraPerPerson: 140 },
     price: 192,
-    duration: "3 hrs",
+    duration: "3 hrs at the village",
     rating: 0,
     reviews: 0,
     category: 'Culture',
@@ -496,10 +515,11 @@ export const experiences: Experience[] = [
     // clip was a stock shot of a man with locs smoking in a forest: not the
     // tour, and not the note this brand strikes.
     video: VIDEOS.offRoad2,
-    about: "An hour on the bush trails of Westmoreland on your own ATV, then up to a Rastafari community in the hills. You are walked through the herb garden and the way the food is grown, sit down to an ital tasting, and hear the history and the livity from the people living it, with drumming to finish.",
+    about: "About an hour and a quarter on the bush trails of Westmoreland on your own ATV, then up to a Rastafari community in the hills. You are walked through the herb garden and the way the food is grown, sit down to an ital tasting, and hear the history and the livity from the people living it, with drumming to finish.",
     ages: "16+ to drive, 8+ to ride",
     fitness: "Drivers need a valid driver's licence, passengers from 8 ride with an adult, and the community visit suits all ages. Moderate. Riding an ATV over rutted trail is physical on the arms and shoulders, and there is a short uphill walk into the community. Not suitable in pregnancy or with back or neck injuries.",
     meetingPoint: "Hotel pickup",
+    fromHotel: "Allow 5.5 to 6 hours from Negril or the Hip Strip and 6.5 to 7.5 from Rose Hall. From Ocho Rios or Runaway Bay it is an 8 to 12 hour day.",
     included: [
       "Round-trip private transport from your hotel",
       "Single-rider ATV, helmet and goggles",
@@ -535,7 +555,7 @@ export const experiences: Experience[] = [
     title: "ATV Off-Road Adventure",
     pricing: { mode: 'per_person', baseRate: 130, tierMax: 3, extraPerPerson: 125 },
     price: 166,
-    duration: "2 hrs",
+    duration: "2 hrs at the park",
     rating: 0,
     reviews: 0,
     category: 'Adventure',
@@ -549,6 +569,7 @@ export const experiences: Experience[] = [
     ages: "16+ to drive, 8+ to ride",
     fitness: "Drivers need a valid driver's licence, and passengers from 8 ride double with an adult. Moderate. Bracing a machine over rough ground works your arms, shoulders and legs. Not suitable in pregnancy or with back, neck or wrist injuries.",
     meetingPoint: "Hotel pickup",
+    fromHotel: "Allow 4 to 6 hours from Montego Bay and Rose Hall and 3 to 4.5 from Negril. From Ocho Rios it is a 7 to 10 hour day.",
     included: [
       "Round-trip private transport from your hotel",
       "ATV, helmet and goggles",
@@ -584,7 +605,7 @@ export const experiences: Experience[] = [
     title: "Rainforest Zipline Adventure",
     pricing: { mode: 'per_person', baseRate: 120, tierMax: 3, extraPerPerson: 110 },
     price: 153,
-    duration: "2 hrs",
+    duration: "1 hr at the park",
     rating: 0,
     reviews: 0,
     category: 'Adventure',
@@ -598,6 +619,7 @@ export const experiences: Experience[] = [
     ages: "8 and up",
     fitness: "Riders under 16 are accompanied on the course by an adult. Light to moderate. Stairs and short uphill walks between platforms, and you need to hold your own weight seated in a harness. Riders must be between 60 and 270 lbs. Not suitable in pregnancy or with shoulder or back injuries.",
     meetingPoint: "Hotel pickup",
+    fromHotel: "Allow 3.5 to 5 hours from Montego Bay (up to 6 from Rose Hall) and 2 to 3 from Negril. From Ocho Rios it is a 7 to 10 hour day.",
     included: [
       "Round-trip private transport from your hotel",
       "Every run on the course",
@@ -633,7 +655,7 @@ export const experiences: Experience[] = [
     title: "Horseback Riding Trail",
     pricing: { mode: 'per_person', baseRate: 100, tierMax: 3, extraPerPerson: 95 },
     price: 128,
-    duration: "2 hrs",
+    duration: "2 hrs at the stable",
     rating: 0,
     reviews: 0,
     category: 'Nature',
@@ -645,8 +667,9 @@ export const experiences: Experience[] = [
     video: VIDEOS.horseback,
     about: "A ride out of a working stable through country lanes and cane fields to a stretch of open coast, on a horse matched to your experience. Grooms walk the line the whole way and the pace is a steady walk, with a trot on the flat if the group is up to it.",
     ages: "6 and up",
-    fitness: "Under-8s are led on a rein by a groom. Light. No riding experience needed, but you must be able to mount from a block and sit for most of two hours. Riders must be under 250 lbs. Not suitable in pregnancy or with back or hip injuries.",
+    fitness: "Under-8s are led on a rein by a groom. Light. No riding experience needed, but you must be able to mount from a block and sit for about an hour. Riders must be under 250 lbs. Not suitable in pregnancy or with back or hip injuries.",
     meetingPoint: "Hotel pickup",
+    fromHotel: "Allow about 3 hours from Ocho Rios or Runaway Bay, 4.5 to 6 from Montego Bay and Rose Hall, and 7.5 to 9.5 from Negril.",
     included: [
       "Round-trip private transport from your hotel",
       "A horse matched to your ability",
@@ -682,7 +705,7 @@ export const experiences: Experience[] = [
     title: "Horseback Ride 'n' Swim",
     pricing: { mode: 'per_person', baseRate: 100, tierMax: 3, extraPerPerson: 95 },
     price: 128,
-    duration: "2.5 hrs",
+    duration: "2 hrs at the stable",
     rating: 0,
     reviews: 0,
     category: 'Water',
@@ -696,6 +719,7 @@ export const experiences: Experience[] = [
     ages: "8 and up",
     fitness: "Swimmers only. Moderate. Around an hour in the saddle, then the swim bareback holding a strap. You must be comfortable in open water. Riders must be under 250 lbs. Not suitable in pregnancy or with back or hip injuries.",
     meetingPoint: "Hotel pickup",
+    fromHotel: "Allow about 3 hours from Ocho Rios or Runaway Bay, 4.5 to 6 from Montego Bay and Rose Hall, and 7.5 to 9.5 from Negril.",
     included: [
       "Round-trip private transport from your hotel",
       "A horse matched to your ability",
@@ -731,7 +755,7 @@ export const experiences: Experience[] = [
     title: "Jet Ski the Caribbean",
     pricing: { mode: 'group', baseRate: 130, tierMax: 3, extraPerPerson: 100 },
     price: 166,
-    duration: "1 hr",
+    duration: "1 hr at the beach",
     rating: 0,
     reviews: 0,
     category: 'Water',
@@ -741,13 +765,14 @@ export const experiences: Experience[] = [
     emoji: '🌊',
     image: '/tours/collins/jet-ski-beach.jpg',
     video: VIDEOS.jetSki,
-    about: "A briefing on the sand, then an hour of open Caribbean off Montego Bay. You ride your own machine inside a marked area with a guide on the water, out past the swim zone where there is finally room to open it up.",
+    about: "A briefing on the sand, then thirty minutes of open Caribbean off Montego Bay. You ride your own machine inside a marked area with a guide on the water, out past the swim zone where there is finally room to open it up.",
     ages: "18+ to drive, 12+ to ride",
     fitness: "Drivers need photo ID, and passengers from 12 ride behind an adult. Light to moderate. You need to be able to climb back on from deep water if you come off. Not suitable in pregnancy or with back or neck injuries.",
     meetingPoint: "Hotel pickup",
+    fromHotel: "Allow 2 to 3 hours from Montego Bay and Rose Hall, 4 to 6 from Negril, and 4.5 to 6.5 from Ocho Rios (3 to 4.5 from Runaway Bay).",
     included: [
       "Round-trip private transport from your hotel",
-      "Jet ski hire and fuel for the hour",
+      "Jet ski hire and fuel for the ride",
       "Life vest and safety briefing",
       "Guide on the water",
     ],
@@ -780,7 +805,7 @@ export const experiences: Experience[] = [
     title: "Parasailing Over the Bay",
     pricing: { mode: 'group', baseRate: 120, tierMax: 3, extraPerPerson: 90 },
     price: 153,
-    duration: "1 hr",
+    duration: "1 hr on the boat",
     rating: 0,
     reviews: 0,
     category: 'Water',
@@ -790,10 +815,11 @@ export const experiences: Experience[] = [
     emoji: '🪂',
     image: '/media/img/4605351.jpg',
     video: VIDEOS.parasail,
-    about: "Out from the beach on the boat, clipped into the harness on the flight deck, and winched up several hundred feet above Montego Bay with the coastline opening under your feet. You lift off dry and land dry unless you ask for a dip. The hour covers the boat trip out and back; the flight itself is ten to twelve minutes.",
+    about: "Out from the beach on the boat, clipped into the harness on the flight deck, and winched up several hundred feet above Montego Bay with the coastline opening under your feet. You lift off dry and land dry unless you ask for a dip. The hour covers the boat trip out and back; the flight itself is ten to fifteen minutes.",
     ages: "6 and up",
     fitness: "Under-16s fly in tandem with an adult. Light. You are seated in a harness for the whole flight. Combined tandem weight must be between 90 and 375 lbs. Not suitable in pregnancy or with heart, back or neck conditions.",
     meetingPoint: "Hotel pickup",
+    fromHotel: "Allow about 1.5 hours from hotels near the Hip Strip, 2 to 3 from Rose Hall, and 4 to 5 from Negril.",
     included: [
       "Round-trip private transport from your hotel",
       "Boat ride out and back",
@@ -829,7 +855,7 @@ export const experiences: Experience[] = [
     title: "Clear Kayak Reef Tour",
     pricing: { mode: 'group', baseRate: 180, tierMax: 3, extraPerPerson: 160 },
     price: 230,
-    duration: "1.5 hrs",
+    duration: "1 hr at the beach",
     rating: 0,
     reviews: 0,
     category: 'Water',
@@ -843,6 +869,7 @@ export const experiences: Experience[] = [
     ages: "6 and up",
     fitness: "Under-12s share a kayak with an adult. Light. Flat, sheltered water at a slow pace, with no kayaking experience needed. Basic swimming ability is required for the snorkel stop.",
     meetingPoint: "Hotel pickup",
+    fromHotel: "Allow about 2 hours from Montego Bay and Rose Hall, 3.5 to 4.5 from Negril, and 4 to 6.5 from Ocho Rios.",
     included: [
       "Round-trip private transport from your hotel",
       "Clear kayak, paddle and life vest",
@@ -878,7 +905,7 @@ export const experiences: Experience[] = [
     title: "River Tubing",
     pricing: { mode: 'per_person', baseRate: 100, tierMax: 3, extraPerPerson: 80 },
     price: 128,
-    duration: "1.5 hrs",
+    duration: "1.5 hrs at the river",
     rating: 0,
     reviews: 0,
     category: 'Nature',
@@ -888,10 +915,11 @@ export const experiences: Experience[] = [
     emoji: '🛟',
     image: '/media/img/1305095.jpg',
     video: VIDEOS.river,
-    about: "In at the top of the run, out at the bottom, and a bit over an hour of cool river in between. The current does the work through easy rapids and long slow pools, with guides tubing alongside to keep you off the rocks and hold the group together.",
+    about: "In at the top of the run, out at the bottom, and forty-five minutes to an hour of cool river in between. The current does the work through easy rapids and long slow pools, with guides tubing alongside to keep you off the rocks and hold the group together.",
     ages: "6 and up",
     fitness: "Under-12s tube with an adult alongside. Light. You float, and the only walking is a short path down to the entry point and back up from the exit. Life vests are worn throughout, so water confidence is enough.",
     meetingPoint: "Hotel pickup",
+    fromHotel: "Allow about 2 hours from Ocho Rios, 3 from Runaway Bay, 5 to 6 from Montego Bay and Rose Hall, and 8 to 10 from Negril.",
     included: [
       "Round-trip private transport from your hotel",
       "River entry",
@@ -928,7 +956,7 @@ export const experiences: Experience[] = [
     title: "Rick's Cafe Cliff Diving & Sunset",
     pricing: { mode: 'group', baseRate: 200, tierMax: 4, extraPerPerson: 40 },
     price: 255,
-    duration: "3 hrs",
+    duration: "3 hrs at Rick's",
     rating: 0,
     reviews: 0,
     category: 'Adventure',
@@ -945,6 +973,7 @@ export const experiences: Experience[] = [
     ages: "All ages, jumping 16+",
     fitness: "Cliff jumping is for ages 16 and up and is done under the venue's own rules. Light unless you jump, with steps down to the water and back up. Jumping is for strong swimmers only.",
     meetingPoint: "Hotel pickup",
+    fromHotel: "Allow 3.5 to 4 hours from Negril, 6 to 7 from Montego Bay and Rose Hall (back about 9pm in winter and 10pm in summer), and 9 to 11 from Ocho Rios or Runaway Bay.",
     included: [
       "Round-trip private transport from your hotel",
       "Rick's Cafe entry",
@@ -993,8 +1022,9 @@ export const experiences: Experience[] = [
     video: VIDEOS.culture,
     about: "Up into the hills of St. Ann to the village where Robert Nesta Marley was born, guided by people from Nine Mile. You see the one-room house, the rock he sang about, and the mausoleum where he and his mother rest. The drive is half the day and half the point: deep country, mountain roads and the Jamaica most visitors never leave the coast to find.",
     ages: "All ages",
-    fitness: "It is a long day in a vehicle, so think it through for very young children. Light. Some walking on uneven ground and a flight of steps up to the mausoleum, with two to three hours of driving each way depending on where you start.",
+    fitness: "It is a long day in a vehicle, so think it through for very young children. Light. Some walking on uneven ground and a flight of steps up to the mausoleum.",
     meetingPoint: "Hotel pickup",
+    fromHotel: "Allow 4 to 5 hours from Ocho Rios or Runaway Bay, 6 to 7 from Montego Bay and Rose Hall, and 9 to 10 from Negril, with about an hour at Nine Mile itself and a lunch stop on the way back.",
     included: [
       "Round-trip private transport from your hotel",
       "Nine Mile entry",
@@ -1030,7 +1060,7 @@ export const experiences: Experience[] = [
     title: "Tubing + Clear Kayak Combo",
     pricing: { mode: 'per_person', baseRate: 280, tierMax: 3, extraPerPerson: 280 },
     price: 357,
-    duration: "Half day",
+    duration: "Full day",
     rating: 0,
     reviews: 0,
     category: 'Water',
@@ -1040,10 +1070,11 @@ export const experiences: Experience[] = [
     emoji: '🛶',
     image: '/media/img/4511090.jpg',
     video: VIDEOS.tubing,
-    about: "Two of the calmest ways to see this coast, back to back. The river first, floating down on a tube with the current doing the work, then out over the reef in a clear-hulled kayak with the coral moving underneath you. Transport between the two and a break in the middle are built into the half day.",
+    about: "Two of the calmest ways to see this coast, back to back. The river first, floating down on a tube with the current doing the work, then out over the reef in a clear-hulled kayak with the coral moving underneath you. Transport between the two and a break in the middle are built into the day.",
     ages: "6 and up",
     fitness: "Under-12s tube and paddle with an adult. Light. Flat water on both legs, short walks at each entry point, and life vests worn throughout. Water confidence is enough.",
     meetingPoint: "Hotel pickup",
+    fromHotel: "Allow 6 to 9 hours from Montego Bay, Rose Hall or Ocho Rios, and 9 to 13 from Negril. The river is near Ocho Rios and the kayak is in Montego Bay.",
     included: [
       "Round-trip private transport from your hotel and between both sites",
       "River entry, tube and life vest",
@@ -1095,6 +1126,7 @@ export const experiences: Experience[] = [
     ages: "6 and up",
     fitness: "Under-12s raft and paddle with an adult. Light throughout. Seated on the raft, flat water in the kayak, and short walks at each entry point.",
     meetingPoint: "Hotel pickup",
+    fromHotel: "Allow 3 to 5 hours from Montego Bay (up to 6 from Rose Hall), 5 to 7.5 from Negril, and 6 to 10 from Ocho Rios.",
     included: [
       "Round-trip private transport from your hotel and between both sites",
       "Private bamboo raft and licensed captain",
@@ -1130,7 +1162,7 @@ export const experiences: Experience[] = [
     title: "Dunn's River + Blue Hole",
     pricing: { mode: 'group', baseRate: 150, tierMax: 3, extraPerPerson: 100 },
     price: 192,
-    duration: "Half day",
+    duration: "Full day",
     rating: 0,
     reviews: 0,
     category: 'Adventure',
@@ -1144,6 +1176,7 @@ export const experiences: Experience[] = [
     ages: "8 and up",
     fitness: "Confident swimmers only, and the age floor is set by the Blue Hole. Moderate to demanding. Two climbs over wet rock in one day and roughly two hours in the water in total. Not suitable with limited mobility, a heart condition, or in pregnancy.",
     meetingPoint: "Hotel pickup",
+    fromHotel: "Allow 5 to 6 hours from Ocho Rios with the lunch stop and 7 to 9 from Montego Bay and Rose Hall. From Negril it would be a 10 to 14 hour day, so we do not recommend it.",
     included: [
       "Round-trip private transport from your hotel and between both sites",
       "Dunn's River and Blue Hole entry",
@@ -1181,7 +1214,7 @@ export const experiences: Experience[] = [
     title: "Zipline + ATV",
     pricing: { mode: 'per_person', baseRate: 235, tierMax: 3, extraPerPerson: 235 },
     price: 300,
-    duration: "Half day",
+    duration: "Full day",
     rating: 0,
     reviews: 0,
     category: 'Adventure',
@@ -1191,10 +1224,11 @@ export const experiences: Experience[] = [
     emoji: '⚡',
     image: '/media/img/5976872.jpg',
     video: VIDEOS.offRoad2,
-    about: "The full adrenaline half day. Fly the canopy first on a course of ziplines out over the valley, then swap the harness for a helmet and take an ATV onto the mud trails in Hanover. Same base, same guides, straight from one to the other.",
+    about: "The full adrenaline day. Fly the canopy first on a course of ziplines out over the valley, then swap the harness for a helmet and take an ATV onto the mud trails in Hanover. Same base, same guides, straight from one to the other.",
     ages: "8+ zipline, 16+ to drive",
     fitness: "ATV drivers need a valid driver's licence, and younger riders go double with an adult. Moderate. Stairs and short climbs between zipline platforms, then a physical hour on a machine over rough ground. Zipline riders must be between 60 and 270 lbs. Not suitable in pregnancy or with back, neck or shoulder injuries.",
     meetingPoint: "Hotel pickup",
+    fromHotel: "Allow about 3 to 4 hours from Negril, 4.5 to 7 from Montego Bay and Rose Hall, and 7.5 to 11 from Ocho Rios.",
     included: [
       "Round-trip private transport from your hotel",
       "Full zipline course with harness, helmet and gloves",
@@ -1232,7 +1266,7 @@ export const experiences: Experience[] = [
     title: "Bamboo Rafting + Zipline",
     pricing: { mode: 'per_person', baseRate: 210, tierMax: 3, extraPerPerson: 210 },
     price: 268,
-    duration: "Half day",
+    duration: "Full day",
     rating: 0,
     reviews: 0,
     category: 'Adventure',
@@ -1246,6 +1280,7 @@ export const experiences: Experience[] = [
     ages: "All ages, zipline 8+",
     fitness: "Zipline riders under 16 are accompanied on the course. Light on the river and moderate on the canopy, with stairs and short climbs between platforms and your own weight held in a harness. Zipline riders must be between 60 and 270 lbs.",
     meetingPoint: "Hotel pickup",
+    fromHotel: "Allow 6 to 9 hours from Montego Bay and Rose Hall, 7 to 9 from Negril, and 8 to 13 from Ocho Rios.",
     included: [
       "Round-trip private transport from your hotel and between both sites",
       "Raft village entry, private raft and licensed captain",
@@ -1296,6 +1331,7 @@ export const experiences: Experience[] = [
     ages: "8+ zipline, 16+ to drive",
     fitness: "ATV drivers need a valid driver's licence, and cliff jumping at Rick's is 16 and up. Demanding as a full day: a physical hour on an ATV, stairs and climbs on the canopy course, and several hours of driving. Zipline riders must be between 60 and 270 lbs. Not suitable in pregnancy or with back, neck or shoulder injuries.",
     meetingPoint: "Hotel pickup",
+    fromHotel: "Allow 9 to 11 hours from Negril and 11.5 to 14 from Montego Bay and Rose Hall, back in Montego Bay about 9pm in winter and 10pm in summer. From Ocho Rios or Runaway Bay it would be a 15 to 16 hour day, so we do not recommend it.",
     included: [
       "Round-trip private transport for the whole day, including the run out to Negril",
       "ATV with helmet, goggles and trail guides",
@@ -1316,7 +1352,7 @@ export const experiences: Experience[] = [
       "A light layer and US cash or a card for the evening",
     ],
     additionalInfo: [
-      "An early start and a late finish: pickup is usually before 8am and you are back after dark.",
+      "A long day that finishes after dark at Rick's. Pickup time depends on your hotel and the season, and we confirm it the day before.",
       "The day is built around sunset at Rick's, so exact timings shift through the year and we confirm them the day before.",
       "If weather closes one of the three, that leg is rescheduled free or refunded.",
     ],

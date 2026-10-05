@@ -95,10 +95,10 @@ export const POSTS_3: BlogPost[] = [
       {
         type: 'list',
         items: [
-          "[Dunn's River Falls Climb](/experience/dunns-river-falls-climb): $351 for up to three people, two hours, park entry and guide included.",
-          "[Bamboo Rafting on the Martha Brae](/experience/bamboo-rafting-on-the-martha-brae): $128 for up to three, ninety minutes, the easiest morning off a Montego Bay resort.",
-          "[Rick's Cafe Cliff Diving and Sunset](/experience/ricks-cafe-cliff-diving-and-sunset): $255 for up to four, three hours in Negril, entry included.",
-          "[Rainforest Zipline Adventure](/experience/rainforest-zipline-adventure): $153 per person, two hours.",
+          "[Dunn's River Falls Climb](/experience/dunns-river-falls-climb): $351 for up to three people, two hours at the falls and five to seven door to door from Montego Bay, park entry and guide included.",
+          "[Bamboo Rafting on the Martha Brae](/experience/bamboo-rafting-on-the-martha-brae): $128 for up to three, ninety minutes at the river (an hour and a quarter on the raft) and about three hours door to door, the easiest morning off a Montego Bay resort.",
+          "[Rick's Cafe Cliff Diving and Sunset](/experience/ricks-cafe-cliff-diving-and-sunset): $255 for up to four, three hours at Rick's and six to seven door to door from Montego Bay, entry included.",
+          "[Rainforest Zipline Adventure](/experience/rainforest-zipline-adventure): $153 per person, about an hour at the park and four to five hours door to door from Montego Bay.",
           "[Bob Marley Nine Mile Pilgrimage](/experience/bob-marley-nine-mile-pilgrimage): $459 for up to three, a full day in the St. Ann hills, entry included.",
         ],
       },

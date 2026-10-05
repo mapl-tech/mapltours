@@ -548,7 +548,7 @@ export function buildWebMcpTools(actions: WebMcpActions): WebMcpTool[] {
 
   const list_tours: WebMcpTool = {
     name: 'list_tours',
-    description: `List the ${experiences.length} private tours and day packages MAPL Tours runs in Jamaica (Dunn's River, Blue Hole, bamboo rafting, Rick's Cafe, zipline, ATV, horseback and more). fromPriceUsd is the price for the smallest party; priceUnit says whether it covers a party of up to N people or one person. Use get_tour with guests for the exact total. Hotel pickup included. Optional keyword or area filter; returns up to ${LIST_MAX} rows. Read-only.`,
+    description: `List the ${experiences.length} private tours and day packages MAPL Tours runs in Jamaica (Dunn's River, Blue Hole, bamboo rafting, Rick's Cafe, zipline, ATV, horseback and more). fromPriceUsd is the price for the smallest party; priceUnit says whether it covers a party of up to N people or one person. Use get_tour with guests for the exact total. Hotel pickup included. Optional keyword or area filter; returns up to ${LIST_MAX} rows. Read-only. duration is time at the activity; get_tour adds hotel-and-back times.`,
     inputSchema: {
       type: 'object',
       properties: {
@@ -576,7 +576,7 @@ export function buildWebMcpTools(actions: WebMcpActions): WebMcpTool[] {
 
   const get_tour: WebMcpTool = {
     name: 'get_tour',
-    description: 'Details for one tour: what it includes, ages, fitness, what to bring, the exact total for a party size, and the earliest bookable date. Read-only.',
+    description: 'Details for one tour: what it includes, ages, fitness, what to bring, how long the outing takes from hotels in Montego Bay, Ocho Rios and Negril (fromHotelAndBack; duration is the time at the activity, or Full day / Half day), the exact total for a party size, and the earliest bookable date. Read-only.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -601,9 +601,10 @@ export function buildWebMcpTools(actions: WebMcpActions): WebMcpTool[] {
         included: few(e.included),
         notIncluded: few(e.notIncluded),
         ages: e.ages ?? null,
-        fitness: (e.fitness ?? '').slice(0, 240),
+        fitness: (e.fitness ?? '').slice(0, 400),
         bring: few(e.bring),
         pickup: e.meetingPoint ?? 'Hotel pickup',
+        fromHotelAndBack: e.fromHotel ?? null,
         earliestDate: earliest,
         bookingNotice: `${MIN_LEAD_TIME_HOURS} hours' notice counted from midnight Jamaica time, so the earliest date is ${earliest}`,
         cancellation: CANCELLATION_SUMMARY.short,

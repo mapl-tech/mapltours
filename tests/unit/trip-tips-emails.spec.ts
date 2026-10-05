@@ -533,8 +533,8 @@ describe('the numbers and names come from the site', () => {
 
   test('tour days list every tour, soonest first, with the catalogue title and duration', () => {
     const t = pick('t2_week_before_tour', 1).text
-    const a = t.indexOf('Tuesday, December 8: Dunn’s River Falls Climb, 2 hrs, for 2 people')
-    const b = t.indexOf('Thursday, December 10: River Tubing, 1.5 hrs, for 2 people')
+    const a = t.indexOf('Tuesday, December 8: Dunn’s River Falls Climb, 2 hrs at the falls, for 2 people')
+    const b = t.indexOf('Thursday, December 10: River Tubing, 1.5 hrs at the river, for 2 people')
     expect(a).toBeGreaterThan(-1)
     expect(b).toBeGreaterThan(a)
     expect(pick('t2_week_before_tour', 1).subject).toBe('Your tours start Tuesday, December 8')
@@ -1107,8 +1107,8 @@ describe('the visual system', () => {
       expect(c.tip.html, name(c)).toContain(`${REPLY_HTML}</p>`)
     }
     const raft = buildTip('t2_week_before_tour', { ...base, track: 'TOUR', tours: [{ title: 'x', date: '2026-12-05', experienceId: 3, travelers: 2 }] })
-    expect(raft.html).toContain('1.5&nbsp;hrs, for 2&nbsp;people')
-    expect(raft.text).toContain('1.5 hrs, for 2 people')
+    expect(raft.html).toContain('1.5&nbsp;hrs at the river, for 2&nbsp;people')
+    expect(raft.text).toContain('1.5 hrs at the river, for 2 people')
   })
 
   const lum = (hex: string) => {

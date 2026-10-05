@@ -1,7 +1,7 @@
 'use client'
 
 import { Car, Home, Utensils, Plus, X, ChevronUp, ChevronDown } from 'lucide-react'
-import { parseDurationHours, STOP_HOURS, useCartStore } from '@/lib/cart'
+import { parseDurationHours, stopHoursFor, useCartStore } from '@/lib/cart'
 import { EATS } from '@/lib/eats'
 import { placeLabel } from '@/lib/experiences'
 import { planDay, fitCandidateStop, canMoveItem, dayAreas, roundFive, MAX_STOP_GAP_MIN } from '@/lib/day-route'
@@ -139,7 +139,7 @@ export default function DayFlow({ compact = false }: { compact?: boolean }) {
 
   const totalHours =
     items.reduce((n, i) => n + parseDurationHours(i.duration), 0) +
-    stops.length * STOP_HOURS
+    stopHoursFor(items, stops.length)
 
   // Every eatery, judged in the slot the day would give it, closest first.
   // Sorting by that gap is most of the guidance: the top of the list is what
@@ -384,7 +384,7 @@ export default function DayFlow({ compact = false }: { compact?: boolean }) {
         color: 'var(--text-tertiary)', marginTop: 14,
         paddingTop: 12, borderTop: `1px solid ${RAIL}`,
       }}>
-        {totalHours > 0 && <>About {formatHours(totalHours)} in the day. </>}
+        {totalHours > 0 && <>About {formatHours(totalHours)} at the stops, plus the drive to and from your hotel. </>}
         Your driver handles everything between these stops, and times are confirmed
         before the day. Food stops are free to add: you pay the restaurant
         directly, at their price.

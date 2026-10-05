@@ -124,7 +124,7 @@ export default function TourDetailsSheet({ exp, onClose, cta }: { exp: Experienc
   }, [])
 
   const groupMax = exp.pricing.mode === 'group' ? exp.pricing.tierMax : null
-  const hasGoodToKnow = Boolean(exp.meetingPoint || exp.ages || exp.fitness || exp.additionalInfo?.length)
+  const hasGoodToKnow = Boolean(exp.meetingPoint || exp.fromHotel || exp.ages || exp.fitness || exp.additionalInfo?.length)
 
   // PORTALED to <body>: rendered in place, the dialog lives inside the
   // reel's scroll container, whose ancestor stacking context caps it below
@@ -246,6 +246,9 @@ export default function TourDetailsSheet({ exp, onClose, cta }: { exp: Experienc
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                 {exp.meetingPoint && (
                   <Fact icon={<MapPin size={14} strokeWidth={2.5} />} label="Meeting point">{exp.meetingPoint}</Fact>
+                )}
+                {exp.fromHotel && (
+                  <Fact icon={<Clock size={14} strokeWidth={2.5} />} label="From your hotel and back">{exp.fromHotel}</Fact>
                 )}
                 {exp.ages && (
                   <Fact icon={<Users size={14} strokeWidth={2.5} />} label="Who it suits">
