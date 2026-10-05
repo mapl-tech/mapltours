@@ -58,7 +58,6 @@ export default function Avatar({
         boxShadow: ring ? '0 0 0 2px rgba(255,255,255,0.14)' : undefined,
         ...style,
       }}
-      aria-label={name ? `${name} avatar` : 'User avatar'}
     >
       {showImage ? (
         /* eslint-disable-next-line @next/next/no-img-element */

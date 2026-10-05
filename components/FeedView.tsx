@@ -6,6 +6,7 @@ import { experiences, singleExperiences, packageExperiences, DESTINATION_IMAGES,
 import { EATS } from '@/lib/eats'
 import { priceUnitLabel } from '@/lib/experiences'
 import { useCartStore } from '@/lib/cart'
+import { addPackageToTrip } from '@/lib/add-to-trip'
 import { fitCandidateStop, MAX_STOP_GAP_MIN } from '@/lib/day-route'
 import { useHydrated } from '@/lib/use-hydrated'
 import { CULTURE_IMAGE, HERO_VIDEO_540, HERO_VIDEO_720, HERO_VIDEO_1080, HERO_VIDEO_PHONE, HERO_POSTER_PHONE, HERO_POSTER } from '@/lib/images'
@@ -540,8 +541,41 @@ function FoodSection() {
 function PackagesSection() {
   const railRef = useRef<HTMLDivElement>(null)
   const { t, formatPrice } = useI18n()
-  const { addItem, removeItem, isInCart, conflictsInCart } = useCartStore()
+  const { items, removeItem, isInCart, conflictsInCart } = useCartStore()
   const hydrated = useHydrated()
+  // Adding any package clears every single tour (an itinerary is one kind or
+  // the other), so this is said once for the whole rail, not on each card.
+  const singleTours = hydrated ? items.filter((i) => i.kind !== 'package') : []
+  const singles = singleTours.length
+  const days = hydrated ? items.filter((i) => i.kind === 'package') : []
+  // While any card can carry a note (tours in the itinerary) or a day is in
+  // it, every card keeps two lines for one: the note leaving a card on an
+  // add shrank the tallest card, and the rail's buttons moved under the
+  // pointer.
+  const noteSlot = singles > 0 || days.length > 0
+  // After an add the card's button becomes its Checkout link: focus goes
+  // there, not to the page.
+  const addedLinks = useRef(new Map<number, HTMLAnchorElement>())
+  // And after Undo, back to the card's Add this day.
+  const addButtons = useRef(new Map<number, HTMLButtonElement>())
+  // A second click or tap straight after an add lands on the card again: it
+  // must never be the one that removes the day just added.
+  const addedAt = useRef(new Map<number, number>())
+  const addDay = (pkg: Experience) => {
+    const result = addPackageToTrip(pkg, {
+      placement: 'page',
+      checkout: true,
+      onUndo: () => requestAnimationFrame(() => addButtons.current.get(pkg.id)?.focus({ preventScroll: true })),
+    })
+    if (result === 'blocked' || result === 'already') return
+    addedAt.current.set(pkg.id, Date.now())
+    // In the button's own place, so already on screen: no scroll.
+    requestAnimationFrame(() => addedLinks.current.get(pkg.id)?.focus({ preventScroll: true }))
+  }
+  const justAdded = (pkg: Experience) => Date.now() - (addedAt.current.get(pkg.id) ?? 0) < 700
+  const removeDay = (pkg: Experience) => {
+    if (!justAdded(pkg)) removeItem(pkg.id)
+  }
 
   const scroll = (dir: 'left' | 'right') => {
     if (!railRef.current) return
@@ -577,9 +611,28 @@ function PackagesSection() {
             }}>
               {t('Two or three experiences run back to back, in the right order, driven door to door. Book a ready-made day or build your own, you decide.')}
             </p>
+            {/* Said while anything is in the itinerary, so adding a day
+                swaps this line's words rather than removing it: the rail
+                jumped 52 to 71px when it went. */}
+            {(singles > 0 || days.length > 0) && (
+              <p id="pkg-replaces-note" className="pkg-replaces" style={{
+                fontSize: 14, color: 'var(--gold-text)', fontWeight: 600,
+                fontFamily: 'var(--font-dm-sans)', marginTop: 10, lineHeight: 1.45,
+              }}>
+                {singles === 1
+                  ? t('Adding a ready-made day replaces {tour} in your itinerary.').replace('{tour}', t(singleTours[0].title))
+                  : singles > 1
+                    ? t('Adding a ready-made day replaces the {n} tours in your itinerary.').replace('{n}', String(singles))
+                    : days.length === 1
+                      ? t('Your itinerary is {day}, a ready-made day.').replace('{day}', t(days[0].title))
+                      : t('Your itinerary holds {n} ready-made days.').replace('{n}', String(days.length))}
+              </p>
+            )}
           </div>
 
-          <div style={{ display: 'flex', gap: 8, flexShrink: 0, marginBottom: 4 }}>
+          {/* Wider screens only: on a phone they took a third of the width
+              from the heading, and the rail swipes, its next card peeking. */}
+          <div className="hide-mobile" style={{ display: 'flex', gap: 8, flexShrink: 0, marginBottom: 4 }}>
             <button onClick={() => scroll('left')} aria-label="Previous packages" style={{
               width: 44, height: 44, borderRadius: '50%', background: 'transparent',
               border: '1px solid var(--border-strong)', cursor: 'pointer',
@@ -609,7 +662,24 @@ function PackagesSection() {
       >
         {packageExperiences.map((pkg) => {
           const inCart = hydrated && isInCart(pkg.id)
-          const replaces = hydrated ? conflictsInCart(pkg) : []
+          // Single tours are covered by the line above the rail; a card only
+          // speaks for itself when it bundles every one of them (the same
+          // day, ready-made: an upgrade, said as one) or shares an activity
+          // with a package already in the itinerary, which adding it drops.
+          const covers = singles > 0 && singleTours.every((i) => (pkg.includes ?? []).includes(i.id))
+          const replaces = hydrated ? conflictsInCart(pkg).filter((i) => i.kind === 'package') : []
+          const note = inCart
+            ? null
+            : covers
+              ? singles === 1
+                ? t('Includes the tour in your itinerary, as one day.')
+                : singles === 2
+                  ? t('Includes both tours in your itinerary, as one day.')
+                  : t('Includes the {n} tours in your itinerary, as one day.').replace('{n}', String(singles))
+              : replaces.length > 0
+                ? t('Replaces {tours} in your itinerary.').replace('{tours}', replaces.map((i) => t(i.title)).join(` ${t('and')} `))
+                : null
+          const noteId = note ? `pkg-note-${pkg.id}` : singles > 0 ? 'pkg-replaces-note' : undefined
           const steps = (pkg.includes ?? [])
             .map((id) => experiences.find((e) => e.id === id)?.title)
             .filter(Boolean) as string[]
@@ -667,25 +737,57 @@ function PackagesSection() {
                 </ol>
 
                 <div className="pkg-buy" style={{ marginTop: 'auto', display: 'flex', flexDirection: 'column', gap: 10 }}>
-                  <div>
-                    <span style={{
-                      fontFamily: 'var(--font-dm-sans)', fontWeight: 700,
-                      fontSize: 20, color: 'var(--text-primary)', letterSpacing: '-0.01em',
-                    }}>
-                      {formatPrice(pkg.price)}
-                    </span>
-                    <span style={{ fontSize: 13, color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-sans)', marginLeft: 4 }}>
-                      {priceUnitLabel(pkg.pricing)}
-                    </span>
+                  {/* Above the price, so every card's price and button stay
+                      level across the rail. */}
+                  {(note || noteSlot) && (
+                    <p id={note ? `pkg-note-${pkg.id}` : undefined} className={note ? 'pkg-replaces' : undefined} style={{ fontSize: 14, fontWeight: 600, color: 'var(--gold-text)', fontFamily: 'var(--font-dm-sans)', lineHeight: '20px', minHeight: noteSlot ? 40 : undefined }}>
+                      {note}
+                    </p>
+                  )}
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, minHeight: 44 }}>
+                    <p style={{ margin: 0 }}>
+                      <span style={{
+                        fontFamily: 'var(--font-dm-sans)', fontWeight: 700,
+                        fontSize: 20, color: 'var(--text-primary)', letterSpacing: '-0.01em',
+                      }}>
+                        {formatPrice(pkg.price)}
+                      </span>{' '}
+                      <span style={{ fontSize: 13, color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-sans)' }}>
+                        {priceUnitLabel(pkg.pricing)}
+                      </span>
+                    </p>
+                    {/* Remove sits beside the price, never in the button's
+                        place: under the button, it landed exactly where Add
+                        this day had been, so a double click added the day and
+                        then emptied the itinerary. */}
+                    {inCart && (
+                      <button
+                        onClick={() => removeDay(pkg)}
+                        aria-label={`Remove ${pkg.title} from your itinerary`}
+                        style={{
+                          minHeight: 44, padding: '0 2px', background: 'none', border: 'none', cursor: 'pointer',
+                          fontSize: 13, fontWeight: 600, color: 'var(--text-tertiary)', flexShrink: 0,
+                          fontFamily: 'var(--font-dm-sans)', textDecoration: 'underline',
+                        }}
+                      >
+                        {t('Remove')}
+                      </button>
+                    )}
                   </div>
                   {/* Once the day is in the itinerary the button stops being a
-                      toggle and becomes the way forward: tapping it goes to
-                      checkout. Removing moves to a quiet secondary link, so the
-                      primary action is never "undo what you just did". */}
+                      toggle and becomes the way forward, in the same place:
+                      tapping it goes to checkout. Removing is the quiet link
+                      above, so the primary action is never "undo what you
+                      just did". */}
                   {inCart ? (
                     <>
                       <Link
                         href="/checkout"
+                        ref={(el) => { if (el) addedLinks.current.set(pkg.id, el); else addedLinks.current.delete(pkg.id) }}
+                        // The second click of a double click lands here, in
+                        // the button's place: it stays an add, not a trip
+                        // to checkout.
+                        onClick={(e) => { if (justAdded(pkg)) e.preventDefault() }}
                         style={{
                           width: '100%', minHeight: 44, borderRadius: 9999,
                           background: 'var(--emerald)', color: '#fff',
@@ -698,22 +800,13 @@ function PackagesSection() {
                       >
                         {t('\u2713 Added')} · {t('Checkout')} <ArrowRight size={15} />
                       </Link>
-                      <button
-                        onClick={() => removeItem(pkg.id)}
-                        aria-label={`Remove ${pkg.title} from your itinerary`}
-                        style={{
-                          minHeight: 32, background: 'none', border: 'none', cursor: 'pointer',
-                          fontSize: 13, fontWeight: 600, color: 'var(--text-tertiary)',
-                          fontFamily: 'var(--font-dm-sans)', textDecoration: 'underline',
-                        }}
-                      >
-                        {t('Remove')}
-                      </button>
                     </>
                   ) : (
                     <button
-                      onClick={() => addItem(pkg)}
+                      ref={(el) => { if (el) addButtons.current.set(pkg.id, el); else addButtons.current.delete(pkg.id) }}
+                      onClick={() => addDay(pkg)}
                       aria-label={`${t('Add this day')}: ${t(pkg.title)}`}
+                      aria-describedby={noteId}
                       style={{
                         width: '100%', minHeight: 44, borderRadius: 9999,
                         background: 'var(--gold)', color: '#1A1508',
@@ -725,18 +818,6 @@ function PackagesSection() {
                     >
                       {t('Add this day')}
                     </button>
-                  )}
-                  {/* Two ways to buy, said as an invitation rather than as an
-                      accounting note. The old line ("Replaces the 1 experience
-                      in your itinerary") read like a warning about something
-                      being taken away, when the choice underneath is really
-                      ours-or-yours and either makes a good day. Shown only
-                      when there are singles in the cart to swap, which is
-                      exactly when the question is live. */}
-                  {replaces.length > 0 && !inCart && (
-                    <p className="pkg-replaces" style={{ fontSize: 13, color: 'var(--gold-text)', fontFamily: 'var(--font-dm-sans)', lineHeight: 1.45 }}>
-                      {t('Choose this day, or add individual tours as you like.')}
-                    </p>
                   )}
                 </div>
               </div>
@@ -1222,7 +1303,7 @@ export default function FeedView() {
             fontFamily: 'var(--font-dm-sans)', fontSize: 14, fontWeight: 500,
             color: '#fff', marginTop: 16, textShadow: '0 1px 6px rgba(0,0,0,0.5)',
           }}>
-            From $22 · Flexible cancellation within 48 hours of booking
+            From $22 · Flexible cancellation
           </p>
         </div>
       </section>
@@ -1399,7 +1480,7 @@ export default function FeedView() {
             {[
               { icon: <Users size={14} color="var(--gold-warm)" />, text: 'Jamaican drivers and hosts' },
               { icon: <MapPin size={14} color="var(--gold-warm)" />, text: 'Private door-to-door transport' },
-              { icon: <ShieldCheck size={14} color="var(--gold-warm)" />, text: 'Flexible cancellation within 48 hrs of booking' },
+              { icon: <ShieldCheck size={14} color="var(--gold-warm)" />, text: 'Flexible cancellation' },
             ].map((t) => (
               <span key={t.text} style={{
                 display: 'inline-flex', alignItems: 'center', gap: 7,

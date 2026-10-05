@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/service'
 import { sendEmail } from '@/lib/email/send'
 import RewardUnlocked from '@/emails/RewardUnlocked'
+import { BRAND_FROM } from '@/lib/contact'
+import { guestNames } from '@/lib/guest-name'
 
 /**
  * Supabase DB webhook target, fires on INSERT to `public.user_rewards`.
@@ -64,14 +66,15 @@ export async function POST(req: Request) {
     return NextResponse.json({ skipped: 'no_recipient_email' })
   }
 
-  const meta = userRes.user.user_metadata ?? {}
-  const fullName: string | undefined = meta.full_name ?? meta.name
-  const firstName = fullName?.split(' ')[0] ?? null
+  // user_metadata is the guest's to write: a name that is not text used to
+  // throw here, before anything was sent (lib/guest-name).
+  const { firstName } = guestNames(userRes.user.user_metadata)
 
   try {
     await sendEmail({
       to: userRes.user.email,
-      subject: `🎉 ${record.percent}% off your next MAPL Tours trip, ${record.code}`,
+      from: BRAND_FROM,
+      subject: `🎉 ${record.percent}% off your next MAPL Tours Jamaica tour, ${record.code}`,
       react: RewardUnlocked({
         firstName,
         code: record.code,

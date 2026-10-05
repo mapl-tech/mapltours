@@ -291,6 +291,37 @@ h5, h6 { letter-spacing: -0.01em; }
 .reel-right-rail {
   bottom: 24px;
 }
+/* Short screens (a small phone, an in-app browser's bars, a phone on its
+   side): the rail stays clear of the close button. A guest clip's rail is
+   the tallest, with Sound, and met the close button under about 665px of
+   height, where a tap on Save landed on Close. Below 760px it drops its
+   avatar and tightens; below 620px every rail does, and the counts and
+   words under the discs go too (each button keeps its name), except
+   "2 clips" under the disc that carries the "Save 5%" bubble. */
+@media (max-height: 760px) {
+  .reel-right-rail--clip { gap: 12px !important; }
+  .reel-right-rail--clip > div:first-child { display: none; }
+}
+@media (max-height: 620px) {
+  .reel-right-rail { gap: 10px !important; }
+  .reel-right-rail > div:first-child { display: none; }
+  .reel-right-rail > button:not(:last-child) > span:last-child { display: none; }
+}
+/* A phone on its side: room kept for the "Save 5%" bubble, the clips count
+   goes after all, and Comments (from 768px the panel beside the reel holds
+   them). Under 768px the
+   bar below the reel leaves less, so Send goes too, and on the shortest
+   screens at any width; all are back the moment the phone is upright. */
+@media (max-height: 440px) {
+  .reel-right-rail { gap: 8px !important; }
+  .reel-right-rail > button:last-child { margin-top: 6px; }
+  .reel-right-rail > button:last-child > span:last-child { display: none; }
+  /* !important: the buttons lay themselves out with an inline display. */
+  .reel-right-rail .reel-rail-comments { display: none !important; }
+}
+@media (max-width: 767px) and (max-height: 440px), (max-height: 360px) {
+  .reel-right-rail .reel-rail-send { display: none !important; }
+}
 .reel-meta-line { display: none; }
 /* Phone-only lines on the reel: the two included facts and the reason a
    spent button is spent (desktop says both in .reel-helper). */
@@ -322,7 +353,7 @@ h5, h6 { letter-spacing: -0.01em; }
    the reel's own button. 380px fits the 480px video column on desktop. */
 .trip-notice { animation: fadeUp 0.28s ease; left: 12px; right: 12px; margin: 0 auto; max-width: 456px; }
 .trip-notice--reel {
-  top: max(calc(env(safe-area-inset-top, 0px) + 112px), 116px);
+  top: calc(max(env(safe-area-inset-top, 0px), var(--status-floor, 0px)) + 78px);
   right: auto; margin: 0; max-width: none; width: min(380px, calc(100vw - 86px));
 }
 @media (max-width: 767px) {
@@ -377,6 +408,8 @@ h5, h6 { letter-spacing: -0.01em; }
   opacity: 0; transition: opacity 0.15s ease;
 }
 .reel-play-toggle--paused, .reel-play-toggle:focus-visible { opacity: 1; }
+/* Round when focused too: the site-wide ring's 3px corner made it a square. */
+.reel-play-toggle:focus-visible { border-radius: 50%; }
 @media (prefers-reduced-motion: reduce) { .reel-play-toggle { transition: none; } }
 /* The reel's side panel is a dark ground: the site's olive ring measured
    under 2:1 on it. The brighter gold is 10:1 on #111110. */
@@ -834,10 +867,10 @@ h5, h6 { letter-spacing: -0.01em; }
        once the mobile bar slimmed to 56px. */
     padding-top: var(--nav-h) !important;
   }
-  .explore-sticky-bar {
-    top: 0 !important;
-    padding-top: 12px !important;
-  }
+  /* No top override: the bar pins under the 56px header here too (set in
+     ExploreView). top: 0 put the returning header over the search box.
+     No extra padding either: 26px above the search box against 14px under
+     the chips made the bar taller than it needs to be. */
 
   /* ── Checkout, stack gracefully ── */
   .checkout-body {
@@ -1925,9 +1958,17 @@ body:has(.xfer-unlisted-panel) .xfer-sticky-cta {
   scrollbar-width: none;
   -ms-overflow-style: none;
   -webkit-overflow-scrolling: touch;
-  padding-bottom: 2px;
+  /* Room for a chip's focus ring (2px at a 2px offset) inside the rail,
+     whose scrolling clips anything outside it; the negative margin keeps
+     the chips where they were. */
+  padding: 4px 4px 6px;
+  margin: -4px -4px -4px;
+  scroll-padding-inline: 4px;
 }
 .explore-chips::-webkit-scrollbar { display: none; }
+/* Phones: the chip row runs to the screen's edge, so the next chip shows it
+   scrolls, cut by the edge rather than 12px inside it. */
+@media (max-width: 767px) { .explore-chips { margin-right: -16px; padding-right: 16px; } }
 
 .explore-chip {
   flex: 0 0 auto;
@@ -1976,7 +2017,7 @@ body:has(.xfer-unlisted-panel) .xfer-sticky-cta {
   min-width: 190px;
   padding: 0 40px 0 14px;
   border-radius: 9999px;
-  border: 1px solid var(--border);
+  border: 1px solid #8A857C; /* 3.49:1, the field's edge (WCAG 1.4.11) */
   background-color: var(--surface);
   color: var(--text-primary);
   font-family: var(--font-dm-sans);
@@ -3136,12 +3177,15 @@ a.pf-stat:hover { background: var(--surface); }
 .clips-dark :focus-visible { outline-color: var(--gold-warm) !important; }
 /* The dialogs themselves take focus on open (so a screen reader starts in
    them); they are not controls, and a ring round the whole sheet is noise. */
-.clips-sheet:focus-visible, .clip-viewer:focus-visible { outline: none !important; box-shadow: none !important; }
+.clips-sheet:focus-visible { outline: none !important; box-shadow: none !important; }
 .clips-head {
   display: flex; align-items: flex-start; justify-content: space-between; gap: 12px;
   padding: 16px 12px 12px 20px; border-bottom: 1px solid var(--border-on-dark); flex-shrink: 0;
 }
 .clips-title { margin: 0; font-size: 20px; font-weight: 700; letter-spacing: -0.01em; line-height: 1.2; color: #fff; }
+/* The terms behind the reel's "Save 5%" bubble: gold text on the dark sheet
+   (--gold-warm, 10:1 on #111110). */
+.clips-reward { margin: 6px 0 0; font-size: 14px; line-height: 1.4; font-weight: 600; color: var(--gold-warm); }
 .clips-sub {
   margin: 4px 0 0; font-size: 14px; line-height: 1.45; color: var(--text-on-dark-2);
   display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
@@ -3299,100 +3343,42 @@ a.pf-stat:hover { background: var(--surface); }
 @media (hover: hover) { .clips-primary:not(:disabled):hover { background: var(--gold-warm); } }
 .clips-primary:disabled { background: rgba(255, 255, 255, 0.12); color: var(--text-on-dark-2); cursor: default; }
 .clips-done { padding: 12px 4px 4px; text-align: center; display: flex; flex-direction: column; gap: 16px; }
+.clips-retry {
+  margin-top: 4px; min-height: 44px; padding: 0 20px; border-radius: 9999px; cursor: pointer;
+  border: 1px solid rgba(255, 255, 255, 0.24); background: rgba(255, 255, 255, 0.08);
+  color: #fff; font: 700 15px/1 var(--font-dm-sans);
+}
 .clips-done p { margin: 0; font-size: 15px; line-height: 1.55; color: var(--text-on-dark-2); }
 
-/* Full-screen viewer */
-.clip-viewer {
-  position: fixed; inset: 0; z-index: 2150; background: #000; color: #fff;
-  display: flex; flex-direction: column; font-family: var(--font-dm-sans); outline: none;
-  animation: fadeIn 0.2s ease both;
-}
-.clip-stage { position: relative; flex: 1; min-height: 0; display: flex; }
-.clip-rail {
-  flex: 1; display: flex; overflow-x: auto; overflow-y: hidden; scroll-snap-type: x mandatory;
-  overscroll-behavior-x: contain; scrollbar-width: none;
-}
-.clip-rail::-webkit-scrollbar { display: none; }
-.clip-slide {
-  position: relative; flex: 0 0 100%; height: 100%; scroll-snap-align: start; scroll-snap-stop: always;
-  display: flex; align-items: center; justify-content: center; background: #000;
-}
-.clip-frame { position: relative; width: 100%; height: 100%; }
-.clip-slide video { width: 100%; height: 100%; object-fit: contain; background: #000; cursor: pointer; }
-/* From 768px a clip plays in an upright column with its byline, and the
-   sound and send controls sit beside it rather than at the window's edge. */
-@media (min-width: 768px) {
-  .clip-frame { width: auto; max-width: 100%; aspect-ratio: 9 / 16; }
-}
-.clip-loading { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 14px; color: var(--text-on-dark-2); pointer-events: none; }
-.clip-slide-scrim {
-  position: absolute; left: 0; right: 0; bottom: 0; height: 45%; pointer-events: none;
-  background: linear-gradient(0deg, rgba(0, 0, 0, 0.82) 0%, rgba(0, 0, 0, 0.6) 40%, rgba(0, 0, 0, 0) 100%);
-}
-.clip-byline { position: absolute; left: 16px; right: 84px; bottom: 16px; z-index: 2; display: flex; align-items: flex-start; gap: 10px; }
-.clip-byline p { margin: 0; }
-.clip-byline-name { font-size: 15px; font-weight: 700; }
-.clip-byline-meta { margin-top: 2px !important; font-size: 13px; color: #e6e6e6; }
-.clip-byline-cap { margin-top: 6px !important; font-size: 14px; line-height: 1.45; }
-.clip-top {
-  position: absolute; top: 0; left: 0; right: 0; z-index: 4; pointer-events: none;
-  display: flex; align-items: center; gap: 12px;
-  padding: calc(10px + env(safe-area-inset-top)) 12px 28px 16px;
-  background: linear-gradient(180deg, rgba(0, 0, 0, 0.55), rgba(0, 0, 0, 0));
-}
-.clip-segs { flex: 1; display: flex; gap: 4px; }
-.clip-segs span { flex: 1; height: 3px; border-radius: 2px; background: rgba(255, 255, 255, 0.38); overflow: hidden; }
-/* The played part of each clip: whole for clips already seen, filling for
-   the one on screen (timeupdate, about four times a second, eased). */
-.clip-segs i { display: block; height: 100%; background: #fff; transform-origin: left; transition: transform 0.25s linear; }
-.clip-ctl {
-  pointer-events: auto; width: 44px; height: 44px; flex-shrink: 0; border-radius: 50%; cursor: pointer;
-  border: 1px solid rgba(255, 255, 255, 0.14); background: rgba(20, 18, 16, 0.55); color: #fff;
-  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
-  display: flex; align-items: center; justify-content: center;
-}
-.clip-side { position: absolute; right: 12px; bottom: 16px; z-index: 3; display: flex; flex-direction: column; gap: 16px; }
-.clip-side button {
-  min-width: 48px; padding: 0; border: none; background: none; color: #fff; cursor: pointer;
-  display: flex; flex-direction: column; align-items: center; gap: 4px; font: 700 12px/1.3 var(--font-dm-sans);
-}
-.clip-side-label { padding: 1px 8px; border-radius: 9999px; background: rgba(0, 0, 0, 0.6); }
-/* Beside the upright column (its half-width is the stage height x 9/32;
-   72px is the booking bar), not at the window's edge. */
-@media (min-width: 768px) { .clip-side { right: max(16px, calc(50% - (100dvh - 72px) * 9 / 32 - 76px)); } }
-.clip-arrow {
-  position: absolute; top: 50%; z-index: 3; transform: translateY(-50%);
-  width: 48px; height: 48px; border-radius: 50%; cursor: pointer;
-  border: 1px solid rgba(255, 255, 255, 0.14); background: rgba(20, 18, 16, 0.55); color: #fff;
-  display: none; align-items: center; justify-content: center;
-}
-.clip-arrow--prev { left: 24px; }
-.clip-arrow--next { right: 24px; }
-.clip-arrow:disabled { opacity: 0.35; cursor: default; }
-@media (min-width: 768px) and (hover: hover) { .clip-arrow { display: flex; } }
-.clip-toast {
-  position: absolute; left: 50%; bottom: 24px; z-index: 5; transform: translateX(-50%);
-  width: max-content; max-width: calc(100% - 32px); margin: 0; padding: 10px 16px; border-radius: 9999px;
-  background: rgba(17, 17, 16, 0.92); font-size: 14px; font-weight: 600; text-align: center;
-}
-.clip-bar {
-  flex-shrink: 0; background: var(--bg-dark); border-top: 1px solid var(--border-on-dark);
-  padding: 10px 16px calc(10px + env(safe-area-inset-bottom));
-}
-.clip-bar-inner { max-width: 560px; margin: 0 auto; }
-.clip-bar-title { margin: 0 0 2px; font-size: 14px; font-weight: 700; color: #fff; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.clip-bar .clips-price b { font-size: 17px; }
-.clip-bar-why { margin: 2px 0 0; font-size: 13px; line-height: 1.35; color: var(--text-on-dark-2); }
-/* The cancellation terms under the add, where there is room for a line. */
-.clip-bar-terms { display: none; margin: 6px 0 0; font-size: 13px; line-height: 1.4; color: var(--text-on-dark-2); }
-@media (min-width: 768px) { .clip-bar-terms { display: block; } }
-/* Over video: the reel's white ring with a dark halo (technique C40). */
-.clip-viewer :focus-visible {
-  outline: 2px solid #fff !important; outline-offset: 2px;
-  box-shadow: 0 0 0 6px rgba(0, 0, 0, 0.6) !important;
-}
 @media (prefers-reduced-motion: reduce) {
-  .clips-overlay, .clips-sheet, .clip-viewer, .clip-skeleton,
+  .clips-overlay, .clips-sheet, .clip-skeleton,
   .clips-overlay.closing, .clips-overlay.closing > .clips-sheet { animation: none; }
-  .clip-card img, .clip-card video, .clips-progress > span, .clip-segs i { transition: none; }
+  .clip-card img, .clip-card video, .clips-progress > span { transition: none; }
 }
+
+/* "Save 5%": a speech bubble over the reel's Clips icon, the reward for
+   posting clips (the sheet it opens states the terms). Centred on the icon
+   and inside the rail's own column, like a badge: off to the icon's left it
+   sat on the tour's facts line on a 360x640 phone (the text column reaches
+   88px from the edge, the rail starts at 68px). Its top clears the label
+   above by 6px. Gold surface with its own ink (8:1). Part of the button, so a
+   tap on it is a tap on Clips. */
+.reel-clips-disc { position: relative; }
+.reel-save-bubble {
+  position: absolute; left: 50%; bottom: calc(100% - 8px); z-index: 1;
+  transform: translateX(-50%);
+  padding: 3px 7px; border-radius: 9999px;
+  background: var(--gold); color: var(--gold-ink);
+  font: 700 12px/16px var(--font-dm-sans); white-space: nowrap;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.35);
+  animation: saveBubbleIn 0.32s cubic-bezier(0.22, 1, 0.36, 1) 0.15s both;
+}
+.reel-save-bubble::after {
+  content: ''; position: absolute; left: 50%; bottom: -3px; width: 8px; height: 8px;
+  margin-left: -4px; background: var(--gold); border-radius: 0 0 2px 0; transform: rotate(45deg);
+}
+@keyframes saveBubbleIn {
+  from { opacity: 0; transform: translate(-50%, 4px) scale(0.7); }
+  to { opacity: 1; transform: translateX(-50%); }
+}
+@media (prefers-reduced-motion: reduce) { .reel-save-bubble { animation: none; } }

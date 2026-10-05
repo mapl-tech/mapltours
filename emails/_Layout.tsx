@@ -38,13 +38,67 @@ const FOOTER_BG = '#FAF8F3'
 
 interface MaplLayoutProps {
   preheader: string
+  /** Opt-in: a <title>, and the message marked as an email landmark for
+   *  screen readers (role article, roledescription email). Emails that do
+   *  not pass it render exactly as before. */
+  title?: string
   children: React.ReactNode
 }
 
-export function MaplLayout({ preheader, children }: MaplLayoutProps) {
+export function MaplLayout({ preheader, title, children }: MaplLayoutProps) {
+  const card = (
+    <Container style={container} className="mapl-card">
+      {/* Gold letterhead accent */}
+      <Section style={accentBar} />
+
+      {/* Wordmark band. The mark sits on its own white plate: the plain
+          transparent PNG has pure black lettering, and Gmail and Outlook
+          darken the card in dark mode, which left only "JAMAICA" (1.26:1).
+          On a light card the plate is invisible. 128x59 is its real ratio
+          (the old 47 squashed it in Outlook and shifted the page 12px when
+          it loaded). */}
+      <Section style={brandBand} className="mapl-pad">
+        <Img
+          src={`${siteUrl()}/mapl-logo-email-plate.png`}
+          alt="MAPL Tours Jamaica"
+          width="128"
+          height="59"
+          style={brandLogo}
+        />
+        <Section style={brandRule} />
+        <Text style={brandTagline}>Discover Jamaica beyond the resort</Text>
+      </Section>
+
+      {/* Body */}
+      <Section style={bodyPad} className="mapl-pad mapl-pad-y">
+        {children}
+      </Section>
+
+      {/* Footer */}
+      <Hr style={hr} />
+      <Section style={footerPad} className="mapl-pad">
+        <Text style={footerLine}>
+          MAPL Tours Jamaica · Montego Bay · Falmouth · Ocho&nbsp;Rios · Negril
+        </Text>
+        <Text style={footerLine}>
+          <Link href={siteUrl()} style={footerLink}>
+            {hostname()}
+          </Link>{' '}
+          ·{' '}
+          <Link href={`mailto:${supportEmail()}`} style={footerLink}>
+            {supportEmail()}
+          </Link>
+        </Text>
+        <Text style={footerLineMuted}>
+          © {new Date().getFullYear()} MAPL Tours Jamaica. All rights reserved.
+        </Text>
+      </Section>
+    </Container>
+  )
   return (
     <Html lang="en">
       <Head>
+        {title && <title>{title}</title>}
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <meta name="color-scheme" content="light only" />
         <meta name="supported-color-schemes" content="light" />
@@ -62,53 +116,18 @@ export function MaplLayout({ preheader, children }: MaplLayoutProps) {
             .mapl-stack-col { display: block !important; width: 100% !important; padding: 0 !important; }
             .mapl-stack-col + .mapl-stack-col { margin-top: 14px !important; }
             .mapl-item-img { width: 56px !important; height: 56px !important; }
+            /* Opt-in, for emails that use them: body copy at 16px on a phone,
+               and a call to action as wide as the column. */
+            .mapl-body { font-size: 16px !important; line-height: 24px !important; }
+            .mapl-cta-block { display: block !important; text-align: center !important; }
           }
         `}</style>
       </Head>
       <Preview>{preheader}</Preview>
       <Body style={body}>
-        <Container style={container} className="mapl-card">
-          {/* Gold letterhead accent */}
-          <Section style={accentBar} />
-
-          {/* Wordmark band */}
-          <Section style={brandBand} className="mapl-pad">
-            <Img
-              src={`${siteUrl()}/mapl-logo-email.png`}
-              alt="MAPL Tours Jamaica"
-              width="128"
-              height="47"
-              style={brandLogo}
-            />
-            <Section style={brandRule} />
-            <Text style={brandTagline}>Discover Jamaica beyond the resort</Text>
-          </Section>
-
-          {/* Body */}
-          <Section style={bodyPad} className="mapl-pad mapl-pad-y">
-            {children}
-          </Section>
-
-          {/* Footer */}
-          <Hr style={hr} />
-          <Section style={footerPad} className="mapl-pad">
-            <Text style={footerLine}>
-              MAPL Tours · Montego Bay · Falmouth · Ocho Rios · Negril
-            </Text>
-            <Text style={footerLine}>
-              <Link href={siteUrl()} style={footerLink}>
-                {hostname()}
-              </Link>{' '}
-              ·{' '}
-              <Link href={`mailto:${supportEmail()}`} style={footerLink}>
-                {supportEmail()}
-              </Link>
-            </Text>
-            <Text style={footerLineMuted}>
-              © {new Date().getFullYear()} MAPL Tours. All rights reserved.
-            </Text>
-          </Section>
-        </Container>
+        {title
+          ? <div role="article" aria-roledescription="email" aria-label={title} lang="en">{card}</div>
+          : card}
       </Body>
     </Html>
   )
@@ -420,15 +439,6 @@ const brandLogo: React.CSSProperties = {
   maxWidth: '100%',
 }
 
-const brandWordmark: React.CSSProperties = {
-  margin: 0,
-  fontFamily: SYSTEM_SANS(),
-  fontSize: 15,
-  fontWeight: 800,
-  letterSpacing: '0.2em',
-  color: INK,
-}
-
 const brandRule: React.CSSProperties = {
   height: 2,
   width: 34,
@@ -481,6 +491,9 @@ const footerLink: React.CSSProperties = {
   color: INK,
   textDecoration: 'none',
   fontWeight: 500,
+  // A tap target, not a word: 44px tall on a phone.
+  display: 'inline-block',
+  padding: '14px 2px',
 }
 
 /* ───────────────── Helpers ───────────────── */
@@ -500,8 +513,16 @@ function SYSTEM_MONO_NUM(): string {
   return SYSTEM_SANS()
 }
 
+/**
+ * The site's address for every link and image in an email, always https for
+ * the live site. Production's NEXT_PUBLIC_SITE_URL is http://, and the http
+ * address answers an image with a redirect some mail clients will not follow:
+ * the header logo showed as a broken image (owner's screenshot, Oct 4 2026).
+ * A local address keeps its scheme.
+ */
 export function siteUrl(): string {
-  return process.env.NEXT_PUBLIC_SITE_URL ?? 'https://mapltours.com'
+  const url = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://mapltours.com'
+  return /^http:\/\/(localhost|127\.0\.0\.1)(:|\/|$)/.test(url) ? url : url.replace(/^http:\/\//, 'https://')
 }
 
 export function supportEmail(): string {

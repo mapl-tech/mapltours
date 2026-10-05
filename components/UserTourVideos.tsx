@@ -20,13 +20,12 @@
 import { useCallback, useEffect, useId, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import Link from 'next/link'
-import { Play, Pause, Volume2, VolumeX, ChevronLeft, ChevronRight, X, Check, Upload, Send, Film } from 'lucide-react'
+import { Play, X, Check, Upload, Film } from 'lucide-react'
 import {
   useExperienceVideos,
   useMyVideoProgress,
   uploadTourVideo,
   captureVideoThumbnail,
-  fetchApprovedVideo,
   readVideoDuration,
   validateVideoFile,
   VIDEO_MAX_BYTES,
@@ -48,21 +47,22 @@ import Avatar from '@/components/Avatar'
 
 interface Props {
   exp: Experience
-  /** Open the viewer on this clip once the gallery loads (?clip= links). */
-  initialVideoId?: string | null
   /** Open on the upload sheet: a guest back from signing in to post. */
   startUpload?: boolean
-  /** The reel's own add, so the sheet and the viewer book the same way. */
+  /** The reel's own add, so the sheet books the same way. */
   cta?: TourDetailsCta
+  /** Play this clip in the reel: guest clips are reels after their tour
+   *  (components/ExperienceDetail), so a card here closes the sheet and the
+   *  reel scrolls to it, rather than opening a second viewer. */
+  onPlay: (clipId: string) => void
   onClose: () => void
 }
 
-export default function UserTourVideos({ exp, initialVideoId, startUpload, cta, onClose }: Props) {
+export default function UserTourVideos({ exp, startUpload, cta, onPlay, onClose }: Props) {
   const slug = slugify(exp.title)
-  const { videos, loading, refresh } = useExperienceVideos(exp.id)
+  const { videos, loading, error, refresh } = useExperienceVideos(exp.id)
   const { user, loading: authLoading } = useAuth()
   const [uploadOpen, setUploadOpen] = useState(false)
-  const [viewing, setViewing] = useState<{ list: TourVideo[]; index: number } | null>(null)
   const titleId = useId()
 
   // Closing plays a short exit before unmounting (a timer, not
@@ -86,20 +86,6 @@ export default function UserTourVideos({ exp, initialVideoId, startUpload, cta, 
     return () => { document.body.style.overflow = prev }
   }, [])
 
-  // A shared clip opens straight in the viewer. One missing from the loaded
-  // window (older than the newest 40, or a stale cache) is fetched alone;
-  // an unapproved or unknown id quietly leaves the plain sheet.
-  const deepLinkDone = useRef(false)
-  useEffect(() => {
-    if (deepLinkDone.current || !initialVideoId || loading) return
-    deepLinkDone.current = true
-    const idx = videos.findIndex((v) => v.id === initialVideoId)
-    if (idx >= 0) { setViewing({ list: videos, index: idx }); return }
-    fetchApprovedVideo(initialVideoId, exp.id)
-      .then((v) => { if (v) setViewing({ list: [v], index: 0 }) })
-      .catch(() => {})
-  }, [initialVideoId, loading, videos, exp.id])
-
   // Back from signing in to post: the upload sheet, once auth has settled.
   const uploadDone = useRef(false)
   useEffect(() => {
@@ -108,10 +94,8 @@ export default function UserTourVideos({ exp, initialVideoId, startUpload, cta, 
     if (user) setUploadOpen(true)
   }, [startUpload, authLoading, user])
 
-  const openClip = (index: number) => {
-    setViewing({ list: videos, index })
-    trackClipsEvent('clip_play', slug)
-  }
+  // Counted as clip_play by the reel once it holds the screen, not here too.
+  const openClip = (clip: TourVideo) => onPlay(clip.id)
   const startPost = () => {
     setUploadOpen(true)
     trackClipsEvent('clip_post_start', slug)
@@ -153,6 +137,9 @@ export default function UserTourVideos({ exp, initialVideoId, startUpload, cta, 
                 ? exp.title
                 : `${count} ${count === 1 ? 'clip' : 'clips'} filmed by guests on ${exp.title}`}
             </p>
+            {/* The terms of the reel's "Save 5%" bubble, on the first screen
+                whatever the sheet holds, so the tap always shows them. */}
+            <p className="clips-reward">{`Post clips from your trip: ${VIDEO_REWARD_MILESTONE} approved get you 5% off your next tour.`}</p>
           </div>
           <button type="button" className="clips-x" onClick={requestClose} aria-label="Close guest clips">
             <X size={20} aria-hidden />
@@ -162,6 +149,13 @@ export default function UserTourVideos({ exp, initialVideoId, startUpload, cta, 
         <div className="clips-body">
           {loading ? (
             <ClipsSkeleton />
+          ) : error && count === 0 ? (
+            <div className="clips-empty" role="status">
+              <div className="clips-empty-icon" aria-hidden><Film size={22} /></div>
+              <h3>The clips did not load</h3>
+              <p>Check your connection and try again.</p>
+              <button type="button" className="clips-retry" onClick={() => { void refresh() }}>Try again</button>
+            </div>
           ) : count === 0 ? (
             <div className="clips-empty">
               <div className="clips-empty-icon" aria-hidden><Film size={22} /></div>
@@ -170,9 +164,9 @@ export default function UserTourVideos({ exp, initialVideoId, startUpload, cta, 
             </div>
           ) : (
             <ul className="clips-grid" aria-label="Clips">
-              {videos.map((v, i) => (
+              {videos.map((v) => (
                 <li key={v.id}>
-                  <ClipCard video={v} onOpen={() => openClip(i)} />
+                  <ClipCard video={v} onOpen={() => openClip(v)} />
                 </li>
               ))}
             </ul>
@@ -192,16 +186,6 @@ export default function UserTourVideos({ exp, initialVideoId, startUpload, cta, 
         )}
       </div>
 
-      {viewing && (
-        <ClipViewer
-          videos={viewing.list}
-          startIndex={viewing.index}
-          exp={exp}
-          cta={cta && add ? { ...cta, onAdd: add } : undefined}
-          onClose={() => setViewing(null)}
-        />
-      )}
-
       {uploadOpen && (
         <UploadSheet
           exp={exp}
@@ -220,17 +204,15 @@ export default function UserTourVideos({ exp, initialVideoId, startUpload, cta, 
 /* ─────────────────────────────────────────────────────────────────────────
    The price and the add, as the reel and the details sheet show them
    ───────────────────────────────────────────────────────────────────────── */
-function BuyRow({ exp, cta, onAdd, compact = false }: { exp: Experience; cta: TourDetailsCta; onAdd: () => void; compact?: boolean }) {
+function BuyRow({ exp, cta, onAdd }: { exp: Experience; cta: TourDetailsCta; onAdd: () => void }) {
   const { t, formatPrice } = useI18n()
   return (
     <div className="clips-buy">
       <div style={{ minWidth: 0 }}>
-        {compact && <p className="clip-bar-title">{exp.title}</p>}
         <div className="clips-price">
           <b>{formatPrice(exp.price)}</b>
           <span>{priceUnitLabel(exp.pricing)}</span>
         </div>
-        {compact && cta.blocked && !cta.inCart && cta.swapLine && <p className="clip-bar-why">{cta.swapLine}</p>}
       </div>
       {cta.inCart ? (
         <Link
@@ -261,11 +243,6 @@ function clipTime(sec: number | null | undefined): string | null {
   if (!sec || sec <= 0) return null
   const s = Math.round(sec)
   return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`
-}
-
-function clipDate(iso: string): string {
-  const d = new Date(iso)
-  return Number.isNaN(d.getTime()) ? '' : d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: d.getFullYear() === new Date().getFullYear() ? undefined : 'numeric' })
 }
 
 function ClipCard({ video, onOpen }: { video: TourVideo; onOpen: () => void }) {
@@ -326,7 +303,7 @@ function GuestInvite({ slug, hasClips, onPost }: { slug: string; hasClips: boole
       <div>
         <h3 id="clips-invite-title">{hasClips ? 'Been on this tour? Add yours' : 'Been on this tour?'}</h3>
         <p>
-          Post a clip from your phone. Every approved clip counts, and {VIDEO_REWARD_MILESTONE} get you 5% off your next trip.
+          Post a clip from your phone. Every approved clip counts toward your 5% off.
         </p>
       </div>
 
@@ -365,262 +342,6 @@ function GuestInvite({ slug, hasClips, onPost }: { slug: string; hasClips: boole
         </Link>
       )}
     </section>
-  )
-}
-
-/* ─────────────────────────────────────────────────────────────────────────
-   Full-screen viewer: swipe between clips, book from the bar beneath them
-   ───────────────────────────────────────────────────────────────────────── */
-function ClipViewer({ videos, startIndex, exp, cta, onClose }: {
-  videos: TourVideo[]
-  startIndex: number
-  exp: Experience
-  cta?: TourDetailsCta
-  onClose: () => void
-}) {
-  const rootRef = useRef<HTMLDivElement>(null)
-  const railRef = useRef<HTMLDivElement>(null)
-  const [index, setIndex] = useState(startIndex)
-  const [muted, setMuted] = useState(true)
-  const [paused, setPaused] = useState(false)
-  const [toast, setToast] = useState<string | null>(null)
-  // How far the clip on screen has played, 0 to 1, for its story segment.
-  const [played, setPlayed] = useState(0)
-  useEffect(() => { setPlayed(0) }, [index])
-  useFocusTrap(rootRef, onClose)
-
-  // Reduced motion: nothing starts on its own; the play button does.
-  useEffect(() => {
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) setPaused(true)
-  }, [])
-
-  useEffect(() => {
-    const rail = railRef.current
-    if (rail) rail.scrollTo({ left: startIndex * rail.clientWidth, behavior: 'instant' as ScrollBehavior })
-  }, [startIndex])
-
-  const onScroll = useCallback(() => {
-    const rail = railRef.current
-    if (!rail || rail.clientWidth === 0) return
-    const next = Math.round(rail.scrollLeft / rail.clientWidth)
-    setIndex((prev) => (prev !== next ? next : prev))
-  }, [])
-
-  const goTo = useCallback((to: number) => {
-    const rail = railRef.current
-    if (!rail || to < 0 || to >= videos.length) return
-    const smooth = !window.matchMedia('(prefers-reduced-motion: reduce)').matches
-    rail.scrollTo({ left: to * rail.clientWidth, behavior: smooth ? 'smooth' : ('instant' as ScrollBehavior) })
-  }, [videos.length])
-
-  // Arrows step, M mutes, Space plays or pauses unless a control has focus
-  // (Space on a button must press that button). Escape is the trap's.
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.target instanceof HTMLElement && !rootRef.current?.contains(e.target) && e.target !== document.body) return
-      if (e.key === 'ArrowRight') { e.preventDefault(); goTo(index + 1) }
-      else if (e.key === 'ArrowLeft') { e.preventDefault(); goTo(index - 1) }
-      else if (e.key === 'm' || e.key === 'M') setMuted((m) => !m)
-      else if (e.key === ' ' && !(e.target instanceof HTMLElement && e.target.closest('button, a, input, textarea'))) {
-        e.preventDefault()
-        setPaused((p) => !p)
-      }
-    }
-    document.addEventListener('keydown', onKey)
-    return () => document.removeEventListener('keydown', onKey)
-  }, [index, goTo])
-
-  const showToast = (msg: string) => {
-    setToast(msg)
-    window.setTimeout(() => setToast(null), 2200)
-  }
-  const share = async () => {
-    const clip = videos[index]
-    if (!clip) return
-    const url = `${window.location.origin}/experience/${slugify(exp.title)}?clip=${clip.id}`
-    if (typeof navigator.share === 'function') {
-      try {
-        const data: ShareData = { title: exp.title, text: `A guest's clip from ${exp.title}, Jamaica`, url }
-        if (!navigator.canShare || navigator.canShare(data)) { await navigator.share(data); return }
-      } catch (err) {
-        if ((err as DOMException)?.name === 'AbortError') return
-      }
-    }
-    try {
-      if (navigator.clipboard && window.isSecureContext) {
-        await navigator.clipboard.writeText(url)
-      } else {
-        const ta = document.createElement('textarea')
-        ta.value = url
-        ta.style.position = 'fixed'
-        ta.style.opacity = '0'
-        document.body.appendChild(ta)
-        ta.select()
-        document.execCommand('copy')
-        document.body.removeChild(ta)
-      }
-      showToast('Link copied. Send it to whoever you are travelling with.')
-    } catch {
-      showToast('Could not copy the link. Long-press the address bar instead.')
-    }
-  }
-
-  const current = videos[index]
-  const by = current ? formatGuestLabel(current.uploader_handle, current.uploader_name, 'A guest') : ''
-
-  return (
-    <div ref={rootRef} role="dialog" aria-modal="true" aria-label="Guest clip" tabIndex={-1} className="clip-viewer">
-      <div className="clip-stage">
-        <div className="clip-top">
-          {videos.length > 1 && (
-            <div className="clip-segs" aria-hidden>
-              {videos.map((v, i) => (
-                <span key={v.id}>
-                  <i style={{ transform: `scaleX(${i < index ? 1 : i === index ? played : 0})` }} />
-                </span>
-              ))}
-            </div>
-          )}
-          <p className="sr-only" aria-live="polite">Clip {index + 1} of {videos.length}, by {by}</p>
-          <button type="button" className="clip-ctl" onClick={onClose} aria-label="Close clip" style={{ marginLeft: 'auto' }}>
-            <X size={20} aria-hidden />
-          </button>
-        </div>
-
-        <div ref={railRef} className="clip-rail" onScroll={onScroll}>
-          {videos.map((v, i) => (
-            <ClipSlide
-              key={v.id}
-              video={v}
-              active={i === index}
-              next={i === index + 1}
-              onProgress={i === index ? setPlayed : undefined}
-              muted={muted}
-              paused={paused}
-              onPausedChange={setPaused}
-              onEnded={() => (i < videos.length - 1 ? goTo(i + 1) : undefined)}
-              loop={i === videos.length - 1}
-            />
-          ))}
-        </div>
-
-        <div className="clip-side">
-          <button type="button" onClick={() => setMuted((m) => !m)} aria-label={muted ? 'Turn sound on' : 'Turn sound off'} aria-pressed={!muted}>
-            <span className="reel-action-disc">{muted ? <VolumeX size={22} aria-hidden /> : <Volume2 size={22} aria-hidden />}</span>
-            <span className="clip-side-label">{muted ? 'Sound' : 'Mute'}</span>
-          </button>
-          <button type="button" onClick={share} aria-label="Send this clip">
-            <span className="reel-action-disc"><Send size={21} aria-hidden /></span>
-            <span className="clip-side-label">Send</span>
-          </button>
-        </div>
-
-        {videos.length > 1 && (
-          <>
-            <button type="button" className="clip-arrow clip-arrow--prev" onClick={() => goTo(index - 1)} disabled={index === 0} aria-label="Previous clip">
-              <ChevronLeft size={24} aria-hidden />
-            </button>
-            <button type="button" className="clip-arrow clip-arrow--next" onClick={() => goTo(index + 1)} disabled={index === videos.length - 1} aria-label="Next clip">
-              <ChevronRight size={24} aria-hidden />
-            </button>
-          </>
-        )}
-
-        {toast && <p className="clip-toast" role="status">{toast}</p>}
-      </div>
-
-      {cta && (
-        <div className="clip-bar">
-          <div className="clip-bar-inner">
-            <BuyRow exp={exp} cta={cta} onAdd={cta.onAdd} compact />
-            <p className="clip-bar-terms">{CANCELLATION_SUMMARY.short}.</p>
-          </div>
-        </div>
-      )}
-    </div>
-  )
-}
-
-function ClipSlide({ video, active, next, onProgress, muted, paused, onPausedChange, onEnded, loop }: {
-  video: TourVideo
-  active: boolean
-  /** The clip after the one on screen: fetched ahead so a swipe or the
-   *  auto-advance starts it without a loading gap. */
-  next: boolean
-  onProgress?: (fraction: number) => void
-  muted: boolean
-  paused: boolean
-  onPausedChange: (p: boolean) => void
-  onEnded: () => void
-  loop: boolean
-}) {
-  const ref = useRef<HTMLVideoElement>(null)
-  const [ready, setReady] = useState(false)
-  const by = formatGuestLabel(video.uploader_handle, video.uploader_name, 'A guest')
-  const date = clipDate(video.created_at)
-
-  // A clip starts from the top each time it becomes the one on screen;
-  // pausing and resuming it carries on from where it was.
-  useEffect(() => {
-    const el = ref.current
-    if (!el) return
-    if (!active) { el.pause(); return }
-    el.currentTime = 0
-  }, [active])
-
-  useEffect(() => {
-    const el = ref.current
-    if (!el || !active) return
-    if (paused) el.pause()
-    // Refused autoplay shows the play button; an AbortError is only a
-    // swipe interrupting a start, and must not pause the next clip.
-    else el.play().catch((err: DOMException) => { if (err?.name === 'NotAllowedError') onPausedChange(true) })
-  }, [active, paused, onPausedChange])
-
-  useEffect(() => { if (ref.current) ref.current.muted = muted }, [muted])
-
-  return (
-    <div className="clip-slide" aria-hidden={!active}>
-      <div className="clip-frame">
-        <video
-          ref={ref}
-          src={active || next ? video.video_url : undefined}
-          poster={video.thumbnail_url ?? undefined}
-          playsInline
-          loop={loop}
-          muted={muted}
-          preload={active || next ? 'auto' : 'none'}
-          onLoadedData={() => setReady(true)}
-          onTimeUpdate={onProgress ? (e) => {
-            const v = e.currentTarget
-            if (v.duration > 0) onProgress(v.currentTime / v.duration)
-          } : undefined}
-          onEnded={onEnded}
-          onClick={() => onPausedChange(!paused)}
-        />
-        {active && !ready && <span className="clip-loading" aria-hidden>Loading</span>}
-        {active && (
-          <button
-            type="button"
-            className={paused ? 'reel-play-toggle reel-play-toggle--paused' : 'reel-play-toggle'}
-            aria-label={paused ? 'Play clip' : 'Pause clip'}
-            onClick={() => onPausedChange(!paused)}
-          >
-            {paused ? <Play size={24} fill="white" strokeWidth={0} aria-hidden /> : <Pause size={22} fill="white" strokeWidth={0} aria-hidden />}
-          </button>
-        )}
-        <span className="clip-slide-scrim" aria-hidden />
-        <div className="clip-byline">
-          {/* The name beside it says who; the picture is decoration. */}
-          <span aria-hidden><Avatar src={video.uploader_avatar_url} name={video.uploader_name} size={36} ring /></span>
-          <div style={{ minWidth: 0 }}>
-            <p className="clip-byline-name">{by}</p>
-            <p className="clip-byline-meta">Guest clip{date ? ` · ${date}` : ''}</p>
-            {video.caption && <p className="clip-byline-cap">{video.caption}</p>}
-          </div>
-        </div>
-      </div>
-    </div>
   )
 }
 

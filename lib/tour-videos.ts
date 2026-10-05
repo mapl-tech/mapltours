@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { createClient } from './supabase/client'
 import { useAuth } from './supabase/auth-context'
 import { useSwrCache } from './swr-cache'
+import { VIDEO_REWARD_MILESTONE } from './video-rules'
 
 /**
  * ============================================================================
@@ -27,7 +28,8 @@ export const VIDEO_ALLOWED_TYPES = [
   'video/quicktime', // .mov (iPhone)
   'video/webm',
 ] as const
-export const VIDEO_REWARD_MILESTONE = 5
+// Lives in a plain module so server code can read it too (see lib/video-rules).
+export { VIDEO_REWARD_MILESTONE }
 
 // ── Data shapes ─────────────────────────────────────────────────────────────
 export type VideoStatus = 'pending' | 'approved' | 'rejected' | 'flagged'
@@ -87,6 +89,22 @@ export interface VideoProgress {
 
 // ── Client handle (memoised by Supabase SDK) ────────────────────────────────
 const supabase = createClient()
+
+/**
+ * The columns a signed-out visitor may read; migration 035 grants anon these
+ * and nothing else. reviewed_by would name an administrator to anyone, the
+ * reconnaissance migration 030 closed, and admin_notes are the reviewer's own
+ * words. Every public read below asks for exactly this list.
+ */
+const PUBLIC_CLIP_COLUMNS = 'id, user_id, experience_id, video_path, thumbnail_path, duration_seconds, caption, status, created_at'
+
+type PublicClipRow = Pick<TourVideoRow,
+  'id' | 'user_id' | 'experience_id' | 'video_path' | 'thumbnail_path' | 'duration_seconds' | 'caption' | 'status' | 'created_at'>
+
+/** A public row as a TourVideoRow: the private columns are unknown here. */
+function fromPublicRow(r: PublicClipRow): TourVideoRow {
+  return { ...r, size_bytes: null, content_hash: null, admin_notes: null, reviewed_by: null, reviewed_at: null }
+}
 
 // ────────────────────────────────────────────────────────────────────────────
 //  Validation
@@ -317,50 +335,86 @@ export function videoPublicUrl(path: string | null): string | null {
 // ────────────────────────────────────────────────────────────────────────────
 
 /**
+ * Public rows to TourVideos: storage URLs plus the uploader's name, picture
+ * and handle for the byline. social_handle is from migration 026; where it
+ * has not run, the legacy columns keep bylines working.
+ */
+async function withUploaders(rows: PublicClipRow[]): Promise<TourVideo[]> {
+  const userIds = Array.from(new Set(rows.map((r) => r.user_id)))
+  const fullRes = await supabase
+    .from('users')
+    .select('id, name, avatar_url, social_handle')
+    .in('id', userIds)
+  const usersRes = fullRes.error
+    ? await supabase.from('users').select('id, name, avatar_url').in('id', userIds)
+    : fullRes
+  type ProfileRow = { id: string; name: string | null; avatar_url: string | null; social_handle?: string | null }
+  const userMap = new Map((usersRes.data as ProfileRow[] | null)?.map((u) => [u.id, u]) || [])
+  return rows.map((r): TourVideo => ({
+    ...fromPublicRow(r),
+    video_url: videoPublicUrl(r.video_path) ?? '',
+    thumbnail_url: videoPublicUrl(r.thumbnail_path),
+    uploader_name: userMap.get(r.user_id)?.name ?? null,
+    uploader_avatar_url: userMap.get(r.user_id)?.avatar_url ?? null,
+    uploader_handle: userMap.get(r.user_id)?.social_handle ?? null,
+  }))
+}
+
+/**
  * Approved videos for a given experience, public, swipe-through feed.
  * Cached by experience id so revisiting a tour paints instantly.
  */
 export function useExperienceVideos(experienceId: number | null) {
-  const { data, loading, refresh } = useSwrCache<TourVideo[]>(
+  const { data, loading, error, refresh } = useSwrCache<TourVideo[]>(
     experienceId == null ? null : `tour-videos:${experienceId}`,
     async () => {
       if (experienceId == null) return []
-      const { data: rows } = await supabase
+      const { data: rows, error } = await supabase
         .from('user_tour_videos')
-        .select('id, user_id, experience_id, video_path, thumbnail_path, duration_seconds, size_bytes, content_hash, caption, status, admin_notes, reviewed_by, reviewed_at, created_at')
+        .select(PUBLIC_CLIP_COLUMNS)
         .eq('experience_id', experienceId)
         .eq('status', 'approved')
         .order('created_at', { ascending: false })
         .limit(40)
+      // Thrown, not returned as []: an empty list reads "No guest clips here
+      // yet", which a failed read must never say (it did, for every signed-out
+      // visitor, until migration 035).
+      if (error) throw error
 
       if (!rows || rows.length === 0) return []
-
-      // Pull uploader display info so the gallery can render @handle.
-      // social_handle is from migration 026; where it has not run yet, retry
-      // with the legacy columns so bylines keep working.
-      const userIds = Array.from(new Set(rows.map((r) => r.user_id)))
-      const fullRes = await supabase
-        .from('users')
-        .select('id, name, avatar_url, social_handle')
-        .in('id', userIds)
-      const usersRes = fullRes.error
-        ? await supabase.from('users').select('id, name, avatar_url').in('id', userIds)
-        : fullRes
-      type ProfileRow = { id: string; name: string | null; avatar_url: string | null; social_handle?: string | null }
-      const userMap = new Map((usersRes.data as ProfileRow[] | null)?.map((u) => [u.id, u]) || [])
-
-      return rows.map((r): TourVideo => ({
-        ...(r as TourVideoRow),
-        video_url: videoPublicUrl(r.video_path) ?? '',
-        thumbnail_url: videoPublicUrl(r.thumbnail_path),
-        uploader_name: userMap.get(r.user_id)?.name ?? null,
-        uploader_avatar_url: userMap.get(r.user_id)?.avatar_url ?? null,
-        uploader_handle: userMap.get(r.user_id)?.social_handle ?? null,
-      }))
+      return withUploaders(rows as PublicClipRow[])
     }
   )
 
-  return { videos: data ?? [], loading, refresh }
+  return { videos: data ?? [], loading, error, refresh }
+}
+
+/**
+ * Every approved clip, newest first, for the reel: each tour's guest clips
+ * play as reels right after the tour (components/ExperienceDetail). One read
+ * for all tours, public columns only, with the same uploader bylines as the
+ * gallery. A failed read throws, so the reel keeps what it had rather than
+ * concluding there are no clips.
+ */
+export function useApprovedClips(): { clips: TourVideo[]; loading: boolean; revalidating: boolean; refresh: () => Promise<void> } {
+  const { data, loading, revalidating, refresh } = useSwrCache<TourVideo[]>('tour-videos:all', async () => {
+    const { data: rows, error } = await supabase
+      .from('user_tour_videos')
+      .select(PUBLIC_CLIP_COLUMNS)
+      .eq('status', 'approved')
+      .order('created_at', { ascending: false })
+      .limit(200)
+    if (error) throw error
+    if (!rows || rows.length === 0) return []
+    return withUploaders(rows as PublicClipRow[])
+  })
+  return { clips: data ?? [], loading, revalidating, refresh }
+}
+
+/** "Oct 4", or "Oct 4, 2025" when not this year: when a guest posted a clip. */
+export function clipDateLabel(iso: string): string {
+  const d = new Date(iso)
+  return Number.isNaN(d.getTime()) ? '' : d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: d.getFullYear() === new Date().getFullYear() ? undefined : 'numeric' })
 }
 
 /**
@@ -372,7 +426,7 @@ export function useExperienceVideos(experienceId: number | null) {
 export async function fetchApprovedVideo(id: string, experienceId: number): Promise<TourVideo | null> {
   const { data: row } = await supabase
     .from('user_tour_videos')
-    .select('id, user_id, experience_id, video_path, thumbnail_path, duration_seconds, size_bytes, content_hash, caption, status, admin_notes, reviewed_by, reviewed_at, created_at')
+    .select(PUBLIC_CLIP_COLUMNS)
     .eq('id', id)
     .eq('experience_id', experienceId)
     .eq('status', 'approved')
@@ -391,7 +445,7 @@ export async function fetchApprovedVideo(id: string, experienceId: number): Prom
   const u = (usersRes.data as ProfileRow[] | null)?.[0]
 
   return {
-    ...(row as TourVideoRow),
+    ...fromPublicRow(row as PublicClipRow),
     video_url: videoPublicUrl(row.video_path) ?? '',
     thumbnail_url: videoPublicUrl(row.thumbnail_path),
     uploader_name: u?.name ?? null,

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useEffect, useCallback, useMemo } from 'react'
+import { useState, useRef, useEffect, useLayoutEffect, useCallback, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { singleExperiences, packageExperiences, Experience, slugify , priceUnitLabel, mobileVideo, mobileHevcVideo, reelPoster, HEVC_SOURCE_TYPE } from '@/lib/experiences'
 import { trackViewItem, trackReelDetailsOpen, trackReelCtaTap, trackClipsEvent } from '@/lib/analytics'
@@ -15,7 +15,7 @@ import { useTourFit } from '@/lib/use-tour-fit'
 import { useCtaSwap } from '@/lib/use-cta-swap'
 import Link from 'next/link'
 import dynamic from 'next/dynamic'
-import { Heart, MessageCircle, Play, Pause, ChevronLeft, ChevronRight, ChevronUp, X, ThumbsUp, Send, MapPin, Star, Clock, ShoppingBag, Film, Check } from 'lucide-react'
+import { Heart, MessageCircle, Play, Pause, ChevronLeft, ChevronRight, ChevronUp, ChevronDown, X, ThumbsUp, Send, MapPin, Star, Clock, ShoppingBag, Film, Check, Volume2, VolumeX } from 'lucide-react'
 import { useExperienceLike, useComments, DisplayComment } from '@/lib/supabase/hooks'
 import { useAuth } from '@/lib/supabase/auth-context'
 import Avatar from '@/components/Avatar'
@@ -23,6 +23,8 @@ import MaplAvatar from '@/components/MaplAvatar'
 import { isMaplCreator, displayHandle } from '@/lib/creator'
 import TourDetailsSheet from './TourDetailsSheet'
 import { CANCELLATION_SUMMARY } from '@/lib/refund-pricing'
+import { useApprovedClips, clipDateLabel, type TourVideo } from '@/lib/tour-videos'
+import { formatGuestLabel } from '@/lib/social-handle'
 
 declare global {
   interface Window {
@@ -76,18 +78,87 @@ function reelFacts(included: string[] | undefined): string | null {
 
 /* ── Single Reel (Snapchat style) ── */
 /**
- * The next reel starts buffering ahead of the swipe only on a phone whose
- * connection can spare it: not with Save-Data, not on 2G or 3G. Safari has no
- * connection information and is treated as able.
+ * The next reel starts buffering ahead of the swipe only on a connection that
+ * can spare it: not with Save-Data, not on 2G or 3G. Safari has no connection
+ * information and is treated as able. Desktop plays the same phone clips
+ * (see the effect in Reel), so it buffers ahead too.
  */
 function canBufferAhead(): boolean {
-  if (!window.matchMedia('(max-width: 767px)').matches) return false
   const c = (navigator as unknown as { connection?: { saveData?: boolean; effectiveType?: string } }).connection
   if (!c) return true
   return !c.saveData && !['slow-2g', '2g', '3g'].includes(c.effectiveType ?? '4g')
 }
 
-function Reel({ exp, isActive, near, ahead, onComments }: { exp: Experience; isActive: boolean; near: boolean; ahead: boolean; onComments: () => void }) {
+/**
+ * How far the reel's top controls sit below the top of the page: the phone's
+ * own safe area, so they sit near the top in an ordinary browser tab and clear
+ * the notch or Dynamic Island wherever the page reaches under it. One state
+ * covers the page without reporting an inset: iPhone Safari with its toolbar
+ * collapsed draws the status bar over the top of the page (Sept 17 2026,
+ * 15adac2). useStatusBarFloor sets --status-floor for that state alone; it
+ * used to be a 50 to 60px floor for every phone, which left a gap above the
+ * controls in every other browser.
+ */
+const REEL_INSET = 'max(env(safe-area-inset-top, 0px), var(--status-floor, 0px))'
+
+/** Safari itself on an iPhone: not Chrome, Firefox or an app's built-in browser. */
+function isIPhoneSafari(ua: string): boolean {
+  return /iPhone|iPod/.test(ua) && /Version\/[\d.]+.*Safari\//.test(ua)
+    && !/CriOS|FxiOS|EdgiOS|OPiOS|GSA\/|Instagram|FBAN|FBAV|FB_IAB|Line\/|Twitter|Snapchat|TikTok|musical_ly|Pinterest|LinkedInApp/.test(ua)
+}
+
+/** --status-floor: 62px (the tallest iPhone status bar) while Safari's toolbar is collapsed, else 0. */
+function useStatusBarFloor() {
+  useEffect(() => {
+    const nav = navigator as Navigator & { standalone?: boolean }
+    if (!isIPhoneSafari(navigator.userAgent) || nav.standalone || window.matchMedia('(display-mode: standalone)').matches) return
+    const root = document.documentElement
+    // 100svh is the page's height with Safari's toolbars showing; a taller
+    // window means they have collapsed. Without svh support the probe
+    // measures 0 and the floor always applies, as it did before.
+    const probe = document.createElement('div')
+    probe.setAttribute('aria-hidden', 'true')
+    probe.style.cssText = 'position:fixed;top:0;left:0;width:0;height:100svh;visibility:hidden;pointer-events:none'
+    document.body.appendChild(probe)
+    const update = () => {
+      root.style.setProperty('--status-floor', window.innerHeight - probe.offsetHeight > 24 ? '62px' : '0px')
+    }
+    update()
+    window.addEventListener('resize', update)
+    window.visualViewport?.addEventListener('resize', update)
+    return () => {
+      window.removeEventListener('resize', update)
+      window.visualViewport?.removeEventListener('resize', update)
+      probe.remove()
+      root.style.removeProperty('--status-floor')
+    }
+  }, [])
+}
+
+/** A guest's clip of a tour, played as its own reel right after the tour. */
+interface ReelClip { video: TourVideo; n: number; of: number }
+
+function Reel({ exp, clip, isActive, near, ahead, last, clipCount, muted, onMuted, onEnded, canAdvance, onPlayClip, onComments }: {
+  exp: Experience
+  clip?: ReelClip
+  isActive: boolean
+  near: boolean
+  ahead: boolean
+  /** The feed's final reel: a guest clip there loops instead of moving on. */
+  last: boolean
+  /** This tour's approved guest clips, for the Clips button. */
+  clipCount: number
+  /** Guest clips have sound; one choice covers all of them (the feed's). */
+  muted: boolean
+  onMuted: (muted: boolean) => void
+  /** A guest clip that plays to its end moves the feed to the next reel. */
+  onEnded: () => void
+  /** False while the visitor writes or reads on top of the feed (it holds still). */
+  canAdvance: () => boolean
+  /** A clip picked in the sheet: the feed scrolls to it. */
+  onPlayClip: (clipId: string) => void
+  onComments: () => void
+}) {
   const videoRef = useRef<HTMLVideoElement>(null)
   const progressRef = useRef<HTMLDivElement>(null)
   const [paused, setPaused] = useState(false)
@@ -102,6 +173,16 @@ function Reel({ exp, isActive, near, ahead, onComments }: { exp: Experience; isA
   const blocked = !inCart && !tourFit.allowed
   const slug = slugify(exp.title)
   const cta = useCtaSwap(inCart)
+  // A guest's footage may be landscape: shown whole rather than cropped to a
+  // third of its width. Portrait phone footage fills the reel like the tour's.
+  const [clipFit, setClipFit] = useState<'cover' | 'contain'>('cover')
+  const clipBy = clip ? formatGuestLabel(clip.video.uploader_handle, clip.video.uploader_name, 'A guest') : ''
+  const clipId = clip?.video.id
+  // Read by the play effect without restarting playback when they change.
+  const mutedRef = useRef(muted)
+  mutedRef.current = muted
+  const onMutedRef = useRef(onMuted)
+  onMutedRef.current = onMuted
   // A beat of feedback where the thumb is: the new "In your trip" pill pops
   // in, and phones that can (Android) give one short tick.
   const [justAdded, setJustAdded] = useState(false)
@@ -183,23 +264,22 @@ function Reel({ exp, isActive, near, ahead, onComments }: { exp: Experience; isA
   // The phone line under "Book this instead" has one line of about 286px:
   // how far this tour is from the day, and what booking it does.
   const shortReason = blocked ? swapReason(tourFit) : null
+  // A tour's clips show its price row too, so the id carries the clip.
+  const swapId = clip ? `swap-${slug}-${clip.video.id}` : `swap-${slug}`
   const [shareToast, setShareToast] = useState<string | null>(null)
   const [detailsFor, setDetailsFor] = useState<Experience | null>(null)
   const [clipsOpen, setClipsOpen] = useState(false)
-  // ?clip=<id> share links land on the experience page and should open the
-  // clips overlay on that clip. Consumed once by the active reel, then
-  // scrubbed from the URL so closing the overlay does not re-trigger it.
-  const [initialClipId, setInitialClipId] = useState<string | null>(null)
+  // Whether this clip, once it ends, gives way to the next reel: read by the
+  // video's own listeners, so always the current answer.
+  const advancesRef = useRef<() => boolean>(() => false)
+  advancesRef.current = () => !!clipId && isActive && !last && !detailsFor && !clipsOpen
+    && !window.matchMedia('(prefers-reduced-motion: reduce)').matches && canAdvance()
   // ?clips=post: a guest back from signing in to post a clip.
   const [clipsUpload, setClipsUpload] = useState(false)
   const clipParamConsumed = useRef(false)
-  // Closing also clears any deep-linked clip id: UserTourVideos unmounts
-  // with the overlay, so a surviving id would force the shared clip open
-  // again on every manual reopen for the life of the page. The sheet owns
-  // its focus trap and Escape (it stacks a viewer and an upload sheet).
+  // The sheet owns its focus trap and Escape (it stacks an upload sheet).
   const closeClips = useCallback(() => {
     setClipsOpen(false)
-    setInitialClipId(null)
     setClipsUpload(false)
   }, [])
   const openClips = () => {
@@ -207,21 +287,19 @@ function Reel({ exp, isActive, near, ahead, onComments }: { exp: Experience; isA
     trackClipsEvent('clips_open', slug)
   }
 
+  // ?clips=post opens the upload sheet on the tour's own reel. (?clip= share
+  // links are the feed's: it scrolls to that clip's reel.)
   useEffect(() => {
-    if (!isActive || clipParamConsumed.current) return
+    if (!isActive || clip || clipParamConsumed.current) return
     clipParamConsumed.current = true
     const params = new URLSearchParams(window.location.search)
-    const clip = params.get('clip')
-    const post = `clips=${params.get('clips')}` === CLIPS_POST_QUERY
-    if (!clip && !post) return
-    if (clip) setInitialClipId(clip)
-    if (post) setClipsUpload(true)
+    if (`clips=${params.get('clips')}` !== CLIPS_POST_QUERY) return
+    setClipsUpload(true)
     setClipsOpen(true)
     const url = new URL(window.location.href)
-    url.searchParams.delete('clip')
     url.searchParams.delete('clips')
-    window.history.replaceState({}, '', url.toString())
-  }, [isActive])
+    window.history.replaceState(window.history.state, '', url.toString())
+  }, [isActive, clip])
 
   // The clips cover the reel: pause it underneath (one moving picture, and
   // no second soundtrack once a clip has sound) and carry on at close.
@@ -261,10 +339,10 @@ function Reel({ exp, isActive, near, ahead, onComments }: { exp: Experience; isA
   }
 
   const handleShare = async () => {
-    const url = `${window.location.origin}/experience/${slugify(exp.title)}`
+    const url = `${window.location.origin}/experience/${slugify(exp.title)}${clip ? `?clip=${clip.video.id}` : ''}`
     const shareData: ShareData = {
       title: exp.title,
-      text: `${exp.title}, ${exp.destination}, Jamaica`,
+      text: clip ? `A guest's clip from ${exp.title}, Jamaica` : `${exp.title}, ${exp.destination}, Jamaica`,
       url,
     }
     const showToast = (msg: string) => {
@@ -297,34 +375,55 @@ function Reel({ exp, isActive, near, ahead, onComments }: { exp: Experience; isA
     // The UI state mirrors the ELEMENT's real state: audit measured 6 of 7
     // loads sitting paused at t=0 while the UI assumed playing.
     const onPlay = () => setPaused(false)
-    const onPause = () => setPaused(true)
+    // A clip that has ended and is about to give way to the next reel is not
+    // "paused": the Play button flashed on it for ~100 ms as it slid away.
+    const onPause = () => { if (!(video.ended && advancesRef.current())) setPaused(true) }
     video.addEventListener('play', onPlay)
     video.addEventListener('pause', onPause)
+    // A play still waiting for data (loadeddata, canplay, the retry) when
+    // this reel stops being the one on screen must never start it: a guest
+    // clip swiped past before it loaded played on off screen, with sound.
+    let cancelled = false
+    let retry: number | undefined
+    const tryPlay = () => {
+      if (cancelled) return
+      video.play().catch((err: DOMException) => {
+        if (cancelled) return
+        if (clipId && err?.name === 'NotAllowedError' && !video.muted) {
+          video.muted = true
+          onMutedRef.current(true)
+          video.play().catch(() => {})
+          return
+        }
+        retry = window.setTimeout(() => { if (!cancelled) video.play().catch(() => {}) }, 300)
+      })
+    }
+    const cleanup = () => {
+      cancelled = true
+      window.clearTimeout(retry)
+      video.removeEventListener('play', onPlay)
+      video.removeEventListener('pause', onPause)
+      video.removeEventListener('loadeddata', tryPlay)
+      video.removeEventListener('canplay', tryPlay)
+    }
 
     if (isActive) {
       // Motion preference wins: poster + explicit Play control, no autoplay.
       if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
         setPaused(true)
-        return () => {
-          video.removeEventListener('play', onPlay)
-          video.removeEventListener('pause', onPause)
-        }
+        return cleanup
       }
-      video.muted = true
-      // The markup carries only the phone clip (see the <source> below).
-      // Desktop gets the original by src, which overrides the <source>
-      // child; load() restarts resource selection. The browser may have
-      // begun the phone clip by now, which costs desktop a few hundred KB.
-      if (exp.video && window.matchMedia('(min-width: 768px)').matches && video.getAttribute('src') !== exp.video) {
-        video.src = exp.video
-        video.load()
-      }
+      // Tour reels have no sound. A guest clip follows the feed's one sound
+      // choice; a phone that refuses sound without a fresh tap plays it
+      // muted, and the Sound button says so.
+      video.muted = clipId ? mutedRef.current : true
+      // Desktop plays the phone clip too. The 480px column shows the same
+      // portrait centre crop, and 720x1280 covers it at about 1.3x on a 2x
+      // screen, sharper than a phone gets. Desktop used to swap in the
+      // original here (up to 57 MB, 18.5 Mbps), which discarded the clip the
+      // browser had already started, began every swipe cold and stalled on
+      // home broadband (measured Oct 4 2026).
       video.currentTime = 0
-      const tryPlay = () => {
-        video.play().catch(() => {
-          setTimeout(() => video.play().catch(() => {}), 300)
-        })
-      }
       if (video.readyState >= 2) {
         tryPlay()
       } else {
@@ -347,11 +446,13 @@ function Reel({ exp, isActive, near, ahead, onComments }: { exp: Experience; isA
       }
     }
 
-    return () => {
-      video.removeEventListener('play', onPlay)
-      video.removeEventListener('pause', onPause)
-    }
-  }, [isActive, near, ahead, exp.video])
+    return cleanup
+  }, [isActive, near, ahead, exp.video, clipId])
+
+  useEffect(() => {
+    const video = videoRef.current
+    if (clipId && video) video.muted = muted
+  }, [clipId, muted])
 
   // TikTok's thin line: how far into the clip, so a visitor sees it is short
   // and loops. Written straight to the element each frame, not through state.
@@ -391,10 +492,11 @@ function Reel({ exp, isActive, near, ahead, onComments }: { exp: Experience; isA
       onClick={togglePlay}
       role="group"
       className="reel-item"
-      aria-label={`${exp.title} reel`}
-      // The tour's description stands in for the video, which has no sound
-      // and no text of its own.
-      aria-describedby={`reel-desc-${slug}`}
+      aria-label={clip ? `${exp.title}, guest clip ${clip.n} of ${clip.of} by ${clipBy}` : `${exp.title} reel`}
+      // The tour's description stands in for its video, which has no sound
+      // and no text of its own; a guest clip is described by its caption, or
+      // without one by a line saying whose footage it is.
+      aria-describedby={clip ? (clip.video.caption ? `clip-cap-${clip.video.id}` : `clip-desc-${clip.video.id}`) : `reel-desc-${slug}`}
       // Off-screen reels are visually stacked out of view but their buttons
       // and inputs were still in the tab order; inert removes the whole
       // subtree from focus and the accessibility tree until it is active.
@@ -413,7 +515,27 @@ function Reel({ exp, isActive, near, ahead, onComments }: { exp: Experience; isA
           decision (2026-08-24): tap-anywhere is the pause. The play/pause
           button below keeps that: it shows only while paused or when a
           keyboard puts focus on it (WCAG 2.2.2, 4.1.2). */}
-      {exp.youtubeId ? (
+      {clip ? (
+        // A guest's own upload: one file (mp4, mov or webm as posted), its
+        // poster the thumbnail made at upload. It plays to its end and the
+        // feed moves on; on the feed's last reel it loops instead.
+        <video
+          ref={videoRef}
+          playsInline
+          muted={muted}
+          loop={last}
+          preload={isActive ? 'auto' : near ? 'metadata' : 'none'}
+          src={near ? clip.video.video_url : undefined}
+          poster={near ? clip.video.thumbnail_url ?? undefined : undefined}
+          onLoadedMetadata={(e) => setClipFit(e.currentTarget.videoWidth > e.currentTarget.videoHeight ? 'contain' : 'cover')}
+          // With reduced motion the feed never moves by itself: the clip
+          // stops at its end and the Play button comes back.
+          // Nor from under the reel's own sheets (details, clips): the feed
+          // waits while the visitor reads on top of it.
+          onEnded={() => { if (advancesRef.current()) onEnded() }}
+          style={{ width: '100%', height: '100%', objectFit: clipFit, background: '#000' }}
+        />
+      ) : exp.youtubeId ? (
         <iframe
           src={`https://www.youtube.com/embed/${exp.youtubeId}?autoplay=1&mute=1&loop=1&controls=0&showinfo=0&modestbranding=1&playlist=${exp.youtubeId}&playsinline=1`}
           allow="autoplay; encrypted-media"
@@ -440,9 +562,8 @@ function Reel({ exp, isActive, near, ahead, onComments }: { exp: Experience; isA
             media-gated sources WebKit on an iPhone profile fetched the 30 MB
             original. Two codecs instead, chosen by type: HEVC (~1.3 Mbps,
             every iPhone and most Android phones) and the H.264 file for any
-            browser that cannot play it. Phones are almost every visitor, so
-            the HTML serves them; the effect above swaps in the original on
-            desktop. Rendered for this reel and its neighbours; a reel that
+            browser that cannot play it. Desktop plays the same clip (see
+            the effect above). Rendered for this reel and its neighbours; a reel that
             leaves the neighbourhood calls load() with no sources, which
             empties the element and frees the buffer. */}
         {near && exp.video && (
@@ -481,7 +602,7 @@ function Reel({ exp, isActive, near, ahead, onComments }: { exp: Experience; isA
           counter below them. env(): the site opts into viewport-fit=cover,
           so without the inset this line renders under the Dynamic Island. */}
       <div aria-hidden style={{
-        position: 'absolute', top: 'max(calc(env(safe-area-inset-top, 0px) + 8px), 50px)', left: 12, right: 12, zIndex: 15,
+        position: 'absolute', top: `calc(${REEL_INSET} + 10px)`, left: 16, right: 16, zIndex: 15,
         height: 2.5, borderRadius: 2, overflow: 'hidden', background: 'rgba(255,255,255,0.25)',
       }}>
         <div ref={progressRef} style={{
@@ -505,14 +626,24 @@ function Reel({ exp, isActive, near, ahead, onComments }: { exp: Experience; isA
       }} />
 
       {/* ── Right action column (Snapchat style, tight, no labels) ── */}
-      <div className="reel-right-rail" style={{
-        position: 'absolute', right: 12, zIndex: 10,
+      {/* Above the bottom info (11 over its 10): that block's soft shade
+          reaches under the rail and was dimming its discs and the gold
+          "Save 5%" bubble. The two never share any width. */}
+      <div className={clip ? 'reel-right-rail reel-right-rail--clip' : 'reel-right-rail'} style={{
+        position: 'absolute', right: 12, zIndex: 11,
         display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16,
       }}>
         {/* Creator avatar, MAPL Tours logo when posted by us, otherwise the
             creator's initial disk (coloured by handle). No follow badge. */}
         <div style={{ marginBottom: 4 }}>
-          {isMaplCreator(exp.creator) ? (
+          {clip ? (
+            <Avatar
+              src={clip.video.uploader_avatar_url}
+              name={clipBy}
+              size={44}
+              style={{ boxShadow: '0 0 0 2px #fff' }}
+            />
+          ) : isMaplCreator(exp.creator) ? (
             <MaplAvatar size={44} border="2px solid white" />
           ) : (
             <Avatar
@@ -526,7 +657,8 @@ function Reel({ exp, isActive, near, ahead, onComments }: { exp: Experience; isA
         {/* Like */}
         <button
           onClick={(e) => { e.stopPropagation(); toggleLike() }}
-          aria-label={liked ? 'Remove this experience from your saved tours' : 'Save this experience for later'}
+          // One name; the state is aria-pressed (two cues disagreed).
+          aria-label="Save this tour"
           aria-pressed={liked}
           style={{
             display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2,
@@ -551,6 +683,7 @@ function Reel({ exp, isActive, near, ahead, onComments }: { exp: Experience; isA
 
         {/* Comments */}
         <button
+          className="reel-rail-comments"
           onClick={(e) => { e.stopPropagation(); onComments() }}
           aria-label="View comments"
           style={{
@@ -569,8 +702,9 @@ function Reel({ exp, isActive, near, ahead, onComments }: { exp: Experience; isA
 
         {/* Share */}
         <button
+          className="reel-rail-send"
           onClick={(e) => { e.stopPropagation(); handleShare() }}
-          aria-label="Send this tour"
+          aria-label={clip ? 'Send this clip' : 'Send this tour'}
           style={{
             display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2,
             background: 'none', border: 'none', cursor: 'pointer', color: 'white',
@@ -585,10 +719,40 @@ function Reel({ exp, isActive, near, ahead, onComments }: { exp: Experience; isA
           </span>
         </button>
 
-        {/* Guest clips, opens UserTourVideos overlay */}
+        {/* Sound, guest clips only: the tour's own reels have none. */}
+        {clip && (
+          <button
+            onClick={(e) => { e.stopPropagation(); onMuted(!muted) }}
+            // The visible word is the name (WCAG 2.5.3); on or off is
+            // aria-pressed and the icon.
+            aria-label="Sound"
+            aria-pressed={!muted}
+            style={{
+              display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2,
+              background: 'none', border: 'none', cursor: 'pointer', color: 'white',
+              minWidth: 44, minHeight: 44, padding: 4,
+            }}
+          >
+            <span className="reel-action-disc">
+              {muted ? <VolumeX size={22} strokeWidth={1.8} aria-hidden /> : <Volume2 size={22} strokeWidth={1.8} aria-hidden />}
+            </span>
+            <span style={{ fontSize: 12, fontWeight: 700, fontFamily: 'var(--font-dm-sans)', padding: '1px 8px', borderRadius: 9999, background: 'rgba(0,0,0,0.6)' }}>
+              Sound
+            </span>
+          </button>
+        )}
+
+        {/* Guest clips: opens the sheet, every clip of this tour (a tap plays
+            it here, in the feed) and the way to post one. The count says how
+            many there are; the clips also come up by swiping on. "Save 5%" is
+            the reward for posting them, and every tap on it lands on the
+            sheet, whose header states the terms (5 approved clips, 5% off a
+            next tour), so the bubble never promises more than the tap shows.
+            Shown on the reel on screen, so it pops in as each one arrives. */}
         <button
           onClick={(e) => { e.stopPropagation(); openClips() }}
-          aria-label="Clips from guests on this tour"
+          // Starts with the visible words, for speech control (WCAG 2.5.3).
+          aria-label={`${clipCount > 0 ? `${clipCount} ${clipCount === 1 ? 'clip' : 'clips'}` : 'Clips'} from guests on this tour. Save 5%: 5 approved clips from your trip get you 5% off your next tour`}
           aria-haspopup="dialog"
           style={{
             display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2,
@@ -596,11 +760,12 @@ function Reel({ exp, isActive, near, ahead, onComments }: { exp: Experience; isA
             minWidth: 44, minHeight: 44, padding: 4,
           }}
         >
-          <span className="reel-action-disc">
+          <span className="reel-action-disc reel-clips-disc">
             <Film size={22} strokeWidth={1.8} />
+            {isActive && <span className="reel-save-bubble" aria-hidden="true">Save 5%</span>}
           </span>
-          <span style={{ fontSize: 12, fontWeight: 700, fontFamily: 'var(--font-dm-sans)', padding: '1px 8px', borderRadius: 9999, background: 'rgba(0,0,0,0.6)' }}>
-            Clips
+          <span style={{ fontSize: 12, fontWeight: 700, fontFamily: 'var(--font-dm-sans)', padding: '1px 8px', borderRadius: 9999, background: 'rgba(0,0,0,0.6)', whiteSpace: 'nowrap' }}>
+            {clipCount > 0 ? `${clipCount} ${clipCount === 1 ? 'clip' : 'clips'}` : 'Clips'}
           </span>
         </button>
 
@@ -611,9 +776,9 @@ function Reel({ exp, isActive, near, ahead, onComments }: { exp: Experience; isA
       {clipsOpen && (
         <UserTourVideos
           exp={exp}
-          initialVideoId={initialClipId}
           startUpload={clipsUpload}
           cta={{ inCart, blocked, swapLine: shortReason, onAdd: () => addToTrip() }}
+          onPlay={(id) => { closeClips(); onPlayClip(id) }}
           onClose={closeClips}
         />
       )}
@@ -689,13 +854,43 @@ function Reel({ exp, isActive, near, ahead, onComments }: { exp: Experience; isA
           background: 'rgba(0,0,0,0.6)', borderRadius: 32, filter: 'blur(28px)',
           pointerEvents: 'none',
         }} />
-        {/* Creator name */}
-        <p style={{
-          fontSize: 13, fontWeight: 500, color: 'white',
-          fontFamily: 'var(--font-dm-sans)', marginBottom: 4,
-        }}>
-          @{displayHandle(exp.creator)}
-        </p>
+        {/* Who made the video: the guest who filmed a clip (labelled as a
+            guest's, so it is never mistaken for ours), or the tour's creator. */}
+        {clip ? (
+          <div style={{ marginBottom: 14 }}>
+            <p style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', margin: '0 0 4px', fontFamily: 'var(--font-dm-sans)' }}>
+              {/* A dark fill: the old light one measured 3.75:1 on a bright
+                  frame of a landscape clip. */}
+              <span style={{
+                padding: '3px 10px', borderRadius: 9999, background: 'rgba(0,0,0,0.45)',
+                border: '1px solid rgba(255,255,255,0.28)', fontSize: 12, fontWeight: 700, color: 'white',
+              }}>
+                {`Guest clip ${clip.n} of ${clip.of}`}
+              </span>
+              <span style={{ fontSize: 13, fontWeight: 600, color: 'white' }}>
+                {clipBy}{clipDateLabel(clip.video.created_at) ? ` · ${clipDateLabel(clip.video.created_at)}` : ''}
+              </span>
+            </p>
+            {clip.video.caption && (
+              <p id={`clip-cap-${clip.video.id}`} style={{
+                margin: 0, fontSize: 14, lineHeight: 1.45, color: 'white', fontFamily: 'var(--font-dm-sans)',
+                display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden',
+              }}>
+                {clip.video.caption}
+              </p>
+            )}
+            {!clip.video.caption && (
+              <p id={`clip-desc-${clip.video.id}`} className="sr-only">{`${clipBy}'s own video from ${exp.title}.`}</p>
+            )}
+          </div>
+        ) : (
+          <p style={{
+            fontSize: 13, fontWeight: 500, color: 'white',
+            fontFamily: 'var(--font-dm-sans)', marginBottom: 4,
+          }}>
+            @{displayHandle(exp.creator)}
+          </p>
+        )}
 
         {/* Title */}
         <TitleTag style={{
@@ -708,13 +903,13 @@ function Reel({ exp, isActive, near, ahead, onComments }: { exp: Experience; isA
         {/* Description, 2 line clamp. Phones hide it (class): with it, the
             chips and the helper line, the overlay covered more than half the
             video; the same words are one tap away in the details sheet. */}
-        <p id={`reel-desc-${slug}`} className="reel-desc" style={{
+        {!clip && <p id={`reel-desc-${slug}`} className="reel-desc" style={{
           fontSize: 15, color: '#fff',
           fontFamily: 'var(--font-dm-sans)', lineHeight: 1.45, marginBottom: 10,
           display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden',
         }}>
           {t(exp.description)}
-        </p>
+        </p>}
 
         {/* Phones: one line carries the place, the duration and the way to
             the details, in place of the paragraph, the link and the chips. */}
@@ -724,22 +919,30 @@ function Reel({ exp, isActive, near, ahead, onComments }: { exp: Experience; isA
           onClick={(e) => { e.stopPropagation(); openDetails() }}
           aria-label={`${exp.destination}, ${exp.duration}. What's included, ages and what to bring`}
           style={{
-            alignItems: 'center', gap: 6, minHeight: 44, padding: 0, marginBottom: 8,
+            // Each fact keeps its icon and its words together, with space
+            // rather than a "·" between them: a dot left at the end of a
+            // wrapped line on 13 of 14 tours at 360px.
+            alignItems: 'center', columnGap: 12, rowGap: 0, minHeight: 44, padding: 0, marginBottom: 8,
+            // On a clip it sits with the title it belongs to, below the
+            // guest's byline group (its 44px target overlaps only the title).
+            marginTop: clip ? -8 : undefined,
             background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left',
             fontFamily: 'var(--font-dm-sans)', fontSize: 13.5, fontWeight: 600, color: '#fff',
           }}
         >
-          <MapPin size={13} aria-hidden /> {exp.destination}
-          <span aria-hidden style={{ opacity: 0.8 }}>·</span>
-          <Clock size={13} aria-hidden /> {exp.duration}
-          <span aria-hidden style={{ opacity: 0.8 }}>·</span>
-          <span style={{ textDecoration: 'underline', textUnderlineOffset: 3 }}>What&apos;s included</span>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, whiteSpace: 'nowrap' }}>
+            <MapPin size={13} aria-hidden /> {exp.destination}
+          </span>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, whiteSpace: 'nowrap' }}>
+            <Clock size={13} aria-hidden /> {exp.duration}
+          </span>
+          <span style={{ textDecoration: 'underline', textUnderlineOffset: 3, whiteSpace: 'nowrap' }}>What&apos;s included</span>
         </button>
 
         {/* Phones: the two things the price covers that decide a purchase
             (the ride and the entry), on one line under the meta line. The
             full list stays a tap away in the details sheet. */}
-        {facts && (
+        {facts && !clip && (
           <p className="reel-facts" style={{
             margin: '0 0 8px', fontSize: 13, lineHeight: '17px',
             color: 'var(--text-on-dark-2)', fontFamily: 'var(--font-dm-sans)',
@@ -755,7 +958,7 @@ function Reel({ exp, isActive, near, ahead, onComments }: { exp: Experience; isA
             overlay keeps the same height. Left-aligned so that when it wraps
             on a 360px phone the second line lines up under the title instead
             of centring "bring" on its own. */}
-        <button
+        {!clip && <button
           className="reel-included"
           onClick={() => openDetails()}
           style={{
@@ -768,10 +971,10 @@ function Reel({ exp, isActive, near, ahead, onComments }: { exp: Experience; isA
           }}
         >
           What&apos;s included, ages and what to bring
-        </button>
+        </button>}
 
         {/* Info chips row */}
-        <div className="reel-chips" style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 12 }}>
+        {!clip && <div className="reel-chips" style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 12 }}>
           <span style={{
             display: 'inline-flex', alignItems: 'center', gap: 4,
             padding: '4px 10px', borderRadius: 9999,
@@ -799,7 +1002,7 @@ function Reel({ exp, isActive, near, ahead, onComments }: { exp: Experience; isA
           }}>
             {exp.reviews > 0 ? (<><Star size={12} fill="white" strokeWidth={0} /> {exp.rating}</>) : t('New')}
           </span>
-        </div>
+        </div>}
 
         {/* Why "Book this instead": ABOVE the price row, never below it. The
             block is anchored to the bottom, so a line under the button that
@@ -807,7 +1010,7 @@ function Reel({ exp, isActive, near, ahead, onComments }: { exp: Experience; isA
             swap, 29px on desktop after an add). Phones get the short line,
             wider screens the whole reason; only while it applies. */}
         {shortReason && (
-          <p id={`swap-${slug}`} className="reel-blocked-reason" style={{
+          <p id={swapId} className="reel-blocked-reason" style={{
             margin: '0 0 8px', fontSize: 13, lineHeight: '17px',
             color: 'var(--text-on-dark-2)', fontFamily: 'var(--font-dm-sans)',
             whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
@@ -875,7 +1078,7 @@ function Reel({ exp, isActive, near, ahead, onComments }: { exp: Experience; isA
               data-slug={slug}
               onClick={(e) => { e.stopPropagation(); cta.press(e.currentTarget); addToTrip() }}
               aria-label={`${blocked ? t('Book this instead') : t('Add to Trip')}: ${exp.title}`}
-              aria-describedby={shortReason ? `swap-${slug}` : undefined}
+              aria-describedby={shortReason ? swapId : undefined}
               style={{
                 minHeight: 48, minWidth: Math.max(140, cta.minWidth), padding: '0 22px', borderRadius: 9999,
                 background: 'white', color: '#000',
@@ -1297,6 +1500,10 @@ export default function ExperienceDetail({ slug }: { slug: string }) {
   const scrollRef = useRef<HTMLDivElement>(null)
   const [commentText, setCommentText] = useState('')
   const [mobileComments, setMobileComments] = useState(false)
+  const hydrated = useHydrated()
+  useStatusBarFloor()
+  // Guest clips have sound; one choice covers every clip in the feed.
+  const [clipsMuted, setClipsMuted] = useState(true)
 
   // When the busiest day in the cart hits the 8-hour cap, surface tours
   // already in the cart first (randomised, deduped) so the feed pivots to
@@ -1327,7 +1534,30 @@ export default function ExperienceDetail({ slug }: { slug: string }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dayIsFull, cartIdsKey, slug])
 
-  const startIdx = feedExperiences.findIndex((e) => slugify(e.title) === slug)
+  // Guest clips play as reels right after their tour, newest first, so they
+  // are watched by swiping on, like everything else here. They join only
+  // after hydration: the list comes from a client cache the server never
+  // saw, and the first render has to match its HTML.
+  const { clips, loading: clipsLoading, revalidating: clipsRevalidating, refresh: refreshClips } = useApprovedClips()
+  const clipsByTour = useMemo(() => {
+    const byTour = new Map<number, TourVideo[]>()
+    if (!hydrated) return byTour
+    for (const c of clips) {
+      const list = byTour.get(c.experience_id)
+      if (list) list.push(c)
+      else byTour.set(c.experience_id, [c])
+    }
+    return byTour
+  }, [hydrated, clips])
+  const entries = useMemo(() => feedExperiences.flatMap((exp) => {
+    const list = clipsByTour.get(exp.id) ?? []
+    return [
+      { key: `tour-${exp.id}`, exp, clip: undefined as ReelClip | undefined },
+      ...list.map((video, i) => ({ key: `clip-${video.id}`, exp, clip: { video, n: i + 1, of: list.length } as ReelClip | undefined })),
+    ]
+  }), [feedExperiences, clipsByTour])
+
+  const startIdx = entries.findIndex((e) => !e.clip && slugify(e.exp.title) === slug)
   const [activeIndex, setActiveIndex] = useState(startIdx >= 0 ? startIdx : 0)
 
   // The reel is a fullscreen surface: the DOCUMENT must never scroll here.
@@ -1346,7 +1576,25 @@ export default function ExperienceDetail({ slug }: { slug: string }) {
     }
   }, [])
 
-  const activeExp = feedExperiences[activeIndex]
+  // Clamped: when the reel on screen leaves the feed (a clip un-approved
+  // since it loaded), an index past the end rendered "Experience not found"
+  // and dropped the whole feed for a frame; the anchoring below then puts
+  // its tour on screen.
+  const activeEntry = entries[Math.min(activeIndex, entries.length - 1)]
+  const activeExp = activeEntry?.exp
+  // The counter and the arrows beside it count tours; a tour's guest clips
+  // sit under its number.
+  const tourNumber = activeExp ? feedExperiences.indexOf(activeExp) + 1 : 0
+  // Said by screen readers when the reel on screen changes, including when a
+  // clip ends and the next one takes over without anyone touching anything.
+  const nowShowing = !activeEntry
+    ? ''
+    : activeEntry.clip
+      ? `Guest clip ${activeEntry.clip.n} of ${activeEntry.clip.of} from ${activeEntry.exp.title}, by ${formatGuestLabel(activeEntry.clip.video.uploader_handle, activeEntry.clip.video.uploader_name, 'a guest')}`
+      : `${activeEntry.exp.title}, tour ${tourNumber} of ${feedExperiences.length}`
+  // Wider screens have no phone bar: the reel after this one, when it is a
+  // guest clip, gets its own button beside the arrows (which move by tour).
+  const nextClip = entries[activeIndex + 1]?.clip
 
   // The reel a visitor settles on, reported once it has held the screen for
   // a moment: a swipe through five tours is not five views.
@@ -1363,6 +1611,13 @@ export default function ExperienceDetail({ slug }: { slug: string }) {
     }, 1200)
     return () => window.clearTimeout(t)
   }, [activeExp])
+  // A guest clip that holds the screen is counted, as a tour view is.
+  const activeClipKey = activeEntry?.clip ? activeEntry.key : null
+  useEffect(() => {
+    if (!activeClipKey || !activeExp) return
+    const t = window.setTimeout(() => trackClipsEvent('clip_play', slugify(activeExp.title)), 1200)
+    return () => window.clearTimeout(t)
+  }, [activeClipKey, activeExp])
   const { addComment: addSupabaseComment, toDisplayComments, isLoggedIn, user: currentUser, replyingTo, setReplyingTo } = useComments(activeExp?.id || 0)
   const activeComments = activeExp ? toDisplayComments(activeExp.comments) : []
 
@@ -1440,9 +1695,149 @@ export default function ExperienceDetail({ slug }: { slug: string }) {
     if (childHeight === 0) return
 
     const idx = Math.round(container.scrollTop / childHeight)
-    const clampedIdx = Math.max(0, Math.min(idx, feedExperiences.length - 1))
+    const clampedIdx = Math.max(0, Math.min(idx, entries.length - 1))
     setActiveIndex(clampedIdx)
-  }, [feedExperiences.length])
+  }, [entries.length])
+
+  const scrollToEntry = useCallback((index: number, behavior: ScrollBehavior = 'smooth') => {
+    const el = scrollRef.current
+    if (!el || index < 0) return
+    const children = el.children
+    const childHeight = children.length ? (children[0] as HTMLElement).offsetHeight : window.innerHeight
+    const instant = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    el.scrollTo({ top: index * childHeight, behavior: instant ? ('instant' as ScrollBehavior) : behavior })
+  }, [])
+
+  // The feed changes under the reel on screen when the clips arrive or the
+  // cart reorders the tours. Keep that reel on screen: find where it went and
+  // jump there before the browser paints.
+  const activeKey = useRef<string | null>(null)
+  const activeTourKey = useRef<string | null>(null)
+  useLayoutEffect(() => {
+    const key = activeKey.current
+    if (!key) return
+    let idx = entries.findIndex((e) => e.key === key)
+    // Gone from the feed: its tour, or failing that the nearest reel.
+    if (idx < 0) idx = entries.findIndex((e) => e.key === activeTourKey.current)
+    if (idx < 0) idx = Math.min(activeIndex, entries.length - 1)
+    if (idx < 0 || idx === activeIndex) return
+    scrollToEntry(idx, 'instant' as ScrollBehavior)
+    setActiveIndex(idx)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [entries])
+  useEffect(() => {
+    const entry = entries[activeIndex]
+    if (!entry) return
+    activeKey.current = entry.key
+    activeTourKey.current = `tour-${entry.exp.id}`
+  }, [entries, activeIndex])
+
+  // A clip picked in the sheet plays here, in the feed. The scroll waits for
+  // the sheet to close: its focus trap hands focus back to Clips, and that
+  // focus() scrolls the tour's reel into view, which cancelled a scroll
+  // started any sooner. Focus then moves to the clip's own play control, so
+  // a keyboard user is not left on a reel that has gone inert.
+  const focusOnArrive = useRef<string | null>(null)
+  // ?clip=<id> share links, and clips picked in the sheet before the feed has
+  // them: the reel goes to the clip once it is in (effect below).
+  const pendingClip = useRef<string | null>(null)
+  const playClip = useCallback((id: string) => {
+    focusOnArrive.current = `clip-${id}`
+    const idx = entries.findIndex((e) => e.key === `clip-${id}`)
+    if (idx < 0) {
+      // Approved since the feed loaded: fetch the clips again and go to it
+      // when it arrives, as a share link does.
+      pendingClip.current = id
+      void refreshClips()
+      return
+    }
+    window.setTimeout(() => scrollToEntry(idx), 60)
+  }, [entries, scrollToEntry, refreshClips])
+  useEffect(() => {
+    const key = focusOnArrive.current
+    if (!key || entries[activeIndex]?.key !== key) return
+    focusOnArrive.current = null
+    const reel = scrollRef.current?.children[activeIndex] as HTMLElement | undefined
+    reel?.querySelector<HTMLElement>('.reel-play-toggle')?.focus({ preventScroll: true })
+  }, [activeIndex, entries])
+
+  // Focus that the feed takes away (its reel went inert on a swipe or at a
+  // clip's end, or the arrow pressed is gone on the reel it led to) moves to
+  // the reel now on screen, not to the page. Only focus that was in the
+  // reels or their controls: a visitor who never focused anything there is
+  // left alone.
+  const lastFocus = useRef<Element | null>(null)
+  useEffect(() => {
+    const onFocusIn = (e: FocusEvent) => { lastFocus.current = e.target as Element }
+    document.addEventListener('focusin', onFocusIn)
+    return () => document.removeEventListener('focusin', onFocusIn)
+  }, [])
+  useEffect(() => {
+    const column = scrollRef.current?.parentElement
+    const prev = lastFocus.current
+    const active = document.activeElement
+    const lost = !active || active === document.body || !!active.closest('[inert]')
+    if (!column || !prev || !lost) return
+    if (prev.isConnected && !column.contains(prev)) return
+    const reel = scrollRef.current?.children[activeIndex] as HTMLElement | undefined
+    reel?.querySelector<HTMLElement>('.reel-play-toggle')?.focus({ preventScroll: true })
+  }, [activeIndex])
+
+  // Arrow and Page keys move one reel from the page itself or the reel's own
+  // controls (on first load nothing is focused, and a key did nothing). Inside
+  // the feed, or after a click in it or in the panel beside it, the browser
+  // scrolls that already; fields and open sheets keep their keys.
+  const lastPointerZone = useRef<'feed' | 'panel' | null>(null)
+  useEffect(() => {
+    const onPointer = (e: PointerEvent) => {
+      const el = e.target as Element | null
+      lastPointerZone.current = scrollRef.current?.contains(el) ? 'feed' : el?.closest?.('.reel-panel') ? 'panel' : null
+    }
+    document.addEventListener('pointerdown', onPointer)
+    return () => document.removeEventListener('pointerdown', onPointer)
+  }, [])
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.defaultPrevented || e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) return
+      const dir = e.key === 'ArrowDown' || e.key === 'PageDown' ? 1 : e.key === 'ArrowUp' || e.key === 'PageUp' ? -1 : 0
+      const scroller = scrollRef.current
+      const column = scroller?.parentElement
+      if (!dir || !scroller || !column) return
+      const el = document.activeElement
+      if (el && scroller.contains(el)) return
+      const fromPage = !el || el === document.body || el === document.documentElement || el.tagName === 'MAIN'
+      if (!fromPage && !column.contains(el)) return
+      if (fromPage && lastPointerZone.current) return
+      if (Array.from(document.querySelectorAll('[role="dialog"]')).some((d) => d.getClientRects().length > 0)) return
+      const next = Math.max(0, Math.min(entries.length - 1, activeIndex + dir))
+      e.preventDefault()
+      if (next !== activeIndex) scrollToEntry(next)
+    }
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [activeIndex, entries.length, scrollToEntry])
+
+  // ?clip=<id> share links open on that clip's reel once the clips are in;
+  // an id that is not (or no longer) approved leaves the tour on screen.
+  useEffect(() => {
+    const url = new URL(window.location.href)
+    const id = url.searchParams.get('clip')
+    if (!id) return
+    pendingClip.current = id
+    url.searchParams.delete('clip')
+    window.history.replaceState(window.history.state, '', url.toString())
+  }, [])
+  useEffect(() => {
+    const id = pendingClip.current
+    if (!id || !hydrated) return
+    const idx = entries.findIndex((e) => e.key === `clip-${id}`)
+    if (idx >= 0) {
+      pendingClip.current = null
+      scrollToEntry(idx, 'instant' as ScrollBehavior)
+    } else if (!clipsLoading && !clipsRevalidating) {
+      pendingClip.current = null
+    }
+  }, [entries, hydrated, clipsLoading, clipsRevalidating, scrollToEntry])
 
   // Back only when the visitor reached the reel from another page of this
   // site in this tab (lib/reel-feed closeTarget). A reel opened from an ad or
@@ -1460,16 +1855,19 @@ export default function ExperienceDetail({ slug }: { slug: string }) {
     else router.push('/explore')
   }
 
-  const scrollToReel = (direction: 'prev' | 'next' | 'first') => {
-    if (!scrollRef.current) return
-    const children = scrollRef.current.children
-    const childHeight = children.length ? (children[0] as HTMLElement).offsetHeight : window.innerHeight
-    const target = direction === 'first'
-      ? 0
-      : direction === 'prev'
-        ? Math.max(0, activeIndex - 1)
-        : Math.min(feedExperiences.length - 1, activeIndex + 1)
-    scrollRef.current.scrollTo({ top: target * childHeight, behavior: 'smooth' })
+  // The arrows beside the counter move by tour: back to the start of this
+  // tour from one of its clips, otherwise to the tour before or after.
+  const tourEntryIndex = (exp: Experience | undefined) => (exp ? entries.findIndex((e) => !e.clip && e.exp === exp) : -1)
+  const prevTarget = activeEntry?.clip ? tourEntryIndex(activeExp) : tourEntryIndex(feedExperiences[tourNumber - 2])
+  const nextTarget = tourEntryIndex(feedExperiences[tourNumber])
+
+  // A clip's end moves the feed on, but not from under someone writing a
+  // comment or reading a sheet: the comment box follows the reel on screen,
+  // so a comment half-written for one tour was posted to the next.
+  const holdFeed = () => {
+    if (mobileComments || commentText.trim() !== '') return true
+    if (document.activeElement?.closest('input, textarea, select, [contenteditable="true"]')) return true
+    return Array.from(document.querySelectorAll('[role="dialog"]')).some((d) => d.getClientRects().length > 0)
   }
 
   const addComment = async () => {
@@ -1516,17 +1914,18 @@ export default function ExperienceDetail({ slug }: { slug: string }) {
         flex: '1 1 auto', width: '100%',
         height: '100%', position: 'relative',
       }}>
+        <p className="sr-only" aria-live="polite">{nowShowing}</p>
         {/* ── Prev / Next arrows, top, beside close button ── */}
         <div style={{
-          position: 'absolute', top: 'max(calc(env(safe-area-inset-top, 0px) + 18px), 60px)', left: 14, right: 60,
+          position: 'absolute', top: `calc(${REEL_INSET} + 22px)`, left: 16, right: 60,
           zIndex: 20, display: 'flex', alignItems: 'center', gap: 8,
           pointerEvents: 'none',
         }}>
-          {activeIndex > 0 ? (
+          {prevTarget >= 0 ? (
             <button
-              onClick={() => scrollToReel('prev')}
+              onClick={() => scrollToEntry(prevTarget)}
               className="reel-top-btn"
-              aria-label="Previous experience"
+              aria-label={activeEntry?.clip ? `Back to ${activeExp.title}` : 'Previous experience'}
               style={{
                 width: 44, height: 44, borderRadius: '50%',
                 background: 'rgba(0,0,0,0.5)',
@@ -1561,15 +1960,15 @@ export default function ExperienceDetail({ slug }: { slug: string }) {
             background: 'rgba(0,0,0,0.55)', border: '1px solid rgba(255,255,255,0.18)',
           }}>
             <span aria-hidden="true">
-              {activeIndex + 1}
+              {tourNumber}
               <span style={{ color: '#fff', fontWeight: 500 }}> / {feedExperiences.length}</span>
             </span>
-            <span className="sr-only">{`Tour ${activeIndex + 1} of ${feedExperiences.length}`}</span>
+            <span className="sr-only">{`Tour ${tourNumber} of ${feedExperiences.length}${activeEntry?.clip ? `, guest clip ${activeEntry.clip.n} of ${activeEntry.clip.of}` : ''}`}</span>
           </span>
 
-          {activeIndex < feedExperiences.length - 1 ? (
+          {nextTarget >= 0 ? (
             <button
-              onClick={() => scrollToReel('next')}
+              onClick={() => scrollToEntry(nextTarget)}
               className="reel-top-btn"
               aria-label="Next experience"
               style={{
@@ -1595,6 +1994,35 @@ export default function ExperienceDetail({ slug }: { slug: string }) {
               <ChevronRight size={22} strokeWidth={2.5} />
             </button>
           ) : <div style={{ width: 44 }} />}
+
+          {nextClip && (
+            <button
+              type="button"
+              onClick={() => scrollToEntry(activeIndex + 1)}
+              className="reel-top-btn hide-mobile"
+              style={{
+                height: 44, padding: '0 14px 0 10px', borderRadius: 9999,
+                background: 'rgba(0,0,0,0.5)',
+                backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)',
+                border: '1px solid rgba(255,255,255,0.12)', cursor: 'pointer', pointerEvents: 'auto',
+                display: 'inline-flex', alignItems: 'center', gap: 6,
+                color: '#fff', fontSize: 13, fontWeight: 700, fontFamily: 'var(--font-dm-sans)',
+                whiteSpace: 'nowrap', boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
+                transition: 'all 0.2s ease',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = 'rgba(0,0,0,0.68)'
+                e.currentTarget.style.boxShadow = '0 6px 28px rgba(0,0,0,0.4)'
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = 'rgba(0,0,0,0.5)'
+                e.currentTarget.style.boxShadow = '0 4px 20px rgba(0,0,0,0.3)'
+              }}
+            >
+              <ChevronDown size={18} strokeWidth={2.5} aria-hidden />
+              {`Next: guest clip ${nextClip.n} of ${nextClip.of}`}
+            </button>
+          )}
         </div>
 
         {/* Close, top right. After the arrows in the DOM so Tab follows the
@@ -1608,10 +2036,10 @@ export default function ExperienceDetail({ slug }: { slug: string }) {
             closeReel()
           }}
           style={{
-            // A 52px floor: iPhones report a 0 safe-area inset while Safari's
-            // collapsed chrome still lets the status bar overlay the top 47px.
-            position: 'absolute', top: 'max(calc(env(safe-area-inset-top, 0px) + 10px), 52px)', right: 11, zIndex: 30,
-            width: 48, height: 48, padding: 0,
+            // The phone's real inset (REEL_INSET), including iPhone Safari's
+            // collapsed toolbar, when the status bar covers the top.
+            position: 'absolute', top: `calc(${REEL_INSET} + 20px)`, right: 11, zIndex: 30,
+            width: 48, height: 48, padding: 0, borderRadius: '50%',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             cursor: 'pointer', background: 'none', border: 'none',
           }}
@@ -1641,13 +2069,21 @@ export default function ExperienceDetail({ slug }: { slug: string }) {
             overscrollBehaviorY: 'contain',
           }}
         >
-          {feedExperiences.map((exp, i) => (
+          {entries.map((entry, i) => (
             <Reel
-              key={exp.id}
-              exp={exp}
+              key={entry.key}
+              exp={entry.exp}
+              clip={entry.clip}
               isActive={i === activeIndex}
               near={Math.abs(i - activeIndex) <= 1}
               ahead={i === activeIndex + 1}
+              last={i === entries.length - 1}
+              clipCount={clipsByTour.get(entry.exp.id)?.length ?? 0}
+              muted={clipsMuted}
+              onMuted={setClipsMuted}
+              onEnded={() => scrollToEntry(i + 1)}
+              canAdvance={() => !holdFeed()}
+              onPlayClip={playClip}
               onComments={() => {
                 const mobile = window.matchMedia('(max-width: 767px)').matches
                 if (mobile) { setMobileComments(true); return }
@@ -1690,7 +2126,7 @@ export default function ExperienceDetail({ slug }: { slug: string }) {
               </span>
             </div>
             <p className="reel-panel-sub" style={{ fontSize: 12, color: '#cccccc', fontFamily: 'var(--font-dm-sans)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-              {activeExp.title}
+              {activeEntry?.clip ? `${activeExp.title} · guest clip ${activeEntry.clip.n} of ${activeEntry.clip.of}` : activeExp.title}
             </p>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
@@ -1934,13 +2370,13 @@ export default function ExperienceDetail({ slug }: { slug: string }) {
         display: 'flex', alignItems: 'center', gap: 10,
       }}>
         {items.length === 0 && (() => {
-          const last = activeIndex >= feedExperiences.length - 1
-          const next = feedExperiences[activeIndex + 1]
+          const next = entries[activeIndex + 1]
+          const last = !next
           return (
             <button
               type="button"
               className="reel-next"
-              onClick={() => scrollToReel(last ? 'first' : 'next')}
+              onClick={() => scrollToEntry(last ? 0 : activeIndex + 1)}
               style={{
                 flex: 1, minWidth: 0, minHeight: 48, padding: '0 16px', borderRadius: 9999,
                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
@@ -1951,7 +2387,11 @@ export default function ExperienceDetail({ slug }: { slug: string }) {
             >
               <ChevronUp size={18} strokeWidth={2.5} className="reel-next-chevron" aria-hidden />
               <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                {last ? `That's all ${feedExperiences.length}. Back to the first` : `Next: ${next?.title ?? ''}`}
+                {last
+                  ? `That's all ${feedExperiences.length}. Back to the first`
+                  : next.clip
+                    ? `Next: guest clip ${next.clip.n} of ${next.clip.of}`
+                    : `Next: ${next.exp.title}`}
               </span>
             </button>
           )

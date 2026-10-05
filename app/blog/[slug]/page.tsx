@@ -828,7 +828,7 @@ export default function BlogPostPage({
               <p style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 14, color: 'var(--text-secondary)', margin: 0, lineHeight: 1.6 }}>
                 {ZONES[dest.zone].duration}. One flat price per vehicle for up to 4
                 people: <strong>${oneWay} one-way</strong>, <strong>${roundTrip} round-trip</strong> (10% off two one-ways).
-                Meet and greet with a name sign, live flight tracking, flexible cancellation within 48 hours of booking.
+                Meet and greet with a name sign, live flight tracking, flexible cancellation.
               </p>
               <Link
                 href={`/transfers?to=${dest.id}`}

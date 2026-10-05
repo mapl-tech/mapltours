@@ -657,9 +657,15 @@ function RewardsCard() {
   const used = allRewards.filter((r) => r.status === 'used')
   const active = availableRewards.length > 0
   const pct = active ? 100 : Math.min(100, (towardNext / VIDEO_REWARD_MILESTONE) * 100)
+  // /profile#rewards, from the clip emails: this card appears once sign-in
+  // has loaded, too late for the browser's own jump to it.
+  const cardRef = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    if (window.location.hash === '#rewards') cardRef.current?.scrollIntoView({ block: 'start' })
+  }, [])
 
   return (
-    <div className="pf-card pf-pad">
+    <div ref={cardRef} id="rewards" className="pf-card pf-pad" style={{ scrollMarginTop: 'calc(var(--nav-h, 56px) + 16px)' }}>
       <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, marginBottom: 14 }}>
         <span aria-hidden style={{
           width: 38, height: 38, borderRadius: '50%', flexShrink: 0,
@@ -671,12 +677,12 @@ function RewardsCard() {
         </span>
         <div style={{ minWidth: 0 }}>
           <p className="pf-eyebrow" style={{ color: active ? 'var(--emerald)' : 'var(--gold-text)', marginBottom: 3 }}>
-            {active ? 'Reward ready' : 'Video reward'}
+            {active ? 'Reward ready' : 'Clip reward'}
           </p>
           <h3 style={{ fontFamily: FONT, fontWeight: 800, fontSize: 16, color: 'var(--text-primary)', lineHeight: 1.3 }}>
             {active
-              ? '5% off your next trip'
-              : `${towardNext} of ${VIDEO_REWARD_MILESTONE} videos approved`}
+              ? '5% off your next tour'
+              : `${towardNext} of ${VIDEO_REWARD_MILESTONE} clips approved`}
           </h3>
         </div>
       </div>
@@ -689,7 +695,7 @@ function RewardsCard() {
         aria-valuenow={active ? VIDEO_REWARD_MILESTONE : towardNext}
         aria-valuemin={0}
         aria-valuemax={VIDEO_REWARD_MILESTONE}
-        aria-label="Videos approved toward your next reward"
+        aria-label="Clips approved toward your next reward"
         style={{ position: 'relative', height: 8, borderRadius: 9999, background: 'var(--border-strong)', overflow: 'hidden' }}
       >
         <div style={{
@@ -701,8 +707,8 @@ function RewardsCard() {
       <p style={{ fontFamily: FONT, fontSize: 13, color: 'var(--text-secondary)', marginTop: 10, lineHeight: 1.5 }}>
         {approved} approved{pending > 0 && `, ${pending} in review`}{rejected > 0 && `, ${rejected} not accepted`}.{' '}
         {active
-          ? 'Use the code below at checkout.'
-          : `Post ${VIDEO_REWARD_MILESTONE - towardNext} more from your trip to unlock 5% off.`}
+          ? 'It comes off automatically at checkout when you book a tour signed in.'
+          : `Post ${VIDEO_REWARD_MILESTONE - towardNext} more from your trip to unlock 5% off your next tour.`}
       </p>
 
       {(availableRewards.length + used.length) > 0 && (

@@ -260,6 +260,16 @@ export function mobileHevcVideo(video: string): string {
  * Safari does.
  */
 export const HEVC_SOURCE_TYPE = 'video/mp4; codecs="hvc1.1.6.L93.B0"'
+/**
+ * Desktop card version of the clips above: the 4:3 centre crop the tour card
+ * shows, at most 960x720, 30 fps, about 2.5 Mbps, 10 seconds, about 3 MB.
+ * The card played the original before (up to 57 MB, 18.5 Mbps, 120 fps),
+ * which stalled on home broadband and was never cached at Netlify's edge.
+ * Built by scripts/encode-card-clips.mjs for every catalogue video.
+ */
+export function cardVideo(video: string): string {
+  return video.replace(/^\/media\/video\/([^/]+)\.mp4$/, '/media/video/c/$1.mp4')
+}
 /** The first frame of the phone clip, so the still and the video are one shot. */
 export function videoPoster(video: string): string {
   return video.replace(/^\/media\/video\/([^/]+)\.mp4$/, '/media/video/m/$1.webp')

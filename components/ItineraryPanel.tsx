@@ -121,6 +121,18 @@ export default function ItineraryPanel({ open, onClose }: { open: boolean; onClo
             shrink below its content and actually scroll. */}
         <div className="no-scrollbar" style={{ flex: 1, minHeight: 0, overflowY: 'auto', overscrollBehavior: 'contain' }}>
 
+        {/* First, where a phone sees it without scrolling. */}
+        {items[0]?.kind === 'package' && (
+          <p style={{
+            padding: '12px 24px 0', fontSize: 13, fontWeight: 600, color: 'var(--gold-text)',
+            fontFamily: 'var(--font-dm-sans)', lineHeight: 1.45,
+          }}>
+            {items.filter((i) => i.kind === 'package').length > 1
+              ? t('Adding a single tour replaces your ready-made days.')
+              : t('Adding a single tour replaces your ready-made day.')}
+          </p>
+        )}
+
         {/* Day Builder */}
         <div style={{
           padding: '16px 24px 18px',
@@ -142,15 +154,6 @@ export default function ItineraryPanel({ open, onClose }: { open: boolean; onClo
             <DayFlow compact />
           </div>
         </div>
-
-        {items[0]?.kind === 'package' && (
-          <p style={{
-            padding: '10px 24px 0', fontSize: 12.5, color: 'var(--text-tertiary)',
-            fontFamily: 'var(--font-dm-sans)', lineHeight: 1.45,
-          }}>
-            {t('Keep this day, or add individual tours as you like.')}
-          </p>
-        )}
 
         {/* Items */}
         <div style={{ padding: '14px 24px' }}>
@@ -177,7 +180,7 @@ export default function ItineraryPanel({ open, onClose }: { open: boolean; onClo
                     background: 'none', border: 'none', color: 'var(--text-tertiary)',
                     fontSize: 12, fontFamily: 'var(--font-dm-sans)', cursor: 'pointer',
                     textDecoration: 'underline', textUnderlineOffset: 2,
-                    minHeight: 40, display: 'inline-flex', alignItems: 'center', padding: '0 4px',
+                    minHeight: 44, display: 'inline-flex', alignItems: 'center', padding: '0 4px',
                   }}>{t('Remove')}</button>
                 </div>
               </div>
@@ -213,7 +216,7 @@ export default function ItineraryPanel({ open, onClose }: { open: boolean; onClo
                         background: 'none', border: 'none', color: 'var(--text-tertiary)',
                         fontSize: 12, fontFamily: 'var(--font-dm-sans)', cursor: 'pointer',
                         textDecoration: 'underline', textUnderlineOffset: 2,
-                        minHeight: 40, display: 'inline-flex', alignItems: 'center', padding: '0 4px',
+                        minHeight: 44, display: 'inline-flex', alignItems: 'center', padding: '0 4px',
                       }}>{t('Remove')}</button>
                     </div>
                   </div>

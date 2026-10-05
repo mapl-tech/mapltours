@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'vitest'
 import { existsSync } from 'node:fs'
 import { join } from 'node:path'
-import { experiences, mobileVideo, videoPoster } from '@/lib/experiences'
+import { experiences, mobileVideo, videoPoster, cardVideo } from '@/lib/experiences'
 import { HERO_VIDEO_PHONE, HERO_POSTER_PHONE, HERO_POSTER, HERO_VIDEO_540, HERO_VIDEO_720, HERO_VIDEO_1080 } from '@/lib/images'
 
 const pub = (p: string) => join(process.cwd(), 'public', p)
@@ -17,6 +17,14 @@ describe('phone video derivatives', () => {
     }
   })
 
+  test('every clip has a desktop card version', () => {
+    const clips = Array.from(new Set(experiences.map((e) => e.video).filter((v): v is string => !!v)))
+    for (const v of clips) {
+      expect(cardVideo(v), v).not.toBe(v)
+      expect(existsSync(pub(cardVideo(v))), cardVideo(v)).toBe(true)
+    }
+  })
+
   test('every home hero file the component can pick exists', () => {
     for (const f of [HERO_VIDEO_PHONE, HERO_POSTER_PHONE, HERO_POSTER, HERO_VIDEO_540, HERO_VIDEO_720, HERO_VIDEO_1080]) {
       expect(existsSync(pub(f)), f).toBe(true)
@@ -25,5 +33,6 @@ describe('phone video derivatives', () => {
 
   test('helpers leave unknown paths alone', () => {
     expect(mobileVideo('/elsewhere/clip.mp4')).toBe('/elsewhere/clip.mp4')
+    expect(cardVideo('/elsewhere/clip.mp4')).toBe('/elsewhere/clip.mp4')
   })
 })

@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, memo } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { Experience, CATEGORY_COLORS, slugify , priceUnitLabel } from '@/lib/experiences'
+import { Experience, CATEGORY_COLORS, slugify , priceUnitLabel, cardVideo } from '@/lib/experiences'
 import { displayHandle } from '@/lib/creator'
 import { useCartStore } from '@/lib/cart'
 import { useHydrated } from '@/lib/use-hydrated'
@@ -36,6 +36,9 @@ export default memo(function ExpCard({ exp }: { exp: Experience }) {
   // desktop grid is in the phone DOM too (hidden), so without this a phone
   // carried 15 idle <video> elements it could never show.
   const [everHovered, setEverHovered] = useState(false)
+  // The photo stays up until the clip is actually moving. It used to fade on
+  // mouseenter, before a frame existed, so any wait showed a blank card.
+  const [clipPlaying, setClipPlaying] = useState(false)
 
   const handleMouseEnter = () => {
     setHovering(true)
@@ -47,17 +50,36 @@ export default memo(function ExpCard({ exp }: { exp: Experience }) {
   }
 
   // Play and pause after the commit, so the first hover, which is also the
-  // render that creates the element, finds it with its src in place.
+  // render that creates the element, finds it. The src is set here rather
+  // than as a prop because leaving can take it away again.
   useEffect(() => {
     const v = videoRef.current
-    if (!v) return
+    if (!v || !exp.video) return
     if (hovering) {
+      const clip = cardVideo(exp.video)
+      if (v.getAttribute('src') !== clip) v.src = clip
       v.currentTime = 0
       v.play().catch(() => {})
     } else {
       v.pause()
+      setClipPlaying(false)
+      // A paused clip goes on downloading. A pointer crossing the grid left
+      // three or four doing so, and they took 90% of the line from the card
+      // it stopped on (measured Oct 4 2026). Unless the whole clip is in
+      // already, drop it once the photo has faded back over it (0.3s):
+      // emptied at once, the card showed white through the fade. A hover
+      // back within that time cancels it and the clip carries on.
+      const b = v.buffered
+      const whole = v.duration > 0 && b.length > 0 && b.end(b.length - 1) >= v.duration - 0.1
+      if (!whole && v.getAttribute('src')) {
+        const drop = window.setTimeout(() => {
+          v.removeAttribute('src')
+          v.load()
+        }, 350)
+        return () => window.clearTimeout(drop)
+      }
     }
-  }, [hovering, everHovered])
+  }, [hovering, everHovered, exp.video])
 
   return (
     <article className="exp-card" style={{ cursor: 'pointer' }}>
@@ -79,7 +101,7 @@ export default memo(function ExpCard({ exp }: { exp: Experience }) {
             loading="lazy"
             style={{
               objectFit: 'cover',
-              opacity: hovering ? 0 : 1,
+              opacity: hovering && (clipPlaying || !!exp.youtubeId) ? 0 : 1,
               transition: 'opacity 0.3s ease',
             }}
           />
@@ -101,18 +123,18 @@ export default memo(function ExpCard({ exp }: { exp: Experience }) {
           ) : everHovered ? (
           <video
             ref={videoRef}
-            src={exp.video}
             muted
             loop
             playsInline
-            preload="none"
+            preload="auto"
+            onPlaying={(e) => { if (!e.currentTarget.paused) setClipPlaying(true) }}
             style={{
               position: 'absolute',
               inset: 0,
               width: '100%',
               height: '100%',
               objectFit: 'cover',
-              opacity: hovering ? 1 : 0,
+              opacity: hovering && clipPlaying ? 1 : 0,
               transition: 'opacity 0.3s ease',
             }}
           />

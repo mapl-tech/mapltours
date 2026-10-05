@@ -6,6 +6,9 @@
  * the button rather than pointing at a chat nobody answers.
  */
 export const SUPPORT_EMAIL = 'contact@mapltours.com'
+/** The sender for the clip emails, under the company's full name. The other
+ *  emails use EMAIL_FROM, whose display name is the owner's to change. */
+export const BRAND_FROM = `MAPL Tours Jamaica <${SUPPORT_EMAIL}>`
 export const REPLY_PROMISE = 'A person replies within 24 hours.'
 
 export const WHATSAPP_NUMBER = (process.env.NEXT_PUBLIC_WHATSAPP_NUMBER ?? '').replace(/\D/g, '') || null

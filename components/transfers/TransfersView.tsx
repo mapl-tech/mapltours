@@ -878,7 +878,7 @@ export default function TransfersView({ initialDestinationId }: { initialDestina
                 'Driver waits with your name at arrivals',
                 'Flight tracking, no surcharge if you land late',
                 'Air-conditioned private vehicle, your party only',
-                'Flexible cancellation within 48 hours of booking',
+                'Flexible cancellation',
               ]}
             />
             <CompareItem

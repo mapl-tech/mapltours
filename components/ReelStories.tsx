@@ -2,7 +2,7 @@
 
 import Image from 'next/image'
 import Link from 'next/link'
-import { singleExperiences, slugify, videoPoster, type Experience } from '@/lib/experiences'
+import { singleExperiences, slugify, type Experience } from '@/lib/experiences'
 import { useSeenReels } from '@/lib/seen-reels'
 import { useHydrated } from '@/lib/use-hydrated'
 import { useI18n } from '@/lib/i18n'
@@ -40,8 +40,11 @@ export default function ReelStories({ lead }: { lead: Experience[] }) {
                   aria-label={`${t(exp.title)}: watch the video${watched ? ' again' : ''}`}
                 >
                   <span className={watched ? 'reel-story-ring reel-story-ring--seen' : 'reel-story-ring'}>
+                    {/* The tour's cover photo, the one on its card, not the video's
+                        first frame: stock clips open on water or sky, which in a
+                        66px circle said nothing about the tour (owner, Oct 4). */}
                     <Image
-                      src={exp.video ? videoPoster(exp.video) : exp.image}
+                      src={exp.image}
                       alt=""
                       width={66}
                       height={66}

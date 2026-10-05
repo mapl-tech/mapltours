@@ -40,9 +40,29 @@ export default function ExploreView({ initialQuery = '' }: { initialQuery?: stri
   const [search, setSearch] = useState(initialQuery)
   const [activeCat, setActiveCat] = useState<string>('All')
   const [activeParish, setActiveParish] = useState('All Parishes')
-  const [filterHidden, setFilterHidden] = useState(false)
+  const [navHidden, setNavHidden] = useState(false)
+  // TopNav's header is 56px at every width; measured once mounted.
+  const [navHeight, setNavHeight] = useState(56)
+  const [barHeight, setBarHeight] = useState(0)
+  const [focusInBar, setFocusInBar] = useState(false)
+  const bar = useRef<HTMLDivElement>(null)
+  const results = useRef<HTMLDivElement>(null)
+  // Whether the visitor's last move was a key (Tab or an arrow) rather than a
+  // tap or a click: only then does focus inside pin the bar. A tapped chip
+  // keeps focus in Chrome, and a tapped search box counts as :focus-visible
+  // everywhere; either kept the bar over the results with the header gone.
+  const lastInputKey = useRef(false)
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Tab' || e.key.startsWith('Arrow')) lastInputKey.current = true }
+    const onPointer = () => { lastInputKey.current = false }
+    document.addEventListener('keydown', onKey, true)
+    document.addEventListener('pointerdown', onPointer, true)
+    return () => {
+      document.removeEventListener('keydown', onKey, true)
+      document.removeEventListener('pointerdown', onPointer, true)
+    }
+  }, [])
   const { t } = useI18n()
-  const lastScrollY = useRef(0)
   const parishId = useId()
   // null until hydration = render both grids exactly like the server did.
   const [isMobileVp, setIsMobileVp] = useState<boolean | null>(null)
@@ -61,19 +81,46 @@ export default function ExploreView({ initialQuery = '' }: { initialQuery?: stri
     if (initialQuery) setSearch(initialQuery)
   }, [initialQuery])
 
+  // The site header (TopNav) hides on scroll down and comes back on scroll up
+  // or when focus enters it. The bar follows the header's real state rather
+  // than keeping a scroll rule of its own: the two rules disagreed, and the
+  // bar parked at --nav-h (72px on desktop) under a 56px header, so desktop
+  // showed a strip of cards between them on the way up and a row of pills
+  // left on screen on the way down, and on a phone the header covered the
+  // search box (measured on production, Oct 4 2026). Read from the header's
+  // own style so TopNav, which checkout shares, stays untouched.
   useEffect(() => {
-    const onScroll = () => {
-      const y = window.scrollY
-      if (y > 150 && y > lastScrollY.current) {
-        setFilterHidden(true)
-      } else {
-        setFilterHidden(false)
-      }
-      lastScrollY.current = y
+    const nav = document.querySelector<HTMLElement>('.nav-header')
+    if (!nav) return
+    const read = () => {
+      setNavHidden(nav.style.transform.includes('-100%'))
+      setNavHeight(nav.offsetHeight || 56)
     }
-    window.addEventListener('scroll', onScroll, { passive: true })
-    return () => window.removeEventListener('scroll', onScroll)
+    read()
+    const observer = new MutationObserver(read)
+    observer.observe(nav, { attributes: true, attributeFilter: ['style'] })
+    return () => observer.disconnect()
   }, [])
+
+  // The bar's own height (two rows on a phone, one taller on desktop), so it
+  // can sit wholly above the screen edge while the header is away.
+  useEffect(() => {
+    const el = bar.current
+    if (!el) return
+    const measure = () => setBarHeight(el.offsetHeight)
+    measure()
+    const observer = new ResizeObserver(measure)
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [])
+
+  // Under a visible header: right below it. While the header is away the bar
+  // goes too, unless keyboard focus is inside, when it takes the top edge.
+  // It moves by its sticky line, not a transform: a transform left its place
+  // in the page empty, a blank band between the intro and the results on
+  // every scroll down (199px on a phone). Moved this way it simply scrolls
+  // off with the page.
+  const barTop = !navHidden ? navHeight : focusInBar ? 0 : -barHeight
 
   // lib/explore-search: every word of the search, in any order, so a tour
   // typed in the guest's own words ("bamboo rafting Martha Brae") is found.
@@ -81,6 +128,23 @@ export default function ExploreView({ initialQuery = '' }: { initialQuery?: stri
     () => filterExperiences(singleExperiences, { search, cat: activeCat, parish: activeParish }),
     [search, activeCat, activeParish],
   )
+
+  // A filter changed deep in the list: the results start again just below
+  // the header and the bar. Tapping "Culture" at the foot of the page left
+  // the guest looking at the footer, its first result far above the screen.
+  const filterChanges = useRef(0)
+  useEffect(() => {
+    if (filterChanges.current++ === 0) return
+    const el = results.current
+    if (!el) return
+    const clear = navHeight + (bar.current?.offsetHeight ?? 0)
+    const top = el.getBoundingClientRect().top
+    if (top >= clear) return
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    window.scrollTo({ top: window.scrollY + top - clear, behavior: reduce ? 'auto' : 'smooth' })
+    // Only the filters move it; the header's height is read as it is then.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeCat, activeParish, search])
 
   const filtering = activeCat !== 'All' || activeParish !== 'All Parishes' || search.trim() !== ''
   const clearAll = () => { setSearch(''); setActiveCat('All'); setActiveParish('All Parishes') }
@@ -118,14 +182,24 @@ export default function ExploreView({ initialQuery = '' }: { initialQuery?: stri
       </div>
 
       {/* Sticky controls */}
-      <div className="explore-sticky-bar" style={{
-        position: 'sticky', top: 'var(--nav-h)', zIndex: 20,
-        background: 'rgba(250,249,247,0.94)',
-        backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)',
-        borderBottom: '1px solid var(--border)',
-        transition: 'transform 0.35s cubic-bezier(0.22,1,0.36,1)',
-        transform: filterHidden ? 'translateY(-100%)' : 'translateY(0)',
-      }}>
+      <div
+        ref={bar}
+        className="explore-sticky-bar"
+        onFocus={() => setFocusInBar(lastInputKey.current)}
+        onBlur={(e) => {
+          if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setFocusInBar(false)
+        }}
+        style={{
+          position: 'sticky', top: barTop, zIndex: 20,
+          // Opaque: the blur never rendered in Chrome (the page wrapper's
+          // filled opacity animation defeats backdrop-filter), so the results
+          // showed sharp through a 94% bar.
+          background: 'var(--bg-warm)',
+          borderBottom: '1px solid var(--border)',
+          // The header's own curve and length, so the two move as one.
+          transition: 'top 0.35s cubic-bezier(0.22,1,0.36,1)',
+        }}
+      >
         <div className="container" style={{ paddingTop: 14, paddingBottom: 14 }}>
           <div className="explore-controls" style={{ marginBottom: 12 }}>
             <div style={{
@@ -146,8 +220,9 @@ export default function ExploreView({ initialQuery = '' }: { initialQuery?: stri
                 placeholder={t('Search experiences...')}
                 aria-label="Search experiences"
                 style={{
+                  // A 3.49:1 edge: the field must read as a field (WCAG 1.4.11).
                   width: '100%', height: 44, borderRadius: 9999,
-                  border: '1px solid var(--border)', background: 'var(--surface)',
+                  border: '1px solid #8A857C', background: 'var(--surface)',
                   padding: '0 44px 0 42px', fontSize: 16,
                   fontFamily: 'var(--font-dm-sans)', color: 'var(--text-primary)',
                   outline: 'none',
@@ -202,7 +277,7 @@ export default function ExploreView({ initialQuery = '' }: { initialQuery?: stri
 
       <h2 className="visually-hidden">All experiences</h2>
 
-      <div className="container" style={{ paddingTop: 20, paddingBottom: 80 }}>
+      <div ref={results} className="container" style={{ paddingTop: 20, paddingBottom: 80 }}>
         {/* Result count. Filters that change nothing visible feel broken, and
             a live region means the change is announced rather than only seen. */}
         <div style={{

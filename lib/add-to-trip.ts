@@ -1,4 +1,4 @@
-import { useCartStore } from './cart'
+import { useCartStore, type DaySnapshot } from './cart'
 import { useTripNotice } from './trip-notice'
 import { tripDayLabel } from './reel-feed'
 import type { Experience } from './experiences'
@@ -61,4 +61,38 @@ export function addTourToTrip(
     placement: opts.placement,
   })
   return 'swapped'
+}
+
+/**
+ * Add a ready-made day (a package). The cart holds one kind of day, so a
+ * package replaces the single tours in it, and any package it shares an
+ * activity with (cart addItem). That used to happen without a word: the
+ * notice now says what it replaced, and Undo puts the day back exactly as it
+ * was, as it does for a tour booked in a day's place.
+ */
+export function addPackageToTrip(
+  pkg: Experience,
+  opts: { placement: 'reel' | 'page'; checkout: boolean; onUndo?: () => void },
+): AddResult {
+  const store = useCartStore.getState()
+  if (store.isInCart(pkg.id)) return 'already'
+  const snapshot: DaySnapshot = { items: store.items, stops: store.stops }
+  store.addItem(pkg)
+  const after = useCartStore.getState().items
+  const line = after.find((i) => i.id === pkg.id)
+  if (!line) return 'blocked'
+  const replaced = snapshot.items.filter((i) => !after.some((a) => a.id === i.id))
+  const day = tripDayLabel(line.date)
+  useTripNotice.getState().show({
+    text: replaced.length === 0
+      ? (day ? `Added for ${day}. You can change the day at checkout.` : 'Added to your trip.')
+      : `Booked in place of ${replaced.length === 1 ? replaced[0].title : `your ${replaced.length} tours`}.`,
+    undo: () => {
+      useCartStore.getState().restoreDay(snapshot)
+      opts.onUndo?.()
+    },
+    checkout: opts.checkout,
+    placement: opts.placement,
+  })
+  return replaced.length > 0 ? 'swapped' : 'added'
 }

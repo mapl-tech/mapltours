@@ -8,7 +8,7 @@
  * Approving a video triggers the DB function that may unlock a 5%-off reward.
  */
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import Link from 'next/link'
 import {
   useAdminVideoQueue,
@@ -54,6 +54,27 @@ export default function AdminVideosPage() {
     () => (filter === 'all' ? all : all.filter((v) => v.status === filter)),
     [all, filter],
   )
+
+  // The new-clip email links here with ?clip=<id>: once the queue loads, that
+  // clip's tab opens and the clip is brought into view and outlined. Read from
+  // the address in an effect, so the page needs no Suspense boundary.
+  // Once only, so reviewing it or the clips around it never jumps the page.
+  const [wanted, setWanted] = useState<string | null>(null)
+  const [shown, setShown] = useState(false)
+  useEffect(() => {
+    setWanted(new URLSearchParams(window.location.search).get('clip'))
+  }, [])
+  const wantedStatus = wanted ? all.find((v) => v.id === wanted)?.status : undefined
+  useEffect(() => {
+    if (wantedStatus && !shown) setFilter(wantedStatus)
+  }, [wantedStatus, shown])
+  useEffect(() => {
+    if (!wanted || shown) return
+    const card = document.getElementById(`clip-${wanted}`)
+    if (!card) return
+    card.scrollIntoView({ block: 'center' })
+    setShown(true)
+  }, [wanted, shown, videos])
 
   if (authLoading || adminLoading) {
     return <Shell><p style={{ color: faint }}>Checking access…</p></Shell>
@@ -152,7 +173,7 @@ export default function AdminVideosPage() {
           gap: 16, marginTop: 22,
         }}>
           {videos.map((v) => (
-            <ModerationCard key={v.id} video={v} onChanged={refresh} />
+            <ModerationCard key={v.id} video={v} onChanged={refresh} highlighted={v.id === wanted} />
           ))}
         </div>
       )}
@@ -160,7 +181,7 @@ export default function AdminVideosPage() {
   )
 }
 
-function ModerationCard({ video, onChanged }: { video: AdminVideo; onChanged: () => void }) {
+function ModerationCard({ video, onChanged, highlighted }: { video: AdminVideo; onChanged: () => void; highlighted?: boolean }) {
   const [notes, setNotes] = useState(video.admin_notes ?? '')
   const [busy, setBusy] = useState<null | VideoStatus>(null)
   const experience = useMemo(
@@ -176,9 +197,11 @@ function ModerationCard({ video, onChanged }: { video: AdminVideo; onChanged: ()
   }
 
   return (
-    <article style={{
+    <article id={`clip-${video.id}`} style={{
       background: '#fff',
       border,
+      outline: highlighted ? '2px solid #B8873D' : undefined,
+      outlineOffset: 2,
       borderRadius: 16,
       overflow: 'hidden',
       display: 'flex', flexDirection: 'column',
