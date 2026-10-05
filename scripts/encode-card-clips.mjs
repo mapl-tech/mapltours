@@ -5,7 +5,7 @@
  *
  * The tour card (components/ExpCard.tsx) plays this on hover, through
  * lib/experiences cardVideo. It played the original before, and the originals
- * are 3 to 57 MB at up to 18.5 Mbps and 120 fps, eight of them fragmented
+ * are 3 to 57 MB at up to 29 Mbps and 120 fps, eight of them fragmented
  * MP4s that cost Chrome several range requests before the first frame. On a
  * 20 Mbps line the jet ski clip stalled five times in its first five seconds,
  * and Netlify's edge never stores a file that large when the browser asks for
@@ -13,9 +13,9 @@
  *
  * The card shows a 4:3 centre crop of the clip (object-fit: cover), so that
  * crop is all this keeps: at most 960x720, which a 2x screen draws at about
- * its own size, no faster than 30 fps, the first 10 seconds (counted from
- * START where a clip has one), H.264 High at
- * CRF 23 capped at 2.5 Mbps, moov first, one unfragmented file, no audio.
+ * its own size, no faster than 30 fps, the first 10 seconds unless CUT gives
+ * a clip its own window, H.264 High at CRF 23 capped at 2.5 Mbps, moov first,
+ * one unfragmented file, no audio.
  *
  *   FFMPEG=/path/to/ffmpeg node scripts/encode-card-clips.mjs [--force]
  *
@@ -33,18 +33,21 @@ const ffmpeg = process.env.FFMPEG || 'ffmpeg'
 const force = process.argv.includes('--force')
 const only = process.env.ONLY ? new Set(process.env.ONLY.split(',')) : null
 
-// Seconds to skip where a clip's subject is not yet in frame at 0 s. The
-// phone clip is cut from the same second (lib/experiences mobileVideo), so
-// the reel and the card open on the same picture.
-const START = {
-  // The clear kayak is still coming up from under the bottom edge.
-  '38809773': 5,
+// A clip whose card needs its own window instead of the first 10 s, upright:
+// start and duration in seconds, and a filter (pre) that runs before the 4:3
+// centre crop. The phone clip has its own cut (documented above mobileVideo
+// in lib/experiences.ts).
+const CUT = {
+  // The clear kayak (tour 12), turned on its side like its listing photo, so
+  // the whole kayak and her head fit the 4:3 card from the first frame. It
+  // stops before a snorkeler's rope reaches the frame at about 6 s.
+  '19358284': { duration: 5.5, pre: 'transpose=1,' },
 }
 
-function encode(src, out, start = 0) {
+function encode(src, out, { start = 0, duration = 10, pre = '' } = {}) {
   return spawnSync(ffmpeg, [
-    '-y', '-v', 'error', ...(start ? ['-ss', String(start)] : []), '-i', src, '-t', '10',
-    '-vf', "crop='min(iw,ih*4/3)':'min(ih,iw*3/4)',scale='min(960,iw)':-2:flags=lanczos,setsar=1",
+    '-y', '-v', 'error', ...(start ? ['-ss', String(start)] : []), '-i', src, '-t', String(duration),
+    '-vf', `${pre}crop='min(iw,ih*4/3)':'min(ih,iw*3/4)',scale='min(960,iw)':-2:flags=lanczos,setsar=1`,
     '-fpsmax', '30',
     '-c:v', 'libx264', '-preset', 'slow', '-crf', '23',
     '-maxrate', '2500k', '-bufsize', '5000k',
@@ -75,7 +78,7 @@ for (const id of ids) {
     console.log(`skip ${id} (up to date)`)
     continue
   }
-  if (encode(src, out, START[id]).status !== 0) {
+  if (encode(src, out, CUT[id]).status !== 0) {
     console.error(`failed: ${id}`)
     failed++
     continue

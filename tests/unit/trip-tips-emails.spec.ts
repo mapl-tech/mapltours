@@ -911,6 +911,9 @@ describe('photos: from the site, email-safe, and of what the email is about', ()
     // The jet skis by the same rule: two people stand beside them, one per ski, and nothing says who they are.
     expect(PHOTOS.jetSki.alt).not.toMatch(/guide/i)
     expect(PHOTOS.jetSki.alt).toContain('two people standing in the water')
+    // Only one of the two women in the clear kayak looks up at the drone, and she sits in the back.
+    expect(PHOTOS.kayakPair.alt).toContain('one of them smiling up')
+    expect(PHOTOS.kayakPair.alt).not.toMatch(/\bfront\b/)
   })
 
   test('the ride and arrivals emails show the ride', () => {

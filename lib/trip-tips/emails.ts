@@ -219,8 +219,10 @@ export const PHOTOS = {
   horsebackTrail: { file: 'horseback-trail.jpg', width: 1200, height: 600, alt: 'Three riders on horseback along a beach at sunset' },
   horseSwim: { file: 'horse-swim.jpg', width: 1200, height: 600, alt: 'A rider on a horse swimming through the surf' },
   parasail: { file: 'parasail.jpg', width: 1200, height: 600, alt: 'A boat crossing a reef, seen from above, with a parasail in the air' },
-  // The Clear Kayak Drone Photoshoot's listing image (clear-kayak-river.jpg), a still from its stock clip (Pexels 38809773): a clear kayak on a river, not Collin's river.
-  kayak: { file: 'kayak.jpg', width: 1080, height: 540, alt: 'Two people in life vests paddling a see-through kayak on a clear river' },
+  // The kind of shot Collin sent, from stock (Pexels, dave white, a lagoon in Zanzibar), not his guests or his river: the Clear Kayak Drone
+  // Photoshoot's listing image (clear-kayak-lounge.jpg, a frame of clip 19358284) and Bamboo Raft + Clear Kayak + Drone Photos' (clear-kayak-pair.jpg, photo 19357947).
+  kayak: { file: 'kayak.jpg', width: 1200, height: 600, alt: 'A woman lying back in a clear kayak on turquoise water, seen from a drone straight above' },
+  kayakPair: { file: 'kayak-pair.jpg', width: 1200, height: 600, alt: 'Two women in one clear kayak on turquoise water, one of them smiling up at the drone' },
   riverTubing: { file: 'river-tubing.jpg', width: 1120, height: 560, alt: 'Riders in helmets tubing down a rocky river' },
   nineMile: { file: 'nine-mile.jpg', width: 720, height: 360, alt: 'The 9 Miles Trading Post, Bob Marley’s face painted above its door' },
   // No tour has shown it since Oct 5 2026, when the clear kayak turned out to be a river photoshoot and 17 took `kayak`; kept so a tip already sent keeps its picture.
@@ -251,7 +253,7 @@ export const TOUR_PHOTOS: Record<number, PhotoName | null> = {
   14: 'ricksCafeSunset',
   15: 'nineMile',
   16: 'riverTubing', // Tubing + Clear Kayak: its listing image shows neither; River Tubing (13) is in it
-  17: 'kayak', // Bamboo Raft + Clear Kayak + Drone Photos: the clear kayak (12) in it; its listing image is another still from the same stock clip
+  17: 'kayakPair',
   18: 'blueHole', // Dunn's River + Blue Hole: the listing image is not Dunn's River; the day visits the Blue Hole (2)
   19: 'atv', // Zipline + ATV: the ATV Off-Road (6) in it, Collins's own buggies, not the listing's stock ATV in a desert (5976872.jpg)
   21: 'marthaBraeRaft', // Bamboo Rafting + Zipline: the listing's rafts are not on the Martha Brae (3), which it rafts

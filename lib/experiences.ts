@@ -244,12 +244,17 @@ const VIDEOS = {
   beachSwim:   '/media/video/10904849.mp4',
   jetSki:      '/media/video/15290251.mp4',
   parasail:    '/media/video/2523901.mp4',
-  clearKayak:  '/media/video/38809773.mp4',
+  // The kind of shot Collin sent (Oct 5 2026): a drone straight down on a
+  // guest lounging in a clear kayak. Both are stock from one Zanzibar drone
+  // photographer on Pexels (dave white, 19358284 and 19358147), not
+  // Collin's guests or his river; replace them with his own once a guest
+  // agrees. The masters are already trimmed and framed (see mobileVideo).
+  clearKayak:  '/media/video/19358284.mp4',
   river:       '/media/video/11598677.mp4',
   cliffDiving: '/media/video/27952003.mp4',
   culture:     '/media/video/37177393.mp4',
   tubing:      '/media/video/6740290.mp4',
-  droneKayak:  '/media/video/4207416.mp4',
+  clearKayakPair: '/media/video/19358147.mp4',
   waterfall2:  '/media/video/33720041.mp4',
   offRoad2:    '/media/video/5319274.mp4',
   rasta2:      '/media/video/37177249.mp4',
@@ -273,7 +278,7 @@ const VIDEOS = {
  * 2.5 Mbps, 12 seconds, no audio, index at the front. Made with ffmpeg from
  * the files in /media/video (scratch script, Sept 2026); a unit test checks
  * every clip has both files. The desktop files run 3 to 54 MB at up to
- * 23 Mbps, which on cellular stalled or never started.
+ * 29 Mbps, which on cellular stalled or never started.
  *
  * ricksCafe's overhead jumps sit left of centre (about 37% of the width), so
  * its 9:16 window (774x1376, the full height) sits where the action is in
@@ -286,12 +291,18 @@ const VIDEOS = {
  *     -profile:v high -level 4.0 -pix_fmt yuv420p -movflags +faststart -an
  *     m/ricks-cafe-cliff-diving.mp4
  *
- * The clear kayak's clip (38809773) starts 5 s in, so it runs about 6 s:
- * before that the kayak is still coming up from under the bottom edge, where
- * the reel's title sits, and the poster (its first frame) showed only water.
- * `ffmpeg -ss 5 -i 38809773.mp4 -vf "fps=30,scale=720:1280:flags=lanczos,
- * setsar=1"` with the same x264 settings; its card clip starts at the same
- * second (START in scripts/encode-card-clips.mjs).
+ * The two clear-kayak clips come from 4K Pexels files (2160x3838) cut into
+ * 1080x1920 masters, then the same x264 settings for the phone clip:
+ * - 19358284 (tour 12): the first 9 s, unframed, at CRF 21 (its sparkling
+ *   water made CRF 18 a 42 MB master). The drone rises from her; the phone
+ *   clip is its first 4.45 s (`-t 4.45`), because a snorkeler swims into the
+ *   top-left corner from 4.5 s. Upright, her head sits above the card's 4:3
+ *   band while the drone is low, so the card clip is the first 5.5 s turned
+ *   on its side like the listing photo (CUT in scripts/encode-card-clips.mjs).
+ * - 19358147 (package 17): 3 s to 9 s, framed with crop=1944:3456:137:380
+ *   (the kayak higher, clear of the reel's title; a boat comes in at 9 s,
+ *   and seagrass reaches the right edge from about 8 s), at CRF 18; the
+ *   phone clip is all of it.
  */
 export function mobileVideo(video: string): string {
   return video.replace(/^\/media\/video\/([^/]+)\.mp4$/, '/media/video/m/$1.mp4')
@@ -316,7 +327,8 @@ export function mobileHevcVideo(video: string): string {
 export const HEVC_SOURCE_TYPE = 'video/mp4; codecs="hvc1.1.6.L93.B0"'
 /**
  * Desktop card version of the clips above: the 4:3 centre crop the tour card
- * shows, at most 960x720, 30 fps, about 2.5 Mbps, 10 seconds, about 3 MB.
+ * shows, at most 960x720, 30 fps, about 2.5 Mbps, 10 seconds (or the window
+ * the script's CUT gives a clip), about 3 MB.
  * The card played the original before (up to 57 MB, 18.5 Mbps, 120 fps),
  * which stalled on home broadband and was never cached at Netlify's edge.
  * Built by scripts/encode-card-clips.mjs for every catalogue video.
@@ -324,7 +336,14 @@ export const HEVC_SOURCE_TYPE = 'video/mp4; codecs="hvc1.1.6.L93.B0"'
 export function cardVideo(video: string): string {
   return video.replace(/^\/media\/video\/([^/]+)\.mp4$/, '/media/video/c/$1.mp4')
 }
-/** The first frame of the phone clip, so the still and the video are one shot. */
+/**
+ * The first frame of the phone clip, so the still and the video are one shot:
+ *   ffmpeg -i m/<id>.mp4 -frames:v 1 -vf "scale=in_color_matrix=bt709:
+ *     in_range=tv:out_range=pc,format=bgra" -c:v libwebp -quality 80
+ *     -compression_level 6 m/<id>.webp
+ * Without the BT.709 matrix, libwebp reads the clip's colours as BT.601 and
+ * the still's water is visibly a different colour from the clip it gives way to.
+ */
 export function videoPoster(video: string): string {
   return video.replace(/^\/media\/video\/([^/]+)\.mp4$/, '/media/video/m/$1.webp')
 }
@@ -873,7 +892,8 @@ export const experiences: Experience[] = [
     followers: '',
     gradient: 'linear-gradient(170deg, #002B5B 0%, #0066A0 52%, #00B4D8 100%)',
     emoji: '🛶',
-    image: '/media/img/clear-kayak-river.jpg',
+    // A frame of its clip, turned on its side so the whole kayak fits 4:3.
+    image: '/media/img/clear-kayak-lounge.jpg',
     video: VIDEOS.clearKayak,
     about: "A photoshoot in a see-through kayak on a calm, clear river. You float while the drone shoots from above, so the pictures show you, the kayak and the water under it, and you go home with drone photos and video of your own.",
     ages: "6 and up",
@@ -1127,11 +1147,10 @@ export const experiences: Experience[] = [
     followers: '',
     gradient: 'linear-gradient(170deg, #002B5B 0%, #0066A0 52%, #00B4D8 100%)',
     emoji: '📸',
-    // A still from the clear kayak's stock clip (Pexels 38809773) until
-    // photos of this day come in. The old image (7763506.jpg) showed sit-on-top
-    // sea kayaks, and the kayak half is a clear kayak on a river.
-    image: '/media/img/clear-kayak-river-side.jpg',
-    video: VIDEOS.droneKayak,
+    // Pexels photo 19357947, the two women of its clip (see VIDEOS). It
+    // showed sit-on-top sea kayaks (7763506.jpg) until Oct 5 2026.
+    image: '/media/img/clear-kayak-pair.jpg',
+    video: VIDEOS.clearKayakPair,
     about: "A raft down the river, then a photoshoot in a clear kayak on calm water with a drone overhead, so you go home with footage of your own day rather than stock. The edited clips and stills land by download link a few days later.",
     ages: "6 and up",
     fitness: "Under-12s raft and paddle with an adult. Light throughout. Seated on the raft, flat water in the kayak, and short walks at each entry point.",
