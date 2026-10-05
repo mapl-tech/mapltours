@@ -7,7 +7,7 @@ import { useCartStore } from '@/lib/cart'
 import { useState, useEffect, useRef, useMemo } from 'react'
 import { Search, Lock, MapPin, ShoppingBag, Car, Menu, X, Heart, Compass } from 'lucide-react'
 import { DESTINATIONS as TRANSFER_DESTINATIONS } from '@/lib/airport-transfers'
-import { TOUR_DESTINATIONS, singleExperiences, slugify } from '@/lib/experiences'
+import { TOUR_DESTINATIONS, singleExperiences, slugify, placeLabel } from '@/lib/experiences'
 import { experienceMatchesSearch } from '@/lib/explore-search'
 import LanguageSwitcher from './LanguageSwitcher'
 import { useI18n } from '@/lib/i18n'
@@ -442,7 +442,7 @@ export default function TopNav({ onCartClick }: { onCartClick?: () => void }) {
                     </div>
                     <div>
                       <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>{exp.title}</p>
-                      <p style={{ fontSize: 12, color: 'var(--text-tertiary)', marginTop: 1 }}>{t('Tour')} · {exp.destination}, {exp.parish}</p>
+                      <p style={{ fontSize: 12, color: 'var(--text-tertiary)', marginTop: 1 }}>{t('Tour')} · {placeLabel(exp)}</p>
                     </div>
                   </button>
                 ))}
@@ -1020,7 +1020,7 @@ export default function TopNav({ onCartClick }: { onCartClick?: () => void }) {
               </span>
               <span>
                 <span style={{ display: 'block', fontSize: 15, fontWeight: 600, color: 'var(--text-primary)' }}>{exp.title}</span>
-                <span style={{ display: 'block', fontSize: 13, color: 'var(--text-tertiary)', marginTop: 1 }}>{t('Tour')} · {exp.destination}, {exp.parish}</span>
+                <span style={{ display: 'block', fontSize: 13, color: 'var(--text-tertiary)', marginTop: 1 }}>{t('Tour')} · {placeLabel(exp)}</span>
               </span>
             </button>
           ))}

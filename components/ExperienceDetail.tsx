@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, useLayoutEffect, useCallback, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
-import { singleExperiences, packageExperiences, Experience, slugify , priceUnitLabel, mobileVideo, mobileHevcVideo, reelPoster, HEVC_SOURCE_TYPE } from '@/lib/experiences'
+import { singleExperiences, packageExperiences, Experience, slugify , priceUnitLabel, placeLabel, mobileVideo, mobileHevcVideo, reelPoster, HEVC_SOURCE_TYPE } from '@/lib/experiences'
 import { trackViewItem, trackReelDetailsOpen, trackReelCtaTap, trackClipsEvent } from '@/lib/analytics'
 import { CLIPS_POST_QUERY } from '@/lib/safe-redirect'
 import { useI18n } from '@/lib/i18n'
@@ -1239,7 +1239,7 @@ function DesktopTourPanel({ exp }: { exp: Experience }) {
         {t(exp.title)}
       </h2>
       <p style={{ fontSize: 14, color: '#cccccc', display: 'flex', gap: 14, flexWrap: 'wrap' }}>
-        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}><MapPin size={14} aria-hidden /> {exp.destination}, {exp.parish}</span>
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}><MapPin size={14} aria-hidden /> {placeLabel(exp)}</span>
         <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}><Clock size={14} aria-hidden /> {exp.duration}</span>
       </p>
       {/* Under 420px of panel (a 768px tablet gives it about 300) the

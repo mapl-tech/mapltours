@@ -225,6 +225,33 @@ export const useTransfersCart = create<TransfersCartStore>()(
         const items = repriced.slice(-1)
         return { ...state, items } as TransfersCartStore
       },
+      // A saved line is the guest's choice (where, which way, how many, when),
+      // not a frozen fare: every load re-reads the fare, the name and the zone
+      // from the live rate table, for the party size, as lib/cart.ts does for
+      // tours. Only a version bump used to reprice (and then for one guest),
+      // so any fare change stranded saved carts: the page sent the old total,
+      // the server priced afresh, and "Cart total mismatch, please reload"
+      // came back on every reload (Collin's sheet, Oct 2026, moved sixteen
+      // fares for five to seven guests). A hotel no longer listed drops out.
+      merge: (persisted, current) => {
+        const state = (persisted ?? {}) as Partial<TransfersCartStore>
+        const items = (state.items ?? []).flatMap((i) => {
+          const dest = getDestination(i.destinationId)
+          const priceUsd = dest ? getTransferPrice(i.destinationId, i.tripType, i.passengers ?? 1) : null
+          if (!dest || priceUsd === null) return []
+          const zone = ZONES[dest.zone]
+          return [{
+            ...i,
+            destinationName: dest.name,
+            parish: dest.parish,
+            zone: dest.zone,
+            zoneLabel: zone?.label ?? i.zoneLabel,
+            zoneDuration: zone?.duration ?? i.zoneDuration,
+            priceUsd,
+          }]
+        })
+        return { ...current, ...state, items }
+      },
     },
   ),
 )

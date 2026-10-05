@@ -9,7 +9,7 @@ import Image from 'next/image'
 import { ArrowLeft, Check, MapPin, Users, Calendar, Clock, Leaf, Lock, ShieldCheck, CalendarDays, ChevronDown } from 'lucide-react'
 import { earliestBookableExperienceDate } from '@/lib/booking-window'
 import { useCartStore, DAILY_HOUR_LIMIT, type CartItem } from '@/lib/cart'
-import { tourPrice, perTravelerPrice, maxGroupSize } from '@/lib/experiences'
+import { tourPrice, perTravelerPrice, maxGroupSize, placeLabel } from '@/lib/experiences'
 import { getStoredAttribution } from '@/lib/attribution'
 import { trackBeginCheckout } from '@/lib/analytics'
 import TripTimeBar from '@/components/TripTimeBar'
@@ -425,7 +425,7 @@ function ReviewStep({ formData, setFormData, formErrors }: {
                   <div>
                     <h4 style={{ fontFamily: 'var(--font-dm-sans)', fontWeight: 700, fontSize: 16, marginBottom: 4, lineHeight: 1.25 }}>{t(item.title)}</h4>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 12, color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-sans)' }}>
-                      <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}><MapPin size={12} /> {item.destination}, {item.parish}</span>
+                      <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}><MapPin size={12} /> {placeLabel(item)}</span>
                       <span>·</span>
                       <span>{item.duration}</span>
                     </div>

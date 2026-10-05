@@ -109,6 +109,7 @@ export interface TransferDestination {
 export const DESTINATIONS: TransferDestination[] = [
   // Zone A, Montego Bay & Rose Hall
   { id: 'iberostar-rose-hall', name: 'Iberostar Waves Rose Hall', parish: 'St. James', zone: 'A', baseRate: 40 },
+  { id: 'iberostar-selection-rose-hall', name: 'Iberostar Selection Rose Hall', parish: 'St. James', zone: 'A', baseRate: 40, extraPerPerson: 5 },
   { id: 'secrets-st-james', name: 'Secrets St. James, Montego Bay', parish: 'St. James', zone: 'A', baseRate: 40, extraPerPerson: 5, reopens: 'Q1 2027' },
   { id: 'secrets-wild-orchid', name: 'Secrets Wild Orchid, Montego Bay', parish: 'St. James', zone: 'A', baseRate: 40, extraPerPerson: 5, reopens: 'Q1 2027' },
   { id: 'jewel-grande-montego-bay', name: 'Jewel Grande Montego Bay', parish: 'St. James', zone: 'A', baseRate: 40, estimated: true , reopens: '2027' },
@@ -165,13 +166,13 @@ export const DESTINATIONS: TransferDestination[] = [
   { id: 'couples-swept-away', name: 'Couples Swept Away, Negril', parish: 'Westmoreland', zone: 'D', baseRate: 90 },
   { id: 'couples-negril', name: 'Couples Negril', parish: 'Westmoreland', zone: 'D', baseRate: 90 },
   { id: 'hedonism-ii', name: 'Hedonism II, Negril', parish: 'Westmoreland', zone: 'D', baseRate: 90, extraPerPerson: 25 },
-  { id: 'bahia-principe-runaway-bay', name: 'Bahia Principe Explore Jamaica, Runaway Bay', parish: 'St. Ann', zone: 'D', baseRate: 80, reopens: '1 Dec 2026' },
-  { id: 'bahia-principe-escape', name: 'Bahia Principe Escape, Runaway Bay', parish: 'St. Ann', zone: 'D', baseRate: 80 },
+  { id: 'bahia-principe-runaway-bay', name: 'Bahia Principe Explore Jamaica, Runaway Bay', parish: 'St. Ann', zone: 'D', baseRate: 80, extraPerPerson: 19, reopens: '1 Dec 2026' },
+  { id: 'bahia-principe-escape', name: 'Bahia Principe Escape, Runaway Bay', parish: 'St. Ann', zone: 'D', baseRate: 80, extraPerPerson: 19 },
   { id: 'jewel-paradise-cove', name: 'Royalton CHIC Jamaica Paradise Cove, Runaway Bay', parish: 'St. Ann', zone: 'D', baseRate: 80, estimated: true , reopens: '15 Jul 2027' },
 
   // Zone E, Ocho Rios & South Coast
   { id: 'sandals-ochi', name: 'Sandals Ochi Beach Resort', parish: 'St. Ann', zone: 'E', baseRate: 90, estimated: true },
-  { id: 'sandals-dunns-river', name: "Sandals Dunn's River", parish: 'St. Ann', zone: 'E', baseRate: 90, estimated: true },
+  { id: 'sandals-dunns-river', name: "Sandals Dunn's River", parish: 'St. Ann', zone: 'E', baseRate: 90 },
   { id: 'moon-palace-ocho-rios', name: 'Moon Palace Jamaica, Ocho Rios', parish: 'St. Ann', zone: 'E', baseRate: 90 },
   { id: 'riu-ocho-rios', name: 'Riu Ocho Rios', parish: 'St. Ann', zone: 'E', baseRate: 90 },
   { id: 'sandals-royal-plantation', name: 'Sandals Royal Plantation, Ocho Rios', parish: 'St. Ann', zone: 'E', baseRate: 90 },
@@ -194,7 +195,6 @@ export const DESTINATIONS: TransferDestination[] = [
   // a real quote replaces the estimate and usually comes down.
 
   // Zone A, Montego Bay & Rose Hall
-  { id: 'iberostar-selection-rose-hall', name: 'Iberostar Selection Rose Hall', parish: 'St. James', zone: 'A', baseRate: 40, estimated: true },
   { id: 'toby-resort', name: "Toby's Resort, Montego Bay", parish: 'St. James', zone: 'A', baseRate: 40, estimated: true },
   { id: 'mbj-other', name: 'Other hotel or villa, Montego Bay / Rose Hall', parish: 'St. James', zone: 'A', baseRate: 40, estimated: true },
 
@@ -656,6 +656,9 @@ const NAME_ALIASES: Record<string, string> = {
   'grand-decameron-montego-beach': 'royal decameron',
   'grand-decameron-cornwall-beach': 'royal decameron',
   'iberostar-grand-rose-hall': 'iberostar grand',
+  // Its name from 2010 until Sandals reopened it in May 2023, and still the
+  // name on Collin's sheet.
+  'sandals-dunns-river': "jewel dunn's river",
   'moon-palace-grand-montego-bay': 'moon palace montego bay',
 }
 

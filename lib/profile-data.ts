@@ -9,7 +9,7 @@
  * Three of these functions exist because the inline versions they replace
  * were wrong in ways a guest could see. Each is called out at its definition.
  */
-import { experiences } from './experiences'
+import { experiences, placeLabel } from './experiences'
 
 export interface ProfileBookingItem {
   title: string
@@ -79,6 +79,17 @@ export function itemImage(item: ProfileBookingItem): string | null {
 }
 
 /** The parish an item sits in, or null for a transfer. */
+/**
+ * Where a booked tour runs, town and parish from one source: the catalogue,
+ * while the tour is in it. The town stored with a booking made before a tour
+ * moved (Collin's sheet, Oct 2026) next to the catalogue's new parish read
+ * "Ocho Rios, Hanover". Otherwise the place stored with the booking.
+ */
+export function itemPlace(item: ProfileBookingItem): string | null {
+  const exp = experiences.find((e) => e.id === item.experience_id)
+  return exp ? placeLabel(exp) : item.destination || null
+}
+
 export function itemParish(item: ProfileBookingItem): string | null {
   return experiences.find((e) => e.id === item.experience_id)?.parish ?? null
 }

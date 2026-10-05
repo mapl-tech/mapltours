@@ -528,7 +528,7 @@ export const POSTS_3: BlogPost[] = [
       },
       {
         type: 'p',
-        text: "MAPL Tours guests at Bahia Principe Grand Jamaica often pair the stay with two or three north-coast tours: [Dunn's River](/experience/dunns-river-falls-climb), [Nine Mile](/experience/bob-marley-nine-mile-pilgrimage), [the rainforest zipline](/experience/rainforest-zipline-adventure), booked separately from [the catalogue](/explore). The property works well as a base; it is weaker as the whole experience.",
+        text: "MAPL Tours guests at Bahia Principe Grand Jamaica often pair the stay with two or three north-coast tours: [Dunn's River](/experience/dunns-river-falls-climb), [Nine Mile](/experience/bob-marley-nine-mile-pilgrimage), [river tubing](/experience/river-tubing), booked separately from [the catalogue](/explore). The property works well as a base; it is weaker as the whole experience.",
       },
     ],
     relatedSlugs: ['moon-palace-jamaica-review', 'jamaica-all-inclusive-tier-list'],

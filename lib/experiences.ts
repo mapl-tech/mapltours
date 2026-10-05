@@ -66,6 +66,15 @@ export function tourPrice(p: TourPricing, travelers: number): number {
  * up to tierMax, so labelling it "/person" would overstate what a couple pays
  * and understate what a group of six pays.
  */
+/**
+ * Where a tour runs, as guests read it: "Ocho Rios, St. Ann", or just
+ * "Hanover" when the place is the parish (Collin's sheet names only the
+ * parish for some tours), never "Hanover, Hanover".
+ */
+export function placeLabel(p: { destination: string; parish?: string | null }): string {
+  return p.parish && p.parish !== p.destination ? `${p.destination}, ${p.parish}` : p.destination
+}
+
 export function priceUnitLabel(p: TourPricing): string {
   return p.mode === 'group' ? `up to ${p.tierMax} people` : 'per person'
 }
@@ -469,8 +478,8 @@ export const experiences: Experience[] = [
   },
   {
     id: 5,
-    destination: "Ocho Rios",
-    parish: "St. Ann",
+    destination: "Negril",
+    parish: "Westmoreland",
     title: "Rasta Cultural ATV Safari",
     pricing: { mode: 'group', baseRate: 150, tierMax: 3, extraPerPerson: 140 },
     price: 192,
@@ -487,7 +496,7 @@ export const experiences: Experience[] = [
     // clip was a stock shot of a man with locs smoking in a forest: not the
     // tour, and not the note this brand strikes.
     video: VIDEOS.offRoad2,
-    about: "An hour on the bush trails behind Ocho Rios on your own ATV, then up to a Rastafari community in the hills. You are walked through the herb garden and the way the food is grown, sit down to an ital tasting, and hear the history and the livity from the people living it, with drumming to finish.",
+    about: "An hour on the bush trails of Westmoreland on your own ATV, then up to a Rastafari community in the hills. You are walked through the herb garden and the way the food is grown, sit down to an ital tasting, and hear the history and the livity from the people living it, with drumming to finish.",
     ages: "16+ to drive, 8+ to ride",
     fitness: "Drivers need a valid driver's licence, passengers from 8 ride with an adult, and the community visit suits all ages. Moderate. Riding an ATV over rutted trail is physical on the arms and shoulders, and there is a short uphill walk into the community. Not suitable in pregnancy or with back or neck injuries.",
     meetingPoint: "Hotel pickup",
@@ -521,8 +530,8 @@ export const experiences: Experience[] = [
   },
   {
     id: 6,
-    destination: "Ocho Rios",
-    parish: "St. Ann",
+    destination: "Hanover",
+    parish: "Hanover",
     title: "ATV Off-Road Adventure",
     pricing: { mode: 'per_person', baseRate: 130, tierMax: 3, extraPerPerson: 125 },
     price: 166,
@@ -536,7 +545,7 @@ export const experiences: Experience[] = [
     emoji: '🏍️',
     image: '/tours/atv.webp',
     video: VIDEOS.offRoad,
-    about: "Two hours on the trails behind Ocho Rios: red mud, rutted farm tracks, a shallow river crossing and a few long open stretches where you can hold the throttle down. One guide rides ahead and another sweeps the back, and after the briefing and a practice loop you actually get to ride rather than trundle.",
+    about: "Two hours on the trails in Hanover: red mud, rutted farm tracks, a shallow river crossing and a few long open stretches where you can hold the throttle down. One guide rides ahead and another sweeps the back, and after the briefing and a practice loop you actually get to ride rather than trundle.",
     ages: "16+ to drive, 8+ to ride",
     fitness: "Drivers need a valid driver's licence, and passengers from 8 ride double with an adult. Moderate. Bracing a machine over rough ground works your arms, shoulders and legs. Not suitable in pregnancy or with back, neck or wrist injuries.",
     meetingPoint: "Hotel pickup",
@@ -563,15 +572,15 @@ export const experiences: Experience[] = [
       "The trails run in light rain and are usually better for it. Lightning stops a ride, and you reschedule free or take a full refund.",
       "No alcohol before riding. Drivers who have been drinking are turned away and cannot be refunded.",
     ],
-    description: "Rugged trails, red mud and open throttle through the hills behind Ocho Rios. Helmets, briefing and a guide who lets you actually ride.",
+    description: "Rugged trails, red mud and open throttle through the hills of Hanover. Helmets, briefing and a guide who lets you actually ride.",
     tags: ["ATV", "Off-Road", "Mud"],
     kind: 'single',
     comments: [],
   },
   {
     id: 7,
-    destination: "Ocho Rios",
-    parish: "St. Ann",
+    destination: "Hanover",
+    parish: "Hanover",
     title: "Rainforest Zipline Adventure",
     pricing: { mode: 'per_person', baseRate: 120, tierMax: 3, extraPerPerson: 110 },
     price: 153,
@@ -585,7 +594,7 @@ export const experiences: Experience[] = [
     emoji: '🌲',
     image: '/media/img/2041759.jpg',
     video: VIDEOS.zipline,
-    about: "A course of ziplines strung between platforms across the rainforest canopy above Ocho Rios, from short warm-up runs to a long, fast finale out over the valley. Certified guides clip you in at every platform and handle the braking, so the whole job is to sit back and look down.",
+    about: "A course of ziplines strung between platforms across the rainforest canopy in Hanover, from short warm-up runs to a long, fast finale out over the valley. Certified guides clip you in at every platform and handle the braking, so the whole job is to sit back and look down.",
     ages: "8 and up",
     fitness: "Riders under 16 are accompanied on the course by an adult. Light to moderate. Stairs and short uphill walks between platforms, and you need to hold your own weight seated in a harness. Riders must be between 60 and 270 lbs. Not suitable in pregnancy or with shoulder or back injuries.",
     meetingPoint: "Hotel pickup",
@@ -815,8 +824,8 @@ export const experiences: Experience[] = [
   },
   {
     id: 12,
-    destination: "Ocho Rios",
-    parish: "St. Ann",
+    destination: "Montego Bay",
+    parish: "St. James",
     title: "Clear Kayak Reef Tour",
     pricing: { mode: 'group', baseRate: 180, tierMax: 3, extraPerPerson: 160 },
     price: 230,
@@ -867,7 +876,7 @@ export const experiences: Experience[] = [
     destination: "Ocho Rios",
     parish: "St. Ann",
     title: "River Tubing",
-    pricing: { mode: 'group', baseRate: 100, tierMax: 3, extraPerPerson: 80 },
+    pricing: { mode: 'per_person', baseRate: 100, tierMax: 3, extraPerPerson: 80 },
     price: 128,
     duration: "1.5 hrs",
     rating: 0,
@@ -1019,8 +1028,8 @@ export const experiences: Experience[] = [
     destination: "Ocho Rios",
     parish: "St. Ann",
     title: "Tubing + Clear Kayak Combo",
-    pricing: { mode: 'per_person', baseRate: 180, tierMax: 3, extraPerPerson: 180 },
-    price: 230,
+    pricing: { mode: 'per_person', baseRate: 280, tierMax: 3, extraPerPerson: 280 },
+    price: 357,
     duration: "Half day",
     rating: 0,
     reviews: 0,
@@ -1067,8 +1076,8 @@ export const experiences: Experience[] = [
   },
   {
     id: 17,
-    destination: "Ocho Rios",
-    parish: "St. Ann",
+    destination: "Montego Bay",
+    parish: "St. James",
     title: "Bamboo Raft + Clear Kayak + Drone Photos",
     pricing: { mode: 'per_person', baseRate: 260, tierMax: 3, extraPerPerson: 260 },
     price: 332,
@@ -1167,11 +1176,11 @@ export const experiences: Experience[] = [
   },
   {
     id: 19,
-    destination: "Ocho Rios",
-    parish: "St. Ann",
+    destination: "Hanover",
+    parish: "Hanover",
     title: "Zipline + ATV",
-    pricing: { mode: 'per_person', baseRate: 170, tierMax: 3, extraPerPerson: 170 },
-    price: 217,
+    pricing: { mode: 'per_person', baseRate: 235, tierMax: 3, extraPerPerson: 235 },
+    price: 300,
     duration: "Half day",
     rating: 0,
     reviews: 0,
@@ -1182,7 +1191,7 @@ export const experiences: Experience[] = [
     emoji: '⚡',
     image: '/media/img/5976872.jpg',
     video: VIDEOS.offRoad2,
-    about: "The full adrenaline half day. Fly the canopy first on a course of ziplines out over the valley, then swap the harness for a helmet and take an ATV onto the mud trails behind Ocho Rios. Same base, same guides, straight from one to the other.",
+    about: "The full adrenaline half day. Fly the canopy first on a course of ziplines out over the valley, then swap the harness for a helmet and take an ATV onto the mud trails in Hanover. Same base, same guides, straight from one to the other.",
     ages: "8+ zipline, 16+ to drive",
     fitness: "ATV drivers need a valid driver's licence, and younger riders go double with an adult. Moderate. Stairs and short climbs between zipline platforms, then a physical hour on a machine over rough ground. Zipline riders must be between 60 and 270 lbs. Not suitable in pregnancy or with back, neck or shoulder injuries.",
     meetingPoint: "Hotel pickup",
@@ -1218,8 +1227,8 @@ export const experiences: Experience[] = [
   },
   {
     id: 21,
-    destination: "Ocho Rios",
-    parish: "St. Ann",
+    destination: "Hanover",
+    parish: "Hanover",
     title: "Bamboo Rafting + Zipline",
     pricing: { mode: 'per_person', baseRate: 210, tierMax: 3, extraPerPerson: 210 },
     price: 268,
@@ -1268,8 +1277,8 @@ export const experiences: Experience[] = [
   },
   {
     id: 22,
-    destination: "Ocho Rios",
-    parish: "St. Ann",
+    destination: "Hanover",
+    parish: "Hanover",
     title: "Triple Pack: ATV + Zipline + Rick's Cafe",
     pricing: { mode: 'per_person', baseRate: 250, tierMax: 3, extraPerPerson: 250 },
     price: 319,

@@ -662,7 +662,7 @@ export const POSTS_5: BlogPost[] = [
       },
       {
         type: 'p',
-        text: "MAPL Tours Jamaica does not run dive boats; we leave that to the shops above. What we do is the rest of the trip. If your dive days are on the north coast, [a clear-kayak reef tour in Ocho Rios](/experience/clear-kayak-reef-tour) is the non-diver's way to see the same coral, and in Negril [the Rick's Cafe sunset](/experience/ricks-cafe-cliff-diving-and-sunset) is the right end to a two-tank morning. And when you land at Montego Bay with a bag full of gear, [book a private airport transfer](/transfers): one flat price per vehicle, and your driver picks you up at arrivals. No problem.",
+        text: "MAPL Tours Jamaica does not run dive boats; we leave that to the shops above. What we do is the rest of the trip. If your dive days are on the north coast, [a clear-kayak reef tour in Montego Bay](/experience/clear-kayak-reef-tour) is the non-diver's way to see the same coral, and in Negril [the Rick's Cafe sunset](/experience/ricks-cafe-cliff-diving-and-sunset) is the right end to a two-tank morning. And when you land at Montego Bay with a bag full of gear, [book a private airport transfer](/transfers): one flat price per vehicle, and your driver picks you up at arrivals. No problem.",
       },
       {
         type: 'faq',
@@ -693,7 +693,7 @@ export const POSTS_5: BlogPost[] = [
           },
           {
             q: 'What can non-divers do while I dive?',
-            a: "In Ocho Rios, [the clear-kayak reef tour](/experience/clear-kayak-reef-tour) puts them over the same coral from the surface, and every region has snorkel boats. See [the full catalogue](/explore) for the rest.",
+            a: "In Montego Bay, [the clear-kayak reef tour](/experience/clear-kayak-reef-tour) puts them over the same coral from the surface, and every region has snorkel boats. See [the full catalogue](/explore) for the rest.",
           },
         ],
       },

@@ -22,7 +22,7 @@ import { normalizeSocialHandle } from '@/lib/social-handle'
 import { quoteRefund, formatCents } from '@/lib/refund-pricing'
 import {
   bookingRef, countdownLabel, formatLongDate, formatTripDate, guestLabel,
-  isTransfer, isUnfiled, itemImage, itemParish, latestDate, nextTrip,
+  isTransfer, isUnfiled, itemImage, itemParish, itemPlace, latestDate, nextTrip,
   paymentLabel, profileStats, readableTitle, splitBookings, todayInJamaica,
   transferLegs, type ProfileBooking, type ProfileBookingItem, type ProfileDriver,
 } from '@/lib/profile-data'
@@ -372,7 +372,7 @@ function NextTripCard({ booking, item, daysAway, onRequested }: {
           </h3>
           {parish && (
             <p style={{ fontFamily: FONT, fontSize: 13.5, color: 'var(--text-tertiary)', marginTop: 5 }}>
-              {item.destination}, {parish}
+              {itemPlace(item)}
             </p>
           )}
         </div>
@@ -508,7 +508,7 @@ function PastTripCard({ booking }: { booking: ProfileBooking }) {
           )}
         </p>
         <p style={{ fontFamily: FONT, fontSize: 13, color: 'var(--text-tertiary)', marginTop: 4 }}>
-          {[item.destination, parish].filter(Boolean).join(', ')}
+          {parish ? itemPlace(item) : item.destination}
         </p>
       </div>
     </>

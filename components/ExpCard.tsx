@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, memo } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { Experience, CATEGORY_COLORS, slugify , priceUnitLabel, cardVideo } from '@/lib/experiences'
+import { Experience, CATEGORY_COLORS, slugify , priceUnitLabel, cardVideo, placeLabel } from '@/lib/experiences'
 import { displayHandle } from '@/lib/creator'
 import { useCartStore } from '@/lib/cart'
 import { useHydrated } from '@/lib/use-hydrated'
@@ -238,7 +238,7 @@ export default memo(function ExpCard({ exp }: { exp: Experience }) {
             display: 'flex', alignItems: 'center', gap: 4,
           }}>
             <MapPin size={12} strokeWidth={2} />
-            {exp.destination}, {exp.parish}
+            {placeLabel(exp)}
           </span>
         </div>
 

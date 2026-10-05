@@ -157,7 +157,10 @@ function HeroVideo({ poster }: { poster: string }) {
 const viralExperiences = singleExperiences.filter((e) => e.id >= 11 && e.id <= 15)
 
 // Only destinations Collins actually serves, straight from the catalog.
-const destinations = TOUR_DESTINATIONS
+// A tile is a landmark photo of the place (lib/images DESTINATIONS); a tour
+// destination without one yet (Hanover) is left out of the grid rather than
+// drawn with no image, and still reached from the menu and /explore.
+const destinations = TOUR_DESTINATIONS.filter((d) => !!DESTINATION_IMAGES[d.name])
 
 function SectionHeader({ label, action }: { label: string; action?: { text: string; href: string } }) {
   const { t } = useI18n()

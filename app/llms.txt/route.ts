@@ -1,4 +1,4 @@
-import { experiences, slugify, priceUnitLabel } from '@/lib/experiences'
+import { experiences, slugify, priceUnitLabel, placeLabel } from '@/lib/experiences'
 import {
   DESTINATIONS,
   ZONES,
@@ -69,12 +69,17 @@ export function GET() {
   const experienceLines = experiences
     .map((exp) => {
       const url = `${baseUrl}/experience/${slugify(exp.title)}`
-      const summary = `${exp.destination}, ${exp.parish}. ${exp.category}. ${exp.duration}. $${exp.price} ${priceUnitLabel(exp.pricing)}. ${exp.description}`
+      const summary = `${placeLabel(exp)}. ${exp.category}. ${exp.duration}. $${exp.price} ${priceUnitLabel(exp.pricing)}. ${exp.description}`
       return `- [${exp.title}](${url}): ${summary}`
     })
     .join('\n')
 
-  // Derived from the catalog so the quoted range cannot drift out of date.
+  // Derived from the catalog so the quoted ranges cannot drift out of date
+  // (they read $103 to $459 and $192 to $332 by hand, both stale).
+  const priceRange = (kind: 'single' | 'package') => {
+    const prices = experiences.filter((e) => e.kind === kind).map((e) => e.price)
+    return `$${Math.min(...prices)} to $${Math.max(...prices)}`
+  }
 
   const blogLines = BLOG_POSTS
     .slice()
@@ -123,7 +128,7 @@ ${blogLines}
 - Country: Jamaica
 - Currency: USD
 - Airport transfers: one flat all-in price per vehicle for 1-4 passengers (5-7 ride together, priced per person), nothing added at checkout. From $${cheapestTransfer.ow} one-way (${ZONES[cheapestTransfer.dest.zone].label}) up to $${dearestTransfer.ow} (${ZONES[dearestTransfer.dest.zone].label}); round trips are ${roundTripPct}% off two one-ways. Cancellation: flexible within 48 hours of booking, less a 20% administration charge plus taxes (if applicable); after that window bookings are non-refundable, and no-shows are charged in full.
-- Tours and experiences: $103 to $459 all-in, nothing added at checkout. Most are private group tours priced per vehicle for a party of up to 3 or 4, not per person; a few are per person. Ready-made multi-stop day packages run $192 to $332. Cancellation: flexible within 48 hours of booking, less a 20% administration charge plus taxes (if applicable).
+- Tours and experiences: ${priceRange('single')} all-in, nothing added at checkout. Most are private group tours priced per vehicle for a party of up to 3 or 4, not per person; a few are per person. Ready-made multi-stop day packages run ${priceRange('package')}. Cancellation: flexible within 48 hours of booking, less a 20% administration charge plus taxes (if applicable).
 - Payments: Stripe (cards and Apple Pay)
 - Booking cutoff: bookings close 24 hours before an experience or pickup begins
 - Cancellation requests: made from the Profile page or by replying to the confirmation email, and reviewed before the refund is issued; a booking whose experience has already begun can no longer be refunded

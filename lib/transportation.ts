@@ -53,6 +53,10 @@ const LOCATIONS: Record<string, { lat: number; lng: number }> = {
   'Port Antonio':   { lat: 18.1785, lng: -76.4497 },
   'Falmouth':       { lat: 18.4939, lng: -77.6556 },
   'Montego Bay':    { lat: 18.4762, lng: -77.9186 },
+  // Collin's sheet places his ATV and zipline in Hanover without naming the
+  // park (Sandy Bay and Green Island both have one): Lucea, the parish town,
+  // sits between them.
+  'Hanover':        { lat: 18.4510, lng: -78.1736 },
   'Manchioneal':    { lat: 18.1300, lng: -76.2700 },
   'Port Royal':     { lat: 17.9361, lng: -76.8417 },
 

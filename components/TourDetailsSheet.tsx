@@ -5,7 +5,7 @@ import { createPortal } from 'react-dom'
 import { useFocusTrap } from '@/lib/use-focus-trap'
 import { X, Check, Backpack, Users, Activity, Info, MapPin, Clock } from 'lucide-react'
 import type { Experience } from '@/lib/experiences'
-import { priceUnitLabel } from '@/lib/experiences'
+import { priceUnitLabel, placeLabel } from '@/lib/experiences'
 import { useI18n } from '@/lib/i18n'
 import { CANCELLATION_SUMMARY } from '@/lib/refund-pricing'
 
@@ -186,7 +186,7 @@ export default function TourDetailsSheet({ exp, onClose, cta }: { exp: Experienc
               fontFamily: 'var(--font-dm-sans)', fontSize: 13, color: 'var(--text-tertiary)',
               marginTop: 6, display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap',
             }}>
-              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><MapPin size={12} /> {exp.destination}, {exp.parish}</span>
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><MapPin size={12} /> {placeLabel(exp)}</span>
               <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><Clock size={12} /> {exp.duration}</span>
               <span style={{ fontWeight: 700, color: 'var(--text-primary)' }}>
                 {formatPrice(exp.price)} <span style={{ fontWeight: 400, color: 'var(--text-tertiary)' }}>{priceUnitLabel(exp.pricing)}</span>

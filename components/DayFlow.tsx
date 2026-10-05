@@ -3,6 +3,7 @@
 import { Car, Home, Utensils, Plus, X, ChevronUp, ChevronDown } from 'lucide-react'
 import { parseDurationHours, STOP_HOURS, useCartStore } from '@/lib/cart'
 import { EATS } from '@/lib/eats'
+import { placeLabel } from '@/lib/experiences'
 import { planDay, fitCandidateStop, canMoveItem, dayAreas, roundFive, MAX_STOP_GAP_MIN } from '@/lib/day-route'
 import { useState } from 'react'
 
@@ -97,7 +98,7 @@ export default function DayFlow({ compact = false }: { compact?: boolean }) {
         key: node.key,
         kind: 'experience',
         title: node.item.title,
-        detail: `${node.item.destination}, ${node.item.parish}`,
+        detail: placeLabel(node.item),
         meta: node.item.duration,
         note: leg && leg.minutes !== null
           ? leg.over

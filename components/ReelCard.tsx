@@ -1,6 +1,6 @@
 'use client'
 
-import { Experience, CATEGORY_COLORS , priceUnitLabel } from '@/lib/experiences'
+import { Experience, CATEGORY_COLORS , priceUnitLabel, placeLabel } from '@/lib/experiences'
 import { isMaplCreator, displayHandle } from '@/lib/creator'
 import MaplAvatar from '@/components/MaplAvatar'
 import { useCartStore } from '@/lib/cart'
@@ -291,7 +291,7 @@ export default function ReelCard({
               fontFamily: 'var(--font-dm-sans)',
             }}
           >
-            📍 {exp.destination}, {exp.parish}
+            📍 {placeLabel(exp)}
           </span>
         </div>
 

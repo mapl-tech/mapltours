@@ -13,15 +13,22 @@ import { experiences, packageExperiences } from '../../lib/experiences'
 const s = () => useCartStore.getState()
 const notice = () => useTripNotice.getState().notice
 
-// A package and the single tours it bundles, from the live catalogue.
-const pkg = packageExperiences.find((p) => (p.includes ?? []).length >= 2)!
-const [first, second] = (pkg.includes ?? []).map((id) => experiences.find((e) => e.id === id)!)
+// A package and the single tours it bundles, from the live catalogue: one
+// whose tours share a place, so both fit in one day (the day planner measures
+// the drive between them; Tubing + Clear Kayak stopped fitting when the kayak
+// moved to Montego Bay with Collin's sheet), preferring one that shares an
+// activity with another package so that case is tested too.
+const partsOf = (p: (typeof packageExperiences)[number]) => (p.includes ?? []).map((id) => experiences.find((e) => e.id === id)!)
+const shares = (a: (typeof packageExperiences)[number], b: (typeof packageExperiences)[number]) => a.id !== b.id && (a.includes ?? []).some((id) => (b.includes ?? []).includes(id))
+const oneDay = packageExperiences.filter((p) => partsOf(p).length >= 2 && partsOf(p).every((e) => e.destination === partsOf(p)[0].destination))
+const pkg = oneDay.find((p) => packageExperiences.some((o) => shares(o, p))) ?? oneDay[0]
+const [first, second] = partsOf(pkg)
 // A package sharing an activity with pkg, if the catalogue has one.
-const overlapping = packageExperiences.find((p) => p.id !== pkg.id && (p.includes ?? []).some((id) => (pkg.includes ?? []).includes(id)))
+const overlapping = packageExperiences.find((p) => shares(p, pkg))
 
 const lunch: FoodStop = {
-  name: 'Test jerk stop', town: 'Ocho Rios', parish: 'St. Ann', knownFor: 'jerk chicken',
-  image: '/x.webp', mapsQuery: 'Ocho Rios', afterId: first.id,
+  name: 'Test jerk stop', town: first.destination, parish: first.parish, knownFor: 'jerk chicken',
+  image: '/x.webp', mapsQuery: first.destination, afterId: first.id,
 }
 
 beforeEach(() => {

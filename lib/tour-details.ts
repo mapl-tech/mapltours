@@ -65,7 +65,7 @@ export const TOUR_DETAILS: Record<number, TourDetail> = {
     confirmWithOperator: ["A raft bench typically seats two, so a party of three may need two rafts. Confirm how the operator handles this and whether the rate covers it.", "Confirm whether life vests are provided, especially for children.", "Confirm the pickup radius and drive time from Ocho Rios, Runaway Bay and Montego Bay hotels.", "Confirm whether a welcome drink is part of the rate or bought at the landing."],
   },
   5: {
-    about: "Your driver collects you at your hotel and takes you up to the trail base above Ocho Rios, where you get a helmet, a safety briefing and a practice loop before you ride out. The trail runs through bush and farm country to a Rastafari community, where you sit down for ital food, drumming, and a straight talk about the livity from the people who live it. Then you ride back down the hill and we run you home.",
+    about: "Your driver collects you at your hotel and takes you out to the trail base in Westmoreland, where you get a helmet, a safety briefing and a practice loop before you ride out. The trail runs through bush and farm country to a Rastafari community, where you sit down for ital food, drumming, and a straight talk about the livity from the people who live it. Then you ride back down the hill and we run you home.",
     included: ["Private door-to-door transport from your hotel and back", "ATV, helmet and safety briefing", "Entrance and community fees at the Rastafari village", "A guide for the ride and the village visit"],
     bring: ["Closed-toe shoes you do not mind ruining", "Long shorts or trousers", "Sunglasses or goggles for the dust", "A change of clothes for the ride home", "Cash for tips and craft stalls"],
     minAge: "Riders are usually 16 and up with a valid driver's licence. Younger guests can often ride as a passenger behind an adult.",
@@ -75,7 +75,7 @@ export const TOUR_DETAILS: Record<number, TourDetail> = {
     confirmWithOperator: ["Confirm whether the ital food and drink is covered by the rate or paid at the village.", "Confirm the operator's minimum riding age and whether a driver's licence is required.", "Confirm whether two people may share one ATV, and any combined weight limit.", "Confirm whether a damage waiver or deposit is taken at the trail base.", "Confirm the rain cancellation policy, since these trails close in bad weather."],
   },
   6: {
-    about: "We collect you at your hotel and drive you to the trail head in the hills behind Ocho Rios. You get a helmet, a full briefing and a short practice loop, then follow your guide out on red-dirt tracks through bush and farm land, and through whatever mud the last rain left behind. You rinse off at the base and your driver runs you back.",
+    about: "We collect you at your hotel and drive you to the trail head in the hills of Hanover. You get a helmet, a full briefing and a short practice loop, then follow your guide out on red-dirt tracks through bush and farm land, and through whatever mud the last rain left behind. You rinse off at the base and your driver runs you back.",
     included: ["Private door-to-door transport from your hotel and back", "ATV, helmet and safety briefing", "Trail entrance fees", "A guide riding with you the whole way"],
     bring: ["Closed-toe shoes you do not mind ruining", "Clothes you are happy to get muddy", "Sunglasses or goggles for the dust", "A full change of clothes for the ride home", "Cash for tips"],
     minAge: "Riders are usually 16 and up with a valid driver's licence. Younger guests can often ride as a passenger behind an adult.",
@@ -85,7 +85,7 @@ export const TOUR_DETAILS: Record<number, TourDetail> = {
     confirmWithOperator: ["Confirm the operator's minimum riding age and licence requirement.", "Confirm whether two riders may share one ATV and any weight limit.", "Confirm whether a damage waiver or security deposit is taken on site.", "Confirm whether rinse-off facilities and lockers exist at the base.", "Confirm the rain cancellation policy."],
   },
   7: {
-    about: "Your driver picks you up at your hotel and takes you up into the hills above Ocho Rios where the canopy course sits. You get fitted with a harness and helmet, walk through the safety briefing, then work your way along a run of lines and platforms with the valley opening under your feet, guides clipping you in and out at every stop. Off the last line, your driver is waiting to take you back.",
+    about: "Your driver picks you up at your hotel and takes you up into the hills of Hanover where the canopy course sits. You get fitted with a harness and helmet, walk through the safety briefing, then work your way along a run of lines and platforms with the valley opening under your feet, guides clipping you in and out at every stop. Off the last line, your driver is waiting to take you back.",
     included: ["Private door-to-door transport from your hotel and back", "Entrance fee for the canopy course", "Harness, helmet and gloves", "Trained guides on every platform"],
     bring: ["Closed-toe shoes with a back strap", "Shorts or trousers you can move in", "A hair tie if your hair is long", "Insect repellent", "Cash for tips"],
     minAge: "Ages 6 and up is standard for canopy courses here, and there is usually a minimum and maximum rider weight as well.",
@@ -149,7 +149,7 @@ export const TOUR_DETAILS: Record<number, TourDetail> = {
     included: ["Private door-to-door transport from your hotel and back", "All river and entrance fees", "Tube, life vest, and river guides", "The shuttle from the take out back to your vehicle"],
     bring: ["Swimwear under your clothes", "Water shoes with a strap", "A towel and dry clothes for the ride home", "A waterproof case on a strap if you want your phone", "Small cash for tips"],
     minAge: "Ages 6 and up, and everyone needs to be comfortable in moving water",
-    maxGroup: "One flat rate covers a private party of up to 3. Larger parties are priced per head.",
+    maxGroup: "Priced per person; parties of 4 or more pay a lower rate per head.",
     fitness: "Easy on the water. The walk in and out is over wet river rocks and a short slope.",
     goodToKnow: ["You are soaked from the moment you sit in the tube. Leave your dry things in the car with your driver.", "River rocks are slick. Strapped water shoes, not flip flops and not bare feet.", "The river runs on the rain. Heavy weather upstream can push the trip to another day, and that call comes from the guides.", "Nothing loose in your hands on the water. If it floats away it is gone."],
     confirmWithOperator: ["Which river the operator runs. The White River and the Rio Bueno have different entry points and very different drive times from Ocho Rios, which changes what we can promise about the day.", "Minimum age set by the river operator.", "Whether guides shoot photos on the run and sell them at the take out, and roughly what they cost.", "Whether there are lockers or a secure spot for valuables at the entry point, or whether everything stays with the driver.", "Whether guides work on tips alone, so we can tell guests what to carry."],

@@ -8,7 +8,7 @@ import { useCartStore, DAILY_HOUR_LIMIT } from '@/lib/cart'
 import { couponDiscountCents } from '@/lib/coupons'
 import { priceTourCart } from '@/lib/checkout-pricing'
 import CodeField from './CodeField'
-import { tourPrice, perTravelerPrice } from '@/lib/experiences'
+import { tourPrice, perTravelerPrice, placeLabel } from '@/lib/experiences'
 import { earliestBookableExperienceDate } from '@/lib/booking-window'
 import { getStoredAttribution } from '@/lib/attribution'
 import { trackBeginCheckout } from '@/lib/analytics'
@@ -409,7 +409,7 @@ export default function OnePageCheckout() {
                     </div>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <p style={{ fontFamily: FONT, fontWeight: 700, fontSize: 15, lineHeight: 1.25, color: 'var(--text-primary)' }}>{t(item.title)}</p>
-                      <p style={{ fontFamily: FONT, fontSize: 13, color: 'var(--text-tertiary)', marginTop: 3 }}>{item.destination}, {item.parish} · {item.duration.replace(/ /g, '\u00a0')}</p>
+                      <p style={{ fontFamily: FONT, fontSize: 13, color: 'var(--text-tertiary)', marginTop: 3 }}>{placeLabel(item)} · {item.duration.replace(/ /g, '\u00a0')}</p>
                     </div>
                     <div style={{ textAlign: 'right', flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
                       <p className="opc-num" style={{ fontFamily: FONT, fontWeight: 700, fontSize: 15, whiteSpace: 'nowrap' }}>{formatUsd(tourPrice(item.pricing, item.travelers))}</p>
