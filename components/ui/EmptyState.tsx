@@ -15,7 +15,7 @@ export interface EmptyStateAction {
 }
 
 export function EmptyState({
-  emoji, title, body, action, secondary, tone = 'warm', children,
+  emoji, title, body, action, secondary, tone = 'warm', headingLevel = 3, children,
 }: {
   emoji: string
   title: string
@@ -24,8 +24,11 @@ export function EmptyState({
   secondary?: EmptyStateAction
   /** 'warm' sits on the page; 'plain' sits inside a card that already has a border. */
   tone?: 'warm' | 'plain'
+  /** 2 where it sits straight under the page's h1 (a page whose whole body is this state), so the outline never skips a level. */
+  headingLevel?: 2 | 3
   children?: ReactNode
 }) {
+  const Heading = headingLevel === 2 ? 'h2' : 'h3'
   return (
     <div
       style={{
@@ -42,14 +45,14 @@ export function EmptyState({
       }}
     >
       <p style={{ fontSize: 40, marginBottom: 14, lineHeight: 1 }} aria-hidden>{emoji}</p>
-      <h3
+      <Heading
         style={{
           fontFamily: 'var(--font-dm-sans)', fontWeight: 700, fontSize: 20,
           color: 'var(--text-primary)', marginBottom: 8, letterSpacing: '-0.01em',
         }}
       >
         {title}
-      </h3>
+      </Heading>
       <p
         style={{
           fontFamily: 'var(--font-dm-sans)', fontSize: 15, lineHeight: 1.6,

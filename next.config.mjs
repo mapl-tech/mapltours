@@ -190,16 +190,17 @@ const nextConfig = {
             "object-src 'none'",
             "frame-ancestors 'none'",
             "form-action 'self'",
-            "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com https://*.js.stripe.com https://www.googletagmanager.com https://static.hotjar.com https://script.hotjar.com https://www.google-analytics.com https://www.googleadservices.com https://googleads.g.doubleclick.net",
+            "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com https://*.js.stripe.com https://www.googletagmanager.com https://static.hotjar.com https://script.hotjar.com https://www.google-analytics.com https://www.googleadservices.com https://googleads.g.doubleclick.net https://connect.facebook.net",
             "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
             "font-src 'self' data: https://fonts.gstatic.com https://script.hotjar.com",
             "img-src 'self' data: blob: https:",
             // Guest clips stream from Supabase storage.
             "media-src 'self' blob: https://*.supabase.co",
             "frame-src https://js.stripe.com https://*.js.stripe.com https://hooks.stripe.com https://link.com https://*.link.com https://www.youtube.com https://www.youtube-nocookie.com https://vars.hotjar.com",
-            "connect-src 'self' https://api.stripe.com https://link.com https://*.link.com https://fonts.googleapis.com https://*.supabase.co wss://*.supabase.co https://www.google-analytics.com https://*.analytics.google.com https://www.googletagmanager.com https://*.hotjar.com https://*.hotjar.io wss://*.hotjar.com https://api.supabase.com",
+            "connect-src 'self' https://api.stripe.com https://link.com https://*.link.com https://fonts.googleapis.com https://*.supabase.co wss://*.supabase.co https://www.google-analytics.com https://*.google-analytics.com https://*.analytics.google.com https://www.googletagmanager.com https://connect.facebook.net https://www.facebook.com https://*.hotjar.com https://*.hotjar.io wss://*.hotjar.com https://api.supabase.com",
             "worker-src 'self' blob:",
-            "upgrade-insecure-requests",
+            // No upgrade-insecure-requests: a report-only policy ignores it
+            // and Chrome logs an error for it on every page.
           ].join('; '),
         },
       ],

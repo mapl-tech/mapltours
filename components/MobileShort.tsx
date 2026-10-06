@@ -1,6 +1,7 @@
 'use client'
 
 import { useRef, useEffect, useState, memo } from 'react'
+import { useAfterLoad } from '@/lib/use-media-gate'
 import InView from './InView'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -88,6 +89,10 @@ export default memo(function MobileShort({
   const visibleRef = useRef(false)
   // Undefined means "nobody is driving me", which is every stacked caller.
   const videoAllowed = active !== false
+  // No clip until the page's images are in (lib/use-media-gate): a clip that
+  // started with the page held back the card's poster, the largest thing on
+  // screen, which is the clip's own first frame anyway.
+  const pageLoaded = useAfterLoad()
 
   // Losing active unmounts the <video> below, and an unmounted video never
   // fires 'pause', so the poster has to be brought back by hand. Without this
@@ -239,7 +244,7 @@ export default memo(function MobileShort({
 
           {/* Video, mounts when near viewport, plays when visible. Tours
               without footage simply keep showing their photo. */}
-          {videoMounted && exp.video && videoAllowed && (
+          {videoMounted && pageLoaded && exp.video && videoAllowed && (
             <video
               ref={videoRef}
               src={clipFor(exp.video)}

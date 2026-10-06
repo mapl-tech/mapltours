@@ -42,7 +42,7 @@
 # Hero media is not content-hashed, so a day, not a month: a replaced poster
 # reaches returning visitors by tomorrow instead of revalidating on every visit.
 [[headers]]
-  for = "/hero-montage-phone.webp"
+  for = "/hero-montage-phone-768.webp"
   [headers.values]
     Cache-Control = "public, max-age=86400, stale-while-revalidate=604800"
 

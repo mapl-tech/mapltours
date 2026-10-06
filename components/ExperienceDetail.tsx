@@ -24,6 +24,7 @@ import { isMaplCreator, displayHandle, clipCredit, clipsInReelOrder, isMaplAccou
 import TourDetailsSheet from './TourDetailsSheet'
 import { CANCELLATION_SUMMARY } from '@/lib/refund-pricing'
 import { useApprovedClips, clipDateLabel, type TourVideo } from '@/lib/tour-videos'
+import { useAfterFirstPaint } from '@/lib/use-media-gate'
 import { isKeyOrReaderClick } from '@/lib/press'
 
 declare global {
@@ -165,6 +166,10 @@ function Reel({ exp, clip, isActive, near, ahead, advancesAtEnd, clipCount, mute
   onComments: () => void
 }) {
   const videoRef = useRef<HTMLVideoElement>(null)
+  // The clip attaches once the page has painted (lib/use-media-gate): in the
+  // server HTML it held a phone's first frame back by about two seconds. The
+  // poster, the clip's own first frame, shows until then.
+  const mediaReady = useAfterFirstPaint()
   const progressRef = useRef<HTMLDivElement>(null)
   const [paused, setPaused] = useState(false)
   const isInCart = useCartStore((s) => s.isInCart)
@@ -604,7 +609,7 @@ function Reel({ exp, clip, isActive, near, ahead, advancesAtEnd, clipCount, mute
           muted={muted}
           loop={!advancesAtEnd}
           preload={isActive ? 'auto' : near ? 'metadata' : 'none'}
-          src={near ? clip.video.video_url : undefined}
+          src={near && mediaReady ? clip.video.video_url : undefined}
           poster={near ? clip.video.thumbnail_url ?? undefined : undefined}
           onLoadedMetadata={(e) => setClipFit(e.currentTarget.videoWidth > e.currentTarget.videoHeight ? 'contain' : 'cover')}
           // Under the reel's own sheets, or while a comment is written, it
@@ -646,7 +651,7 @@ function Reel({ exp, clip, isActive, near, ahead, advancesAtEnd, clipCount, mute
             the effect above). Rendered for this reel and its neighbours; a reel that
             leaves the neighbourhood calls load() with no sources, which
             empties the element and frees the buffer. */}
-        {near && exp.video && (
+        {near && mediaReady && exp.video && (
           <>
             <source src={mobileHevcVideo(exp.video)} type={HEVC_SOURCE_TYPE} />
             <source src={mobileVideo(exp.video)} type="video/mp4" />

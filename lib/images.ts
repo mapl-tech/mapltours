@@ -21,9 +21,15 @@ export const HERO = '/media/img/14788935-hero.jpg'
 export const HERO_VIDEO_540 = '/hero-montage-540.mp4'
 export const HERO_VIDEO_720 = '/hero-montage-720.mp4'
 export const HERO_VIDEO_1080 = '/hero-montage-1080.mp4'
-/** Phones get the bio page's own 720x540 cut (1.3 MB) and its first frame as the poster. */
+/** Phones get the bio page's own 720x540 cut (1.3 MB), the centre 4:3 of the 1080p montage. */
 export const HERO_VIDEO_PHONE = '/hero-montage-phone.mp4'
-export const HERO_POSTER_PHONE = '/hero-montage-phone.webp'
+/**
+ * Its poster: the 1080p montage's first frame, cut to what a phone's hero shows
+ * of the cover-cropped clip (768x1080, x 576 to 1344). At 720x540 a phone drew
+ * it about 1.9x up, so Chrome sized it too small to count as the largest paint
+ * and the clip took that role when it started, a second later.
+ */
+export const HERO_POSTER_PHONE = '/hero-montage-phone-768.webp'
 /** Desktop poster: the montage's first frame, so nothing swaps scene when it starts. */
 export const HERO_POSTER = '/hero-montage.webp'
 

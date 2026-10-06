@@ -62,6 +62,7 @@ export default function SavedView() {
     return (
       <Shell>
         <EmptyState
+          headingLevel={2}
           emoji="🇯🇲"
           title="Sign in to save tours"
           body="Save any tour you like and it will be here when you come back, ready to drop into your trip."
@@ -108,6 +109,7 @@ export default function SavedView() {
     return (
       <Shell>
         <EmptyState
+          headingLevel={2}
           emoji="🌴"
           title="Nothing saved yet"
           body="Tap the heart on any tour and it lands here. Build the shortlist first, decide the dates after."
