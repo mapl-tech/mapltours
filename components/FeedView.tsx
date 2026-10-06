@@ -431,7 +431,9 @@ function FoodSection() {
                   : fit.verdict === 'no-tours'
                     ? 'Free with any tour day'
                     : fit.verdict === 'stranded'
-                      ? `Nothing in your day comes within ${MAX_STOP_GAP_MIN} min of it`
+                      // One line in the 310px card (274px of text at 13px): the longer
+                      // "Nothing in your day comes within 30 min of it" left "it" alone on a second line.
+                      ? `Over ${MAX_STOP_GAP_MIN} min from everything in your day`
                       : fit.label}
               </p>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
