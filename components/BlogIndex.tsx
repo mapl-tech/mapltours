@@ -201,23 +201,29 @@ function CategoryNav({
         borderBottom: '1px solid var(--border-strong)',
       }}
     >
+      {/* Centred by the first and last pills' auto margins, not by
+          justify-content: a centred row wider than a phone spilled "All" and
+          "Stories" off the left edge, where no scroll could reach them. Auto
+          margins centre the row when it fits and fall to zero when it does
+          not, so it then starts at the edge and scrolls. */}
       <div
         className="no-scrollbar"
         style={{
           display: 'flex',
           alignItems: 'center',
-          justifyContent: 'center',
           gap: 36,
           overflowX: 'auto',
         }}
       >
-        {BLOG_CATEGORIES.map((cat) => {
+        {BLOG_CATEGORIES.map((cat, i) => {
           const isActive = cat === active
           return (
             <button
               key={cat}
               onClick={() => onSelect(cat)}
               style={{
+                marginLeft: i === 0 ? 'auto' : undefined,
+                marginRight: i === BLOG_CATEGORIES.length - 1 ? 'auto' : undefined,
                 background: 'transparent',
                 border: 'none',
                 padding: '4px 6px',
