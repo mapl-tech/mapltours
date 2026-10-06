@@ -3,7 +3,8 @@
 import { useMemo, useState, useId, isValidElement, cloneElement, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import Image from 'next/image'
+import Image, { getImageProps } from 'next/image'
+import InView from '../InView'
 import {
   Plane,
   MapPin,
@@ -63,6 +64,17 @@ const HERO_IMAGE = {
   src: HERO, // aerial Buff Bay coastal road
   alt: 'Aerial view of Jamaica’s north-coast road between Montego Bay and Ocho Rios, the route MAPL Tours drivers use for airport transfers.',
 }
+
+// Shown from 901px only (see the hero below), so it is sized for that column.
+const heroImageProps = getImageProps({
+  src: HERO_IMAGE.src,
+  alt: HERO_IMAGE.alt,
+  fill: true,
+  sizes: '520px',
+  style: { objectFit: 'cover' },
+}).props
+// A 1x1 transparent GIF: the source a hidden picture picks, so it fetches nothing.
+const EMPTY_IMAGE = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7'
 
 const ZONE_IMAGES: Record<TransferZone, { src: string; alt: string }> = {
   A: {
@@ -500,16 +512,17 @@ export default function TransfersView({ initialDestinationId }: { initialDestina
             </div>
           </div>
 
-          {/* Image */}
+          {/* Image. Phones and tablets hide it (.xfer-hero-image is display
+              none to 900px: the quote card comes first there), so they get
+              an empty source and download nothing. As a `priority` Image it
+              was preloaded everywhere: every phone fetched it first, 58 KB
+              at high priority for a photo it never showed (Oct 6 2026). */}
           <div className="xfer-hero-image">
-            <Image
-              src={HERO_IMAGE.src}
-              alt={HERO_IMAGE.alt}
-              fill
-              priority
-              sizes="(max-width: 900px) 100vw, 520px"
-              style={{ objectFit: 'cover' }}
-            />
+            <picture>
+              <source media="(max-width: 900px)" srcSet={EMPTY_IMAGE} />
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img {...heroImageProps} loading="eager" fetchPriority="high" />
+            </picture>
             <div className="xfer-hero-image-scrim" aria-hidden />
             <div className="xfer-hero-image-caption">
               <span className="xfer-hero-image-caption-kicker">En route</span>
@@ -933,13 +946,18 @@ export default function TransfersView({ initialDestinationId }: { initialDestina
               return (
                 <article key={code} className="xfer-zone-card">
                   <div className="xfer-zone-img">
-                    <Image
-                      src={img.src}
-                      alt={img.alt}
-                      fill
-                      sizes="(max-width: 900px) 100vw, 360px"
-                      style={{ objectFit: 'cover' }}
-                    />
+                    {/* InView, not loading="lazy": Chrome widens its lazy
+                        distance on a slow or unknown connection, and these
+                        photos, four screens down, downloaded with the page. */}
+                    <InView>
+                      <Image
+                        src={img.src}
+                        alt={img.alt}
+                        fill
+                        sizes="(max-width: 900px) 100vw, 360px"
+                        style={{ objectFit: 'cover' }}
+                      />
+                    </InView>
                     <div className="xfer-zone-img-scrim" aria-hidden />
                     <span className="xfer-zone-roman">{roman(code)}</span>
                     {code === 'D' && (
