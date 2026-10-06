@@ -1,13 +1,27 @@
 'use client'
 
 import { usePathname } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
+/*
+ * Fades the page in when the guest moves to another page. Never on the
+ * first load: there the server HTML shows as it arrives. It used to fade in
+ * from opacity 0, and fade again from 0 when React hydrated, and Chrome does
+ * not count anything painted at opacity 0 as the page's content (Oct 6
+ * 2026): the home poster was skipped, so the hero clip, a second later,
+ * became the largest paint, and text only counted once the fonts or the
+ * scripts repainted it.
+ */
 export default function PageTransition({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
-  const [visible, setVisible] = useState(true)
+  const [visible, setVisible] = useState(false)
+  // The page on screen. A ref, not a mounted flag, so a repeated effect
+  // (React's strict mode in development) does not count as a navigation.
+  const shown = useRef(pathname)
 
   useEffect(() => {
+    if (shown.current === pathname) return
+    shown.current = pathname
     setVisible(false)
     const timer = requestAnimationFrame(() => setVisible(true))
     return () => cancelAnimationFrame(timer)
