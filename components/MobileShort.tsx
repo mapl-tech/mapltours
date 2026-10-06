@@ -208,6 +208,24 @@ export default memo(function MobileShort({
     }
   }, [isVisible, videoMounted, videoAllowed])
 
+  const poster = (
+    <Image
+      src={exp.video ? videoPoster(exp.video) : exp.image}
+      alt={exp.title}
+      fill
+      sizes="(max-width: 767px) 86vw, 20vw"
+      quality={75}
+      {...(priority
+        ? { priority: true, fetchPriority: 'high' as const }
+        : { loading: 'lazy' as const })}
+      style={{
+        objectFit: 'cover',
+        opacity: isPlaying ? 0 : 1,
+        transition: 'opacity 0.3s ease',
+      }}
+    />
+  )
+
   return (
     <div ref={containerRef} className="on-media">
       {/* Buttons must not nest inside the card link (invalid interactive
@@ -225,22 +243,12 @@ export default memo(function MobileShort({
           transform: 'translateZ(0)',
         }}>
           {/* Static image, shows until video plays: the clip's own first
-              frame when there is a clip, so nothing jumps when it starts. */}
-<InView>          <Image
-            src={exp.video ? videoPoster(exp.video) : exp.image}
-            alt={exp.title}
-            fill
-            sizes="(max-width: 767px) 86vw, 20vw"
-            quality={75}
-            {...(priority
-              ? { priority: true, fetchPriority: 'high' as const }
-              : { loading: 'lazy' as const })}
-            style={{
-              objectFit: 'cover',
-              opacity: isPlaying ? 0 : 1,
-              transition: 'opacity 0.3s ease',
-            }}
-          /></InView>
+              frame when there is a clip, so nothing jumps when it starts.
+              The priority card is on screen by definition, so its image is
+              in the server HTML. Behind InView it only appeared after
+              hydration, and on /explore it was the largest paint, at 4 s in
+              Lighthouse's phone runs (Oct 6 2026). */}
+          {priority ? poster : <InView>{poster}</InView>}
 
           {/* Video, mounts when near viewport, plays when visible. Tours
               without footage simply keep showing their photo. */}
