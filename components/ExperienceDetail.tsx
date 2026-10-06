@@ -610,7 +610,7 @@ function Reel({ exp, clip, isActive, near, ahead, advancesAtEnd, clipCount, mute
           loop={!advancesAtEnd}
           preload={isActive ? 'auto' : near ? 'metadata' : 'none'}
           src={near && mediaReady ? clip.video.video_url : undefined}
-          poster={near ? clip.video.thumbnail_url ?? undefined : undefined}
+          poster={near && (isActive || mediaReady) ? clip.video.thumbnail_url ?? undefined : undefined}
           onLoadedMetadata={(e) => setClipFit(e.currentTarget.videoWidth > e.currentTarget.videoHeight ? 'contain' : 'cover')}
           // Under the reel's own sheets, or while a comment is written, it
           // plays again instead of moving on.
@@ -640,7 +640,9 @@ function Reel({ exp, clip, isActive, near, ahead, advancesAtEnd, clipCount, mute
         loop={!advancesAtEnd} muted playsInline
         onEnded={(e) => atEnd(e.currentTarget)}
         preload={isActive ? 'auto' : near ? 'metadata' : 'none'}
-        poster={near ? reelPoster(exp) ?? undefined : undefined}
+        // The neighbours' posters wait for the first paint too: in the server
+        // HTML the next reel's still (about 60 KB) loaded before this one painted.
+        poster={near && (isActive || mediaReady) ? reelPoster(exp) ?? undefined : undefined}
         style={{ width: '100%', height: '100%', objectFit: 'cover', willChange: 'opacity', background: '#08080A' }}
       >
         {/* The 720x1280 phone clip, never a media attribute: with two
