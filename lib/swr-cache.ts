@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { useHydrated } from './use-hydrated'
 
 /**
  * Stale-while-revalidate cache backed by localStorage.
@@ -9,6 +10,13 @@ import { useCallback, useEffect, useRef, useState } from 'react'
  * a background fetch → write the fresh value back to cache and state. Callers
  * see cached data immediately on repeat visits and the network update lands
  * silently a moment later.
+ *
+ * Except while hydrating: the server has no cache, so a component in the
+ * server HTML first renders exactly what the server did and picks the cache
+ * up in its mount effect a frame later. Reading it during hydration broke
+ * the Blue Hole tour on every repeat visit (Oct 6 2026): its one cached
+ * comment rendered where the server had sent "No comments yet", and React
+ * threw away the page's server HTML (#418, #423, #425) and drew it again.
  *
  * Cache entries are versioned + expiry-stamped. Anything older than `maxAge`
  * is still shown (the whole point is "stale-while-revalidate") but a
@@ -84,11 +92,13 @@ export function useSwrCache<T>(
 ): SwrCacheResult<T> {
   const { enabled = true, maxAge = DEFAULT_MAX_AGE_MS } = options
 
-  // Read cache synchronously during render so the first paint has data.
-  const [data, setData] = useState<T | null>(() => (key ? readCache<T>(key)?.data ?? null : null))
+  // Read cache synchronously during render so the first paint has data,
+  // unless this render must match the server's (see the header).
+  const hydrated = useHydrated()
+  const [data, setData] = useState<T | null>(() => (hydrated && key ? readCache<T>(key)?.data ?? null : null))
   const [loading, setLoading] = useState<boolean>(() => {
     if (!key || !enabled) return false
-    return readCache<T>(key) === null
+    return hydrated ? readCache<T>(key) === null : true
   })
   const [revalidating, setRevalidating] = useState(false)
   const [error, setError] = useState<unknown>(null)
