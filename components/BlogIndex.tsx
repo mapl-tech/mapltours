@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { BLOG_CATEGORIES, type BlogPost, formatPostDate } from '@/lib/blog'
+import { BLOG_CATEGORIES, type BlogCard, formatPostDate } from '@/lib/blog'
 import Footer from './Footer'
 
 /* ─── Small primitives ─── */
@@ -249,7 +249,7 @@ function CategoryNav({
 
 /* ─── Featured (lead) ─── */
 
-function FeaturedLead({ post }: { post: BlogPost }) {
+function FeaturedLead({ post }: { post: BlogCard }) {
   return (
     <article
       className="blog-featured"
@@ -387,7 +387,7 @@ function FeaturedLead({ post }: { post: BlogPost }) {
 
 /* ─── Post card (editorial) ─── */
 
-function PostCard({ post, size = 'md' }: { post: BlogPost; size?: 'md' | 'lg' }) {
+function PostCard({ post, size = 'md' }: { post: BlogCard; size?: 'md' | 'lg' }) {
   const isLg = size === 'lg'
   return (
     <article>
@@ -515,7 +515,7 @@ function Colophon() {
 
 /* ─── Main ─── */
 
-export default function BlogIndex({ posts, renderedAt }: { posts: BlogPost[]; renderedAt: string }) {
+export default function BlogIndex({ posts, renderedAt }: { posts: BlogCard[]; renderedAt: string }) {
   const [active, setActive] = useState<(typeof BLOG_CATEGORIES)[number]>('All')
 
   const lead = useMemo(() => posts.find((p) => p.featured) ?? posts[0], [posts])

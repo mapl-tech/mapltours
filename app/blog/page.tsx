@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import BlogIndex from '@/components/BlogIndex'
-import { BLOG_POSTS } from '@/lib/blog'
+import { BLOG_POSTS, toBlogCard } from '@/lib/blog'
 
 const SITE_URL = 'https://mapltours.com'
 const BLOG_URL = `${SITE_URL}/blog`
@@ -74,7 +74,7 @@ export default function BlogPage() {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbsLd) }}
       />
-      <BlogIndex posts={sorted} renderedAt={new Date().toISOString()} />
+      <BlogIndex posts={sorted.map(toBlogCard)} renderedAt={new Date().toISOString()} />
     </>
   )
 }

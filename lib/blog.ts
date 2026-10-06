@@ -34,6 +34,21 @@ export interface BlogPost {
   updatedAt?: string
 }
 
+/**
+ * A post as a list shows it: everything but the article. The /blog index is a
+ * client component, so whatever it is handed is written into the page's HTML;
+ * handing it whole posts put every article's body there (508 KB of HTML,
+ * Oct 6 2026).
+ */
+export type BlogCard = Pick<BlogPost, 'slug' | 'title' | 'excerpt' | 'category' | 'image' | 'readTime' | 'publishedAt' | 'author' | 'featured'>
+
+export function toBlogCard(p: BlogPost): BlogCard {
+  return {
+    slug: p.slug, title: p.title, excerpt: p.excerpt, category: p.category, image: p.image,
+    readTime: p.readTime, publishedAt: p.publishedAt, author: p.author, featured: p.featured,
+  }
+}
+
 // One real byline. The four named writers these used to be were invented,
 // and a byline is a claim about who wrote the piece.
 const mapl: BlogAuthor = { name: 'MAPL Tours Jamaica', role: 'Editorial', initials: 'MT' }
