@@ -1,11 +1,23 @@
 import { type NextRequest, NextResponse } from 'next/server'
 import { updateSession } from '@/lib/supabase/middleware'
+import { withoutSecretParams } from '@/lib/tracker-gate'
 
 // Routes that need auth session refresh
 const AUTH_ROUTES = ['/profile', '/saved', '/checkout', '/login', '/auth', '/driver']
 
 export async function middleware(request: NextRequest) {
   const path = request.nextUrl.pathname
+
+  // A Stripe redirect return (/checkout/confirm, /transfers/confirm, /gifts)
+  // carries the PaymentIntent's client secret in the query, and the Meta
+  // pixel, GA and Hotjar all report the page address. Send the browser to the
+  // same address without it before the page, or any tag, exists.
+  const clean = withoutSecretParams(request.nextUrl.href)
+  if (clean) {
+    const url = request.nextUrl.clone()
+    url.search = clean.search
+    return NextResponse.redirect(url, 307)
+  }
 
   // Route folders are case-sensitive in the App Router, so /Transfers, /Blog
   // and /About all 404 while /transfers, /blog and /about are fine. That is

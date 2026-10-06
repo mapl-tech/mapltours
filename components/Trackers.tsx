@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { usePathname } from 'next/navigation'
 import Script from 'next/script'
+import { isTrackedHost } from '@/lib/tracker-gate'
 
 /**
  * Analytics loaders (GA4 + Google Ads tag + Meta Pixel + Hotjar), gated on the
@@ -56,6 +57,8 @@ export default function Trackers() {
   const firstPath = useRef(true)
 
   useEffect(() => {
+    // Only the live site feeds the live pixel and GA (lib/tracker-gate).
+    if (!isTrackedHost(window.location.hostname)) return
     if (!optedOut()) setAllowed(true)
   }, [])
 

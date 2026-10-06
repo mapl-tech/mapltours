@@ -26,9 +26,10 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 }
 
+// Never payment_intent_client_secret: the middleware removes it before the
+// page exists (lib/tracker-gate SECRET_RETURN_PARAMS), so nothing may rely on it.
 interface SearchParams {
   payment_intent?: string
-  payment_intent_client_secret?: string
   redirect_status?: string
   /** Set when a gift card covered the whole total, so no PaymentIntent exists. */
   booking_id?: string

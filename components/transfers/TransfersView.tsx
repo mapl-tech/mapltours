@@ -521,7 +521,7 @@ export default function TransfersView({ initialDestinationId }: { initialDestina
             <picture>
               <source media="(max-width: 900px)" srcSet={EMPTY_IMAGE} />
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img {...heroImageProps} loading="eager" fetchPriority="high" />
+              <img {...heroImageProps} alt={HERO_IMAGE.alt} loading="eager" fetchPriority="high" />
             </picture>
             <div className="xfer-hero-image-scrim" aria-hidden />
             <div className="xfer-hero-image-caption">

@@ -4,6 +4,7 @@ import { reportMetaLead } from '@/lib/meta-capi'
 import { tipsConsentValid, type TipsDefault } from '@/lib/trip-tips'
 import { countryFromHeaders } from '@/lib/visitor-country'
 import { NO_STORE_HEADERS } from '@/lib/no-store'
+import { isTrackedHost } from '@/lib/tracker-gate'
 
 /**
  * The 5% code popup's submit (components/CouponPopup).
@@ -115,7 +116,11 @@ export async function POST(req: NextRequest) {
     return reply({ error: message }, upstream.status === 400 ? 400 : 502)
   }
 
-  if (eventId) {
+  // Only the live site feeds the live pixel (lib/tracker-gate): a popup on a
+  // dev server or a deploy preview still gets its code, but Meta hears nothing.
+  let pageHost = ''
+  try { pageHost = page ? new URL(page).hostname : '' } catch { pageHost = '' }
+  if (eventId && isTrackedHost(pageHost)) {
     await reportMetaLead({
       email,
       eventId,

@@ -66,6 +66,16 @@ describe('POST /api/lead (the 5% code popup)', () => {
     expect((ev.custom_data as Record<string, unknown>).content_name).toBe('popup-explore')
   })
 
+  test('a popup on a dev server or a deploy preview still sends the code, but the live pixel hears nothing', async () => {
+    for (const page of ['http://localhost:3100/', 'https://6ac51fe429617e00085ea824--mapltours.netlify.app/explore']) {
+      calls.length = 0
+      const r = await POST(req({ email: 'guest@example.com', place: 'home', page, eventId: 'evt-12345678' }))
+      expect(r.status).toBe(200)
+      expect(calls.some((c) => c.url.includes('bio.mapltours.com'))).toBe(true)
+      expect(calls.some((c) => c.url.includes('graph.facebook.com'))).toBe(false)
+    }
+  })
+
   test('no event id from the browser (tracking declined): the email still goes, Meta hears nothing', async () => {
     const r = await POST(req({ email: 'guest@example.com', place: 'home', page: 'https://mapltours.com/' }))
     expect(r.status).toBe(200)
