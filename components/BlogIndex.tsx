@@ -78,27 +78,32 @@ function romanize(n: number): string {
 
 /* ─── Masthead (nameplate) ─── */
 
-function Masthead() {
-  // Compute date-dependent strings after mount so the SSR HTML and the first
-  // client render match. Without this, the server's clock/timezone would
-  // diverge from the user's and trigger a hydration error.
-  const [dateBits, setDateBits] = useState<{ dateline: string; vol: string; issue: string } | null>(null)
-  useEffect(() => {
-    const now = new Date()
-    setDateBits({
-      dateline: now.toLocaleDateString('en-US', {
-        weekday: 'long',
-        month: 'long',
-        day: 'numeric',
-        year: 'numeric',
-      }),
-      vol: romanize(now.getFullYear() - 2023),
-      issue: romanize(now.getMonth() + 1),
-    })
-  }, [])
-  const dateline = dateBits?.dateline ?? ''
-  const vol = dateBits?.vol ?? ''
-  const issue = dateBits?.issue ?? ''
+// The journal is dated in Jamaica, wherever it is read.
+const JOURNAL_TZ = 'America/Jamaica'
+
+function Masthead({ renderedAt }: { renderedAt: string }) {
+  // The server HTML carries the real dateline, from the moment the page was
+  // rendered (the deploy, for this static page), and the first client render
+  // uses that same moment, so hydration matches. The effect then moves it to
+  // today, which only changes anything when the deploy was on an earlier day.
+  // It used to render empty and fill in after mount, and on a phone the
+  // filled strip wrapped to a second line and pushed the page down 26px.
+  const [now, setNow] = useState(() => new Date(renderedAt))
+  useEffect(() => { setNow(new Date()) }, [])
+  const dateline = now.toLocaleDateString('en-US', {
+    timeZone: JOURNAL_TZ,
+    weekday: 'long',
+    month: 'long',
+    day: 'numeric',
+    year: 'numeric',
+  })
+  const ym = Object.fromEntries(
+    new Intl.DateTimeFormat('en-US', { timeZone: JOURNAL_TZ, year: 'numeric', month: 'numeric' })
+      .formatToParts(now)
+      .map((p) => [p.type, p.value]),
+  )
+  const vol = romanize(Number(ym.year) - 2023)
+  const issue = romanize(Number(ym.month))
 
   return (
     <header
@@ -510,7 +515,7 @@ function Colophon() {
 
 /* ─── Main ─── */
 
-export default function BlogIndex({ posts }: { posts: BlogPost[] }) {
+export default function BlogIndex({ posts, renderedAt }: { posts: BlogPost[]; renderedAt: string }) {
   const [active, setActive] = useState<(typeof BLOG_CATEGORIES)[number]>('All')
 
   const lead = useMemo(() => posts.find((p) => p.featured) ?? posts[0], [posts])
@@ -525,7 +530,7 @@ export default function BlogIndex({ posts }: { posts: BlogPost[] }) {
 
   return (
     <div style={{ minHeight: '100vh', paddingTop: 'var(--nav-h)', background: 'var(--bg)' }}>
-      <Masthead />
+      <Masthead renderedAt={renderedAt} />
 
       <CategoryNav active={active} onSelect={setActive} />
 

@@ -74,7 +74,7 @@ export default function BlogPage() {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbsLd) }}
       />
-      <BlogIndex posts={sorted} />
+      <BlogIndex posts={sorted} renderedAt={new Date().toISOString()} />
     </>
   )
 }
