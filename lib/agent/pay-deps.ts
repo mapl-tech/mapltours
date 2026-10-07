@@ -12,13 +12,12 @@ import { NextRequest } from 'next/server'
 import { rateLimit } from '../rate-limit'
 import { createServiceClient } from '../supabase/service'
 import type { AgentPayDeps, ConfirmOutcome, GrantedToken, IntentLike, RideState } from './agent-pay'
+import { agentPaymentsEnabled } from './payments-flag'
 
 /** Shared payment tokens are a Stripe preview API; reading one needs this version. */
 export const SPT_API_VERSION = '2026-04-22.preview'
 
-export function agentPaymentsEnabled(): boolean {
-  return process.env.AGENT_PAYMENTS_ENABLED === '1' && !!process.env.STRIPE_SECRET_KEY
-}
+export { agentPaymentsEnabled }
 
 // Every call here is single-try with a short timeout, so the whole tool fits
 // in Netlify's 10 s: the confirm gets 3.5 s, the read-back 1.5 s, and the

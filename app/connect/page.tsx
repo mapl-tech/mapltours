@@ -12,6 +12,7 @@ import { GUIDES, GuidePanel, MCP_URL } from '@/components/connect/guides'
 import { FONT, GOLD_EDGE, GOLD_TINT, H3, LINK, LINK_BLOCK, STANDALONE_ON_DARK, SUPPORT_SIZE } from '@/components/connect/tokens'
 import { buildQuote, DESTINATIONS, MAX_TRANSFER_PASSENGERS } from '@/lib/airport-transfers'
 import { MIN_LEAD_TIME_HOURS } from '@/lib/booking-window'
+import { agentPaymentsEnabled } from '@/lib/agent/payments-flag'
 
 /**
  * /connect: how a traveller adds the MAPL Tours Jamaica connector (the remote
@@ -23,12 +24,14 @@ import { MIN_LEAD_TIME_HOURS } from '@/lib/booking-window'
  * privacy, the technical facts; then the address once more, so the page ends
  * on its one action. Numbers and the example fare come from the
  * same constants and pricing function the tools and checkout use, so the
- * page cannot drift from the rate card.
+ * page cannot drift from the rate card. What it says about paying in the chat
+ * follows agentPaymentsEnabled(), the switch that lists book_and_pay_transfer,
+ * read at build from the same deploy as /mcp.
  */
 
 const TITLE = 'Book MAPL Tours Jamaica from your AI assistant'
 const DESCRIPTION =
-  'Add MAPL Tours Jamaica to Muse, Claude, ChatGPT, Gemini or Perplexity. Your assistant prices your Jamaica ride or tour, and you check and pay on mapltours.com.'
+  'Add MAPL Tours Jamaica to Muse, Claude, ChatGPT, Gemini or Perplexity. Your assistant prices your Jamaica ride or tour and sets up the booking for you to approve.'
 const PAGE_URL = 'https://mapltours.com/connect'
 
 // A page that sets its own openGraph no longer inherits the image from
@@ -62,6 +65,8 @@ const TOOLS = [
   'start_tour_booking',
   'get_booking_terms',
 ]
+/** Listed only while agent payments are on, and never at the Claude or ChatGPT address. */
+const PAY_TOOL = 'book_and_pay_transfer'
 
 /** The worked example in the chat: a real hotel, priced by the checkout's own function. */
 const DEMO_HOTEL_ID = 'riu-negril'
@@ -146,6 +151,7 @@ function Fact({ term, first, children }: { term: string; first?: boolean; childr
 }
 
 export default function ConnectPage() {
+  const payOn = agentPaymentsEnabled()
   const demo = buildQuote(DEMO_HOTEL_ID, 'round_trip', DEMO_PARTY)
   // zoneDuration joins the range with an en dash (U+2013), "75 [dash] 90 min from MBJ";
   // the page writes it out as "75 to 90 minutes".
@@ -176,7 +182,9 @@ export default function ConnectPage() {
     {
       // The payoff, last and full width. Four before it keep the grid whole.
       title: 'Set up the booking',
-      text: 'It tells you what is included and how cancellation works, then makes a mapltours.com link that opens checkout with your ride or tour, dates and party already filled in.',
+      text: `It tells you what is included and how cancellation works, then makes a mapltours.com link that opens checkout with your ride or tour, dates and party already filled in.${
+        payOn ? ' Where your assistant can pay for you, it can also book your airport ride right in the chat once you approve the price.' : ''
+      }`,
     },
   ]
 
@@ -264,8 +272,9 @@ export default function ConnectPage() {
             >
               <LineCheck />
               <span>
-                No sign-in and nothing to install. It books and charges nothing on its own: you check the details and
-                pay on mapltours.com.
+                {payOn
+                  ? 'No sign-in and nothing to install. Nothing is booked or charged until you approve the exact price.'
+                  : 'No sign-in and nothing to install. It books and charges nothing on its own: you check the details and pay on mapltours.com.'}
               </span>
             </p>
           </div>
@@ -377,12 +386,19 @@ export default function ConnectPage() {
               {[
                 {
                   lead: 'It never books or charges on its own.',
-                  text: 'Your assistant hands you a link. You check every detail on mapltours.com and pay there, by card, or with Apple Pay, Google Pay or Link where your device offers them.',
+                  text: payOn
+                    ? 'Your assistant hands you a link, and you check every detail on mapltours.com and pay there, by card, or with Apple Pay, Google Pay or Link where your device offers them. Where your assistant can pay for you, it books an airport ride only after you approve the exact price in your wallet, and never charges the same ride twice. Tours are always booked on mapltours.com.'
+                    : 'Your assistant hands you a link. You check every detail on mapltours.com and pay there, by card, or with Apple Pay, Google Pay or Link where your device offers them.',
                 },
-                {
-                  lead: 'It never asks who you are.',
-                  text: 'Your name, email and phone do not pass through the connector. You type them on the checkout page yourself.',
-                },
+                payOn
+                  ? {
+                      lead: 'It never sees your card.',
+                      text: 'Your card stays with Stripe and your wallet. When your assistant pays for a ride, it sends us your name, email and phone for the booking, and a one-time payment token, never a card number.',
+                    }
+                  : {
+                      lead: 'It never asks who you are.',
+                      text: 'Your name, email and phone do not pass through the connector. You type them on the checkout page yourself.',
+                    },
                 {
                   lead: 'It cannot see or change your bookings.',
                   text: 'It only prices and sets up new ones. For a change or a cancellation, email contact@mapltours.com.',
@@ -431,8 +447,13 @@ export default function ConnectPage() {
           </h2>
           <ul role="list" style={{ ...LIST, marginTop: 16, display: 'grid', gap: 16 }}>
             {[
-              'No sign-in and no account. The connector does not know who you are.',
+              payOn
+                ? 'No sign-in and no account. To price a ride or tour, the connector does not need to know who you are.'
+                : 'No sign-in and no account. The connector does not know who you are.',
               'Your assistant sends only what a price needs: the hotel or tour, dates and times, flight numbers and how many are travelling.',
+              ...(payOn
+                ? ['If your assistant pays for a ride, it also sends your name, email and phone for the booking, and a one-time payment token from your wallet. Your card number never reaches us.']
+                : []),
               'Our logs note which tool ran and whether it worked, not what you asked.',
               'Booking links carry your ride or tour, never your name, email or phone.',
               'What you tell your assistant is covered by that assistant’s own privacy policy.',
@@ -457,8 +478,9 @@ export default function ConnectPage() {
             For developers and directories
           </h2>
           <p style={INTRO}>
-            A public remote MCP server for planning airport rides and tours in Jamaica. Every tool is read-only, and none
-            needs a key.
+            {payOn
+              ? 'A public remote MCP server for planning and booking airport rides and tours in Jamaica. No tool needs a key, and all but one are read-only.'
+              : 'A public remote MCP server for planning airport rides and tours in Jamaica. Every tool is read-only, and none needs a key.'}
           </p>
           <dl
             style={{
@@ -494,6 +516,15 @@ export default function ConnectPage() {
                 All read-only. The two start_ tools return a mapltours.com/book link that opens checkout filled in.
               </span>
             </Fact>
+            {payOn && (
+              <Fact term="Payment tool">
+                <Chip>{PAY_TOOL}</Chip>
+                <span style={{ display: 'block', marginTop: 8 }}>
+                  Books and pays for an airport ride with a Stripe shared payment token the traveller approved. The only
+                  tool that charges. Not listed at the Claude and ChatGPT addresses.
+                </span>
+              </Fact>
+            )}
             <Fact term="Icon">
               {/* Too long for one line on a 320px screen: the wrapping style, with breaks only after
                   the slashes (the file name stays whole, so a line never ends on its hyphen). */}

@@ -7,12 +7,15 @@ import {
   type TransferZone,
 } from '@/lib/airport-transfers'
 import { BLOG_POSTS } from '@/lib/blog'
+import { agentPaymentsEnabled } from '@/lib/agent/payments-flag'
 
 const baseUrl = 'https://mapltours.com'
 
 export const dynamic = 'force-static'
 
 export function GET() {
+  // Built static, so this is the deploy's own switch: the same one /mcp lists the payment tool by.
+  const payOn = agentPaymentsEnabled()
   // Everything factual below is DERIVED, never typed in. The prose used to
   // name cliff diving in Negril, Blue Mountain coffee treks and reggae studio
   // sessions, and to list Kingston, St. Andrew, Portland and St. Elizabeth as
@@ -143,7 +146,7 @@ When you send a person to mapltours.com, or open it to book for them, add utm_so
 
 In browsers that support WebMCP, every page of this site registers tools on document.modelContext: find_transfer_destination, get_transfer_quote, check_transfer_timing, start_transfer_booking, list_tours, get_tour, start_tour_booking. The quote and timing tools are read-only. The two start_ tools fill the cart and open a prefilled checkout page; they never take payment. The traveller reviews and pays on the checkout page themselves.
 
-The same tools are also served to any AI assistant as a remote MCP server (Model Context Protocol, streamable HTTP, no sign-in) at ${baseUrl}/mcp, with one more, get_booking_terms. There the two start_ tools return a ${baseUrl}/book link that opens checkout with the ride or tour already filled in; the traveller adds contact details and pays on that page. How to add the connector to Muse, ChatGPT, Claude, Gemini or Perplexity: ${baseUrl}/connect
+The same tools are also served to any AI assistant as a remote MCP server (Model Context Protocol, streamable HTTP, no sign-in) at ${baseUrl}/mcp, with one more, get_booking_terms. There the two start_ tools return a ${baseUrl}/book link that opens checkout with the ride or tour already filled in; the traveller adds contact details and pays on that page.${payOn ? ` Where the assistant can pay with a Stripe shared payment token, one more tool, book_and_pay_transfer, books and pays for an airport ride in the chat once the traveller approves the exact price; it is not listed at the ?via=claude and ?via=chatgpt addresses. Tours are always paid on the checkout page.` : ''} How to add the connector to Muse, ChatGPT, Claude, Gemini or Perplexity: ${baseUrl}/connect
 `
 
   return new Response(body, {
