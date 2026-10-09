@@ -104,8 +104,13 @@ export interface AgentPayDeps {
   createCheckout: (body: Record<string, unknown>, ip: string) => Promise<{ status: number; json: Record<string, unknown> }>
   /** `quick` bounds the read for the time-critical re-read after an unclear confirm. */
   retrievePaymentIntent: (id: string, quick?: boolean) => Promise<IntentLike>
-  /** Confirm with payment_method_data[shared_payment_granted_token]; card errors come back as { error }. */
-  confirmPaymentIntent: (id: string, spt: string, returnUrl: string, idempotencyKey: string) => Promise<ConfirmOutcome>
+  /**
+   * Confirm with payment_method_data[shared_payment_granted_token] and NO
+   * return_url: on an intent backed by a shared payment token the agent
+   * supplies it, and Stripe refuses a confirm that sends one (found by the
+   * first live test, Oct 9 2026). Card errors come back as { error }.
+   */
+  confirmPaymentIntent: (id: string, spt: string, idempotencyKey: string) => Promise<ConfirmOutcome>
 }
 
 export interface PayContext {
@@ -345,7 +350,9 @@ export async function bookAndPayTransfer(input: Record<string, unknown>, ctx: Pa
   }
 
   // 10. Pay. One attempt per intent and token; never retried here.
-  const outcome = await deps.confirmPaymentIntent(pi.id, spt, `${origin}/transfers/confirm`, `agentpay:${pi.id}:${spt}`)
+  // "agentpay2": the first version's key may hold Stripe's refusal of the
+  // confirm that sent a return_url, and a key replays its first answer.
+  const outcome = await deps.confirmPaymentIntent(pi.id, spt, `agentpay2:${pi.id}:${spt}`)
   if ('error' in outcome) {
     console.warn('[agent-pay]', { via, bookingRef: ref, outcome: outcome.error.kind })
     if (outcome.error.kind === 'declined') {

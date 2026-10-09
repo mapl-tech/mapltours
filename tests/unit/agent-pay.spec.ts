@@ -107,7 +107,7 @@ describe('the happy path', () => {
     expect(d.tooManyAttempts).toHaveBeenCalledWith('203.0.113.9', 'alex@example.com')
     expect(d.retrievePaymentIntent).toHaveBeenCalledWith('pi_ABC123')
     expect(d.confirmPaymentIntent).toHaveBeenCalledTimes(1)
-    expect(d.confirmPaymentIntent).toHaveBeenCalledWith('pi_ABC123', SPT, `${ORIGIN}/transfers/confirm`, `agentpay:pi_ABC123:${SPT}`)
+    expect(d.confirmPaymentIntent).toHaveBeenCalledWith('pi_ABC123', SPT, `agentpay2:pi_ABC123:${SPT}`)
   })
 
   test('a one-way from the airport sends only the arrival leg', async () => {

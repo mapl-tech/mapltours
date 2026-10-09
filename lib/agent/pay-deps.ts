@@ -99,7 +99,7 @@ export function agentPayDeps(origin: string): AgentPayDeps | null {
     retrievePaymentIntent: async (id, quick): Promise<IntentLike> =>
       (await stripe().paymentIntents.retrieve(id, {}, { timeout: quick ? 1_500 : 2_500, maxNetworkRetries: 0 })) as unknown as IntentLike,
 
-    confirmPaymentIntent: async (id, spt, returnUrl, idempotencyKey): Promise<ConfirmOutcome> => {
+    confirmPaymentIntent: async (id, spt, idempotencyKey): Promise<ConfirmOutcome> => {
       try {
         const pi = await stripe().paymentIntents.confirm(
           id,
@@ -107,7 +107,8 @@ export function agentPayDeps(origin: string): AgentPayDeps | null {
             // Not in the SDK's types yet (preview); Stripe clones the
             // traveller's payment method from the token onto this intent.
             payment_method_data: { shared_payment_granted_token: spt } as unknown as Stripe.PaymentIntentConfirmParams.PaymentMethodData,
-            return_url: returnUrl,
+            // No return_url: the agent supplies it for a token-backed intent,
+            // and Stripe refuses the confirm if we send one too.
           },
           { idempotencyKey, timeout: 3_500, maxNetworkRetries: 0 },
         )
