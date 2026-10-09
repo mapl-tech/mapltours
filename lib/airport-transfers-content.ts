@@ -4,6 +4,14 @@
  * JSON-LD alongside the client-side TransfersView component that renders it.
  */
 
+import { MIN_PICKUP_LEAD_MIN } from './booking-window'
+
+/** The checkout's suggested hotel pickup before the flight home, in words: "3 hours 30 minutes". */
+const PICKUP_LEAD = [
+  `${Math.floor(MIN_PICKUP_LEAD_MIN / 60)} hours`,
+  MIN_PICKUP_LEAD_MIN % 60 ? `${MIN_PICKUP_LEAD_MIN % 60} minutes` : '',
+].filter(Boolean).join(' ')
+
 export interface TransferReview {
   quote: string
   name: string
@@ -33,7 +41,23 @@ export interface TransferFaq {
 export const TRANSFER_FAQS: TransferFaq[] = [
   {
     q: 'Is the price really flat for 1–4 passengers?',
-    a: 'Yes. The fare shown is per vehicle, not per person. A family of four pays the same as a solo traveler on the same route. Parties of five to seven are priced per person and still ride together; groups of eight or more get a custom quote with a second vehicle.',
+    a: 'Yes. The fare shown is per vehicle, not per person, and it is all-in: nothing is added at checkout. A family of four pays the same as a solo traveler on the same route, and a round-trip fare covers both rides, to your hotel and back to the airport. Parties of five to seven are priced per person and still ride together; groups of eight or more get a custom quote with a second vehicle.',
+  },
+  {
+    q: 'What vehicle will we ride in?',
+    a: 'A private, air-conditioned minivan, reserved for your party alone. You never share it with other passengers, and it is never a shuttle or a coach. Prefer an SUV? We can arrange one at a higher rate; email contact@mapltours.com for a price.',
+  },
+  {
+    q: 'How much luggage can we bring?',
+    a: 'A suitcase each is no problem: four adults and four suitcases fit comfortably in the minivan. Travelling with more bags, golf clubs or a stroller? Add them under "Anything we should know?" at checkout and we will make sure the vehicle fits.',
+  },
+  {
+    q: 'Are your drivers licensed and insured?',
+    a: 'Yes. Your ride is provided by our licensed local transport partner, authorized for tourist airport transfers in Jamaica. The vehicle carries commercial passenger insurance, and every passenger has their own seat belt.',
+  },
+  {
+    q: 'Will we know who our driver is?',
+    a: 'Yes. Before your pickup we send your driver\'s name, the vehicle and its registration plate, and how to reach them.',
   },
   {
     q: 'What happens if my flight is delayed?',
@@ -42,6 +66,10 @@ export const TRANSFER_FAQS: TransferFaq[] = [
   {
     q: 'How do I find my driver at MBJ?',
     a: 'After you clear immigration and customs, walk through the arrivals doors. Your driver will be holding a MAPL Tours Jamaica sign with your name. If you do not see them within ten minutes, contact us using the details in your confirmation email.',
+  },
+  {
+    q: 'How do we set the pickup for our flight home?',
+    a: `You choose it at checkout. Enter the time your flight home departs and we suggest a hotel pickup ${PICKUP_LEAD} before it, which you can change. Your driver picks you up at your hotel or villa. Any other instructions go in the "Anything we should know?" box at checkout.`,
   },
   {
     q: 'Can I pay in cash?',
