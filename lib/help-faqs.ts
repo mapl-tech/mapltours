@@ -4,6 +4,8 @@
  * the same source and can never drift apart.
  */
 
+import { TRANSFER_FAQS } from './airport-transfers-content'
+
 export interface HelpFaq {
   q: string
   a: string
@@ -13,6 +15,12 @@ export interface HelpCategory {
   id: string
   label: string
   faqs: HelpFaq[]
+  /**
+   * The page whose FAQPage markup already carries these answers. Google wants
+   * a repeated question marked up once, so /help shows them but leaves them
+   * out of its own structured data.
+   */
+  markedUpOn?: string
 }
 
 export const HELP_CATEGORIES: HelpCategory[] = [
@@ -37,6 +45,13 @@ export const HELP_CATEGORIES: HelpCategory[] = [
         a: 'Changes run on the same window as cancellations: within 48 hours of booking, and before the experience has started. Contact our support team with the date or guest count you need and we\'ll sort it out with your driver. Once that 48-hour window closes the booking is locked in, the same point at which it stops being refundable.',
       },
     ],
+  },
+  {
+    // The /transfers page's own answers, so the two can never disagree.
+    id: 'transfers',
+    label: 'Airport Transfers',
+    faqs: TRANSFER_FAQS,
+    markedUpOn: '/transfers',
   },
   {
     id: 'cancellations',

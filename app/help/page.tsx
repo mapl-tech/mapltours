@@ -17,7 +17,7 @@ function FaqJsonLd() {
   const data = {
     '@context': 'https://schema.org',
     '@type': 'FAQPage',
-    mainEntity: HELP_CATEGORIES.flatMap((c) =>
+    mainEntity: HELP_CATEGORIES.filter((c) => !c.markedUpOn).flatMap((c) =>
       c.faqs.map((f) => ({
         '@type': 'Question',
         name: f.q,

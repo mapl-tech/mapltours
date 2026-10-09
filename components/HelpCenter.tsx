@@ -3,16 +3,18 @@
 import { useState, useMemo } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { CalendarDays, RotateCcw, Sparkles, CreditCard, UserRound, Mail, Search } from 'lucide-react'
+import { CalendarDays, RotateCcw, Sparkles, CreditCard, UserRound, Mail, Search, Plane } from 'lucide-react'
 import Footer from './Footer'
 import { DESTINATION_IMAGES } from '@/lib/experiences'
 import { HELP_CATEGORIES } from '@/lib/help-faqs'
+import { copyText } from '@/components/connect/copy'
 
 // ── FAQ Data ──
 // Exported so app/help/page.tsx can emit the same questions as FAQPage
 // structured data; one source, so the schema can never drift from the page.
 const ICONS: Record<string, React.ReactNode> = {
   'booking': <CalendarDays size={15} strokeWidth={1.75} />,
+  'transfers': <Plane size={15} strokeWidth={1.75} />,
   'cancellations': <RotateCcw size={15} strokeWidth={1.75} />,
   'experience': <Sparkles size={15} strokeWidth={1.75} />,
   'payments': <CreditCard size={15} strokeWidth={1.75} />,
@@ -78,6 +80,7 @@ export default function HelpCenter() {
   const [activeCategory, setActiveCategory] = useState('booking')
   const [openIndex, setOpenIndex] = useState<number | null>(0)
   const [search, setSearch] = useState('')
+  const [copyState, setCopyState] = useState<'idle' | 'copied' | 'failed'>('idle')
 
   const activeCat = categories.find((c) => c.id === activeCategory)!
 
@@ -314,26 +317,18 @@ export default function HelpCenter() {
                 display: 'grid', gridTemplateColumns: '1fr', gap: 16,
                 maxWidth: 440, margin: '0 auto',
               }}>
-                {/* Email, the only support channel at launch (no phone line yet) */}
-                <a href="mailto:contact@mapltours.com" style={{
+                {/* Email, the only support channel (no phone line yet). A mailto link
+                    alone does nothing on a computer with no mail app set up, which
+                    is how the whole card used to fail, so it also offers the contact
+                    form and a copy of the address. */}
+                <div style={{
                   display: 'flex', flexDirection: 'column', alignItems: 'center',
                   textAlign: 'center', padding: '36px 24px',
                   borderRadius: 'var(--r-xl)',
                   border: '1px solid var(--border)',
                   background: 'var(--card-bg)',
                   boxShadow: 'var(--shadow-sm)',
-                  textDecoration: 'none',
-                  transition: 'all 0.2s ease',
-                }}
-                  onMouseEnter={(e) => {
-                    (e.currentTarget as HTMLElement).style.boxShadow = 'var(--shadow-md)';
-                    (e.currentTarget as HTMLElement).style.transform = 'translateY(-2px)'
-                  }}
-                  onMouseLeave={(e) => {
-                    (e.currentTarget as HTMLElement).style.boxShadow = 'var(--shadow-sm)';
-                    (e.currentTarget as HTMLElement).style.transform = ''
-                  }}
-                >
+                }}>
                   <div style={{
                     width: 52, height: 52, borderRadius: '50%',
                     background: 'var(--surface)',
@@ -350,19 +345,40 @@ export default function HelpCenter() {
                   }}>
                     Email us
                   </p>
-                  <p style={{
+                  <a href="mailto:contact@mapltours.com" style={{
                     fontSize: 15, fontWeight: 600, color: 'var(--text-primary)',
                     fontFamily: 'var(--font-dm-sans)',
+                    textDecoration: 'underline', textUnderlineOffset: 3,
+                    padding: '10px 4px',
                   }}>
                     contact@mapltours.com
-                  </p>
-                  <p style={{
+                  </a>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: 8, marginTop: 8 }}>
+                    <Link href="/contact" className="btn-primary" style={{ height: 44 }}>
+                      Send us a message
+                    </Link>
+                    <button
+                      type="button"
+                      className="btn-outline"
+                      style={{ height: 44 }}
+                      onClick={async (e) => {
+                        const ok = await copyText('contact@mapltours.com', e.currentTarget)
+                        setCopyState(ok ? 'copied' : 'failed')
+                        window.setTimeout(() => setCopyState('idle'), 2500)
+                      }}
+                    >
+                      {copyState === 'copied' ? 'Copied' : 'Copy address'}
+                    </button>
+                  </div>
+                  <p role="status" style={{
                     fontSize: 12, color: 'var(--text-tertiary)',
-                    fontFamily: 'var(--font-dm-sans)', marginTop: 6,
+                    fontFamily: 'var(--font-dm-sans)', marginTop: 12,
                   }}>
-                    Response within 24 hours
+                    {copyState === 'failed'
+                      ? 'Copying did not work here. Press and hold the address above to copy it.'
+                      : 'Response within 24 hours'}
                   </p>
-                </a>
+                </div>
               </div>
             </div>
 

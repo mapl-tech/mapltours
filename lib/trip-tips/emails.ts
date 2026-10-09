@@ -778,7 +778,7 @@ const BRING_LINE = 'Bring a valid ID, reef-safe sunscreen, and water.'
 
 /**
  * The weather rule as the terms state it (app/terms/page.tsx:61, also
- * LegalModal.tsx:238 and lib/help-faqs.ts:73), not the blogs' "refunded in
+ * LegalModal.tsx:238 and lib/help-faqs.ts:88), not the blogs' "refunded in
  * full or rescheduled" (map-facts C1).
  */
 const WEATHER_LINE =
@@ -876,7 +876,7 @@ const DRIVER_LINE = 'Your driver waits at arrivals with your name on a sign, and
  * Tour lead time. app/terms/page.tsx:47 says bookings close 24 hours before
  * an experience begins, and lib/booking-window.ts counts a tour day from
  * midnight in Jamaica (isExperienceDateBookable), as the help page says
- * (lib/help-faqs.ts:33 "experience days are counted from midnight in
+ * (lib/help-faqs.ts:41 "experience days are counted from midnight in
  * Jamaica"). So a Friday tour is bookable to the end of Wednesday, not
  * "24 hours before it starts". A test holds this to isExperienceDateBookable.
  */
@@ -1019,7 +1019,7 @@ function p2(): Draft {
           href: siteLink(`/experience/${getSlug(e)}`, `p2_tours_tour_${e.id}`),
         })),
       },
-      // tourOperatorCost: above tierMax the party pays per head; help-faqs:29
+      // tourOperatorCost: above tierMax the party pays per head; help-faqs:37
       // "with a per-person rate above that; set your guest count at checkout
       // and the price updates". "Than that" ties it to the limits in the table.
       { t: 'small', text: 'Bigger parties than that pay per person, and the price updates as you set your group.' },
@@ -1087,12 +1087,12 @@ function p4(): Draft {
         t: 'rows',
         rows: [
           // app/terms/page.tsx:43-44 (USD, Stripe at checkout);
-          // lib/help-faqs.ts:87 (cards, Apple Pay, Google Pay);
+          // lib/help-faqs.ts:102 (cards, Apple Pay, Google Pay);
           // airport-transfers-content.ts:48 "taken online up front".
           ['Paying', 'Online when you book, in US dollars, by card, Apple Pay or Google Pay.'],
           // app/terms/page.tsx:47 "Bookings close 24 hours before an
           // experience or pickup begins" (rides: the pickup is a real time,
-          // isPickupBookable) and TOUR_NOTICE for tours (lib/help-faqs.ts:33
+          // isPickupBookable) and TOUR_NOTICE for tours (lib/help-faqs.ts:41
           // "experience days are counted from midnight in Jamaica").
           ['How far ahead', 'Book a ride at least 24 hours before pickup. Tour days count from midnight in Jamaica, so book a Friday tour by the end of Wednesday.'],
           // app/terms/page.tsx:54,57,58 (nothing is refundable once the tour
