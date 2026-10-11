@@ -73,6 +73,7 @@
  * ride together in one vehicle; 8 or more are sent to a quote.
  */
 import type { TipKey, Track } from './plan'
+import { FACEBOOK_GROUP } from '../facebook-group'
 import { DESTINATIONS, MAX_TRANSFER_PASSENGERS, ZONES, getTransferPrice, zonePriceRange, type TransferDestination, type TransferTripType, type TransferZone } from '../airport-transfers'
 import { experiences, getSlug, priceUnitLabel, tourPrice, type Experience } from '../experiences'
 import { POPUP_CODE, POPUP_PERCENT } from '../coupon-popup'
@@ -688,7 +689,11 @@ function render(key: TipKey, d: Draft, unsubscribeUrl: string, postal: string | 
   // the owner's decision of Sept 27 2026; see lib/trip-tips/postal.ts).
   // 8px above the privacy link keeps its 44px target off the unsubscribe
   // link's, which it would otherwise touch with no address line between.
+  // The guests' Facebook group leads the footer (owner, Oct 11 2026): below
+  // the rule, so the reply line stays the last thing the tip itself says.
+  // Four words, because the longest tip sits five under the 250-word limit.
   const footer = [
+    `<p style="${small14}margin-bottom:8px;">${textLink(FACEBOOK_GROUP.url, 'Join our Facebook group')}</p>`,
     `<p style="${small14}">${esc(why)}</p>`,
     `<p style="${small14}">Changed your mind? ${textLink(unsubscribeUrl, 'Unsubscribe')}</p>`,
     ...(postal ? [`<p style="${small14}">${esc(postal)}</p>`] : []),
@@ -714,7 +719,7 @@ ${footer}
     'MAPL Tours Jamaica',
     ...d.body.map(blockText).filter((s) => s !== ''),
     inlineText(d.closing),
-    [why, `Unsubscribe: ${unsubscribeUrl}`, ...(postal ? [postal] : []), `Privacy: ${privacy}`].join('\n'),
+    [`Join our Facebook group: ${FACEBOOK_GROUP.url}`, why, `Unsubscribe: ${unsubscribeUrl}`, ...(postal ? [postal] : []), `Privacy: ${privacy}`].join('\n'),
   ].join('\n\n')
 
   return { subject: d.subject, preheader: d.preheader, html, text: `${text}\n` }

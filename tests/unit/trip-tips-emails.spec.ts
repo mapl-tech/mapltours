@@ -22,6 +22,7 @@ import {
   type TipContext,
   type TipKey,
 } from '../../lib/trip-tips/emails'
+import { FACEBOOK_GROUP } from '../../lib/facebook-group'
 import { TIP_KEYS, TRACK_KEYS, planPerson, type Track } from '../../lib/trip-tips/plan'
 import { isExperienceDateBookable } from '../../lib/booking-window'
 import { rideBooking, tourBooking } from './trip-tips-fakes'
@@ -297,6 +298,13 @@ describe.each(CASES.map((c) => [name(c), c] as const))('%s', (_n, c) => {
     expect(tip.html).toMatch(/>Unsubscribe<\/a><\/p>\n<p [^>]*><a class="tl" href="[^"]*\/privacy\?[^"]*"[^>]*>Privacy<\/a><\/p>\n<\/div>/)
   })
 
+  test('the footer opens with the guests\u2019 Facebook group, in both versions, after the reply line', () => {
+    expect(hrefs(tip.html)).toContain(FACEBOOK_GROUP.url)
+    expect(tip.html.indexOf(FACEBOOK_GROUP.url)).toBeGreaterThan(tip.html.lastIndexOf(PRIMARY_MARK))
+    expect(tip.html.indexOf(FACEBOOK_GROUP.url)).toBeLessThan(tip.html.indexOf('You asked MAPL Tours Jamaica'))
+    expect(tip.text).toContain(`Join our Facebook group: ${FACEBOOK_GROUP.url}\nYou asked MAPL Tours Jamaica`)
+  })
+
   test('a hidden preheader, the subject as the title, a light document under Gmail’s clip size', () => {
     expect(tip.preheader.length).toBeGreaterThan(20)
     expect(tip.html).toContain(`display:none;mso-hide:all;`)
@@ -334,9 +342,9 @@ describe.each(CASES.map((c) => [name(c), c] as const))('%s', (_n, c) => {
     expect(tip.text).not.toMatch(/\.jpg|media\/email/)
   })
 
-  test('every link is this site with trip tips attribution, the official C5 form, or the unsubscribe link', () => {
+  test('every link is this site with trip tips attribution, the official C5 form, the unsubscribe link or the guests\u2019 Facebook group', () => {
     for (const h of hrefs(tip.html)) {
-      if (h === UNSUB || h === C5_URL) continue
+      if (h === UNSUB || h === C5_URL || h === FACEBOOK_GROUP.url) continue
       expect(h.startsWith(`${SITE}/`), h).toBe(true)
       expect(h).toMatch(/[?&]utm_campaign=trip_tips(&|$)/)
       expect(h).toMatch(new RegExp(`[?&]utm_content=${key}_`))
@@ -803,7 +811,8 @@ describe('the ten tips read as one series', () => {
       // The reply line is the last thing the email says before the footer, in
       // both versions. Only t1 shows anything after it: its one photo, so the
       // first screen holds only the fare and the button.
-      expect(c.tip.text, name(c)).toContain(`${REPLY_PROMISE}\n\nYou asked MAPL Tours Jamaica`)
+      // The footer opens with the guests' Facebook group (Oct 11 2026), then the why line.
+      expect(c.tip.text, name(c)).toContain(`${REPLY_PROMISE}\n\nJoin our Facebook group: ${FACEBOOK_GROUP.url}\nYou asked MAPL Tours Jamaica`)
       const beforeRule = c.tip.html.slice(0, c.tip.html.indexOf('<hr '))
       expect(beforeRule, name(c)).toContain(`${REPLY_HTML}</p>`)
       const tail = beforeRule.slice(beforeRule.lastIndexOf(`${REPLY_HTML}</p>`) + `${REPLY_HTML}</p>`.length)

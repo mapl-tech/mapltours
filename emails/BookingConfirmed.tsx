@@ -1,5 +1,6 @@
 import { Heading, Text, Link, Section, Row, Column } from '@react-email/components'
 import { MaplLayout, maplStyles as s, siteUrl } from './_Layout'
+import { FACEBOOK_GROUP } from '../lib/facebook-group'
 
 export interface BookingConfirmedProps {
   bookingRef: string
@@ -50,31 +51,34 @@ function fmtMoney(n: number | null | undefined, currency: string): string {
 function fmtDate(iso: string): string {
   try {
     const d = new Date(iso)
+    // A tour date is a calendar day ('2026-11-03' parses as UTC midnight); read
+    // it in UTC so a server or preview in the Americas never shows the day before.
     return d.toLocaleDateString('en-US', {
       weekday: 'short',
       month: 'short',
       day: 'numeric',
       year: 'numeric',
+      timeZone: 'UTC',
     })
   } catch {
     return iso
   }
 }
 
+// The moment the card was charged: shown in Jamaica time and labelled, never
+// in whatever zone the server runs in.
 function fmtDateTime(iso: string | null | undefined): string | null {
   if (!iso) return null
-  try {
-    const d = new Date(iso)
-    return d.toLocaleString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-      hour: 'numeric',
-      minute: '2-digit',
-    })
-  } catch {
-    return null
-  }
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return null
+  return `${d.toLocaleString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+    timeZone: 'America/Jamaica',
+  })} Jamaica time`
 }
 
 /**
@@ -129,10 +133,9 @@ export default function BookingConfirmed(props: BookingConfirmedProps) {
       <Heading as="h1" style={s.hero} className="mapl-h1">
         Thank you, {name}.
       </Heading>
-      <Text style={s.heroLead}>
-        Your booking is confirmed. Save this email. Your guide will reference{' '}
-        <strong style={{ color: '#1a1a1a' }}>{bookingRef}</strong> when they
-        reach out.
+      <Text className="mapl-body" style={s.heroLead}>
+        Your booking is confirmed. Save this email: your guide will quote this
+        booking reference when they reach out.
       </Text>
 
       {/* Booking ref + view button */}
@@ -140,7 +143,7 @@ export default function BookingConfirmed(props: BookingConfirmedProps) {
         <span style={s.refPill}>{bookingRef}</span>
       </Section>
       <Section style={s.ctaWrap}>
-        <Link href={`${siteUrl()}/profile`} style={s.cta}>
+        <Link href={`${siteUrl()}/profile`} className="mapl-cta-block" style={s.cta}>
           View your booking
         </Link>
       </Section>
@@ -148,27 +151,27 @@ export default function BookingConfirmed(props: BookingConfirmedProps) {
       {/* Itinerary card */}
       <Section style={s.card}>
         <Section style={s.cardHeader}>
-          <Text style={s.cardHeaderText}>
+          <Heading as="h2" style={s.cardHeaderText}>
             Itinerary · {items.length} experience{items.length !== 1 ? 's' : ''}
-          </Text>
+          </Heading>
         </Section>
         {items.map((item, i) => (
           <Section
             key={i}
             style={{
-              padding: '16px 18px',
-              borderTop: i === 0 ? 'none' : '1px solid #f0f0f0',
+              padding: '18px 20px',
+              borderTop: i === 0 ? 'none' : '1px solid #F1ECE3',
             }}
           >
             <Row>
               <Column style={{ verticalAlign: 'top', paddingRight: 12 }} className="mapl-stack-col">
-                <Text style={{ ...s.body, fontWeight: 600, marginBottom: 4 }}>
+                <Text className="mapl-body" style={{ ...s.body, fontWeight: 600, marginBottom: 4 }}>
                   {item.title}
                 </Text>
-                <Text style={s.bodyMuted}>
+                <Text className="mapl-note" style={s.bodyMuted}>
                   {item.destination} · {fmtDate(item.date)}
                 </Text>
-                <Text style={{ ...s.bodyMuted, marginTop: 2 }}>
+                <Text className="mapl-note" style={{ ...s.bodyMuted, marginTop: 2 }}>
                   {item.travelers} traveler{item.travelers !== 1 ? 's' : ''}
                   {item.pricePerPerson != null
                     ? ` · ${fmtMoney(item.pricePerPerson, currency)} each`
@@ -188,7 +191,7 @@ export default function BookingConfirmed(props: BookingConfirmedProps) {
       {/* Order summary */}
       <Section style={s.card}>
         <Section style={s.cardHeader}>
-          <Text style={s.cardHeaderText}>Payment summary</Text>
+          <Heading as="h2" style={s.cardHeaderText}>Payment summary</Heading>
         </Section>
         <Section style={s.cardBody}>
           {showBreakdown && (
@@ -212,27 +215,34 @@ export default function BookingConfirmed(props: BookingConfirmedProps) {
               )}
             </>
           )}
-          <div style={s.totalRow}>
-            <Text style={s.totalLabel}>
-              Total paid
-              {paidAtPretty && (
-                <span
-                  style={{
-                    display: 'block',
-                    marginTop: 2,
-                    fontFamily: 'inherit',
-                    fontSize: 12,
-                    fontWeight: 400,
-                    color: '#9a9a9a',
-                    letterSpacing: 0,
-                  }}
-                >
-                  {paidAtPretty}
-                </span>
-              )}
-            </Text>
-            <Text style={s.totalValue}>{fmtMoney(totalPaid, currency)}</Text>
-          </div>
+          {/* A table row, not a flex div, so Outlook keeps label and amount on one
+              line. The rule above it separates the lines; alone, it would double
+              the header's. */}
+          <Row style={showBreakdown ? s.totalTableRow : undefined}>
+            <Column>
+              <Text style={s.totalLabel}>
+                Total paid
+                {paidAtPretty && (
+                  <span
+                    style={{
+                      display: 'block',
+                      marginTop: 2,
+                      fontFamily: 'inherit',
+                      fontSize: 13,
+                      fontWeight: 400,
+                      color: '#6E6A62',
+                      letterSpacing: 0,
+                    }}
+                  >
+                    {paidAtPretty}
+                  </span>
+                )}
+              </Text>
+            </Column>
+            <Column align="right">
+              <Text style={s.totalValue}>{fmtMoney(totalPaid, currency)}</Text>
+            </Column>
+          </Row>
           {/* How the total was paid, UNDER it: two parts of the total, not
               deductions from it, so no minus sign. Outside the showBreakdown
               gate on purpose, since a gift-card booking with no transport,
@@ -254,11 +264,11 @@ export default function BookingConfirmed(props: BookingConfirmedProps) {
       {customerLines.length > 0 && (
         <Section style={s.card}>
           <Section style={s.cardHeader}>
-            <Text style={s.cardHeaderText}>Your details</Text>
+            <Heading as="h2" style={s.cardHeaderText}>Your details</Heading>
           </Section>
           <Section style={s.cardBody}>
             {customerLines.map((line, i) => (
-              <Text key={i} style={s.body}>
+              <Text key={i} className="mapl-body" style={s.body}>
                 {line}
               </Text>
             ))}
@@ -270,16 +280,16 @@ export default function BookingConfirmed(props: BookingConfirmedProps) {
       {(pickup || dropoff) && (
         <Section style={s.card}>
           <Section style={s.cardHeader}>
-            <Text style={s.cardHeaderText}>Pickup &amp; drop-off</Text>
+            <Heading as="h2" style={s.cardHeaderText}>Pickup &amp; drop-off</Heading>
           </Section>
           <Section style={s.cardBody}>
             {pickup && (
-              <Text style={s.body}>
+              <Text className="mapl-body" style={s.body}>
                 <strong style={{ fontWeight: 600 }}>Pickup:</strong> {pickup}
               </Text>
             )}
             {dropoff && dropoff !== pickup && (
-              <Text style={{ ...s.body, marginTop: 6 }}>
+              <Text className="mapl-body" style={{ ...s.body, marginTop: 6 }}>
                 <strong style={{ fontWeight: 600 }}>Drop-off:</strong> {dropoff}
               </Text>
             )}
@@ -294,7 +304,7 @@ export default function BookingConfirmed(props: BookingConfirmedProps) {
             <Text style={s.highlightCardHeaderText}>Special requests</Text>
           </Section>
           <Section style={s.cardBody}>
-            <Text style={{ ...s.body, whiteSpace: 'pre-wrap' }}>
+            <Text className="mapl-body" style={{ ...s.body, whiteSpace: 'pre-wrap' }}>
               {specialRequests}
             </Text>
           </Section>
@@ -304,29 +314,42 @@ export default function BookingConfirmed(props: BookingConfirmedProps) {
       {/* What happens next */}
       <Section style={s.card}>
         <Section style={s.cardHeader}>
-          <Text style={s.cardHeaderText}>Before you go</Text>
+          <Heading as="h2" style={s.cardHeaderText}>Before you go</Heading>
         </Section>
         <Section style={s.cardBody}>
-          <Text style={s.body}>
-            {/* The guest now states a pickup time at checkout, so this
-                confirms it rather than asking for it. */}
-            · Your guide will reach out 24–48 hours before to confirm your
-            driver and your pickup time.
-          </Text>
-          <Text style={{ ...s.body, marginTop: 6 }}>
-            · Bring a valid ID, reef-safe sunscreen, and water.
-          </Text>
-          <Text style={{ ...s.body, marginTop: 6 }}>
-            · Flexible cancellation within 48 hours of booking. Request it from
-            your Profile page, or reply to this email, and we will review it.
-            Refunds are less an administration charge equivalent to 20% of the
-            total amount of fees paid plus taxes (if applicable).
-          </Text>
-          <Text style={s.note}>
+          <ul style={s.steps}>
+            <li className="mapl-body" style={{ ...s.step, marginTop: 0 }}>
+              {/* The guest now states a pickup time at checkout, so this
+                  confirms it rather than asking for it. */}
+              Your guide will reach out 24–48 hours before to confirm your
+              driver and your pickup time.
+            </li>
+            <li className="mapl-body" style={s.step}>
+              Bring a valid ID, reef-safe sunscreen, and water.
+            </li>
+            <li className="mapl-body" style={s.step}>
+              Flexible cancellation within 48 hours of booking. Request it from
+              your Profile page, or reply to this email, and we will review it.
+              Refunds are less an administration charge equivalent to 20% of the
+              total amount of fees paid plus taxes (if applicable).
+            </li>
+          </ul>
+          <Text className="mapl-note" style={s.note}>
             Questions? Reply to this email any time. Our team on the ground
             answers in hours, not days.
           </Text>
         </Section>
+      </Section>
+      {/* The guests' Facebook group (owner, Oct 11 2026): after the last card,
+          a quiet ghost button (44px tall) under one line, so the booking
+          details stay the point of this email. */}
+      <Text className="mapl-body" style={{ ...s.note, marginTop: 32 }}>
+        Counting down? Ask our local drivers and guides anything in our Facebook group, {FACEBOOK_GROUP.name}.
+      </Text>
+      <Section style={{ ...s.ctaWrap, margin: '12px 0 4px' }}>
+        <Link href={FACEBOOK_GROUP.url} className="mapl-cta-block" style={{ ...s.ctaGhost, padding: '13px 29px' }}>
+          Join our Facebook group
+        </Link>
       </Section>
     </MaplLayout>
   )
@@ -366,25 +389,23 @@ function BreakdownLine({
   value: string
   emphasis?: 'emerald'
 }) {
+  // A table row, not a flex div, so Outlook keeps label and amount on one line.
   return (
-    <div
-      style={{
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'baseline',
-        margin: '0 0 8px',
-      }}
-    >
-      <Text style={s.rowLabel}>{label}</Text>
-      <Text
-        style={{
-          ...s.rowValue,
-          color: emphasis === 'emerald' ? '#1d7a50' : s.rowValue.color,
-          fontWeight: emphasis === 'emerald' ? 600 : (s.rowValue.fontWeight as number) || 400,
-        }}
-      >
-        {value}
-      </Text>
-    </div>
+    <Row style={{ margin: '0 0 8px' }}>
+      <Column>
+        <Text style={s.rowLabel}>{label}</Text>
+      </Column>
+      <Column align="right">
+        <Text
+          style={{
+            ...s.rowValue,
+            color: emphasis === 'emerald' ? '#1d7a50' : s.rowValue.color,
+            fontWeight: emphasis === 'emerald' ? 600 : (s.rowValue.fontWeight as number) || 400,
+          }}
+        >
+          {value}
+        </Text>
+      </Column>
+    </Row>
   )
 }

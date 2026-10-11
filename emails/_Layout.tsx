@@ -114,11 +114,12 @@ export function MaplLayout({ preheader, title, children }: MaplLayoutProps) {
             .mapl-h1 { font-size: 26px !important; line-height: 1.15 !important; }
             .mapl-h2 { font-size: 14px !important; }
             .mapl-stack-col { display: block !important; width: 100% !important; padding: 0 !important; }
-            .mapl-stack-col + .mapl-stack-col { margin-top: 14px !important; }
+            .mapl-stack-col + .mapl-stack-col { margin-top: 14px !important; text-align: left !important; }
             .mapl-item-img { width: 56px !important; height: 56px !important; }
             /* Opt-in, for emails that use them: body copy at 16px on a phone,
-               and a call to action as wide as the column. */
+               small print at 14px, and a call to action as wide as the column. */
             .mapl-body { font-size: 16px !important; line-height: 24px !important; }
+            .mapl-note { font-size: 14px !important; line-height: 21px !important; }
             .mapl-cta-block { display: block !important; text-align: center !important; }
           }
         `}</style>
@@ -142,7 +143,7 @@ export const maplStyles = {
     fontFamily: SYSTEM_SANS(),
     fontSize: 13,
     fontWeight: 700,
-    letterSpacing: '0.14em',
+    letterSpacing: '0.12em',
     textTransform: 'uppercase' as const,
     color: GREEN,
   } as React.CSSProperties,
@@ -187,12 +188,14 @@ export const maplStyles = {
     borderBottom: `1px solid ${BORDER_SOFT}`,
     background: '#FCFBF8',
   } as React.CSSProperties,
+  /* Also rendered as an h2, so it carries Text's line height itself. */
   cardHeaderText: {
     margin: 0,
     fontFamily: SYSTEM_SANS(),
     fontSize: 13,
+    lineHeight: '24px',
     fontWeight: 700,
-    letterSpacing: '0.1em',
+    letterSpacing: '0.12em',
     textTransform: 'uppercase' as const,
     color: MUTED,
   } as React.CSSProperties,
@@ -247,6 +250,12 @@ export const maplStyles = {
     marginTop: 14,
     borderTop: `1px solid ${BORDER_SOFT}`,
   } as React.CSSProperties,
+  /* The same rule as a table row (Row), for clients that ignore flex. */
+  totalTableRow: {
+    paddingTop: 14,
+    marginTop: 14,
+    borderTop: `1px solid ${BORDER_SOFT}`,
+  } as React.CSSProperties,
   totalLabel: {
     margin: 0,
     fontFamily: SYSTEM_SANS(),
@@ -292,6 +301,18 @@ export const maplStyles = {
     fontFamily: SYSTEM_SANS(),
     letterSpacing: '-0.005em',
   } as React.CSSProperties,
+  /* A few steps or reminders: a real list, so screen readers count them. */
+  steps: {
+    margin: 0,
+    padding: '0 0 0 18px',
+  } as React.CSSProperties,
+  step: {
+    margin: '6px 0 0',
+    fontFamily: SYSTEM_SANS(),
+    fontSize: 14,
+    lineHeight: 1.55,
+    color: INK,
+  } as React.CSSProperties,
   /* Footnote inside cards. */
   note: {
     margin: '14px 0 0',
@@ -326,7 +347,7 @@ export const maplStyles = {
     fontFamily: SYSTEM_SANS(),
     fontSize: 13,
     fontWeight: 700,
-    letterSpacing: '0.14em',
+    letterSpacing: '0.12em',
     textTransform: 'uppercase' as const,
     color: GREEN,
   } as React.CSSProperties,

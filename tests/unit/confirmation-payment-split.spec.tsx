@@ -178,3 +178,24 @@ describe('the gift-covered confirmation, sent from the stored row', () => {
     expect(t).toContain('Covered by MAPL Tours Jamaica $0.30')
   })
 })
+
+// The paid time is an instant: it used to print in the server's zone (UTC on
+// Netlify) with no label, so a 10:00 AM payment in Jamaica read "3:00 PM".
+describe('when the booking was paid', () => {
+  const paidAt = '2026-10-11T15:00:00Z'
+
+  test('the tour email states it in Jamaica time, labelled', async () => {
+    const t = await text(BookingConfirmed({ ...tour, paidAt, totalPaid: 150 } as never))
+    expect(t).toContain('Oct 11, 2026, 10:00 AM Jamaica time')
+  })
+
+  test('the ride email states it in Jamaica time, labelled', async () => {
+    const t = await text(TransferConfirmed({ ...ride, paidAt, totalPaid: 150 } as never))
+    expect(t).toContain('Sun, Oct 11, 2026, 10:00 AM Jamaica time')
+  })
+
+  test("a tour's date is its calendar day in any server zone", async () => {
+    const t = await text(BookingConfirmed({ ...tour, totalPaid: 150 } as never))
+    expect(t).toContain('Thu, Oct 8, 2026')
+  })
+})

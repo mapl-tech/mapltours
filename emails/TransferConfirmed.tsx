@@ -1,5 +1,6 @@
 import { Heading, Text, Link, Section, Row, Column } from '@react-email/components'
 import { MaplLayout, maplStyles as s, siteUrl } from './_Layout'
+import { FACEBOOK_GROUP } from '../lib/facebook-group'
 
 export interface TransferConfirmedProps {
   bookingRef: string
@@ -47,6 +48,10 @@ function fmtMoney(n: number | null | undefined, currency: string): string {
   return `${sign}${currency === 'USD' ? '$' : `${currency} `}${abs}`
 }
 
+// Leg labels in sentence case, so they read as labels inside the card rather
+// than as a second set of card titles.
+const legLabel = { ...s.sectionLabel, textTransform: 'none' as const, letterSpacing: 0 }
+
 function fmtDateTime(iso: string | null | undefined): string | null {
   if (!iso) return null
   try {
@@ -65,6 +70,23 @@ function fmtDateTime(iso: string | null | undefined): string | null {
   } catch {
     return null
   }
+}
+
+// The moment the card was charged is a real instant, not a wall-clock: show it
+// in Jamaica time and say so, like the legs.
+function fmtPaidAt(iso: string | null | undefined): string | null {
+  if (!iso) return null
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return null
+  return `${d.toLocaleString('en-US', {
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+    timeZone: 'America/Jamaica',
+  })} Jamaica time`
 }
 
 export default function TransferConfirmed(props: TransferConfirmedProps) {
@@ -96,7 +118,7 @@ export default function TransferConfirmed(props: TransferConfirmedProps) {
   void bookingFee
   const hasCoupon = couponDiscount != null && couponDiscount > 0
   const { giftPaid, cardPaid, coveredByUs } = paymentSplit(totalPaid, giftApplied, cardCharged)
-  const paidAtPretty = fmtDateTime(paidAt)
+  const paidAtPretty = fmtPaidAt(paidAt)
   const customerLines = [
     [firstName, props.lastName].filter(Boolean).join(' ').trim() || null,
     email ?? null,
@@ -110,43 +132,37 @@ export default function TransferConfirmed(props: TransferConfirmedProps) {
       <Heading as="h1" style={s.hero} className="mapl-h1">
         Thank you, {name}.
       </Heading>
-      <Text style={s.heroLead}>
+      <Text className="mapl-body" style={s.heroLead}>
         Your transfer{transfers.length > 1 ? 's are' : ' is'} confirmed. Your
         driver will be waiting in the arrivals area with a MAPL Tours Jamaica
-        sign. Booking reference{' '}
-        <strong style={{ color: '#1a1a1a' }}>{bookingRef}</strong>.
+        sign. Your booking reference:
       </Text>
 
       <Section style={{ margin: '20px 0 0' }}>
         <span style={s.refPill}>{bookingRef}</span>
       </Section>
-      <Section style={s.ctaWrap}>
-        <Link href={`${siteUrl()}/explore`} style={s.cta}>
-          Add tours to your trip
-        </Link>
-      </Section>
 
       {/* Itinerary card, per-leg flight info */}
       <Section style={s.card}>
         <Section style={s.cardHeader}>
-          <Text style={s.cardHeaderText}>
+          <Heading as="h2" style={s.cardHeaderText}>
             Itinerary · {transfers.length} transfer{transfers.length !== 1 ? 's' : ''}
-          </Text>
+          </Heading>
         </Section>
         {transfers.map((t, i) => (
           <Section
             key={i}
             style={{
-              padding: '16px 18px',
-              borderTop: i === 0 ? 'none' : '1px solid #f0f0f0',
+              padding: '18px 20px',
+              borderTop: i === 0 ? 'none' : '1px solid #F1ECE3',
             }}
           >
             <Row>
               <Column style={{ verticalAlign: 'top', paddingRight: 12 }} className="mapl-stack-col">
-                <Text style={{ ...s.body, fontWeight: 600, marginBottom: 4 }}>
+                <Text className="mapl-body" style={{ ...s.body, fontWeight: 600, marginBottom: 4 }}>
                   {t.destination}
                 </Text>
-                <Text style={s.bodyMuted}>
+                <Text className="mapl-note" style={s.bodyMuted}>
                   Zone {t.zone} ·{' '}
                   {t.tripType === 'round_trip' ? 'Round-trip' : 'One-way'} ·{' '}
                   {t.passengers} passenger{t.passengers !== 1 ? 's' : ''}
@@ -160,9 +176,9 @@ export default function TransferConfirmed(props: TransferConfirmedProps) {
             </Row>
 
             {t.arrivalAt && (
-              <Section style={{ marginTop: 12, paddingLeft: 12, borderLeft: '2px solid #e7e7e7' }}>
-                <Text style={s.sectionLabel}>Arrival · MBJ → hotel</Text>
-                <Text style={{ ...s.body, marginTop: 2 }}>
+              <Section style={{ marginTop: 12, paddingLeft: 12, borderLeft: '2px solid #E7E1D6' }}>
+                <Text style={legLabel}>Arrival · MBJ → hotel</Text>
+                <Text className="mapl-body" style={{ ...s.body, marginTop: 2 }}>
                   {fmtDateTime(t.arrivalAt)} Jamaica time
                   {t.arrivalFlight ? ` · flight ${t.arrivalFlight}` : ''}
                 </Text>
@@ -175,9 +191,9 @@ export default function TransferConfirmed(props: TransferConfirmedProps) {
                 where they were going, with no date, no time and no flight
                 anywhere in the email, and the operator alert dropped it too. */}
             {t.departureAt && (
-              <Section style={{ marginTop: 8, paddingLeft: 12, borderLeft: '2px solid #e7e7e7' }}>
-                <Text style={s.sectionLabel}>Departure · hotel → MBJ</Text>
-                <Text style={{ ...s.body, marginTop: 2 }}>
+              <Section style={{ marginTop: 8, paddingLeft: 12, borderLeft: '2px solid #E7E1D6' }}>
+                <Text style={legLabel}>Departure · hotel → MBJ</Text>
+                <Text className="mapl-body" style={{ ...s.body, marginTop: 2 }}>
                   Hotel pickup {fmtDateTime(t.departureAt)} Jamaica time
                   {t.departureFlight ? ` · flight ${t.departureFlight}` : ''}
                 </Text>
@@ -187,10 +203,18 @@ export default function TransferConfirmed(props: TransferConfirmedProps) {
         ))}
       </Section>
 
+      {/* The upsell follows the ride it adds to, so the guest checks the booking
+          first; 12px above and 28px below keep it with the ride. */}
+      <Section style={{ ...s.ctaWrap, margin: '12px 0 0' }}>
+        <Link href={`${siteUrl()}/explore`} className="mapl-cta-block" style={s.cta}>
+          Add tours to your trip
+        </Link>
+      </Section>
+
       {/* Order summary */}
-      <Section style={s.card}>
+      <Section style={{ ...s.card, marginTop: 28 }}>
         <Section style={s.cardHeader}>
-          <Text style={s.cardHeaderText}>Payment summary</Text>
+          <Heading as="h2" style={s.cardHeaderText}>Payment summary</Heading>
         </Section>
         <Section style={s.cardBody}>
           {hasCoupon && (
@@ -199,27 +223,34 @@ export default function TransferConfirmed(props: TransferConfirmedProps) {
               <BreakdownLine label={couponCode ? `Code ${couponCode}` : 'Discount code'} value={`− ${fmtMoney(couponDiscount, currency)}`} emphasis="emerald" />
             </>
           )}
-          <div style={s.totalRow}>
-            <Text style={s.totalLabel}>
-              Total paid
-              {paidAtPretty && (
-                <span
-                  style={{
-                    display: 'block',
-                    marginTop: 2,
-                    fontFamily: 'inherit',
-                    fontSize: 12,
-                    fontWeight: 400,
-                    color: '#9a9a9a',
-                    letterSpacing: 0,
-                  }}
-                >
-                  {paidAtPretty}
-                </span>
-              )}
-            </Text>
-            <Text style={s.totalValue}>{fmtMoney(totalPaid, currency)}</Text>
-          </div>
+          {/* A table row, not a flex div, so Outlook keeps label and amount on one
+              line. The rule above it separates the lines; alone, it would double
+              the header's. */}
+          <Row style={hasCoupon ? s.totalTableRow : undefined}>
+            <Column>
+              <Text style={s.totalLabel}>
+                Total paid
+                {paidAtPretty && (
+                  <span
+                    style={{
+                      display: 'block',
+                      marginTop: 2,
+                      fontFamily: 'inherit',
+                      fontSize: 13,
+                      fontWeight: 400,
+                      color: '#6E6A62',
+                      letterSpacing: 0,
+                    }}
+                  >
+                    {paidAtPretty}
+                  </span>
+                )}
+              </Text>
+            </Column>
+            <Column align="right">
+              <Text style={s.totalValue}>{fmtMoney(totalPaid, currency)}</Text>
+            </Column>
+          </Row>
           {/* A gift-funded booking's card was charged LESS than the total,
               and the guest will check this email against their own card
               statement. So say how the total was paid, UNDER it: two parts
@@ -240,11 +271,11 @@ export default function TransferConfirmed(props: TransferConfirmedProps) {
       {customerLines.length > 0 && (
         <Section style={s.card}>
           <Section style={s.cardHeader}>
-            <Text style={s.cardHeaderText}>Your details</Text>
+            <Heading as="h2" style={s.cardHeaderText}>Your details</Heading>
           </Section>
           <Section style={s.cardBody}>
             {customerLines.map((line, i) => (
-              <Text key={i} style={s.body}>
+              <Text key={i} className="mapl-body" style={s.body}>
                 {line}
               </Text>
             ))}
@@ -259,7 +290,7 @@ export default function TransferConfirmed(props: TransferConfirmedProps) {
             <Text style={s.highlightCardHeaderText}>Special requests</Text>
           </Section>
           <Section style={s.cardBody}>
-            <Text style={{ ...s.body, whiteSpace: 'pre-wrap' }}>
+            <Text className="mapl-body" style={{ ...s.body, whiteSpace: 'pre-wrap' }}>
               {specialRequests}
             </Text>
           </Section>
@@ -269,27 +300,40 @@ export default function TransferConfirmed(props: TransferConfirmedProps) {
       {/* On arrival */}
       <Section style={s.card}>
         <Section style={s.cardHeader}>
-          <Text style={s.cardHeaderText}>On arrival at MBJ</Text>
+          <Heading as="h2" style={s.cardHeaderText}>On arrival at MBJ</Heading>
         </Section>
         <Section style={s.cardBody}>
-          <Text style={s.body}>· Clear immigration and collect your bags.</Text>
-          <Text style={{ ...s.body, marginTop: 6 }}>
-            · Exit the terminal at arrivals. Your driver will be waiting at the
-            MAPL Tours sign.
-          </Text>
-          <Text style={{ ...s.body, marginTop: 6 }}>
-            · Reach us any time at{' '}
-            <Link href="mailto:contact@mapltours.com" style={{ color: '#1a1a1a', textDecoration: 'underline' }}>
-              contact@mapltours.com
-            </Link>
-          </Text>
-          <Text style={s.note}>
+          <ul style={s.steps}>
+            <li className="mapl-body" style={{ ...s.step, marginTop: 0 }}>Clear immigration and collect your bags.</li>
+            <li className="mapl-body" style={s.step}>
+              Exit the terminal at arrivals. Your driver will be waiting at the
+              MAPL Tours Jamaica sign.
+            </li>
+            <li className="mapl-body" style={s.step}>
+              Reach us any time at{' '}
+              <Link href="mailto:contact@mapltours.com" style={{ color: '#1A1714', textDecoration: 'underline' }}>
+                contact@mapltours.com
+              </Link>
+            </li>
+          </ul>
+          <Text className="mapl-note" style={s.note}>
             Flexible cancellation within 48 hours of booking. Request it from
             your Profile page, or reply to this email, and we will review it.
             Refunds are less an administration charge equivalent to 20% of the
             total amount of fees paid plus taxes (if applicable). Safe travels.
           </Text>
         </Section>
+      </Section>
+      {/* The guests' Facebook group (owner, Oct 11 2026): after the last card,
+          a quiet ghost button (44px tall) under one line, so the booking
+          details stay the point of this email. */}
+      <Text className="mapl-body" style={{ ...s.note, marginTop: 32 }}>
+        Counting down? Ask our local drivers anything in our Facebook group, {FACEBOOK_GROUP.name}.
+      </Text>
+      <Section style={{ ...s.ctaWrap, margin: '12px 0 4px' }}>
+        <Link href={FACEBOOK_GROUP.url} className="mapl-cta-block" style={{ ...s.ctaGhost, padding: '13px 29px' }}>
+          Join our Facebook group
+        </Link>
       </Section>
     </MaplLayout>
   )
@@ -321,17 +365,15 @@ function paymentSplit(
 }
 
 function BreakdownLine({ label, value, emphasis }: { label: string; value: string; emphasis?: 'emerald' }) {
+  // A table row, not a flex div, so Outlook keeps label and amount on one line.
   return (
-    <div
-      style={{
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'baseline',
-        margin: '0 0 8px',
-      }}
-    >
-      <Text style={s.rowLabel}>{label}</Text>
-      <Text style={emphasis === 'emerald' ? { ...s.rowValue, color: '#1d7a50', fontWeight: 600 } : s.rowValue}>{value}</Text>
-    </div>
+    <Row style={{ margin: '0 0 8px' }}>
+      <Column>
+        <Text style={s.rowLabel}>{label}</Text>
+      </Column>
+      <Column align="right">
+        <Text style={emphasis === 'emerald' ? { ...s.rowValue, color: '#1d7a50', fontWeight: 600 } : s.rowValue}>{value}</Text>
+      </Column>
+    </Row>
   )
 }
