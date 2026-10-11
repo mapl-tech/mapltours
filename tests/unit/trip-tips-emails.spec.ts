@@ -831,7 +831,7 @@ describe('the ten tips read as one series', () => {
       const beforeRule = c.tip.html.slice(0, c.tip.html.indexOf('<hr '))
       expect(beforeRule, name(c)).toContain(`${REPLY_HTML}</p>`)
       const tail = beforeRule.slice(beforeRule.lastIndexOf(`${REPLY_HTML}</p>`) + `${REPLY_HTML}</p>`.length)
-      if (c.key === 't1_airport_ride') expect(tail, name(c)).toMatch(/^\n<a class="tl" href="[^"]*"[^>]*><img [^>]*><\/a>\n$/)
+      if (c.key === 't1_airport_ride') expect(tail, name(c)).toMatch(/^\n<img [^>]*>\n$/)
       else expect(tail.trim(), name(c)).toBe('')
     }
   })
@@ -968,24 +968,37 @@ describe('photos: from the site, email-safe, and of what the email is about', ()
     expect(files(pick('t2_week_before_tour', 2))).toEqual([PHOTOS[TOUR_FALLBACK].file])
   })
 
-  test('p2 shows the raft it leads with, p4 a tour to choose; a linked photo says where it goes', () => {
+  // Owner, Oct 11 2026 (from Sentinel): a photo is never a link. The button
+  // above it is the one large target, and a picture that went to the same
+  // page split the action and repeated the destination for screen readers.
+  test('p2 shows the raft it leads with, p4 a tour to choose; no photo is a link', () => {
     expect(files(pick('p2_tours'))).toEqual([PHOTOS.marthaBraeRaft.file])
     expect(files(pick('p4_booking_rules'))).toEqual([PHOTOS.ricksCafeSunset.file])
     for (const c of CASES) {
-      for (const m of Array.from(c.tip.html.matchAll(/<a class="tl" href="([^"]*)"[^>]*><img [^>]*alt="([^"]*)"/g))) {
-        const pill = c.tip.html.slice(c.tip.html.indexOf(PRIMARY_MARK))
-        const button = /href="([^"]+)"/.exec(pill)![1]
-        // Same page as the button, its own utm_content.
-        expect(m[1].split('?')[0], name(c)).toBe(button.split('?')[0])
-        expect(m[1], name(c)).toMatch(/utm_content=[a-z0-9_]+_photo$/)
-        expect(m[2], name(c)).toMatch(/^(Price my ride|Choose my tour)\. /)
-      }
-      // Booked emails that open the booking do not link their photos.
-      if (/\/profile\?/.test(/href="([^"]+)"/.exec(c.tip.html.slice(c.tip.html.indexOf(PRIMARY_MARK)))![1])) {
-        expect(c.tip.html, name(c)).not.toMatch(/<a [^>]*><img /)
-      }
+      expect(c.tip.html, name(c)).not.toMatch(/<a [^>]*>\s*<img /)
+      expect(c.tip.html, name(c)).not.toMatch(/_photo[&"]/)
       for (const alt of alts(c.tip)) expect(alt).not.toMatch(/[–—!]/)
     }
+  })
+
+  // Owner, Oct 11 2026 (from Sentinel): the line right under the button answers
+  // the doubt that stops the tap, so it is body size; any line after it is small print.
+  test('the first line under every button is 16px body text, any later line 14px', () => {
+    let twoLines = 0
+    for (const c of CASES) {
+      const after = c.tip.html.slice(c.tip.html.indexOf('</table>', c.tip.html.indexOf(PRIMARY_MARK)) + '</table>'.length)
+      const first = /^<p style="([^"]*)">/.exec(after)
+      expect(first, name(c)).not.toBeNull()
+      expect(first![1], name(c)).toMatch(/^margin:0 0 16px;font-size:16px;line-height:1\.6;color:#2b2926;/)
+      const second = /^<p style="[^"]*">[\s\S]*?<\/p><p style="([^"]*)">/.exec(after)
+      if (/margin-bottom:4px;/.test(first![1])) {
+        expect(second, name(c)).not.toBeNull()
+        expect(second![1], name(c)).toMatch(/font-size:14px;/)
+        twoLines++
+      }
+    }
+    // p1, p2 and p3 carry the code line second.
+    expect(twoLines).toBeGreaterThan(0)
   })
 
   describe('where each photo sits', () => {

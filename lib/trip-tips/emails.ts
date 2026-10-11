@@ -491,8 +491,11 @@ type Block =
   | { t: 'h2'; text: string }
   | { t: 'p'; text: Inline }
   | { t: 'small'; text: Inline }
-  /** A photo; with `href` it links there and its alt starts with `label`, the link's purpose. */
-  | { t: 'photo'; photo: TipPhoto; href?: string; label?: string }
+  /**
+   * A photo, never a link (owner, Oct 11 2026): the button above it is the one
+   * large target, so a tap on the picture is not a second way to the same page.
+   */
+  | { t: 'photo'; photo: TipPhoto }
   /** helper: one line, or several short lines (one idea each) under the pill. */
   | { t: 'button'; href: string; label: string; helper?: Inline | Inline[] }
   /** A question and a standalone 44px text link under it, for the one quiet secondary action. */
@@ -560,17 +563,15 @@ function blockHtml(x: Block, next?: Block): string {
       // with, so the question reads as its own idea, not a caption.
       const { photo } = x
       const h = Math.round((PHOTO_WIDTH * photo.height) / photo.width)
-      const alt = x.href && x.label ? `${x.label}. ${photo.alt}` : photo.alt
       const below = next?.t === 'link' ? 32 : 16
-      const img = `<img src="${TIPS_MEDIA_BASE}${photo.file}" width="${PHOTO_WIDTH}" height="${h}" alt="${esc(alt)}" border="0" style="display:block;width:100%;max-width:${PHOTO_WIDTH}px;height:auto;aspect-ratio:${photo.width}/${photo.height};border:0;border-radius:14px;margin:16px 0 ${below}px;">`
-      // A linked photo repeats the button's destination for a thumb that taps
-      // the picture; screen readers and the keyboard skip it, so they meet that
-      // destination once, at the button. Its alt still names the action for
-      // a client that blocks images.
-      return x.href ? `<a class="tl" href="${attr(x.href)}" aria-hidden="true" tabindex="-1" style="display:block;text-decoration:none;">${img}</a>` : img
+      const img = `<img src="${TIPS_MEDIA_BASE}${photo.file}" width="${PHOTO_WIDTH}" height="${h}" alt="${esc(photo.alt)}" border="0" style="display:block;width:100%;max-width:${PHOTO_WIDTH}px;height:auto;aspect-ratio:${photo.width}/${photo.height};border:0;border-radius:14px;margin:16px 0 ${below}px;">`
+      return img
     }
     case 'button':
-      return pill(x.href, x.label) + helperLines(x.helper).map((h, i, all) => `<p style="${SMALL}${i < all.length - 1 ? 'margin-bottom:4px;' : ''}">${inlineHtml(h)}</p>`).join('')
+      // The line right under the button answers the doubt that stops the tap
+      // (a late landing, a changed flight, the Friday cut-off), so it is body
+      // size (owner, Oct 11 2026, from Sentinel); any line after it is small print.
+      return pill(x.href, x.label) + helperLines(x.helper).map((h, i, all) => `<p style="${i === 0 ? P : SMALL}${i < all.length - 1 ? 'margin-bottom:4px;' : ''}">${inlineHtml(h)}</p>`).join('')
     case 'link':
       return `<p style="${P}margin-bottom:4px;">${esc(x.lead)}<br>${textLink(x.href, x.label)}</p>`
     case 'rows':
@@ -926,10 +927,9 @@ function fareTable(): Block {
 const fareNotes = () => `${ROUND_TRIP_LINE} ${oneWayLine()} ${GROUP_LINE}`
 
 /** A photo block: linked (its alt then leads with the link's label) when the email's button goes to the same place, plain otherwise. */
-const photo = (name: PhotoName | TipPhoto, link?: { href: string; label: string }): PhotoBlock => ({
+const photo = (name: PhotoName | TipPhoto): PhotoBlock => ({
   t: 'photo',
   photo: typeof name === 'string' ? PHOTOS[name] : name,
-  ...(link ? { href: link.href, label: link.label } : {}),
 })
 
 const nameLead = (ctx: TipContext) => {
@@ -995,7 +995,7 @@ function p1(): Draft {
       { t: 'button', href: transfers, label: 'Price my ride', helper: ['We track your flight, and there’s no surcharge if you land late.', codeLine()] },
       // Below the button, not above it: a top photo pushed the first button
       // about 260px further down a 390px phone (Sentinel insight 7774f95b).
-      photo('coastRoad', { href: siteLink('/transfers', 'p1_ride_costs_photo'), label: 'Price my ride' }),
+      photo('coastRoad'),
       { t: 'h2', text: 'What happens when you land' },
       { t: 'facts', items: arrivalFacts(false).filter((f) => f.lead !== 'Land late, still met.') },
       // The quiet repeat of the one action, after the proof (Sentinel
@@ -1051,7 +1051,7 @@ function p2(): Draft {
       // Below the button: above the table it pushed the button past the
       // first screen on 320 to 360px phones (measured 880px and 854px). The
       // first tour in the table, the raft the owner approved for email.
-      photo('marthaBraeRaft', { href: siteLink('/explore', 'p2_tours_photo'), label: 'Choose my tour' }),
+      photo('marthaBraeRaft'),
       // As p4 asks it: a prospect has booked nothing, so not "still".
       { t: 'link', lead: 'Need the ride from the airport too?', label: 'Price my ride', href: siteLink('/transfers', 'p2_tours_ride') },
     ],
@@ -1090,7 +1090,7 @@ function p3(): Draft {
       },
       // The ride the third item is about, after the button (it sits near the
       // bottom of a 390px phone's first screen, with no room above it).
-      photo('shoreRoad', { href: siteLink('/transfers', 'p3_before_you_land_photo'), label: 'Price my ride' }),
+      photo('shoreRoad'),
     ],
     closing: PROSPECT_CLOSING,
   }
@@ -1132,7 +1132,7 @@ function p4(): Draft {
       { t: 'button', href: siteLink('/explore', 'p4_booking_rules_button'), label: 'Choose my tour', helper: codeLine() },
       // A tour to choose, after the button (it sits near the bottom of a
       // 390px phone's first screen): Rick's Cafe, as the bio's tour.jpg.
-      photo('ricksCafeSunset', { href: siteLink('/explore', 'p4_booking_rules_photo'), label: 'Choose my tour' }),
+      photo('ricksCafeSunset'),
       { t: 'link', lead: 'Need the ride from the airport too?', label: 'Price my ride', href: siteLink('/transfers', 'p4_booking_rules_ride') },
     ],
     closing: PROSPECT_CLOSING,
@@ -1307,7 +1307,7 @@ function t1(ctx: TipContext): Draft {
     closing: BOOKED_CLOSING,
     // The ride this tip prices, linked where the button goes, below the reply
     // line, so the fare and the button lead.
-    after: [photo('coastRoad', { href: siteLink(path, 't1_airport_ride_photo'), label: 'Price my ride' })],
+    after: [photo('coastRoad')],
   }
 }
 
