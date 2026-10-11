@@ -6,6 +6,7 @@ import {
   C5_URL,
   formatDay,
   formatTime,
+  GROUP_INVITE,
   PHOTOS,
   PHOTO_WIDTH,
   PRIMARY_MARK,
@@ -298,11 +299,20 @@ describe.each(CASES.map((c) => [name(c), c] as const))('%s', (_n, c) => {
     expect(tip.html).toMatch(/>Unsubscribe<\/a><\/p>\n<p [^>]*><a class="tl" href="[^"]*\/privacy\?[^"]*"[^>]*>Privacy<\/a><\/p>\n<\/div>/)
   })
 
-  test('the footer opens with the guests\u2019 Facebook group, in both versions, after the reply line', () => {
-    expect(hrefs(tip.html)).toContain(FACEBOOK_GROUP.url)
-    expect(tip.html.indexOf(FACEBOOK_GROUP.url)).toBeGreaterThan(tip.html.lastIndexOf(PRIMARY_MARK))
-    expect(tip.html.indexOf(FACEBOOK_GROUP.url)).toBeLessThan(tip.html.indexOf('You asked MAPL Tours Jamaica'))
-    expect(tip.text).toContain(`Join our Facebook group: ${FACEBOOK_GROUP.url}\nYou asked MAPL Tours Jamaica`)
+  // Owner, Oct 11 2026: the guests' Facebook group in every tip, seen, not
+  // tucked into the footer. Its own section, once, after the tip's content
+  // and before the reply line, in both versions.
+  test('invites to the guests\u2019 Facebook group once, as its own section just before the reply line', () => {
+    expect(hrefs(tip.html).filter((h) => h === FACEBOOK_GROUP.url)).toHaveLength(1)
+    const invite = tip.html.indexOf(FACEBOOK_GROUP.url)
+    expect(invite).toBeGreaterThan(tip.html.lastIndexOf(PRIMARY_MARK))
+    expect(invite).toBeLessThan(tip.html.indexOf(REPLY_HTML))
+    expect(invite).toBeLessThan(tip.html.indexOf('<hr '))
+    // A card of its own: 32px above, the reply line 32px below.
+    expect(tip.html).toMatch(new RegExp(`<table [^>]*style="width:100%;margin:32px 0 0;[^"]*"><tr><td bgcolor="#EEF4EE"[^>]*><p [^>]*font-weight:700;[^>]*>${GROUP_INVITE.lead.replace('?', '\\?')}</p><p [^>]*><a class="tl" href="${FACEBOOK_GROUP.url}"[^>]*>${GROUP_INVITE.label}</a></p></td></tr></table>\n<p style="[^"]*margin-top:32px;">`))
+    expect(tip.text).toContain(`${GROUP_INVITE.lead} ${GROUP_INVITE.label}: ${FACEBOOK_GROUP.url}\n\n`)
+    expect(tip.text.indexOf(FACEBOOK_GROUP.url)).toBeLessThan(tip.text.indexOf(REPLY_PROMISE))
+    expect(tip.text.split(FACEBOOK_GROUP.url)).toHaveLength(2)
   })
 
   test('a hidden preheader, the subject as the title, a light document under Gmail’s clip size', () => {
@@ -316,9 +326,15 @@ describe.each(CASES.map((c) => [name(c), c] as const))('%s', (_n, c) => {
     expect(tip.html.match(/<h1\b/g)?.length).toBe(1)
   })
 
-  test('short: 250 words or fewer on screen, footer included', () => {
+  // The group invitation is the same in every tip, so it has a ceiling of its
+  // own and each tip keeps its 250 words for what only it says.
+  test('short: 250 words or fewer on screen, footer included, plus the shared group invitation', () => {
+    const words = (t: string) => t.split(/\s+/).filter((w) => /[A-Za-z0-9$]/.test(w)).length
+    const invite = `${GROUP_INVITE.lead} ${GROUP_INVITE.label}`
+    expect(words(invite)).toBeLessThanOrEqual(9)
     const shown = visible(tip.html.replace(/<head>[\s\S]*?<\/head>/, '').replace(/<div style="display:none[\s\S]*?<\/div>/, ''))
-    expect(shown.split(/\s+/).filter((w) => /[A-Za-z0-9$]/.test(w)).length).toBeLessThanOrEqual(250)
+    expect(shown).toContain(invite)
+    expect(words(shown.replace(invite, ''))).toBeLessThanOrEqual(250)
   })
 
   test('at least one photo, each a site-hosted JPEG with width, height, alt, display:block, no border and rounded corners, after the button', () => {
@@ -811,8 +827,7 @@ describe('the ten tips read as one series', () => {
       // The reply line is the last thing the email says before the footer, in
       // both versions. Only t1 shows anything after it: its one photo, so the
       // first screen holds only the fare and the button.
-      // The footer opens with the guests' Facebook group (Oct 11 2026), then the why line.
-      expect(c.tip.text, name(c)).toContain(`${REPLY_PROMISE}\n\nJoin our Facebook group: ${FACEBOOK_GROUP.url}\nYou asked MAPL Tours Jamaica`)
+      expect(c.tip.text, name(c)).toContain(`${REPLY_PROMISE}\n\nYou asked MAPL Tours Jamaica`)
       const beforeRule = c.tip.html.slice(0, c.tip.html.indexOf('<hr '))
       expect(beforeRule, name(c)).toContain(`${REPLY_HTML}</p>`)
       const tail = beforeRule.slice(beforeRule.lastIndexOf(`${REPLY_HTML}</p>`) + `${REPLY_HTML}</p>`.length)
@@ -1030,8 +1045,9 @@ describe('photos: from the site, email-safe, and of what the email is about', ()
         expect(files(t), label).toEqual([PHOTOS.coastRoad.file])
         const reply = at(t.html, REPLY_HTML)
         expect(at(t.html, '<img '), label).toBeGreaterThan(reply)
-        // Between the button and the reply line: its helper lines and nothing else.
-        expect(t.html.slice(afterPill(t.html), reply), label).toMatch(/^(<p [^>]*>[^<]*<\/p>)+\n<p [^>]*>Anything else\? Just reply, and $/)
+        // Between the button and the reply line: its helper lines and the
+        // shared group invitation (Oct 11 2026), nothing else.
+        expect(t.html.slice(afterPill(t.html), reply), label).toMatch(/^(<p [^>]*>[^<]*<\/p>)+\n<table [^>]*><tr><td bgcolor="#EEF4EE"[^>]*><p [^>]*>Want more tips from locals\?<\/p><p [^>]*><a [^>]*>Join our Facebook group<\/a><\/p><\/td><\/tr><\/table>\n<p [^>]*>Anything else\? Just reply, and $/)
       }
     })
 

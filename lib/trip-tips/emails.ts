@@ -563,7 +563,11 @@ function blockHtml(x: Block, next?: Block): string {
       const alt = x.href && x.label ? `${x.label}. ${photo.alt}` : photo.alt
       const below = next?.t === 'link' ? 32 : 16
       const img = `<img src="${TIPS_MEDIA_BASE}${photo.file}" width="${PHOTO_WIDTH}" height="${h}" alt="${esc(alt)}" border="0" style="display:block;width:100%;max-width:${PHOTO_WIDTH}px;height:auto;aspect-ratio:${photo.width}/${photo.height};border:0;border-radius:14px;margin:16px 0 ${below}px;">`
-      return x.href ? `<a class="tl" href="${attr(x.href)}" style="display:block;text-decoration:none;">${img}</a>` : img
+      // A linked photo repeats the button's destination for a thumb that taps
+      // the picture; screen readers and the keyboard skip it, so they meet that
+      // destination once, at the button. Its alt still names the action for
+      // a client that blocks images.
+      return x.href ? `<a class="tl" href="${attr(x.href)}" aria-hidden="true" tabindex="-1" style="display:block;text-decoration:none;">${img}</a>` : img
     }
     case 'button':
       return pill(x.href, x.label) + helperLines(x.helper).map((h, i, all) => `<p style="${SMALL}${i < all.length - 1 ? 'margin-bottom:4px;' : ''}">${inlineHtml(h)}</p>`).join('')
@@ -673,6 +677,17 @@ interface Draft {
   after?: PhotoBlock[]
 }
 
+/**
+ * The guests' Facebook group (owner, Oct 11 2026), the same in every tip: its
+ * own short section after the tip's content and before the reply line, so it
+ * reads as an invitation rather than footer housekeeping, and the reply line
+ * stays the last thing the tip says. It offers more of what the series gives
+ * (tips from locals) rather than a second place to ask a question, which the
+ * reply line already answers. Shared by every tip, so it sits outside each
+ * tip's 250-word budget and has a ceiling of its own in the tests.
+ */
+export const GROUP_INVITE = { lead: 'Want more tips from locals?', label: 'Join our Facebook group' } as const
+
 function render(key: TipKey, d: Draft, unsubscribeUrl: string, postal: string | null): BuiltTip {
   const booked = TIP_TRACK[key] !== 'PROSPECT'
   // Why they get it: they asked for Jamaica trip tips (the consent label,
@@ -689,16 +704,18 @@ function render(key: TipKey, d: Draft, unsubscribeUrl: string, postal: string | 
   // the owner's decision of Sept 27 2026; see lib/trip-tips/postal.ts).
   // 8px above the privacy link keeps its 44px target off the unsubscribe
   // link's, which it would otherwise touch with no address line between.
-  // The guests' Facebook group leads the footer (owner, Oct 11 2026): below
-  // the rule, so the reply line stays the last thing the tip itself says.
-  // Four words, because the longest tip sits five under the 250-word limit.
   const footer = [
-    `<p style="${small14}margin-bottom:8px;">${textLink(FACEBOOK_GROUP.url, 'Join our Facebook group')}</p>`,
     `<p style="${small14}">${esc(why)}</p>`,
     `<p style="${small14}">Changed your mind? ${textLink(unsubscribeUrl, 'Unsubscribe')}</p>`,
     ...(postal ? [`<p style="${small14}">${esc(postal)}</p>`] : []),
     `<p style="${small14}margin-top:8px;">${textLink(privacy, 'Privacy')}</p>`,
   ].join('\n')
+
+  // A soft green card, a treatment no other block uses, so the invitation
+  // does not read as one more link to the tip's own page (p1's "See your
+  // hotel's fare" sits just above it). 32px around it; the 4px bottom padding
+  // plus the link's own 12px matches the 16px at the top.
+  const groupCard = `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%;margin:32px 0 0;border-collapse:separate;"><tr><td bgcolor="#EEF4EE" style="background:#EEF4EE;border:1px solid #C6D8CE;border-radius:16px;padding:16px 16px 4px;"><p style="margin:0;font-size:16px;line-height:1.6;font-weight:700;color:#171614;">${esc(GROUP_INVITE.lead)}</p><p style="margin:0;font-size:16px;line-height:1.6;">${textLink(FACEBOOK_GROUP.url, GROUP_INVITE.label)}</p></td></tr></table>`
 
   const title = esc(d.subject)
   const html = `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="x-apple-disable-message-reformatting"><meta name="color-scheme" content="light only"><meta name="supported-color-schemes" content="light only"><title>${title}</title>${HEAD_STYLE}</head>
@@ -708,6 +725,7 @@ ${preheaderHtml(d.preheader)}
 <div role="article" aria-roledescription="email" aria-label="${title}" lang="en" style="max-width:600px;margin:0 auto;padding:32px 20px 40px;box-sizing:border-box;">
 <p style="margin:0 0 16px;font-size:13px;font-weight:700;color:#5A4A16;">MAPL Tours Jamaica</p>
 ${d.body.map((x, i) => blockHtml(x, d.body[i + 1])).join('\n')}
+${groupCard}
 <p style="${P}margin-top:32px;">${inlineHtml(d.closing)}</p>
 ${(d.after ?? []).map((x) => `${blockHtml(x)}\n`).join('')}${RULE}
 ${footer}
@@ -718,8 +736,9 @@ ${footer}
   const text = [
     'MAPL Tours Jamaica',
     ...d.body.map(blockText).filter((s) => s !== ''),
+    `${GROUP_INVITE.lead} ${GROUP_INVITE.label}: ${FACEBOOK_GROUP.url}`,
     inlineText(d.closing),
-    [`Join our Facebook group: ${FACEBOOK_GROUP.url}`, why, `Unsubscribe: ${unsubscribeUrl}`, ...(postal ? [postal] : []), `Privacy: ${privacy}`].join('\n'),
+    [why, `Unsubscribe: ${unsubscribeUrl}`, ...(postal ? [postal] : []), `Privacy: ${privacy}`].join('\n'),
   ].join('\n\n')
 
   return { subject: d.subject, preheader: d.preheader, html, text: `${text}\n` }
