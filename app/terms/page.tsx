@@ -14,7 +14,7 @@ export default function TermsPage() {
   return (
     <EditorialPage slug="terms" label="Legal" title="Terms of Service">
       <Section title="Last updated">
-        <p>These Terms were last updated on May 5, 2026.</p>
+        <p>These Terms were last updated on October 17, 2026.</p>
       </Section>
 
       <Section title="Agreement to terms">
@@ -44,7 +44,7 @@ export default function TermsPage() {
           <li>Payment is captured at checkout via Stripe. Your card information is processed by Stripe and never stored on our servers.</li>
           <li>Your booking confirmation email serves as your receipt and contains your booking reference and all trip details.</li>
           <li>By completing checkout you confirm that the traveler details and dates you have provided are accurate.</li>
-          <li>Bookings close 24 hours before an experience or pickup begins. Anything inside that window must be arranged with us directly and is subject to availability.</li>
+          <li>Bookings close 12 hours before an experience or pickup begins. Anything inside that window must be arranged with us directly and is subject to availability.</li>
           <li>Private door-to-door transport is included in every experience booking and is priced per travel day and itemized in your total. You provide the pickup and drop-off locations at checkout, and it is your responsibility to be ready at the agreed place and time.</li>
         </ul>
       </Section>

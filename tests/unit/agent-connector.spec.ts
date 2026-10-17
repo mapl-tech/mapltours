@@ -85,11 +85,11 @@ describe('start_tour_booking', () => {
 })
 
 describe('get_booking_terms', () => {
-  test('states the live cancellation policy and the 24-hour rule', async () => {
+  test('states the live cancellation policy and the 12-hour rule', async () => {
     const r = await tool('get_booking_terms').execute({})
     expect(r.cancellation).toEqual({ summary: CANCELLATION_SUMMARY.short, detail: CANCELLATION_SUMMARY.detail })
     expect(JSON.stringify(r)).not.toContain('Free to cancel')
-    expect(JSON.stringify(r)).toContain("24 hours' notice")
+    expect(JSON.stringify(r)).toContain("12 hours' notice")
     expect(JSON.stringify(r)).not.toMatch(/[–—]/)
   })
 })

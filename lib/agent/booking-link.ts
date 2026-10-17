@@ -14,7 +14,7 @@
  *     their agent) types them on the page.
  *   - The link is re-validated when it is opened, with the same checks the
  *     tools use (lib/webmcp-tools), because a link can be edited, shared or
- *     opened days later: a pickup that has slipped inside the 24-hour window
+ *     opened days later: a pickup that has slipped inside the 12-hour window
  *     is refused with a way forward, never silently booked.
  *   - The price is never in the link. Checkout prices the cart from the rate
  *     card, as it does for every other visitor.

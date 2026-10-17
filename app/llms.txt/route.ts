@@ -134,7 +134,7 @@ ${blogLines}
 - Airport transfers: one flat all-in price per vehicle for 1-4 passengers (5-7 ride together, priced per person), nothing added at checkout. From $${cheapestTransfer.ow} one-way (${ZONES[cheapestTransfer.dest.zone].label}) up to $${dearestTransfer.ow} (${ZONES[dearestTransfer.dest.zone].label}); round trips are ${roundTripPct}% off two one-ways. Cancellation: flexible within 48 hours of booking, less a 20% administration charge plus taxes (if applicable); after that window bookings are non-refundable, and no-shows are charged in full.
 - Tours and experiences: ${priceRange('single')} all-in, nothing added at checkout. Most are private group tours priced per vehicle for a party of up to 3 or 4, not per person; a few are per person. Ready-made multi-stop day packages run ${priceRange('package')}. Cancellation: flexible within 48 hours of booking, less a 20% administration charge plus taxes (if applicable).
 - Payments: Stripe (cards and Apple Pay)
-- Booking cutoff: bookings close 24 hours before an experience or pickup begins
+- Booking cutoff: bookings close 12 hours before an experience or pickup begins (a tour day counts from midnight in Jamaica, so a tour can be booked until noon the day before)
 - Cancellation requests: made from the Profile page or by replying to the confirmation email, and reviewed before the refund is issued; a booking whose experience has already begun can no longer be refunded
 - Changes: date and guest changes follow the same 48-hour window, by contacting support
 

@@ -6,7 +6,7 @@
  * from a flight time, and a stable key for "has the order changed since the
  * server last priced it". The components only wire these to state.
  */
-import { MIN_PICKUP_LEAD_MIN, earliestBookableExperienceDate } from './booking-window'
+import { MIN_LEAD_TIME_HOURS, MIN_PICKUP_LEAD_MIN, earliestBookableExperienceDate } from './booking-window'
 
 export const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 export const LEG_TIME_RE = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/
@@ -126,12 +126,12 @@ export function validateTransferForm(input: TransferFormInput): FieldErrors {
   const { hasArrivalLeg, hasDepartureLeg } = legsFor(legs.tripType, legs.fromAirport)
   if (hasArrivalLeg) {
     if (!legs.arrivalAt) e.arrivalAt = 'Add when your flight lands'
-    else if (minDateTime && legs.arrivalAt < minDateTime) e.arrivalAt = 'Pickups need 24 hours’ notice; choose a later time'
+    else if (minDateTime && legs.arrivalAt < minDateTime) e.arrivalAt = `Pickups need ${MIN_LEAD_TIME_HOURS} hours’ notice; choose a later time`
     if (!flightOk(legs.arrivalFlight)) e.arrivalFlight = 'Add your arrival flight number, e.g. AA1234'
   }
   if (hasDepartureLeg) {
     if (!legs.departureAt) e.departureAt = 'Add when your flight home departs'
-    else if (minDateTime && legs.departureAt < minDateTime) e.departureAt = 'Pickups need 24 hours’ notice; choose a later time'
+    else if (minDateTime && legs.departureAt < minDateTime) e.departureAt = `Pickups need ${MIN_LEAD_TIME_HOURS} hours’ notice; choose a later time`
     else if (legs.tripType === 'round_trip' && legs.arrivalAt && legs.departureAt <= legs.arrivalAt) e.departureAt = 'The flight home must be after you arrive'
     if (!flightOk(legs.departureFlight)) e.departureFlight = 'Add your departure flight number, e.g. AA4321'
   }

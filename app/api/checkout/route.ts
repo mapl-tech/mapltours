@@ -294,7 +294,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Amount must be at least $0.50' }, { status: 400 })
     }
 
-    // Enforce the 24-hour lead time (the date pickers also set `min`, but
+    // Enforce the 12-hour lead time (the date pickers also set `min`, but
     // never trust the client). This subsumes the old past-date check: a date
     // already gone is by definition inside the window.
     const tooSoon = pricing.lines.some(

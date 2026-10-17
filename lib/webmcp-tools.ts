@@ -21,7 +21,7 @@
  *     agent to confirm with the person before calling them. They also refuse
  *     to touch the cart while a Stripe confirm is in flight on the page.
  *   - Leg times are "YYYY-MM-DDTHH:MM" Jamaica wall clock, validated to that
- *     shape and judged against the 24-hour rule as a fixed instant, so the
+ *     shape and judged against the 12-hour rule as a fixed instant, so the
  *     answer is the same in Tokyo, Berlin and Kingston. The checkout view
  *     avoids isPickupBookable in the browser for the same reason.
  *   - A one-way carries only the legs its direction allows. Fields for the
@@ -211,7 +211,7 @@ export function legTime(field: string, v: unknown): { value?: string; error?: st
   return { value: s }
 }
 /**
- * Judge a Jamaica wall-clock time against the 24-hour rule as a fixed
+ * Judge a Jamaica wall-clock time against the 12-hour rule as a fixed
  * instant. isPickupBookable parses what it is given and then shifts by
  * Jamaica's offset; a bare "YYYY-MM-DDTHH:MM" would parse in the BROWSER'S
  * zone, so the same input would be bookable in Los Angeles and refused in

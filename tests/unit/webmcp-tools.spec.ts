@@ -5,7 +5,8 @@ import { experiences, getSlug, tourPrice, perTravelerPrice } from '../../lib/exp
 import { MIN_PICKUP_LEAD_MIN } from '../../lib/booking-window'
 import { useCartStore } from '../../lib/cart'
 
-// A fixed "now": 10:00 Jamaica on Sep 5, so the 24-hour cutoff is 10:00 on Sep 6.
+// A fixed "now": 10:00 Jamaica on Sep 5, so the 12-hour cutoff is 22:00 on Sep 5
+// and the earliest tour day is Sep 6 (it starts at midnight, 14 hours out).
 const NOW = new Date('2026-09-05T15:00:00Z')
 function fakeActions(overrides: Partial<WebMcpActions> = {}): WebMcpActions & { calls: string[] } {
   const calls: string[] = []
@@ -109,7 +110,7 @@ describe('WebMCP tool set', () => {
     expect(await t.execute({})).toMatchObject({ error: expect.stringMatching(/arrival_at, departure_at or departure_flight_at/) })
   })
 
-  test('the 24-hour rule is judged on the Jamaica clock whatever zone the browser runs in', async () => {
+  test('the 12-hour rule is judged on the Jamaica clock whatever zone the browser runs in', async () => {
     const { t } = tool('check_transfer_timing')
     for (const tz of ['UTC', 'America/Los_Angeles', 'Europe/Berlin', 'Asia/Tokyo']) {
       process.env.TZ = tz
@@ -117,11 +118,11 @@ describe('WebMCP tool set', () => {
       const offset = new Date('2026-09-06T10:00').getTimezoneOffset()
       if (tz === 'Asia/Tokyo') expect(offset).toBe(-540)
       if (tz === 'America/Los_Angeles') expect(offset).toBe(420)
-      const onTheLine = (await t.execute({ arrival_at: '2026-09-06T10:00' })) as R
-      expect(onTheLine.bookable, `${tz} 10:00`).toBe(true)
-      const justInside = (await t.execute({ arrival_at: '2026-09-06T09:59' })) as R
-      expect(justInside.bookable, `${tz} 09:59`).toBe(false)
-      expect(justInside.earliestBookableJamaicaTime).toBe('2026-09-06T10:00')
+      const onTheLine = (await t.execute({ arrival_at: '2026-09-05T22:00' })) as R
+      expect(onTheLine.bookable, `${tz} 22:00`).toBe(true)
+      const justInside = (await t.execute({ arrival_at: '2026-09-05T21:59' })) as R
+      expect(justInside.bookable, `${tz} 21:59`).toBe(false)
+      expect(justInside.earliestBookableJamaicaTime).toBe('2026-09-05T22:00')
       expect(justInside.alternative).toMatch(/email/)
       const later = (await t.execute({ arrival_at: '2026-09-07T14:30', departure_at: '2026-09-14T09:00' })) as R
       expect(later.bookable).toBe(true)
@@ -158,7 +159,7 @@ describe('WebMCP tool set', () => {
   test('start_transfer_booking refuses a pickup inside the window before touching the cart', async () => {
     const { t, a } = tool('start_transfer_booking')
     const r = await t.execute({ destination: 'sandals-negril', trip_type: 'one_way', passengers: 2, direction: 'airport_to_hotel', arrival_at: '2026-09-05T18:00' })
-    expect(r).toMatchObject({ error: expect.stringMatching(/24-hour.*2026-09-06T10:00/) })
+    expect(r).toMatchObject({ error: expect.stringMatching(/12-hour.*2026-09-05T22:00/) })
     expect(a.calls).toEqual([])
   })
 
@@ -240,8 +241,8 @@ describe('WebMCP tool set', () => {
     expect(r.priceUsd).toBeUndefined()
     expect(r.fromPriceUsd).toBe(rick.price)
     expect(r.url).toMatch(/\/experience\/ricks-cafe/)
-    expect(r.earliestDate).toBe('2026-09-07')
-    expect(r.bookingNotice).toMatch(/2026-09-07/)
+    expect(r.earliestDate).toBe('2026-09-06')
+    expect(r.bookingNotice).toMatch(/2026-09-06/)
     // over the flat-rate tier the text says so
     const over = (await get.execute({ tour: rick.title, guests: rick.pricing.tierMax + 2 })) as R
     expect(over.priceForParty.covers).toMatch(/extra guests at a per-person rate/)
@@ -275,7 +276,7 @@ describe('WebMCP tool set', () => {
   test('start_tour_booking enforces the date rules before touching the cart', async () => {
     const { t, a } = tool('start_tour_booking')
     expect(await t.execute({ tour: 'ricks-cafe-cliff-diving-and-sunset', guests: 2, date: '12/10/2026' })).toMatchObject({ error: expect.stringMatching(/YYYY-MM-DD/) })
-    expect(await t.execute({ tour: 'ricks-cafe-cliff-diving-and-sunset', guests: 2, date: '2026-09-06' })).toMatchObject({ error: expect.stringMatching(/earliest date is 2026-09-07/) })
+    expect(await t.execute({ tour: 'ricks-cafe-cliff-diving-and-sunset', guests: 2, date: '2026-09-05' })).toMatchObject({ error: expect.stringMatching(/earliest date is 2026-09-06/) })
     expect(await t.execute({ tour: 'ricks-cafe-cliff-diving-and-sunset', guests: 2, date: '2026-09-01' })).toMatchObject({ error: expect.stringMatching(/earliest date/) })
     expect(await t.execute({ tour: 'ricks-cafe-cliff-diving-and-sunset', guests: 2, date: '2026-02-30' })).toMatchObject({ error: expect.stringMatching(/earliest date/) })
     expect(a.calls).toEqual([])

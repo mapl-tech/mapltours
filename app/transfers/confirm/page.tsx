@@ -382,7 +382,7 @@ function Success({ data }: { data: ConfirmData }) {
         {data.email
           ? `Confirmation on its way to ${data.email}.`
           : 'A confirmation email is on the way.'}{' '}
-        MAPL Tours will reach out 24 hours before pickup.
+        We will send your driver’s details before your pickup.
       </p>
 
 

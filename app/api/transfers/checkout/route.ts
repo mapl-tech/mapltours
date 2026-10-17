@@ -234,7 +234,7 @@ export async function POST(request: NextRequest) {
         )
       }
 
-      // 24-hour lead time on every scheduled leg. Exact here, because
+      // 12-hour lead time on every scheduled leg. Exact here, because
       // transfers store real pickup timestamps. Subsumes the old past-date
       // check: a pickup already gone is inside the window by definition.
       if (!areTransferLegsBookable({ arrivalAt: item.arrivalAt, departureAt: item.departureAt })) {

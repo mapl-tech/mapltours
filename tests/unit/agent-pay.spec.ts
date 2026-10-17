@@ -137,7 +137,7 @@ describe('refused before any token lookup', () => {
     ['bad email', { guest: { first_name: 'A', last_name: 'R', email: 'nope', phone: '+1 305 555 0142' } }, 'guest.email'],
     ['short phone', { guest: { first_name: 'A', last_name: 'R', email: 'a@b.co', phone: '555' } }, 'guest.phone'],
     ['unknown hotel', { destination: 'Atlantis Resort Bahamas' }, 'No hotel matches'],
-    ['inside 24 hours', { arrival_at: '2026-10-02T06:00' }, 'booking window'],
+    ['inside 12 hours', { arrival_at: '2026-10-01T18:00' }, 'booking window'],
     ['missing arrival flight', { arrival_flight: undefined }, 'arrival_flight'],
     ['missing departure flight', { departure_flight: undefined }, 'departure_flight'],
     ['price not what was approved', { approved_total_usd: PRICE - 1 }, 'price_not_approved'],

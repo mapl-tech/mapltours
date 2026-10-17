@@ -154,7 +154,7 @@ export function quoteRefund(booking: RefundableBooking, now: Date = new Date()):
   }
 
   // Delivered services are not refundable, whatever the clock says. Without
-  // this, the 24-hour booking cutoff and the 48-hour refund window overlap:
+  // this, the 12-hour booking cutoff and the 48-hour refund window overlap:
   // book Monday for Tuesday, take the tour, then cancel Tuesday night still
   // inside the 48 hours and collect 80% back on a trip already taken.
   if (booking.serviceStartsAt) {

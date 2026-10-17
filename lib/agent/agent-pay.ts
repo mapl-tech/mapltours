@@ -6,7 +6,7 @@
  *
  * The money path is the site's own, unchanged: the ride goes through the real
  * /api/transfers/checkout handler with the same body a browser sends, so the
- * server prices it from the rate card, enforces the 24-hour rule and the
+ * server prices it from the rate card, enforces the 12-hour rule and the
  * flight numbers, inserts the pending booking (unique on the cart hash) and
  * mints the PaymentIntent (idempotency-keyed per booking row). The route
  * never confirms an intent; only step 9 below does, with the SPT, server side,

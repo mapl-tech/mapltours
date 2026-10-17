@@ -14,13 +14,15 @@ const at = (iso: string) => new Date(iso)
 
 describe('experiences, date-only with an assumed midnight start', () => {
   test('a date whose Jamaica midnight is beyond the cutoff is bookable', () => {
-    // now 03:00Z → cutoff next day 03:00Z; Aug 16 starts 05:00Z, which is later.
+    // now 03:00Z → cutoff 15:00Z the same day; Aug 16 starts 05:00Z, which is later.
     expect(isExperienceDateBookable('2026-08-16', at('2026-08-15T03:00:00Z'))).toBe(true)
   })
 
-  test('the same next-day date is refused once booking happens later in the day', () => {
-    // now 10:00Z → cutoff Aug 16 10:00Z; Aug 16 starts 05:00Z, which is sooner.
-    expect(isExperienceDateBookable('2026-08-16', at('2026-08-15T10:00:00Z'))).toBe(false)
+  test('the next day is bookable until noon in Jamaica, then refused', () => {
+    // now 16:59Z (11:59 Jamaica) → cutoff Aug 16 04:59Z; Aug 16 starts 05:00Z, which is later.
+    expect(isExperienceDateBookable('2026-08-16', at('2026-08-15T16:59:00Z'))).toBe(true)
+    // now 18:00Z (13:00 Jamaica) → cutoff Aug 16 06:00Z; Aug 16 starts 05:00Z, which is sooner.
+    expect(isExperienceDateBookable('2026-08-16', at('2026-08-15T18:00:00Z'))).toBe(false)
   })
 
   test('the day after is bookable in both cases', () => {
@@ -39,10 +41,10 @@ describe('experiences, date-only with an assumed midnight start', () => {
   })
 
   test('exact boundary: Jamaica midnight landing precisely on the cutoff is allowed', () => {
-    // cutoff === Aug 17 05:00Z exactly.
-    expect(isExperienceDateBookable('2026-08-17', at('2026-08-16T05:00:00Z'))).toBe(true)
+    // cutoff === Aug 17 05:00Z exactly (noon in Jamaica the day before).
+    expect(isExperienceDateBookable('2026-08-17', at('2026-08-16T17:00:00Z'))).toBe(true)
     // one second later, Aug 17 is inside the window.
-    expect(isExperienceDateBookable('2026-08-17', at('2026-08-16T05:00:01Z'))).toBe(false)
+    expect(isExperienceDateBookable('2026-08-17', at('2026-08-16T17:00:01Z'))).toBe(false)
   })
 
   test('accepts a full ISO timestamp by reading its date part', () => {
@@ -83,22 +85,29 @@ describe('transfers, exact because pickups carry a real time', () => {
   // 17:00 UTC. `now` below is a true instant — 12:00 UTC = 07:00 in Jamaica.
   const now = at('2026-08-15T12:00:00Z')
 
-  test('exactly 24 hours ahead is allowed', () => {
-    // Jamaica 07:00 tomorrow = 12:00 UTC tomorrow = now + exactly 24h.
-    expect(isPickupBookable('2026-08-16T07:00:00Z', now)).toBe(true)
+  test('exactly 12 hours ahead is allowed', () => {
+    // Jamaica 19:00 today = 00:00 UTC tomorrow = now + exactly 12h.
+    expect(isPickupBookable('2026-08-15T19:00:00Z', now)).toBe(true)
   })
 
   test('one minute inside the window is refused', () => {
-    expect(isPickupBookable('2026-08-16T06:59:00Z', now)).toBe(false)
+    expect(isPickupBookable('2026-08-15T18:59:00Z', now)).toBe(false)
   })
 
-  test('the 24h window is measured in real hours, not a 29h phantom', () => {
+  test('the 12h window is measured in real hours, not a 17h phantom', () => {
     // Regression: raw Date.parse read the wall-clock as UTC, landing 5 hours
-    // early, so a pickup 26 real hours out was refused. Jamaica 09:00
-    // tomorrow = 14:00 UTC tomorrow = 26 real hours from `now`. Must book.
-    expect(isPickupBookable('2026-08-16T09:00:00Z', now)).toBe(true)
-    // And 23 real hours out must still be refused: Jamaica 06:00 tomorrow.
-    expect(isPickupBookable('2026-08-16T06:00:00Z', now)).toBe(false)
+    // early. Jamaica 21:00 today = 02:00 UTC tomorrow = 14 real hours from
+    // `now`. Must book.
+    expect(isPickupBookable('2026-08-15T21:00:00Z', now)).toBe(true)
+    // And 11 real hours out must still be refused: Jamaica 18:00 today.
+    expect(isPickupBookable('2026-08-15T18:00:00Z', now)).toBe(false)
+  })
+
+  test('an 11:45 landing tomorrow books until 23:45 tonight, Jamaica time', () => {
+    // The Oct 17 2026 guest: asked at 18:22 Jamaica (23:22Z) about Sunday 11:45.
+    expect(isPickupBookable('2026-10-18T11:45:00Z', at('2026-10-17T23:22:00Z'))).toBe(true)
+    expect(isPickupBookable('2026-10-18T11:45:00Z', at('2026-10-18T04:45:00Z'))).toBe(true)
+    expect(isPickupBookable('2026-10-18T11:45:00Z', at('2026-10-18T04:46:00Z'))).toBe(false)
   })
 
   test('comfortably ahead is allowed, past is refused', () => {
@@ -138,10 +147,10 @@ describe('transfer legs', () => {
   })
 })
 
-test('the window is 24 hours', () => {
-  expect(MIN_LEAD_TIME_HOURS).toBe(24)
+test('the window is 12 hours', () => {
+  expect(MIN_LEAD_TIME_HOURS).toBe(12)
   const now = at('2026-08-15T12:00:00Z')
-  expect(leadTimeCutoff(now).toISOString()).toBe('2026-08-16T12:00:00.000Z')
+  expect(leadTimeCutoff(now).toISOString()).toBe('2026-08-16T00:00:00.000Z')
 })
 
 describe('earliestServiceStart', () => {

@@ -90,7 +90,7 @@ export default function TransfersCheckoutView() {
   // compared against).
   const cartShapeRef = useRef('')
   // Earliest bookable pickup as a datetime-local value (YYYY-MM-DDTHH:mm):
-  // now plus the 24-hour lead time, NOT now. Computed AFTER mount so SSR and
+  // now plus the 12-hour lead time, NOT now. Computed AFTER mount so SSR and
   // the first client render both emit min="" (no hydration mismatch); the
   // browser then constrains the pickers. The server re-checks regardless.
   const [minDateTime, setMinDateTime] = useState('')
@@ -1687,8 +1687,8 @@ function ConfirmedInline({
             lineHeight: 1.5,
           }}
         >
-          A confirmation email with meeting instructions is on its way. MAPL Tours
-          will reach out 24 hours before pickup.
+          A confirmation email with meeting instructions is on its way. We will
+          send your driver’s details before your pickup.
         </p>
         <p
           style={{

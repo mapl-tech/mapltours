@@ -169,7 +169,7 @@ function ReviewStep({ formData, setFormData, formErrors }: {
   // No per-tour dates: a checkout is ONE day, so the single trip date in the
   // card above is written to every line.
 
-  // Earliest selectable date honours the 24-hour lead time, so a date that
+  // Earliest selectable date honours the 12-hour lead time, so a date that
   // checkout would reject cannot be picked (also validated server-side).
   // Computed after mount to keep SSR/CSR markup identical.
   const [minDate, setMinDate] = useState('')

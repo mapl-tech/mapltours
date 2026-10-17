@@ -898,14 +898,14 @@ const GROUP_LINE = 'Parties of 5 to 7 still ride together, and you see your part
 const DRIVER_LINE = 'Your driver waits at arrivals with your name on a sign, and we track your flight.'
 
 /**
- * Tour lead time. app/terms/page.tsx:47 says bookings close 24 hours before
+ * Tour lead time. app/terms/page.tsx:47 says bookings close 12 hours before
  * an experience begins, and lib/booking-window.ts counts a tour day from
  * midnight in Jamaica (isExperienceDateBookable), as the help page says
  * (lib/help-faqs.ts:41 "experience days are counted from midnight in
- * Jamaica"). So a Friday tour is bookable to the end of Wednesday, not
- * "24 hours before it starts". A test holds this to isExperienceDateBookable.
+ * Jamaica"). So a Friday tour is bookable until noon on Thursday, not
+ * "12 hours before it starts". A test holds this to isExperienceDateBookable.
  */
-const TOUR_NOTICE = 'Book a Friday tour by the end of Wednesday: tour days count from midnight in Jamaica.'
+const TOUR_NOTICE = 'Book a Friday tour by noon on Thursday: tour days count from midnight in Jamaica.'
 
 /**
  * The zone fare table: ZONES in order, zonePriceRange round trip, the fares
@@ -1114,11 +1114,11 @@ function p4(): Draft {
           // lib/help-faqs.ts:102 (cards, Apple Pay, Google Pay);
           // airport-transfers-content.ts:48 "taken online up front".
           ['Paying', 'Online when you book, in US dollars, by card, Apple Pay or Google Pay.'],
-          // app/terms/page.tsx:47 "Bookings close 24 hours before an
+          // app/terms/page.tsx:47 "Bookings close 12 hours before an
           // experience or pickup begins" (rides: the pickup is a real time,
           // isPickupBookable) and TOUR_NOTICE for tours (lib/help-faqs.ts:41
           // "experience days are counted from midnight in Jamaica").
-          ['How far ahead', 'Book a ride at least 24 hours before pickup. Tour days count from midnight in Jamaica, so book a Friday tour by the end of Wednesday.'],
+          ['How far ahead', 'Book a ride at least 12 hours before pickup. Tour days count from midnight in Jamaica, so book a Friday tour by noon on Thursday.'],
           // app/terms/page.tsx:54,57,58 (nothing is refundable once the tour
           // or pickup has begun, even inside the 48 hours; the refund is "the
           // amount you paid, less an administration charge"); app/safety/page.tsx:25

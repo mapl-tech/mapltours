@@ -1,5 +1,5 @@
 /**
- * Minimum lead time: nothing may be booked less than 24 hours before it runs.
+ * Minimum lead time: nothing may be booked less than 12 hours before it runs.
  *
  * Pure functions, no I/O, so the boundaries are unit-testable and the client
  * date pickers and the checkout routes agree on one rule. The server is
@@ -8,18 +8,22 @@
  * The two products need different maths because they store different things:
  *
  *   • Transfers carry a real pickup timestamp (the flight arrival), so the
- *     24 hours is measured exactly.
+ *     12 hours is measured exactly.
  *
  *   • Experiences store a DATE ONLY, with no start time anywhere in the model
  *     (`duration` is prose like "Full day"). We therefore assume the earliest
- *     possible start, midnight Jamaica time, and require 24 hours before THAT.
+ *     possible start, midnight Jamaica time, and require 12 hours before THAT.
  *     Assuming a later start would let a 9am tour be booked with 10 hours'
  *     notice, which is the thing this is meant to prevent. The practical
- *     effect is that experiences need roughly one to two days' notice.
+ *     effect is that a tour can be booked until noon the day before.
  */
 
-/** Hours of notice required before an experience or a pickup. */
-export const MIN_LEAD_TIME_HOURS = 24
+/**
+ * Hours of notice required before an experience or a pickup. 12 since Oct 17
+ * 2026 (owner, for tours and rides alike): a guest landing the next morning
+ * asked the evening before, and the old 24 shut them out.
+ */
+export const MIN_LEAD_TIME_HOURS = 12
 
 const MS_PER_HOUR = 3_600_000
 
@@ -121,7 +125,7 @@ export function areTransferLegsBookable(
 
 /** Customer-facing message when something is inside the window. */
 export const LEAD_TIME_MESSAGE =
-  'Bookings close 24 hours before. Please choose a later date or contact us to arrange it.'
+  `Bookings close ${MIN_LEAD_TIME_HOURS} hours before. Please choose a later date or contact us to arrange it.`
 
 /**
  * When the earliest part of a booking is due to start.

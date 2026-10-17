@@ -38,7 +38,7 @@ export const HELP_CATEGORIES: HelpCategory[] = [
       },
       {
         q: 'How far in advance should I book?',
-        a: 'Bookings close 24 hours before an experience or pickup begins, and experience days are counted from midnight in Jamaica, so in practice you need one to two days\' notice. Book earlier where you can: in peak season our drivers\' days fill up, and the sunset run to Rick\'s Cafe goes first, especially (December-March).',
+        a: 'Bookings close 12 hours before an experience or pickup begins, and experience days are counted from midnight in Jamaica, so a tour can be booked until noon the day before. Book earlier where you can: in peak season our drivers\' days fill up, and the sunset run to Rick\'s Cafe goes first, especially (December-March).',
       },
       {
         q: 'Can I modify my booking after checkout?',

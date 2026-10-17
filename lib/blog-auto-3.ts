@@ -138,7 +138,7 @@ export const POSTS_3: BlogPost[] = [
         type: 'list',
         items: [
           "Match the resort to the airport run: Rose Hall is under 20 minutes from MBJ, Ocho Rios up to two hours.",
-          "Book tours a day ahead; our checkout enforces a 24-hour lead time.",
+          "Book tours a day ahead; our checkout enforces a 12-hour lead time.",
           "Carry small bills for tips; USD is welcome, small JMD notes are better for staff. [Our money guide](/blog/jamaica-currency-and-money) covers the rest.",
         ],
       },

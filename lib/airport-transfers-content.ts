@@ -4,7 +4,7 @@
  * JSON-LD alongside the client-side TransfersView component that renders it.
  */
 
-import { MIN_PICKUP_LEAD_MIN } from './booking-window'
+import { MIN_LEAD_TIME_HOURS, MIN_PICKUP_LEAD_MIN } from './booking-window'
 
 /** The checkout's suggested hotel pickup before the flight home, in words: "3 hours 30 minutes". */
 const PICKUP_LEAD = [
@@ -70,6 +70,10 @@ export const TRANSFER_FAQS: TransferFaq[] = [
   {
     q: 'How do we set the pickup for our flight home?',
     a: `You choose it at checkout. Enter the time your flight home departs and we suggest a hotel pickup ${PICKUP_LEAD} before it, which you can change. Your driver picks you up at your hotel or villa. Any other instructions go in the "Anything we should know?" box at checkout.`,
+  },
+  {
+    q: 'How late can I book?',
+    a: `Online booking closes ${MIN_LEAD_TIME_HOURS} hours before your pickup: for the ride to your hotel, that is when your flight lands. Need a ride sooner than that? Email contact@mapltours.com with your flight number, hotel and party size, and we will tell you whether a driver is free.`,
   },
   {
     q: 'Can I pay in cash?',

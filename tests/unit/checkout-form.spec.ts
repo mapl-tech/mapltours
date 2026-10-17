@@ -22,9 +22,9 @@ describe('contact validation', () => {
 describe('tour form', () => {
   test('needs a pickup place, a bookable date and the waiver', () => {
     expect(validateTourForm({ contact, pickup: 'Sandals Negril Beach Resort', tripDate: '2026-09-07', waiverAccepted: true, now: NOW })).toEqual({})
-    const e = validateTourForm({ contact, pickup: '', tripDate: '2026-09-06', waiverAccepted: false, now: NOW })
+    const e = validateTourForm({ contact, pickup: '', tripDate: '2026-09-05', waiverAccepted: false, now: NOW })
     expect(e.pickup).toMatch(/Choose where/)
-    expect(e.tripDate).toMatch(/earliest date is Mon, Sep 7/)
+    expect(e.tripDate).toMatch(/earliest date is Sun, Sep 6/)
     expect(e.waiver).toMatch(/waiver/)
     expect(validateTourForm({ contact, pickup: 'x', tripDate: '', waiverAccepted: true, now: NOW }).tripDate).toBe('Pick a date')
   })
@@ -39,7 +39,7 @@ describe('transfer form', () => {
     expect(e.arrivalFlight).toMatch(/AA1234/)
     expect(e.departureAt).toMatch(/after you arrive/)
     expect(e.departureFlight).toMatch(/AA4321/)
-    expect(validateTransferForm({ contact, minDateTime: min, legs: { tripType: 'round_trip', fromAirport: true, arrivalAt: '2026-09-06T09:00', arrivalFlight: 'AA1', departureAt: '2026-09-20T10:00', departureFlight: 'AA2' } }).arrivalAt).toMatch(/24 hours/)
+    expect(validateTransferForm({ contact, minDateTime: min, legs: { tripType: 'round_trip', fromAirport: true, arrivalAt: '2026-09-06T09:00', arrivalFlight: 'AA1', departureAt: '2026-09-20T10:00', departureFlight: 'AA2' } }).arrivalAt).toMatch(/12 hours/)
   })
   test('a one-way carries only its own leg', () => {
     expect(legsFor('one_way', false)).toEqual({ hasArrivalLeg: false, hasDepartureLeg: true })

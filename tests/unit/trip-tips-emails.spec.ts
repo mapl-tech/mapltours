@@ -261,8 +261,8 @@ describe.each(CASES.map((c) => [name(c), c] as const))('%s', (_n, c) => {
       /\b\d+ ?(to \d+ ?)?(min|mins|minutes|hrs?|hours?) (from|to) (MBJ|Sangster|the airport)|\bunder \d+ min|\bthe drive\b|\d+ ?(to \d+ ?)?min\b/i,
       // Group prices always with their limit, never as one price for everyone.
       /(pay|priced) per person and ride together/i,
-      // Lead time: tours close from midnight in Jamaica, not 24 hours before they start.
-      /24 hours (before|ahead of) (a|the|your) tour|bookings close 24 hours (ahead|before a tour)/i,
+      // Lead time: tours close from midnight in Jamaica, not 12 (or 24) hours before they start.
+      /(12|24) hours (before|ahead of) (a|the|your) tour|bookings close (12|24) hours (ahead|before a tour)/i,
       // A booked guest at MBJ is not sent to an inbox that answers in 24 hours.
       /within ten minutes|details in your confirmation email/i,
       /one near each resort area|both days work|everything is booked/i,
@@ -497,14 +497,14 @@ describe('the numbers and names come from the site', () => {
     for (const m of Array.from(pre.matchAll(/\$\d[\d,]*( for up to \d people| per person)?/g))) expect(m[1], m[0]).toBeTruthy()
   })
 
-  test('the tour lead time matches the booking window: a Friday tour by the end of Wednesday', () => {
+  test('the tour lead time matches the booking window: a Friday tour by noon on Thursday', () => {
     const friday = '2026-12-04'
     expect(formatDay(friday)).toMatch(/^Friday/)
-    // 23:59 on Wednesday in Jamaica is 04:59 UTC on Thursday; 00:01 on Thursday is 05:01 UTC.
-    expect(isExperienceDateBookable(friday, new Date('2026-12-03T04:59:00Z'))).toBe(true)
-    expect(isExperienceDateBookable(friday, new Date('2026-12-03T05:01:00Z'))).toBe(false)
-    expect(pick('p2_tours').text).toContain('Book a Friday tour by the end of Wednesday: tour days count from midnight in Jamaica.')
-    expect(pick('p4_booking_rules').text).toContain('How far ahead: Book a ride at least 24 hours before pickup. Tour days count from midnight in Jamaica, so book a Friday tour by the end of Wednesday.')
+    // 11:59 on Thursday in Jamaica is 16:59 UTC; 12:01 is 17:01 UTC.
+    expect(isExperienceDateBookable(friday, new Date('2026-12-03T16:59:00Z'))).toBe(true)
+    expect(isExperienceDateBookable(friday, new Date('2026-12-03T17:01:00Z'))).toBe(false)
+    expect(pick('p2_tours').text).toContain('Book a Friday tour by noon on Thursday: tour days count from midnight in Jamaica.')
+    expect(pick('p4_booking_rules').text).toContain('How far ahead: Book a ride at least 12 hours before pickup. Tour days count from midnight in Jamaica, so book a Friday tour by noon on Thursday.')
   })
 
   test('p4: the cancel window also ends when the tour or pickup begins, and the preheader names the 20% charge', () => {

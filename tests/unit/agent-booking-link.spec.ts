@@ -73,7 +73,7 @@ describe('parseHandoff refuses, with a way forward', () => {
     ['ride=riu-negril&trip=round_trip&pax=2&land=2027-03-05', 'not valid'],
     ['ride=riu-negril&trip=round_trip&pax=2&land=2027-03-05T14:30Z', 'not valid'],
     ['ride=riu-negril&trip=round_trip&pax=2&land=2027-02-30T10:00', 'not valid'],
-    ['ride=riu-negril&trip=round_trip&pax=2&land=2026-10-02T06:00', "24 hours' notice"],
+    ['ride=riu-negril&trip=round_trip&pax=2&land=2026-10-01T18:00', "12 hours' notice"],
   ])('%s', (q, msg) => {
     const r = ride(q)
     expect(r.ok).toBe(false)
@@ -91,7 +91,7 @@ describe('parseHandoff refuses, with a way forward', () => {
     ['tour=bamboo-rafting-on-the-martha-brae&guests=2', 'missing the tour date'],
     ['tour=bamboo-rafting-on-the-martha-brae&guests=2&date=2027-02-30', 'missing the tour date'],
     ['tour=bamboo-rafting-on-the-martha-brae&guests=2&date=07/03/2027', 'missing the tour date'],
-    ['tour=bamboo-rafting-on-the-martha-brae&guests=2&date=2026-10-01', "24 hours' notice"],
+    ['tour=bamboo-rafting-on-the-martha-brae&guests=2&date=2026-10-01', "12 hours' notice"],
   ])('%s', (q, msg) => {
     const r = ride(q)
     expect(r.ok).toBe(false)
