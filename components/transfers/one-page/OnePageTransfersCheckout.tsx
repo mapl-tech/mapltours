@@ -460,6 +460,7 @@ export default function OnePageTransfersCheckout() {
                   createIntent={createIntent}
                   registerPay={registerPay}
                   billing={{ name: contactName || undefined, email: form.email.trim() || undefined, phone: form.phone.trim() || undefined }}
+                  purchaseMatch={{ email: form.email, phone: form.phone, firstName: form.firstName, lastName: form.lastName }}
                   externalError={serverError}
                   onAmountResolved={(usd) => setServerDue(usd)}
                   footer={<><Reassurance lines={['Stripe takes the payment. We never see your card number.', 'Your driver meets you at arrivals with a name sign. We send their name, vehicle and plate before pickup.']} /><AskFirst place="transfer_checkout" context={askContext} /></>}

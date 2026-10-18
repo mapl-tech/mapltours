@@ -47,7 +47,23 @@ describe('privacy policy processor list', () => {
   })
 
   test('keeps the last-updated line on or after the change', () => {
-    expect(text(html)).toContain('This Privacy Policy was last updated on October 7, 2026.')
+    expect(text(html)).toContain('This Privacy Policy was last updated on October 18, 2026.')
+  })
+
+  test('says which hashed details a booking shares with Meta, through the pixel and the server', () => {
+    // lib/analytics rememberPurchaseMatch (the pixel's Purchase) and
+    // lib/meta-capi (the Conversions API) send these since Oct 17 2026.
+    const meta = text(html.match(/<section data-title="Advertising with Meta \(Facebook and Instagram\)">([\s\S]*?)<\/section>/)?.[1] ?? '')
+    // What the pixel really does (measured Oct 18 2026, fbevents 2.9.419):
+    // the Purchase's advanced matching, then the same details on every later
+    // event until a reload, and the dataset's automatic matching on a tap.
+    expect(meta).toContain('It also sends Meta the email address, phone number and name you type on our site, in hashed form')
+    expect(meta).toContain('even if you do not book')
+    expect(meta).toContain('Once it has them, it keeps sending them with everything else it records as you move around our site, until you reload the page or close the tab')
+    expect(meta).toContain('For a booking we add your phone number, name and, if you gave it, your country, also in hashed form, and the amount paid')
+    expect(meta).toContain('If your browser sends Do Not Track or Global Privacy Control, the Meta pixel does not load')
+    // A hashed phone or name can be recovered by guessing; never claim otherwise.
+    expect(meta).not.toMatch(/cannot be read/)
   })
 
   test('has no em dashes', () => {

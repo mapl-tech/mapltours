@@ -37,6 +37,11 @@ export function buildPurchasePayload(b: PurchaseBookingRow, nowMs: number = Date
   const secret = process.env.GA4_API_SECRET
   if (!secret) return { skipped: 'GA4_API_SECRET not set' }
   const attr = (b.attribution && typeof b.attribution === 'object' ? b.attribution : {}) as Record<string, unknown>
+  // The visitor asked not to be tracked (lib/attribution records it at
+  // checkout). components/Trackers already loads no GA for them, but a _ga
+  // cookie from an earlier visit still rides in the checkout payload, so the
+  // server half of the same promise lives here, as in lib/meta-capi.
+  if (attr.dnt === '1') return { skipped: 'visitor opted out of tracking' }
   const clientId = typeof attr.ga_client_id === 'string' && /^\d+\.\d+$/.test(attr.ga_client_id) ? attr.ga_client_id : null
   if (!clientId) return { skipped: 'no GA client id on the booking' }
   const sessionId = typeof attr.ga_session_id === 'string' && /^\d+$/.test(attr.ga_session_id) ? attr.ga_session_id : undefined

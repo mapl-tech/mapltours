@@ -41,6 +41,14 @@ describe('server-side GA4 purchase', () => {
     expect('skipped' in old ? null : old.body.timestamp_micros).toBeUndefined()
   })
 
+  test('honours the visitor tracking opt-out recorded at checkout, even with a _ga cookie from an earlier visit', async () => {
+    const optedOut = { ...booking, attribution: { ...booking.attribution, dnt: '1' } }
+    expect(buildPurchasePayload(optedOut, NOW)).toEqual({ skipped: 'visitor opted out of tracking' })
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true })
+    expect(await reportServerPurchase(optedOut, fetchMock as unknown as typeof fetch)).toBe('skipped')
+    expect(fetchMock).not.toHaveBeenCalled()
+  })
+
   test('tours are reported as a tour line', () => {
     const p = buildPurchasePayload({ ...booking, booking_type: 'tour', total_paid: 306 }, NOW)
     if ('skipped' in p) throw new Error(p.skipped)

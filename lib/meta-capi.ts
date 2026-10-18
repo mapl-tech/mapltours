@@ -2,6 +2,7 @@ import 'server-only'
 import { createHash } from 'node:crypto'
 import { bookingRef } from './dispatch'
 import { readMetaIds } from './attribution'
+import { matchFields } from './meta-match'
 
 /**
  * Server-side purchase reporting to Meta (the Conversions API), the exact
@@ -22,9 +23,18 @@ import { readMetaIds } from './attribution'
  *
  * Matching: Meta needs identity to attribute a server event to the person who
  * clicked. Unlike GA4 (which forbids PII), the Conversions API is BUILT for
- * hashed identifiers, so we send SHA-256 of the guest's email plus the `_fbp`
- * / `_fbc` browser cookies captured at checkout (lib/attribution). Nothing
- * unhashed and nothing that is not already Meta's own cookie ever leaves here.
+ * hashed identifiers, so we send SHA-256 of the guest's email, phone, first
+ * and last name, country (when the booking has one) and a customer id (the
+ * email again), normalised by lib/meta-match exactly as the browser pixel's
+ * copy is, plus the `_fbp` / `_fbc` browser cookies captured at checkout
+ * (lib/attribution). Nothing unhashed and nothing that is not already Meta's
+ * own cookie ever leaves here. No IP address or full browser string: the
+ * booking keeps neither (lib/attribution keeps only a browser family, on
+ * purpose). When the pixel ran, its own copy and the Gateway's carry both.
+ * When it was blocked, or the guest never reached the confirm page, this is
+ * the only Purchase Meta gets, and it lacks client_user_agent, which Meta
+ * lists as required for website events; storing it would reverse that
+ * decision and is the owner's call.
  *
  * Never throws, never blocks fulfilment: the webhook awaits it with a short
  * timeout and carries on whatever happens. Dormant until META_PIXEL_ID and
@@ -37,6 +47,10 @@ export interface PurchaseBookingRow {
   total_paid?: number | string | null
   currency?: string | null
   email?: string | null
+  phone?: string | null
+  first_name?: string | null
+  last_name?: string | null
+  country?: string | null
   pickup?: string | null
   dropoff?: string | null
   paid_at?: string | null
@@ -93,15 +107,21 @@ export function buildPurchaseEvent(
 
   // Identity for matching. An event with no identifiers at all cannot be
   // attributed to anyone, so skip it rather than send a phantom conversion
-  // that only inflates the account's unattributed purchases.
+  // that only inflates the account's unattributed purchases. A name or a
+  // country alone identifies nobody, so they ride along but never count.
   const user_data: Record<string, unknown> = {}
-  const em = hashedEmail(b.email)
-  if (em) user_data.em = [em]
+  const m = matchFields({ email: b.email, phone: b.phone, firstName: b.first_name, lastName: b.last_name, country: b.country })
+  if (m.em) user_data.em = [sha256(m.em)]
+  if (m.ph) user_data.ph = [sha256(m.ph)]
+  if (m.fn) user_data.fn = [sha256(m.fn)]
+  if (m.ln) user_data.ln = [sha256(m.ln)]
+  if (m.country) user_data.country = [sha256(m.country)]
+  if (m.external_id) user_data.external_id = [sha256(m.external_id)]
   const fbp = typeof attr.fbp === 'string' && /^fb\.\d\./.test(attr.fbp) ? attr.fbp : undefined
   if (fbp) user_data.fbp = fbp
   const fbc = metaClickId(attr)
   if (fbc) user_data.fbc = fbc
-  if (Object.keys(user_data).length === 0) return { skipped: 'no identifiers to match on' }
+  if (!m.em && !m.ph && !fbp && !fbc) return { skipped: 'no identifiers to match on' }
 
   const isTransfer = b.booking_type === 'transfer'
   const paidMs = b.paid_at ? Date.parse(b.paid_at) : NaN
@@ -162,8 +182,23 @@ export async function reportMetaPurchase(
         signal: ctrl.signal,
       })
       if (!r.ok) {
-        console.warn('[meta-capi] purchase report rejected', { booking_id: b.id, status: r.status })
+        // Meta's own reason, so a rejected field shows in the logs rather
+        // than as a bare status. Same abort window; never fatal.
+        let reason: unknown
+        try { reason = ((await r.json()) as { error?: { message?: unknown } } | null)?.error?.message } catch { /* no readable body */ }
+        console.warn('[meta-capi] purchase report rejected', { booking_id: b.id, status: r.status, reason })
         return 'failed'
+      }
+      // Meta answers 200 with events_received and any messages about what it
+      // could not use. Read inside the same abort window, never fatal, and it
+      // never changes the result: the event was accepted.
+      try {
+        const j = (await r.json()) as { events_received?: unknown; messages?: unknown }
+        if (j.events_received !== 1 || (Array.isArray(j.messages) && j.messages.length > 0)) {
+          console.warn('[meta-capi] purchase report accepted with warnings', { booking_id: b.id, events_received: j.events_received, messages: j.messages })
+        }
+      } catch {
+        // An unreadable body: the event was still accepted.
       }
       return 'sent'
     } finally {

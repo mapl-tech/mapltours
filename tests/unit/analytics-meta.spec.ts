@@ -9,6 +9,16 @@ import { describe, test, expect, afterEach, vi } from 'vitest'
 
 type Store = Record<string, string>
 
+// whenFbqReady and whenGtagReady poll for up to 10 s. Tracked so afterEach can
+// stop them: a poll left running would fire into a later test's window and
+// make its exact call assertions flaky.
+const timers: ReturnType<typeof setTimeout>[] = []
+const trackedTimeout = (fn: () => void, ms: number) => {
+  const t = setTimeout(fn, ms)
+  timers.push(t)
+  return t
+}
+
 function installWindow(opts: { withFbq?: boolean; withGtag?: boolean } = {}) {
   const store: Store = {}
   const fbqCalls: unknown[][] = []
@@ -17,7 +27,7 @@ function installWindow(opts: { withFbq?: boolean; withGtag?: boolean } = {}) {
       getItem: (k: string) => (k in store ? store[k] : null),
       setItem: (k: string, v: string) => { store[k] = v },
     },
-    setTimeout: (fn: () => void, ms: number) => setTimeout(fn, ms),
+    setTimeout: trackedTimeout,
   }
   if (opts.withFbq !== false) win.fbq = (...args: unknown[]) => { fbqCalls.push(args) }
   if (opts.withGtag) win.gtag = () => {}
@@ -33,6 +43,7 @@ async function fresh() {
 const settle = () => new Promise((r) => setTimeout(r, 20))
 
 afterEach(() => {
+  for (const t of timers.splice(0)) clearTimeout(t)
   delete (globalThis as unknown as { window?: unknown }).window
 })
 
@@ -103,5 +114,159 @@ describe('pixel Purchase', () => {
     await settle()
     expect(w.fbqCalls).toHaveLength(0)
     expect(Object.keys(w.store).some((k) => k.includes('purchase-meta'))).toBe(false)
+  })
+})
+
+/**
+ * Advanced matching (lib/analytics rememberPurchaseMatch). The payment panel
+ * keeps the guest's details in sessionStorage just before it confirms; the
+ * confirmation page hands them to the pixel with a second init, once, and
+ * deletes them. The confirm pages themselves never print contact details.
+ */
+describe('pixel advanced matching for the Purchase', () => {
+  const BOOKING_ID = 'c067affe-1234-4abc-9def-000000000000'
+  const REF = 'MAPL-C067AFFE'
+  const GUEST = { email: ' Guest@Gmail.com ', phone: '876-555-0123', firstName: 'Ann', lastName: 'Lee' }
+
+  function installSession(opts: { storageThrows?: boolean; optedOut?: boolean; withGtag?: boolean } = {}) {
+    const local: Store = {}
+    const session: Store = {}
+    const fbqCalls: unknown[][] = []
+    const gtagCalls: unknown[][] = []
+    const boom = () => { throw new Error('storage blocked') }
+    const win: Record<string, unknown> = {
+      localStorage: {
+        getItem: (k: string) => (k in local ? local[k] : null),
+        setItem: (k: string, v: string) => { local[k] = v },
+      },
+      sessionStorage: opts.storageThrows
+        ? { getItem: boom, setItem: boom, removeItem: boom }
+        : {
+            getItem: (k: string) => (k in session ? session[k] : null),
+            setItem: (k: string, v: string) => { session[k] = v },
+            removeItem: (k: string) => { delete session[k] },
+          },
+      setTimeout: trackedTimeout,
+      fbq: (...args: unknown[]) => { fbqCalls.push(args) },
+    }
+    if (opts.optedOut) win.doNotTrack = '1'
+    if (opts.withGtag) win.gtag = (...args: unknown[]) => { gtagCalls.push(args) }
+    ;(globalThis as unknown as { window: unknown }).window = win
+    return { session, fbqCalls, gtagCalls }
+  }
+
+  const purchase = { transactionId: REF, value: 75, currency: 'usd', items: [] }
+
+  test('the details kept at Pay reach the pixel right before the Purchase, then leave the tab', async () => {
+    const w = installSession()
+    const { rememberPurchaseMatch, trackPurchase } = await fresh()
+    rememberPurchaseMatch(BOOKING_ID, GUEST)
+    expect(Object.keys(w.session)).toEqual(['mapl-meta-match'])
+    trackPurchase(purchase)
+    await settle()
+    expect(w.fbqCalls).toEqual([
+      // The phone with a leading +, so fbevents never prefixes the Gateway's
+      // alternate copy with the browser locale's country code.
+      ['init', '1607953960710055', { em: 'guest@gmail.com', external_id: 'guest@gmail.com', ph: '+18765550123', fn: 'ann', ln: 'lee' }],
+      ['track', 'Purchase', { value: 75, currency: 'USD', content_type: 'product', contents: [] }, { eventID: REF }],
+    ])
+    expect(w.session).toEqual({})
+  })
+
+  test('details kept for another booking are deleted and never used', async () => {
+    const w = installSession()
+    const { rememberPurchaseMatch, trackPurchase } = await fresh()
+    rememberPurchaseMatch('aaaaaaaa-0000-4000-8000-000000000000', GUEST)
+    trackPurchase(purchase)
+    await settle()
+    expect(w.fbqCalls.map((c) => c[0])).toEqual(['track'])
+    expect(w.session).toEqual({})
+  })
+
+  test('stale details are deleted and never used', async () => {
+    const w = installSession()
+    const { trackPurchase } = await fresh()
+    w.session['mapl-meta-match'] = JSON.stringify({ ref: REF, at: Date.now() - 7 * 3_600_000, fields: { em: 'guest@gmail.com' } })
+    trackPurchase(purchase)
+    await settle()
+    expect(w.fbqCalls.map((c) => c[0])).toEqual(['track'])
+    expect(w.session).toEqual({})
+  })
+
+  test('only known keys are read back from storage', async () => {
+    const w = installSession()
+    const { trackPurchase } = await fresh()
+    w.session['mapl-meta-match'] = JSON.stringify({ ref: REF, at: Date.now(), fields: { em: 'guest@gmail.com', zz: 'x', ph: 5 } })
+    trackPurchase(purchase)
+    await settle()
+    expect(w.fbqCalls[0]).toEqual(['init', '1607953960710055', { em: 'guest@gmail.com' }])
+  })
+
+  test('a visitor who opted out of tracking keeps nothing', async () => {
+    const w = installSession({ optedOut: true })
+    const { rememberPurchaseMatch } = await fresh()
+    rememberPurchaseMatch(BOOKING_ID, GUEST)
+    expect(w.session).toEqual({})
+  })
+
+  test('details with neither an email nor a phone are not kept', async () => {
+    const w = installSession()
+    const { rememberPurchaseMatch } = await fresh()
+    rememberPurchaseMatch(BOOKING_ID, { firstName: 'Ann', lastName: 'Lee', phone: '07911 123456' })
+    rememberPurchaseMatch(null, GUEST)
+    expect(w.session).toEqual({})
+  })
+
+  test('a reload sends no second init and no second Purchase, and the details are gone', async () => {
+    const w = installSession()
+    const { rememberPurchaseMatch, trackPurchase } = await fresh()
+    rememberPurchaseMatch(BOOKING_ID, GUEST)
+    trackPurchase(purchase)
+    await settle()
+    rememberPurchaseMatch(BOOKING_ID, GUEST)
+    trackPurchase(purchase)
+    await settle()
+    expect(w.fbqCalls.map((c) => c[0])).toEqual(['init', 'track'])
+    expect(w.session).toEqual({})
+  })
+
+  test('blocked storage never throws, and the Purchase still goes, unmatched', async () => {
+    const w = installSession({ storageThrows: true })
+    const { rememberPurchaseMatch, trackPurchase } = await fresh()
+    expect(() => rememberPurchaseMatch(BOOKING_ID, GUEST)).not.toThrow()
+    expect(() => trackPurchase(purchase)).not.toThrow()
+    await settle()
+    expect(w.fbqCalls.map((c) => c[0])).toEqual(['track'])
+  })
+
+  test('Google Analytics never receives the details', async () => {
+    const w = installSession({ withGtag: true })
+    const { rememberPurchaseMatch, trackPurchase } = await fresh()
+    rememberPurchaseMatch(BOOKING_ID, GUEST)
+    trackPurchase(purchase)
+    await settle()
+    // Exactly the purchase event, nothing else: no plain or hashed detail,
+    // no gtag('set', 'user_data', ...).
+    expect(w.gtagCalls).toEqual([['event', 'purchase', { transaction_id: REF, value: 75, currency: 'USD', items: [] }]])
+  })
+
+  test('a payment that did not go through forgets them, and forgetting never throws', async () => {
+    const w = installSession()
+    const { rememberPurchaseMatch, forgetPurchaseMatch } = await fresh()
+    rememberPurchaseMatch(BOOKING_ID, GUEST)
+    forgetPurchaseMatch()
+    expect(w.session).toEqual({})
+    installSession({ storageThrows: true })
+    expect(() => forgetPurchaseMatch()).not.toThrow()
+  })
+
+  test('an invalid amount still clears the details from the tab', async () => {
+    const w = installSession()
+    const { rememberPurchaseMatch, trackPurchase } = await fresh()
+    rememberPurchaseMatch(BOOKING_ID, GUEST)
+    trackPurchase({ ...purchase, value: Number.NaN })
+    await settle()
+    expect(w.fbqCalls).toEqual([])
+    expect(w.session).toEqual({})
   })
 })

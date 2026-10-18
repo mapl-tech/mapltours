@@ -39,9 +39,10 @@ const ALLOWED_KEYS = [
   // tag from a visitor sending Do Not Track or Global Privacy Control, but
   // the Conversions API fires from the Stripe webhook long after that
   // decision, and it matches on the hashed email rather than a cookie, so
-  // nothing about the browser's choice would otherwise reach it. GA4 is
-  // implicitly safe because it needs a _ga cookie the opted-out visitor never
-  // got; Meta is not. See lib/meta-capi.
+  // nothing about the browser's choice would otherwise reach it. GA4 needs
+  // the same gate: a _ga cookie set on a visit before the opt-out is still
+  // read into this payload (getStoredAttribution), so lib/ga4-server skips a
+  // booking carrying it too. See lib/meta-capi and lib/ga4-server.
   'dnt',
   // The first outside touch (FIRST_TOUCH_KEY), flattened by
   // getStoredAttribution. Reporting only: nothing hashes, prices or sends

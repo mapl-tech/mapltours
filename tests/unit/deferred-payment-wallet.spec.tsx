@@ -460,3 +460,143 @@ describe('a server amount above the page total', () => {
     expect(onAmountResolved).toHaveBeenCalledWith(220)
   })
 })
+
+// ── (g) Meta advanced matching: kept before the confirm, never in its way ──
+
+describe('the guest details kept for the confirmation page pixel', () => {
+  const GUEST = { email: 'Guest@Gmail.com', phone: '876-555-0123', firstName: 'Ann', lastName: 'Lee' }
+  let order: string[]
+  let session: Record<string, string>
+
+  function installSession(throws = false) {
+    const boom = () => { throw new Error('storage blocked') }
+    dom.window.sessionStorage = throws
+      ? { getItem: boom, setItem: boom, removeItem: boom }
+      : {
+          getItem: (k: string) => (k in session ? session[k] : null),
+          setItem: (k: string, v: string) => { order.push('kept'); session[k] = v },
+          removeItem: (k: string) => { delete session[k] },
+        }
+  }
+
+  async function mountWithGuest(amountCents: number) {
+    container = dom.document.createElement('div')
+    dom.document.body.appendChild(container)
+    root = createRoot(container as unknown as HTMLElement)
+    await act(async () => root!.render(<DeferredPaymentPanel {...props(amountCents)} purchaseMatch={GUEST} />))
+    await act(async () => h.payment?.onReady?.())
+  }
+
+  beforeEach(() => {
+    order = []
+    session = {}
+    stripe.confirmPayment.mockImplementation(async () => { order.push('confirm'); return { paymentIntent: { id: 'pi_test_1', status: 'succeeded' } } })
+  })
+  afterEach(() => { delete dom.window.sessionStorage })
+
+  test('are kept, normalised and tied to this booking, before confirmPayment runs', async () => {
+    installSession()
+    await mountWithGuest(19900)
+    await tapPay()
+    expect(order).toEqual(['kept', 'confirm'])
+    const saved = JSON.parse(session['mapl-meta-match'])
+    expect(saved.ref).toBe('MAPL-0A0A0A0A')
+    expect(saved.fields).toEqual({ em: 'guest@gmail.com', external_id: 'guest@gmail.com', ph: '18765550123', fn: 'ann', ln: 'lee' })
+    expect(stripe.confirmPayment).toHaveBeenCalledWith(confirmedWith())
+    expect(location.assign).toHaveBeenCalledWith(`${ORIGIN}/transfers/confirm?payment_intent=pi_test_1&redirect_status=succeeded`)
+  })
+
+  test('blocked storage changes nothing about the payment', async () => {
+    installSession(true)
+    await mountWithGuest(19900)
+    await tapPay()
+    expect(stripe.confirmPayment).toHaveBeenCalledTimes(1)
+    expect(stripe.confirmPayment).toHaveBeenCalledWith(confirmedWith())
+    expect(location.assign).toHaveBeenCalledWith(`${ORIGIN}/transfers/confirm?payment_intent=pi_test_1&redirect_status=succeeded`)
+    expect(shownError()).toBeNull()
+  })
+
+  test('a wallet payment keeps them too, and still confirms once', async () => {
+    installSession()
+    await mountWithGuest(19900)
+    await tapWallet('apple_pay')
+    const approved = await approveWallet('apple_pay')
+    expect(approved.paymentFailed).not.toHaveBeenCalled()
+    expect(order).toEqual(['kept', 'confirm'])
+    expect(JSON.parse(session['mapl-meta-match']).ref).toBe('MAPL-0A0A0A0A')
+  })
+
+  test('nothing is kept when the form gate refuses the tap', async () => {
+    installSession()
+    formValid = false
+    await mountWithGuest(19900)
+    await tapPay()
+    expect(session).toEqual({})
+    expect(stripe.confirmPayment).not.toHaveBeenCalled()
+  })
+
+  test('the card form keeps them too when the server answers with a confirmation page', async () => {
+    installSession()
+    createIntent.mockResolvedValue({ navigate: `/transfers/confirm?booking_id=${BOOKING}` })
+    await mountWithGuest(19900)
+    await tapPay()
+    expect(JSON.parse(session['mapl-meta-match']).ref).toBe('MAPL-0A0A0A0A')
+    expect(location.assign).toHaveBeenCalledWith(`/transfers/confirm?booking_id=${BOOKING}`)
+    expect(stripe.confirmPayment).not.toHaveBeenCalled()
+  })
+
+  test('an intent another tab already paid is asked for once more, and the already-paid answer keeps them', async () => {
+    installSession()
+    createIntent.mockResolvedValueOnce(intentFor(19900)).mockResolvedValueOnce({ navigate: `/transfers/confirm?booking_id=${BOOKING}` })
+    stripe.retrievePaymentIntent.mockResolvedValue({ paymentIntent: { status: 'succeeded', amount: 19900 } })
+    await mountWithGuest(19900)
+    await tapPay()
+    expect(createIntent).toHaveBeenLastCalledWith({ fresh: true })
+    expect(JSON.parse(session['mapl-meta-match']).ref).toBe('MAPL-0A0A0A0A')
+    expect(location.assign).toHaveBeenCalledWith(`/transfers/confirm?booking_id=${BOOKING}`)
+    expect(stripe.confirmPayment).not.toHaveBeenCalled()
+  })
+
+  test('a decline drops them at once, and a retry keeps them again before its own confirm', async () => {
+    installSession()
+    stripe.confirmPayment.mockImplementationOnce(async () => { order.push('confirm'); return { error: { type: 'card_error', message: 'Your card was declined.' } } })
+    await mountWithGuest(19900)
+    await tapPay()
+    expect(session).toEqual({})
+    expect(location.assign).not.toHaveBeenCalled()
+    await tapPay()
+    expect(order).toEqual(['kept', 'confirm', 'kept', 'confirm'])
+    expect(JSON.parse(session['mapl-meta-match']).ref).toBe('MAPL-0A0A0A0A')
+    expect(location.assign).toHaveBeenCalledWith(`${ORIGIN}/transfers/confirm?payment_intent=pi_test_1&redirect_status=succeeded`)
+  })
+
+  test('a confirm that throws drops them and shows the error', async () => {
+    installSession()
+    stripe.confirmPayment.mockImplementationOnce(async () => { order.push('confirm'); throw new Error('Network down') })
+    await mountWithGuest(19900)
+    await tapPay()
+    expect(order).toEqual(['kept', 'confirm'])
+    expect(session).toEqual({})
+    expect(shownError()).toContain('Network down')
+    expect(location.assign).not.toHaveBeenCalled()
+  })
+
+  test('an error after the payment went through keeps them for its confirmation page', async () => {
+    installSession()
+    onPaid.mockImplementationOnce(() => { throw new Error('cart busy') })
+    await mountWithGuest(19900)
+    await tapPay()
+    expect(stripe.confirmPayment).toHaveBeenCalledTimes(1)
+    expect(JSON.parse(session['mapl-meta-match']).ref).toBe('MAPL-0A0A0A0A')
+  })
+
+  test('a gift card that covers everything keeps them for the booking its confirmation names', async () => {
+    installSession()
+    createIntent.mockResolvedValue({ navigate: `/transfers/confirm?booking_id=${BOOKING}` })
+    await mountWithGuest(0)
+    await tapPay()
+    expect(JSON.parse(session['mapl-meta-match']).ref).toBe('MAPL-0A0A0A0A')
+    expect(location.assign).toHaveBeenCalledWith(`/transfers/confirm?booking_id=${BOOKING}`)
+    expect(stripe.confirmPayment).not.toHaveBeenCalled()
+  })
+})

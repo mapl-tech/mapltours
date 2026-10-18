@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import { usePathname } from 'next/navigation'
 import Script from 'next/script'
 import { isTrackedHost } from '@/lib/tracker-gate'
+import { META_PIXEL_ID } from '@/lib/meta-match'
 
 /**
  * Analytics loaders (GA4 + Google Ads tag + Meta Pixel + Hotjar), gated on the
@@ -30,7 +31,6 @@ import { isTrackedHost } from '@/lib/tracker-gate'
  * post-hydration anyway, so this costs nothing.
  */
 
-const META_PIXEL_ID = '1607953960710055'
 
 declare global {
   interface Window {

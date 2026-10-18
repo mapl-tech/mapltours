@@ -14,7 +14,7 @@ export default function PrivacyPage() {
   return (
     <EditorialPage slug="privacy" label="Legal" title="Privacy Policy">
       <Section title="Last updated">
-        <p>This Privacy Policy was last updated on October 7, 2026.</p>
+        <p>This Privacy Policy was last updated on October 18, 2026.</p>
       </Section>
 
       <Section title="Our commitment">
@@ -76,8 +76,8 @@ export default function PrivacyPage() {
           people to us:
         </p>
         <ul style={{ marginTop: 12, paddingLeft: 20, display: 'flex', flexDirection: 'column', gap: 8 }}>
-          <li><strong>The Meta pixel</strong> on our site records the pages and tours you view, what you add to your trip, and when you start a checkout or complete a booking.</li>
-          <li><strong>Meta&rsquo;s Conversions API.</strong> When you book with us or ask for a discount code, our server tells Meta about it directly, with your email address in hashed form (scrambled so it cannot be read) and Meta&rsquo;s own cookies from your browser. For a booking we add the amount paid; for a discount code request, your browser details and IP address.</li>
+          <li><strong>The Meta pixel</strong> on our site records the pages and tours you view, what you add to your trip, and when you start a checkout or complete a booking. It also sends Meta the email address, phone number and name you type on our site, in hashed form, so Meta can match your visit and your booking to your account. It picks them up when you complete a booking, and also when you tap a button or link on a page where you have typed them, even if you do not book. Once it has them, it keeps sending them with everything else it records as you move around our site, until you reload the page or close the tab.</li>
+          <li><strong>Meta&rsquo;s Conversions API.</strong> When you book with us or ask for a discount code, our server tells Meta about it directly, with your email address in hashed form and Meta&rsquo;s own cookies from your browser. For a booking we add your phone number, name and, if you gave it, your country, also in hashed form, and the amount paid; for a discount code request, your browser details and IP address.</li>
           <li><strong>Customer lists.</strong> We may share the email address, phone number, name and country of people who have booked with us, in hashed form, so Meta can match them to accounts. We use these lists to offer our tours to past guests, to stop showing ads to people who have already booked, and to find new people with similar interests. Meta uses the hashed details only to match and discards what does not match.</li>
         </ul>
         <p style={{ marginTop: 12 }}>

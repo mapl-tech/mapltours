@@ -7,6 +7,8 @@ import { Lock } from 'lucide-react'
 import { getStripe } from '@/lib/stripe'
 import { setPaymentInFlight } from '@/lib/payment-lock'
 import type { CheckoutIntentResult } from '@/lib/checkout-form'
+import { forgetPurchaseMatch, rememberPurchaseMatch } from '@/lib/analytics'
+import type { MatchInput } from '@/lib/meta-match'
 import { payableIntent, type SendOptions } from './intent-session'
 
 /**
@@ -49,6 +51,13 @@ export interface DeferredPaymentPanelProps {
   registerPay?: (fn: (() => void) | null) => void
   /** Prefills the card form's billing details from the contact fields. */
   billing?: { name?: string; email?: string; phone?: string }
+  /**
+   * The guest's contact details, kept in this tab for the confirmation
+   * page's Meta pixel (lib/analytics rememberPurchaseMatch) just before the
+   * panel confirms or leaves for the confirmation page. Sent nowhere by the
+   * panel, and never able to stop a payment.
+   */
+  purchaseMatch?: MatchInput
   /** Rendered between the card fields and the pay button (the terms line). */
   children?: ReactNode
   /** Rendered under the pay button (reassurance). */
@@ -112,6 +121,18 @@ export default function DeferredPaymentPanel(props: DeferredPaymentPanelProps) {
   )
 }
 
+/** The latest value of a prop, readable from a callback without re-creating it. */
+function useLatestRef<T>(value: T) {
+  const ref = useRef(value)
+  useEffect(() => { ref.current = value })
+  return ref
+}
+
+/** The booking a confirmation address names (?booking_id=), on the gift-covered and already-paid paths. */
+function bookingIdIn(url: string): string | null {
+  try { return new URL(url, window.location.origin).searchParams.get('booking_id') } catch { return null }
+}
+
 function useBusy(onChange?: (b: boolean) => void) {
   const [busy, setBusyState] = useState(false)
   const setBusy = useCallback((b: boolean) => {
@@ -160,15 +181,16 @@ function PayButton({ label, busy, disabled, onClick }: { label: string; busy: bo
 }
 
 /** Fully covered by a gift card: no card form, one button, same server call. */
-function NothingToCharge({ payLabel, validate, createIntent, onPaid, registerPay, children, footer, externalError }: DeferredPaymentPanelProps) {
+function NothingToCharge({ payLabel, validate, createIntent, onPaid, registerPay, purchaseMatch, children, footer, externalError }: DeferredPaymentPanelProps) {
   const [busy, setBusy] = useBusy()
   const [error, setError] = useState<string | null>(null)
+  const matchRef = useLatestRef(purchaseMatch)
   const complete = useCallback(async () => {
     if (busy || !validate()) return
     setBusy(true); setError(null)
     try {
       const res = await createIntent()
-      if ('navigate' in res) { await onPaid?.(); window.location.assign(res.navigate); return }
+      if ('navigate' in res) { rememberPurchaseMatch(bookingIdIn(res.navigate), matchRef.current); await onPaid?.(); window.location.assign(res.navigate); return }
       // A refusal hands the button back. It used to stay on "Confirming…"
       // for good, and a reward conflict on a cart the gift card still covers
       // keeps this component mounted, so the guest could never tap again.
@@ -181,7 +203,7 @@ function NothingToCharge({ payLabel, validate, createIntent, onPaid, registerPay
       setError('Something went wrong. Please try again.')
       setBusy(false)
     }
-  }, [busy, validate, createIntent, onPaid, setBusy])
+  }, [busy, validate, createIntent, onPaid, setBusy, matchRef])
   useEffect(() => { registerPay?.(complete); return () => registerPay?.(null) }, [registerPay, complete])
   const shown = error ?? externalError ?? null
   return (
@@ -197,9 +219,10 @@ function NothingToCharge({ payLabel, validate, createIntent, onPaid, registerPay
   )
 }
 
-function PayForm({ amountCents, returnUrl, payLabel, validate, createIntent, onPaid, onAmountResolved, registerPay, billing, children, footer, externalError }: DeferredPaymentPanelProps) {
+function PayForm({ amountCents, returnUrl, payLabel, validate, createIntent, onPaid, onAmountResolved, registerPay, billing, purchaseMatch, children, footer, externalError }: DeferredPaymentPanelProps) {
   const stripe = useStripe()
   const elements = useElements()
+  const matchRef = useLatestRef(purchaseMatch)
   const [busy, setBusy] = useBusy()
   const [error, setError] = useState<string | null>(null)
   const [walletReady, setWalletReady] = useState(false)
@@ -239,7 +262,7 @@ function PayForm({ amountCents, returnUrl, payLabel, validate, createIntent, onP
         const { paymentIntent } = await stripe.retrievePaymentIntent(secret)
         return paymentIntent ? { status: paymentIntent.status, amount: paymentIntent.amount } : null
       })
-      if ('navigate' in res) { leaving.current = true; await onPaid?.(); window.location.assign(res.navigate); return }
+      if ('navigate' in res) { leaving.current = true; rememberPurchaseMatch(bookingIdIn(res.navigate), matchRef.current); await onPaid?.(); window.location.assign(res.navigate); return }
       if ('error' in res) { fail(res.shownOnPage ? null : res.error); return }
       // What Stripe will really charge, read from the intent rather than from
       // the page's arithmetic. An answer can carry no amountDue, and a gift
@@ -268,6 +291,9 @@ function PayForm({ amountCents, returnUrl, payLabel, validate, createIntent, onP
         fail(`The total is now ${usd(due)}. Check it, then tap the button again.`)
         return
       }
+      // Kept before the confirm, not after it: a 3DS or bank redirect leaves
+      // this page from inside confirmPayment. Synchronous and never throws.
+      rememberPurchaseMatch(res.bookingId, matchRef.current)
       const result = await stripe.confirmPayment({
         elements,
         clientSecret: res.clientSecret,
@@ -283,6 +309,9 @@ function PayForm({ amountCents, returnUrl, payLabel, validate, createIntent, onP
         const inline = !wallet && (result.error.type === 'card_error' || result.error.type === 'validation_error')
         fail(inline ? null : (result.error.message ?? 'Payment failed. Please try again.'))
         if (inline) elements.getElement('payment')?.focus?.()
+        // Not paid: the details kept for the confirmation page go now. A
+        // retry keeps them again just before its own confirm.
+        forgetPurchaseMatch()
         return
       }
       // Paid. Stay locked: the button must not come back to life in the
@@ -300,13 +329,16 @@ function PayForm({ amountCents, returnUrl, payLabel, validate, createIntent, onP
       window.location.assign(url.toString())
     } catch (e) {
       fail(e instanceof Error && e.message ? e.message : 'Something went wrong. Please try again.')
+      // Only when nothing went through: once leaving is set the payment did,
+      // and its confirmation page still needs them.
+      if (!leaving.current) forgetPurchaseMatch()
     } finally {
       if (!leaving.current) {
         busyRef.current = false
         setBusy(false)
       }
     }
-  }, [stripe, elements, validate, createIntent, onPaid, onAmountResolved, amountCents, returnUrl, setBusy])
+  }, [stripe, elements, validate, createIntent, onPaid, onAmountResolved, amountCents, returnUrl, setBusy, matchRef])
 
   useEffect(() => { registerPay?.(() => pay()); return () => registerPay?.(null) }, [registerPay, pay])
 

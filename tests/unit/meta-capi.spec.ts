@@ -84,6 +84,48 @@ describe('server-side Meta purchase (Conversions API)', () => {
     expect(ud.fbc).toBeUndefined()
   })
 
+  test('sends every hashed key the booking supports, normalised exactly as the pixel copy is', () => {
+    const p = buildPurchaseEvent({ ...booking, phone: '(876) 555-0123', first_name: ' Mary-Ann ', last_name: "O'Brien", country: 'JM' }, NOW)
+    if ('skipped' in p) throw new Error('unexpected skip')
+    const ud = (p.body.data as Record<string, unknown>[])[0].user_data as Record<string, unknown>
+    expect(ud).toEqual({
+      em: [sha256('guest@example.com')],
+      ph: [sha256('18765550123')],
+      fn: [sha256('maryann')],
+      ln: [sha256('obrien')],
+      country: [sha256('jm')],
+      external_id: [sha256('guest@example.com')],
+      fbp: 'fb.1.1725000000000.987654321',
+      fbc: `fb.1.${Date.parse('2026-09-05T10:00:00.000Z')}.IwAR123`,
+    })
+    // Nothing readable leaves: every contact value is a SHA-256 digest.
+    for (const k of ['em', 'ph', 'fn', 'ln', 'country', 'external_id']) expect((ud[k] as string[])[0]).toMatch(/^[0-9a-f]{64}$/)
+    const wire = JSON.stringify(p.body)
+    for (const plain of ['guest@example.com', 'Guest@Example.com', '8765550123', 'maryann', 'Mary-Ann', 'obrien', "O'Brien"]) expect(wire).not.toContain(plain)
+  })
+
+  test('a phone it cannot place, a free-text country and an empty name are left out, never sent raw', () => {
+    const p = buildPurchaseEvent({ ...booking, phone: '07911 123456', first_name: '  ', last_name: null, country: 'Jamaica' }, NOW)
+    if ('skipped' in p) throw new Error('unexpected skip')
+    const ud = (p.body.data as Record<string, unknown>[])[0].user_data as Record<string, unknown>
+    expect(Object.keys(ud).sort()).toEqual(['em', 'external_id', 'fbc', 'fbp'])
+    expect(JSON.stringify(p.body)).not.toContain('07911')
+  })
+
+  test('a phone alone is enough to match; a name or a country alone is not', () => {
+    const phoneOnly = buildPurchaseEvent({ ...booking, email: null, attribution: null, phone: '876-555-0123' }, NOW)
+    if ('skipped' in phoneOnly) throw new Error('unexpected skip')
+    const ud = (phoneOnly.body.data as Record<string, unknown>[])[0].user_data as Record<string, unknown>
+    expect(ud).toEqual({ ph: [sha256('18765550123')] })
+    expect(buildPurchaseEvent({ ...booking, email: null, attribution: null, first_name: 'Ann', last_name: 'Lee', country: 'US' }, NOW))
+      .toMatchObject({ skipped: expect.stringMatching(/identifiers/) })
+  })
+
+  test('an opted-out booking is skipped before any of its details are read', () => {
+    const optedOut = { ...booking, phone: '876-555-0123', first_name: 'Ann', last_name: 'Lee', attribution: { dnt: '1', fbp: 'fb.1.1.2' } }
+    expect(buildPurchaseEvent(optedOut, NOW)).toEqual({ skipped: 'visitor opted out of tracking' })
+  })
+
   test('reportMetaPurchase posts the event and reports sent/skipped without throwing', async () => {
     const fetchMock = vi.fn().mockResolvedValue({ ok: true })
     expect(await reportMetaPurchase(booking, fetchMock as unknown as typeof fetch)).toBe('sent')
@@ -94,6 +136,25 @@ describe('server-side Meta purchase (Conversions API)', () => {
 
     delete process.env.META_CAPI_TOKEN
     expect(await reportMetaPurchase(booking, fetchMock as unknown as typeof fetch)).toBe('skipped')
+  })
+
+  test("Meta's answer is read for warnings and reasons, and never changes the result", async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const json = (body: unknown) => vi.fn().mockResolvedValue({ ok: true, json: async () => body })
+    // A clean acceptance: sent, nothing logged.
+    expect(await reportMetaPurchase(booking, json({ events_received: 1, messages: [], fbtrace_id: 'x' }) as unknown as typeof fetch)).toBe('sent')
+    expect(warn).not.toHaveBeenCalled()
+    // Accepted with messages: still sent, and the messages are logged.
+    expect(await reportMetaPurchase(booking, json({ events_received: 1, messages: ['ph dropped'] }) as unknown as typeof fetch)).toBe('sent')
+    expect(warn).toHaveBeenLastCalledWith('[meta-capi] purchase report accepted with warnings', expect.objectContaining({ messages: ['ph dropped'] }))
+    // A body that will not parse, or a null one: still sent.
+    const broken = vi.fn().mockResolvedValue({ ok: true, json: async () => { throw new SyntaxError('bad json') } })
+    expect(await reportMetaPurchase(booking, broken as unknown as typeof fetch)).toBe('sent')
+    expect(await reportMetaPurchase(booking, json(null) as unknown as typeof fetch)).toBe('sent')
+    // A rejection logs Meta's own reason with the status.
+    const rejected = vi.fn().mockResolvedValue({ ok: false, status: 400, json: async () => ({ error: { message: 'Invalid parameter' } }) })
+    expect(await reportMetaPurchase(booking, rejected as unknown as typeof fetch)).toBe('failed')
+    expect(warn).toHaveBeenLastCalledWith('[meta-capi] purchase report rejected', expect.objectContaining({ status: 400, reason: 'Invalid parameter' }))
   })
 
   /**
@@ -126,6 +187,25 @@ describe('server-side Meta purchase (Conversions API)', () => {
         return Promise.reject(err)
       })
       await expect(reportMetaPurchase(booking, aborted as unknown as typeof fetch)).resolves.toBe('failed')
+    })
+
+    test('a body that stalls after the headers is cut off by the same 4 s abort', async () => {
+      vi.spyOn(console, 'warn').mockImplementation(() => {})
+      vi.useFakeTimers()
+      try {
+        const stalled = (ok: boolean) => vi.fn((_url: string, init: RequestInit) => Promise.resolve({
+          ok,
+          status: ok ? 200 : 400,
+          json: () => new Promise((_, reject) => init.signal!.addEventListener('abort', () => reject(Object.assign(new Error('aborted'), { name: 'AbortError' })))),
+        }))
+        const sent = reportMetaPurchase(booking, stalled(true) as unknown as typeof fetch)
+        const failed = reportMetaPurchase(booking, stalled(false) as unknown as typeof fetch)
+        await vi.advanceTimersByTimeAsync(4000)
+        await expect(sent).resolves.toBe('sent')
+        await expect(failed).resolves.toBe('failed')
+      } finally {
+        vi.useRealTimers()
+      }
     })
 
     test('a malformed booking resolves rather than throwing', async () => {

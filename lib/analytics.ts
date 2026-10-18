@@ -25,8 +25,16 @@
  *      against localStorage first, keyed by the event and the transaction.
  *   3. It sends only what is already on the page. No emails, no names, no
  *      phone numbers: Google's terms forbid personally identifiable data in
- *      analytics, and a booking reference is not one.
+ *      analytics, and a booking reference is not one. The one exception is
+ *      the Meta pixel's Purchase, which is given the guest's own contact
+ *      details for matching (rememberPurchaseMatch below); the pixel hashes
+ *      them before they leave the browser, and GA never sees them. Being
+ *      pixel state, they then ride on every later pixel event in that page
+ *      until a full reload, which app/privacy/page.tsx says.
  */
+
+import { trackingOptedOut } from './attribution'
+import { META_PIXEL_ID, MATCH_KEYS, bookingRefOf, matchFields, type MatchFields, type MatchInput } from './meta-match'
 
 type GtagFn = (command: string, ...args: unknown[]) => void
 
@@ -115,6 +123,85 @@ function claimOnce(key: string): boolean {
   }
 }
 
+/**
+ * Meta advanced matching for the Purchase, handed from the checkout to the
+ * confirmation page inside the guest's own tab.
+ *
+ * The confirm pages never print the guest's email, phone or country: anyone
+ * holding a payment_intent id can open them (see the PRIVACY note in
+ * app/transfers/confirm/page.tsx). But the pixel can only match a Purchase on
+ * details it is given, and without them the copy Meta keeps, the Conversions
+ * API Gateway's relay of the pixel event, carried IP, browser and _fbp and
+ * nothing else (Event Match Quality 6.1, Oct 17 2026). So the payment panel
+ * keeps what the guest typed, normalised by lib/meta-match, in sessionStorage
+ * (this tab only) just before it confirms, tied to that booking's reference.
+ * The confirmation page takes it back once, deletes it whether or not it
+ * belongs to this booking, and passes it to the pixel. A payment that fails
+ * on this page deletes it at once (forgetPurchaseMatch); a retry keeps it
+ * again before its own confirm. One that leaves for a bank or wallet
+ * redirect and fails there never comes back to the panel, and the confirm
+ * page takes nothing on a failed status, so that entry stays in the tab
+ * until the next Pay replaces or deletes it or the tab closes; it is only
+ * ever used for that same booking.
+ *
+ * Nothing is kept for a visitor who opted out of tracking, nothing here ever
+ * reaches GA, and every step swallows its own errors: a full or blocked
+ * storage means an unmatched Purchase, never a failed payment.
+ */
+const MATCH_STORAGE_KEY = 'mapl-meta-match'
+/**
+ * The longest a remembered entry can still be used: long enough for a slow
+ * 3DS or bank redirect. Not a lifetime: the entry is deleted when it is used
+ * or when a payment fails on the page, and otherwise (a redirect payment that
+ * failed at the bank) at the next Pay or when the tab's session ends.
+ */
+const MATCH_MAX_AGE_MS = 6 * 3_600_000
+
+/** Called by the payment panel immediately before it confirms or leaves for the confirm page. */
+export function rememberPurchaseMatch(bookingId: string | null | undefined, input: MatchInput | null | undefined): void {
+  try {
+    if (typeof window === 'undefined' || !bookingId || !input) return
+    if (trackingOptedOut()) return
+    const fields = matchFields(input)
+    if (!fields.em && !fields.ph) return
+    window.sessionStorage.setItem(MATCH_STORAGE_KEY, JSON.stringify({ ref: bookingRefOf(bookingId), at: Date.now(), fields }))
+  } catch {
+    // Storage full, blocked or absent: the purchase still reports, unmatched.
+  }
+}
+
+/** Drops the remembered details after a payment attempt that did not go through. */
+export function forgetPurchaseMatch(): void {
+  try {
+    if (typeof window !== 'undefined') window.sessionStorage.removeItem(MATCH_STORAGE_KEY)
+  } catch {
+    // Storage blocked: nothing was kept.
+  }
+}
+
+/** The details remembered for this booking, removed from storage either way. */
+function takePurchaseMatch(transactionId: string): MatchFields | null {
+  try {
+    const raw = window.sessionStorage.getItem(MATCH_STORAGE_KEY)
+    if (raw == null) return null
+    window.sessionStorage.removeItem(MATCH_STORAGE_KEY)
+    const saved = JSON.parse(raw) as { ref?: unknown; at?: unknown; fields?: unknown } | null
+    if (!saved || saved.ref !== transactionId) return null
+    const age = typeof saved.at === 'number' ? Date.now() - saved.at : NaN
+    if (!(age >= -60_000 && age <= MATCH_MAX_AGE_MS)) return null
+    const f = saved.fields
+    if (!f || typeof f !== 'object') return null
+    const out: MatchFields = {}
+    for (const k of MATCH_KEYS) {
+      const v = (f as Record<string, unknown>)[k]
+      if (typeof v === 'string' && v) out[k] = v
+    }
+    return out.em || out.ph ? out : null
+  } catch {
+    return null
+  }
+}
+
 export interface AnalyticsItem {
   /** Stable identifier, e.g. a slug or a destination id. */
   id: string
@@ -151,6 +238,9 @@ export function trackPurchase(input: {
 }): void {
   try {
     if (typeof window === 'undefined' || !input.transactionId) return
+    // Taken before anything can return, so the guest's details never outlive
+    // the confirmation page in this tab, whatever happens below.
+    const match = takePurchaseMatch(input.transactionId)
     if (!Number.isFinite(input.value) || input.value < 0) return
     whenGtagReady((gtag) => {
       if (!claimOnce(`purchase:${input.transactionId}`)) return
@@ -166,6 +256,22 @@ export function trackPurchase(input: {
     // one tracker being blocked never suppresses the other.
     whenFbqReady((fbq) => {
       if (!claimOnce(`purchase-meta:${input.transactionId}`)) return
+      // Advanced matching. A second init of the same pixel with the guest's
+      // details attaches them, hashed by the pixel, to this Purchase AND to
+      // the Gateway's server copy of it. Measured Oct 17 2026 in Chrome
+      // against the live pixel config: without this call neither copy
+      // carried an email. They stay on the pixel for every later event in
+      // this page (its own SPA PageView, ViewContent, AddToCart and so on)
+      // until a full reload: fbevents refuses a later init as a duplicate, so
+      // they cannot be cleared (measured Oct 18 2026, fbevents 2.9.419). The
+      // privacy page says so. Never on a reload: the once-claim returns first.
+      // The phone goes in with a leading +. Without one, fbevents also builds
+      // an alternate copy for the Gateway with the browser locale's country
+      // code put in front ('44' + '18765550123' in an en-GB browser); with
+      // it, every copy hashes exactly the digits the server sends (measured
+      // Oct 18 2026, fbevents 2.9.419). Storage and lib/meta-match keep the
+      // plain digits.
+      if (match) fbq('init', META_PIXEL_ID, match.ph ? { ...match, ph: `+${match.ph}` } : match)
       fbq('track', 'Purchase', {
         value: Math.round(input.value * 100) / 100,
         currency: (input.currency || 'USD').toUpperCase(),
