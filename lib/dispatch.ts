@@ -266,7 +266,7 @@ export function msgDriverRequest(b: Bk, m: MoneyBlock): string {
 export function msgCustomerConfirmation(b: Bk): string {
   const leg = firstLeg(b)!
   const d = [
-    'Your MAPL Tours airport transfer is confirmed.',
+    'Your MAPL Tours Jamaica airport transfer is confirmed.',
     '',
     `Transfer type: ${leg.tripType === 'round_trip' ? 'Round trip' : 'One-way'}`,
     `Passengers: ${leg.passengers}`,
@@ -297,7 +297,7 @@ export function msgCustomerConfirmation(b: Bk): string {
     '',
     departureOnly
       ? 'If you have any difficulty finding your driver, contact MAPL Tours Jamaica at contact@mapltours.com right away.'
-      : 'If you have any difficulty locating your driver after clearing customs, contact MAPL Tours at contact@mapltours.com right away.',
+      : 'If you have any difficulty locating your driver after clearing customs, contact MAPL Tours Jamaica at contact@mapltours.com right away.',
   )
   return d.join('\n')
 }

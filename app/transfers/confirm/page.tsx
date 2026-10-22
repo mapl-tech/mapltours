@@ -605,7 +605,7 @@ function Success({ data }: { data: ConfirmData }) {
                 <li>· Clear immigration and collect your bags.</li>
                 <li>
                   · Exit the terminal at arrivals, your driver will be holding a
-                  MAPL Tours sign with your name.
+                  MAPL Tours Jamaica sign with your name.
                 </li>
               </>
             )}

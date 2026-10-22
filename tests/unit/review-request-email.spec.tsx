@@ -116,6 +116,29 @@ describe('a ride is told in the direction it ran', () => {
     }
   })
 
+  test('the footnote says "ride" for a guest who only rode in, who is mid-holiday, and "trip" for everyone else', async () => {
+    const rideIn = decode(await ride('arrival'))
+    expect(rideIn).toContain('You get this once, the day after your ride. We will not chase you about it.')
+    expect(rideIn).not.toContain('the day after your trip')
+    for (const legs of ['departure', 'both', undefined] as const) {
+      const html = decode(await ride(legs))
+      expect(html, String(legs)).toContain('You get this once, the day after your trip. We will not chase you about it.')
+    }
+    const tour = decode(await render(ReviewRequest({
+      ...base, firstName: 'Linda', isTransfer: false, legs: 'arrival',
+      tripLabel: "Dunn's River Falls Climb", tripDates: '20 September',
+    })))
+    expect(tour).toContain('the day after your trip')
+  })
+
+  test('signs off with the brand in full, in every direction', async () => {
+    for (const legs of ['arrival', 'departure', 'both'] as const) {
+      const html = decode(await ride(legs))
+      expect(html, legs).toContain('MAPL Tours Jamaica, Montego Bay')
+      expect(html, legs).not.toMatch(/MAPL Tours(?! Jamaica)/)
+    }
+  })
+
   test('a tour is told as a tour, whatever legs it is handed', async () => {
     const html = decode(await render(ReviewRequest({
       ...base, firstName: 'Linda', isTransfer: false, legs: 'departure',

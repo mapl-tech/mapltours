@@ -86,6 +86,13 @@ describe('a one-way airport to hotel ride', () => {
     expect(text).not.toContain('Before you go')
     expect(text).not.toContain('Departure · hotel → MBJ')
   })
+
+  test('names the brand in full on the sign the driver holds', async () => {
+    // Owner rule: "MAPL Tours Jamaica", never "MAPL Tours" alone.
+    const text = await page(ride)
+    expect(text).toContain('holding a MAPL Tours Jamaica sign with your name')
+    expect(text).not.toMatch(/MAPL Tours(?! Jamaica)/)
+  })
 })
 
 describe('a one-way that carries both timestamps (an old phantom second leg)', () => {

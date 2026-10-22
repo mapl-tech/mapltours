@@ -147,6 +147,10 @@ export default function ReviewRequest({
         prompts: 'Where we actually took you. What you ate. Whether the day was worth what you paid.',
       }
 
+  // A guest who only rode in is mid-holiday when this lands, a day after they
+  // landed: it is the day after their ride, and their trip is not over.
+  const after = isTransfer && legs === 'arrival' ? 'ride' : 'trip'
+
   const mailto = `mailto:${supportEmail}?subject=${encodeURIComponent(
     `${bookingRef}: something fell short`,
   )}`
@@ -211,7 +215,7 @@ export default function ReviewRequest({
       <Text style={signoff}>
         Thanks for coming. Walk good.
         <br />
-        MAPL Tours, Montego Bay
+        MAPL Tours Jamaica, Montego Bay
       </Text>
 
       <Hr style={metaDivider} />
@@ -226,8 +230,7 @@ export default function ReviewRequest({
       </Row>
 
       <Text style={s.footnote}>
-        You get this once, the day after your trip. We will not chase you about
-        it.
+        {`You get this once, the day after your ${after}. We will not chase you about it.`}
       </Text>
     </MaplLayout>
   )

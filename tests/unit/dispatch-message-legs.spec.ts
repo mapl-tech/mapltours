@@ -80,6 +80,25 @@ describe('the driver request', () => {
   })
 })
 
+describe('both messages name the brand in full (owner rule: "MAPL Tours Jamaica", never "MAPL Tours" alone)', () => {
+  const shapes: Array<[string, Bk]> = [
+    ['a hotel-to-airport one-way', departureOnly],
+    ['an airport-to-hotel one-way', arrivalOnly],
+    ['a round trip', roundTrip],
+  ]
+
+  test.each(shapes)('the customer message for %s', (_name, b) => {
+    const m = customerMsg(b)
+    expect(m).toContain('Your MAPL Tours Jamaica airport transfer is confirmed.')
+    expect(m).toContain('contact MAPL Tours Jamaica at contact@mapltours.com right away.')
+    expect(m).not.toMatch(/MAPL Tours(?! Jamaica)/)
+  })
+
+  test.each(shapes)('the driver request for %s', (_name, b) => {
+    expect(driverMsg(b)).not.toMatch(/MAPL Tours(?! Jamaica)/)
+  })
+})
+
 describe('the customer confirmation message', () => {
   test('a hotel-to-airport one-way promises a pickup at the hotel, not a driver in arrivals', () => {
     const m = customerMsg(departureOnly)
