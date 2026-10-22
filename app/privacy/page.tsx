@@ -19,7 +19,7 @@ export default function PrivacyPage() {
 
       <Section title="Our commitment">
         <p>
-          MAPL Tours respects your privacy. This Policy explains what information we collect, why we collect it, who we
+          MAPL Tours Jamaica respects your privacy. This Policy explains what information we collect, why we collect it, who we
           share it with, and the choices you have. If you have any questions after reading it, email{' '}
           <a href="mailto:contact@mapltours.com" style={{ color: 'var(--text-primary)', textDecoration: 'underline' }}>
             contact@mapltours.com
@@ -127,7 +127,7 @@ export default function PrivacyPage() {
 
       <Section title="Children">
         <p>
-          MAPL Tours is intended for adults. We do not knowingly collect personal information from anyone under 16. If
+          MAPL Tours Jamaica is intended for adults. We do not knowingly collect personal information from anyone under 16. If
           you believe a child has provided us with their information, contact us and we will delete it.
         </p>
       </Section>

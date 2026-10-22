@@ -51,7 +51,7 @@ export const metadata: Metadata = {
         url: HERO,
         width: 1920,
         height: 1080,
-        alt: 'Aerial view of Jamaica’s north-coast road, MAPL Tours airport-transfer route.',
+        alt: 'Aerial view of Jamaica’s north-coast road, MAPL Tours Jamaica airport-transfer route.',
       },
     ],
   },

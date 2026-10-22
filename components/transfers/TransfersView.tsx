@@ -62,7 +62,7 @@ const POPULAR_ROUTES: Array<{
    used elsewhere on the site. Alt text is descriptive for SEO + a11y. */
 const HERO_IMAGE = {
   src: HERO, // aerial Buff Bay coastal road
-  alt: 'Aerial view of Jamaica’s north-coast road between Montego Bay and Ocho Rios, the route MAPL Tours drivers use for airport transfers.',
+  alt: 'Aerial view of Jamaica’s north-coast road between Montego Bay and Ocho Rios, the route MAPL Tours Jamaica drivers use for airport transfers.',
 }
 
 // Shown from 901px only (see the hero below), so it is sized for that column.
@@ -885,7 +885,7 @@ export default function TransfersView({ initialDestinationId }: { initialDestina
           <div className="xfer-compare-grid">
             <CompareItem
               bold
-              title="MAPL Tours private transfer"
+              title="MAPL Tours Jamaica private transfer"
               items={[
                 'Fixed zone price, paid up front',
                 'Driver waits with your name at arrivals',
@@ -2720,7 +2720,7 @@ function SavingsRow({
         <span className="xfer-saving-mapl">{formatPrice(mapl)}</span>
         <span className="xfer-saving-typical">taxi quotes ${typical}</span>
       </span>
-      <span className="xfer-saving-tag">MAPL Tours flat rate</span>
+      <span className="xfer-saving-tag">MAPL Tours Jamaica flat rate</span>
     </div>
   )
 }

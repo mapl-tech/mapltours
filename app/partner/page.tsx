@@ -9,7 +9,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: 'Partner With MAPL Tours Jamaica',
     description:
-      'You know Jamaica. We will bring you the guests. Partner with MAPL Tours to reach travellers looking for exactly what you run.',
+      'You know Jamaica. We will bring you the guests. Partner with MAPL Tours Jamaica to reach travellers looking for exactly what you run.',
     url: 'https://mapltours.com/partner',
     type: 'website',
   },

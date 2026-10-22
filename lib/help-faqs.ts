@@ -62,7 +62,7 @@ export const HELP_CATEGORIES: HelpCategory[] = [
         a: 'Yes, within 48 hours of booking. Request the cancellation from your Profile page, where we quote you the exact refund before you confirm, and our team reviews it. Your booking stays confirmed until we approve the request. Refunds are the amount you paid less an administration charge equivalent to 20% of the total amount of fees paid plus taxes (if applicable). After the 48-hour window bookings are non-refundable, a booking whose experience has already started can no longer be refunded, and no-shows are charged in full.',
       },
       {
-        q: 'What if MAPL Tours has to cancel my booking?',
+        q: 'What if MAPL Tours Jamaica has to cancel my booking?',
         a: 'If we have to cancel, you receive a full refund with no administration charge, or you can choose to rebook at no additional cost. We\'ll notify you as soon as we know and help arrange an alternative experience if you prefer.',
       },
       {

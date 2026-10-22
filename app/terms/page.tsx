@@ -123,8 +123,8 @@ export default function TermsPage() {
 
       <Section title="Intellectual property">
         <p>
-          All content on mapltours.com, including text, imagery, video, the MAPL Tours name and logo, and the
-          underlying software, is owned by MAPL Tours or licensed to us. You may not copy, reproduce, or commercially
+          All content on mapltours.com, including text, imagery, video, the MAPL Tours Jamaica name and logo, and the
+          underlying software, is owned by MAPL Tours Jamaica or licensed to us. You may not copy, reproduce, or commercially
           exploit any part of the platform without our written permission.
         </p>
       </Section>

@@ -95,7 +95,7 @@ export function GET() {
 
 > Jamaica tour operator and private airport transfer service on the north coast. ${singleCount} guided tours and ${packageCount} multi-stop day packages around ${list(destinations)}, all run with private door-to-door transport from your hotel. Locally owned and locally driven, not a resort concierge desk and not a reseller.
 
-MAPL Tours runs flat-rate private airport transfers from Sangster International Airport (MBJ) to ${transferCount} hotels, resorts and villas, and sells its own guided tours across ${parishes.length} parishes: ${list(parishes)}. Every price is per vehicle or per party as stated, in USD, bookable online without an account.
+MAPL Tours Jamaica runs flat-rate private airport transfers from Sangster International Airport (MBJ) to ${transferCount} hotels, resorts and villas, and sells its own guided tours across ${parishes.length} parishes: ${list(parishes)}. Every price is per vehicle or per party as stated, in USD, bookable online without an account.
 
 Tagline: "Discover Jamaica Beyond the Resort."
 

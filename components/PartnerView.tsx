@@ -52,7 +52,7 @@ const STEPS = [
   {
     n: '2',
     title: 'We come and do it',
-    body: 'Someone from MAPL Tours books it like a guest would and goes. No clipboard, no inspection. We want to see the day a traveller would actually get.',
+    body: 'Someone from MAPL Tours Jamaica books it like a guest would and goes. No clipboard, no inspection. We want to see the day a traveller would actually get.',
   },
   {
     n: '3',
@@ -93,7 +93,7 @@ const STANDARDS = [
   },
   {
     title: 'It has to be Jamaican',
-    body: 'Owned and run by people from here, us included. The whole point of MAPL Tours is that the island is not a backdrop, it is the people who know it.',
+    body: 'Owned and run by people from here, us included. The whole point of MAPL Tours Jamaica is that the island is not a backdrop, it is the people who know it.',
   },
   {
     title: 'It has to be dependable',
@@ -416,7 +416,7 @@ export default function PartnerView() {
                 textTransform: 'uppercase', letterSpacing: '0.14em',
                 color: 'var(--gold-warm)', marginBottom: 18,
               }}>
-                MAPL Tours handles
+                MAPL Tours Jamaica handles
               </p>
               <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: 12 }}>
                 {WE_HANDLE.map((item) => (

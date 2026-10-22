@@ -480,7 +480,7 @@ export const POSTS_1: BlogPost[] = [
       },
       {
         type: 'p',
-        text: "If you want the recovery without the label, a regular deep-tissue massage from a great therapist is often just as good. MAPL Tours lists vetted boutique spa partners as add-ons when you book an experience in [the catalogue](/explore).",
+        text: "If you want the recovery without the label, a regular deep-tissue massage from a great therapist is often just as good. MAPL Tours Jamaica lists vetted boutique spa partners as add-ons when you book an experience in [the catalogue](/explore).",
       },
     ],
     relatedSlugs: ['negril-guide'],

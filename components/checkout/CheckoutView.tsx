@@ -1283,7 +1283,7 @@ export default function CheckoutView() {
                       fontFamily: 'var(--font-dm-sans)', fontWeight: 700, fontSize: 13,
                       color: 'var(--text-primary)', letterSpacing: '-0.005em',
                     }}>
-                      {availableReward.percent}% MAPL Tours reward
+                      {availableReward.percent}% MAPL Tours Jamaica reward
                     </p>
                     <p style={{
                       fontFamily: 'var(--font-dm-sans)', fontSize: 12,

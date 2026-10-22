@@ -369,7 +369,7 @@ export function buildWebMcpTools(actions: WebMcpActions): WebMcpTool[] {
 
   const find_transfer_destination: WebMcpTool = {
     name: 'find_transfer_destination',
-    description: `Find hotels and villas MAPL Tours drives to from Sangster International Airport (MBJ), Montego Bay, Jamaica. Returns up to 8 matches with the id to use in get_transfer_quote, or the "Other hotel or villa" id for each area when nothing matches. Covers ${DESTINATIONS.length} properties from Montego Bay to Negril, Ocho Rios, Falmouth and Lucea. Kingston, Port Antonio and Mandeville are quoted by email instead.`,
+    description: `Find hotels and villas MAPL Tours Jamaica drives to from Sangster International Airport (MBJ), Montego Bay, Jamaica. Returns up to 8 matches with the id to use in get_transfer_quote, or the "Other hotel or villa" id for each area when nothing matches. Covers ${DESTINATIONS.length} properties from Montego Bay to Negril, Ocho Rios, Falmouth and Lucea. Kingston, Port Antonio and Mandeville are quoted by email instead.`,
     inputSchema: {
       type: 'object',
       properties: { query: { type: 'string', description: 'Hotel, villa, resort or town name, e.g. "Sandals Negril" or "Ocho Rios"' } },
@@ -548,7 +548,7 @@ export function buildWebMcpTools(actions: WebMcpActions): WebMcpTool[] {
 
   const list_tours: WebMcpTool = {
     name: 'list_tours',
-    description: `List the ${experiences.length} private tours and day packages MAPL Tours runs in Jamaica (Dunn's River, Blue Hole, bamboo rafting, Rick's Cafe, zipline, ATV, horseback and more). fromPriceUsd is the price for the smallest party; priceUnit says whether it covers a party of up to N people or one person. Use get_tour with guests for the exact total. Hotel pickup included. Optional keyword or area filter; returns up to ${LIST_MAX} rows. Read-only. duration is time at the activity; get_tour adds hotel-and-back times.`,
+    description: `List the ${experiences.length} private tours and day packages MAPL Tours Jamaica runs in Jamaica (Dunn's River, Blue Hole, bamboo rafting, Rick's Cafe, zipline, ATV, horseback and more). fromPriceUsd is the price for the smallest party; priceUnit says whether it covers a party of up to N people or one person. Use get_tour with guests for the exact total. Hotel pickup included. Optional keyword or area filter; returns up to ${LIST_MAX} rows. Read-only. duration is time at the activity; get_tour adds hotel-and-back times.`,
     inputSchema: {
       type: 'object',
       properties: {

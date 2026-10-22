@@ -73,7 +73,7 @@ function DriverLoginContent() {
                 fontSize: 13, lineHeight: 1.5, margin: '18px 0 0', padding: '11px 14px', borderRadius: 10,
                 background: '#FCEDEA', border: '1px solid rgba(176,28,12,0.25)', color: '#B01C0C',
               }}>
-                That Google account is not approved for the driver portal. Sign in with the Gmail address MAPL Tours approved, or contact contact@mapltours.com.
+                That Google account is not approved for the driver portal. Sign in with the Gmail address MAPL Tours Jamaica approved, or contact contact@mapltours.com.
               </p>
             )}
 

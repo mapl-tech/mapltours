@@ -265,7 +265,7 @@ export async function sendDayOf(
     // Operations and the driver hold exactly what the guest holds.
     bcc: opsBcc(b.email),
     subject: isArrival
-      ? `${dayLabel}: your MAPL Tours driver at Montego Bay (${ref})`
+      ? `${dayLabel}: your MAPL Tours Jamaica driver at Montego Bay (${ref})`
       : `${dayLabel}: your ride to the airport (${ref})`,
     react: TransferDayOf({
       bookingRef: ref,

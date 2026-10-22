@@ -10,8 +10,8 @@ import { trackContactClick } from '@/lib/analytics'
  * message so the reply can be specific ("the Negril round trip on Oct 12").
  */
 export default function AskFirst({ context, heading = 'Questions before you pay?', place }: { context: string; heading?: string; place: string }) {
-  const wa = whatsappLink(`Hi MAPL Tours, ${context}`)
-  const mail = mailtoLink(`Question about ${context}`, `Hi MAPL Tours,\n\nI am looking at ${context} and wanted to ask: `)
+  const wa = whatsappLink(`Hi MAPL Tours Jamaica, ${context}`)
+  const mail = mailtoLink(`Question about ${context}`, `Hi MAPL Tours Jamaica,\n\nI am looking at ${context} and wanted to ask: `)
   return (
     <div className="ask-first">
       <p className="ask-first-h">{heading} <span>{REPLY_PROMISE}</span></p>

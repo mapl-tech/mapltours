@@ -269,7 +269,7 @@ export default function GiftCardsView() {
                       fontFamily: 'var(--font-dm-sans)', letterSpacing: '0.12em',
                       textTransform: 'uppercase',
                     }}>
-                      Tours Jamaica
+                      Jamaica
                     </p>
                   </div>
                   <p style={{

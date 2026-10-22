@@ -12,7 +12,7 @@ export const metadata: Metadata = {
 
 export default function CareersPage() {
   return (
-    <EditorialPage slug="careers" label="Join Us" title="Careers at MAPL Tours">
+    <EditorialPage slug="careers" label="Join Us" title="Careers at MAPL&nbsp;Tours&nbsp;Jamaica">
       <Section title="A small company, on purpose">
         <p>MAPL Tours Jamaica is a small company: a founder building the product, and the Jamaican drivers and hosts who run every transfer and tour we sell. There are no open positions right now. When that changes, this page will say so, and the roles on it will be real.</p>
       </Section>

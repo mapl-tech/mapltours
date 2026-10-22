@@ -6,7 +6,8 @@ import { PLACES } from '@/lib/places'
 import Footer from '@/components/Footer'
 
 export const metadata: Metadata = {
-  title: 'About MAPL Tours',
+  // Short, like every other page: the root layout's title template adds " | MAPL Tours Jamaica".
+  title: 'About',
   description: 'Who MAPL Tours Jamaica is: private airport transfers from Sangster (MBJ) at one flat price per vehicle, and private tours and day packages with hotel pickup, run with Jamaican drivers and hosts.',
   alternates: { canonical: 'https://mapltours.com/about' },
 }
@@ -26,7 +27,7 @@ const VALUES = [
   },
   {
     title: 'Honest about what you pay',
-    body: 'Most tours are one price per vehicle for your party, and nothing is added at checkout. You pay MAPL Tours for the tours we run and the driving we do; restaurants and attractions you settle directly at their own price. Cancellations are flexible within 48 hours of booking, less a 20% administration charge.',
+    body: 'Most tours are one price per vehicle for your party, and nothing is added at checkout. You pay MAPL Tours Jamaica for the tours we run and the driving we do; restaurants and attractions you settle directly at their own price. Cancellations are flexible within 48 hours of booking, less a 20% administration charge.',
   },
 ]
 
@@ -220,7 +221,7 @@ export default function AboutPage() {
               The best of Jamaica is spread across the island, and almost none of it is at your hotel. It&rsquo;s a jerk pit off the coast road, a great house on a hill, a waterfall an hour inland, a fish fry that only happens when the boats come in.
             </p>
             <p style={{ fontSize: 16, lineHeight: 1.8, color: 'var(--text-secondary)', fontFamily: 'var(--font-dm-sans)', marginBottom: 20 }}>
-              MAPL Tours is how you reach all of it. Choose a private tour or a ready-made day package, add the restaurants and heritage sites you want to see, say how long you want at each, and we build the day around it with a Jamaican driver and host, from your hotel door and back. The price is per vehicle for your party, not per person.
+              MAPL Tours Jamaica is how you reach all of it. Choose a private tour or a ready-made day package, add the restaurants and heritage sites you want to see, say how long you want at each, and we build the day around it with a Jamaican driver and host, from your hotel door and back. The price is per vehicle for your party, not per person.
             </p>
             <p style={{ fontSize: 16, lineHeight: 1.8, color: 'var(--text-secondary)', fontFamily: 'var(--font-dm-sans)' }}>
               You pay us for the tours we run and the driving we do. Restaurants and attractions you settle directly, at the door, at their price. We also run private airport transfers to and from Sangster International, one flat price per vehicle to any of the hotels and villas on our rate card, with your driver waiting at arrivals with a name sign, whether or not you book anything else.
@@ -397,7 +398,7 @@ export default function AboutPage() {
               fontFamily: 'var(--font-dm-sans)', fontWeight: 700, fontSize: 15,
               color: '#fff', letterSpacing: '-0.005em',
             }}>
-              The MAPL Tours Team
+              The MAPL Tours Jamaica Team
             </span>
             <span style={{
               fontFamily: 'var(--font-dm-sans)', fontSize: 12,

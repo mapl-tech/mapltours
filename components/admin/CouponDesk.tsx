@@ -202,7 +202,7 @@ export default function CouponDesk() {
       </div>
       <p style={{ marginTop: 8, color: soft, fontSize: 14, maxWidth: 680, lineHeight: 1.6 }}>
         A coupon takes a percent or a fixed amount off a tour or an airport ride at checkout. It is not money: nothing is refunded on it,
-        and the booking&rsquo;s total is already net of it. <strong style={{ color: ink }}>Every discount comes out of MAPL Tours&rsquo; margin.</strong> The
+        and the booking&rsquo;s total is already net of it. <strong style={{ color: ink }}>Every discount comes out of MAPL Tours Jamaica&rsquo;s margin.</strong> The
         driver or the tour operator is paid their full rate, and a code can never take more than the margin on that booking.
         JAMAICA5 is the public code the bio page hands out; make anything else here.
       </p>
@@ -277,7 +277,7 @@ export default function CouponDesk() {
             <input id="cp-note" style={input} value={formNote} onChange={(e) => setFormNote(e.target.value)} placeholder="Instagram giveaway, March" />
           </div>
         </div>
-        <p style={{ marginTop: 14, fontSize: 14, color: soft }}>This coupon will be: <strong style={{ color: ink }}>{preview}</strong>. Taken from MAPL Tours&rsquo; margin, never from the driver or operator.</p>
+        <p style={{ marginTop: 14, fontSize: 14, color: soft }}>This coupon will be: <strong style={{ color: ink }}>{preview}</strong>. Taken from MAPL Tours Jamaica&rsquo;s margin, never from the driver or operator.</p>
         {formError && <p role="alert" style={{ marginTop: 8, fontSize: 14, fontWeight: 600, color: '#B3261E' }}>{formError}</p>}
         <button type="submit" disabled={creating}
           style={{ marginTop: 12, height: 44, padding: '0 22px', borderRadius: 10, border: 'none', background: ink, color: '#fff', fontFamily: dm, fontWeight: 600, fontSize: 14, cursor: creating ? 'wait' : 'pointer', opacity: creating ? 0.6 : 1 }}>

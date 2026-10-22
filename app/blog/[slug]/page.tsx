@@ -873,7 +873,7 @@ export default function BlogPostPage({
             Prices, opening hours and access at the places mentioned here are
             what we understood them to be at the time of writing, and they
             change. Independent businesses set their own rates and are not
-            operated by MAPL Tours. Please confirm anything you are relying on
+            operated by MAPL Tours Jamaica. Please confirm anything you are relying on
             before you travel, and check official advice for weather, road and
             safety conditions.
           </p>

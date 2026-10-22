@@ -1358,7 +1358,7 @@ export default function FeedView() {
               textTransform: 'uppercase', letterSpacing: '0.14em',
               color: 'var(--gold-warm)', marginBottom: 16, display: 'block',
             }}>
-              The MAPL Tours Experience
+              The MAPL Tours Jamaica Experience
             </span>
             <h2 style={{
               fontFamily: 'var(--font-dm-sans)', fontWeight: 800,
@@ -1366,7 +1366,7 @@ export default function FeedView() {
               letterSpacing: '-0.025em', lineHeight: 1.1,
               marginBottom: 14, color: '#fff',
             }}>
-              Two ways to travel with MAPL Tours.
+              Two ways to travel with MAPL Tours Jamaica.
             </h2>
             <p className="concierge-body" style={{
               fontSize: 15, color: '#cccccc',

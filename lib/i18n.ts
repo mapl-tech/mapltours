@@ -56,7 +56,7 @@ const T: Record<string, Record<string, string>> = {
     'When': 'Cuando', 'Where': 'Donde', 'Who': 'Quien', 'Guests': 'Huespedes', 'Any dates': 'Cualquier fecha',
     'Add a comment...': 'Agregar un comentario...', 'Comments': 'Comentarios', 'Reply': 'Responder',
     'Share': 'Compartir', 'Send': 'Enviar', 'No comments yet. Be the first!': 'Sin comentarios aun. Se el primero!',
-    'Why MAPL Tours': 'Por que MAPL Tours',
+    'Why MAPL Tours Jamaica': 'Por que MAPL Tours Jamaica',
     'The authenticity of local culture.': 'La autenticidad de la cultura local.',
     'The comfort of a private driver.': 'La comodidad de un conductor privado.',
     'Flexible cancellation': 'Cancelacion flexible',
@@ -89,7 +89,7 @@ const T: Record<string, Record<string, string>> = {
     // Checkout - Confirmed
     'Your Jamaican adventure is booked.': 'Tu aventura jamaicana esta reservada.',
     // Concierge section
-    'The MAPL Tours Experience': 'La experiencia MAPL Tours',
+    'The MAPL Tours Jamaica Experience': 'La experiencia MAPL Tours Jamaica',
     'Build your perfect day in Jamaica.': 'Construye tu dia perfecto en Jamaica.',
     'Pick the experiences you love. We arrange your private driver, host, and full itinerary from door to door.': 'Elige las experiencias que te gusten. Organizamos tu transporte privado, guia e itinerario completo de puerta a puerta.',
     'Choose what excites you': 'Elige lo que te emociona',
@@ -219,7 +219,7 @@ const T: Record<string, Record<string, string>> = {
     'Booking Confirmed': 'Reservation confirmee',
     'When': 'Quand', 'Where': 'Ou', 'Who': 'Qui', 'Guests': 'Invites', 'Any dates': 'Toutes les dates',
     'Comments': 'Commentaires', 'Reply': 'Repondre', 'Contact Us': 'Contactez-nous',
-    'Why MAPL Tours': 'Pourquoi MAPL Tours',
+    'Why MAPL Tours Jamaica': 'Pourquoi MAPL Tours Jamaica',
     'The authenticity of local culture.': 'L\'authenticite de la culture locale.',
     'The comfort of a private driver.': 'Le confort d\'un chauffeur privé.',
     // Categories

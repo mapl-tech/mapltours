@@ -80,8 +80,8 @@ export async function POST(req: NextRequest) {
     to: 'contact@mapltours.com',
     from: CONTACT_FROM,
     subject: subject
-      ? `MAPL Tours · Contact · ${subject}`
-      : `MAPL Tours · Contact · message from ${name}`,
+      ? `MAPL Tours Jamaica · Contact · ${subject}`
+      : `MAPL Tours Jamaica · Contact · message from ${name}`,
     replyTo: email,
     react: ContactMessage({
       name,
@@ -107,7 +107,7 @@ export async function POST(req: NextRequest) {
   const replyRes = await sendEmail({
     to: email,
     from: CONTACT_FROM,
-    subject: 'We got your message, MAPL Tours',
+    subject: 'We got your message, MAPL Tours Jamaica',
     react: ContactAutoReply({
       firstName,
       subject: subject || null,

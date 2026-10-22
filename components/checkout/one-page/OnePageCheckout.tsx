@@ -739,7 +739,7 @@ function OrderSummary(p: {
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', margin: '6px 0 4px', borderRadius: 12, border: '1px solid rgba(255,179,0,0.3)', background: 'rgba(255,179,0,0.06)' }}>
             <div style={{ width: 30, height: 30, borderRadius: '50%', background: 'var(--gold, #FFB300)', color: '#111', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}><Award size={15} /></div>
             <div style={{ flex: 1, minWidth: 0 }}>
-              <p style={{ fontFamily: FONT, fontWeight: 700, fontSize: 13 }}>{p.availableReward.percent}% MAPL Tours reward</p>
+              <p style={{ fontFamily: FONT, fontWeight: 700, fontSize: 13 }}>{p.availableReward.percent}% MAPL Tours Jamaica reward</p>
               <p style={{ fontFamily: FONT, fontSize: 13, color: 'var(--text-tertiary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.availableReward.code}</p>
             </div>
             <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontFamily: FONT, fontSize: 13, fontWeight: 600, minHeight: 44, cursor: 'pointer' }}>

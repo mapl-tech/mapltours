@@ -11,14 +11,14 @@ export const metadata: Metadata = {
 
 export default function SafetyPage() {
   return (
-    <EditorialPage slug="safety" label="Your Safety" title="Safety at MAPL Tours">
+    <EditorialPage slug="safety" label="Your Safety" title="Safety at MAPL&nbsp;Tours&nbsp;Jamaica">
       <Section title="Private, by design">
         <p>Every tour and transfer we sell is private: your party, your driver, your vehicle. Nobody is pooled, nobody waits at a meeting point, and the person driving you is the person named in your email. Here is what that means in practice, and what we ask of you.</p>
       </Section>
 
       <Section title="How We Keep You Safe">
         <ValueCard title="Your driver, by name" desc="Before your pickup you receive your driver's name, vehicle, plate number and WhatsApp, so you know who is meeting you before you see them. Our drivers are Jamaican and drive these routes every week." />
-        <ValueCard title="Met at arrivals" desc="For airport transfers we track your flight and your driver waits just outside arrivals with a MAPL Tours sign showing your name. If you land late, your driver adjusts; there is no delay surcharge." />
+        <ValueCard title="Met at arrivals" desc="For airport transfers we track your flight and your driver waits just outside arrivals with a MAPL Tours Jamaica sign showing your name. If you land late, your driver adjusts; there is no delay surcharge." />
         <ValueCard title="Venue rules, always" desc="Cliff jumping at Rick's Cafe, the climb at Dunn's River and the rafts on the Martha Brae run under each venue's own rules and staff. Age limits and fitness notes are printed on every tour page, and nobody is pushed to do anything." />
         <ValueCard title="Tell us before you go" desc="There is a special requests box at checkout. Use it for medical conditions, mobility limits, allergies or a child seat, and we plan the day around them rather than finding out on the road." />
         <ValueCard title="A person on email" desc="Write to contact@mapltours.com and a person replies within 24 hours. On the day itself, your driver's WhatsApp is the fastest line, and your confirmation email has everything you need in one place." />

@@ -752,7 +752,7 @@ export const POSTS_5: BlogPost[] = [
       {
         type: 'list',
         items: [
-          "Montego Bay airport to Negril, $111 private with [MAPL Tours](/transfers) or $199 round trip, $25 shared shuttle, 90 minutes",
+          "Montego Bay airport to Negril, $111 private with [MAPL Tours Jamaica](/transfers) or $199 round trip, $25 shared shuttle, 90 minutes",
           "Montego Bay airport to Ocho Rios, $111 private or $199 round trip, $25 shared, 90 minutes",
           "Ocho Rios to Kingston, $120 private, 2 hours",
           "Kingston to Port Antonio, $120 private, 2.5 hours",
@@ -906,7 +906,7 @@ export const POSTS_5: BlogPost[] = [
       },
       {
         type: 'p',
-        text: "We build custom honeymoon itineraries at MAPL Tours, villa, boutique, or a mix, with bookable experiences across the island. Start with [the catalogue](/explore) to see the anchors, and we can assemble the rest around them. Get married, come here, skip the wristband. No problem.",
+        text: "We build custom honeymoon itineraries at MAPL Tours Jamaica, villa, boutique, or a mix, with bookable experiences across the island. Start with [the catalogue](/explore) to see the anchors, and we can assemble the rest around them. Get married, come here, skip the wristband. No problem.",
       },
     ],
     relatedSlugs: ['negril-guide', 'blue-mountain-sunrise-hike'],
