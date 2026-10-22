@@ -339,6 +339,9 @@ function Success({ data }: { data: ConfirmData }) {
   // The only lines above the total are the fare they were quoted and the
   // code they applied, when there is one.
   const showBreakdown = data.couponDiscount !== null && data.couponDiscount > 0 && data.totalPaid !== null
+  // Same rule as the confirmation email: a departure and no arrival is a
+  // hotel-to-airport one-way, picked up at the hotel rather than met at MBJ.
+  const departureOnly = !data.transfers.some((t) => t.arrivalAt) && data.transfers.some((t) => t.departureAt)
 
   return (
     <div style={{ textAlign: 'center' }}>
@@ -459,7 +462,11 @@ function Success({ data }: { data: ConfirmData }) {
                   dot="var(--emerald)"
                 />
               )}
-              {t.tripType === 'round_trip' && t.departureAt && (
+              {/* A round trip's return, or the ride's ONLY leg: gating on
+                  round_trip alone left a one-way hotel-to-airport ride with no
+                  leg at all on this page. A one-way that also carries an
+                  arrival keeps ignoring a stray departure, as dispatch does. */}
+              {t.departureAt && (t.tripType === 'round_trip' || !t.arrivalAt) && (
                 <Leg
                   label="Departure · hotel → MBJ"
                   whenLabel={`Hotel pickup ${formatDateTime(t.departureAt)} Jamaica time`}
@@ -567,8 +574,9 @@ function Success({ data }: { data: ConfirmData }) {
         </div>
       </Card>
 
-      {/* On arrival */}
-      <Card title="On arrival at MBJ">
+      {/* On the ground: the arrival steps, or for a hotel-to-airport one-way
+          the pickup at the hotel. The last two lines are shared. */}
+      <Card title={departureOnly ? 'Before you go' : 'On arrival at MBJ'}>
         <div style={{ padding: '14px 24px 18px', textAlign: 'left' }}>
           <ul
             style={{
@@ -581,11 +589,26 @@ function Success({ data }: { data: ConfirmData }) {
               lineHeight: 1.7,
             }}
           >
-            <li>· Clear immigration and collect your bags.</li>
-            <li>
-              · Exit the terminal at arrivals, your driver will be holding a
-              MAPL Tours sign with your name.
-            </li>
+            {departureOnly ? (
+              <>
+                <li>
+                  · Be ready a few minutes before your pickup time. Your driver
+                  will be waiting outside your hotel.
+                </li>
+                <li>
+                  · If your flight time changes, reply to your confirmation
+                  email and we will adjust your pickup.
+                </li>
+              </>
+            ) : (
+              <>
+                <li>· Clear immigration and collect your bags.</li>
+                <li>
+                  · Exit the terminal at arrivals, your driver will be holding a
+                  MAPL Tours sign with your name.
+                </li>
+              </>
+            )}
             <li>
               · Reach us any time:{' '}
               <Link href="mailto:contact@mapltours.com" style={{ color: 'var(--text-primary)', textDecoration: 'underline' }}>

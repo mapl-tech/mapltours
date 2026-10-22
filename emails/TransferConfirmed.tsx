@@ -109,6 +109,12 @@ export default function TransferConfirmed(props: TransferConfirmedProps) {
     transfers,
   } = props
   const name = firstName?.trim() || 'there'
+  // A leg exists when its timestamp is set. A ride with a departure and no
+  // arrival is a hotel-to-airport one-way: the guest is picked up at the hotel
+  // and dropped at MBJ, so the arrivals promise and the "On arrival at MBJ"
+  // card would both be wrong for them. Anything with an arrival leg, and a
+  // ride with no timestamps at all, keeps the arrival copy.
+  const departureOnly = !transfers.some((t) => t.arrivalAt) && transfers.some((t) => t.departureAt)
   // Transfers are quoted and sold at ONE all-in price. `subtotal` is the
   // driver's wholesale cost and `bookingFee` is MAPL's margin, so they are
   // never itemised here: that would publish internal costs to the guest.
@@ -133,9 +139,11 @@ export default function TransferConfirmed(props: TransferConfirmedProps) {
         Thank you, {name}.
       </Heading>
       <Text className="mapl-body" style={s.heroLead}>
-        Your transfer{transfers.length > 1 ? 's are' : ' is'} confirmed. Your
-        driver will be waiting in the arrivals area with a MAPL Tours Jamaica
-        sign. Your booking reference:
+        Your transfer{transfers.length > 1 ? 's are' : ' is'} confirmed.{' '}
+        {departureOnly
+          ? 'Your driver will pick you up at your hotel and take you to Sangster International Airport (MBJ).'
+          : 'Your driver will be waiting in the arrivals area with a MAPL Tours Jamaica sign.'}{' '}
+        Your booking reference:
       </Text>
 
       <Section style={{ margin: '20px 0 0' }}>
@@ -297,18 +305,36 @@ export default function TransferConfirmed(props: TransferConfirmedProps) {
         </Section>
       )}
 
-      {/* On arrival */}
+      {/* On the ground: the arrival steps, or for a hotel-to-airport one-way
+          the pickup at the hotel. The last step is shared. */}
       <Section style={s.card}>
         <Section style={s.cardHeader}>
-          <Heading as="h2" style={s.cardHeaderText}>On arrival at MBJ</Heading>
+          <Heading as="h2" style={s.cardHeaderText}>
+            {departureOnly ? 'Before you go' : 'On arrival at MBJ'}
+          </Heading>
         </Section>
         <Section style={s.cardBody}>
           <ul style={s.steps}>
-            <li className="mapl-body" style={{ ...s.step, marginTop: 0 }}>Clear immigration and collect your bags.</li>
-            <li className="mapl-body" style={s.step}>
-              Exit the terminal at arrivals. Your driver will be waiting at the
-              MAPL Tours Jamaica sign.
-            </li>
+            {departureOnly ? (
+              <>
+                <li className="mapl-body" style={{ ...s.step, marginTop: 0 }}>
+                  Be ready a few minutes before your pickup time. Your driver
+                  will be waiting outside your hotel.
+                </li>
+                <li className="mapl-body" style={s.step}>
+                  If your flight time changes, reply to this email and we will
+                  adjust your pickup.
+                </li>
+              </>
+            ) : (
+              <>
+                <li className="mapl-body" style={{ ...s.step, marginTop: 0 }}>Clear immigration and collect your bags.</li>
+                <li className="mapl-body" style={s.step}>
+                  Exit the terminal at arrivals. Your driver will be waiting at the
+                  MAPL Tours Jamaica sign.
+                </li>
+              </>
+            )}
             <li className="mapl-body" style={s.step}>
               Reach us any time at{' '}
               <Link href="mailto:contact@mapltours.com" style={{ color: '#1A1714', textDecoration: 'underline' }}>

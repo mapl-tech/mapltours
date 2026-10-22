@@ -9,12 +9,16 @@ import {
   Text,
 } from '@react-email/components'
 import { MaplLayout, maplStyles as s } from './_Layout'
+import type { TransferLegs } from '../lib/review-request'
 
 export interface ReviewRequestProps {
   bookingRef: string
   firstName: string | null
   /** Transfer vs tour wording. Changes the verbs and the writing prompts. */
   isTransfer: boolean
+  /** Transfers only: which way the ride ran. Absent reads as a round trip, the
+   *  wording this email has always had. */
+  legs?: TransferLegs
   /** Resort for a transfer, tour name for a tour. e.g. "Azul Beach Resort Negril" */
   tripLabel: string
   /** Already formatted by the caller. e.g. "15 to 25 August" */
@@ -22,6 +26,48 @@ export interface ReviewRequestProps {
   /** Tripadvisor write-a-review deep link. */
   reviewUrl: string
   supportEmail: string
+}
+
+/* The words a ride is told in, by which way it ran. "To and from", "got home"
+   and "walked out of arrivals" assume the guest rode both ways; a one-way guest
+   read them as a mail merge that did not know what they had booked. */
+const HOME_WISH =
+  'We hope it went smoothly and that you got home easily. The bag is probably still open on the floor with sand in it.'
+// The review lands a day after they land, so a guest who rode in is mid-trip.
+const SETTLED_WISH =
+  'We hope it went smoothly and that you are settled in. The bags are probably still half unpacked on the floor.'
+const ARRIVAL_WORRY =
+  'The person booking next is standing in a different airport, on a phone, working out whether someone will really be there when they land.'
+const DEPARTURE_WORRY =
+  'The person booking next is sitting at home, on a phone, working out whether a driver will really be at the hotel in time for their flight.'
+const ARRIVAL_PROMPTS =
+  'Whether the driver was standing there when you walked out of arrivals. Whether the van was cold. Whether you got to the resort without drama.'
+const DEPARTURE_PROMPTS =
+  'Whether the driver was waiting when you came out of the hotel. Whether the van was cold. Whether you got to the airport without drama.'
+
+function transferWords(label: string, dates: string, legs: TransferLegs) {
+  if (legs === 'arrival') {
+    return {
+      sentence: `We drove you from the airport to ${label}, ${dates}.`,
+      wish: SETTLED_WISH,
+      worry: ARRIVAL_WORRY,
+      prompts: ARRIVAL_PROMPTS,
+    }
+  }
+  if (legs === 'departure') {
+    return {
+      sentence: `We drove you from ${label} to the airport, ${dates}.`,
+      wish: HOME_WISH,
+      worry: DEPARTURE_WORRY,
+      prompts: DEPARTURE_PROMPTS,
+    }
+  }
+  return {
+    sentence: `We drove you to and from ${label}, ${dates}.`,
+    wish: HOME_WISH,
+    worry: ARRIVAL_WORRY,
+    prompts: ARRIVAL_PROMPTS,
+  }
 }
 
 /**
@@ -74,6 +120,7 @@ export default function ReviewRequest({
   bookingRef,
   firstName,
   isTransfer,
+  legs,
   tripLabel,
   tripDates,
   reviewUrl,
@@ -88,16 +135,17 @@ export default function ReviewRequest({
       ? 'Thanks for riding with us'
       : 'Thanks for spending the day with us') + (name ? `, ${name}.` : '.')
 
-  // Names the trip in the lead instead of in a card.
-  const tripSentence = isTransfer
-    ? `We drove you to and from ${tripLabel}, ${tripDates}.`
-    : `We took you out to ${tripLabel}, ${tripDates}.`
-
-  // Writing prompts are the conversion mechanism. Blank-page paralysis kills
-  // more reviews than apathy does.
-  const prompts = isTransfer
-    ? 'Whether the driver was standing there when you walked out of arrivals. Whether the van was cold. Whether you got to the resort without drama.'
-    : 'Where we actually took you. What you ate. Whether the day was worth what you paid.'
+  // Names the trip in the lead instead of in a card, and tells a ride as the
+  // ride it was. Writing prompts are the conversion mechanism: blank-page
+  // paralysis kills more reviews than apathy does.
+  const words = isTransfer
+    ? transferWords(tripLabel, tripDates, legs ?? 'both')
+    : {
+        sentence: `We took you out to ${tripLabel}, ${tripDates}.`,
+        wish: HOME_WISH,
+        worry: ARRIVAL_WORRY,
+        prompts: 'Where we actually took you. What you ate. Whether the day was worth what you paid.',
+      }
 
   const mailto = `mailto:${supportEmail}?subject=${encodeURIComponent(
     `${bookingRef}: something fell short`,
@@ -112,15 +160,13 @@ export default function ReviewRequest({
       </Heading>
 
       <Text style={lead}>
-        {tripSentence} We hope it went smoothly and that you got home easily.
-        The bag is probably still open on the floor with sand in it.
+        {words.sentence} {words.wish}
       </Text>
 
       <Text style={para}>
         If you have two minutes, we&rsquo;d be glad if you told people how it
-        went. The person booking next is standing in a different airport, on a
-        phone, working out whether someone will really be there when they land.
-        Nothing we write answers that. You can. {prompts}
+        went. {words.worry} Nothing we write answers that. You can.{' '}
+        {words.prompts}
       </Text>
 
       <Section style={s.ctaWrap}>

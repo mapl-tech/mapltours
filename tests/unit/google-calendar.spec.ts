@@ -71,6 +71,31 @@ describe('calendarEventsForBooking — transfers', () => {
     expect(events[0].summary).toContain('MBJ pickup')
   })
 
+  test('a hotel-to-airport one-way still lands on the calendar, as its departure', () => {
+    // It has a departure and no arrival. Gated on round_trip alone it produced
+    // NO events: a paid pickup the ops calendar never showed.
+    const events = calendarEventsForBooking(transferBooking, [
+      { ...roundTripItem, trip_type: 'one_way', arrival_at: null, arrival_flight: null },
+    ])
+    expect(events).toHaveLength(1)
+    const [departure] = events
+    expect(departure.summary).toContain('→ MBJ')
+    expect(departure.summary).not.toContain('MBJ pickup')
+    expect(departure.start).toEqual({ dateTime: '2026-09-17T09:15:00', timeZone: 'America/Jamaica' })
+    expect(departure.end).toEqual({ dateTime: '2026-09-17T10:15:00', timeZone: 'America/Jamaica' })
+    expect(departure.description).toContain('AA1581')
+    expect(departure.location).toBe('Samsara Cliff Resort, Negril')
+    // Slot 0, so a refund's sweep of the derived ids still removes it.
+    expect(departure.id).toBe(calendarEventId(transferBooking.id, 0))
+  })
+
+  test('a one-way that carries a stray departure alongside its arrival keeps one event', () => {
+    // The old gate's behaviour, kept for rows with an arrival leg.
+    const events = calendarEventsForBooking(transferBooking, [{ ...roundTripItem, trip_type: 'one_way' }])
+    expect(events).toHaveLength(1)
+    expect(events[0].summary).toContain('MBJ pickup')
+  })
+
   test('event ids are derived from the booking id and valid for the Calendar API', () => {
     const events = calendarEventsForBooking(transferBooking, [roundTripItem])
     expect(events[0].id).toBe(calendarEventId(transferBooking.id, 0))

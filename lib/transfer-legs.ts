@@ -65,3 +65,25 @@ export function planTransferLegs(item: TransferLegFields): TransferLegPlan {
 
   return { hasArrivalLeg, hasDepartureLeg, strayLeg }
 }
+
+/**
+ * How a STORED transfer reads as a title, in the direction it actually runs.
+ *
+ * Read the way every consumer reads legs: a leg exists when its timestamp is
+ * set, so a departure with no arrival is a hotel-to-airport one-way. The
+ * cancellation emails and the guest's Profile both printed "MBJ to {hotel}"
+ * for every ride, which told a guest who was dropped at the airport that they
+ * had been picked up there.
+ */
+export function transferTitle(item: {
+  trip_type?: string | null
+  hotel?: string | null
+  destination?: string | null
+  arrival_at?: string | null
+  departure_at?: string | null
+}): string {
+  const place = item.hotel ?? item.destination ?? 'your hotel'
+  const toAirport = !item.arrival_at && !!item.departure_at
+  const round = item.trip_type === 'round_trip' ? ' (round trip)' : ''
+  return `Airport transfer${round}: ${toAirport ? `${place} to MBJ` : `MBJ to ${place}`}`
+}

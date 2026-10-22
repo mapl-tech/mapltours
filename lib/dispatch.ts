@@ -54,6 +54,13 @@ export function firstLeg(b: Bk): TransferLeg | null {
   }
 }
 
+/** A hotel-to-airport one-way: a departure leg and no arrival leg. The guest
+ *  is picked up at the hotel, so the message builders below must not describe
+ *  an airport pickup for it. */
+function isDepartureOnly(leg: TransferLeg): boolean {
+  return !leg.arrivalAt && !!leg.departureAt
+}
+
 /**
  * The default driver. MAPL currently runs every transfer with Collin, so a
  * paid transfer is stamped with his details automatically and the dispatch
@@ -225,14 +232,19 @@ export function msgDriverRequest(b: Bk, m: MoneyBlock): string {
     `Passengers: ${leg.passengers}`,
     `Transfer type: ${leg.tripType === 'round_trip' ? 'Round trip' : 'One-way'}`,
     `Pay: ${money(m.driverTotal)} USD total${m.isRoundTrip ? ` (${money(m.driverPerLeg)} per leg)` : ''}`,
-    '',
-    'ARRIVAL',
-    `Pick up: ${AIRPORT}`,
-    `Drop-off: ${leg.hotel}`,
-    `Date: ${jaDate(leg.arrivalAt)}`,
-    `Flight lands: ${jaTime(leg.arrivalAt)} Jamaica time${leg.arrivalFlight ? ` (flight ${leg.arrivalFlight})` : ''}`,
   ]
-  if (leg.tripType === 'round_trip' && leg.departureAt) {
+  const departureOnly = isDepartureOnly(leg)
+  if (!departureOnly) {
+    lines.push(
+      '',
+      'ARRIVAL',
+      `Pick up: ${AIRPORT}`,
+      `Drop-off: ${leg.hotel}`,
+      `Date: ${jaDate(leg.arrivalAt)}`,
+      `Flight lands: ${jaTime(leg.arrivalAt)} Jamaica time${leg.arrivalFlight ? ` (flight ${leg.arrivalFlight})` : ''}`,
+    )
+  }
+  if (leg.departureAt && (leg.tripType === 'round_trip' || departureOnly)) {
     lines.push(
       '',
       'DEPARTURE',
@@ -258,25 +270,34 @@ export function msgCustomerConfirmation(b: Bk): string {
     '',
     `Transfer type: ${leg.tripType === 'round_trip' ? 'Round trip' : 'One-way'}`,
     `Passengers: ${leg.passengers}`,
-    '',
-    'ARRIVAL',
-    `Pick up: ${AIRPORT}`,
-    `Drop-off: ${leg.hotel}`,
-    `Date: ${jaDate(leg.arrivalAt)}`,
-    `Flight lands: ${jaTime(leg.arrivalAt)} Jamaica time`,
   ]
-  if (leg.tripType === 'round_trip' && leg.departureAt) {
+  const departureOnly = isDepartureOnly(leg)
+  if (!departureOnly) {
+    d.push(
+      '',
+      'ARRIVAL',
+      `Pick up: ${AIRPORT}`,
+      `Drop-off: ${leg.hotel}`,
+      `Date: ${jaDate(leg.arrivalAt)}`,
+      `Flight lands: ${jaTime(leg.arrivalAt)} Jamaica time`,
+    )
+  }
+  if (leg.departureAt && (leg.tripType === 'round_trip' || departureOnly)) {
     d.push('', 'DEPARTURE', `Pick up: ${leg.hotel}`, `Drop-off: ${AIRPORT}`, `Date: ${jaDate(leg.departureAt)}`, `Hotel pickup: ${jaTime(leg.departureAt)} Jamaica time`)
   }
   d.push(
     '',
-    'Your driver will meet you in the airport arrivals area holding a MAPL Tours Jamaica sign.',
+    departureOnly
+      ? 'Your driver will pick you up at your hotel and take you to Sangster International Airport (MBJ).'
+      : 'Your driver will meet you in the airport arrivals area holding a MAPL Tours Jamaica sign.',
     `Driver: ${b.driver_name ?? '(to be confirmed)'}`,
     `Vehicle: ${b.driver_vehicle ?? '(to be confirmed)'}`,
     `Plate: ${b.driver_plate ?? '(to be confirmed)'}`,
     `Driver WhatsApp: ${b.driver_phone ?? '(to be confirmed)'}`,
     '',
-    'If you have any difficulty locating your driver after clearing customs, contact MAPL Tours at contact@mapltours.com right away.',
+    departureOnly
+      ? 'If you have any difficulty finding your driver, contact MAPL Tours Jamaica at contact@mapltours.com right away.'
+      : 'If you have any difficulty locating your driver after clearing customs, contact MAPL Tours at contact@mapltours.com right away.',
   )
   return d.join('\n')
 }

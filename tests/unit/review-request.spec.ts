@@ -154,6 +154,78 @@ describe('it asks about what they actually booked', () => {
     expect(describeForReview(b).tripDates).toBe('15 August')
   })
 
+  // The email tells a ride as the ride it was, so it needs to know which way
+  // it ran. A leg exists when its timestamp is set, as everywhere else.
+  test('a ride in only is told as an arrival', () => {
+    const b = booking({
+      booking_items: [{ item_type: 'transfer', hotel: 'Riu Negril', trip_type: 'one_way', arrival_at: '2026-08-15T21:05:00Z' }],
+    })
+    expect(describeForReview(b).legs).toBe('arrival')
+  })
+
+  test('a ride out only is told as a departure, and still names its day', () => {
+    const b = booking({
+      booking_items: [{ item_type: 'transfer', hotel: 'Riu Negril', trip_type: 'one_way', departure_at: '2026-08-15T14:30:00Z' }],
+    })
+    const d = describeForReview(b)
+    expect(d.legs).toBe('departure')
+    expect(d.tripLabel).toBe('Riu Negril')
+    expect(d.tripDates).toBe('15 August')
+  })
+
+  test('a round trip is told as both ways', () => {
+    expect(describeForReview(roundTrip('2026-08-15T21:05:00Z', '2026-08-25T18:00:00Z')).legs).toBe('both')
+  })
+
+  test('a round trip stays both ways even when one of its times is missing', () => {
+    // Checkout requires both legs for a round trip, so a missing time is a data
+    // gap and not a one-way: it keeps the wording it always had.
+    for (const gap of [{ departure_at: null }, { departure_at: '' }, { arrival_at: null }, { arrival_at: '' }]) {
+      const b = booking({
+        booking_items: [{
+          item_type: 'transfer', hotel: 'Riu Negril', trip_type: 'round_trip',
+          arrival_at: '2026-08-15T21:05:00Z', departure_at: '2026-08-25T18:00:00Z', ...gap,
+        }],
+      })
+      expect(describeForReview(b).legs, JSON.stringify(gap)).toBe('both')
+    }
+  })
+
+  test('a one-way carrying both timestamps is told as both ways, as before', () => {
+    const b = booking({
+      booking_items: [{
+        item_type: 'transfer', hotel: 'Riu Negril', trip_type: 'one_way',
+        arrival_at: '2026-08-15T21:05:00Z', departure_at: '2026-08-25T18:00:00Z',
+      }],
+    })
+    expect(describeForReview(b).legs).toBe('both')
+  })
+
+  test('a legacy ride with no trip type is told by the legs it has', () => {
+    const arrival = booking({ booking_items: [{ item_type: 'transfer', hotel: 'Riu Negril', trip_type: null, arrival_at: '2026-08-15T21:05:00Z' }] })
+    const departure = booking({ booking_items: [{ item_type: 'transfer', hotel: 'Riu Negril', trip_type: null, departure_at: '2026-08-15T14:30:00Z' }] })
+    expect(describeForReview(arrival).legs).toBe('arrival')
+    expect(describeForReview(departure).legs).toBe('departure')
+  })
+
+  test('an arrival and a departure booked as two rides are both ways too', () => {
+    const b = booking({
+      booking_items: [
+        { item_type: 'transfer', hotel: 'Riu Negril', trip_type: 'one_way', arrival_at: '2026-08-15T21:05:00Z' },
+        { item_type: 'transfer', hotel: 'Riu Negril', trip_type: 'one_way', departure_at: '2026-08-25T18:00:00Z' },
+      ],
+    })
+    expect(describeForReview(b).legs).toBe('both')
+  })
+
+  test('a tour carries no legs', () => {
+    const b = booking({
+      booking_type: 'tour',
+      booking_items: [{ item_type: 'experience', title: 'River Tubing', date: '2026-09-20' }],
+    })
+    expect(describeForReview(b).legs).toBeUndefined()
+  })
+
   test('a single tour is named exactly', () => {
     const b = booking({
       booking_type: 'tour',

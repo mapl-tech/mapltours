@@ -59,6 +59,9 @@ export default function TransferOperatorAlert({
   currency,
   transfers,
 }: TransferOperatorAlertProps) {
+  // A hotel-to-airport one-way has no arrival to flight-track: what the
+  // operator checks is the requested pickup against the flight.
+  const departureOnly = !transfers.some((t) => t.arrivalAt) && transfers.some((t) => t.departureAt)
   return (
     <MaplLayout
       preheader={`Transfer dispatch · ${bookingRef} · ${transfers.length} ride${transfers.length !== 1 ? 's' : ''}`}
@@ -68,7 +71,9 @@ export default function TransferOperatorAlert({
       </Heading>
       <Text style={s.heroLead}>
         A paid airport transfer just landed. Assign the driver, confirm the
-        vehicle, and flight-track arrival. Flight numbers and times are below.
+        vehicle, and{' '}
+        {departureOnly ? 'check the pickup time against the flight' : 'flight-track arrival'}.
+        Flight numbers and times are below.
       </Text>
 
       <Section style={{ margin: '20px 0 0' }}>

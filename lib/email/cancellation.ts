@@ -7,6 +7,7 @@ import RefundRequested from '@/emails/RefundRequested'
 import OperatorRefundApproval from '@/emails/OperatorRefundApproval'
 import RefundDeclined from '@/emails/RefundDeclined'
 import { earliestServiceStart } from '@/lib/booking-window'
+import { transferTitle } from '@/lib/transfer-legs'
 
 /**
  * Cancellation notifications, shared by BOTH refund paths:
@@ -52,14 +53,15 @@ interface CancellationItem {
 }
 
 /** Shape tour items and transfer legs into one display row set. */
-function shapeItems(booking: Row, rows: Row[]): CancellationItem[] {
+export function shapeItems(booking: Row, rows: Row[]): CancellationItem[] {
   const isTransfer = booking.booking_type === 'transfer'
   return (rows ?? []).map((i: Row) =>
     isTransfer
       ? {
-          title: `Airport transfer${i.trip_type === 'round_trip' ? ' (round trip)' : ''}: MBJ to ${i.hotel ?? i.destination ?? 'your hotel'}`,
+          title: transferTitle(i),
           destination: i.hotel ?? i.destination ?? 'Jamaica',
-          date: (i.arrival_at ?? '').slice(0, 10) || '',
+          // A hotel-to-airport one-way has no arrival_at: its date is the pickup.
+          date: (i.arrival_at || i.departure_at || '').slice(0, 10),
           travelers: i.passengers ?? i.travelers ?? 1,
         }
       : {

@@ -140,8 +140,16 @@ export function reviewRequestBlockedReason(
   return null
 }
 
+/** Which way a transfer ran, from the legs it has (a leg exists when its
+ *  timestamp is set): flew in only, flew out only, or both. */
+export type TransferLegs = 'arrival' | 'departure' | 'both'
+
 export interface ReviewSubject {
   isTransfer: boolean
+  /** Transfers only. The email tells a one-way as the ride it was, not as a
+   *  round trip: "to and from", "got home" and "walked out of arrivals" all
+   *  assume the guest rode both ways. */
+  legs?: TransferLegs
   /** What to name in the email, e.g. "Azul Beach Resort Negril". */
   tripLabel: string
   /** Human date span, e.g. "15 to 25 August" or "20 September". */
@@ -195,7 +203,21 @@ export function describeForReview(booking: ReviewableBooking): ReviewSubject {
           ? dayLabel(first)
           : `${dayLabel(first)} to ${dayLabel(last)}`
 
-    return { isTransfer: true, tripLabel, tripDates }
+    const hasArrival = items.some((i) => !!i.arrival_at)
+    const hasDeparture = items.some((i) => !!i.departure_at)
+    // A round trip is told as both ways whatever its timestamps say: checkout
+    // requires both legs for one, so a missing time is a data gap, not a
+    // one-way, and it keeps the wording it always had.
+    const roundTrip = items.some((i) => i.trip_type === 'round_trip')
+    const legs: TransferLegs = roundTrip
+      ? 'both'
+      : hasArrival && !hasDeparture
+        ? 'arrival'
+        : hasDeparture && !hasArrival
+          ? 'departure'
+          : 'both'
+
+    return { isTransfer: true, legs, tripLabel, tripDates }
   }
 
   // Tours: name what they actually did. One tour by name; several summarised,

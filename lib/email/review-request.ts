@@ -58,7 +58,7 @@ export async function sendReviewRequest(
     return { ...base, ok: false, skipped: blocked }
   }
 
-  const { isTransfer, tripLabel, tripDates } = describeForReview(booking)
+  const { isTransfer, legs, tripLabel, tripDates } = describeForReview(booking)
   const claimedAt = new Date().toISOString()
 
   const { data: claimed } = await svc.rpc('merge_dispatch', {
@@ -84,6 +84,7 @@ export async function sendReviewRequest(
       bookingRef: bookingRef(booking.id),
       firstName: booking.first_name ?? null,
       isTransfer,
+      legs,
       tripLabel,
       tripDates,
       reviewUrl: TRIPADVISOR_REVIEW_URL,

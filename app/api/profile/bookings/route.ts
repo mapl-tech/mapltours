@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createServiceClient } from '@/lib/supabase/service'
 import { escapeLikePattern } from '@/lib/pg-like'
+import { transferTitle } from '@/lib/transfer-legs'
 
 /**
  * The signed-in user's own bookings for the profile page.
@@ -120,7 +121,7 @@ export async function GET() {
       booking_items: (b.booking_items ?? []).map((i: Row) =>
         b.booking_type === 'transfer'
           ? {
-              title: `Airport transfer${i.trip_type === 'round_trip' ? ' (round trip)' : ''}: MBJ to ${i.hotel ?? i.destination ?? 'your hotel'}`,
+              title: transferTitle(i),
               destination: i.hotel ?? i.destination ?? 'Jamaica',
               travelers: i.passengers ?? i.travelers ?? 1,
               // A hotel -> airport one-way has no arrival_at. Deriving the date

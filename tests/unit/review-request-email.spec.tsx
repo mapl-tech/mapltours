@@ -57,6 +57,76 @@ describe('asks about the right thing', () => {
   })
 })
 
+/**
+ * A ride is told as the ride it was. The email said "We drove you to and from
+ * {hotel}" and asked whether the guest "walked out of arrivals" and "got to
+ * the resort", to a guest who had booked a single direction. A guest who only
+ * rode in is mid-trip when it lands, so "got home" and the sand in the bag are
+ * wrong for them as well.
+ */
+describe('a ride is told in the direction it ran', () => {
+  const ride = (legs?: 'arrival' | 'departure' | 'both') => render(ReviewRequest({
+    ...base, firstName: 'Kalen', isTransfer: true, legs,
+    tripLabel: 'Excellence Oyster Bay', tripDates: '18 October',
+  }))
+
+  test('a ride in is a ride in, for a guest who is still on holiday', async () => {
+    const html = decode(await ride('arrival'))
+    expect(html).toContain('We drove you from the airport to Excellence Oyster Bay, 18 October.')
+    expect(html).not.toMatch(/to and from/i)
+    expect(html).toContain('settled in')
+    expect(html).not.toMatch(/got home/i)
+    expect(html).not.toMatch(/sand in it/i)
+    // The prompts are about the arrival they actually had.
+    expect(html).toMatch(/walked out of arrivals/i)
+    expect(html).toMatch(/got to the resort/i)
+  })
+
+  test('a ride out is a ride out, with no arrivals anywhere in it', async () => {
+    const html = decode(await ride('departure'))
+    expect(html).toContain('We drove you from Excellence Oyster Bay to the airport, 18 October.')
+    expect(html).not.toMatch(/to and from/i)
+    expect(html).not.toMatch(/arrivals/i)
+    expect(html).not.toMatch(/when they land/i)
+    expect(html).not.toMatch(/got to the resort/i)
+    expect(html).toContain('Whether the driver was waiting when you came out of the hotel')
+    expect(html).toContain('Whether you got to the airport without drama')
+    // They flew home afterwards, so the line about the bag still holds.
+    expect(html).toContain('got home easily')
+  })
+
+  test('a round trip, and a ride with no direction given, read as they always did', async () => {
+    for (const html of [decode(await ride('both')), decode(await ride(undefined))]) {
+      expect(html).toContain('We drove you to and from Excellence Oyster Bay, 18 October.')
+      expect(html).toContain('got home easily')
+      expect(html).toMatch(/walked out of arrivals/i)
+      expect(html).toMatch(/when they land/i)
+    }
+  })
+
+  test('every direction keeps the compliance posture and the house rules', async () => {
+    for (const legs of ['arrival', 'departure', 'both'] as const) {
+      const raw = await ride(legs)
+      const html = decode(raw)
+      expect(raw).not.toContain('—')
+      expect(html).not.toMatch(/discount|voucher|prize|giveaway|competition/i)
+      expect(html).not.toMatch(/if you enjoyed|if you were happy|only if you/i)
+      expect(html).toMatch(/leave the review as well/i)
+      expect(html).toContain('Excellence Oyster Bay')
+    }
+  })
+
+  test('a tour is told as a tour, whatever legs it is handed', async () => {
+    const html = decode(await render(ReviewRequest({
+      ...base, firstName: 'Linda', isTransfer: false, legs: 'departure',
+      tripLabel: "Dunn's River Falls Climb", tripDates: '20 September',
+    })))
+    expect(html).toContain("Dunn's River Falls Climb")
+    expect(html).toMatch(/took you out to/i)
+    expect(html).not.toMatch(/drove you/i)
+  })
+})
+
 describe('compliance holds', () => {
   test('offers no incentive of any kind', async () => {
     // Not offering one is the compliant act. The email used to also ANNOUNCE

@@ -145,7 +145,11 @@ export function calendarEventsForBooking(
         ...jamaica(leg.arrival_at, 60),
       })
     }
-    if (leg.trip_type === 'round_trip' && leg.departure_at) {
+    // A hotel-to-airport one-way has a departure and no arrival, so gating on
+    // round_trip alone left it with no event at all: a paid pickup that never
+    // reached the ops calendar. A one-way WITH an arrival keeps its one event.
+    const departureOnly = !leg.arrival_at && !!leg.departure_at
+    if (leg.departure_at && (leg.trip_type === 'round_trip' || departureOnly)) {
       events.push({
         id: calendarEventId(booking.id, events.length),
         summary: `Departure pickup · ${guest} · ${hotel} → MBJ`,

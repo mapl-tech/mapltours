@@ -115,6 +115,14 @@ export default function DispatchConsole({ booking, stripeFee, driverEmailConfigu
     setSavingDriver(false); setDriverSaved(true); setTimeout(() => setDriverSaved(false), 1800)
   }
 
+  // A hotel-to-airport one-way has a departure and no arrival. The departure
+  // was gated on round trip and the arrival was not gated at all, so the
+  // operator saw an empty "Arrival" and no pickup time. A one-way WITH an
+  // arrival keeps what it always showed.
+  const departureOnly = !leg.arrivalAt && !!leg.departureAt
+  // The departure leg is a round trip's return, or the ride's only leg.
+  const hasDepartureLeg = m.isRoundTrip || departureOnly
+
   // Calendar links
   const arrivalCal = leg.arrivalAt ? gcalLink({
     title: `MAPL Tours pickup: ${name} (${ref})`,
@@ -122,11 +130,11 @@ export default function DispatchConsole({ booking, stripeFee, driverEmailConfigu
     location: `${AIRPORT}, Montego Bay`,
     details: `Drop-off: ${leg.hotel}. Passengers: ${leg.passengers}. Customer: ${b.phone ?? ''}. Driver pay: ${money(m.driverPerLeg)}${m.isRoundTrip ? ' (leg 1 of 2)' : ''}.`,
   }) : null
-  const departureCal = m.isRoundTrip && leg.departureAt ? gcalLink({
+  const departureCal = leg.departureAt && hasDepartureLeg ? gcalLink({
     title: `MAPL Tours departure pickup: ${name} (${ref})`,
     startIso: leg.departureAt, durationMin: 90,
     location: leg.hotel,
-    details: `Drop at ${AIRPORT}. Hotel pickup ${jaTime(leg.departureAt)} Jamaica time (time requested by the guest)${leg.departureFlight ? `, flight ${leg.departureFlight}` : ''}. Driver pay: ${money(m.driverPerLeg)} (leg 2 of 2).`,
+    details: `Drop at ${AIRPORT}. Hotel pickup ${jaTime(leg.departureAt)} Jamaica time (time requested by the guest)${leg.departureFlight ? `, flight ${leg.departureFlight}` : ''}. Driver pay: ${money(m.driverPerLeg)}${m.isRoundTrip ? ' (leg 2 of 2)' : ''}.`,
   }) : null
 
   return (
@@ -168,19 +176,23 @@ export default function DispatchConsole({ booking, stripeFee, driverEmailConfigu
 
         {/* Trip */}
         <Card title="Trip (Jamaica time)">
-          <p style={{ ...tnum, fontSize: 12, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: faint, margin: '0 0 6px' }}>Arrival</p>
-          <div style={{ fontSize: 14, fontWeight: 600 }}>{AIRPORT} → {leg.hotel}</div>
-          <div style={{ fontSize: 13, color: soft, marginTop: 2, ...tnum }}>{jaDate(leg.arrivalAt)}</div>
-          <div style={{ fontSize: 13, color: soft, ...tnum }}>Flight lands {jaTime(leg.arrivalAt)}{leg.arrivalFlight ? ` (flight ${leg.arrivalFlight})` : ' (flight TBD)'}</div>
-          <div style={{ fontSize: 12, color: faint, marginTop: 2, ...tnum }}>Customer usually clears customs ~{ARRIVAL_CLEAR_MIN} min after landing ({jaTime(leg.arrivalAt ? shiftIso(leg.arrivalAt, ARRIVAL_CLEAR_MIN) : null)}).</div>
-          <div style={{ marginTop: 10, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-            {arrivalCal && <Btn href={arrivalCal}>📅 Add arrival to Google Calendar</Btn>}
-            <DayOfBtn bookingId={b.id} leg="arrival" sentAt={dispatch.dayof_arrival_sent} />
-          </div>
-
-          {m.isRoundTrip && leg.departureAt && (
+          {!departureOnly && (
             <>
-              <p style={{ ...tnum, fontSize: 12, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: faint, margin: '16px 0 6px' }}>Departure</p>
+              <p style={{ ...tnum, fontSize: 12, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: faint, margin: '0 0 6px' }}>Arrival</p>
+              <div style={{ fontSize: 14, fontWeight: 600 }}>{AIRPORT} → {leg.hotel}</div>
+              <div style={{ fontSize: 13, color: soft, marginTop: 2, ...tnum }}>{jaDate(leg.arrivalAt)}</div>
+              <div style={{ fontSize: 13, color: soft, ...tnum }}>Flight lands {jaTime(leg.arrivalAt)}{leg.arrivalFlight ? ` (flight ${leg.arrivalFlight})` : ' (flight TBD)'}</div>
+              <div style={{ fontSize: 12, color: faint, marginTop: 2, ...tnum }}>Customer usually clears customs ~{ARRIVAL_CLEAR_MIN} min after landing ({jaTime(leg.arrivalAt ? shiftIso(leg.arrivalAt, ARRIVAL_CLEAR_MIN) : null)}).</div>
+              <div style={{ marginTop: 10, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                {arrivalCal && <Btn href={arrivalCal}>📅 Add arrival to Google Calendar</Btn>}
+                <DayOfBtn bookingId={b.id} leg="arrival" sentAt={dispatch.dayof_arrival_sent} />
+              </div>
+            </>
+          )}
+
+          {leg.departureAt && hasDepartureLeg && (
+            <>
+              <p style={{ ...tnum, fontSize: 12, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: faint, margin: departureOnly ? '0 0 6px' : '16px 0 6px' }}>Departure</p>
               <div style={{ fontSize: 14, fontWeight: 600 }}>{leg.hotel} → {AIRPORT}</div>
               <div style={{ fontSize: 13, color: soft, marginTop: 2, ...tnum }}>{jaDate(leg.departureAt)}</div>
               <div style={{ fontSize: 13, color: soft, ...tnum }}>Hotel pickup {jaTime(leg.departureAt)}{leg.departureFlight ? ` · flight ${leg.departureFlight}` : ''}</div>
@@ -201,8 +213,10 @@ export default function DispatchConsole({ booking, stripeFee, driverEmailConfigu
             The arrival time is when the flight lands; the departure time is the hotel pickup the guest asked for. Check both against the airline before dispatch.
           </p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-            <FlightTracking legLabel="Arrival flight" flightRaw={leg.arrivalFlight} dateIso={leg.arrivalAt} bookedLabel={jaTime(leg.arrivalAt)} mbjRole="arrival" />
-            {m.isRoundTrip && (
+            {!departureOnly && (
+              <FlightTracking legLabel="Arrival flight" flightRaw={leg.arrivalFlight} dateIso={leg.arrivalAt} bookedLabel={jaTime(leg.arrivalAt)} mbjRole="arrival" />
+            )}
+            {hasDepartureLeg && (
               <FlightTracking legLabel="Departure flight" flightRaw={leg.departureFlight} dateIso={leg.departureAt} bookedLabel={jaTime(leg.departureAt)} mbjRole="departure" />
             )}
           </div>
@@ -316,7 +330,9 @@ function StepActions({ stepKey, b, m, arrivalCal, departureCal }: {
       return wrap(<><CopyBtn text={msg} label="Copy flight request" /><Btn tone="wa" href={waLink(custPhone, msg)}>Send on WhatsApp</Btn></>)
     }
     case 'driver_reconfirmed': {
-      const msg = msgDriverReminder(b, 'arrival')
+      // A hotel-to-airport one-way has no arrival to remind the driver about.
+      const l = firstLeg(b)
+      const msg = msgDriverReminder(b, l && !l.arrivalAt && l.departureAt ? 'departure' : 'arrival')
       return wrap(<><CopyBtn text={msg} label="Copy driver reminder" /><Btn tone="wa" href={waLink(drvPhone, msg)}>Send on WhatsApp</Btn></>)
     }
     case 'landed': {

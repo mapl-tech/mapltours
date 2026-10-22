@@ -463,7 +463,7 @@ export default function OnePageTransfersCheckout() {
                   purchaseMatch={{ email: form.email, phone: form.phone, firstName: form.firstName, lastName: form.lastName }}
                   externalError={serverError}
                   onAmountResolved={(usd) => setServerDue(usd)}
-                  footer={<><Reassurance lines={['Stripe takes the payment. We never see your card number.', 'Your driver meets you at arrivals with a name sign. We send their name, vehicle and plate before pickup.']} /><AskFirst place="transfer_checkout" context={askContext} /></>}
+                  footer={<><Reassurance lines={['Stripe takes the payment. We never see your card number.', hasArrivalLeg ? 'Your driver meets you at arrivals with a name sign. We send their name, vehicle and plate before pickup.' : 'Your driver picks you up at your hotel. We send their name, vehicle and plate before pickup.']} /><AskFirst place="transfer_checkout" context={askContext} /></>}
                 >
                   <p style={{ marginTop: 18, fontFamily: FONT, fontSize: 13, lineHeight: 1.55, color: 'var(--text-tertiary)' }}>
                     By paying you agree to the <LinkButton onClick={() => setLegal('terms')}>Terms</LinkButton> and the <LinkButton onClick={() => setLegal('cancellation')}>Cancellation Policy</LinkButton>.

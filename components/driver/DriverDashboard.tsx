@@ -231,20 +231,27 @@ function Leg({ role, from, to, dateIso, flightRaw, extra, actions }: {
 
 /* ── One trip card ── */
 
-function TripCard({ t, open, onToggle }: { t: DriverTrip; open: boolean; onToggle: () => void }) {
+export function TripCard({ t, open, onToggle }: { t: DriverTrip; open: boolean; onToggle: () => void }) {
   const ref = useScrollOnOpen(open)
   const isRT = t.tripType === 'round_trip'
+  // A hotel-to-airport one-way has a departure and no arrival: the card must
+  // show the pickup it has, not "Lands -". The departure leg is a round trip's
+  // return, or the ride's only leg.
+  const departureOnly = !t.arrivalAt && !!t.departureAt
+  const hasDepartureLeg = isRT || departureOnly
   const arrCal = t.arrivalAt ? gcalLink({
     title: `MAPL Tours pickup: ${t.guestName} (${t.ref})`,
     startIso: t.arrivalAt, durationMin: 60,
     location: `${t.airport}, Montego Bay`,
     details: `Drop-off: ${t.hotel}. Passengers: ${t.passengers}. Guest: ${t.guestPhone ?? ''}. Your pay: ${money(t.payoutLegs[0].amount)}${isRT ? ' (leg 1 of 2)' : ''}.`,
   }) : null
-  const depCal = isRT && t.departureAt ? gcalLink({
+  const depCal = t.departureAt && hasDepartureLeg ? gcalLink({
     title: `MAPL Tours departure pickup: ${t.guestName} (${t.ref})`,
     startIso: t.departureAt, durationMin: 90,
     location: t.hotel,
-    details: `Drop at ${t.airport}. Hotel pickup ${jaTime(t.departureAt)} Jamaica time (time the guest requested)${t.departureFlight ? `, flight ${t.departureFlight}` : ''}. Your pay: ${money(t.payoutLegs[1]?.amount ?? 0)} (leg 2 of 2).`,
+    // A one-way has a single payout leg, paid once in full; only a round trip's
+    // return is "leg 2 of 2" and reads the second payout.
+    details: `Drop at ${t.airport}. Hotel pickup ${jaTime(t.departureAt)} Jamaica time (time the guest requested)${t.departureFlight ? `, flight ${t.departureFlight}` : ''}. Your pay: ${money(isRT ? (t.payoutLegs[1]?.amount ?? 0) : t.payoutLegs[0].amount)}${isRT ? ' (leg 2 of 2)' : ''}.`,
   }) : null
   const mapsHotel = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(t.hotel + ', Jamaica')}`
 
@@ -278,7 +285,7 @@ function TripCard({ t, open, onToggle }: { t: DriverTrip; open: boolean; onToggl
             <span style={{ display: 'flex', alignItems: 'baseline', gap: 8, flexWrap: 'wrap' }}>
               <span style={{ fontSize: 14, fontWeight: 700, color: ink }}>{t.guestName}</span>
               <span aria-hidden="true" style={{ color: faint }}>·</span>
-              <span style={{ fontSize: 13, color: soft }}>{t.airport} <span aria-hidden="true">→</span> {t.hotel}</span>
+              <span style={{ fontSize: 13, color: soft }}>{departureOnly ? t.hotel : t.airport} <span aria-hidden="true">→</span> {departureOnly ? t.airport : t.hotel}</span>
               {t.specialRequests && (
                 <span style={{
                   fontSize: 12, fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase',
@@ -289,7 +296,7 @@ function TripCard({ t, open, onToggle }: { t: DriverTrip; open: boolean; onToggl
               )}
             </span>
             <span style={{ fontSize: 13, color: soft, ...tnum }}>
-              Lands <strong style={{ color: ink, fontWeight: 600 }}>{jaShort(t.arrivalAt)} · {jaTime(t.arrivalAt)}</strong> Jamaica time
+              {departureOnly ? 'Hotel pickup' : 'Lands'} <strong style={{ color: ink, fontWeight: 600 }}>{jaShort(departureOnly ? t.departureAt : t.arrivalAt)} · {jaTime(departureOnly ? t.departureAt : t.arrivalAt)}</strong> Jamaica time
             </span>
             {t.tripType === 'round_trip' && t.departureAt && (
               <span style={{ fontSize: 13, color: soft, ...tnum }}>
@@ -330,14 +337,16 @@ function TripCard({ t, open, onToggle }: { t: DriverTrip; open: boolean; onToggl
 
         {/* Legs as a timeline */}
         <div style={{ paddingTop: 16, borderTop: borderSoft, display: 'flex', flexDirection: 'column', gap: 18 }}>
-          <Leg
-            role="arrival" from={t.airport} to={t.hotel} dateIso={t.arrivalAt} flightRaw={t.arrivalFlight}
-            actions={<>
-              <Act grow href={mapsHotel}><MapPin size={16} aria-hidden="true" />Map to hotel</Act>
-              {arrCal && <Act grow href={arrCal}><CalendarPlus size={16} aria-hidden="true" />Calendar</Act>}
-            </>}
-          />
-          {isRT && t.departureAt && (
+          {!departureOnly && (
+            <Leg
+              role="arrival" from={t.airport} to={t.hotel} dateIso={t.arrivalAt} flightRaw={t.arrivalFlight}
+              actions={<>
+                <Act grow href={mapsHotel}><MapPin size={16} aria-hidden="true" />Map to hotel</Act>
+                {arrCal && <Act grow href={arrCal}><CalendarPlus size={16} aria-hidden="true" />Calendar</Act>}
+              </>}
+            />
+          )}
+          {t.departureAt && hasDepartureLeg && (
             <Leg
               role="departure" from={t.hotel} to={t.airport} dateIso={t.departureAt} flightRaw={t.departureFlight}
               extra={
@@ -345,7 +354,11 @@ function TripCard({ t, open, onToggle }: { t: DriverTrip; open: boolean; onToggl
                   This is the pickup time the guest requested.
                 </p>
               }
-              actions={depCal ? <Act grow href={depCal}><CalendarPlus size={16} aria-hidden="true" />Calendar</Act> : null}
+              actions={<>
+                {/* The arrival leg carries the hotel map; a ride with no arrival needs it here. */}
+                {departureOnly && <Act grow href={mapsHotel}><MapPin size={16} aria-hidden="true" />Map to hotel</Act>}
+                {depCal && <Act grow href={depCal}><CalendarPlus size={16} aria-hidden="true" />Calendar</Act>}
+              </>}
             />
           )}
         </div>
