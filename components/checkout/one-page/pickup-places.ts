@@ -41,5 +41,20 @@ export const PICKUP_PLACES: { name: string; address: string; kind?: PlaceKind }[
   { kind: 'cruise', name: 'Ocho Rios Cruise Port', address: 'Turtle Beach Rd, Ocho Rios, St. Ann' },
 ]
 
-/** A hotel that is not on the list still needs to be sayable. */
+/**
+ * A hotel that is not on the list still needs to be sayable. The stored value
+ * keeps its old wording on purpose: carts saved before the checkout asked for
+ * the name right under the list hold exactly this string, and a new spelling
+ * would make it read as a typed hotel name. Guests see OTHER_PLACE_LABEL.
+ */
 export const OTHER_PLACE = 'Other hotel or villa (tell us in the note)'
+export const OTHER_PLACE_LABEL = 'Other hotel or villa'
+
+export function isListedPlace(name: string): boolean {
+  return PICKUP_PLACES.some((p) => p.name === name)
+}
+
+/** The pickup as a guest should read it: never the stored instruction. */
+export function placeShown(pickup: string): string {
+  return pickup === OTHER_PLACE ? OTHER_PLACE_LABEL : pickup
+}

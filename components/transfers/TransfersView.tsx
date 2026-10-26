@@ -195,6 +195,7 @@ export default function TransfersView({ initialDestinationId }: { initialDestina
       setDestinationId('')
       return
     }
+    revealFare()
     if (tripType === 'round_trip') { setDestinationId(v); return }
     setFromAirport(false)
     setDestinationId(v)
@@ -206,8 +207,44 @@ export default function TransfersView({ initialDestinationId }: { initialDestina
       setDestinationId('')
       return
     }
+    revealFare()
     setFromAirport(true)
     setDestinationId(v)
+  }
+
+  /**
+   * Show the fare a hotel pick just produced. On a phone the pick left focus
+   * in the hotel box, so the keyboard stayed up, the page hid its sticky Book
+   * bar (it hides while a card field has focus) and the price and the Book
+   * button sat below the fold: measured at 390x844, the price at y=939 and
+   * Book at y=1041 after choosing Sandals Negril. So on a touch screen the box
+   * lets go of focus at once (closing the keyboard), focus moves on to Book
+   * once the fare has enabled it (so a keyboard or switch user on a tablet
+   * carries on from there, not from the top of the page), and only if Book
+   * is off screen or under the sticky strip is it brought to the middle. A
+   * desktop is left alone: no keyboard covers the page and no sticky strip
+   * sits over the button, so moving it would only scroll the hotel box the
+   * guest just used out of view (measured at 1440x900).
+   */
+  const bookRef = useRef<HTMLButtonElement>(null)
+  const revealFare = () => {
+    if (typeof window === 'undefined' || !window.matchMedia('(pointer: coarse)').matches) return
+    const active = document.activeElement
+    if (active instanceof HTMLInputElement && active.getAttribute('role') === 'combobox') active.blur()
+    // After the list closes, the fare paints and (on a phone) the keyboard
+    // has gone, or the measurement below is taken against the wrong screen.
+    window.setTimeout(() => {
+      const btn = bookRef.current
+      if (!btn) return
+      if (!btn.disabled && (document.activeElement === document.body || document.activeElement == null)) btn.focus({ preventScroll: true })
+      const r = btn.getBoundingClientRect()
+      const vv = window.visualViewport
+      const bottom = (vv ? vv.offsetTop + vv.height : window.innerHeight) - 104
+      const top = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--nav-h')) || 56
+      if (r.top >= top && r.bottom <= bottom) return
+      const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+      btn.scrollIntoView({ block: 'center', behavior: reduce ? 'auto' : 'smooth' })
+    }, 350)
   }
   const [tripType, setTripType] = useState<TransferTripType>('round_trip')
   // Starts at 1, matching the tour cart. Transfer fares are per VEHICLE for
@@ -829,6 +866,7 @@ export default function TransfersView({ initialDestinationId }: { initialDestina
             </div>
 
             <button
+              ref={bookRef}
               type="button"
               className="btn-primary"
               onClick={handleBook}

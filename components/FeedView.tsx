@@ -1724,7 +1724,7 @@ export default function FeedView() {
                 { icon: <Users size={18} />, title: 'Jamaican drivers and hosts', desc: 'The people who run your day live here and drive these roads every week. You get their name before pickup.' },
                 { icon: <Headphones size={18} />, title: 'A person on email', desc: 'Write to us any time and a person replies within 24 hours. On the day, your driver is a WhatsApp away.' },
                 { icon: <ShieldCheck size={18} />, title: 'Flexible cancellation', desc: 'Change of plans? Cancel within 48 hours of booking for a refund, less a 20% administration charge. No stress.' },
-                { icon: <Star size={18} />, title: 'Rides priced per vehicle', desc: 'Airport rides are one price for the whole vehicle, and most tours one price for your party. Every price is all-in, with nothing added at checkout.' },
+                { icon: <Star size={18} />, title: 'One fare for up to 4', desc: 'An airport ride is one price for the vehicle for 1 to 4 people, and priced per person from 5. Each tour shows its price for your party or per guest. Every price is all-in, with nothing added at checkout.' },
                 { icon: <Heart size={18} />, title: 'Paid to the people who drive it', desc: 'Every trip you book is driven and hosted by Jamaicans, and they are paid for every one.' },
               ].map((item) => (
                 <div key={item.title}>

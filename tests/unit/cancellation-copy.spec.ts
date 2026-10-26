@@ -31,6 +31,14 @@ describe('the cancellation promise', () => {
     expect(CANCELLATION_SUMMARY.detail).toMatch(/has begun/i)
   })
 
+  test('never calls a cancellation free while it keeps a charge', () => {
+    // The dialog's headline said "Free to cancel" and the line under it kept 20%.
+    if (ADMIN_CHARGE_RATE > 0) {
+      for (const line of Object.values(CANCELLATION_SUMMARY)) expect(line).not.toMatch(/\bfree\b/i)
+    }
+    expect(CANCELLATION_SUMMARY.lead).toContain(`refund ${Math.round((1 - ADMIN_CHARGE_RATE) * 100)}% of what you paid`)
+  })
+
   test('carries no em dash, per the standing copy rule', () => {
     for (const line of Object.values(CANCELLATION_SUMMARY)) {
       expect(line).not.toContain('—')

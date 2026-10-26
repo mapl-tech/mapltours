@@ -11,12 +11,12 @@ import CodeField from './CodeField'
 import { tourPrice, perTravelerPrice, placeLabel } from '@/lib/experiences'
 import { earliestBookableExperienceDate } from '@/lib/booking-window'
 import { getStoredAttribution } from '@/lib/attribution'
-import { trackBeginCheckout } from '@/lib/analytics'
+import { trackBeginCheckout, trackCheckoutStep, trackCheckoutMissing, type CheckoutStep } from '@/lib/analytics'
 import { planDay } from '@/lib/day-route'
 import { useAvailableReward } from '@/lib/tour-videos'
 import { useI18n } from '@/lib/i18n'
 import { useFocusTrap } from '@/lib/use-focus-trap'
-import { validateTourForm, validateContact, orderKey, readCheckoutAnswer, formatDate, PAYMENT_SERVICE_UNREACHABLE, DATE_VALUE_FORMAT, incompleteDateMessage, attentionLine, type FieldErrors } from '@/lib/checkout-form'
+import { validateTourForm, validateContact, orderKey, readCheckoutAnswer, formatDate, PAYMENT_SERVICE_UNREACHABLE, DATE_VALUE_FORMAT, incompleteDateMessage, attentionLine, messageOnLeave, reconcileShown, type FieldErrors } from '@/lib/checkout-form'
 import LegalModal from '@/components/checkout/LegalModal'
 import TripTimeBar from '@/components/TripTimeBar'
 import DayFlow from '@/components/DayFlow'
@@ -25,7 +25,7 @@ import { createIntentSession, type PostOutcome, type SendOptions } from './inten
 import AskFirst from '@/components/AskFirst'
 import { Card, SectionTitle, TextField, SelectField, Stepper, Disclosure, Reassurance, LinkButton, focusFirstError } from './fields'
 import { useHydrated } from './useHydrated'
-import { PICKUP_PLACES, OTHER_PLACE } from './pickup-places'
+import { PICKUP_PLACES, OTHER_PLACE, OTHER_PLACE_LABEL, isListedPlace, placeShown } from './pickup-places'
 
 /**
  * The tour checkout, on one page.
@@ -47,11 +47,23 @@ import { PICKUP_PLACES, OTHER_PLACE } from './pickup-places'
  */
 
 const FONT = 'var(--font-dm-sans)'
-const FIELD_ORDER = ['tripDate', 'pickup', 'firstName', 'lastName', 'email', 'phone', 'waiver']
+const FIELD_ORDER = ['tripDate', 'pickup', 'pickupName', 'firstName', 'lastName', 'email', 'phone', 'waiver']
 /** The visible label of each field, for the line announced when Pay finds problems. */
 const FIELD_LABELS: Record<string, string> = {
-  tripDate: 'Trip date', pickup: 'Where we pick you up', firstName: 'First name', lastName: 'Last name',
+  tripDate: 'Trip date', pickup: 'Where we pick you up', pickupName: 'Hotel or villa name', firstName: 'First name', lastName: 'Last name',
   email: 'Email', phone: 'Phone', waiver: 'the Activity Waiver box',
+}
+
+/**
+ * The tour rules, plus one this page owns: "Other hotel or villa" with no
+ * name is not a place a driver can go. The quiet save still runs on it (so an
+ * abandoned checkout stays visible), and Pay rewrites the saved row's pickup
+ * with the name, but Pay needs the name first.
+ */
+function tourRules(input: Parameters<typeof validateTourForm>[0]): FieldErrors {
+  const e = validateTourForm(input)
+  if (input.pickup === OTHER_PLACE) e.pickupName = 'Add the name of your hotel or villa'
+  return e
 }
 const AUTO_SAVE_DELAY_MS = 2500
 
@@ -159,6 +171,72 @@ export default function OnePageCheckout() {
     if (errors.tripDate) setErrors((e) => { const n = { ...e }; delete n.tripDate; return n })
   }
   const setGuests = (n: number) => items.forEach((i) => updateTravelers(i.id, n))
+
+  // The rules as they stand right now: the message a field gets when the
+  // guest leaves it, and the test that clears a message once it is fixed.
+  // Same function Pay runs, so the two can never disagree.
+  const liveErrors = useMemo(() => tourRules({ contact: form, pickup, tripDate, waiverAccepted: waiver }), [form, pickup, tripDate, waiver])
+  useEffect(() => { setErrors((shown) => reconcileShown(shown, liveErrors)) }, [liveErrors])
+  const leave = (k: string, v: string) => {
+    const m = messageOnLeave(liveErrors, k, v)
+    if (m) setErrors((e) => (e[k] === m ? e : { ...e, [k]: m }))
+  }
+
+  // "Other hotel or villa" is a choice the guest makes in the list, held
+  // here, not something read off the pickup: a name typed into the box can
+  // equal a listed hotel partway through a longer one ("Riu Negril"), and the
+  // box must not vanish under their fingers. The name is kept apart too, so
+  // trying a listed hotel and coming back does not lose it.
+  const [otherMode, setOtherMode] = useState(false)
+  const [otherName, setOtherName] = useState('')
+  // A pickup the list does not have (an agent's booking link, an older cart)
+  // opens in this mode with its name in the box. Read once, after hydration.
+  const otherSeeded = useRef(false)
+  useEffect(() => {
+    if (!hydrated || otherSeeded.current) return
+    otherSeeded.current = true
+    if (pickup && !isListedPlace(pickup)) {
+      setOtherMode(true)
+      setOtherName(pickup === OTHER_PLACE ? '' : pickup)
+    }
+  }, [hydrated, pickup])
+  const choosePlace = (v: string) => {
+    if (v === OTHER_PLACE) {
+      setOtherMode(true)
+      setPlace(otherName.trim() || OTHER_PLACE)
+      return
+    }
+    setOtherMode(false)
+    setPlace(v)
+  }
+  const typeOtherName = (v: string) => {
+    setOtherName(v)
+    setPlace(v.trim() || OTHER_PLACE)
+  }
+
+  // Where a guest stops on this page (lib/analytics trackCheckoutStep): each
+  // step once per page load, and each field a refused Pay names once.
+  const stepsSent = useRef<Set<CheckoutStep>>(new Set())
+  const step = useCallback((s: CheckoutStep) => {
+    if (stepsSent.current.has(s)) return
+    stepsSent.current.add(s)
+    trackCheckoutStep('tour', s)
+  }, [])
+  const missingSent = useRef<Set<string>>(new Set())
+  const blocked = useCallback((fields: string[]) => {
+    step('pay_blocked')
+    const fresh = fields.filter((f) => !missingSent.current.has(f))
+    fresh.forEach((f) => missingSent.current.add(f))
+    if (fresh.length) trackCheckoutMissing('tour', fresh)
+  }, [step])
+  const tripReady = !!pickup && !!tripDate && !liveErrors.pickup && !liveErrors.pickupName && !liveErrors.tripDate
+  const contactReady = !liveErrors.firstName && !liveErrors.lastName && !liveErrors.email && !liveErrors.phone
+  useEffect(() => {
+    if (!hydrated || items.length === 0) return
+    step('view')
+    if (tripReady) step('trip_ready')
+    if (contactReady) step('contact_ready')
+  }, [hydrated, items.length, tripReady, contactReady, step])
 
   // ── The order, as the server will receive it ──
   const body = useMemo(() => ({
@@ -308,20 +386,22 @@ export default function OnePageCheckout() {
 
   // ── The gate before any payment attempt ──
   const validate = useCallback((): boolean => {
-    if (isDayOverLimit()) { setLimitOpen(true); return false }
-    const errs = validateTourForm({ contact: form, pickup, tripDate, waiverAccepted: waiver })
+    if (isDayOverLimit()) { setLimitOpen(true); blocked(['dayLimit']); return false }
+    const errs = tourRules({ contact: form, pickup, tripDate, waiverAccepted: waiver })
     // A half-filled date reads as empty, so the rule above calls it missing;
     // the half-filled message is the accurate one (same as on blur).
     if (errs.tripDate && (document.getElementById('opc-date') as HTMLInputElement | null)?.validity?.badInput) errs.tripDate = incompleteDateMessage('Trip date', 'date')
     setErrors(errs)
     if (Object.keys(errs).length) {
+      blocked([...FIELD_ORDER.filter((k) => errs[k]), ...Object.keys(errs).filter((k) => !FIELD_ORDER.includes(k))])
       setAnnouncement(attentionLine(errs, FIELD_LABELS, FIELD_ORDER))
       focusFirstError(errs, FIELD_ORDER)
       return false
     }
+    step('pay_tap')
     setAnnouncement('')
     return true
-  }, [form, pickup, tripDate, waiver, isDayOverLimit])
+  }, [form, pickup, tripDate, waiver, isDayOverLimit, blocked, step])
 
   /**
    * One field, two kinds of code. A coupon is tried first (it is what the
@@ -374,7 +454,7 @@ export default function OnePageCheckout() {
   const summaryFacts = ([
     tripDate && !dateTooSoon ? { label: 'Date', value: formatDate(tripDate) } : null,
     { label: guests === 1 ? 'Guest' : 'Guests', value: String(guests) },
-    pickup ? { label: 'Pickup', value: pickup } : null,
+    pickup ? { label: 'Pickup', value: placeShown(pickup) } : null,
   ].filter(Boolean)) as { label: string; value: string }[]
 
   return (
@@ -454,7 +534,7 @@ export default function OnePageCheckout() {
                 </div>
 
                 <div style={{ padding: '14px 0 16px' }}>
-                  <SelectField id="opc-pickup" fieldKey="pickup" label="Where we pick you up" value={pickup || ''} onChange={setPlace} error={errors.pickup}
+                  <SelectField id="opc-pickup" fieldKey="pickup" label="Where we pick you up" value={otherMode ? OTHER_PLACE : pickup || ''} onChange={choosePlace} error={errors.pickup}
                     hint={pickup && pickup !== OTHER_PLACE ? PICKUP_PLACES.find((p) => p.name === pickup)?.address ?? 'We bring you back to the same place.' : 'Your hotel, resort, the airport or a cruise port. We bring you back to the same place.'}>
                     <option value="">Choose your hotel, resort or airport</option>
                     <optgroup label="Airport">
@@ -462,12 +542,25 @@ export default function OnePageCheckout() {
                     </optgroup>
                     <optgroup label="Hotels and resorts">
                       {PICKUP_PLACES.filter((p) => !p.kind).map((p) => <option key={p.name} value={p.name}>{p.name}</option>)}
-                      <option value={OTHER_PLACE}>{OTHER_PLACE}</option>
+                      <option value={OTHER_PLACE}>{OTHER_PLACE_LABEL}</option>
                     </optgroup>
                     <optgroup label="Cruise ports">
                       {PICKUP_PLACES.filter((p) => p.kind === 'cruise').map((p) => <option key={p.name} value={p.name}>{p.name}</option>)}
                     </optgroup>
                   </SelectField>
+                  {/* Asked for right here. The name used to go in the note box,
+                      a whole section further down, so "Other" read as "we do
+                      not serve your hotel" and the order summary printed
+                      "Pickup: Other hotel or vill…". */}
+                  {otherMode ? (
+                    <div style={{ marginTop: 12 }}>
+                      {/* 200 is where the server cuts a pickup (app/api/checkout). */}
+                      <TextField id="opc-pickup-name" fieldKey="pickupName" label="Hotel or villa name" value={otherName} error={errors.pickupName}
+                        onChange={typeOtherName} maxLength={200}
+                        autoComplete="off" placeholder="e.g. Iberostar Rose Hall"
+                        hint="So your driver finds you. Add the area for a villa or a private home." />
+                    </div>
+                  ) : null}
                   <p style={{ display: 'flex', gap: 8, alignItems: 'flex-start', marginTop: 12, fontFamily: FONT, fontSize: 13, lineHeight: 1.5, color: 'var(--text-tertiary)' }}>
                     <MapPin size={13} style={{ flexShrink: 0, marginTop: 2 }} />
                     <span>We set your pickup time around the tour and confirm it with you before the day.</span>
@@ -498,8 +591,8 @@ export default function OnePageCheckout() {
                   <TextField id="opc-first" fieldKey="firstName" label="First name" value={form.firstName} onChange={setField('firstName')} error={errors.firstName} autoComplete="given-name" placeholder="First name" />
                   <TextField id="opc-last" fieldKey="lastName" label="Last name" value={form.lastName} onChange={setField('lastName')} error={errors.lastName} autoComplete="family-name" placeholder="Last name" />
                 </div>
-                <TextField id="opc-email" fieldKey="email" label="Email" type="email" inputMode="email" value={form.email} onChange={setField('email')} error={errors.email} autoComplete="email" placeholder="you@email.com" hint="Your confirmation and trip details go here." />
-                <TextField id="opc-phone" fieldKey="phone" label="Phone" type="tel" inputMode="tel" value={form.phone} onChange={setField('phone')} error={errors.phone} autoComplete="tel" placeholder="+1 (555) 000-0000" hint="WhatsApp works. We use it to reach you about your trip." />
+                <TextField id="opc-email" fieldKey="email" label="Email" type="email" inputMode="email" value={form.email} onChange={setField('email')} onBlur={() => leave('email', form.email)} error={errors.email} autoComplete="email" placeholder="you@email.com" hint="Your confirmation and trip details go here." />
+                <TextField id="opc-phone" fieldKey="phone" label="Phone" type="tel" inputMode="tel" value={form.phone} onChange={setField('phone')} onBlur={() => leave('phone', form.phone)} error={errors.phone} autoComplete="tel" placeholder="+1 (555) 000-0000" hint="WhatsApp works. We use it to reach you about your trip." />
               </div>
               {/* Shown, not hidden behind a disclosure. A dietary need or a
                   mobility question is only ever mentioned when the box is

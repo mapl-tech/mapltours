@@ -38,8 +38,13 @@ export const CANCELLATION_WINDOW_HOURS = 48
 export const CANCELLATION_SUMMARY = {
   /** One clause, for a trust line beside other microcopy. */
   short: `Cancel within ${CANCELLATION_WINDOW_HOURS} hrs of booking, less a ${Math.round(ADMIN_CHARGE_RATE * 100)}% admin charge`,
-  /** The headline answer, for the top of the policy dialog. */
-  lead: `Free to cancel within ${CANCELLATION_WINDOW_HOURS} hours of booking.`,
+  /**
+   * The headline answer, for the top of the policy dialog. It said "Free to
+   * cancel", and the line under it kept 20%: the first thing a guest reads
+   * about refunds contradicted the second. The refund is the amount paid less
+   * the charge, so the headline states that share.
+   */
+  lead: `Cancel within ${CANCELLATION_WINDOW_HOURS} hours of booking and we refund ${Math.round((1 - ADMIN_CHARGE_RATE) * 100)}% of what you paid.`,
   /** What it costs and when it stops, immediately under the headline. */
   detail:
     `You get the amount paid back, less a ${Math.round(ADMIN_CHARGE_RATE * 100)}% administration charge plus taxes where they apply. ` +

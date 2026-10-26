@@ -5,14 +5,14 @@ import Link from 'next/link'
 import { ArrowLeft, Car, Plane, PlaneLanding, PlaneTakeoff, Users } from 'lucide-react'
 import { useTransfersCart, type TransferCartItem } from '@/lib/transfers-cart'
 import { MAX_TRANSFER_PASSENGERS, ROUND_TRIP_DISCOUNT, driverCost, getTransferPrice } from '@/lib/airport-transfers'
-import { leadTimeCutoff } from '@/lib/booking-window'
+import { leadTimeCutoff, MIN_PICKUP_LEAD_MIN } from '@/lib/booking-window'
 import { getStoredAttribution } from '@/lib/attribution'
-import { trackBeginCheckout } from '@/lib/analytics'
+import { trackBeginCheckout, trackCheckoutStep, trackCheckoutMissing, type CheckoutStep } from '@/lib/analytics'
 import { couponDiscountCents } from '@/lib/coupons'
 import CodeField from '@/components/checkout/one-page/CodeField'
 import { useI18n } from '@/lib/i18n'
 import {
-  validateTransferForm, orderKey, readCheckoutAnswer, PAYMENT_SERVICE_UNREACHABLE, legsFor, pickupFromFlight, flightFromPickup, formatWallClock, PICKUP_LEAD_TEXT, LEG_TIME_RE, DATETIME_VALUE_FORMAT, incompleteDateMessage, attentionLine, type FieldErrors,
+  validateTransferForm, orderKey, readCheckoutAnswer, PAYMENT_SERVICE_UNREACHABLE, legsFor, pickupFromFlight, flightFromPickup, formatWallClock, PICKUP_LEAD_TEXT, LEG_TIME_RE, DATETIME_VALUE_FORMAT, incompleteDateMessage, attentionLine, messageOnLeave, reconcileShown, shiftWallClock, type FieldErrors,
 } from '@/lib/checkout-form'
 import LegalModal from '@/components/checkout/LegalModal'
 import DeferredPaymentPanel, { type IntentResult } from '@/components/checkout/one-page/DeferredPaymentPanel'
@@ -140,6 +140,45 @@ export default function OnePageTransfersCheckout() {
     departureFlight: hasDepartureLeg ? item?.departureFlight?.trim() || undefined : undefined,
   }), [tripType, fromAirport, hasArrivalLeg, hasDepartureLeg, item?.arrivalAt, item?.arrivalFlight, item?.departureAt, item?.departureFlight])
 
+  // The rules as they stand right now: the message a field gets when the
+  // guest leaves it (a flight home before the arrival used to stay silent
+  // until Pay, while the page offered a pickup for it), and the test that
+  // clears a message once it is fixed. Same function Pay runs.
+  const liveErrors = useMemo(() => validateTransferForm({ contact: form, legs, minDateTime }), [form, legs, minDateTime])
+  useEffect(() => { setErrors((shown) => reconcileShown(shown, liveErrors)) }, [liveErrors])
+  const leave = (k: string, v: string | undefined) => {
+    const m = messageOnLeave(liveErrors, k, v)
+    if (m) setErrors((e) => (e[k] === m ? e : { ...e, [k]: m }))
+  }
+
+  // Where a guest stops on this page (lib/analytics trackCheckoutStep): each
+  // step once per page load, and each field a refused Pay names once.
+  // times_ready against flights_ready says how many guests stop at the
+  // flight numbers.
+  const stepsSent = useRef<Set<CheckoutStep>>(new Set())
+  const step = useCallback((s: CheckoutStep) => {
+    if (stepsSent.current.has(s)) return
+    stepsSent.current.add(s)
+    trackCheckoutStep('ride', s)
+  }, [])
+  const missingSent = useRef<Set<string>>(new Set())
+  const blocked = useCallback((fields: string[]) => {
+    step('pay_blocked')
+    const fresh = fields.filter((f) => !missingSent.current.has(f))
+    fresh.forEach((f) => missingSent.current.add(f))
+    if (fresh.length) trackCheckoutMissing('ride', fresh)
+  }, [step])
+  const timesReady = !!minDateTime && !liveErrors.arrivalAt && !liveErrors.departureAt
+  const flightsReady = !liveErrors.arrivalFlight && !liveErrors.departureFlight
+  const contactReady = !liveErrors.firstName && !liveErrors.lastName && !liveErrors.email && !liveErrors.phone
+  useEffect(() => {
+    if (!hydrated || !item) return
+    step('view')
+    if (timesReady) step('times_ready')
+    if (flightsReady) step('flights_ready')
+    if (contactReady) step('contact_ready')
+  }, [hydrated, item, timesReady, flightsReady, contactReady, step])
+
   const body = useMemo(() => ({
     amount: total,
     items: item ? [{ destinationId: item.destinationId, passengers: item.passengers, ...legs }] : [],
@@ -228,13 +267,15 @@ export default function OnePageTransfersCheckout() {
     const errs = validateTransferForm({ contact: form, legs, minDateTime })
     setErrors(errs)
     if (Object.keys(errs).length) {
+      blocked([...FIELD_ORDER.filter((k) => errs[k]), ...Object.keys(errs).filter((k) => !FIELD_ORDER.includes(k))])
       setAnnouncement(attentionLine(errs, FIELD_LABELS, FIELD_ORDER))
       focusFirstError(errs, FIELD_ORDER)
       return false
     }
+    step('pay_tap')
     setAnnouncement('')
     return true
-  }, [form, legs, minDateTime])
+  }, [form, legs, minDateTime, blocked, step])
 
   /**
    * One field, two kinds of code. A coupon is tried first; a miss falls
@@ -286,6 +327,23 @@ export default function OnePageTransfersCheckout() {
   // True only while the pickup is still the one we worked out from the
   // flight. The guest can move it, and the line must stop claiming otherwise.
   const standardLead = !!flightAt && LEG_TIME_RE.test(flightAt) && !!item?.departureAt && item.departureAt === pickupFromFlight(flightAt)
+  // The departure rules judge the hotel PICKUP. While it is the one worked
+  // out from the flight, the flight is what the guest changes, so the message
+  // sits under the flight; once they have set their own pickup, it sits with
+  // the pickup and names it (it said "the flight home" about a pickup).
+  const pickupOwnsError = !!errors.departureAt && !!derivedPickup && !standardLead
+  const pickupError = pickupOwnsError
+    ? errors.departureAt.replace(/^The flight home must be after you arrive$/, 'Your hotel pickup must be after you arrive')
+    : undefined
+  // The earliest flight home the rules accept, for the picker: its pickup
+  // (MIN_PICKUP_LEAD_MIN before the flight) must clear our notice and come
+  // after landing.
+  const flightMin = (() => {
+    if (!minDateTime) return ''
+    const afterLanding = hasArrivalLeg && item?.arrivalAt && LEG_TIME_RE.test(item.arrivalAt) ? shiftWallClock(item.arrivalAt, 1) : ''
+    const pickupFloor = afterLanding > minDateTime ? afterLanding : minDateTime
+    return shiftWallClock(pickupFloor, MIN_PICKUP_LEAD_MIN) || minDateTime
+  })()
 
   return (
     <div className="opc-wrap" style={{ minHeight: '100vh', paddingTop: 'var(--nav-h, 56px)', background: 'var(--bg-warm)' }}>
@@ -379,8 +437,8 @@ export default function OnePageTransfersCheckout() {
                       <div style={{ display: 'flex', flexDirection: 'column', gap: 12, padding: '14px 14px 16px', borderRadius: 'var(--r-md)', background: 'var(--bg-warm)', border: '1px solid var(--border)' }}>
                         <p style={{ display: 'flex', alignItems: 'center', gap: 6, fontFamily: FONT, fontSize: 13, fontWeight: 700, color: 'var(--emerald)' }}><PlaneLanding size={14} /> Arriving at MBJ</p>
                         <div className="opc-grid-2">
-                          <TextField id="xfer-arrival-at" fieldKey="arrivalAt" label="Flight lands" type="datetime-local" min={minDateTime} value={item.arrivalAt ?? ''} onChange={(v) => setLeg({ arrivalAt: v }, 'arrivalAt')} error={errors.arrivalAt} hint="Jamaica time, from your ticket" format={DATETIME_VALUE_FORMAT} incompleteMessage={incompleteDateMessage('Flight lands', 'datetime')} />
-                          <TextField id="xfer-arrival-flight" fieldKey="arrivalFlight" label="Arrival flight" value={item.arrivalFlight ?? ''} onChange={(v) => setLeg({ arrivalFlight: v }, 'arrivalFlight')} error={errors.arrivalFlight} placeholder="e.g. AA1234" autoComplete="off" autoCapitalize="characters" />
+                          <TextField id="xfer-arrival-at" fieldKey="arrivalAt" label="Flight lands" type="datetime-local" min={minDateTime} value={item.arrivalAt ?? ''} onChange={(v) => setLeg({ arrivalAt: v }, 'arrivalAt')} onBlur={() => leave('arrivalAt', item.arrivalAt)} error={errors.arrivalAt} hint="Jamaica time, from your ticket" format={DATETIME_VALUE_FORMAT} incompleteMessage={incompleteDateMessage('Flight lands', 'datetime')} />
+                          <TextField id="xfer-arrival-flight" fieldKey="arrivalFlight" label="Arrival flight" value={item.arrivalFlight ?? ''} onChange={(v) => setLeg({ arrivalFlight: v }, 'arrivalFlight')} onBlur={() => leave('arrivalFlight', item.arrivalFlight)} error={errors.arrivalFlight} hint="As on your ticket" placeholder="e.g. AA1234" autoComplete="off" autoCapitalize="characters" />
                         </div>
                         <p style={{ fontFamily: FONT, fontSize: 13, color: 'var(--text-tertiary)', lineHeight: 1.5 }}>Your driver meets you at arrivals with a name sign, after customs and bags.</p>
                       </div>
@@ -390,21 +448,25 @@ export default function OnePageTransfersCheckout() {
                       <div style={{ display: 'flex', flexDirection: 'column', gap: 12, padding: '14px 14px 16px', borderRadius: 'var(--r-md)', background: 'var(--bg-warm)', border: '1px solid var(--border)' }}>
                         <p style={{ display: 'flex', alignItems: 'center', gap: 6, fontFamily: FONT, fontSize: 13, fontWeight: 700, color: 'var(--gold-text)' }}><PlaneTakeoff size={14} /> Flying home from MBJ</p>
                         <div className="opc-grid-2">
-                          <TextField id="xfer-flight-at" fieldKey="departureAt" label="Flight departs" type="datetime-local" min={hasArrivalLeg && item.arrivalAt ? item.arrivalAt : minDateTime} value={flightAt} onChange={setFlight} error={errors.departureAt} hint="Jamaica time, from your ticket" format={DATETIME_VALUE_FORMAT} incompleteMessage={incompleteDateMessage('Flight departs', 'datetime')} />
-                          <TextField id="xfer-departure-flight" fieldKey="departureFlight" label="Departure flight" value={item.departureFlight ?? ''} onChange={(v) => setLeg({ departureFlight: v }, 'departureFlight')} error={errors.departureFlight} placeholder="e.g. AA4321" autoComplete="off" autoCapitalize="characters" />
+                          <TextField id="xfer-flight-at" fieldKey={pickupOwnsError ? 'departureFlightAt' : 'departureAt'} label="Flight departs" type="datetime-local" min={flightMin} value={flightAt} onChange={setFlight} onBlur={() => leave('departureAt', flightAt)} error={pickupOwnsError ? undefined : errors.departureAt} hint="Jamaica time, from your ticket" format={DATETIME_VALUE_FORMAT} incompleteMessage={incompleteDateMessage('Flight departs', 'datetime')} />
+                          <TextField id="xfer-departure-flight" fieldKey="departureFlight" label="Departure flight" value={item.departureFlight ?? ''} onChange={(v) => setLeg({ departureFlight: v }, 'departureFlight')} onBlur={() => leave('departureFlight', item.departureFlight)} error={errors.departureFlight} hint="As on your ticket" placeholder="e.g. AA4321" autoComplete="off" autoCapitalize="characters" />
                         </div>
                         {derivedPickup ? (
-                          <div style={{ fontFamily: FONT, fontSize: 13, lineHeight: 1.5, color: 'var(--text-secondary)' }}>
+                          <div data-field={pickupOwnsError ? 'departureAt' : undefined} style={{ fontFamily: FONT, fontSize: 13, lineHeight: 1.5, color: 'var(--text-secondary)' }}>
                             <span style={{ fontWeight: 700, color: 'var(--text-primary)' }}>Hotel pickup {derivedPickup}</span>{standardLead ? `, ${PICKUP_LEAD_TEXT} before your flight.` : ', the time you chose.'}{' '}
                             <button type="button" onClick={() => setAdjustPickup((a) => !a)}
                               aria-label={adjustPickup ? 'Done adjusting the hotel pickup time' : 'Adjust the hotel pickup time'}
+                              aria-describedby={pickupError && !adjustPickup ? 'xfer-pickup-error' : undefined}
                               style={{ background: 'none', border: 'none', padding: '6px 8px', margin: '0 -8px', minHeight: 32, font: 'inherit', color: 'inherit', cursor: 'pointer', textDecoration: 'underline', textUnderlineOffset: 2 }}>
                               {adjustPickup ? 'Done' : 'Adjust'}
                             </button>
                             {adjustPickup && (
                               <div style={{ marginTop: 10, maxWidth: 300 }}>
-                                <TextField id="xfer-departure-at" label="Pickup time at the hotel" type="datetime-local" min={hasArrivalLeg && item.arrivalAt ? item.arrivalAt : minDateTime} value={item.departureAt ?? ''} onChange={(v) => setLeg({ departureAt: v }, 'departureAt')} hint="Earlier is safer than later on departure day." format={DATETIME_VALUE_FORMAT} incompleteMessage={incompleteDateMessage('Pickup time at the hotel', 'datetime')} />
+                                <TextField id="xfer-departure-at" label="Pickup time at the hotel" type="datetime-local" min={hasArrivalLeg && item.arrivalAt ? item.arrivalAt : minDateTime} value={item.departureAt ?? ''} onChange={(v) => setLeg({ departureAt: v }, 'departureAt')} onBlur={() => leave('departureAt', item.departureAt)} error={pickupError} hint="Earlier is safer than later on departure day." format={DATETIME_VALUE_FORMAT} incompleteMessage={incompleteDateMessage('Pickup time at the hotel', 'datetime')} />
                               </div>
+                            )}
+                            {pickupError && !adjustPickup && (
+                              <p id="xfer-pickup-error" style={{ fontFamily: FONT, fontSize: 13, color: '#b00020', marginTop: 6, lineHeight: 1.4 }}>{pickupError}</p>
                             )}
                           </div>
                         ) : (
@@ -425,8 +487,8 @@ export default function OnePageTransfersCheckout() {
                   <TextField id="xfer-first" fieldKey="firstName" label="First name" value={form.firstName} onChange={setField('firstName')} error={errors.firstName} autoComplete="given-name" placeholder="First name" />
                   <TextField id="xfer-last" fieldKey="lastName" label="Last name" value={form.lastName} onChange={setField('lastName')} error={errors.lastName} autoComplete="family-name" placeholder="Last name" />
                 </div>
-                <TextField id="xfer-email" fieldKey="email" label="Email" type="email" inputMode="email" value={form.email} onChange={setField('email')} error={errors.email} autoComplete="email" placeholder="you@email.com" hint="Your confirmation and driver details go here." />
-                <TextField id="xfer-phone" fieldKey="phone" label="Phone" type="tel" inputMode="tel" value={form.phone} onChange={setField('phone')} error={errors.phone} autoComplete="tel" placeholder="+1 (555) 000-0000" />
+                <TextField id="xfer-email" fieldKey="email" label="Email" type="email" inputMode="email" value={form.email} onChange={setField('email')} onBlur={() => leave('email', form.email)} error={errors.email} autoComplete="email" placeholder="you@email.com" hint="Your confirmation and driver details go here." />
+                <TextField id="xfer-phone" fieldKey="phone" label="Phone" type="tel" inputMode="tel" value={form.phone} onChange={setField('phone')} onBlur={() => leave('phone', form.phone)} error={errors.phone} autoComplete="tel" placeholder="+1 (555) 000-0000" hint="WhatsApp works. Your driver uses it on the day." />
               </div>
               {/* Shown, not hidden behind a disclosure. A child seat or a
                   wheelchair is the kind of thing a guest mentions only if the

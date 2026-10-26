@@ -7,6 +7,7 @@
  * server last priced it". The components only wire these to state.
  */
 import { MIN_LEAD_TIME_HOURS, MIN_PICKUP_LEAD_MIN, earliestBookableExperienceDate } from './booking-window'
+import { SUPPORT_EMAIL } from './contact'
 
 export const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 export const LEG_TIME_RE = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/
@@ -90,6 +91,32 @@ export function attentionLine(errors: FieldErrors, labels: Record<string, string
   return `${n} ${n === 1 ? 'thing needs' : 'things need'} attention before you can pay: ${names.join(', ')}.`
 }
 
+/**
+ * The message for a field the guest has just LEFT: the rule it breaks, if it
+ * holds a value. An empty field is not flagged on the way past, because the
+ * guest may simply be moving through the form; Pay still names every missing
+ * one. Without this, a mistyped email or a flight home before the arrival
+ * stayed silent until the Pay tap, which then listed every problem at once at
+ * the bottom of a long page.
+ */
+export function messageOnLeave(live: FieldErrors, key: string, value: string | undefined | null): string | undefined {
+  return (value ?? '').trim() ? live[key] : undefined
+}
+
+/**
+ * Drops every shown message the live rules no longer report, so fixing a
+ * field, or the field a rule compares it with (moving the arrival earlier
+ * fixes "the flight home must be after you arrive"), clears it at once. A
+ * message the rules still report keeps its wording: a half-filled date says
+ * so more precisely than the rule's "Pick a date". Returns the same object
+ * when nothing changes, so it can run in an effect without looping.
+ */
+export function reconcileShown(shown: FieldErrors, live: FieldErrors): FieldErrors {
+  const kept = Object.keys(shown).filter((k) => live[k])
+  if (kept.length === Object.keys(shown).length) return shown
+  return Object.fromEntries(kept.map((k) => [k, shown[k]]))
+}
+
 /** Flight numbers: non-empty, at least one digit, at most 10 chars (matches the server). */
 export function flightOk(v: string | undefined | null): boolean {
   const t = (v ?? '').trim()
@@ -120,20 +147,36 @@ export function legsFor(tripType: 'round_trip' | 'one_way', fromAirport: boolean
   }
 }
 
+/**
+ * A flight cannot be moved to suit our notice, so "choose a later time" was a
+ * dead end for a guest landing tonight; the Terms say anything inside the
+ * window is arranged with us directly, so the message says how.
+ */
+const TOO_SOON_TAIL = `too soon to book online. Email ${SUPPORT_EMAIL} and we will see if we can arrange it.`
+
+/** Says "add" when the box is empty and "check" when what is there is not a flight number. */
+function flightMessage(value: string | undefined, which: 'arrival' | 'departure', example: string): string {
+  return (value ?? '').trim()
+    ? `Check the ${which} flight number: letters and digits, like ${example}`
+    : `Add your ${which} flight number, e.g. ${example}`
+}
+
 export function validateTransferForm(input: TransferFormInput): FieldErrors {
   const e = validateContact(input.contact)
   const { legs, minDateTime } = input
   const { hasArrivalLeg, hasDepartureLeg } = legsFor(legs.tripType, legs.fromAirport)
   if (hasArrivalLeg) {
     if (!legs.arrivalAt) e.arrivalAt = 'Add when your flight lands'
-    else if (minDateTime && legs.arrivalAt < minDateTime) e.arrivalAt = `Pickups need ${MIN_LEAD_TIME_HOURS} hours’ notice; choose a later time`
-    if (!flightOk(legs.arrivalFlight)) e.arrivalFlight = 'Add your arrival flight number, e.g. AA1234'
+    else if (minDateTime && legs.arrivalAt < minDateTime) e.arrivalAt = `Your flight lands within ${MIN_LEAD_TIME_HOURS} hours, ${TOO_SOON_TAIL}`
+    if (!flightOk(legs.arrivalFlight)) e.arrivalFlight = flightMessage(legs.arrivalFlight, 'arrival', 'AA1234')
   }
   if (hasDepartureLeg) {
     if (!legs.departureAt) e.departureAt = 'Add when your flight home departs'
-    else if (minDateTime && legs.departureAt < minDateTime) e.departureAt = `Pickups need ${MIN_LEAD_TIME_HOURS} hours’ notice; choose a later time`
+    // departureAt is the hotel PICKUP (worked out from the flight), so the
+    // notice is judged on the pickup and the message says so.
+    else if (minDateTime && legs.departureAt < minDateTime) e.departureAt = `Your hotel pickup would be within ${MIN_LEAD_TIME_HOURS} hours, ${TOO_SOON_TAIL}`
     else if (legs.tripType === 'round_trip' && legs.arrivalAt && legs.departureAt <= legs.arrivalAt) e.departureAt = 'The flight home must be after you arrive'
-    if (!flightOk(legs.departureFlight)) e.departureFlight = 'Add your departure flight number, e.g. AA4321'
+    if (!flightOk(legs.departureFlight)) e.departureFlight = flightMessage(legs.departureFlight, 'departure', 'AA4321')
   }
   return e
 }

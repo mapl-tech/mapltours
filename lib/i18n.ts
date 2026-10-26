@@ -26,7 +26,7 @@ export const languages: Language[] = [
 
 const T: Record<string, Record<string, string>> = {
   es: {
-    'Private, not pooled': 'Privado, sin compartir', 'Jamaican drivers and hosts': 'Conductores y anfitriones jamaicanos', 'A person on email': 'Una persona por correo', 'One price per vehicle': 'Un precio por vehiculo', 'Paid to the people who drive it': 'Pagado a quienes te llevan',
+    'Private, not pooled': 'Privado, sin compartir', 'Jamaican drivers and hosts': 'Conductores y anfitriones jamaicanos', 'A person on email': 'Una persona por correo', 'One price per vehicle': 'Un precio por vehiculo', 'One fare for up to 4': 'Una tarifa hasta 4 personas', 'Paid to the people who drive it': 'Pagado a quienes te llevan',
     'Discover': 'Descubre', 'beyond the resort.': 'mas alla del resort.',
     'What is included': 'Que incluye', 'Not included': 'No incluido',
     'What to bring': 'Que llevar', 'Good to know': 'Bueno saberlo',
@@ -198,7 +198,7 @@ const T: Record<string, Record<string, string>> = {
     'Full day': 'Dia completo',
   },
   fr: {
-    'Private, not pooled': 'Privé, jamais partagé', 'Jamaican drivers and hosts': 'Chauffeurs et hôtes jamaïcains', 'A person on email': 'Une vraie personne par e-mail', 'One price per vehicle': 'Un prix par véhicule', 'Paid to the people who drive it': 'Payé à ceux qui vous conduisent',
+    'Private, not pooled': 'Privé, jamais partagé', 'Jamaican drivers and hosts': 'Chauffeurs et hôtes jamaïcains', 'A person on email': 'Une vraie personne par e-mail', 'One price per vehicle': 'Un prix par véhicule', 'One fare for up to 4': 'Un seul tarif jusqu’à 4 personnes', 'Paid to the people who drive it': 'Payé à ceux qui vous conduisent',
     'Discover': 'Decouvrez', 'beyond the resort.': 'au-dela du resort.',
     'What is included': 'Ce qui est inclus', 'Not included': 'Non inclus',
     'What to bring': 'Quoi apporter', 'Good to know': 'Bon a savoir',
@@ -289,7 +289,7 @@ const T: Record<string, Record<string, string>> = {
     'Full day': 'Journee complete',
   },
   de: {
-    'Private, not pooled': 'Privat, nie geteilt', 'Jamaican drivers and hosts': 'Jamaikanische Fahrer und Gastgeber', 'A person on email': 'Ein Mensch per E-Mail', 'One price per vehicle': 'Ein Preis pro Fahrzeug', 'Paid to the people who drive it': 'Bezahlt an die, die Sie fahren',
+    'Private, not pooled': 'Privat, nie geteilt', 'Jamaican drivers and hosts': 'Jamaikanische Fahrer und Gastgeber', 'A person on email': 'Ein Mensch per E-Mail', 'One price per vehicle': 'Ein Preis pro Fahrzeug', 'One fare for up to 4': 'Ein Preis für bis zu 4 Personen', 'Paid to the people who drive it': 'Bezahlt an die, die Sie fahren',
     'Discover': 'Entdecken Sie', 'beyond the resort.': 'jenseits des Resorts.',
     'What is included': 'Was enthalten ist', 'Not included': 'Nicht enthalten',
     'What to bring': 'Was mitbringen', 'Good to know': 'Gut zu wissen',
@@ -367,7 +367,7 @@ const T: Record<string, Record<string, string>> = {
     'Full day': 'Ganzer Tag',
   },
   pt: {
-    'Private, not pooled': 'Privado, sem partilha', 'Jamaican drivers and hosts': 'Motoristas e anfitriões jamaicanos', 'A person on email': 'Uma pessoa por e-mail', 'One price per vehicle': 'Um preço por veículo', 'Paid to the people who drive it': 'Pago a quem te leva',
+    'Private, not pooled': 'Privado, sem partilha', 'Jamaican drivers and hosts': 'Motoristas e anfitriões jamaicanos', 'A person on email': 'Uma pessoa por e-mail', 'One price per vehicle': 'Um preço por veículo', 'One fare for up to 4': 'Uma tarifa para até 4 pessoas', 'Paid to the people who drive it': 'Pago a quem te leva',
     'Discover': 'Descubra', 'beyond the resort.': 'alem do resort.',
     'What is included': 'O que esta incluido', 'Not included': 'Nao incluido',
     'What to bring': 'O que levar', 'Good to know': 'Bom saber',
@@ -409,7 +409,7 @@ const T: Record<string, Record<string, string>> = {
     'Full day': 'Dia inteiro',
   },
   ja: {
-    'Private, not pooled': '完全プライベート、相乗りなし', 'Jamaican drivers and hosts': 'ジャマイカ人のドライバーとホスト', 'A person on email': 'メールには人が返信', 'One price per vehicle': '車両ごとの一律料金', 'Paid to the people who drive it': '運転する人に支払われます',
+    'Private, not pooled': '完全プライベート、相乗りなし', 'Jamaican drivers and hosts': 'ジャマイカ人のドライバーとホスト', 'A person on email': 'メールには人が返信', 'One price per vehicle': '車両ごとの一律料金', 'One fare for up to 4': '4名まで同一料金', 'Paid to the people who drive it': '運転する人に支払われます',
     'Discover': '発見する', 'beyond the resort.': 'リゾートを超えて。',
     'What is included': '含まれるもの', 'Not included': '含まれないもの',
     'What to bring': '持ち物', 'Good to know': '知っておきたいこと',
@@ -451,7 +451,7 @@ const T: Record<string, Record<string, string>> = {
     'Full day': '終日',
   },
   zh: {
-    'Private, not pooled': '私人包车，不拼车', 'Jamaican drivers and hosts': '牙买加本地司机与向导', 'A person on email': '邮件由真人回复', 'One price per vehicle': '按车计价', 'Paid to the people who drive it': '付给为你开车的人',
+    'Private, not pooled': '私人包车，不拼车', 'Jamaican drivers and hosts': '牙买加本地司机与向导', 'A person on email': '邮件由真人回复', 'One price per vehicle': '按车计价', 'One fare for up to 4': '最多4人同一价格', 'Paid to the people who drive it': '付给为你开车的人',
     'Discover': '发现', 'beyond the resort.': '超越度假村。',
     'What is included': '包含内容', 'Not included': '不包含',
     'What to bring': '携带物品', 'Good to know': '温馨提示',
@@ -493,7 +493,7 @@ const T: Record<string, Record<string, string>> = {
     'Full day': '全天',
   },
   ko: {
-    'Private, not pooled': '프라이빗, 합승 없음', 'Jamaican drivers and hosts': '자메이카 현지 드라이버와 호스트', 'A person on email': '이메일은 사람이 답합니다', 'One price per vehicle': '차량당 하나의 가격', 'Paid to the people who drive it': '운전하는 사람에게 지급',
+    'Private, not pooled': '프라이빗, 합승 없음', 'Jamaican drivers and hosts': '자메이카 현지 드라이버와 호스트', 'A person on email': '이메일은 사람이 답합니다', 'One price per vehicle': '차량당 하나의 가격', 'One fare for up to 4': '최대 4인 동일 요금', 'Paid to the people who drive it': '운전하는 사람에게 지급',
     'Discover': '발견하다', 'beyond the resort.': '리조트를 넘어서.',
     'What is included': '포함 사항', 'Not included': '불포함 사항',
     'What to bring': '준비물', 'Good to know': '알아두면 좋아요',

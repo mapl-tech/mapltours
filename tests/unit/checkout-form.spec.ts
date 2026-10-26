@@ -4,6 +4,7 @@ import {
   formatWallClock, formatDate, orderKey, legsFor, PICKUP_LEAD_TEXT,
   readCheckoutAnswer, PAYMENT_NOT_SET_UP,
   DATE_VALUE_FORMAT, DATETIME_VALUE_FORMAT, LEG_TIME_RE, incompleteDateMessage, attentionLine, shiftWallClock,
+  messageOnLeave, reconcileShown,
 } from '../../lib/checkout-form'
 
 const NOW = new Date('2026-09-05T15:00:00Z') // 10:00 Jamaica, Sep 5
@@ -204,5 +205,101 @@ describe('reading a checkout answer', () => {
       expect(a.result).toEqual({ error: PAYMENT_NOT_SET_UP })
       expect(a.reusable).toBe(false)
     }
+  })
+})
+
+/**
+ * Messages while the guest moves through the form. Before these, every rule
+ * stayed silent until the Pay tap, which then listed all the problems at once
+ * at the bottom of a long page; a flight home before the arrival even got a
+ * hotel pickup offered for it.
+ */
+describe('a field the guest has just left', () => {
+  const ride = (legs: Partial<Parameters<typeof validateTransferForm>[0]['legs']>) =>
+    validateTransferForm({ contact, legs: { tripType: 'round_trip', fromAirport: true, ...legs }, minDateTime: '2026-09-05T22:00' })
+
+  test('gets the rule it breaks when it holds a value', () => {
+    const live = validateContact({ ...contact, email: 'ann@' })
+    expect(messageOnLeave(live, 'email', 'ann@')).toMatch(/does not look right/)
+  })
+
+  test('is not flagged when empty, because the guest may just be passing through', () => {
+    const live = validateContact({ ...contact, email: '' })
+    expect(live.email).toBeTruthy()
+    expect(messageOnLeave(live, 'email', '')).toBeUndefined()
+    expect(messageOnLeave(live, 'email', '   ')).toBeUndefined()
+    expect(messageOnLeave(live, 'email', undefined)).toBeUndefined()
+  })
+
+  test('says nothing when the field is fine', () => {
+    expect(messageOnLeave(validateContact(contact), 'email', contact.email)).toBeUndefined()
+  })
+
+  test('catches the 12-hour rule and a flight home before the arrival on the way past', () => {
+    const tooSoon = ride({ arrivalAt: '2026-09-05T20:00', arrivalFlight: 'AA1', departureAt: '2026-09-12T08:00', departureFlight: 'AA2' })
+    expect(messageOnLeave(tooSoon, 'arrivalAt', '2026-09-05T20:00')).toMatch(/too soon to book online/)
+    const backwards = ride({ arrivalAt: '2026-09-10T14:00', arrivalFlight: 'AA1', departureAt: '2026-09-09T06:30', departureFlight: 'AA2' })
+    expect(messageOnLeave(backwards, 'departureAt', '2026-09-09T10:00')).toMatch(/after you arrive/)
+  })
+})
+
+describe('shown messages once the guest fixes something', () => {
+  test('drop the moment the rule passes, even when another field fixed it', () => {
+    const shown = { departureAt: 'The flight home must be after you arrive', email: 'That email does not look right' }
+    const live = { email: 'That email does not look right' }
+    expect(reconcileShown(shown, live)).toEqual({ email: 'That email does not look right' })
+  })
+
+  test('keep their own wording while the rule still fails', () => {
+    // A half-filled date says so; the rule only knows the value reads empty.
+    const shown = { tripDate: 'Trip date is missing part of the date. Fill in the day, month and year.' }
+    expect(reconcileShown(shown, { tripDate: 'Pick a date' })).toBe(shown)
+  })
+
+  test('return the same object when nothing changes, so an effect cannot loop', () => {
+    const shown = { email: 'x' }
+    expect(reconcileShown(shown, { email: 'x', phone: 'y' })).toBe(shown)
+    const empty = {}
+    expect(reconcileShown(empty, { email: 'x' })).toBe(empty)
+  })
+
+  test('never add a message the guest was not shown', () => {
+    expect(reconcileShown({}, { email: 'x', phone: 'y' })).toEqual({})
+  })
+})
+
+/**
+ * Messages a guest can act on. A flight cannot be moved to suit our notice,
+ * so "choose a later time" was a dead end; and a flight number that is there
+ * but wrong was told to "add" one.
+ */
+describe('ride messages say what to do', () => {
+  const min = '2026-09-06T10:00'
+  const base = { tripType: 'round_trip' as const, fromAirport: true, arrivalAt: '2026-10-10T14:30', arrivalFlight: 'AA1234', departureAt: '2026-10-17T10:00', departureFlight: 'AA4321' }
+
+  test('a flight inside the notice says how to arrange it, by email', () => {
+    const e = validateTransferForm({ contact, minDateTime: min, legs: { ...base, arrivalAt: '2026-09-06T09:00' } })
+    expect(e.arrivalAt).toMatch(/12 hours/)
+    expect(e.arrivalAt).toMatch(/contact@mapltours\.com/)
+    expect(e.arrivalAt).not.toMatch(/choose a later time/)
+  })
+
+  test('a pickup for the flight home inside the notice names the pickup, not the flight', () => {
+    const e = validateTransferForm({ contact, minDateTime: min, legs: { tripType: 'one_way', fromAirport: false, departureAt: '2026-09-06T08:00', departureFlight: 'AA4321' } })
+    expect(e.departureAt).toMatch(/^Your hotel pickup would be within 12 hours/)
+  })
+
+  test('a flight number that is there but wrong is asked to be checked, not added', () => {
+    const wrong = validateTransferForm({ contact, minDateTime: min, legs: { ...base, arrivalFlight: 'AA', departureFlight: 'AA1234/BA5678' } })
+    expect(wrong.arrivalFlight).toMatch(/^Check the arrival flight number/)
+    expect(wrong.departureFlight).toMatch(/^Check the departure flight number/)
+    const missing = validateTransferForm({ contact, minDateTime: min, legs: { ...base, arrivalFlight: '  ', departureFlight: '' } })
+    expect(missing.arrivalFlight).toMatch(/^Add your arrival flight number/)
+    expect(missing.departureFlight).toMatch(/^Add your departure flight number/)
+  })
+
+  test('no ride message carries an em dash', () => {
+    const e = validateTransferForm({ contact: {}, minDateTime: min, legs: { ...base, arrivalAt: '2026-09-06T09:00', arrivalFlight: 'A', departureAt: '2026-09-06T08:00', departureFlight: '' } })
+    for (const m of Object.values(e)) expect(m).not.toContain('\u2014')
   })
 })

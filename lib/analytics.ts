@@ -484,3 +484,86 @@ export function trackReelCtaTap(
     /* no-op */
   }
 }
+
+/**
+ * Where a guest stops inside a checkout.
+ *
+ * begin_checkout fires only once the server has priced the order, which is
+ * after every detail is filled in, so a guest who opened the page and left
+ * was invisible: in Sept and Oct 2026 about 36 people reached the ride
+ * checkout and 6 got far enough to be saved, with nothing to say which field
+ * stopped the other 30. Each step is its own event NAME (checkout_view,
+ * checkout_contact_ready, ...) so it reads straight off GA4's event list with
+ * no custom dimension to register, and each field a refused Pay names is its
+ * own checkout_missing_<field>. The pages send each name at most once per page
+ * load, so an event count reads as a count of checkout visits (a wallet tap
+ * validates twice, and the sticky bar validates before Pay does). Hotjar gets
+ * the same names, so its recordings can be filtered to refused payments.
+ *
+ * Field KEYS only, never what was typed (rule 3 above).
+ */
+export type CheckoutStep =
+  | 'view'          // the form is on screen with something to book
+  | 'trip_ready'    // tour: a bookable date and a pickup place
+  | 'times_ready'   // ride: every flight time the ride needs, inside the notice rule
+  | 'flights_ready' // ride: every flight number the ride needs
+  | 'contact_ready' // a name, a valid email and a phone
+  | 'pay_tap'       // Pay, Apple Pay or Continue, with nothing missing
+  | 'pay_blocked'   // the same tap, refused by a missing or wrong field
+
+type HjFn = (command: string, ...args: unknown[]) => void
+
+/**
+ * The Hotjar counterpart of whenGtagReady. Hotjar loads lazyOnload, after the
+ * page's own load, so a checkout_view sent at hydration found no window.hj and
+ * was lost. Its snippet defines a queueing hj() the moment it runs, so calling
+ * that is safe; an opted-out visitor never gets one and nothing is sent.
+ */
+function whenHjReady(run: (hj: HjFn) => void, attempts = 80): void {
+  if (typeof window === 'undefined') return
+  const w = window as unknown as { hj?: HjFn }
+  if (typeof w.hj === 'function') {
+    run(w.hj)
+    return
+  }
+  if (attempts <= 0) return
+  window.setTimeout(() => whenHjReady(run, attempts - 1), 250)
+}
+
+export function checkoutEventName(step: CheckoutStep): string {
+  return `checkout_${step}`
+}
+
+/** checkout_missing_arrival_flight from "arrivalFlight"; GA4 caps event names at 40 characters. */
+export function checkoutMissingEventName(field: string): string {
+  const snake = field.replace(/[A-Z]/g, (c) => `_${c.toLowerCase()}`).replace(/[^a-z0-9_]/g, '')
+  return `checkout_missing_${snake}`.slice(0, 40)
+}
+
+function sendCheckoutEvent(name: string, params: Record<string, string>): void {
+  whenGtagReady((gtag) => {
+    gtag('event', name, params)
+  })
+  whenHjReady((hj) => {
+    hj('event', name)
+  })
+}
+
+export function trackCheckoutStep(checkout: 'tour' | 'ride', step: CheckoutStep): void {
+  try {
+    if (typeof window === 'undefined') return
+    sendCheckoutEvent(checkoutEventName(step), { checkout })
+  } catch {
+    /* no-op */
+  }
+}
+
+/** Fields a refused Pay named, one event each. The caller sends each field once per page load. */
+export function trackCheckoutMissing(checkout: 'tour' | 'ride', fields: string[]): void {
+  try {
+    if (typeof window === 'undefined') return
+    for (const f of fields) sendCheckoutEvent(checkoutMissingEventName(f), { checkout })
+  } catch {
+    /* no-op */
+  }
+}

@@ -5,6 +5,7 @@ import { parseDurationHours, stopHoursFor, useCartStore } from '@/lib/cart'
 import { EATS } from '@/lib/eats'
 import { placeLabel } from '@/lib/experiences'
 import { planDay, fitCandidateStop, canMoveItem, dayAreas, roundFive, MAX_STOP_GAP_MIN } from '@/lib/day-route'
+import { placeShown } from '@/components/checkout/one-page/pickup-places'
 import { useState } from 'react'
 
 /**
@@ -73,8 +74,8 @@ export default function DayFlow({ compact = false }: { compact?: boolean }) {
   if (items.length === 0 && stops.length === 0) return null
 
   const ctx = { items, stops }
-  const where = pickup?.trim() || 'Your hotel'
-  const backTo = dropoff?.trim() || where
+  const where = placeShown(pickup?.trim() ?? '') || 'Your hotel'
+  const backTo = placeShown(dropoff?.trim() ?? '') || where
   // Reordering belongs to the full-size view (checkout); the drawer is a
   // summary, and a row of arrows in a 400px panel is noise.
   const canReorder = !compact && items.length > 1

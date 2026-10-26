@@ -1,4 +1,4 @@
-import { describe, test, expect, beforeEach, afterEach, vi } from 'vitest'
+import { describe, test, expect, afterEach, vi } from 'vitest'
 
 /**
  * GA4 ecommerce events.
@@ -13,6 +13,17 @@ import { describe, test, expect, beforeEach, afterEach, vi } from 'vitest'
  */
 
 type Store = Record<string, string>
+
+// whenGtagReady and whenHjReady keep polling for a while when their tag is
+// absent. Tracked so afterEach can stop them: a poll left running would fire
+// into a later test's window (a later test that installs Hotjar received four
+// events from the tests before it).
+const timers: ReturnType<typeof setTimeout>[] = []
+const trackedTimeout = (fn: () => void, ms: number) => {
+  const t = setTimeout(fn, ms)
+  timers.push(t)
+  return t
+}
 
 function installWindow(opts: { withGtag?: boolean; storageThrows?: boolean } = {}) {
   const store: Store = {}
@@ -30,8 +41,8 @@ function installWindow(opts: { withGtag?: boolean; storageThrows?: boolean } = {
   const win: Record<string, unknown> = {
     dataLayer,
     localStorage,
-    // The module waits for gtag via setTimeout; give it the real one.
-    setTimeout: (fn: () => void, ms: number) => setTimeout(fn, ms),
+    // The module waits for gtag via setTimeout; give it the real one, tracked.
+    setTimeout: trackedTimeout,
   }
   // gtag defaults to PRESENT now: the interesting case is no longer "queue it
   // anyway" but "wait, and give up if it never arrives".
@@ -53,6 +64,7 @@ async function fresh() {
 }
 
 afterEach(() => {
+  for (const t of timers.splice(0)) clearTimeout(t)
   delete (globalThis as unknown as { window?: unknown }).window
 })
 
@@ -188,5 +200,71 @@ describe('the other two events', () => {
     trackAddToCart(input)
     await settle()
     expect(sent(dataLayer).filter((e) => e[1] === 'add_to_cart')).toHaveLength(2)
+  })
+})
+
+/**
+ * Where a guest stops inside a checkout. Each step is its own event NAME so it
+ * reads straight off GA4's event list, each field a refused Pay names is its
+ * own event, Hotjar gets the same names (once it has loaded) for filtering
+ * recordings, and nothing a guest typed ever leaves the page.
+ */
+describe('checkout steps', () => {
+  test('a step is sent as checkout_<step> with the checkout it belongs to', async () => {
+    const { dataLayer } = installWindow()
+    const { trackCheckoutStep } = await fresh()
+    trackCheckoutStep('ride', 'flights_ready')
+    await settle()
+    expect(sent(dataLayer)).toEqual([['event', 'checkout_flights_ready', { checkout: 'ride' }]])
+  })
+
+  test('each missing field is its own event, by key only', async () => {
+    const { dataLayer } = installWindow()
+    const { trackCheckoutMissing } = await fresh()
+    trackCheckoutMissing('ride', ['arrivalFlight', 'departureFlight', 'email'])
+    await settle()
+    expect(sent(dataLayer)).toEqual([
+      ['event', 'checkout_missing_arrival_flight', { checkout: 'ride' }],
+      ['event', 'checkout_missing_departure_flight', { checkout: 'ride' }],
+      ['event', 'checkout_missing_email', { checkout: 'ride' }],
+    ])
+  })
+
+  test('event names stay inside GA4 limits', async () => {
+    installWindow()
+    const { checkoutMissingEventName } = await fresh()
+    for (const f of ['arrivalFlight', 'departureFlight', 'tripDate', 'waiver', 'dayLimit', 'pickupName', 'aVeryLongFieldNameThatWouldOverflowTheLimit']) {
+      const n = checkoutMissingEventName(f)
+      expect(n.length).toBeLessThanOrEqual(40)
+      expect(n).toMatch(/^[a-z][a-z0-9_]*$/)
+    }
+  })
+
+  test('Hotjar gets the same names when it is on the page', async () => {
+    installWindow()
+    const hj: unknown[][] = []
+    ;(globalThis as unknown as { window: Record<string, unknown> }).window.hj = (...args: unknown[]) => { hj.push(args) }
+    const { trackCheckoutStep, trackCheckoutMissing } = await fresh()
+    trackCheckoutStep('tour', 'view')
+    trackCheckoutMissing('tour', ['waiver'])
+    expect(hj).toEqual([['event', 'checkout_view'], ['event', 'checkout_missing_waiver']])
+  })
+
+  test('Hotjar still gets a step sent before it loaded (it loads lazily)', async () => {
+    installWindow()
+    const { trackCheckoutStep } = await fresh()
+    trackCheckoutStep('tour', 'view')
+    const hj: unknown[][] = []
+    ;(globalThis as unknown as { window: Record<string, unknown> }).window.hj = (...args: unknown[]) => { hj.push(args) }
+    await new Promise((r) => setTimeout(r, 300))
+    expect(hj).toEqual([['event', 'checkout_view']])
+  })
+
+  test('sends nothing at all without gtag or Hotjar (an opted-out guest)', async () => {
+    const { dataLayer } = installWindow({ withGtag: false })
+    const { trackCheckoutStep } = await fresh()
+    expect(() => trackCheckoutStep('tour', 'pay_tap')).not.toThrow()
+    await settle()
+    expect(sent(dataLayer)).toHaveLength(0)
   })
 })
