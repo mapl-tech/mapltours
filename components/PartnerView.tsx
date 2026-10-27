@@ -680,7 +680,8 @@ export default function PartnerView() {
 
                     {/* Honeypot: hidden from people, irresistible to bots. */}
                     <input
-                      type="text" name="website" tabIndex={-1} autoComplete="off"
+                      type="text" name="mapl_hp_field" tabIndex={-1} autoComplete="off"
+                      data-1p-ignore="true" data-lpignore="true" data-form-type="other"
                       value={website} onChange={(e) => setWebsite(e.target.value)}
                       aria-hidden="true"
                       style={{ position: 'absolute', left: '-9999px', width: 1, height: 1, opacity: 0 }}

@@ -50,8 +50,11 @@ export async function POST(req: NextRequest) {
   }
 
   // Honeypot trip, silently accept so the bot thinks it worked, but do
-  // nothing. Real submissions never have `website` populated.
+  // nothing. The field was named "website" until Oct 26 2026, and Chrome's
+  // autofill filled it for real people, who then saw "sent" while nothing was
+  // sent. Log every trip so a silent drop is visible in the function logs.
   if (body.website && body.website.trim().length > 0) {
+    console.warn('[contact] honeypot tripped, submission dropped')
     return NextResponse.json({ ok: true })
   }
 

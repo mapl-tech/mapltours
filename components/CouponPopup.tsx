@@ -335,9 +335,12 @@ function Sheet({ place, closing, onClose }: { place: Place; closing: boolean; on
                 {/* Honeypot: bots fill every field. Off screen, off the tab order, off the reader. */}
                 <input
                   type="text"
-                  name="website"
+                  name="mapl_hp_field"
                   tabIndex={-1}
                   autoComplete="off"
+                  data-1p-ignore="true"
+                  data-lpignore="true"
+                  data-form-type="other"
                   aria-hidden="true"
                   className="cpop-hp"
                   value={website}

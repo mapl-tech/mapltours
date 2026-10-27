@@ -65,7 +65,12 @@ export async function POST(req: NextRequest) {
     return reply({ error: 'Invalid request' }, 400)
   }
 
-  if (body.website && body.website.trim()) return reply({ ok: true, code: FALLBACK_CODE })
+  // Honeypot. Logged, because a browser autofilling the field once made real
+  // people look like bots (contact route, Oct 26 2026).
+  if (body.website && body.website.trim()) {
+    console.warn('[lead] honeypot tripped, lead dropped')
+    return reply({ ok: true, code: FALLBACK_CODE })
+  }
 
   const email = (body.email ?? '').trim().toLowerCase().slice(0, 200)
   if (!EMAIL_RE.test(email)) {
