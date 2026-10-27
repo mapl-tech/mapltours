@@ -3,6 +3,7 @@ import { sendEmail } from '@/lib/email/send'
 import { rateLimit, getIp } from '@/lib/rate-limit'
 import ContactMessage from '@/emails/ContactMessage'
 import ContactAutoReply from '@/emails/ContactAutoReply'
+import PriceRequestAutoReply, { PRICE_REQUEST_REPLY_SUBJECT } from '@/emails/PriceRequestAutoReply'
 
 /**
  * Contact form handler.
@@ -30,7 +31,14 @@ interface ContactBody {
   message?: string
   /** Honeypot, real users never fill this. Bots fill every visible input. */
   website?: string
+  /** Set by the transfers page's "Ask for a price" form. */
+  kind?: string
+  hotel?: string
+  tripType?: string
+  passengers?: number
 }
+
+const PRICE_SUBJECT_PREFIX = 'Unlisted hotel · '
 
 export async function POST(req: NextRequest) {
   const ip = getIp(req)
@@ -70,6 +78,27 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Please enter a valid email address.' }, { status: 400 })
   if (!message)
     return NextResponse.json({ error: 'Please include a message.' }, { status: 400 })
+
+  // The transfers page's "Ask for a price" form gets its own auto-reply: the
+  // general one echoed the team's internal note to the guest and guessed a
+  // first name from the email address. Pages loaded before Oct 27 2026 send
+  // only the subject and message, so the subject also identifies the form.
+  const legacy = subject.startsWith(PRICE_SUBJECT_PREFIX)
+  const priceRequest =
+    body.kind === 'price_request' || legacy
+      ? {
+          hotel: (typeof body.hotel === 'string' && body.hotel.trim()
+            ? body.hotel
+            : legacy ? subject.slice(PRICE_SUBJECT_PREFIX.length) : ''
+          ).trim().slice(0, 200),
+          tripType: (body.tripType === 'one_way' || (!body.tripType && /Trip type: One-way/.test(message))
+            ? 'one_way'
+            : 'round_trip') as 'one_way' | 'round_trip',
+          passengers: Math.min(50, Math.max(1, Math.round(
+            Number(body.passengers) || Number(message.match(/Passengers: (\d+)/)?.[1]) || 1,
+          ))),
+        }
+      : null
 
   const submittedAt = new Date().toISOString()
   const firstName = name.split(/\s+/)[0]
@@ -115,17 +144,25 @@ export async function POST(req: NextRequest) {
   // 4. Auto-reply, best effort. Log on failure but still return success
   //    because the message DID reach the team. Never to a flagged message.
   if (trapped) return NextResponse.json({ ok: true })
-  const replyRes = await sendEmail({
-    to: email,
-    from: CONTACT_FROM,
-    subject: 'We got your message, MAPL Tours Jamaica',
-    react: ContactAutoReply({
-      firstName,
-      subject: subject || null,
-      message,
-    }),
-    tags: [{ name: 'category', value: 'contact_auto_reply' }],
-  })
+  const replyRes = priceRequest?.hotel
+    ? await sendEmail({
+        to: email,
+        from: CONTACT_FROM,
+        subject: PRICE_REQUEST_REPLY_SUBJECT,
+        react: PriceRequestAutoReply(priceRequest),
+        tags: [{ name: 'category', value: 'price_request_auto_reply' }],
+      })
+    : await sendEmail({
+        to: email,
+        from: CONTACT_FROM,
+        subject: 'We got your message, MAPL Tours Jamaica',
+        react: ContactAutoReply({
+          firstName,
+          subject: subject || null,
+          message,
+        }),
+        tags: [{ name: 'category', value: 'contact_auto_reply' }],
+      })
 
   if (!replyRes.ok) {
     console.warn('[contact] auto-reply failed (ops alert sent)', replyRes.error)

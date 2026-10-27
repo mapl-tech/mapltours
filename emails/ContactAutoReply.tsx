@@ -54,13 +54,13 @@ export default function ContactAutoReply({
 
       <Text style={{ ...s.body, marginTop: 24 }}>
         If your trip is coming up fast and you need an answer the same day,
-        reply to this email and put <strong>URGENT</strong> in the subject line,
-        it&rsquo;ll land in front of us before anything else.
+        reply to this email and put <strong>URGENT</strong> in the subject line.
+        It&rsquo;ll land in front of us before anything else.
       </Text>
 
       <Text style={s.note}>
-        This is an automated confirmation, but replies go to a real inbox
-        watched by our team in Jamaica.
+        This is an automated confirmation. Replies go to a real inbox read by
+        the MAPL Tours Jamaica team.
       </Text>
     </MaplLayout>
   )

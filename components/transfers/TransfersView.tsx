@@ -424,6 +424,12 @@ export default function TransfersView({ initialDestinationId }: { initialDestina
             `Passengers: ${passengers}\n\n` +
             `Reply with a flat quote, and add the property to DESTINATIONS if we serve it.`,
           website: askWebsite,
+          // Lets the server send the guest the price-request reply, not the
+          // general one that echoes the internal note above.
+          kind: 'price_request',
+          hotel: askForm.hotel,
+          tripType,
+          passengers,
         }),
       })
       const data = await res.json().catch(() => ({}))
