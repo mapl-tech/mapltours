@@ -49,14 +49,16 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Invalid request body' }, { status: 400 })
   }
 
-  // Honeypot trip, silently accept so the bot thinks it worked, but do
-  // nothing. The field was named "website" until Oct 26 2026, and Chrome's
-  // autofill filled it for real people, who then saw "sent" while nothing was
-  // sent. Log every trip so a silent drop is visible in the function logs.
-  if (body.website && body.website.trim().length > 0) {
-    console.warn('[contact] honeypot tripped, submission dropped')
-    return NextResponse.json({ ok: true })
-  }
+  // Honeypot. A filled hidden field used to drop the message silently, and on
+  // Oct 26 2026 it dropped the owner's own requests: browsers fill hidden
+  // fields (autofill, password managers, AI form fillers), so "filled" does
+  // not mean "bot". The message is now delivered with a flag in the subject
+  // and the field's value inside, and only the auto-reply is skipped, so a
+  // bot never gets mail sent to an address it typed. The per-IP rate limit
+  // above still caps any flood.
+  const hidden = (body.website ?? '').trim().slice(0, 120)
+  const trapped = hidden.length > 0
+  if (trapped) console.warn('[contact] hidden field filled, delivering flagged')
 
   const name = (body.name ?? '').trim().slice(0, 120)
   const email = (body.email ?? '').trim().slice(0, 200)
@@ -82,15 +84,20 @@ export async function POST(req: NextRequest) {
   const opsRes = await sendEmail({
     to: 'contact@mapltours.com',
     from: CONTACT_FROM,
-    subject: subject
-      ? `MAPL Tours Jamaica · Contact · ${subject}`
-      : `MAPL Tours Jamaica · Contact · message from ${name}`,
+    subject:
+      (trapped ? '[Check: hidden field filled] ' : '') +
+      (subject
+        ? `MAPL Tours Jamaica · Contact · ${subject}`
+        : `MAPL Tours Jamaica · Contact · message from ${name}`),
     replyTo: email,
     react: ContactMessage({
       name,
       email,
       subject,
-      message,
+      message: trapped
+        ? `Check this one: the form's hidden anti-spam field came back filled with "${hidden}". ` +
+          `That is either a bot or the visitor's browser filling a hidden field, so read it before replying.\n\n${message}`
+        : message,
       submittedAt,
       origin: ip !== 'unknown' ? ip : null,
     }),
@@ -106,7 +113,8 @@ export async function POST(req: NextRequest) {
   }
 
   // 4. Auto-reply, best effort. Log on failure but still return success
-  //    because the message DID reach the team.
+  //    because the message DID reach the team. Never to a flagged message.
+  if (trapped) return NextResponse.json({ ok: true })
   const replyRes = await sendEmail({
     to: email,
     from: CONTACT_FROM,
