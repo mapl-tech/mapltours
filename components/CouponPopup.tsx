@@ -343,6 +343,8 @@ function Sheet({ place, closing, onClose }: { place: Place; closing: boolean; on
                   data-form-type="other"
                   aria-hidden="true"
                   className="cpop-hp"
+                  // display:none, not off-screen: an off-screen field was autofilled with the visitor's email (Oct 26 2026)
+                  hidden
                   value={website}
                   onChange={(e) => setWebsite(e.target.value)}
                 />

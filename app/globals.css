@@ -2962,7 +2962,8 @@ a.pf-stat:hover { background: var(--surface); }
 @media (prefers-reduced-motion: reduce) { .cpop-field-label { transition: none; } }
 .cpop-input[aria-invalid="true"] { border-color: #9B2C2C; }
 .cpop-input[aria-invalid="true"]:focus { box-shadow: 0 0 0 3px rgba(155, 44, 44, 0.15); }
-.cpop-hp { position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+/* display:none, not off-screen: browsers autofilled the off-screen honeypot with the visitor's email. */
+.cpop-hp { display: none; }
 .cpop-error {
   font-family: var(--font-dm-sans);
   font-size: 16px; line-height: 1.45;

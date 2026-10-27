@@ -2333,7 +2333,9 @@ function UnlistedHotelPanel({
         data-1p-ignore="true" data-lpignore="true" data-form-type="other"
         value={website} onChange={(e) => setWebsite(e.target.value)}
         aria-hidden="true"
-        style={{ position: 'absolute', left: '-9999px', width: 1, height: 1, opacity: 0 }}
+        // display:none, not off-screen: an off-screen field was autofilled with the visitor's email (Oct 26 2026)
+        hidden
+        style={{ display: 'none' }}
       />
 
       {error && (
