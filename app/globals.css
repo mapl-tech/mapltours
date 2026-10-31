@@ -3463,11 +3463,12 @@ a.pf-stat:hover { background: var(--surface); }
 }
 .pc-card h2 svg { color: var(--emerald); flex-shrink: 0; }
 .pc-body { font-family: var(--font-dm-sans); font-size: 1rem; line-height: 1.55; color: var(--text-secondary); margin: 0 0 24px; }
-/* The site's phone rule sets every .btn-primary to 14.5px; this one action keeps 16px everywhere. */
-.pc-card .btn-primary { width: 100%; height: 48px; font-size: 1rem !important; font-weight: 600; }
-.pc-alt { font-family: var(--font-dm-sans); font-size: 0.9375rem; line-height: 1.5; color: var(--text-secondary); margin: 16px 0 0; }
-.pc-note { font-family: var(--font-dm-sans); font-size: 0.875rem; line-height: 1.5; color: var(--text-tertiary); margin: 8px 0 0; }
-.pc-alt a, .pc-help a { color: var(--text-primary); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; }
+/* The site's phone rules shrink .btn-primary to 14.5px and .btn-outline to 44px/14px;
+   these two buttons are the whole page, so both keep 48px and 16px everywhere. */
+.pc-card .btn-primary, .pc-card .btn-outline { width: 100%; height: 48px !important; font-size: 1rem !important; font-weight: 600; }
+.pc-card .btn-outline { margin-top: 8px; }
+.pc-note { font-family: var(--font-dm-sans); font-size: 0.875rem; line-height: 1.5; color: var(--text-tertiary); margin: 16px 0 0; }
+.pc-help a { color: var(--text-primary); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; }
 .pc-help {
   font-family: var(--font-dm-sans); font-size: 0.9375rem; line-height: 1.55; color: var(--text-secondary);
   max-width: 32.5rem; margin: 24px auto 0;

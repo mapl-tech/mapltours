@@ -7,11 +7,11 @@ import { ShieldCheck } from 'lucide-react'
  * Nothing about the guest or the trip (lib/confirm-proof), because the link
  * travels in analytics, browser history and forwarded emails.
  *
- * One action, signing in, because that is the only step that gets the real
- * guest to their details on this device. A guest who booked without an
- * account gets a direct way to the sign-up form, so they are not sent to a
- * "Welcome back" password box first. /login sends a signed-in visitor straight
- * on to /profile. Styles live in globals.css (.pc-*).
+ * Signing in is the one primary action, because it is the only step that gets
+ * the real guest to their details on this device. Most guests book without an
+ * account, so the second, quieter button opens the sign-up form directly
+ * rather than a "Welcome back" password box. /login sends a signed-in visitor
+ * straight on to /profile. Styles live in globals.css (.pc-*).
  */
 export default function PrivateConfirmation({
   kind,
@@ -44,14 +44,17 @@ export default function PrivateConfirmation({
             <ShieldCheck aria-hidden size={20} strokeWidth={2.2} />
             See your trip details
           </h2>
-          <p className="pc-body">Sign in with the email you booked with. Your trip is saved under it.</p>
+          <p className="pc-body">
+            Use the email you booked with. Your trip is saved under it, so a new
+            account with that email finds it too.
+          </p>
           <Link href="/login?redirect=%2Fprofile" className="btn-primary">
             Sign in to see my trip
           </Link>
-          <p className="pc-alt">
-            Booked without an account?{' '}
-            <Link href="/login?mode=signup&redirect=%2Fprofile">Create one with that email</Link>.
-          </p>
+          {/* Most guests book without an account, so this is their way in. */}
+          <Link href="/login?mode=signup&redirect=%2Fprofile" className="btn-outline">
+            Create my account
+          </Link>
           <p className="pc-note">
             {kind === 'ride'
               ? 'Your account also shows your driver’s name, vehicle and plate before pickup.'
