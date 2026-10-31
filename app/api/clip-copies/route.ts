@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/service'
-import { isClipCopiesJob, planClipCopies, type ClipCopyRow } from '@/lib/clip-copies'
+import { clipCopiesJob, clipCopyFolders, planClipCopies, type ClipCopyRow } from '@/lib/clip-copies'
 
 /**
  * Work list for the clip-copies job (lib/clip-copies explains the design).
@@ -8,7 +8,9 @@ import { isClipCopiesJob, planClipCopies, type ClipCopyRow } from '@/lib/clip-co
  * GET, `Authorization: Bearer <GitHub OIDC token>` from the clip-copies
  * workflow on main; anything else is 401.
  *   `?dry=1`      how many clips need copies; mints nothing
- *   `?clip=<id>`  include that clip even if it has copies or a failure marker
+ *   `?clip=<id>`  put that clip first even if it has copies or a failure
+ *                 marker; only from Run workflow (a scheduled run's token,
+ *                 if it ever leaked, cannot reach a finished clip)
  * Answer: each clip's public source URL and signed upload URLs (Supabase's
  * own, valid two hours, overwrite allowed) for its two copies and its
  * failure marker. At most MAX_PER_RUN clips; `more` says how many wait for
@@ -17,6 +19,7 @@ import { isClipCopiesJob, planClipCopies, type ClipCopyRow } from '@/lib/clip-co
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
+export const fetchCache = 'force-no-store'
 
 const BUCKET = 'tour-videos'
 const MAX_PER_RUN = 12
@@ -27,7 +30,7 @@ type Client = ReturnType<typeof createServiceClient>
 
 const fail = (status: number, error: string) => NextResponse.json({ error }, { status, headers: NO_STORE })
 
-/** Every file already in each folder the copies go to. */
+/** Every file already in each folder. */
 async function storedFiles(svc: Client, folders: string[]): Promise<Set<string>> {
   const stored = new Set<string>()
   await Promise.all(folders.map(async (folder) => {
@@ -50,25 +53,25 @@ async function signedUpload(svc: Client, path: string): Promise<string> {
 export async function GET(req: NextRequest) {
   const auth = req.headers.get('authorization') ?? ''
   const token = auth.startsWith('Bearer ') ? auth.slice(7).trim() : ''
-  if (!token || !(await isClipCopiesJob(token))) return fail(401, 'unauthorized')
+  const event = token ? await clipCopiesJob(token) : null
+  if (!event) return fail(401, 'unauthorized')
 
   const dry = req.nextUrl.searchParams.get('dry') === '1'
   const clip = req.nextUrl.searchParams.get('clip') ?? ''
   if (clip && !UUID.test(clip)) return fail(400, 'clip must be a clip id')
+  if (clip && event !== 'workflow_dispatch') return fail(403, 'a clip id is only taken from Run workflow')
 
   try {
     const svc = createServiceClient()
-    const { data: rows, error } = await svc
+    const { data, error } = await svc
       .from('user_tour_videos')
       .select('id, user_id, status, video_path')
       .neq('status', 'rejected')
       .order('created_at', { ascending: true })
     if (error) throw new Error(`read clips: ${error.message}`)
 
-    const eligible = (rows ?? []) as ClipCopyRow[]
-    // With nothing stored every trusted clip is due: that names the folders to read.
-    const folders = Array.from(new Set(planClipCopies(eligible, new Set()).map((c) => c.h264.slice(0, c.h264.lastIndexOf('/')))))
-    const plan = planClipCopies(eligible, await storedFiles(svc, folders), clip || undefined)
+    const rows = (data ?? []) as ClipCopyRow[]
+    const plan = planClipCopies(rows, await storedFiles(svc, clipCopyFolders(rows)), clip || undefined)
     if (dry) return NextResponse.json({ todo: plan.length }, { headers: NO_STORE })
 
     const batch = plan.slice(0, MAX_PER_RUN)
@@ -76,7 +79,6 @@ export async function GET(req: NextRequest) {
       const [hevc, h264, failed] = await Promise.all([signedUpload(svc, c.hevc), signedUpload(svc, c.h264), signedUpload(svc, c.failed)])
       return {
         id: c.id,
-        path: c.path,
         source: svc.storage.from(BUCKET).getPublicUrl(c.path).data.publicUrl,
         uploads: { hevc, h264, failed },
       }

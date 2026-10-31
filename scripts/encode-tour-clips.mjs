@@ -19,7 +19,7 @@
  *
  *   node scripts/encode-tour-clips.mjs --check   # count only, writes todo=<n> to $GITHUB_OUTPUT
  *   node scripts/encode-tour-clips.mjs           # encode and upload
- *   CLIP=<clip id>                               # include that clip even if it has copies
+ *   CLIP=<clip id>                               # that clip first, even if it has copies (Run workflow only)
  *
  * Same recipe as the catalogue's phone clips (scripts/encode-reel-hevc.mjs):
  * no larger than 720x1280 either way round and never upscaled, at most 30 fps,
@@ -29,8 +29,11 @@
  * Uploads are a guest's file, so ffmpeg is held to the containers the upload
  * form accepts (MP4/MOV and WebM) and to local files: a "video" that is
  * really a playlist cannot make it read other files or fetch URLs into the
- * copy. A clip that cannot be encoded gets a .failed.txt marker beside its
- * copies, fails this one run, and is not retried until asked for by id.
+ * copy. A clip longer than the upload form allows, or one ffmpeg refuses or
+ * cannot finish in ENCODE_TIMEOUT_MS, gets a .failed.txt marker beside its
+ * copies, fails this one run, and is not retried until asked for by id. The
+ * log names clips by id only: the repo is public, so are its Actions logs,
+ * and a storage path would show anyone a clip still waiting for review.
  */
 import { spawnSync } from 'node:child_process'
 import { appendFileSync, createWriteStream, mkdtempSync, readFileSync, rmSync, statSync } from 'node:fs'
@@ -46,6 +49,13 @@ const check = process.argv.includes('--check')
 const clip = process.env.CLIP?.trim() || ''
 // lib/tour-videos VIDEO_MAX_BYTES, with room for a container's overhead.
 const MAX_SOURCE_BYTES = 105 * 1024 * 1024
+// lib/tour-videos VIDEO_MAX_DURATION_SEC is 60, checked only in the browser.
+const MAX_SECONDS = 90
+// A 60 s clip takes a few minutes on a runner; this is a file built to stall.
+const ENCODE_TIMEOUT_MS = 10 * 60_000
+// No clip is started after this, so the run ends well inside the job's 60 minutes.
+const RUN_BUDGET_MS = 25 * 60_000
+const started = Date.now()
 
 async function bearer() {
   // A local test against a stand-in for the route passes its own token.
@@ -69,12 +79,12 @@ async function ask(params) {
 
 // The child gets no tokens: only what it needs to find its libraries.
 const childEnv = { PATH: process.env.PATH ?? '/usr/bin:/bin', HOME: tmpdir() }
-const run = (args) => spawnSync(ffmpeg, args, { stdio: ['ignore', 'inherit', 'inherit'], env: childEnv })
+const run = (args) => spawnSync(ffmpeg, args, { stdio: ['ignore', 'inherit', 'inherit'], env: childEnv, timeout: ENCODE_TIMEOUT_MS })
 const INPUT = ['-protocol_whitelist', 'file', '-format_whitelist', 'mov,matroska']
 
 // Longer side at most 1280, shorter at most 720, never upscaled, even sizes.
 const SCALE = "scale='if(gt(iw,ih),min(1280,iw),-2)':'if(gt(iw,ih),-2,min(1280,ih))',scale='min(iw,if(gt(iw,ih),1280,720))':-2"
-const common = ['-vf', SCALE, '-fpsmax', '30', '-pix_fmt', 'yuv420p', '-c:a', 'aac', '-b:a', '96k', '-ac', '2', '-movflags', '+faststart']
+const common = ['-t', String(MAX_SECONDS), '-vf', SCALE, '-fpsmax', '30', '-pix_fmt', 'yuv420p', '-c:a', 'aac', '-b:a', '96k', '-ac', '2', '-movflags', '+faststart']
 const RECIPES = {
   hevc: ['-c:v', 'libx265', '-preset', 'slow', '-crf', '28', '-x265-params', 'vbv-maxrate=1300:vbv-bufsize=2600:log-level=error', '-tag:v', 'hvc1'],
   h264: ['-c:v', 'libx264', '-preset', 'slow', '-profile:v', 'high', '-level', '4.0', '-crf', '24', '-maxrate', '1800k', '-bufsize', '3600k'],
@@ -140,9 +150,11 @@ async function upload(signedUrl, apikey, body, contentType, cacheSeconds) {
   }
 }
 
-/** ffmpeg refusing the file is the clip's fault and marks it; ffmpeg killed
- *  or not starting is the machine's, and the clip is tried again next run. */
+/** ffmpeg refusing the file, or running past ENCODE_TIMEOUT_MS on it, is the
+ *  clip's fault and marks it; ffmpeg killed otherwise or not starting is the
+ *  machine's, and the clip is tried again next run. */
 function ffmpegOk(result, label) {
+  if (result.error?.code === 'ETIMEDOUT') throw new ClipError(`${label} ran past ${ENCODE_TIMEOUT_MS / 60_000} minutes`, 'permanent')
   if (result.error || result.signal) throw new ClipError(`${label}: ffmpeg ${result.error?.code ?? result.signal}`, 'fail')
   if (result.status !== 0) throw new ClipError(`${label} failed`, 'permanent')
 }
@@ -156,20 +168,28 @@ async function encode(c, apikey, work) {
   const probe = spawnSync(ffmpeg, ['-hide_banner', ...INPUT, '-i', src], { encoding: 'utf8', env: childEnv })
   if (/not on whitelist|Invalid data found/i.test(probe.stderr ?? '')) throw new ClipError('not an MP4, MOV or WebM video', 'permanent')
   const isH264 = /Video: h264/.test(probe.stderr ?? '')
+  const d = /Duration: (\d+):(\d\d):(\d\d(?:\.\d+)?)/.exec(probe.stderr ?? '')
+  if (d && Number(d[1]) * 3600 + Number(d[2]) * 60 + Number(d[3]) > MAX_SECONDS) {
+    throw new ClipError(`longer than ${MAX_SECONDS} s`, 'permanent')
+  }
   const files = {}
   for (const kind of ['hevc', 'h264']) {
     const file = path.join(work, `${c.id}.${kind}.mp4`)
     ffmpegOk(run(['-y', '-v', 'error', ...INPUT, '-i', src, ...common, ...RECIPES[kind], file]), `encode ${kind}`)
-    if (kind === 'h264' && isH264 && statSync(file).size > statSync(src).size) {
-      ffmpegOk(run(['-y', '-v', 'error', ...INPUT, '-i', src, '-c', 'copy', '-movflags', '+faststart', file]), 'remux')
-    }
     files[kind] = file
+    if (kind === 'h264' && isH264 && statSync(file).size > statSync(src).size) {
+      // The recipe's copy stays if the remux fails: it is valid, only larger.
+      const remuxed = path.join(work, `${c.id}.remux.mp4`)
+      const r = run(['-y', '-v', 'error', ...INPUT, '-i', src, '-t', String(MAX_SECONDS), '-c', 'copy', '-movflags', '+faststart', remuxed])
+      if (r.status === 0 && !r.error) files[kind] = remuxed
+      else console.error(`  ${c.id}: remux failed, keeping the encoded H.264 copy`)
+    }
   }
   // Both copies are made before either is stored, so a clip never has one
   // copy from this run and one from an older recipe.
   for (const kind of ['hevc', 'h264']) {
     await withRetry(`upload ${kind}`, () => upload(c.uploads[kind], apikey, readFileSync(files[kind]), 'video/mp4', 31536000))
-    console.log(`${c.path} -> ${kind} (${(statSync(src).size / 1e6).toFixed(1)} MB -> ${(statSync(files[kind]).size / 1e6).toFixed(1)} MB)`)
+    console.log(`${c.id} -> ${kind} (${(statSync(src).size / 1e6).toFixed(1)} MB -> ${(statSync(files[kind]).size / 1e6).toFixed(1)} MB)`)
   }
 }
 
@@ -187,27 +207,32 @@ if (spawnSync(ffmpeg, ['-hide_banner', '-version'], { env: childEnv }).status !=
 }
 const { clips, more, apikey } = await ask({})
 let failed = 0
+let deferred = 0
 const work = mkdtempSync(path.join(tmpdir(), 'tour-clips-'))
 try {
   for (const c of clips) {
+    if (Date.now() - started > RUN_BUDGET_MS) {
+      deferred++
+      continue
+    }
     try {
       await encode(c, apikey, work)
     } catch (e) {
       failed++
       const reason = describe(e)
-      console.error(`failed ${c.path} (${c.id}): ${reason}`)
+      console.error(`failed ${c.id}: ${reason}`)
       if (e instanceof ClipError && e.kind === 'permanent') {
         await withRetry('marker', () => upload(c.uploads.failed, apikey, `${new Date().toISOString()} ${reason}\n`, 'text/plain', 60))
           .then(() => console.error(`  marked: it waits until this workflow is run with clip ${c.id}`))
           .catch((m) => console.error(`  marker not written: ${m.message}`))
       }
     } finally {
-      for (const f of [`${c.id}-src`, `${c.id}.hevc.mp4`, `${c.id}.h264.mp4`]) rmSync(path.join(work, f), { force: true })
+      for (const f of [`${c.id}-src`, `${c.id}.hevc.mp4`, `${c.id}.h264.mp4`, `${c.id}.remux.mp4`]) rmSync(path.join(work, f), { force: true })
     }
   }
 } finally {
   rmSync(work, { recursive: true, force: true })
 }
-if (more > 0) console.log(`${more} more clip(s) wait for the next run`)
-console.log(`${clips.length - failed} of ${clips.length} clip(s) encoded`)
+if (more + deferred > 0) console.log(`${more + deferred} more clip(s) wait for the next run`)
+console.log(`${clips.length - deferred - failed} of ${clips.length - deferred} clip(s) encoded`)
 process.exit(failed ? 1 : 0)

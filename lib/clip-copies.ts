@@ -1,4 +1,4 @@
-import { createRemoteJWKSet, jwtVerify, type JWTVerifyGetKey } from 'jose'
+import { createRemoteJWKSet, customFetch, jwtVerify, type JWTVerifyGetKey } from 'jose'
 import { clipDerivativePaths } from './video-rules'
 
 /**
@@ -28,10 +28,18 @@ export const CLIP_COPIES_JOB = {
   events: ['schedule', 'workflow_dispatch'],
 } as const
 
-const githubKeys = createRemoteJWKSet(new URL(`${GITHUB_OIDC_ISSUER}/.well-known/jwks`))
+export type ClipCopiesEvent = (typeof CLIP_COPIES_JOB.events)[number]
 
-/** True only for a current token minted for the clip-copies job on main. */
-export async function isClipCopiesJob(token: string, keys: JWTVerifyGetKey = githubKeys): Promise<boolean> {
+// Next keeps a route's fetches in its Data Cache unless told not to, and a
+// cached key set would outlive GitHub rotating its signing key: every run
+// would be refused until the next deploy.
+const githubKeys = createRemoteJWKSet(new URL(`${GITHUB_OIDC_ISSUER}/.well-known/jwks`), {
+  [customFetch]: (url, init) => fetch(url, { ...init, cache: 'no-store' }),
+})
+
+/** The event that started the job, for a current token minted for the
+ *  clip-copies workflow on main; null for anything else. */
+export async function clipCopiesJob(token: string, keys: JWTVerifyGetKey = githubKeys): Promise<ClipCopiesEvent | null> {
   try {
     const { payload } = await jwtVerify(token, keys, {
       issuer: GITHUB_OIDC_ISSUER,
@@ -40,14 +48,15 @@ export async function isClipCopiesJob(token: string, keys: JWTVerifyGetKey = git
       clockTolerance: 30,
     })
     const job = CLIP_COPIES_JOB
-    return payload.repository === job.repository
+    const event = job.events.find((e) => e === payload.event_name)
+    const ok = payload.repository === job.repository
       && String(payload.repository_id) === job.repositoryId
       && String(payload.repository_owner_id) === job.ownerId
       && payload.workflow_ref === job.workflowRef
       && payload.ref === job.ref
-      && (job.events as readonly string[]).includes(String(payload.event_name))
+    return ok && event ? event : null
   } catch {
-    return false
+    return null
   }
 }
 
@@ -72,26 +81,48 @@ export function clipFailedMarker(path: string): string {
 }
 
 /**
- * The clips that still need copies, oldest first. Rejected clips are left
- * alone; a pending one is encoded so it is light the moment it is approved.
- * `video_path` is written by the uploader's browser, so a row is only trusted
- * with a file in its own uid folder (as app/api/drive-sync checks). A clip
- * with a failure marker waits until it is asked for by id (`force`), which
- * also re-encodes a clip that has its copies.
+ * The one shape uploadTourVideo (lib/tour-videos) gives a clip:
+ * `<uid>/<experience id>-<ms timestamp>.<extension>`. `video_path` is written
+ * by the uploader's browser, and storage-js puts a path into the signing URL
+ * unencoded, where `%2e%2e` is a parent directory and `?` or `#` ends the
+ * path. Anything else could aim an upload outside m/, or at another bucket.
+ */
+const CLIP_FILE = /^\d{1,6}-\d{10,16}\.[a-z0-9]{1,8}$/
+const UID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
+
+export function trustedClipPath(row: Pick<ClipCopyRow, 'user_id' | 'video_path'>): boolean {
+  const [uid, file, ...rest] = (row.video_path ?? '').split('/')
+  return rest.length === 0 && uid === row.user_id && UID.test(uid) && CLIP_FILE.test(file ?? '')
+}
+
+/** The folders the planner reads: each uploader's own, and its copies' under m/. */
+export function clipCopyFolders(rows: ClipCopyRow[]): string[] {
+  const uids = new Set(rows.filter((r) => r.status !== 'rejected' && trustedClipPath(r)).map((r) => r.user_id))
+  return Array.from(uids).flatMap((uid) => [uid, `m/${uid}`])
+}
+
+/**
+ * The clips that still need copies, oldest first, with one asked for by id
+ * (`force`) at the front. Rejected clips are left alone; a pending one is
+ * encoded so it is light the moment it is approved. A clip is only trusted
+ * with its upload actually in its uploader's folder (`stored`), so a row
+ * pointing at nothing never reaches the job. A clip with a failure marker
+ * waits until it is asked for by id, which also re-encodes a finished one.
  */
 export function planClipCopies(rows: ClipCopyRow[], stored: Set<string>, force?: string): ClipCopyPlan[] {
   const seen = new Set<string>()
   const plan: ClipCopyPlan[] = []
   for (const row of rows) {
-    if (row.status === 'rejected') continue
-    const path = row.video_path ?? ''
-    if (!row.user_id || !path.startsWith(`${row.user_id}/`) || path.includes('..') || path.includes('//')) continue
-    if (seen.has(path)) continue
+    if (row.status === 'rejected' || !trustedClipPath(row)) continue
+    const path = row.video_path
+    if (seen.has(path) || !stored.has(path)) continue
     seen.add(path)
     const { hevc, h264 } = clipDerivativePaths(path)
     const failed = clipFailedMarker(path)
     const due = row.id === force || (!stored.has(failed) && !(stored.has(hevc) && stored.has(h264)))
-    if (due) plan.push({ id: row.id, path, hevc, h264, failed })
+    if (!due) continue
+    if (row.id === force) plan.unshift({ id: row.id, path, hevc, h264, failed })
+    else plan.push({ id: row.id, path, hevc, h264, failed })
   }
   return plan
 }
