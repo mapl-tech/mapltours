@@ -5,6 +5,8 @@ import { createIntentSession, payableIntent, STALE_INTENT_MESSAGE, type PostOutc
 import { priceTourCart } from '@/lib/checkout-pricing'
 // vi.mock calls are hoisted above this import, so the handler loads over the fakes below.
 import { POST } from '@/app/api/checkout/route'
+import { bookingProof } from '@/lib/confirm-proof-server'
+import { PROOF_COOKIE, readProofs } from '@/lib/confirm-proof'
 
 /**
  * The one-page checkouts' side of supersede (batch review, money blocker 1).
@@ -521,5 +523,41 @@ describe('the tour route, read the way the page reads it', () => {
     // One payable intent for the trip, not two.
     const payable = Array.from(db.intents.values()).filter((p) => ['requires_payment_method', 'requires_confirmation', 'requires_action'].includes(String(p.status)))
     expect(payable.map((p) => p.id)).toEqual([b.stripe_payment_id])
+  })
+})
+
+// Oct 31 2026: the confirmation page shows the trip only to the browser that
+// booked it (lib/confirm-proof). That proof rides on the real route's answer,
+// and the answer itself must not change.
+describe('the tour route hands the booking proof to the browser that asked', () => {
+  const proofOf = (res: Response) => {
+    const m = (res.headers.get('set-cookie') ?? '').match(new RegExp(`${PROOF_COOKIE}=([^;]*)`))
+    return m ? readProofs(decodeURIComponent(m[1])) : []
+  }
+  const post = (body: Record<string, unknown>) => POST(new NextRequest('http://localhost/api/checkout', {
+    method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body),
+  }))
+
+  it('the quiet save and the Pay tap each carry the proof of the booking they answer with', async () => {
+    process.env.SUPABASE_SERVICE_ROLE_KEY = 'test-service-role-key'
+    const saved = await post({ amount: priced(2, 5).total, items: cart(2), customer, applyReward: true })
+    const data = (await saved.json()) as Record<string, unknown>
+    expect(saved.status).toBe(200)
+    expect(typeof data.clientSecret).toBe('string')
+    expect(proofOf(saved)).toEqual([bookingProof(String(data.bookingId))])
+    // http on a dev server, so not Secure there; HttpOnly everywhere.
+    expect(saved.headers.get('set-cookie')).toMatch(/HttpOnly/i)
+    expect(saved.headers.get('set-cookie')).not.toMatch(/Secure/i)
+  })
+
+  it('a refusal carries no proof', async () => {
+    process.env.SUPABASE_SERVICE_ROLE_KEY = 'test-service-role-key'
+    const other = { id: crypto.randomUUID(), booking_type: 'tour', status: 'pending', email: customer.email, cart_hash: 'other-tab', stripe_payment_id: 'pi_other', created_at: new Date().toISOString() }
+    db.tables.bookings = [other]
+    db.intents.set('pi_other', { id: 'pi_other', status: 'requires_payment_method', amount: 1 })
+    db.tables.user_rewards[0] = { ...db.tables.user_rewards[0], status: 'reserved', used_on_booking_id: other.id }
+    const refused = await post({ amount: priced(2, 5).total, items: cart(2), customer, applyReward: true })
+    expect(refused.status).toBe(409)
+    expect(refused.headers.get('set-cookie')).toBeNull()
   })
 })

@@ -4,6 +4,8 @@ import Stripe from 'stripe'
 import { createServiceClient } from '@/lib/supabase/service'
 import ConfirmClient from './ConfirmClient'
 import ClaimAccountCard from '@/components/ClaimAccountCard'
+import PrivateConfirmation from '@/components/checkout/PrivateConfirmation'
+import { canSeeConfirmation } from '@/lib/confirm-proof-server'
 
 export const dynamic = 'force-dynamic'
 
@@ -34,6 +36,8 @@ interface ConfirmedTransfer {
 
 interface ConfirmData {
   status: 'succeeded' | 'processing' | 'failed' | 'unknown'
+  /** 'full' only for the browser that booked or the signed-in owner (lib/confirm-proof). */
+  access: 'full' | 'private'
   bookingRef: string | null
   paidAt: string | null
   customerName: string | null
@@ -53,6 +57,7 @@ interface ConfirmData {
 function emptyData(): ConfirmData {
   return {
     status: 'unknown',
+    access: 'private',
     bookingRef: null,
     paidAt: null,
     customerName: null,
@@ -110,7 +115,7 @@ async function resolveConfirm(
   let { data: booking } = await supabase
     .from('bookings')
     .select(
-      'id, email, first_name, last_name, phone, country, special_requests, subtotal, booking_fee, coupon_code, coupon_discount, total_paid, currency, paid_at, booking_type',
+      'id, email, user_id, first_name, last_name, phone, country, special_requests, subtotal, booking_fee, coupon_code, coupon_discount, total_paid, currency, paid_at, booking_type',
     )
     .eq('stripe_payment_id', piId)
     .eq('booking_type', 'transfer')
@@ -121,13 +126,24 @@ async function resolveConfirm(
     const { data: byMeta } = await supabase
       .from('bookings')
       .select(
-        'id, email, first_name, last_name, phone, country, special_requests, subtotal, booking_fee, coupon_code, coupon_discount, total_paid, currency, paid_at, booking_type',
+        'id, email, user_id, first_name, last_name, phone, country, special_requests, subtotal, booking_fee, coupon_code, coupon_discount, total_paid, currency, paid_at, booking_type',
       )
       .eq('id', pi.metadata.booking_id)
       .eq('booking_type', 'transfer')
       .maybeSingle()
     booking = byMeta
   }
+
+  // PRIVACY: anyone holding the link reaches this page (the payment_intent id
+  // sits in analytics, history and forwarded emails), so the trip shows only
+  // to the browser that paid or the signed-in owner. Everyone else is told the
+  // booking is confirmed and nothing about it. Even the owner never sees the
+  // contact details here; those stay in the confirmation email.
+  const full = await canSeeConfirmation(
+    { id: booking?.id ?? null, email: booking?.email ?? null, user_id: booking?.user_id ?? null },
+    pi.client_secret,
+  )
+  if (!full) return { ...empty, status, bookingRef: booking ? humanizeId(booking.id) : null }
 
   const { data: items } = booking
     ? await supabase
@@ -139,18 +155,13 @@ async function resolveConfirm(
         .eq('item_type', 'transfer')
     : { data: null }
 
-  // PRIVACY: this page is reachable by anyone who has a payment_intent id
-  // (it appears in return URLs, history, referrers) and bookings carry no
-  // user_id we could check ownership against. So we expose only the
-  // non-sensitive booking confirmation, first name + logistics, and never
-  // the contact PII (email / phone / country / special requests). The full
-  // details still reach the real customer via the Resend confirmation email.
   const customerName = booking
     ? (booking.first_name ?? '').trim() || null
     : null
 
   return {
     status,
+    access: 'full',
     bookingRef: booking ? humanizeId(booking.id) : null,
     paidAt: booking?.paid_at ?? null,
     customerName,
@@ -189,13 +200,16 @@ async function resolveConfirmFromBooking(bookingId: string): Promise<ConfirmData
   const supabase = createServiceClient()
   const { data: booking } = await supabase
     .from('bookings')
-    .select('id, first_name, subtotal, booking_fee, coupon_code, coupon_discount, total_paid, currency, paid_at, status, booking_type')
+    .select('id, email, user_id, first_name, subtotal, booking_fee, coupon_code, coupon_discount, total_paid, currency, paid_at, status, booking_type')
     .eq('id', bookingId)
     .eq('booking_type', 'transfer')
     .eq('status', 'paid')
     .maybeSingle()
 
   if (!booking) return empty
+  if (!(await canSeeConfirmation({ id: booking.id, email: booking.email ?? null, user_id: booking.user_id ?? null }))) {
+    return { ...empty, status: 'succeeded', bookingRef: humanizeId(booking.id) }
+  }
 
   const { data: items } = await supabase
     .from('booking_items')
@@ -204,6 +218,7 @@ async function resolveConfirmFromBooking(bookingId: string): Promise<ConfirmData
 
   return {
     status: 'succeeded',
+    access: 'full',
     bookingRef: humanizeId(booking.id),
     paidAt: booking.paid_at ?? null,
     customerName: (booking.first_name ?? '').trim() || null,
@@ -273,6 +288,7 @@ export default async function TransferConfirmPage({
     searchParams.redirect_status,
     searchParams.booking_id,
   )
+  const isPrivate = data.status === 'succeeded' && data.access === 'private'
 
   return (
     <div
@@ -285,7 +301,7 @@ export default async function TransferConfirmPage({
     >
       <div className="container" style={{ maxWidth: 720, padding: '72px 20px' }}>
         {data.status === 'succeeded' ? (
-          <Success data={data} />
+          isPrivate ? <PrivateConfirmation kind="ride" bookingRef={data.bookingRef} /> : <Success data={data} />
         ) : data.status === 'processing' ? (
           <Processing />
         ) : data.status === 'failed' ? (
@@ -294,25 +310,30 @@ export default async function TransferConfirmPage({
           <Unknown />
         )}
 
-        <div
-          style={{
-            marginTop: 40,
-            display: 'flex',
-            gap: 12,
-            justifyContent: 'center',
-            flexWrap: 'wrap',
-          }}
-        >
-          <Link href="/explore" className="btn-primary" style={{ height: 46, padding: '0 26px' }}>
-            Add tours to your trip
-          </Link>
-          <Link href="/transfers" className="btn-outline" style={{ height: 46, padding: '0 22px' }}>
-            Book another transfer
-          </Link>
-        </div>
+        {/* The signed-out page has one action, signing in. */}
+        {!isPrivate && (
+          <div
+            style={{
+              marginTop: 40,
+              display: 'flex',
+              gap: 12,
+              justifyContent: 'center',
+              flexWrap: 'wrap',
+            }}
+          >
+            <Link href="/explore" className="btn-primary" style={{ height: 46, padding: '0 26px' }}>
+              Add tours to your trip
+            </Link>
+            <Link href="/transfers" className="btn-outline" style={{ height: 46, padding: '0 22px' }}>
+              Book another transfer
+            </Link>
+          </div>
+        )}
       </div>
 
-      {data.status === 'succeeded' && (
+      {/* Clears the cart and reports the sale: only in the browser that booked
+          it, never in one that merely opened the link. */}
+      {data.status === 'succeeded' && data.access === 'full' && (
         <ConfirmClient
           bookingRef={data.bookingRef}
           totalPaid={data.totalPaid}

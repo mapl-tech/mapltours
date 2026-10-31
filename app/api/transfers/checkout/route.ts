@@ -25,6 +25,7 @@ import { DEFAULT_DRIVER } from '@/lib/dispatch'
 import { sanitizeAttribution } from '@/lib/attribution'
 import { addSettledBookingToOpsCalendar } from '@/lib/ops-calendar'
 import { hashTransferCart as hashCart } from '@/lib/transfer-cart-hash'
+import { withConfirmProof } from '@/lib/confirm-proof-server'
 
 /**
  * Transfers checkout, sibling of /api/checkout, with the same hardening:
@@ -96,7 +97,13 @@ const PI_REUSABLE_STATUSES: Stripe.PaymentIntent.Status[] = [
   'requires_action',
 ]
 
+// The browser that asked also gets proof it may see this booking's
+// confirmation page (lib/confirm-proof-server). The answer itself is untouched.
 export async function POST(request: NextRequest) {
+  return withConfirmProof(request, await checkout(request))
+}
+
+async function checkout(request: NextRequest) {
   let reqId = ''
   // A gift claim THIS request debited: non-null from the claim until the
   // value is spent (gift-covered settle) or an intent is attached that the

@@ -20,6 +20,7 @@ import { maybeSendTravelerConfirmation, maybeSendOperatorAlert, resolveOpsRecipi
 import { sendEmail, operatorAlertRecipients } from '@/lib/email/send'
 import OpsAlert from '@/emails/OpsAlert'
 import { addSettledBookingToOpsCalendar } from '@/lib/ops-calendar'
+import { withConfirmProof } from '@/lib/confirm-proof-server'
 
 /**
  * Tour checkout, creates (or atomically reuses) a pending booking row
@@ -158,7 +159,13 @@ const PI_REUSABLE_STATUSES: Stripe.PaymentIntent.Status[] = [
   'requires_action',
 ]
 
+// The browser that asked also gets proof it may see this booking's
+// confirmation page (lib/confirm-proof-server). The answer itself is untouched.
 export async function POST(request: NextRequest) {
+  return withConfirmProof(request, await checkout(request))
+}
+
+async function checkout(request: NextRequest) {
   let reqId = ''
   // Non-null from the moment this request's booking HOLDS the reward
   // reservation until an exit where someone else owns the row's fate (the

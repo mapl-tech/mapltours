@@ -366,6 +366,15 @@ A paid booking reaches Meta's dataset 0055 three ways under one event id, the bo
 - **Never send a "test" Purchase to 0055** to check the format: Meta counts test events for ads. Verify on the next real sale instead: the Dataset Quality API (`dataset_quality?dataset_id=1607953960710055`) for match keys, and the pixel `stats` with `aggregation=custom_data_field` (only the server copy carries `order_id`). The webhook logs Meta's rejection reason and any warnings.
 - **GA4** gets the purchase from gtag on the confirm page and from the webhook's Measurement Protocol call (`lib/ga4-server.ts`, `GA4_API_SECRET`), deduped on `transaction_id`. Both skip opted-out guests, and GA never receives contact details.
 
+### Confirmation pages are private (Oct 31 2026)
+
+The confirmation address carries the PaymentIntent id (or a gift-covered booking's id), and GA4, the Meta pixel and Hotjar all record page addresses, so anyone holding a guest's link used to see their name, hotel, flights and pickup times. `/transfers/confirm` and `/checkout/confirm` now show the trip only to a browser that proves it booked it, or to a guest signed in as the booking's owner; everyone else gets `components/checkout/PrivateConfirmation.tsx` (booked, the reference, "Sign in to see my trip" to `/login?redirect=%2Fprofile`).
+
+- **The proof** is one HttpOnly cookie, `mapl_trip` (`lib/confirm-proof.ts`): a signed booking proof that both checkout routes attach to any answer naming a booking (`withConfirmProof` wraps their POST; the answer itself never changes), and the client secret Stripe appends to a redirect return, which the middleware now keeps in the cookie instead of discarding (still never in the address).
+- **Signed in**: the same ownership rule as `/api/profile/bookings` (linked `user_id`, or the booking email once verified), in `canSeeConfirmation`.
+- `ConfirmClient` (cart clear, purchase events) renders only in the full view, so opening someone's link never reports a sale.
+- Any doubt is the private view, never an error. Tested in `confirm-proof.spec.ts`, both page specs and the real tour route (`one-page-supersede.spec.ts`).
+
 ### ProfileView
 - Hero banner: Jamaica-green gradient, avatar (80px, gold gradient circle), name "Alex Wanderlust", "Toronto - Member since 2024"
 - Stats row: Trips (3), Parishes (4), Experiences Saved — Syne gold numbers

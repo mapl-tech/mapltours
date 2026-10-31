@@ -92,8 +92,8 @@ export default function PrivacyPage() {
 
       <Section title="Cookies">
         <p>
-          We use cookies and similar technologies to keep you logged in, remember your itinerary cart, and measure how
-          the site is performing. You can disable cookies in your browser settings, but some parts of the site
+          We use cookies and similar technologies to keep you logged in, remember your itinerary cart, show your
+          booking confirmation only on the device you booked on, and measure how the site is performing. You can disable cookies in your browser settings, but some parts of the site
           (checkout, saved trips) may not work properly without them.
         </p>
       </Section>

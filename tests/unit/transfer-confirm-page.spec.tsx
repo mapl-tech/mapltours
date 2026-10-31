@@ -1,7 +1,7 @@
 import { describe, test, expect, vi } from 'vitest'
 import { renderToStaticMarkup } from 'react-dom/server'
 
-const db = vi.hoisted(() => ({ item: {} as Record<string, unknown> }))
+const db = vi.hoisted(() => ({ item: {} as Record<string, unknown>, owner: true }))
 
 // The page reads the booking and its items from Supabase. The gift-covered
 // path (`booking_id`, no PaymentIntent) needs no Stripe, so a fake client that
@@ -29,6 +29,9 @@ vi.mock('@/lib/supabase/service', () => ({
   }),
 }))
 vi.mock('../../app/transfers/confirm/ConfirmClient', () => ({ default: () => null }))
+// Whether this browser booked the ride (lib/confirm-proof). Tested on its own
+// in confirm-proof.spec.ts; here it is the switch between the two views.
+vi.mock('@/lib/confirm-proof-server', () => ({ canSeeConfirmation: async () => db.owner }))
 vi.mock('@/components/ClaimAccountCard', () => ({ default: () => null }))
 
 import TransferConfirmPage from '../../app/transfers/confirm/page'
@@ -43,8 +46,9 @@ import TransferConfirmPage from '../../app/transfers/confirm/page'
  * for a driver at arrivals.
  */
 
-const page = async (item: Record<string, unknown>) => {
+const page = async (item: Record<string, unknown>, owner = true) => {
   db.item = item
+  db.owner = owner
   const el = await TransferConfirmPage({
     searchParams: { booking_id: '1a2b3c4d-0000-0000-0000-000000000000' },
   })
@@ -125,5 +129,49 @@ describe('a round trip', () => {
     expect(text).toContain('Departure · hotel → MBJ')
     for (const line of arrivalsCopy) expect(text, line).toContain(line)
     expect(text).not.toContain('Before you go')
+  })
+})
+
+// Oct 31 2026: anyone holding a confirmation link saw the guest's name, hotel,
+// flights and pickup times, and the links sat in GA4, the Meta pixel and
+// Hotjar. A browser that did not book the ride now sees that it is booked and
+// how to sign in, and nothing about the guest or the trip.
+describe('a browser that did not book the ride', () => {
+  const ride = {
+    trip_type: 'round_trip', arrival_at: '2026-11-17T12:22:00+00:00', arrival_flight: 'AA1131',
+    departure_at: '2026-11-24T08:00:00+00:00', departure_flight: 'AA1651',
+  }
+
+  test('learns nothing about the guest or the trip', async () => {
+    const text = await page(ride, false)
+    for (const secret of ['Ada', 'Riu Negril', 'AA1131', 'AA1651', '12:22', '8:00', '126', 'passenger', 'Zone']) {
+      expect(text, secret).not.toContain(secret)
+    }
+  })
+
+  test('is told the ride is booked and how the guest sees it', async () => {
+    const text = await page(ride, false)
+    expect(text).toContain('Your ride is booked.')
+    expect(text).toContain('MAPL-1A2B3C4D')
+    expect(text).toContain('Sign in with the email you booked with')
+    expect(text).toContain('Sign in to see my trip')
+    expect(text).toContain('contact@mapltours.com')
+    expect(text).not.toContain('\u2014')
+  })
+
+  test('has one action, the sign-in, and it leads to the account', async () => {
+    db.item = ride
+    db.owner = false
+    const html = renderToStaticMarkup(await TransferConfirmPage({ searchParams: { booking_id: '1a2b3c4d-0000-0000-0000-000000000000' } }))
+    expect(html).toContain('href="/login?redirect=%2Fprofile"')
+    expect(html).not.toContain('Add tours to your trip')
+    expect(html).not.toContain('Book another transfer')
+  })
+
+  test('the browser that booked it still sees everything', async () => {
+    const text = await page(ride, true)
+    expect(text).toContain('Riu Negril')
+    expect(text).toContain('AA1131')
+    expect(text).not.toContain('Sign in to see my trip')
   })
 })
