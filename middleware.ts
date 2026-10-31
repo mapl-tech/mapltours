@@ -1,7 +1,7 @@
 import { type NextRequest, NextResponse } from 'next/server'
 import { updateSession } from '@/lib/supabase/middleware'
 import { withoutSecretParams } from '@/lib/tracker-gate'
-import { PROOF_COOKIE, addProof, clientSecretFor, isConfirmPath, proofCookie } from '@/lib/confirm-proof'
+import { PROOF_COOKIE, addProof, clientSecretFor, keepsPaymentProof, proofCookie } from '@/lib/confirm-proof'
 
 // Routes that need auth session refresh
 // (/transfers/confirm shows a signed-in guest their own ride, so it needs a live session too)
@@ -14,14 +14,14 @@ export async function middleware(request: NextRequest) {
   // carries the PaymentIntent's client secret in the query, and the Meta
   // pixel, GA and Hotjar all report the page address. Send the browser to the
   // same address without it before the page, or any tag, exists. On a
-  // confirmation page the secret is kept in an HttpOnly cookie instead, as
-  // this browser's proof that it paid (lib/confirm-proof).
+  // confirmation page or /gifts the secret is kept in an HttpOnly cookie
+  // instead, as this browser's proof that it paid (lib/confirm-proof).
   const clean = withoutSecretParams(request.nextUrl.href)
   if (clean) {
     const url = request.nextUrl.clone()
     url.search = clean.search
     const res = NextResponse.redirect(url, 307)
-    const secret = isConfirmPath(path)
+    const secret = keepsPaymentProof(path)
       ? clientSecretFor(
           request.nextUrl.searchParams.get('payment_intent_client_secret'),
           request.nextUrl.searchParams.get('payment_intent'),

@@ -1,8 +1,9 @@
-import { NextResponse } from 'next/server'
+import { NextResponse, type NextRequest } from 'next/server'
 import Stripe from 'stripe'
 import { createServiceClient } from '@/lib/supabase/service'
 import { activateGiftCard } from '@/lib/gift-activation'
 import { rateLimit, getIp } from '@/lib/rate-limit'
+import { requestHoldsSecret } from '@/lib/confirm-proof-server'
 
 /**
  * Show the buyer the code they just paid for.
@@ -29,7 +30,7 @@ export const dynamic = 'force-dynamic'
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!)
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   const ip = getIp(req as never)
   if (rateLimit(ip, { bucket: 'gift-reveal', max: 20, windowMs: 60_000 })) {
     return NextResponse.json({ error: 'Too many attempts. Please wait a moment.' }, { status: 429 })
@@ -58,6 +59,23 @@ export async function POST(req: Request) {
   const giftId = typeof pi.metadata?.gift_card_id === 'string' ? pi.metadata.gift_card_id : null
   if (!giftId) {
     return NextResponse.json({ error: 'That payment is not linked to a gift card.' }, { status: 400 })
+  }
+
+  // Only the browser that paid may see the code (Oct 31 2026). It holds the
+  // intent's client secret in the HttpOnly proof cookie: the middleware keeps
+  // it there from Stripe's redirect return, and StripePaymentPanel hands it
+  // over the same way after a payment that needed no redirect. A payment id
+  // alone, from an analytics report, a history entry or a shared link, no
+  // longer unlocks a spendable code or the recipient's address. The code still
+  // reaches the recipient and the buyer by email either way.
+  if (!requestHoldsSecret(req, pi.client_secret)) {
+    return NextResponse.json(
+      {
+        error:
+          'For security, a gift code only shows in the browser that paid for it. Check the email we sent, or contact contact@mapltours.com and we will resend it.',
+      },
+      { status: 403 },
+    )
   }
 
   if (pi.status !== 'succeeded') {

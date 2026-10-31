@@ -62,6 +62,15 @@ export function isConfirmPath(pathname: string): boolean {
 }
 
 /**
+ * Where a returning payment's client secret is kept as proof: the two
+ * confirmation pages, and /gifts, whose code reveal (/api/gifts/reveal) hands
+ * back a spendable gift card and so needs the same proof.
+ */
+export function keepsPaymentProof(pathname: string): boolean {
+  return isConfirmPath(pathname) || pathname.toLowerCase().replace(/\/+$/, '') === '/gifts'
+}
+
+/**
  * The cookie itself. HttpOnly, so no tag or script can read it; Lax, so it
  * arrives when the guest opens the link from an email or comes back from a
  * bank page; Secure wherever the site is served over https.

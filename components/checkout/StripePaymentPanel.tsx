@@ -137,6 +137,10 @@ function PaymentStep({
     if (piId) {
       const url = new URL(returnUrl, window.location.origin)
       url.searchParams.set('payment_intent', piId)
+      // Handed over the same way Stripe's own redirect does: the middleware
+      // keeps it in an HttpOnly cookie as this browser's proof that it paid,
+      // and takes it out of the address before the page or any tag loads.
+      if (result.paymentIntent?.client_secret) url.searchParams.set('payment_intent_client_secret', result.paymentIntent.client_secret)
       url.searchParams.set('redirect_status', result.paymentIntent?.status ?? 'succeeded')
       window.location.assign(url.toString())
     }

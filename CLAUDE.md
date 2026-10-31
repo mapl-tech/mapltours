@@ -373,6 +373,8 @@ The confirmation address carries the PaymentIntent id (or a gift-covered booking
 - **The proof** is one HttpOnly cookie, `mapl_trip` (`lib/confirm-proof.ts`): a signed booking proof that both checkout routes attach to any answer naming a booking (`withConfirmProof` wraps their POST; the answer itself never changes), and the client secret Stripe appends to a redirect return, which the middleware now keeps in the cookie instead of discarding (still never in the address).
 - **Signed in**: the same ownership rule as `/api/profile/bookings` (linked `user_id`, or the booking email once verified), in `canSeeConfirmation`.
 - `ConfirmClient` (cart clear, purchase events) renders only in the full view, so opening someone's link never reports a sale.
+- **Gift codes too:** the middleware also keeps the client secret on `/gifts`, `StripePaymentPanel` hands it over after a payment that needed no redirect, and `/api/gifts/reveal` refuses (403) any request whose proof cookie lacks that intent's secret, before it says anything about the payment (`gift-reveal-route.spec.ts`). The 30-minute window still applies.
+- **Sign-in is Google or email** (Apple is not enabled in Supabase, so its button was removed). A guest sees their bookings once their email is verified; `mailer_autoconfirm` is off, which that rule depends on.
 - Any doubt is the private view, never an error. Tested in `confirm-proof.spec.ts`, both page specs and the real tour route (`one-page-supersede.spec.ts`).
 
 ### ProfileView

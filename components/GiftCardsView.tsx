@@ -100,6 +100,10 @@ export default function GiftCardsView() {
         setStage('done')
       } else if (data.status && data.status !== 'succeeded') {
         setError('That payment did not complete. Nothing has been charged.')
+      } else if (typeof data.error === 'string') {
+        // A refusal (another browser, or past the reveal window) says why and
+        // where the code is, instead of leaving a blank page.
+        setError(data.error)
       }
     } catch {
       setError('We could not load your gift card. Check your email, or contact us with your payment reference.')

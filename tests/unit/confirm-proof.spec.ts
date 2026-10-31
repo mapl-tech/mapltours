@@ -34,7 +34,7 @@ vi.mock('@/lib/supabase/server', () => ({
   }),
 }))
 
-import { PROOF_COOKIE, PROOF_MAX_ENTRIES, addProof, clientSecretFor, isConfirmPath, readProofs } from '@/lib/confirm-proof'
+import { PROOF_COOKIE, PROOF_MAX_ENTRIES, addProof, clientSecretFor, isConfirmPath, keepsPaymentProof, readProofs } from '@/lib/confirm-proof'
 import { bookingProof, canSeeConfirmation, withConfirmProof } from '@/lib/confirm-proof-server'
 import { middleware } from '@/middleware'
 
@@ -79,6 +79,13 @@ describe('the proof cookie', () => {
     expect(isConfirmPath('/Checkout/Confirm/')).toBe(true)
     expect(isConfirmPath('/gifts')).toBe(false)
     expect(isConfirmPath('/transfers/confirmation')).toBe(false)
+  })
+
+  test('the gift page keeps the secret too, for its code reveal', () => {
+    expect(keepsPaymentProof('/gifts')).toBe(true)
+    expect(keepsPaymentProof('/transfers/confirm')).toBe(true)
+    expect(keepsPaymentProof('/gifts/other')).toBe(false)
+    expect(keepsPaymentProof('/')).toBe(false)
   })
 })
 
@@ -212,7 +219,7 @@ describe('the middleware keeps the secret as proof on a confirmation page', () =
     return m ? readProofs(decodeURIComponent(m[1])) : null
   }
 
-  test.each(['/transfers/confirm', '/checkout/confirm'])('%s: the secret leaves the address and lands in the cookie', async (path) => {
+  test.each(['/transfers/confirm', '/checkout/confirm', '/gifts'])('%s: the secret leaves the address and lands in the cookie', async (path) => {
     const res = await middleware(new NextRequest(`https://mapltours.com${path}?payment_intent=pi_3U6DqsAbc&payment_intent_client_secret=${SECRET}&redirect_status=succeeded`))
     expect(res.status).toBe(307)
     expect(res.headers.get('location')).toBe(`https://mapltours.com${path}?payment_intent=pi_3U6DqsAbc&redirect_status=succeeded`)
@@ -230,7 +237,7 @@ describe('the middleware keeps the secret as proof on a confirmation page', () =
 
   test.each([
     ['a secret for another intent', `/transfers/confirm?payment_intent=pi_other&payment_intent_client_secret=${SECRET}`],
-    ['the gift page', `/gifts?payment_intent=pi_3U6DqsAbc&payment_intent_client_secret=${SECRET}`],
+    ['a page with nothing to unlock', `/explore?payment_intent=pi_3U6DqsAbc&payment_intent_client_secret=${SECRET}`],
     ['no intent named', `/transfers/confirm?payment_intent_client_secret=${SECRET}`],
   ])('%s: the secret is still dropped, and nothing is kept', async (_label, path) => {
     const res = await middleware(new NextRequest(`https://mapltours.com${path}`))

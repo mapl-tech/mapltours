@@ -65,6 +65,19 @@ export async function withConfirmProof(request: NextRequest, response: Response)
   return response
 }
 
+/**
+ * Does this request's proof cookie hold the PaymentIntent's client secret?
+ * For routes (the gift reveal) rather than pages, so it reads the request.
+ */
+export function requestHoldsSecret(request: NextRequest, clientSecret: string | null | undefined): boolean {
+  if (!clientSecret) return false
+  try {
+    return readProofs(request.cookies?.get(PROOF_COOKIE)?.value).some((p) => same(p, clientSecret))
+  } catch {
+    return false
+  }
+}
+
 export interface ConfirmOwner {
   /** Null when the intent succeeded but no booking row was found. */
   id: string | null
