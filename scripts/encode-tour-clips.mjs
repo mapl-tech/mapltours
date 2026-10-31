@@ -140,6 +140,13 @@ async function upload(signedUrl, apikey, body, contentType, cacheSeconds) {
   }
 }
 
+/** ffmpeg refusing the file is the clip's fault and marks it; ffmpeg killed
+ *  or not starting is the machine's, and the clip is tried again next run. */
+function ffmpegOk(result, label) {
+  if (result.error || result.signal) throw new ClipError(`${label}: ffmpeg ${result.error?.code ?? result.signal}`, 'fail')
+  if (result.status !== 0) throw new ClipError(`${label} failed`, 'permanent')
+}
+
 async function encode(c, apikey, work) {
   const src = path.join(work, `${c.id}-src`)
   await withRetry('download', () => download(c.source, src))
@@ -152,13 +159,9 @@ async function encode(c, apikey, work) {
   const files = {}
   for (const kind of ['hevc', 'h264']) {
     const file = path.join(work, `${c.id}.${kind}.mp4`)
-    if (run(['-y', '-v', 'error', ...INPUT, '-i', src, ...common, ...RECIPES[kind], file]).status !== 0) {
-      throw new ClipError(`encode ${kind} failed`, 'permanent')
-    }
+    ffmpegOk(run(['-y', '-v', 'error', ...INPUT, '-i', src, ...common, ...RECIPES[kind], file]), `encode ${kind}`)
     if (kind === 'h264' && isH264 && statSync(file).size > statSync(src).size) {
-      if (run(['-y', '-v', 'error', ...INPUT, '-i', src, '-c', 'copy', '-movflags', '+faststart', file]).status !== 0) {
-        throw new ClipError('remux failed', 'permanent')
-      }
+      ffmpegOk(run(['-y', '-v', 'error', ...INPUT, '-i', src, '-c', 'copy', '-movflags', '+faststart', file]), 'remux')
     }
     files[kind] = file
   }
@@ -177,6 +180,11 @@ if (check) {
   process.exit(0)
 }
 
+// Without a working ffmpeg every clip would look unencodable and be marked.
+if (spawnSync(ffmpeg, ['-hide_banner', '-version'], { env: childEnv }).status !== 0) {
+  console.error(`ffmpeg not found at ${ffmpeg}`)
+  process.exit(1)
+}
 const { clips, more, apikey } = await ask({})
 let failed = 0
 const work = mkdtempSync(path.join(tmpdir(), 'tour-clips-'))
