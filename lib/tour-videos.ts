@@ -52,8 +52,12 @@ export interface TourVideoRow {
 }
 
 export interface TourVideo extends TourVideoRow {
-  /** Public streaming URL resolved from the storage bucket */
+  /** Public streaming URL resolved from the storage bucket: the file as uploaded */
   video_url: string
+  /** The phone copies (scripts/encode-tour-clips.mjs), tried before the
+   *  upload; until a clip is encoded they 404 and the player moves on. */
+  video_hevc_url: string
+  video_m_url: string
   thumbnail_url: string | null
   uploader_name: string | null
   uploader_avatar_url: string | null
@@ -330,6 +334,27 @@ export function videoPublicUrl(path: string | null): string | null {
   return supabase.storage.from('tour-videos').getPublicUrl(path).data.publicUrl
 }
 
+/**
+ * Where a clip's phone copies live: the upload's own path under m/, as an
+ * HEVC and an H.264 MP4 (720p at most, ~1.3 and ~1.8 Mbps, moov first).
+ * Uploads arrive as filmed, at up to 11 Mbps and in codecs an iPhone may not
+ * play (VP9), and on a 4 Mbps phone connection they froze for half of every
+ * clip (measured Oct 31 2026). scripts/encode-tour-clips.mjs writes them.
+ */
+export function clipDerivativePaths(path: string): { hevc: string; h264: string } {
+  const base = path.replace(/\.[A-Za-z0-9]+$/, '')
+  return { hevc: `m/${base}.hevc.mp4`, h264: `m/${base}.mp4` }
+}
+
+function clipUrls(path: string) {
+  const d = clipDerivativePaths(path)
+  return {
+    video_url: videoPublicUrl(path) ?? '',
+    video_hevc_url: videoPublicUrl(d.hevc) ?? '',
+    video_m_url: videoPublicUrl(d.h264) ?? '',
+  }
+}
+
 // ────────────────────────────────────────────────────────────────────────────
 //  Read hooks
 // ────────────────────────────────────────────────────────────────────────────
@@ -352,7 +377,7 @@ async function withUploaders(rows: PublicClipRow[]): Promise<TourVideo[]> {
   const userMap = new Map((usersRes.data as ProfileRow[] | null)?.map((u) => [u.id, u]) || [])
   return rows.map((r): TourVideo => ({
     ...fromPublicRow(r),
-    video_url: videoPublicUrl(r.video_path) ?? '',
+    ...clipUrls(r.video_path),
     thumbnail_url: videoPublicUrl(r.thumbnail_path),
     uploader_name: userMap.get(r.user_id)?.name ?? null,
     uploader_avatar_url: userMap.get(r.user_id)?.avatar_url ?? null,
@@ -446,7 +471,7 @@ export async function fetchApprovedVideo(id: string, experienceId: number): Prom
 
   return {
     ...fromPublicRow(row as PublicClipRow),
-    video_url: videoPublicUrl(row.video_path) ?? '',
+    ...clipUrls(row.video_path),
     thumbnail_url: videoPublicUrl(row.thumbnail_path),
     uploader_name: u?.name ?? null,
     uploader_avatar_url: u?.avatar_url ?? null,
@@ -580,7 +605,7 @@ export function useAdminVideoQueue(filter: VideoStatus | 'all' = 'pending') {
 
     setRows(vids.map((r): AdminVideo => ({
       ...(r as TourVideoRow),
-      video_url: videoPublicUrl(r.video_path) ?? '',
+      ...clipUrls(r.video_path),
       thumbnail_url: videoPublicUrl(r.thumbnail_path),
       uploader_name: userMap.get(r.user_id)?.name ?? null,
       uploader_avatar_url: userMap.get(r.user_id)?.avatar_url ?? null,

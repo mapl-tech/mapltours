@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect, useLayoutEffect, useCallback, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { singleExperiences, packageExperiences, Experience, slugify , priceUnitLabel, placeLabel, mobileVideo, mobileHevcVideo, reelPoster, HEVC_SOURCE_TYPE } from '@/lib/experiences'
-import { trackViewItem, trackReelDetailsOpen, trackReelCtaTap, trackClipsEvent } from '@/lib/analytics'
+import { trackViewItem, trackReelDetailsOpen, trackReelCtaTap, trackClipsEvent, trackReelVideo } from '@/lib/analytics'
 import { CLIPS_POST_QUERY } from '@/lib/safe-redirect'
 import { useI18n } from '@/lib/i18n'
 import { useCartStore, DAILY_HOUR_LIMIT } from '@/lib/cart'
@@ -522,6 +522,41 @@ function Reel({ exp, clip, isActive, near, ahead, advancesAtEnd, clipCount, mute
     if (clipId && video) video.muted = muted
   }, [clipId, muted])
 
+  // Did the video on screen actually move, and how fast (lib/analytics
+  // trackReelVideo)? Once per time a reel comes on screen: the first frame
+  // played, or nothing within 8 s while the tab is visible.
+  useEffect(() => {
+    const video = videoRef.current
+    if (!isActive || !video) return
+    const kind = clipId ? 'clip' : 'tour'
+    const source = () => {
+      const src = video.currentSrc || ''
+      if (!src) return 'none'
+      if (src.includes('/tour-videos/m/')) return src.endsWith('.hevc.mp4') ? 'clip-hevc' : 'clip-h264'
+      if (src.includes('/tour-videos/')) return 'clip-upload'
+      return src.endsWith('.hevc.mp4') ? 'hevc' : 'h264'
+    }
+    const t0 = performance.now()
+    let reported = false
+    const onPlaying = () => {
+      if (reported) return
+      reported = true
+      trackReelVideo('reel_video_start', slug, kind, Math.round(performance.now() - t0), source())
+    }
+    const timer = window.setTimeout(() => {
+      if (reported || document.visibilityState === 'hidden') return
+      reported = true
+      trackReelVideo('reel_video_none', slug, kind, 8000, source())
+    }, 8000)
+    video.addEventListener('playing', onPlaying)
+    // Buffered ahead and already moving when it came on screen.
+    if (!video.paused && video.readyState >= 3) onPlaying()
+    return () => {
+      window.clearTimeout(timer)
+      video.removeEventListener('playing', onPlaying)
+    }
+  }, [isActive, clipId, slug])
+
   // TikTok's thin line: how far into the clip, so a visitor sees it is short
   // and loops. Written straight to the element each frame, not through state.
   useEffect(() => {
@@ -600,23 +635,34 @@ function Reel({ exp, clip, isActive, near, ahead, advancesAtEnd, clipCount, mute
           when a keyboard puts focus on it, and takes pointer clicks only
           while paused (WCAG 2.2.2, 4.1.2). */}
       {clip ? (
-        // A guest's own upload: one file (mp4, mov or webm as posted), its
-        // poster the thumbnail made at upload. It plays to its end and the
-        // feed moves on; on the feed's last reel it loops instead.
+        // A clip (MAPL's or a guest's), its poster the thumbnail made at
+        // upload. It plays to its end and the feed moves on; on the feed's
+        // last reel it loops instead. The phone copies come first
+        // (scripts/encode-tour-clips.mjs, ~1.3-1.8 Mbps, H.264/HEVC): uploads
+        // run up to 11 Mbps or in VP9, and froze for half of every clip on a
+        // 4 Mbps phone connection (Oct 31 2026). A clip not yet encoded has
+        // no copies: those sources 404 and the upload plays as before.
         <video
           ref={videoRef}
           playsInline
           muted={muted}
           loop={!advancesAtEnd}
           preload={isActive ? 'auto' : near ? 'metadata' : 'none'}
-          src={near && mediaReady ? clip.video.video_url : undefined}
           poster={near && (isActive || mediaReady) ? clip.video.thumbnail_url ?? undefined : undefined}
           onLoadedMetadata={(e) => setClipFit(e.currentTarget.videoWidth > e.currentTarget.videoHeight ? 'contain' : 'cover')}
           // Under the reel's own sheets, or while a comment is written, it
           // plays again instead of moving on.
           onEnded={(e) => atEnd(e.currentTarget)}
           style={{ width: '100%', height: '100%', objectFit: clipFit, background: '#000' }}
-        />
+        >
+          {near && mediaReady && (
+            <>
+              {clip.video.video_hevc_url && <source src={clip.video.video_hevc_url} type={HEVC_SOURCE_TYPE} />}
+              {clip.video.video_m_url && <source src={clip.video.video_m_url} type="video/mp4" />}
+              <source src={clip.video.video_url} />
+            </>
+          )}
+        </video>
       ) : exp.youtubeId ? (
         <iframe
           src={`https://www.youtube.com/embed/${exp.youtubeId}?autoplay=1&mute=1&loop=1&controls=0&showinfo=0&modestbranding=1&playlist=${exp.youtubeId}&playsinline=1`}

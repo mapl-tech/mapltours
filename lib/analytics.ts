@@ -462,6 +462,36 @@ export function trackReelDetailsOpen(slug: string): void {
 }
 
 /**
+ * Whether a reel's video actually moved on the visitor's phone, and how fast.
+ * reel_video_start: its first frame played, `ms` after the reel came on
+ * screen. reel_video_none: nothing played within 8 s of it being on screen
+ * (Low Power Mode, a codec the phone refuses, a slow connection). Added Oct 31
+ * 2026 after the owner saw tour videos stall on a phone: lab runs could not
+ * reproduce a real iPhone, so this is the field number. `source` says which
+ * file played (catalogue HEVC or H.264, a clip's phone copy, or a clip's
+ * upload), so a codec problem shows as a source.
+ */
+export function trackReelVideo(
+  event: 'reel_video_start' | 'reel_video_none',
+  slug: string,
+  kind: 'tour' | 'clip',
+  ms: number,
+  source: string,
+): void {
+  try {
+    if (typeof window === 'undefined') return
+    // page_ms: since the page began loading, the wait a visitor who landed on
+    // this reel actually had (ms starts when the reel came on screen).
+    const pageMs = Math.round(performance.now())
+    whenGtagReady((gtag) => {
+      gtag('event', event, { item_id: slug, video_kind: kind, ms, page_ms: pageMs, video_source: source })
+    })
+  } catch {
+    /* no-op */
+  }
+}
+
+/**
  * A tap on the reel's Add to Trip button, whatever it did. add_to_cart is
  * reported from the store and only counts a successful add; this counts the
  * taps that removed, were refused by the day-fit rules ('blocked', with the
