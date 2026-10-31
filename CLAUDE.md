@@ -566,6 +566,15 @@ Rules, enforced in code:
 
 Payments switch: `AGENT_PAYMENTS_ENABLED=1` on Netlify, only after GO-LIVE.md section 8. MCP Registry: `mcp/server.json` (`com.mapltours/booking`), domain proof at `/.well-known/mcp-registry-auth` (public key in the route; the private key lives at `~/.config/mapltours/mcp-registry-key.pem` on the owner's Mac, never in the repo). Tests: `tests/unit/mcp-endpoint.spec.ts` (official client, both eras, against the real route), `agent-booking-link`, `agent-connector`, `agent-pay` (fake Stripe and checkout: every refusal happens before the step it guards).
 
+## Clip phone copies: the GitHub job (Oct 31 2026)
+
+Guest and MAPL clips (`user_tour_videos`) play phone copies (`m/<upload path>.hevc.mp4` and `.mp4`, `clipDerivativePaths` in `lib/video-rules.ts`), falling back to the upload while a clip has none. `.github/workflows/clip-copies.yml` makes them every 15 minutes with `scripts/encode-tour-clips.mjs`, because encoding needs ffmpeg and minutes of CPU that a Netlify function does not have.
+
+- **No secret anywhere.** The job asks `/api/clip-copies` with GitHub's OIDC token; `isClipCopiesJob` (`lib/clip-copies.ts`) accepts only this repo (by id), on main, from that workflow file, scheduled or Run workflow. Renaming the workflow file, moving the repo or changing the default branch breaks it until `CLIP_COPIES_JOB` is updated. The route answers with signed upload URLs for exactly the missing copies, so the job holds no Supabase key.
+- **Guest files are untrusted.** ffmpeg runs with `-format_whitelist mov,matroska -protocol_whitelist file` (a playlist named .mp4 could otherwise read local files into the copy) and without the job's env; a row whose `video_path` is outside its uploader's own folder is ignored.
+- **A clip that cannot be encoded** gets `m/<path>.failed.txt`, fails that one run (GitHub emails the failure) and is skipped until the workflow is run by hand with its clip id, which also redoes a clip that has copies.
+- Tests: `tests/unit/clip-copies.spec.ts` (planner, token checks with a test key, the route).
+
 ## Trip tips v2: the daily tips job (Sept 2026)
 
 `app/api/trip-tips/route.ts`, called daily at 14:00 UTC by `netlify/functions/trip-tips-cron.mjs`, sends each Trip tips subscriber at most one tip a run, chosen by what they have booked. It replaces the Resend automation "Trip tips welcome", which stays disabled; nothing here calls Resend to change it. The rules are in `lib/trip-tips/plan.ts` (pure), the I/O in `lib/trip-tips/run.ts`, the emails in `lib/trip-tips/emails.ts`, the signed stop link in `lib/trip-tips/unsubscribe.ts`.

@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { createClient } from './supabase/client'
 import { useAuth } from './supabase/auth-context'
 import { useSwrCache } from './swr-cache'
-import { VIDEO_REWARD_MILESTONE } from './video-rules'
+import { VIDEO_REWARD_MILESTONE, clipDerivativePaths } from './video-rules'
 
 /**
  * ============================================================================
@@ -29,7 +29,7 @@ export const VIDEO_ALLOWED_TYPES = [
   'video/webm',
 ] as const
 // Lives in a plain module so server code can read it too (see lib/video-rules).
-export { VIDEO_REWARD_MILESTONE }
+export { VIDEO_REWARD_MILESTONE, clipDerivativePaths }
 
 // ── Data shapes ─────────────────────────────────────────────────────────────
 export type VideoStatus = 'pending' | 'approved' | 'rejected' | 'flagged'
@@ -332,18 +332,6 @@ export async function uploadTourVideo({
 export function videoPublicUrl(path: string | null): string | null {
   if (!path) return null
   return supabase.storage.from('tour-videos').getPublicUrl(path).data.publicUrl
-}
-
-/**
- * Where a clip's phone copies live: the upload's own path under m/, as an
- * HEVC and an H.264 MP4 (720p at most, ~1.3 and ~1.8 Mbps, moov first).
- * Uploads arrive as filmed, at up to 11 Mbps and in codecs an iPhone may not
- * play (VP9), and on a 4 Mbps phone connection they froze for half of every
- * clip (measured Oct 31 2026). scripts/encode-tour-clips.mjs writes them.
- */
-export function clipDerivativePaths(path: string): { hevc: string; h264: string } {
-  const base = path.replace(/\.[A-Za-z0-9]+$/, '')
-  return { hevc: `m/${base}.hevc.mp4`, h264: `m/${base}.mp4` }
 }
 
 function clipUrls(path: string) {

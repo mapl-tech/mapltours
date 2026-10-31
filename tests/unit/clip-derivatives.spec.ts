@@ -13,7 +13,7 @@ import { clipDerivativePaths } from '@/lib/tour-videos'
 /**
  * Oct 31 2026: uploaded clips (up to 11 Mbps, two in VP9) froze for half of
  * every clip on a 4 Mbps phone connection. Their phone copies live at a path
- * the reel and scripts/encode-tour-clips.mjs both derive from the upload's.
+ * the reel and the clip-copies job both derive from the upload's (lib/video-rules).
  */
 describe('a clip’s phone copies', () => {
   test('sit under m/ at the upload’s own path, as HEVC and H.264 MP4s', () => {
@@ -24,9 +24,7 @@ describe('a clip’s phone copies', () => {
     expect(clipDerivativePaths('69b8/14-1791157747500.mp4').h264).toBe('m/69b8/14-1791157747500.mp4')
   })
 
-  test('the script derives the same paths', async () => {
-    const src = (await import('node:fs')).readFileSync('scripts/encode-tour-clips.mjs', 'utf8')
-    expect(src).toContain("hevc: `m/${base}.hevc.mp4`, h264: `m/${base}.mp4`")
-    expect(src).toContain(".replace(/\\.[A-Za-z0-9]+$/, '')")
+  test('the reel and the clip-copies job read one rule', async () => {
+    expect(clipDerivativePaths).toBe((await import('@/lib/video-rules')).clipDerivativePaths)
   })
 })

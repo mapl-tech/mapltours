@@ -1,0 +1,54 @@
+# Phone copies of new tour clips (lib/clip-copies, scripts/encode-tour-clips.mjs).
+# Every 15 minutes it asks mapltours.com which clips need copies; nearly every
+# run finds none and ends in seconds. The site trusts this job by GitHub's OIDC
+# token (id-token: write), so there is no secret to keep here.
+#
+# Run workflow, with a clip id, re-encodes that clip even if it has copies or
+# a failure marker.
+name: Clip phone copies
+
+on:
+  schedule:
+    - cron: '4,19,34,49 * * * *'
+  workflow_dispatch:
+    inputs:
+      clip:
+        description: Clip id to re-encode (optional)
+        required: false
+        default: ''
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: clip-copies
+  cancel-in-progress: false
+
+jobs:
+  encode:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    env:
+      CLIP: ${{ inputs.clip }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          sparse-checkout: scripts/encode-tour-clips.mjs
+          sparse-checkout-cone-mode: false
+
+      - name: Which clips need copies
+        id: check
+        run: node scripts/encode-tour-clips.mjs --check
+
+      - name: Install ffmpeg
+        if: steps.check.outputs.todo != '0'
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq --no-install-recommends ffmpeg
+          ffmpeg -hide_banner -version | head -1
+
+      - name: Encode and upload
+        if: steps.check.outputs.todo != '0'
+        run: node scripts/encode-tour-clips.mjs
