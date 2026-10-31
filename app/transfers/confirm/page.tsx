@@ -299,7 +299,8 @@ export default async function TransferConfirmPage({
         color: 'var(--text-primary)',
       }}
     >
-      <div className="container" style={{ maxWidth: 720, padding: '72px 20px' }}>
+      {/* 72px on desktop, 40px on a phone, so the first card is not pushed below the fold */}
+      <div className="container" style={{ maxWidth: 720, padding: 'clamp(40px, 9vw, 72px) 20px' }}>
         {data.status === 'succeeded' ? (
           isPrivate ? <PrivateConfirmation kind="ride" bookingRef={data.bookingRef} /> : <Success data={data} />
         ) : data.status === 'processing' ? (

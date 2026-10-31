@@ -155,6 +155,7 @@ describe('a browser that did not book the ride', () => {
     expect(text).toContain('MAPL-1A2B3C4D')
     expect(text).toContain('Sign in with the email you booked with')
     expect(text).toContain('Sign in to see my trip')
+    expect(text).toContain('Booked without an account?')
     expect(text).toContain('contact@mapltours.com')
     expect(text).not.toContain('\u2014')
   })
@@ -164,6 +165,8 @@ describe('a browser that did not book the ride', () => {
     db.owner = false
     const html = renderToStaticMarkup(await TransferConfirmPage({ searchParams: { booking_id: '1a2b3c4d-0000-0000-0000-000000000000' } }))
     expect(html).toContain('href="/login?redirect=%2Fprofile"')
+    // A guest who booked without an account goes straight to the sign-up form.
+    expect(html).toContain('href="/login?mode=signup&amp;redirect=%2Fprofile"')
     expect(html).not.toContain('Add tours to your trip')
     expect(html).not.toContain('Book another transfer')
   })

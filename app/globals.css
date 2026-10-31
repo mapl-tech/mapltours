@@ -3425,3 +3425,52 @@ a.pf-stat:hover { background: var(--surface); }
   to { opacity: 1; transform: translateX(-50%); }
 }
 @media (prefers-reduced-motion: reduce) { .reel-earn-bubble { animation: none; } }
+
+/* ── Private booking confirmation (components/checkout/PrivateConfirmation.tsx) ──
+   What a confirmation link shows a browser that did not book it. 8px rhythm,
+   rem type, the card's padding grows with the card (container query), and its
+   rise is transform-only so the first paint is never hidden. */
+.pc { text-align: center; }
+.pc-kicker {
+  font-family: var(--font-dm-sans); font-size: 0.75rem; font-weight: 700;
+  letter-spacing: 0.22em; text-transform: uppercase; color: var(--emerald); margin: 0 0 16px;
+}
+.pc-title {
+  font-family: var(--font-dm-sans); font-weight: 700; font-size: clamp(2.25rem, 5vw, 3.5rem);
+  line-height: 1.05; letter-spacing: -0.02em; margin: 0 0 16px;
+}
+.pc-title em { font-style: italic; font-weight: 500; }
+.pc-lede {
+  font-family: var(--font-dm-sans); font-size: 1.0625rem; line-height: 1.5; color: var(--text-secondary);
+  max-width: 32.5rem; margin: 0 auto 24px; text-wrap: balance;
+}
+.pc-ref {
+  display: inline-flex; align-items: center; gap: 12px; padding: 12px 24px; margin: 0 0 32px;
+  border-radius: var(--r-md); border: 1px solid var(--border-strong); background: #fff;
+  font-family: var(--font-dm-sans); font-size: 0.875rem; font-weight: 700; letter-spacing: 0.08em; color: var(--text-primary);
+}
+.pc-ref span { color: var(--text-tertiary); font-size: 0.75rem; letter-spacing: 0.22em; }
+.pc-card {
+  container: pc-card / inline-size;
+  max-width: 32.5rem; margin: 0 auto; padding: 24px; text-align: left;
+  border-radius: var(--r-xl); border: 1px solid var(--border); background: #fff; box-shadow: var(--shadow-sm);
+  animation: pcRise 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+@container pc-card (min-width: 26rem) { .pc-card-body { padding: 8px 8px 0; } }
+.pc-card h2 {
+  display: flex; align-items: center; gap: 8px; margin: 0 0 8px;
+  font-family: var(--font-dm-sans); font-weight: 700; font-size: 1.125rem; letter-spacing: -0.01em; color: var(--text-primary);
+}
+.pc-card h2 svg { color: var(--emerald); flex-shrink: 0; }
+.pc-body { font-family: var(--font-dm-sans); font-size: 1rem; line-height: 1.55; color: var(--text-secondary); margin: 0 0 24px; }
+/* The site's phone rule sets every .btn-primary to 14.5px; this one action keeps 16px everywhere. */
+.pc-card .btn-primary { width: 100%; height: 48px; font-size: 1rem !important; font-weight: 600; }
+.pc-alt { font-family: var(--font-dm-sans); font-size: 0.9375rem; line-height: 1.5; color: var(--text-secondary); margin: 16px 0 0; }
+.pc-note { font-family: var(--font-dm-sans); font-size: 0.875rem; line-height: 1.5; color: var(--text-tertiary); margin: 8px 0 0; }
+.pc-alt a, .pc-help a { color: var(--text-primary); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; }
+.pc-help {
+  font-family: var(--font-dm-sans); font-size: 0.9375rem; line-height: 1.55; color: var(--text-secondary);
+  max-width: 32.5rem; margin: 24px auto 0;
+}
+@keyframes pcRise { from { transform: translateY(8px); } to { transform: none; } }
+@media (prefers-reduced-motion: reduce) { .pc-card { animation: none; } }

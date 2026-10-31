@@ -23,7 +23,9 @@ function LoginContent() {
   const searchParams = useSearchParams()
   const redirect = getSafeRedirect(searchParams.get('redirect'))
 
-  const [mode, setMode] = useState<'login' | 'signup'>('login')
+  // ?mode=signup opens the sign-up form directly: a guest who booked without an
+  // account is sent here from a private confirmation page (PrivateConfirmation).
+  const [mode, setMode] = useState<'login' | 'signup'>(searchParams.get('mode') === 'signup' ? 'signup' : 'login')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
