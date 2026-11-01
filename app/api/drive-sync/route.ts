@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { createServiceClient } from '@/lib/supabase/service'
 import { driveConfigured, uploadClipToDrive, deleteDriveFile } from '@/lib/google-drive'
 import { experiences } from '@/lib/experiences'
+import { trustedClipPath } from '@/lib/clip-copies'
 
 /**
  * POST: copy one uploaded guest clip into the Google Drive marketing
@@ -107,8 +108,10 @@ export async function POST(req: NextRequest) {
   if (!video.size_bytes || video.size_bytes > MAX_SYNC_BYTES) {
     return NextResponse.json({ error: 'too_large' }, { status: 413 })
   }
-  // A clip may only be synced from its owner's own storage folder.
-  if (!video.video_path.startsWith(`${video.user_id}/`)) {
+  // A clip may only be synced from its owner's own storage folder, in the
+  // exact shape the upload form writes: a prefix check let `<uid>/../x`
+  // through, and the storage URL resolves the `..`.
+  if (!trustedClipPath(video)) {
     return NextResponse.json({ error: 'bad_path' }, { status: 400 })
   }
 

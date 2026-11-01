@@ -74,6 +74,7 @@ vi.mock('@/lib/supabase/service', () => ({
         limit: self,
         eq: filter('eq'),
         is: filter('is'),
+        gte: filter('gte'),
         not: (col: string, op: string, val: unknown) => {
           if (col.startsWith('dispatch->') && op === 'is' && val === null) flaggedQuery = true
           return chain
@@ -93,7 +94,10 @@ vi.mock('@/lib/supabase/service', () => ({
           if (record) return Promise.resolve({ data: null, error: null }).then(resolve)
           const source = flaggedQuery ? state.flagged : state.rows
           const hits = source.filter((r) =>
-            where.every(([op, col, val]) => (op === 'is' ? r[col] == null : r[col] === val)))
+            where.every(([op, col, val]) =>
+              op === 'is' ? r[col] == null
+                : op === 'gte' ? r[col] != null && String(r[col]) >= String(val)
+                  : r[col] === val))
           return Promise.resolve({ data: hits, error: null }).then(resolve)
         },
       })
@@ -373,5 +377,71 @@ describe('a paid-but-pending row keeps alerting until it is healed', () => {
     expect(body.paidButPending).toEqual(['MAPL-AAAAAAAA'])
     expect(state.emails.filter((e) => e.subject.includes('stuck in pending'))).toHaveLength(1)
     expect(state.emails[digestIndex()].subject).toContain('1 paid booking stuck')
+  })
+})
+
+// Anyone can start a checkout with any address and any first name, so the
+// nudge was aimed by whoever typed them: every cart a new email, greeting and all.
+describe('the nudge cannot be aimed at a stranger', () => {
+  const id = (n: number) => `${String(n).repeat(8)}-1111-2222-3333-444444444444`
+
+  test('one inbox gets one nudge a week, counting Gmail dot and +tag variants as one', async () => {
+    state.rows = [
+      row({ id: id(1), email: 'jane.doe@gmail.com', stripe_payment_id: 'pi_a' }),
+      row({ id: id(2), email: 'janedoe+x@gmail.com', stripe_payment_id: 'pi_b' }),
+      row({ id: id(3), email: 'j.a.n.e.doe@googlemail.com', stripe_payment_id: 'pi_c' }),
+      row({ id: id(4), email: 'other@example.com', stripe_payment_id: 'pi_d' }),
+    ]
+    state.piStatuses = { pi_a: 'requires_payment_method', pi_b: 'requires_payment_method', pi_c: 'requires_payment_method', pi_d: 'requires_payment_method' }
+    const body = await sweep()
+    expect(state.emails.map((e) => e.to)).toEqual(['jane.doe@gmail.com', 'other@example.com'])
+    expect(body.skipped).toEqual(['MAPL-22222222:inbox_nudged_this_week', 'MAPL-33333333:inbox_nudged_this_week'])
+    // Skipped rows are not claimed, so they are not counted as recovered.
+    expect(touched(id(2))).toHaveLength(0)
+    expect(touched(id(3))).toHaveLength(0)
+  })
+
+  test('an inbox nudged earlier this week is not nudged again; one nudged eight days ago is', async () => {
+    const DAY = 24 * HOUR
+    state.rows = [
+      row({ id: id(5), email: 'ann@example.com', recovery_email_sent_at: new Date(Date.now() - 2 * DAY).toISOString() }),
+      row({ id: id(6), email: 'bob@example.com', recovery_email_sent_at: new Date(Date.now() - 8 * DAY).toISOString() }),
+      row({ id: id(1), email: 'Ann@Example.com', stripe_payment_id: 'pi_a' }),
+      row({ id: id(2), email: 'bob@example.com', stripe_payment_id: 'pi_b' }),
+    ]
+    state.piStatuses = { pi_a: 'requires_payment_method', pi_b: 'requires_payment_method' }
+    const body = await sweep()
+    expect(state.emails.map((e) => e.to)).toEqual(['bob@example.com'])
+    expect(body.skipped).toContain('MAPL-11111111:inbox_nudged_this_week')
+  })
+
+  test('a paid row from a nudged inbox is still caught as paid-but-pending', async () => {
+    state.rows = [
+      row({ id: id(5), email: 'ann@example.com', recovery_email_sent_at: new Date(Date.now() - HOUR).toISOString() }),
+      row({ id: id(1), email: 'ann@example.com', stripe_payment_id: 'pi_a' }),
+    ]
+    state.piStatuses = { pi_a: 'succeeded' }
+    const body = await sweep()
+    expect(body.paidButPending).toEqual(['MAPL-11111111'])
+  })
+
+  test('the greeting uses the first name only when it is a name', async () => {
+    const greeting = async (first_name: unknown) => {
+      state.emails = []
+      state.reacts = []
+      state.updates = []
+      state.rows = [row({ first_name })]
+      state.piStatuses = { pi_1: 'requires_payment_method' }
+      await sweep()
+      return render(state.reacts[0] as ReactElement, { plainText: true })
+    }
+    expect(await greeting('Zoë')).toMatch(/Still thinking it over, Zoë\?/i)
+    for (const bad of ['bit.ly/win', '8765550100', 'help@example.com', 'www.example.org', 'Win! Visit example.org']) {
+      const text = await greeting(bad)
+      expect(text).not.toMatch(/bit\.ly|8765550100|help@example|example\.org/)
+      expect(text).toMatch(/Still thinking it over, there\?/i)
+    }
+    // Only the first word is ever used, and only when it is a name.
+    expect(await greeting('Call 8765550100')).not.toMatch(/8765550100/)
   })
 })

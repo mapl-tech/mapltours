@@ -5,6 +5,8 @@ import { sendEmail, operatorAlertRecipients } from '@/lib/email/send'
 import { resolveOpsRecipients } from '@/lib/email/booking'
 import AbandonedCart from '@/emails/AbandonedCart'
 import OpsAlert from '@/emails/OpsAlert'
+import { mailboxKey } from '@/lib/contact-spam'
+import { guestNames } from '@/lib/guest-name'
 
 /**
  * Abandoned-cart recovery.
@@ -27,6 +29,11 @@ import OpsAlert from '@/emails/OpsAlert'
  *     MAX_AGE_DAYS that have not had a recovery email.
  *   • targeted: `?bookingId=<uuid>` processes exactly that row (still only if
  *     pending + genuinely unpaid + not already recovered).
+ *
+ * Anyone can start a checkout with any address and any first name, so the
+ * nudge is aimed by whoever typed them: one inbox gets at most one a week
+ * (cron mode; Gmail dot and +tag variants are one inbox), and the greeting
+ * uses the first name only when it is a name (lib/guest-name).
  */
 
 export const runtime = 'nodejs'
@@ -75,6 +82,8 @@ const PAID_PENDING_KEY = 'paid_but_pending_at'
 /** Bounds the flagged query. Each row is an incident, so real counts are
  *  tiny; past this many the digest is already on fire. */
 const PAID_PENDING_MAX = 50
+/** One recovery email per inbox in this many days, across all its carts. */
+const INBOX_WEEK_DAYS = 7
 
 function humanizeId(id: string): string {
   return 'MAPL-' + id.slice(0, 8).toUpperCase()
@@ -184,6 +193,20 @@ async function handle(request: NextRequest) {
     }
   }
 
+  // Inboxes nudged in the last week. A query that fails leaves the set empty,
+  // which is the sweep as it was before the limit, not a sweep that stops.
+  const nudged = new Set<string>()
+  if (!bookingId) {
+    const since = new Date(now - INBOX_WEEK_DAYS * 24 * 60 * 60 * 1000).toISOString()
+    const { data: recent, error: recentErr } = await supabase
+      .from('bookings')
+      .select('email')
+      .gte('recovery_email_sent_at', since)
+      .limit(2000)
+    if (recentErr) console.error('[abandoned-cart] recent recovery query failed', recentErr.message)
+    for (const r of (recent ?? []) as Row[]) if (r.email) nudged.add(mailboxKey(String(r.email)))
+  }
+
   for (const b of (rows ?? []) as Row[]) {
     // Stop before the platform stops us, so the run ends with a summary
     // instead of a truncated log and a silent backlog.
@@ -251,6 +274,9 @@ async function handle(request: NextRequest) {
     }
 
     if (!bookingId && age > maxAgeMs) { summary.skipped.push(`${ref}:too_old`); continue }
+    // After the Stripe check, so a paid-but-pending row is still caught.
+    const inbox = mailboxKey(email)
+    if (!bookingId && nudged.has(inbox)) { summary.skipped.push(`${ref}:inbox_nudged_this_week`); continue }
 
     // Atomic claim: only one worker wins the NULL → now() transition.
     const nowIso = new Date().toISOString()
@@ -291,7 +317,7 @@ async function handle(request: NextRequest) {
       to: email,
       subject: `Your Jamaica trip is still saved (${ref})`,
       react: AbandonedCart({
-        firstName: b.first_name,
+        firstName: guestNames({ full_name: b.first_name }).firstName,
         bookingRef: ref,
         currency,
         total: Number(b.total_paid),
@@ -307,6 +333,7 @@ async function handle(request: NextRequest) {
 
     if (res.ok) {
       summary.emailed += 1
+      nudged.add(inbox)
     } else {
       // Release the claim so a later run retries.
       await supabase

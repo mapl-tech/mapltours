@@ -46,19 +46,20 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Invalid payment reference.' }, { status: 400 })
   }
 
+  // Without proof, the answer is the same whether the id exists, is a gift
+  // purchase, or is anything else: a leaked id confirms nothing.
+  const NO_PROOF =
+    'For security, a gift code only shows in the browser that paid for it. Check the email we sent, or contact contact@mapltours.com and we will resend it.'
+
   let pi: Stripe.PaymentIntent
   try {
     pi = await stripe.paymentIntents.retrieve(paymentIntentId)
-  } catch {
-    return NextResponse.json({ error: 'We could not find that payment.' }, { status: 404 })
-  }
-
-  if (pi.metadata?.kind !== 'gift_card') {
-    return NextResponse.json({ error: 'That payment is not a gift card.' }, { status: 400 })
-  }
-  const giftId = typeof pi.metadata?.gift_card_id === 'string' ? pi.metadata.gift_card_id : null
-  if (!giftId) {
-    return NextResponse.json({ error: 'That payment is not linked to a gift card.' }, { status: 400 })
+  } catch (e) {
+    // No such intent reads as no proof; Stripe being unreachable is ours to say.
+    if ((e as { type?: string } | null)?.type === 'StripeInvalidRequestError') {
+      return NextResponse.json({ error: NO_PROOF }, { status: 403 })
+    }
+    return NextResponse.json({ error: 'We could not check that payment just now. Please try again in a moment.' }, { status: 503 })
   }
 
   // Only the browser that paid may see the code (Oct 31 2026). It holds the
@@ -67,15 +68,18 @@ export async function POST(req: NextRequest) {
   // over the same way after a payment that needed no redirect. A payment id
   // alone, from an analytics report, a history entry or a shared link, no
   // longer unlocks a spendable code or the recipient's address. The code still
-  // reaches the recipient and the buyer by email either way.
+  // reaches the recipient and the buyer by email either way. Checked before
+  // anything else about the payment is said.
   if (!requestHoldsSecret(req, pi.client_secret)) {
-    return NextResponse.json(
-      {
-        error:
-          'For security, a gift code only shows in the browser that paid for it. Check the email we sent, or contact contact@mapltours.com and we will resend it.',
-      },
-      { status: 403 },
-    )
+    return NextResponse.json({ error: NO_PROOF }, { status: 403 })
+  }
+
+  if (pi.metadata?.kind !== 'gift_card') {
+    return NextResponse.json({ error: 'That payment is not a gift card.' }, { status: 400 })
+  }
+  const giftId = typeof pi.metadata?.gift_card_id === 'string' ? pi.metadata.gift_card_id : null
+  if (!giftId) {
+    return NextResponse.json({ error: 'That payment is not linked to a gift card.' }, { status: 400 })
   }
 
   if (pi.status !== 'succeeded') {
