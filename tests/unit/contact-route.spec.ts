@@ -144,4 +144,70 @@ describe('contact route', () => {
     expect((await POST(req({ ...ask, message: '' }))).status).toBe(400)
     expect(sent).toHaveLength(0)
   })
+
+  test('a body that is not the form\'s shape is refused, never a crash', async () => {
+    expect((await POST(req({ name: 1, email: ['guest@example.com'], message: { a: 1 }, website: 2 }))).status).toBe(400)
+    const raw = (body: string) => new NextRequest('https://mapltours.com/api/contact', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body,
+    })
+    expect((await POST(raw('null'))).status).toBe(400)
+    expect((await POST(raw('"hello"'))).status).toBe(400)
+    expect(sent).toHaveLength(0)
+  })
+
+  // A page on another site can post text/plain without asking (no CORS
+  // preflight); JSON makes the browser ask, and this route never says yes.
+  test('a post that is not JSON is refused before anything is sent', async () => {
+    const r = await POST(new NextRequest('https://mapltours.com/api/contact', {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({ name: 'Ana', email: 'ana@example.com', message: 'Do you do weddings?' }),
+    }))
+    expect(r.status).toBe(415)
+    expect(sent).toHaveLength(0)
+  })
+
+  // The reply goes to an address nobody verified, so a spammer could have
+  // used it to deliver their own words to a stranger from our domain.
+  test('the auto-reply says back nothing the visitor typed; the team gets all of it', async () => {
+    await POST(req({
+      name: 'bit.ly/win Smith',
+      email: 'victim@example.com',
+      subject: 'Your PayPal account is locked',
+      message: 'Call +1 (876) 555-0100 now or visit https://evil.example/claim to keep your account.',
+      website: '',
+    }))
+    expect(sent.map((m) => m.to)).toEqual(['contact@mapltours.com', 'victim@example.com'])
+    const reply = await render(sent[1].react, { plainText: true })
+    expect(reply).toMatch(/Thanks, there, we got it\./i)
+    expect(reply).not.toMatch(/bit\.ly|PayPal|locked|555|evil|claim/i)
+    const team = await render(sent[0].react, { plainText: true })
+    expect(team).toContain('https://evil.example/claim')
+    expect(sent[0].subject).toBe('MAPL Tours Jamaica · Contact · Your PayPal account is locked')
+  })
+
+  test('a real first name is still used, and a name or subject cannot add lines to a subject', async () => {
+    await POST(req({ name: 'José\r\nBcc: x@example.com', email: 'jose@example.com', subject: 'Hi\nthere', message: 'Do you go to Negril?', website: '' }))
+    expect(sent[0].subject).toBe('MAPL Tours Jamaica · Contact · Hi there')
+    expect(await render(sent[1].react, { plainText: true })).toMatch(/Thanks, José, we got it\./i)
+    sent.length = 0
+    await POST(req({ name: 'José Bcc: x@example.com', email: 'jose@example.com', subject: '', message: 'Do you go to Negril?', website: '' }))
+    expect(sent[0].subject).toBe('MAPL Tours Jamaica · Contact · message from José Bcc: x@example.com')
+  })
+
+  test('a price request names the hotel back only when it reads as a place', async () => {
+    const priceReply = async (hotel: string) => {
+      sent.length = 0
+      await POST(req({ ...ask, subject: `Unlisted hotel · ${hotel}`, kind: 'price_request', hotel, tripType: 'one_way', passengers: 3, website: '' }))
+      expect(sent[1].subject).toBe('Your ride price is on its way, MAPL Tours Jamaica')
+      return render(sent[1].react, { plainText: true })
+    }
+    for (const bad of ['evil.com/claim', 'Call 876-555-0100 to keep your booking', 'www.example.org', 'help@example.com', 'https://example.com']) {
+      const text = await priceReply(bad)
+      expect(text).toMatch(/We.re pricing your ride\./i)
+      expect(text).not.toMatch(/evil|555|example|Call /i)
+      expect(text).toContain('One way')
+    }
+    expect(await priceReply('Villa 12, St. James')).toMatch(/pricing your ride to Villa 12, St\. James\./i)
+  })
 })

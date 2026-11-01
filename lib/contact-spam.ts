@@ -85,6 +85,24 @@ function isWord(token: string): boolean {
   return /[aeiouy]/i.test(token) && !scrambled(token)
 }
 
+// The same character rule as the connector's pickupText (lib/agent/booking-link).
+const NOT_PLACE_NAME = new RegExp("[^\\p{L}\\p{M}\\p{N} .,'&()/#-]", 'gu')
+// A link, an address, a bare domain (Gmail links "example.com" on its own) or
+// a phone number: what makes a message worth relaying to a stranger.
+const RELAY_PAYLOAD = /https?:|www\.|@|:\/\/|[a-z0-9-]\.[a-z]{2,}|\d(?:[\s().-]*\d){6,}/i
+
+/**
+ * The hotel a price request named, fit to say back to the guest, or null.
+ * The auto-reply goes to an address nobody has verified, so a hotel carrying
+ * a link, a domain or a phone number is left out of it (the team still gets
+ * it as typed).
+ */
+export function replyHotel(raw: string): string | null {
+  const s = raw.normalize('NFC').replace(NOT_PLACE_NAME, ' ').replace(/\s+/g, ' ').trim().slice(0, 80).trim()
+  if (!s || RELAY_PAYLOAD.test(raw) || RELAY_PAYLOAD.test(s)) return null
+  return s
+}
+
 /**
  * Why a submission is spam, or null. Held when the typed text has no real
  * words in it (none, or fewer than half its tokens with letters) and either

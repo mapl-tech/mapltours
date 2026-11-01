@@ -1,24 +1,21 @@
-import { Heading, Section, Text } from '@react-email/components'
+import { Heading, Text } from '@react-email/components'
 import { MaplLayout, maplStyles as s } from './_Layout'
 
 export interface ContactAutoReplyProps {
+  /** Already checked to be a name (lib/guest-name), or null. */
   firstName?: string | null
-  /** Mirror the subject the visitor typed, so they remember which thread this is. */
-  subject?: string | null
-  /** Echo the message back so they have a copy of what they sent. */
-  message: string
 }
 
 /**
  * Branded auto-reply sent to anyone who submits the contact form on
- * mapltours.com. Confirms receipt, sets expectation on response time,
- * and mirrors the original message back so the visitor has a record.
+ * mapltours.com. Confirms receipt and sets expectation on response time.
+ *
+ * It carries nothing the visitor typed except a first name that passed the
+ * name rule. The address is unverified, so anything echoed here (a link, a
+ * phone number, a "your account is locked" line) would be delivered to a
+ * stranger from our domain. It used to echo the subject and the message.
  */
-export default function ContactAutoReply({
-  firstName,
-  subject,
-  message,
-}: ContactAutoReplyProps) {
+export default function ContactAutoReply({ firstName }: ContactAutoReplyProps) {
   const name = firstName?.trim() || 'there'
 
   return (
@@ -31,26 +28,6 @@ export default function ContactAutoReply({
         back to you within <strong>one business day</strong> (often much
         sooner).
       </Text>
-
-      {subject ? (
-        <Section style={s.card}>
-          <Section style={s.cardHeader}>
-            <Text style={s.cardHeaderText}>Subject</Text>
-          </Section>
-          <Section style={s.cardBody}>
-            <Text style={s.body}>{subject}</Text>
-          </Section>
-        </Section>
-      ) : null}
-
-      <Section style={s.card}>
-        <Section style={s.cardHeader}>
-          <Text style={s.cardHeaderText}>What you sent us</Text>
-        </Section>
-        <Section style={s.cardBody}>
-          <Text style={{ ...s.body, whiteSpace: 'pre-wrap' }}>{message}</Text>
-        </Section>
-      </Section>
 
       <Text style={{ ...s.body, marginTop: 24 }}>
         If your trip is coming up fast and you need an answer the same day,

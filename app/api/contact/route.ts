@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { sendEmail } from '@/lib/email/send'
 import { rateLimit, getIp } from '@/lib/rate-limit'
-import { contactSpam, mailboxKey } from '@/lib/contact-spam'
+import { contactSpam, mailboxKey, replyHotel } from '@/lib/contact-spam'
+import { guestNames } from '@/lib/guest-name'
 import ContactMessage from '@/emails/ContactMessage'
 import ContactAutoReply from '@/emails/ContactAutoReply'
 import PriceRequestAutoReply, { PRICE_REQUEST_REPLY_SUBJECT } from '@/emails/PriceRequestAutoReply'
@@ -12,8 +13,10 @@ import PriceRequestAutoReply, { PRICE_REQUEST_REPLY_SUBJECT } from '@/emails/Pri
  * Two emails per submission:
  *   1. Ops alert → contact@mapltours.com  (replyTo = visitor's email,
  *      so hitting "Reply" in their inbox goes straight to the visitor)
- *   2. Branded auto-reply → the visitor, confirming receipt and echoing
- *      their message back.
+ *   2. Branded auto-reply → the visitor, confirming receipt. It carries
+ *      nothing they typed beyond a checked first name (or a checked hotel on
+ *      a price request): the address is unverified, so an echo would deliver
+ *      a stranger whatever a spammer wrote, from our domain.
  *
  * The visitor-side auto-reply is best-effort: if it fails we still
  * accept the submission (the ops alert is the load-bearing one). If the
@@ -53,6 +56,13 @@ export async function POST(req: NextRequest) {
     )
   }
 
+  // All three forms send JSON. Requiring it makes a browser on another site
+  // ask first (a CORS preflight, which this route never grants), so no other
+  // page can post this form from its own visitors' browsers and addresses.
+  if (!(req.headers.get('content-type') ?? '').toLowerCase().startsWith('application/json')) {
+    return NextResponse.json({ error: 'Invalid request body' }, { status: 415 })
+  }
+
   // 2. Parse + validate.
   let body: ContactBody
   try {
@@ -60,6 +70,11 @@ export async function POST(req: NextRequest) {
   } catch {
     return NextResponse.json({ error: 'Invalid request body' }, { status: 400 })
   }
+  if (!body || typeof body !== 'object') {
+    return NextResponse.json({ error: 'Invalid request body' }, { status: 400 })
+  }
+  // A field that is not a string is an empty one, never a crash.
+  const text = (v: unknown) => (typeof v === 'string' ? v : '')
 
   // Honeypot. A filled hidden field used to drop the message silently, and on
   // Oct 26 2026 it dropped the owner's own requests: browsers fill hidden
@@ -68,14 +83,17 @@ export async function POST(req: NextRequest) {
   // and the field's value inside, and only the auto-reply is skipped, so a
   // bot never gets mail sent to an address it typed. The per-IP rate limit
   // above still caps any flood.
-  const hidden = (body.website ?? '').trim().slice(0, 120)
+  const hidden = text(body.website).trim().slice(0, 120)
   const trapped = hidden.length > 0
   if (trapped) console.warn('[contact] hidden field filled, delivering flagged')
 
-  const name = (body.name ?? '').trim().slice(0, 120)
-  const email = (body.email ?? '').trim().slice(0, 200)
-  const subject = (body.subject ?? '').trim().slice(0, 200)
-  const message = (body.message ?? '').trim().slice(0, 5000)
+  // The name and subject end up in a subject line: one line, no control characters.
+  const line = (v: unknown, max: number) =>
+    text(v).replace(/[\u0000-\u001f\u007f]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, max)
+  const name = line(body.name, 120)
+  const email = text(body.email).trim().slice(0, 200)
+  const subject = line(body.subject, 200)
+  const message = text(body.message).trim().slice(0, 5000)
 
   if (!name) return NextResponse.json({ error: 'Please enter your name.' }, { status: 400 })
   if (!email || !EMAIL_RE.test(email))
@@ -113,7 +131,8 @@ export async function POST(req: NextRequest) {
       : null
 
   const submittedAt = new Date().toISOString()
-  const firstName = name.split(/\s+/)[0]
+  // Said back to an unverified address, so only when it is a name.
+  const { firstName } = guestNames({ full_name: name })
 
   // Both messages are sent FROM the contact inbox so visitors see a
   // consistent sender ("MAPL Tours <contact@mapltours.com>") and any
@@ -167,18 +186,14 @@ export async function POST(req: NextRequest) {
         to: email,
         from: CONTACT_FROM,
         subject: PRICE_REQUEST_REPLY_SUBJECT,
-        react: PriceRequestAutoReply(priceRequest),
+        react: PriceRequestAutoReply({ ...priceRequest, hotel: replyHotel(priceRequest.hotel) }),
         tags: [{ name: 'category', value: 'price_request_auto_reply' }],
       })
     : await sendEmail({
         to: email,
         from: CONTACT_FROM,
         subject: 'We got your message, MAPL Tours Jamaica',
-        react: ContactAutoReply({
-          firstName,
-          subject: subject || null,
-          message,
-        }),
+        react: ContactAutoReply({ firstName }),
         tags: [{ name: 'category', value: 'contact_auto_reply' }],
       })
 

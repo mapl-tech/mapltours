@@ -1,5 +1,5 @@
 import { describe, test, expect, vi, afterEach } from 'vitest'
-import { contactSpam, mailboxKey, paddedGmail, typedText } from '@/lib/contact-spam'
+import { contactSpam, mailboxKey, paddedGmail, replyHotel, typedText } from '@/lib/contact-spam'
 import { rateLimit } from '@/lib/rate-limit'
 
 const partner = (business: string, parish: string, message: string, kind = 'Guided experience or tour') => ({
@@ -79,6 +79,20 @@ describe('contact spam', () => {
     expect(paddedGmail('a.b.c@gmail.com')).toBe(false)
     expect(paddedGmail('jo.hn+a.b.c.d@gmail.com')).toBe(false)
     expect(paddedGmail('a.b.c.d@example.com')).toBe(false)
+  })
+
+  test('a hotel is said back only when it reads as a place', () => {
+    expect(replyHotel('Sandals Montego Bay')).toBe('Sandals Montego Bay')
+    expect(replyHotel('Villa 12, St. James')).toBe('Villa 12, St. James')
+    expect(replyHotel("Jake's, Treasure Beach (cottage #4)")).toBe("Jake's, Treasure Beach (cottage #4)")
+    expect(replyHotel('Hôtel Mocking Bird Hill')).toBe('Hôtel Mocking Bird Hill')
+    expect(replyHotel('Lot 1234, Bogue')).toBe('Lot 1234, Bogue')
+    expect(replyHotel('  Half   Moon <b>Resort</b> ')).toBe('Half Moon b Resort /b')
+    for (const bad of [
+      'https://maps.app.goo.gl/x8YbQ2uKpZJtqWv7', 'www.example.org', 'example.com', 'evil.co/claim', 'EVIL.COM',
+      'help@example.com', 'Call 876-555-0100', '+1 (876) 555 0100', '18765550100', '', '   ', '<>',
+    ]) expect(replyHotel(bad)).toBeNull()
+    expect(replyHotel('A'.repeat(300))).toHaveLength(80)
   })
 
   test('one mailbox key per real inbox', () => {
