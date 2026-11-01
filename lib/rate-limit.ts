@@ -19,7 +19,7 @@ interface Bucket {
   bucket: string
 }
 
-const hits = new Map<string, number[]>()
+const hits = new Map<string, { times: number[]; windowMs: number }>()
 
 /**
  * Drop keys whose entries have all expired.
@@ -27,17 +27,18 @@ const hits = new Map<string, number[]>()
  * Without this the map grows for every distinct key it ever sees, and the key
  * includes a client-supplied IP — so anyone rotating X-Forwarded-For can grow
  * it without bound. Swept on write, amortised, so there is no timer to leak.
+ * Each key expires by its own bucket's window, so a short bucket's sweep
+ * never empties a longer one early.
  */
 let lastSweep = 0
 const SWEEP_INTERVAL_MS = 60_000
 
-function sweep(now: number, windowMs: number): void {
+function sweep(now: number): void {
   if (now - lastSweep < SWEEP_INTERVAL_MS) return
   lastSweep = now
-  const cutoff = now - Math.max(windowMs, SWEEP_INTERVAL_MS)
   const dead: string[] = []
-  hits.forEach((times, key) => {
-    if (!times.length || times[times.length - 1] <= cutoff) dead.push(key)
+  hits.forEach(({ times, windowMs }, key) => {
+    if (!times.length || times[times.length - 1] <= now - Math.max(windowMs, SWEEP_INTERVAL_MS)) dead.push(key)
   })
   for (const key of dead) hits.delete(key)
 }
@@ -45,16 +46,16 @@ function sweep(now: number, windowMs: number): void {
 /** Returns true if the caller has exceeded the bucket's quota. */
 export function rateLimit(ip: string, opts: Bucket): boolean {
   const now = Date.now()
-  sweep(now, opts.windowMs)
+  sweep(now)
   const cutoff = now - opts.windowMs
   const key = `${opts.bucket}:${ip}`
-  const arr = (hits.get(key) ?? []).filter((t) => t > cutoff)
-  if (arr.length >= opts.max) {
-    hits.set(key, arr)
+  const times = (hits.get(key)?.times ?? []).filter((t) => t > cutoff)
+  if (times.length >= opts.max) {
+    hits.set(key, { times, windowMs: opts.windowMs })
     return true
   }
-  arr.push(now)
-  hits.set(key, arr)
+  times.push(now)
+  hits.set(key, { times, windowMs: opts.windowMs })
   return false
 }
 

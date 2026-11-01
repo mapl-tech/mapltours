@@ -3,7 +3,17 @@ import { NextRequest } from 'next/server'
 import { render } from '@react-email/render'
 import type { ReactElement } from 'react'
 
-vi.mock('@/lib/rate-limit', () => ({ rateLimit: () => false, getIp: () => '203.0.113.9' }))
+// The per-IP limit is off; the per-inbox reply limit runs for real only where
+// a test turns it on, so the other tests can share one guest address.
+const limits = vi.hoisted(() => ({ replies: false }))
+vi.mock('@/lib/rate-limit', async (importOriginal) => {
+  const real = await importOriginal<typeof import('@/lib/rate-limit')>()
+  return {
+    getIp: () => '203.0.113.9',
+    rateLimit: (key: string, opts: { windowMs: number; max: number; bucket: string }) =>
+      limits.replies && opts.bucket === 'contact-reply' ? real.rateLimit(key, opts) : false,
+  }
+})
 const sent: { to: string; subject: string; react: ReactElement }[] = []
 vi.mock('@/lib/email/send', () => ({
   sendEmail: async (m: { to: string; subject: string; react: ReactElement }) => {
@@ -89,6 +99,44 @@ describe('contact route', () => {
     await POST(req({ name: 'Ana', email: 'ana@example.com', subject: 'Question', message: 'Do you do weddings?', website: '' }))
     expect(sent[1].subject).toBe('We got your message, MAPL Tours Jamaica')
     expect(await render(sent[1].react, { plainText: true })).not.toContain('team in Jamaica')
+  })
+
+  // Oct 31 2026: bots through Tor, a dot-padded Gmail, nothing typed but a
+  // number or random strings. These three are the real ones, as received.
+  test('the Oct 31 spam sends nothing, not even to the team, and is told it worked', async () => {
+    const spam = [
+      { name: 'Opwgqo Fwmufq', email: 'd.u.l.uj.u.z.368@gmail.com', subject: '', message: '9073668193' },
+      { name: 'Kathxkzv Buntnsqih', email: 'w.iz.imi.ja.g44.3@gmail.com', subject: '', message: '2033162635' },
+      {
+        name: 'Rpaz Ihylrye', email: 'w.iz.imi.ja.g44.3@gmail.com',
+        subject: 'Partner enquiry · Guided experience or tour · Vcvsjglm LLC',
+        message: 'Business / operation: Vcvsjglm LLC\nParish or area: jiOuTbHLjwyCPAoQP\nType: Guided experience or tour\n\njBiOJqqjeEKqpcxfT',
+      },
+    ]
+    for (const body of spam) {
+      const r = await POST(req({ ...body, website: '' }))
+      expect(r.status).toBe(200)
+      expect(await r.json()).toEqual({ ok: true })
+    }
+    expect(sent).toHaveLength(0)
+  })
+
+  test('a real message from a dot-heavy Gmail still arrives and gets its reply', async () => {
+    await POST(req({ name: 'Mary', email: 'mary.jane.watson.1990@gmail.com', subject: '', message: 'Can you pick us up at MBJ on Dec 3?', website: '' }))
+    expect(sent.map((m) => m.to)).toEqual(['contact@mapltours.com', 'mary.jane.watson.1990@gmail.com'])
+  })
+
+  test('one inbox gets two auto-replies an hour, counting Gmail dot and +tag variants as one; the team gets every message', async () => {
+    limits.replies = true
+    try {
+      for (const email of ['jane.doe@gmail.com', 'janedoe@gmail.com', 'j.anedoe@gmail.com', 'JaneDoe+trip@googlemail.com', 'other@example.com']) {
+        await POST(req({ name: 'Jane', email, subject: 'Question', message: 'Do you go to Negril?', website: '' }))
+      }
+    } finally {
+      limits.replies = false
+    }
+    expect(sent.filter((m) => m.to === 'contact@mapltours.com')).toHaveLength(5)
+    expect(sent.filter((m) => m.to !== 'contact@mapltours.com').map((m) => m.to)).toEqual(['jane.doe@gmail.com', 'janedoe@gmail.com', 'other@example.com'])
   })
 
   test('invalid requests send nothing', async () => {

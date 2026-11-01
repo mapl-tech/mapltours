@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { sendEmail } from '@/lib/email/send'
 import { rateLimit, getIp } from '@/lib/rate-limit'
+import { contactSpam, mailboxKey } from '@/lib/contact-spam'
 import ContactMessage from '@/emails/ContactMessage'
 import ContactAutoReply from '@/emails/ContactAutoReply'
 import PriceRequestAutoReply, { PRICE_REQUEST_REPLY_SUBJECT } from '@/emails/PriceRequestAutoReply'
@@ -18,6 +19,9 @@ import PriceRequestAutoReply, { PRICE_REQUEST_REPLY_SUBJECT } from '@/emails/Pri
  * accept the submission (the ops alert is the load-bearing one). If the
  * ops alert fails, we return 500 so the form surfaces the error and the
  * visitor can retry rather than think their message vanished.
+ *
+ * Spam (lib/contact-spam) sends neither email, and one inbox gets at most two
+ * auto-replies an hour, so the form cannot be used to mail a stranger.
  */
 
 export const runtime = 'nodejs'
@@ -78,6 +82,14 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Please enter a valid email address.' }, { status: 400 })
   if (!message)
     return NextResponse.json({ error: 'Please include a message.' }, { status: 400 })
+
+  // Spam sends nothing, not even to us, and is told it worked so the bot has
+  // nothing to adjust to. The log names the rule, never the address.
+  const spam = contactSpam({ email, subject, message })
+  if (spam) {
+    console.warn(`[contact] held as spam: ${spam}`)
+    return NextResponse.json({ ok: true })
+  }
 
   // The transfers page's "Ask for a price" form gets its own auto-reply: the
   // general one echoed the team's internal note to the guest and guessed a
@@ -144,6 +156,12 @@ export async function POST(req: NextRequest) {
   // 4. Auto-reply, best effort. Log on failure but still return success
   //    because the message DID reach the team. Never to a flagged message.
   if (trapped) return NextResponse.json({ ok: true })
+  // Gmail's dotted variants are one inbox, so they count together. The team
+  // already has the message; only the confirmation is skipped.
+  if (rateLimit(mailboxKey(email), { windowMs: 3_600_000, max: 2, bucket: 'contact-reply' })) {
+    console.warn('[contact] auto-reply skipped: this inbox already had two this hour')
+    return NextResponse.json({ ok: true })
+  }
   const replyRes = priceRequest?.hotel
     ? await sendEmail({
         to: email,
