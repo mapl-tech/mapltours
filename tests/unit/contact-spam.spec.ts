@@ -1,5 +1,5 @@
 import { describe, test, expect, vi, afterEach } from 'vitest'
-import { contactSpam, mailboxKey, paddedGmail, replyHotel, typedText } from '@/lib/contact-spam'
+import { contactSpam, mailboxKey, noRealWords, paddedGmail, replyHotel, typedText } from '@/lib/contact-spam'
 import { rateLimit } from '@/lib/rate-limit'
 
 const partner = (business: string, parish: string, message: string, kind = 'Guided experience or tour') => ({
@@ -57,12 +57,35 @@ describe('contact spam', () => {
     for (const m of real) {
       expect(contactSpam({ email: padded, ...m })).toBeNull()
       expect(contactSpam({ email: 'guest@example.com', ...m })).toBeNull()
+      // ...and every one of them is answered.
+      expect(noRealWords(m.subject, m.message)).toBe(false)
     }
   })
 
   test('only a number, from an ordinary address, is delivered', () => {
     expect(contactSpam({ email: 'guest@example.com', subject: '', message: '8765551234' })).toBeNull()
     expect(contactSpam({ email: 'john.smith@gmail.com', subject: '', message: '8765551234' })).toBeNull()
+  })
+
+  // Nov 2 2026: the bot's five posts that day, as typed, each from a different
+  // ordinary address. Delivered to the team, never answered.
+  test('text with no real words is told apart, so it is delivered but never answered', () => {
+    for (const message of ['9047299932', '9027681708', '6363537966', '6264464967', '9776134824']) {
+      expect(contactSpam({ email: 'someone@example.com', subject: '', message })).toBeNull()
+      expect(noRealWords('', message)).toBe(true)
+    }
+    for (const message of ['+1 (876) 555-0100', '?!', '👍', 'jiOuTbHLjwyCPAoQP', 'xkcd qwrt pfft']) {
+      expect(noRealWords('', message)).toBe(true)
+    }
+    // The forms' own wording is not the visitor's words.
+    const p = partner('', '', '')
+    expect(noRealWords(p.subject, p.message)).toBe(true)
+    expect(noRealWords(price('1234').subject, price('1234').message)).toBe(true)
+    // One real word answers it, a link too, and so does any other script.
+    for (const message of ['Call me 8765551234', 'https://maps.app.goo.gl/x8YbQ2uKpZJtqWv7', 'Привет', 'ok']) {
+      expect(noRealWords('', message)).toBe(false)
+    }
+    expect(noRealWords('Airport ride', '8765551234')).toBe(false)
   })
 
   test('the forms\' own wording is not counted as the visitor\'s words', () => {

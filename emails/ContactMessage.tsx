@@ -10,6 +10,8 @@ export interface ContactMessageProps {
   submittedAt: string
   /** Coarse origin for spam triage, IP / country if available */
   origin?: string | null
+  /** Whether the visitor is being sent the automatic confirmation. */
+  autoReply: boolean
 }
 
 /**
@@ -24,6 +26,7 @@ export default function ContactMessage({
   message,
   submittedAt,
   origin,
+  autoReply,
 }: ContactMessageProps) {
   const submittedPretty = new Date(submittedAt).toLocaleString('en-US', {
     weekday: 'short',
@@ -80,8 +83,9 @@ export default function ContactMessage({
       </Section>
 
       <Text style={s.note}>
-        This is an internal alert, the visitor has already been sent an
-        automated confirmation that we received their message.
+        {autoReply
+          ? 'This is an internal alert, the visitor has already been sent an automated confirmation that we received their message.'
+          : 'This is an internal alert. The visitor was not sent an automated confirmation, so they hear from us only if you reply.'}
       </Text>
     </MaplLayout>
   )

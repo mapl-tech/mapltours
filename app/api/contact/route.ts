@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { sendEmail } from '@/lib/email/send'
 import { rateLimit, getIp } from '@/lib/rate-limit'
-import { contactSpam, mailboxKey, replyHotel } from '@/lib/contact-spam'
+import { contactSpam, mailboxKey, noRealWords, replyHotel } from '@/lib/contact-spam'
 import { guestNames } from '@/lib/guest-name'
 import ContactMessage from '@/emails/ContactMessage'
 import ContactAutoReply from '@/emails/ContactAutoReply'
@@ -23,7 +23,8 @@ import PriceRequestAutoReply, { PRICE_REQUEST_REPLY_SUBJECT } from '@/emails/Pri
  * ops alert fails, we return 500 so the form surfaces the error and the
  * visitor can retry rather than think their message vanished.
  *
- * Spam (lib/contact-spam) sends neither email, and one inbox gets at most two
+ * Spam (lib/contact-spam) sends neither email, text with no real words reaches
+ * the team flagged and is never answered, and one inbox gets at most two
  * auto-replies an hour, so the form cannot be used to mail a stranger.
  */
 
@@ -130,6 +131,35 @@ export async function POST(req: NextRequest) {
         }
       : null
 
+  // Nov 2 2026: the bot came back typing only a number, from a different
+  // ordinary address each time, which the spam rules cannot tell from a guest.
+  // Text with no real words still reaches the team, flagged, but is never
+  // answered, so it cannot make us mail a stranger.
+  const wordless = noRealWords(subject, message)
+  if (wordless) console.warn('[contact] no real words, delivering flagged with no auto-reply')
+
+  // Decided before the team's copy goes out, so that copy says truthfully
+  // whether the visitor heard from us. Gmail's dotted variants are one inbox,
+  // so they count together.
+  const replyCapped =
+    !trapped && !wordless && rateLimit(mailboxKey(email), { windowMs: 3_600_000, max: 2, bucket: 'contact-reply' })
+  if (replyCapped) console.warn('[contact] auto-reply skipped: this inbox already had two this hour')
+  const autoReply = !trapped && !wordless && !replyCapped
+
+  const checks: string[] = []
+  if (trapped) {
+    checks.push(
+      `Check this one: the form's hidden anti-spam field came back filled with "${hidden}". ` +
+        `That is either a bot or the visitor's browser filling a hidden field, so read it before replying.`,
+    )
+  }
+  if (wordless) {
+    checks.push(
+      'Check this one: it has no real words in it, which is how the contact-form spam bot writes. ' +
+        'The visitor was not sent the automatic reply, so write back only if it looks real.',
+    )
+  }
+
   const submittedAt = new Date().toISOString()
   // Said back to an unverified address, so only when it is a name.
   const { firstName } = guestNames({ full_name: name })
@@ -145,7 +175,7 @@ export async function POST(req: NextRequest) {
     to: 'contact@mapltours.com',
     from: CONTACT_FROM,
     subject:
-      (trapped ? '[Check: hidden field filled] ' : '') +
+      (trapped ? '[Check: hidden field filled] ' : wordless ? '[Check: no words] ' : '') +
       (subject
         ? `MAPL Tours Jamaica · Contact · ${subject}`
         : `MAPL Tours Jamaica · Contact · message from ${name}`),
@@ -154,12 +184,10 @@ export async function POST(req: NextRequest) {
       name,
       email,
       subject,
-      message: trapped
-        ? `Check this one: the form's hidden anti-spam field came back filled with "${hidden}". ` +
-          `That is either a bot or the visitor's browser filling a hidden field, so read it before replying.\n\n${message}`
-        : message,
+      message: [...checks, message].join('\n\n'),
       submittedAt,
       origin: ip !== 'unknown' ? ip : null,
+      autoReply,
     }),
     tags: [{ name: 'category', value: 'contact_form' }],
   })
@@ -173,14 +201,9 @@ export async function POST(req: NextRequest) {
   }
 
   // 4. Auto-reply, best effort. Log on failure but still return success
-  //    because the message DID reach the team. Never to a flagged message.
-  if (trapped) return NextResponse.json({ ok: true })
-  // Gmail's dotted variants are one inbox, so they count together. The team
-  // already has the message; only the confirmation is skipped.
-  if (rateLimit(mailboxKey(email), { windowMs: 3_600_000, max: 2, bucket: 'contact-reply' })) {
-    console.warn('[contact] auto-reply skipped: this inbox already had two this hour')
-    return NextResponse.json({ ok: true })
-  }
+  //    because the message DID reach the team. Never to a flagged message,
+  //    nor past the inbox's two an hour.
+  if (!autoReply) return NextResponse.json({ ok: true })
   const replyRes = priceRequest?.hotel
     ? await sendEmail({
         to: email,

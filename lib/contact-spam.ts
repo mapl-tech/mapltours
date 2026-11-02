@@ -15,6 +15,11 @@
  * are stripped first. Text in another script or with accents always counts as
  * words. Both rules need text with no real words in it, so a real guest
  * writing a real sentence is never held, whatever their address looks like.
+ *
+ * From Nov 2 2026 the same bot typed only a number from a different ordinary
+ * address each time (Hotmail, t-online, small business domains), which
+ * neither rule can tell from a guest. Text with no real words is therefore
+ * still delivered to the team, flagged, but never answered (noRealWords).
  */
 
 /** A Gmail address with 3 or more dots before the @ (or a +tag). */
@@ -104,21 +109,39 @@ export function replyHotel(raw: string): string | null {
 }
 
 /**
- * Why a submission is spam, or null. Held when the typed text has no real
- * words in it (none, or fewer than half its tokens with letters) and either
- * the address is a padded Gmail or the text carries two random strings.
+ * The typed text's tokens that carry letters, and whether it has no real
+ * words in it: none, or fewer than half of those tokens.
  */
-export function contactSpam(input: { email: string; subject: string; message: string }): string | null {
+function readWords(subject: string, message: string): { lettered: string[]; noWords: boolean } {
   // A link or an address counts as a word: a guest may send only a map link
   // to their villa.
   const link = (t: string) => /:\/\/|^www\.|@/i.test(t)
-  const tokens = typedText(input.subject, input.message)
+  const tokens = typedText(subject, message)
     .split(/\s+/)
     .map((t) => t.replace(EDGE, ''))
     .filter(Boolean)
   const lettered = tokens.filter((t) => link(t) || (t.match(LETTER) ?? []).length >= 2)
   const words = lettered.filter((t) => link(t) || isWord(t)).length
-  const noWords = words === 0 || words * 2 < lettered.length
+  return { lettered, noWords: words === 0 || words * 2 < lettered.length }
+}
+
+/**
+ * The typed text has no real words in it (a bare number, symbols, random
+ * strings). The team still gets such a post, flagged, and the visitor gets no
+ * auto-reply: the address is unverified and the post says nothing a person
+ * would need confirmed.
+ */
+export function noRealWords(subject: string, message: string): boolean {
+  return readWords(subject, message).noWords
+}
+
+/**
+ * Why a submission is spam, or null. Held when the typed text has no real
+ * words in it (none, or fewer than half its tokens with letters) and either
+ * the address is a padded Gmail or the text carries two random strings.
+ */
+export function contactSpam(input: { email: string; subject: string; message: string }): string | null {
+  const { lettered, noWords } = readWords(input.subject, input.message)
   if (!noWords) return null
   if (paddedGmail(input.email)) return 'padded Gmail, no words'
   if (lettered.filter(scrambled).length >= 2) return 'random strings, no words'

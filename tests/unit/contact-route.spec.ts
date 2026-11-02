@@ -31,6 +31,11 @@ const req = (body: Record<string, unknown>) =>
     body: JSON.stringify(body),
   })
 
+// The team's copy as one line of plain text (the renderer wraps long lines).
+const teamText = async (react: ReactElement) => (await render(react, { plainText: true })).replace(/\s+/g, ' ')
+const REPLIED = 'the visitor has already been sent an automated confirmation'
+const NOT_REPLIED = 'The visitor was not sent an automated confirmation'
+
 const ask = {
   name: 'guest',
   email: 'guest@example.com',
@@ -46,6 +51,9 @@ describe('contact route', () => {
     expect(r.status).toBe(200)
     expect(sent.map((m) => m.to)).toEqual(['contact@mapltours.com', 'guest@example.com'])
     expect(sent[0].subject).toBe('MAPL Tours Jamaica · Contact · Unlisted hotel · Villa Test')
+    const team = await teamText(sent[0].react)
+    expect(team).toContain(REPLIED)
+    expect(team).not.toContain(NOT_REPLIED)
   })
 
   // Oct 26 2026: browsers filled the hidden field for real people and their
@@ -56,6 +64,10 @@ describe('contact route', () => {
     expect(sent).toHaveLength(1)
     expect(sent[0].to).toBe('contact@mapltours.com')
     expect(sent[0].subject).toBe('[Check: hidden field filled] MAPL Tours Jamaica · Contact · Unlisted hotel · Villa Test')
+    const team = await teamText(sent[0].react)
+    expect(team).toContain('hidden anti-spam field came back filled with "https://example.com"')
+    expect(team).toContain(NOT_REPLIED)
+    expect(team).not.toContain(REPLIED)
   })
 
   // Oct 27 2026: the price form's guest reply echoed the team's internal note
@@ -121,6 +133,56 @@ describe('contact route', () => {
     expect(sent).toHaveLength(0)
   })
 
+  // Nov 2 2026: the same bot, through Tor, typing only a number under a
+  // made-up name from a different ordinary address each time, which the spam
+  // rules cannot tell from a guest. The team still sees every post, flagged;
+  // the address typed gets nothing. (The addresses here are stand-ins.)
+  test('a post with no real words reaches the team flagged, and the address typed gets nothing', async () => {
+    const posts = [
+      { name: 'Jqvsph Rfrwvkpsz', email: 'one@example.com', message: '9776134824' },
+      { name: 'Isinjcg Rlrvisa', email: 'two@example.net', message: '6264464967' },
+      { name: 'Ienio Rllcet', email: 'three@example.org', message: '6363537966' },
+    ]
+    for (const body of posts) {
+      const r = await POST(req({ ...body, subject: '', website: '' }))
+      expect(r.status).toBe(200)
+      expect(await r.json()).toEqual({ ok: true })
+    }
+    expect(sent.map((m) => m.to)).toEqual(Array(3).fill('contact@mapltours.com'))
+    expect(sent[2].subject).toBe('[Check: no words] MAPL Tours Jamaica · Contact · message from Ienio Rllcet')
+    const team = await teamText(sent[2].react)
+    expect(team).toContain('6363537966')
+    expect(team).toContain('three@example.org')
+    expect(team).toContain('Check this one: it has no real words in it')
+    expect(team).toContain(NOT_REPLIED)
+    expect(team).not.toContain(REPLIED)
+  })
+
+  test('the partner and price forms with nothing typed but a number are flagged too; one word gets the reply', async () => {
+    await POST(req({
+      name: 'Rpaz Ihylrye', email: 'four@example.com',
+      subject: 'Partner enquiry · General',
+      message: 'Business / operation: (not given)\nParish or area: (not given)\nType: (not given)\n\n2033162635',
+      website: '',
+    }))
+    await POST(req({ ...ask, subject: 'Unlisted hotel · 1234', kind: 'price_request', hotel: '1234', tripType: 'one_way', passengers: 2, website: '' }))
+    expect(sent.map((m) => m.to)).toEqual(['contact@mapltours.com', 'contact@mapltours.com'])
+    expect(sent.every((m) => m.subject.startsWith('[Check: no words] '))).toBe(true)
+    sent.length = 0
+    await POST(req({ name: 'Ana', email: 'ana@example.com', subject: '', message: 'Call me 8765551234', website: '' }))
+    expect(sent.map((m) => m.to)).toEqual(['contact@mapltours.com', 'ana@example.com'])
+    expect(sent[0].subject).toBe('MAPL Tours Jamaica · Contact · message from Ana')
+  })
+
+  test('a filled hidden field with no words is flagged once in the subject and explained twice', async () => {
+    await POST(req({ name: 'Ienio Rllcet', email: 'three@example.org', subject: '', message: '6363537966', website: 'x' }))
+    expect(sent).toHaveLength(1)
+    expect(sent[0].subject).toBe('[Check: hidden field filled] MAPL Tours Jamaica · Contact · message from Ienio Rllcet')
+    const team = await teamText(sent[0].react)
+    expect(team).toContain('hidden anti-spam field came back filled')
+    expect(team).toContain('it has no real words in it')
+  })
+
   test('a real message from a dot-heavy Gmail still arrives and gets its reply', async () => {
     await POST(req({ name: 'Mary', email: 'mary.jane.watson.1990@gmail.com', subject: '', message: 'Can you pick us up at MBJ on Dec 3?', website: '' }))
     expect(sent.map((m) => m.to)).toEqual(['contact@mapltours.com', 'mary.jane.watson.1990@gmail.com'])
@@ -137,6 +199,10 @@ describe('contact route', () => {
     }
     expect(sent.filter((m) => m.to === 'contact@mapltours.com')).toHaveLength(5)
     expect(sent.filter((m) => m.to !== 'contact@mapltours.com').map((m) => m.to)).toEqual(['jane.doe@gmail.com', 'janedoe@gmail.com', 'other@example.com'])
+    // The team's copy says which visitors heard from us.
+    const team = await Promise.all(sent.filter((m) => m.to === 'contact@mapltours.com').map((m) => teamText(m.react)))
+    expect(team.map((t) => t.includes(REPLIED))).toEqual([true, true, false, false, true])
+    expect(team.map((t) => t.includes(NOT_REPLIED))).toEqual([false, false, true, true, false])
   })
 
   test('invalid requests send nothing', async () => {
