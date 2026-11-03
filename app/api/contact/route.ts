@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { sendEmail } from '@/lib/email/send'
 import { rateLimit, getIp } from '@/lib/rate-limit'
 import { contactSpam, mailboxKey, noRealWords, replyHotel } from '@/lib/contact-spam'
+import { isTorExit } from '@/lib/tor-exit'
 import { guestNames } from '@/lib/guest-name'
 import ContactMessage from '@/emails/ContactMessage'
 import ContactAutoReply from '@/emails/ContactAutoReply'
@@ -23,9 +24,10 @@ import PriceRequestAutoReply, { PRICE_REQUEST_REPLY_SUBJECT } from '@/emails/Pri
  * ops alert fails, we return 500 so the form surfaces the error and the
  * visitor can retry rather than think their message vanished.
  *
- * Spam (lib/contact-spam) sends neither email, text with no real words reaches
- * the team flagged and is never answered, and one inbox gets at most two
- * auto-replies an hour, so the form cannot be used to mail a stranger.
+ * Spam (lib/contact-spam, and text with no real words from a Tor exit) sends
+ * neither email, other text with no real words reaches the team flagged and is
+ * never answered, and one inbox gets at most two auto-replies an hour, so the
+ * form cannot be used to mail a stranger.
  */
 
 export const runtime = 'nodejs'
@@ -110,6 +112,19 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: true })
   }
 
+  // Nov 2 2026: the bot came back typing only a number, from a different
+  // ordinary address each time, which the spam rules cannot tell from a guest.
+  // Text with no real words still reaches the team, flagged, but is never
+  // answered, so it cannot make us mail a stranger. From Nov 3 such a post is
+  // held when it comes through a Tor exit, as every one of the bot's has and
+  // no real message on record has. Tor alone never holds a post, and the list
+  // is asked about only here, so a message with words never waits on it.
+  const wordless = noRealWords(subject, message)
+  if (wordless && (await isTorExit(ip))) {
+    console.warn('[contact] held as spam: no words, Tor exit')
+    return NextResponse.json({ ok: true })
+  }
+
   // The transfers page's "Ask for a price" form gets its own auto-reply: the
   // general one echoed the team's internal note to the guest and guessed a
   // first name from the email address. Pages loaded before Oct 27 2026 send
@@ -131,11 +146,6 @@ export async function POST(req: NextRequest) {
         }
       : null
 
-  // Nov 2 2026: the bot came back typing only a number, from a different
-  // ordinary address each time, which the spam rules cannot tell from a guest.
-  // Text with no real words still reaches the team, flagged, but is never
-  // answered, so it cannot make us mail a stranger.
-  const wordless = noRealWords(subject, message)
   if (wordless) console.warn('[contact] no real words, delivering flagged with no auto-reply')
 
   // Decided before the team's copy goes out, so that copy says truthfully

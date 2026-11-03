@@ -6,14 +6,22 @@ import type { ReactElement } from 'react'
 // The per-IP limit is off; the per-inbox reply limit runs for real only where
 // a test turns it on, so the other tests can share one guest address.
 const limits = vi.hoisted(() => ({ replies: false }))
+// The visitor's address, and which addresses the Tor list was asked about.
+const net = vi.hoisted(() => ({ ip: '203.0.113.9', exits: new Set(['185.220.101.7']), asked: [] as string[] }))
 vi.mock('@/lib/rate-limit', async (importOriginal) => {
   const real = await importOriginal<typeof import('@/lib/rate-limit')>()
   return {
-    getIp: () => '203.0.113.9',
+    getIp: () => net.ip,
     rateLimit: (key: string, opts: { windowMs: number; max: number; bucket: string }) =>
       limits.replies && opts.bucket === 'contact-reply' ? real.rateLimit(key, opts) : false,
   }
 })
+vi.mock('@/lib/tor-exit', () => ({
+  isTorExit: async (ip: string) => {
+    net.asked.push(ip)
+    return net.exits.has(ip)
+  },
+}))
 const sent: { to: string; subject: string; react: ReactElement }[] = []
 vi.mock('@/lib/email/send', () => ({
   sendEmail: async (m: { to: string; subject: string; react: ReactElement }) => {
@@ -44,7 +52,11 @@ const ask = {
 }
 
 describe('contact route', () => {
-  beforeEach(() => { sent.length = 0 })
+  beforeEach(() => {
+    sent.length = 0
+    net.ip = '203.0.113.9'
+    net.asked.length = 0
+  })
 
   test('a normal request reaches the inbox and the visitor gets the auto-reply', async () => {
     const r = await POST(req({ ...ask, website: '' }))
@@ -156,6 +168,43 @@ describe('contact route', () => {
     expect(team).toContain('Check this one: it has no real words in it')
     expect(team).toContain(NOT_REPLIED)
     expect(team).not.toContain(REPLIED)
+    // Not from a Tor exit, so each one was asked about and delivered.
+    expect(net.asked).toEqual(Array(3).fill('203.0.113.9'))
+  })
+
+  // Nov 3 2026: all twelve of the bot's posts on record came through Tor exits,
+  // and no real message has. Both together hold a post; either alone does not.
+  test('a post with no real words from a Tor exit sends nothing at all, and is told it worked', async () => {
+    net.ip = '185.220.101.7'
+    const posts = [
+      { name: 'Gjvvt Nhiexfh', email: 'one@example.com', subject: '', message: '6263065808' },
+      { name: 'Dcin Xgtbcfr', email: 'two@example.net', subject: '', message: '6515585093' },
+      { name: 'Rpaz Ihylrye', email: 'four@example.com', subject: 'Partner enquiry · General', message: 'Business / operation: (not given)\nParish or area: (not given)\nType: (not given)\n\n2033162635' },
+    ]
+    for (const body of posts) {
+      const r = await POST(req({ ...body, website: '' }))
+      expect(r.status).toBe(200)
+      expect(await r.json()).toEqual({ ok: true })
+    }
+    // A filled hidden field changes nothing: still the bot.
+    await POST(req({ name: 'Ienio Rllcet', email: 'three@example.org', subject: '', message: '6363537966', website: 'x' }))
+    await POST(req({ ...ask, subject: 'Unlisted hotel · 1234', kind: 'price_request', hotel: '1234', tripType: 'one_way', passengers: 2, website: '' }))
+    expect(sent).toHaveLength(0)
+    expect(net.asked).toEqual(Array(5).fill('185.220.101.7'))
+  })
+
+  test('a real message from a Tor exit arrives and gets its reply, and the list is never asked about', async () => {
+    net.ip = '185.220.101.7'
+    await POST(req({ name: 'Sarah', email: 'sarah@example.com', subject: '', message: 'I would like a quote for a round trip to Negril on January 5.', website: '' }))
+    await POST(req({ ...ask, website: '' }))
+    await POST(req({ name: 'Ana', email: 'ana@example.com', subject: '', message: 'Call me 8765551234', website: '' }))
+    expect(sent.map((m) => m.to)).toEqual([
+      'contact@mapltours.com', 'sarah@example.com',
+      'contact@mapltours.com', 'guest@example.com',
+      'contact@mapltours.com', 'ana@example.com',
+    ])
+    expect(sent.some((m) => m.subject.startsWith('[Check'))).toBe(false)
+    expect(net.asked).toHaveLength(0)
   })
 
   test('the partner and price forms with nothing typed but a number are flagged too; one word gets the reply', async () => {

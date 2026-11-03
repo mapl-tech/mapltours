@@ -20,6 +20,8 @@
  * address each time (Hotmail, t-online, small business domains), which
  * neither rule can tell from a guest. Text with no real words is therefore
  * still delivered to the team, flagged, but never answered (noRealWords).
+ * From Nov 3 the contact route holds such a post when it comes through a Tor
+ * exit (lib/tor-exit), as all twelve of the bot's posts did.
  */
 
 /** A Gmail address with 3 or more dots before the @ (or a +tag). */
