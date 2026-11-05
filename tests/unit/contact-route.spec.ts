@@ -193,18 +193,50 @@ describe('contact route', () => {
     expect(net.asked).toEqual(Array(5).fill('185.220.101.7'))
   })
 
-  test('a real message from a Tor exit arrives and gets its reply, and the list is never asked about', async () => {
+  // Nov 4 2026: the bot's partner post read as words, came through Tor from a
+  // padded Gmail, and its sender got the reply. Stand-in address.
+  test('the Nov 4 partner post sends nothing, through Tor or not', async () => {
+    const post = {
+      name: 'Wbxrlvqe Bqztluqes', email: 'w.iz.imi.ja.g44.3@gmail.com',
+      subject: 'Partner enquiry · Guided experience or tour · Svqsezn LLC',
+      message: 'Business / operation: Svqsezn LLC\nParish or area: YFZVgpKyYSTQASYEIY\nType: Guided experience or tour\n\nDrtvBzvAandGtfTUHwIXGReI',
+      website: '',
+    }
+    for (const ip of ['185.220.101.7', '203.0.113.9']) {
+      net.ip = ip
+      const r = await POST(req(post))
+      expect(await r.json()).toEqual({ ok: true })
+      await POST(req({ ...post, email: 'five@example.com' }))
+    }
+    expect(sent).toHaveLength(0)
+  })
+
+  // A guest may use Tor for privacy, so a message with words still reaches the
+  // team; nothing typed through Tor ever makes us mail an address.
+  test('a real message from a Tor exit reaches the team flagged, and the address typed gets nothing', async () => {
     net.ip = '185.220.101.7'
     await POST(req({ name: 'Sarah', email: 'sarah@example.com', subject: '', message: 'I would like a quote for a round trip to Negril on January 5.', website: '' }))
     await POST(req({ ...ask, website: '' }))
-    await POST(req({ name: 'Ana', email: 'ana@example.com', subject: '', message: 'Call me 8765551234', website: '' }))
-    expect(sent.map((m) => m.to)).toEqual([
-      'contact@mapltours.com', 'sarah@example.com',
-      'contact@mapltours.com', 'guest@example.com',
-      'contact@mapltours.com', 'ana@example.com',
+    await POST(req({ name: 'Ana', email: 'ana@example.com', subject: 'Question', message: 'Call me 8765551234', website: '' }))
+    expect(sent.map((m) => m.to)).toEqual(Array(3).fill('contact@mapltours.com'))
+    expect(sent.map((m) => m.subject)).toEqual([
+      '[Check: sent through Tor] MAPL Tours Jamaica · Contact · message from Sarah',
+      '[Check: sent through Tor] MAPL Tours Jamaica · Contact · Unlisted hotel · Villa Test',
+      '[Check: sent through Tor] MAPL Tours Jamaica · Contact · Question',
     ])
-    expect(sent.some((m) => m.subject.startsWith('[Check'))).toBe(false)
-    expect(net.asked).toHaveLength(0)
+    const team = await teamText(sent[0].react)
+    expect(team).toContain('I would like a quote for a round trip to Negril on January 5.')
+    expect(team).toContain('Check this one: it was sent through Tor')
+    expect(team).toContain(NOT_REPLIED)
+    expect(team).not.toContain(REPLIED)
+    expect(net.asked).toEqual(Array(3).fill('185.220.101.7'))
+  })
+
+  test('a message from an ordinary connection is still answered, after the Tor list is asked', async () => {
+    await POST(req({ name: 'Ana', email: 'ana@example.com', subject: '', message: 'Do you go to Negril?', website: '' }))
+    expect(sent.map((m) => m.to)).toEqual(['contact@mapltours.com', 'ana@example.com'])
+    expect(sent[0].subject).toBe('MAPL Tours Jamaica · Contact · message from Ana')
+    expect(net.asked).toEqual(['203.0.113.9'])
   })
 
   test('the partner and price forms with nothing typed but a number are flagged too; one word gets the reply', async () => {

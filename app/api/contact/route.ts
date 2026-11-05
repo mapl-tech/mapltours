@@ -24,10 +24,10 @@ import PriceRequestAutoReply, { PRICE_REQUEST_REPLY_SUBJECT } from '@/emails/Pri
  * ops alert fails, we return 500 so the form surfaces the error and the
  * visitor can retry rather than think their message vanished.
  *
- * Spam (lib/contact-spam, and text with no real words from a Tor exit) sends
- * neither email, other text with no real words reaches the team flagged and is
- * never answered, and one inbox gets at most two auto-replies an hour, so the
- * form cannot be used to mail a stranger.
+ * Spam (lib/contact-spam, stricter from a Tor exit) sends neither email; other
+ * text with no real words, and anything else from a Tor exit, reaches the team
+ * flagged and is never answered; and one inbox gets at most two auto-replies
+ * an hour, so the form cannot be used to mail a stranger.
  */
 
 export const runtime = 'nodejs'
@@ -104,26 +104,28 @@ export async function POST(req: NextRequest) {
   if (!message)
     return NextResponse.json({ error: 'Please include a message.' }, { status: 400 })
 
+  // Every one of the bot's posts on record came through a Tor exit and no real
+  // message on record has. Tor alone never holds a post: with one of the bot's
+  // marks it is held (lib/contact-spam), without one it reaches the team
+  // flagged and is never answered, so nothing typed through Tor makes us mail
+  // a stranger. The list is cached for an hour and any failure reads as not
+  // Tor, which keeps the rules as they were before it.
+  const tor = await isTorExit(ip)
+
   // Spam sends nothing, not even to us, and is told it worked so the bot has
   // nothing to adjust to. The log names the rule, never the address.
-  const spam = contactSpam({ email, subject, message })
+  const spam = contactSpam({ email, subject, message, tor })
   if (spam) {
     console.warn(`[contact] held as spam: ${spam}`)
     return NextResponse.json({ ok: true })
   }
+  if (tor) console.warn('[contact] Tor exit, delivering flagged with no auto-reply')
 
   // Nov 2 2026: the bot came back typing only a number, from a different
   // ordinary address each time, which the spam rules cannot tell from a guest.
   // Text with no real words still reaches the team, flagged, but is never
-  // answered, so it cannot make us mail a stranger. From Nov 3 such a post is
-  // held when it comes through a Tor exit, as every one of the bot's has and
-  // no real message on record has. Tor alone never holds a post, and the list
-  // is asked about only here, so a message with words never waits on it.
+  // answered, so it cannot make us mail a stranger.
   const wordless = noRealWords(subject, message)
-  if (wordless && (await isTorExit(ip))) {
-    console.warn('[contact] held as spam: no words, Tor exit')
-    return NextResponse.json({ ok: true })
-  }
 
   // The transfers page's "Ask for a price" form gets its own auto-reply: the
   // general one echoed the team's internal note to the guest and guessed a
@@ -152,9 +154,9 @@ export async function POST(req: NextRequest) {
   // whether the visitor heard from us. Gmail's dotted variants are one inbox,
   // so they count together.
   const replyCapped =
-    !trapped && !wordless && rateLimit(mailboxKey(email), { windowMs: 3_600_000, max: 2, bucket: 'contact-reply' })
+    !trapped && !wordless && !tor && rateLimit(mailboxKey(email), { windowMs: 3_600_000, max: 2, bucket: 'contact-reply' })
   if (replyCapped) console.warn('[contact] auto-reply skipped: this inbox already had two this hour')
-  const autoReply = !trapped && !wordless && !replyCapped
+  const autoReply = !trapped && !wordless && !tor && !replyCapped
 
   const checks: string[] = []
   if (trapped) {
@@ -167,6 +169,12 @@ export async function POST(req: NextRequest) {
     checks.push(
       'Check this one: it has no real words in it, which is how the contact-form spam bot writes. ' +
         'The visitor was not sent the automatic reply, so write back only if it looks real.',
+    )
+  }
+  if (tor) {
+    checks.push(
+      'Check this one: it was sent through Tor, a network that hides where the sender is, which is how the ' +
+        'contact-form spam bot posts. The visitor was not sent the automatic reply, so write back only if it looks real.',
     )
   }
 
@@ -185,7 +193,7 @@ export async function POST(req: NextRequest) {
     to: 'contact@mapltours.com',
     from: CONTACT_FROM,
     subject:
-      (trapped ? '[Check: hidden field filled] ' : wordless ? '[Check: no words] ' : '') +
+      (trapped ? '[Check: hidden field filled] ' : wordless ? '[Check: no words] ' : tor ? '[Check: sent through Tor] ' : '') +
       (subject
         ? `MAPL Tours Jamaica · Contact · ${subject}`
         : `MAPL Tours Jamaica · Contact · message from ${name}`),

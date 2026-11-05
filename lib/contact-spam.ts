@@ -22,6 +22,12 @@
  * still delivered to the team, flagged, but never answered (noRealWords).
  * From Nov 3 the contact route holds such a post when it comes through a Tor
  * exit (lib/tor-exit), as all twelve of the bot's posts did.
+ *
+ * On Nov 4 it sent the partner form "Svqsezn LLC" with two random strings from
+ * a padded Gmail through Tor, and was answered: the made-up name has a vowel
+ * and one string had only two case changes, so the text read as words. Now
+ * that string counts as random, from a Tor exit any one of the bot's marks
+ * holds a post, and a post from Tor is never answered (the team still gets it).
  */
 
 /** A Gmail address with 3 or more dots before the @ (or a +tag). */
@@ -72,14 +78,15 @@ export function typedText(subject: string, message: string): string {
 }
 
 /**
- * A random mixed-case string: letters only, 10 or more, at least three places
+ * A random mixed-case string: letters only, 10 or more, at least two places
  * where a small letter is followed by a capital, and two capitals together
  * somewhere after the first letter. CamelCase (BeyondTheResortJamaica,
- * iPhoneXsMax) never has the capitals together, so it is not one.
+ * iPhoneXsMax) never has the capitals together, so it is not one. Two places,
+ * not three, since Nov 4 2026: the bot's YFZVgpKyYSTQASYEIY has only two.
  */
 function scrambled(token: string): boolean {
   if (!/^[A-Za-z]{10,}$/.test(token)) return false
-  return (token.match(/[a-z](?=[A-Z])/g) ?? []).length >= 3 && /[A-Z]{2}/.test(token.slice(1))
+  return (token.match(/[a-z](?=[A-Z])/g) ?? []).length >= 2 && /[A-Z]{2}/.test(token.slice(1))
 }
 
 // Built from strings: the project's TypeScript target predates the u flag
@@ -140,12 +147,20 @@ export function noRealWords(subject: string, message: string): boolean {
 /**
  * Why a submission is spam, or null. Held when the typed text has no real
  * words in it (none, or fewer than half its tokens with letters) and either
- * the address is a padded Gmail or the text carries two random strings.
+ * the address is a padded Gmail or the text carries two random strings. From
+ * a Tor exit (`tor`, lib/tor-exit), any one of the bot's marks is enough: no
+ * real words, a padded Gmail, or a single random string.
  */
-export function contactSpam(input: { email: string; subject: string; message: string }): string | null {
+export function contactSpam(input: { email: string; subject: string; message: string; tor?: boolean }): string | null {
   const { lettered, noWords } = readWords(input.subject, input.message)
-  if (!noWords) return null
-  if (paddedGmail(input.email)) return 'padded Gmail, no words'
-  if (lettered.filter(scrambled).length >= 2) return 'random strings, no words'
+  const padded = paddedGmail(input.email)
+  const random = lettered.filter(scrambled).length
+  if (noWords && padded) return 'padded Gmail, no words'
+  if (noWords && random >= 2) return 'random strings, no words'
+  if (input.tor) {
+    if (noWords) return 'no words, Tor exit'
+    if (padded) return 'padded Gmail, Tor exit'
+    if (random >= 1) return 'random string, Tor exit'
+  }
   return null
 }

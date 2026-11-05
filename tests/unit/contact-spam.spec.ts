@@ -38,6 +38,32 @@ describe('contact spam', () => {
     expect(contactSpam({ email: 'w.iz.imi.ja.g44.3@gmail.com', ...partner('Vcvsjglm Inc', 'jiOuTbHLjwyCPAoQP', 'jBiOJqqjeEKqpcxfT') })).toBe('padded Gmail, no words')
   })
 
+  // Nov 4 2026, as received through Tor (the address here is the Oct 31 one,
+  // not that day's). "Svqsezn" has a vowel and YFZVgpKyYSTQASYEIY only two
+  // case changes, so the post read as words and its sender was answered.
+  test('the Nov 4 partner post is spam from any connection', () => {
+    const p = partner('Svqsezn LLC', 'YFZVgpKyYSTQASYEIY', 'DrtvBzvAandGtfTUHwIXGReI')
+    expect(contactSpam({ email: 'w.iz.imi.ja.g44.3@gmail.com', ...p })).toBe('padded Gmail, no words')
+    expect(contactSpam({ email: 'someone@example.com', ...p })).toBe('random strings, no words')
+    expect(contactSpam({ email: 'someone@example.com', ...p, tor: true })).toBe('random strings, no words')
+    expect(noRealWords('', 'YFZVgpKyYSTQASYEIY')).toBe(true)
+  })
+
+  test('from a Tor exit, any one of the bot\'s marks is spam', () => {
+    expect(contactSpam({ email: 'someone@example.com', subject: '', message: '6515585093', tor: true })).toBe('no words, Tor exit')
+    expect(contactSpam({ email: 'w.iz.imi.ja.g44.3@gmail.com', subject: '', message: 'Do you go to Negril?', tor: true })).toBe('padded Gmail, Tor exit')
+    expect(contactSpam({ email: 'someone@example.com', subject: '', message: 'Hello YFZVgpKyYSTQASYEIY there', tor: true })).toBe('random string, Tor exit')
+    // The same posts from an ordinary connection are not held.
+    expect(contactSpam({ email: 'w.iz.imi.ja.g44.3@gmail.com', subject: '', message: 'Do you go to Negril?' })).toBeNull()
+    expect(contactSpam({ email: 'someone@example.com', subject: '', message: 'Hello YFZVgpKyYSTQASYEIY there' })).toBeNull()
+  })
+
+  test('mixed-case words a guest might type are not random strings', () => {
+    for (const message of ['#BeyondTheResortJamaica', 'iPhoneXsMax', 'MAPLToursJamaica', 'JAMAICAtrip', 'McDonalds', 'WhatsApp', 'MontegoBay', 'SANDALS']) {
+      expect(contactSpam({ email: 'someone@example.com', subject: '', message: `Hi, ${message} question`, tor: true })).toBeNull()
+    }
+  })
+
   test('real messages are never spam, whatever the address looks like', () => {
     const padded = 'mary.jane.watson.1990@gmail.com'
     const real = [
@@ -57,6 +83,8 @@ describe('contact spam', () => {
     for (const m of real) {
       expect(contactSpam({ email: padded, ...m })).toBeNull()
       expect(contactSpam({ email: 'guest@example.com', ...m })).toBeNull()
+      // A guest who writes through Tor still reaches the team.
+      expect(contactSpam({ email: 'guest@example.com', ...m, tor: true })).toBeNull()
       // ...and every one of them is answered.
       expect(noRealWords(m.subject, m.message)).toBe(false)
     }

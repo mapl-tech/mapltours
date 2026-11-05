@@ -2,9 +2,9 @@
  * Whether an address is a Tor exit, from the Tor Project's own list.
  *
  * Every contact-form spam post on record (twelve, Oct 31 to Nov 3 2026) came
- * through a Tor exit, and no real message on record has. On its own Tor says nothing
- * (people use it for privacy), so the contact route asks only about a post
- * that already has no real words in it.
+ * through a Tor exit, and no real message on record has. On its own Tor says
+ * nothing (people use it for privacy), so the contact route holds a post from
+ * Tor only with one of the bot's marks, and otherwise delivers it unanswered.
  *
  * The list is fetched only when asked, at most once an hour, and one request
  * is shared by concurrent callers. Anything that goes wrong (no answer within
