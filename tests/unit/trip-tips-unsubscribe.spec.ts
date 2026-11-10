@@ -183,15 +183,45 @@ describe('the endpoint', () => {
     expect(JSON.parse(logs[0]).via).toBe('one_click')
   })
 
-  test('Resend having no contact is a stop already: done', async () => {
+  // A ride guest who got the tour email may never have been a Resend contact:
+  // the stop must still be on record, so the contact is created unsubscribed.
+  function sequenceFake(statuses: number[]) {
+    const calls: Call[] = []
+    const f = (async (input: RequestInfo | URL, init?: RequestInit) => {
+      calls.push({ method: (init?.method ?? 'GET').toUpperCase(), url: String(input), body: init?.body ? JSON.parse(String(init.body)) : undefined })
+      return new Response('{}', { status: statuses[calls.length - 1] ?? 500 })
+    }) as typeof fetch
+    return { f, calls }
+  }
+  const formPost = (e: string, t: string) => new Request('https://mapltours.com/api/trip-tips/unsubscribe', {
+    method: 'POST',
+    headers: { 'content-type': 'application/x-www-form-urlencoded' },
+    body: `e=${e}&t=${t}`,
+  })
+
+  test('no Resend contact yet: one is created already unsubscribed, then done', async () => {
     const { e, t } = linkParts()
-    const { f } = resendFake(404)
-    const r = await handleUnsubscribe(new Request('https://mapltours.com/api/trip-tips/unsubscribe', {
-      method: 'POST',
-      headers: { 'content-type': 'application/x-www-form-urlencoded' },
-      body: `e=${e}&t=${t}`,
-    }), env, f, log)
+    const { f, calls } = sequenceFake([404, 201])
+    const r = await handleUnsubscribe(formPost(e, t), env, f, log)
     expect(r.status).toBe(200)
+    expect(calls.map((c) => c.method)).toEqual(['PATCH', 'POST'])
+    expect(calls[1].url).toBe('https://api.resend.com/contacts')
+    expect(calls[1].body).toEqual({ email: EMAIL, unsubscribed: true })
+  })
+
+  test('a contact that appears meanwhile (409) is patched once more', async () => {
+    const { e, t } = linkParts()
+    const { f, calls } = sequenceFake([404, 409, 200])
+    expect((await handleUnsubscribe(formPost(e, t), env, f, log)).status).toBe(200)
+    expect(calls.map((c) => c.method)).toEqual(['PATCH', 'POST', 'PATCH'])
+  })
+
+  test('a failed create is not a stop: the button is offered again', async () => {
+    const { e, t } = linkParts()
+    const { f } = sequenceFake([404, 500])
+    const r = await handleUnsubscribe(formPost(e, t), env, f, log)
+    expect(r.status).toBe(502)
+    expect(await r.text()).toContain(COPY.retry)
   })
 
   test.each([500, 0])('a failed stop (%s) says so and offers the button again; one-click answers 502', async (status) => {

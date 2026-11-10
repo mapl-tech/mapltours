@@ -93,6 +93,10 @@ export interface SendEmailInput {
   /** Blind copies. Used so operations and the driver receive exactly what the
    *  guest received, without either address appearing in the guest's headers. */
   bcc?: string | string[]
+  /** Extra message headers, e.g. List-Unsubscribe on marketing mail. */
+  headers?: Record<string, string>
+  /** Resend idempotency key, so a retried send can never deliver twice. */
+  idempotencyKey?: string
 }
 
 export interface SendEmailResult {
@@ -102,7 +106,7 @@ export interface SendEmailResult {
 }
 
 export async function sendEmail({
-  to, subject, react, from, replyTo, tags, bcc,
+  to, subject, react, from, replyTo, tags, bcc, headers, idempotencyKey,
 }: SendEmailInput): Promise<SendEmailResult> {
   if (!resend) {
     // Dev convenience, no Resend key means we only log.
@@ -136,8 +140,9 @@ export async function sendEmail({
       replyTo: finalReplyTo,
       // Empty arrays are rejected by Resend, so only include when present.
       ...(bcc && (Array.isArray(bcc) ? bcc.length : bcc) ? { bcc } : {}),
+      ...(headers && Object.keys(headers).length ? { headers } : {}),
       tags,
-    })
+    }, ...(idempotencyKey ? [{ idempotencyKey }] : []))
 
     if (error) {
       console.error('[email] send failed', { subject, to, error })

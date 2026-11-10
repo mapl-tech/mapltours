@@ -85,27 +85,30 @@ export const contactPath = (email: string) => `/contacts/${encodeURIComponent(em
 export type StopResult = { ok: boolean; status: number }
 
 /**
- * Tips off for this address: PATCH the Resend contact to unsubscribed. A 404
- * means Resend has no contact for the address, so nothing is being sent to it
- * and there is nothing to stop: that is a success. Never throws.
+ * Our marketing mail off for this address: PATCH the Resend contact to
+ * unsubscribed. A 404 means Resend has no contact for the address yet, which
+ * is normal for a ride guest who got the tour email (lib/tour-upsell) without
+ * ever joining trip tips, so the contact is created already unsubscribed and
+ * the stop is on record for every later send. A 409 on that create means it
+ * appeared meanwhile, so the PATCH runs once more. Never throws.
  */
 export async function recordStop(email: string, resendKey: string, f: typeof fetch = fetch, timeoutMs = 5_000): Promise<StopResult> {
-  let status = 0
-  try {
-    const r = await f(`${RESEND_API}${contactPath(email)}`, {
-      method: 'PATCH',
-      headers: { Authorization: `Bearer ${resendKey}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ unsubscribed: true }),
-      signal: AbortSignal.timeout(timeoutMs),
-      cache: 'no-store',
-    })
-    status = r.status
-    await r.text().catch(() => '')
-  } catch {
-    status = 0
+  const headers = { Authorization: `Bearer ${resendKey}`, 'Content-Type': 'application/json' }
+  const go = async (path: string, method: string, body: unknown): Promise<number> => {
+    try {
+      const r = await f(`${RESEND_API}${path}`, { method, headers, body: JSON.stringify(body), signal: AbortSignal.timeout(timeoutMs), cache: 'no-store' })
+      await r.text().catch(() => '')
+      return r.status
+    } catch {
+      return 0
+    }
   }
-  const ok = (status >= 200 && status < 300) || status === 404
-  return { ok, status }
+  let status = await go(contactPath(email), 'PATCH', { unsubscribed: true })
+  if (status === 404) {
+    status = await go('/contacts', 'POST', { email, unsubscribed: true })
+    if (status === 409) status = await go(contactPath(email), 'PATCH', { unsubscribed: true })
+  }
+  return { ok: status >= 200 && status < 300, status }
 }
 
 /** The one line a stop leaves in the logs. Masked: never the address. */
@@ -124,18 +127,23 @@ export const esc = (s: string) =>
  * brand alone while it is null (owner, Sept 27 2026: no address).
  */
 export const footerLine = (address: string | null = TRIP_TIPS_POSTAL_ADDRESS): string => address?.trim() || 'MAPL Tours Jamaica'
-const TITLE = 'Trip tips from MAPL Tours Jamaica'
+const TITLE = 'Emails from MAPL Tours Jamaica'
 const PRIVACY = `${SITE}/privacy`
 const HOME = `${SITE}/?utm_source=email&utm_medium=email&utm_campaign=trip_tips&utm_content=unsubscribe`
 
+/**
+ * One stop covers every marketing email we send (trip tips and the tour
+ * email to ride guests both read the same Resend flag), so the page says so.
+ * Emails about a booking are not marketing and never read the flag.
+ */
 export const COPY = {
-  heading: 'One tap to stop trip tips',
-  ask: 'Tap the button to stop trip tips to this address:',
-  button: 'Stop trip tips',
-  doneHeading: 'Trip tips are off',
-  done: 'Done. No more trip tips to this address.',
-  broken: 'That link did not work. To stop trip tips, email contact@mapltours.com with the word stop and we will take you off the list.',
-  sorry: 'Sorry, trip tips cannot be changed from this page right now. Please try again later, or email contact@mapltours.com with the word stop.',
+  heading: 'One tap to stop these emails',
+  ask: 'Tap the button to stop trip tips and tour ideas from MAPL Tours Jamaica to this address:',
+  button: 'Stop these emails',
+  doneHeading: 'You are off the list',
+  done: 'Done. No more trip tips or tour ideas to this address. Emails about a booking you make still reach you.',
+  broken: 'That link did not work. To stop these emails, email contact@mapltours.com with the word stop and we will take you off the list.',
+  sorry: 'Sorry, this page cannot change your emails right now. Please try again later, or email contact@mapltours.com with the word stop.',
   retry: 'That did not go through. Please tap the button again in a moment.',
   home: 'Go to mapltours.com',
 } as const
@@ -276,7 +284,7 @@ export async function handleUnsubscribe(
   const result = await recordStop(email, key, f)
   log(stopLogLine(email, oneClick ? 'one_click' : 'page', result))
   if (oneClick) {
-    return new Response(result.ok ? 'Unsubscribed from trip tips.' : 'Not recorded. Please try again.', {
+    return new Response(result.ok ? 'Unsubscribed.' : 'Not recorded. Please try again.', {
       status: result.ok ? 200 : 502,
       headers: { ...PAGE_HEADERS, 'Content-Type': 'text/plain; charset=utf-8' },
     })
