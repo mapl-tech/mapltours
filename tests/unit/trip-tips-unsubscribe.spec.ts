@@ -288,16 +288,17 @@ describe('the page copy', () => {
       expect(text).not.toContain('!')
       expect(text).not.toMatch(/MAPL TOURS/)
       expect(text).toContain('MAPL Tours Jamaica')
-      // Owner, Sept 27 2026: no address. The footer names the brand and links the privacy page.
-      expect(html).toMatch(/<footer><p>MAPL Tours Jamaica\. <a href="https:\/\/mapltours\.com\/privacy">Privacy<\/a><\/p><\/footer>/)
+      // Owner, Sept 27 2026: no address. Nov 11 2026: the footer names the company
+      // and its trading name, still no address, and links the privacy page.
+      expect(html).toMatch(/<footer><p>MAPL Tours Limited, trading as MAPL Tours Jamaica\. <a href="https:\/\/mapltours\.com\/privacy">Privacy<\/a><\/p><\/footer>/)
       expect(html).not.toMatch(/Jimmy Cliff|Boulevard|St\. James/)
     }
   })
 
   test('the footer carries the mailing address once one is set', () => {
-    expect(footerLine()).toBe('MAPL Tours Jamaica')
+    expect(footerLine()).toBe('MAPL Tours Limited, trading as MAPL Tours Jamaica')
     expect(footerLine('MAPL Tours Jamaica, PO Box 123, Montego Bay')).toBe('MAPL Tours Jamaica, PO Box 123, Montego Bay')
-    expect(footerLine('  ')).toBe('MAPL Tours Jamaica')
+    expect(footerLine('  ')).toBe('MAPL Tours Limited, trading as MAPL Tours Jamaica')
   })
 
   test('the address shown is escaped', () => {

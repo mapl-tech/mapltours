@@ -1,6 +1,7 @@
 import { createHmac, timingSafeEqual } from 'node:crypto'
 import { maskEmail, normalizeEmail } from '@/lib/booking-sync'
 import { TRIP_TIPS_POSTAL_ADDRESS } from './postal'
+import { TRADING_AS } from '../legal-entity'
 
 /**
  * Trip tips unsubscribe: the signed link in every tip, the page behind it, and
@@ -124,9 +125,10 @@ export const esc = (s: string) =>
 /**
  * The page's footer line: the mailing address when TRIP_TIPS_POSTAL_ADDRESS
  * is set (lib/trip-tips/postal.ts, the same constant the tips print), the
- * brand alone while it is null (owner, Sept 27 2026: no address).
+ * company and its trading name while it is null (owner, Sept 27 2026: no
+ * address; Nov 11 2026: name MAPL Tours Limited, still no address).
  */
-export const footerLine = (address: string | null = TRIP_TIPS_POSTAL_ADDRESS): string => address?.trim() || 'MAPL Tours Jamaica'
+export const footerLine = (address: string | null = TRIP_TIPS_POSTAL_ADDRESS): string => address?.trim() || TRADING_AS
 const TITLE = 'Emails from MAPL Tours Jamaica'
 const PRIVACY = `${SITE}/privacy`
 const HOME = `${SITE}/?utm_source=email&utm_medium=email&utm_campaign=trip_tips&utm_content=unsubscribe`

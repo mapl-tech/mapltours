@@ -47,7 +47,14 @@ describe('privacy policy processor list', () => {
   })
 
   test('keeps the last-updated line on or after the change', () => {
-    expect(text(html)).toContain('This Privacy Policy was last updated on October 18, 2026.')
+    expect(text(html)).toContain('This Privacy Policy was last updated on November 11, 2026.')
+  })
+
+  test('names the business responsible for the data, and no address (owner, Nov 11 2026)', () => {
+    const commitment = text(html.match(/<section data-title="Our commitment">([\s\S]*?)<\/section>/)?.[1] ?? '')
+    expect(commitment).toContain('MAPL Tours Jamaica is the trading name of MAPL Tours Limited, a company registered in Jamaica')
+    expect(commitment).toContain('MAPL Tours Limited is the business responsible for the personal information this Policy describes')
+    expect(commitment).not.toMatch(/\b(Road|Street|Avenue|Box)\b/i)
   })
 
   test('says which hashed details a booking shares with Meta, through the pixel and the server', () => {

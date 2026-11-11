@@ -14,13 +14,15 @@ export default function PrivacyPage() {
   return (
     <EditorialPage slug="privacy" label="Legal" title="Privacy Policy">
       <Section title="Last updated">
-        <p>This Privacy Policy was last updated on October 18, 2026.</p>
+        <p>This Privacy Policy was last updated on November 11, 2026.</p>
       </Section>
 
       <Section title="Our commitment">
         <p>
-          MAPL Tours Jamaica respects your privacy. This Policy explains what information we collect, why we collect it, who we
-          share it with, and the choices you have. If you have any questions after reading it, email{' '}
+          MAPL Tours Jamaica respects your privacy. MAPL Tours Jamaica is the trading name of MAPL Tours Limited, a company
+          registered in Jamaica, and MAPL Tours Limited is the business responsible for the personal information this Policy
+          describes. This Policy explains what information we collect, why we collect it, who we share it with, and the
+          choices you have. If you have any questions after reading it, email{' '}
           <a href="mailto:contact@mapltours.com" style={{ color: 'var(--text-primary)', textDecoration: 'underline' }}>
             contact@mapltours.com
           </a>

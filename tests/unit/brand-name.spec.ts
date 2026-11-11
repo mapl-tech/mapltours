@@ -54,7 +54,9 @@ function copyOf(file: string): string {
   return src.replace(/\s+/g, ' ')
 }
 
-const BARE = /MAPL Tours(?! Jamaica)(?! Inc)/g
+// "MAPL Tours Limited" is the registered company (lib/legal-entity.ts), not a
+// shortened brand, so it is allowed wherever the legal name belongs.
+const BARE = /MAPL Tours(?! Jamaica)(?! Inc)(?! Limited)/g
 
 const found: Record<string, number> = {}
 for (const dir of DIRS) {

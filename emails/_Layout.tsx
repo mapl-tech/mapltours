@@ -10,6 +10,7 @@ import {
   Hr,
   Preview,
 } from '@react-email/components'
+import { TRADING_AS } from '../lib/legal-entity'
 
 /**
  * MAPL Tours transactional email shell.
@@ -90,7 +91,7 @@ export function MaplLayout({ preheader, title, children }: MaplLayoutProps) {
           </Link>
         </Text>
         <Text style={footerLineMuted}>
-          © {new Date().getFullYear()} MAPL Tours Jamaica. All rights reserved.
+          © {new Date().getFullYear()} {TRADING_AS}. All rights reserved.
         </Text>
       </Section>
     </Container>

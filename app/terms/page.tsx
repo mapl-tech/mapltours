@@ -14,7 +14,7 @@ export default function TermsPage() {
   return (
     <EditorialPage slug="terms" label="Legal" title="Terms of Service">
       <Section title="Last updated">
-        <p>These Terms were last updated on October 17, 2026.</p>
+        <p>These Terms were last updated on November 11, 2026.</p>
       </Section>
 
       <Section title="Agreement to terms">
@@ -27,6 +27,9 @@ export default function TermsPage() {
 
       <Section title="Who we are">
         <p>
+          MAPL Tours Jamaica is the trading name of MAPL Tours Limited, a company registered in Jamaica.
+        </p>
+        <p style={{ marginTop: 12 }}>
           MAPL Tours Jamaica sells and operates travel services in Jamaica: private airport transfers, private tours
           and day packages, delivered through the Jamaican drivers, operators and hosts we work with (our partners).
           Each tour page describes what is included and who meets you.

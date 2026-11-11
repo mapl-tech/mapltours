@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import LanguageSwitcher from './LanguageSwitcher'
 import { useI18n } from '@/lib/i18n'
+import { TRADING_AS } from '@/lib/legal-entity'
 import { SOCIALS } from './Socials'
 
 /**
@@ -178,7 +179,7 @@ export default function Footer() {
           fontSize: 12, color: 'var(--text-on-dark-3)',
           fontFamily: 'var(--font-dm-sans)', flexWrap: 'wrap', gap: 16,
         }}>
-          <p>© 2026 MAPL Tours Jamaica. {t('All rights reserved.')}</p>
+          <p>© 2026 {TRADING_AS}. <span style={{ whiteSpace: 'nowrap' }}>{t('All rights reserved.')}</span></p>
           <div className="footer-legal" style={{ display: 'flex', gap: 20, flexWrap: 'wrap' }}>
             {[
               { label: 'Privacy Policy', href: '/privacy' },

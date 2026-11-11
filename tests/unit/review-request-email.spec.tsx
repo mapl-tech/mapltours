@@ -135,7 +135,7 @@ describe('a ride is told in the direction it ran', () => {
     for (const legs of ['arrival', 'departure', 'both'] as const) {
       const html = decode(await ride(legs))
       expect(html, legs).toContain('MAPL Tours Jamaica, Montego Bay')
-      expect(html, legs).not.toMatch(/MAPL Tours(?! Jamaica)/)
+      expect(html, legs).not.toMatch(/MAPL Tours(?! Jamaica)(?! Limited)/)
     }
   })
 

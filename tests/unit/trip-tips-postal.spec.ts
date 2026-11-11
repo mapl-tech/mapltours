@@ -34,8 +34,10 @@ describe('a mailing address, once one is set', () => {
     const t = buildTip(key, { ...ctx, track: TIP_TRACK[key] })
     expect(t.html.split(BOX).length - 1).toBe(1)
     expect(t.text.split(BOX).length - 1).toBe(1)
-    expect(t.html).toMatch(new RegExp(`>Unsubscribe</a></p>\\n<p [^>]*>${BOX}</p>\\n<p [^>]*><a [^>]*>Privacy</a></p>`))
-    expect(t.text).toContain(`Unsubscribe: ${UNSUB}\n${BOX}\nPrivacy: `)
+    // The company line (owner, Nov 11 2026) comes first, then the address under it.
+    const legal = `© ${new Date().getFullYear()} MAPL Tours Limited, trading as MAPL Tours Jamaica.`
+    expect(t.html).toMatch(new RegExp(`>Unsubscribe</a></p>\\n<p [^>]*>${legal.replace('.', '\\.')}</p>\\n<p [^>]*>${BOX}</p>\\n<p [^>]*><a [^>]*>Privacy</a></p>`))
+    expect(t.text).toContain(`Unsubscribe: ${UNSUB}\n${legal}\n${BOX}\nPrivacy: `)
   })
 
   test('the unsubscribe page shows it in its footer', () => {
