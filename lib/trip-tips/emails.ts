@@ -78,7 +78,6 @@ import { DESTINATIONS, MAX_TRANSFER_PASSENGERS, ZONES, getTransferPrice, zonePri
 import { experiences, getSlug, priceUnitLabel, tourPrice, type Experience } from '../experiences'
 import { POPUP_CODE, POPUP_PERCENT } from '../coupon-popup'
 import { TRIP_TIPS_POSTAL_ADDRESS } from './postal'
-import { TRADING_AS } from '../legal-entity'
 
 export type { TipKey, Track }
 export { TRIP_TIPS_POSTAL_ADDRESS }
@@ -704,14 +703,11 @@ function render(key: TipKey, d: Draft, unsubscribeUrl: string, postal: string | 
   // of their own, so they never stretch a line of running text. The mailing
   // address line appears only when TRIP_TIPS_POSTAL_ADDRESS is set (null by
   // the owner's decision of Sept 27 2026; see lib/trip-tips/postal.ts).
-  // The company line (owner, Nov 11 2026: name MAPL Tours Limited, no
-  // address) sits where a sender's identity goes, just above the address.
-  // 8px above the privacy link keeps its 44px target clear of the line above.
-  const legal = `© ${new Date().getFullYear()} ${TRADING_AS}.`
+  // 8px above the privacy link keeps its 44px target off the unsubscribe
+  // link's, which it would otherwise touch with no address line between.
   const footer = [
     `<p style="${small14}">${esc(why)}</p>`,
     `<p style="${small14}">Changed your mind? ${textLink(unsubscribeUrl, 'Unsubscribe')}</p>`,
-    `<p style="${small14}">${esc(legal)}</p>`,
     ...(postal ? [`<p style="${small14}">${esc(postal)}</p>`] : []),
     `<p style="${small14}margin-top:8px;">${textLink(privacy, 'Privacy')}</p>`,
   ].join('\n')
@@ -743,7 +739,7 @@ ${footer}
     ...d.body.map(blockText).filter((s) => s !== ''),
     `${GROUP_INVITE.lead} ${GROUP_INVITE.label}: ${FACEBOOK_GROUP.url}`,
     inlineText(d.closing),
-    [why, `Unsubscribe: ${unsubscribeUrl}`, legal, ...(postal ? [postal] : []), `Privacy: ${privacy}`].join('\n'),
+    [why, `Unsubscribe: ${unsubscribeUrl}`, ...(postal ? [postal] : []), `Privacy: ${privacy}`].join('\n'),
   ].join('\n\n')
 
   return { subject: d.subject, preheader: d.preheader, html, text: `${text}\n` }

@@ -293,12 +293,10 @@ describe.each(CASES.map((c) => [name(c), c] as const))('%s', (_n, c) => {
       expect(s).toContain('You asked MAPL Tours Jamaica for Jamaica trip tips')
       expect(s).not.toMatch(/Jimmy Cliff|Boulevard|St\. James|P\.? ?O\.? Box/i)
     }
-    // The footer comes last: the why line, the unsubscribe line, the company
-    // line (owner, Nov 11 2026: MAPL Tours Limited, no address), then the privacy link.
-    const legal = `© ${new Date().getFullYear()} MAPL Tours Limited, trading as MAPL Tours Jamaica.`
+    // The footer comes last: the why line, the unsubscribe line, then the privacy link, nothing between.
     expect(tip.html.lastIndexOf(UNSUB.replace(/&/g, '&amp;'))).toBeGreaterThan(tip.html.lastIndexOf(PRIMARY_MARK))
-    expect(tip.text.endsWith(`Unsubscribe: ${UNSUB}\n${legal}\nPrivacy: ${SITE}/privacy?utm_source=trip_tips&utm_medium=email&utm_campaign=trip_tips&utm_content=${key}_privacy\n`)).toBe(true)
-    expect(tip.html).toMatch(/>Unsubscribe<\/a><\/p>\n<p [^>]*>© \d{4} MAPL Tours Limited, trading as MAPL Tours Jamaica\.<\/p>\n<p [^>]*><a class="tl" href="[^"]*\/privacy\?[^"]*"[^>]*>Privacy<\/a><\/p>\n<\/div>/)
+    expect(tip.text.endsWith(`Unsubscribe: ${UNSUB}\nPrivacy: ${SITE}/privacy?utm_source=trip_tips&utm_medium=email&utm_campaign=trip_tips&utm_content=${key}_privacy\n`)).toBe(true)
+    expect(tip.html).toMatch(/>Unsubscribe<\/a><\/p>\n<p [^>]*><a class="tl" href="[^"]*\/privacy\?[^"]*"[^>]*>Privacy<\/a><\/p>\n<\/div>/)
   })
 
   // Owner, Oct 11 2026: the guests' Facebook group in every tip, seen, not
@@ -329,17 +327,14 @@ describe.each(CASES.map((c) => [name(c), c] as const))('%s', (_n, c) => {
   })
 
   // The group invitation is the same in every tip, so it has a ceiling of its
-  // own and each tip keeps its 250 words for what only it says. So is the
-  // company line the owner asked for in every email (Nov 11 2026).
-  test('short: 250 words or fewer on screen, footer included, plus the shared group invitation and company line', () => {
+  // own and each tip keeps its 250 words for what only it says.
+  test('short: 250 words or fewer on screen, footer included, plus the shared group invitation', () => {
     const words = (t: string) => t.split(/\s+/).filter((w) => /[A-Za-z0-9$]/.test(w)).length
     const invite = `${GROUP_INVITE.lead} ${GROUP_INVITE.label}`
-    const legal = `© ${new Date().getFullYear()} MAPL Tours Limited, trading as MAPL Tours Jamaica.`
     expect(words(invite)).toBeLessThanOrEqual(9)
     const shown = visible(tip.html.replace(/<head>[\s\S]*?<\/head>/, '').replace(/<div style="display:none[\s\S]*?<\/div>/, ''))
     expect(shown).toContain(invite)
-    expect(shown).toContain(legal)
-    expect(words(shown.replace(invite, '').replace(legal, ''))).toBeLessThanOrEqual(250)
+    expect(words(shown.replace(invite, ''))).toBeLessThanOrEqual(250)
   })
 
   test('at least one photo, each a site-hosted JPEG with width, height, alt, display:block, no border and rounded corners, after the button', () => {

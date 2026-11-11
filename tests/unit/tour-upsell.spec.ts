@@ -381,8 +381,7 @@ describe('the email', async () => {
     expect(text).toContain('https://mapltours.com/api/trip-tips/unsubscribe?e=x&t=y')
     const words = text.replace(/https?:\/\/\S+/g, '')
     expect(words).not.toMatch(/[–—]/)
-    expect(words).not.toMatch(/MAPL Tours(?! Jamaica)(?! Limited)/)
-    expect(words).toContain('MAPL Tours Limited, trading as MAPL Tours Jamaica. All rights reserved.')
+    expect(words).not.toMatch(/MAPL Tours(?! Jamaica)/)
     expect(words).not.toMatch(/collect|only \d+ left|hurry|limited time/i)
   })
 

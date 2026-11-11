@@ -378,7 +378,7 @@ describe('the real email', () => {
       expect(white.length).toBeGreaterThan(0)
       expect(white.every((st) => /background:\s*#1A1714/i.test(st))).toBe(true)
       expect(text).not.toMatch(/[—–]/)
-      expect(text).not.toMatch(/MAPL Tours(?! Jamaica)(?! Limited)/)
+      expect(text).not.toMatch(/MAPL Tours(?! Jamaica)/)
       expect(text).not.toMatch(/NaN|undefined|null/)
     }
     const unlocked = await render(Real(states[2]))
@@ -405,7 +405,7 @@ describe('the real email', () => {
       const white = styles.filter((st) => /(?:^|;)\s*color:\s*#fff(?:fff)?\b/i.test(st))
       expect(white.every((st) => /background:\s*#1A1714/i.test(st))).toBe(true)
       expect(html).toContain(props.code)
-      expect(text).not.toMatch(/MAPL Tours(?! Jamaica)(?! Limited)/)
+      expect(text).not.toMatch(/MAPL Tours(?! Jamaica)/)
       expect(text).not.toMatch(/Tap to copy|NaN|Invalid Date|undefined|null/)
       expect(text).not.toMatch(/[—–]/)
     }

@@ -54,8 +54,9 @@ function copyOf(file: string): string {
   return src.replace(/\s+/g, ' ')
 }
 
-// "MAPL Tours Limited" is the registered company (lib/legal-entity.ts), not a
-// shortened brand, so it is allowed wherever the legal name belongs.
+// "MAPL Tours Limited" is the registered company, not a shortened brand: the
+// Terms and the Privacy Policy name it (owner, Nov 11 2026). Footers on the
+// site and in emails stay "MAPL Tours Jamaica" (owner, Nov 11 2026).
 const BARE = /MAPL Tours(?! Jamaica)(?! Inc)(?! Limited)/g
 
 const found: Record<string, number> = {}
