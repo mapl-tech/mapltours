@@ -84,6 +84,11 @@ export function GET() {
     const prices = experiences.filter((e) => e.kind === kind).map((e) => e.price)
     return `$${Math.min(...prices)} to $${Math.max(...prices)}`
   }
+  // Counted, not written by hand: "most are group tours, a few per person"
+  // went wrong when the clear kayak turned out to be per person (Nov 2026).
+  const singles = experiences.filter((e) => e.kind === 'single')
+  const groupSingles = singles.filter((e) => e.pricing.mode === 'group').length
+  const pricingModes = `${groupSingles} of the ${singles.length} tours are private group tours priced per vehicle for a party of up to 3 or 4; the other ${singles.length - groupSingles} are priced per person, and each tour page says which.`
 
   const blogLines = BLOG_POSTS
     .slice()
@@ -132,7 +137,7 @@ ${blogLines}
 - Country: Jamaica
 - Currency: USD
 - Airport transfers: one flat all-in price per vehicle for 1-4 passengers (5-7 ride together, priced per person), nothing added at checkout. From $${cheapestTransfer.ow} one-way (${ZONES[cheapestTransfer.dest.zone].label}) up to $${dearestTransfer.ow} (${ZONES[dearestTransfer.dest.zone].label}); round trips are ${roundTripPct}% off two one-ways. Cancellation: flexible within 48 hours of booking, less a 20% administration charge plus taxes (if applicable); after that window bookings are non-refundable, and no-shows are charged in full.
-- Tours and experiences: ${priceRange('single')} all-in, nothing added at checkout. Most are private group tours priced per vehicle for a party of up to 3 or 4, not per person; a few are per person. Ready-made multi-stop day packages run ${priceRange('package')}. Cancellation: flexible within 48 hours of booking, less a 20% administration charge plus taxes (if applicable).
+- Tours and experiences: ${priceRange('single')} all-in, nothing added at checkout. ${pricingModes} Ready-made multi-stop day packages run ${priceRange('package')}. Cancellation: flexible within 48 hours of booking, less a 20% administration charge plus taxes (if applicable).
 - Payments: Stripe (cards and Apple Pay)
 - Booking cutoff: bookings close 12 hours before an experience or pickup begins (a tour day counts from midnight in Jamaica, so a tour can be booked until noon the day before)
 - Cancellation requests: made from the Profile page or by replying to the confirmation email, and reviewed before the refund is issued; a booking whose experience has already begun can no longer be refunded

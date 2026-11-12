@@ -26,7 +26,8 @@ const TOURS: Record<number, { mode: 'group' | 'per_person'; baseRate: number; ti
   9: { mode: 'per_person', baseRate: 100, tierMax: 3, extraPerPerson: 95, place: 'Ocho Rios' },
   10: { mode: 'group', baseRate: 130, tierMax: 3, extraPerPerson: 100, place: 'Montego Bay' },
   11: { mode: 'group', baseRate: 120, tierMax: 3, extraPerPerson: 90, place: 'Montego Bay' },
-  12: { mode: 'group', baseRate: 180, tierMax: 3, extraPerPerson: 160, place: 'Montego Bay' },
+  // Collin, Nov 12 2026: the kayak is $180 per person, not per party of 3.
+  12: { mode: 'per_person', baseRate: 180, tierMax: 3, extraPerPerson: 160, place: 'Montego Bay' },
   13: { mode: 'per_person', baseRate: 100, tierMax: 3, extraPerPerson: 80, place: 'Ocho Rios' },
   14: { mode: 'group', baseRate: 200, tierMax: 4, extraPerPerson: 40, place: 'Negril' },
   15: { mode: 'group', baseRate: 360, tierMax: 3, extraPerPerson: 100 },

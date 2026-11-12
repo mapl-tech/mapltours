@@ -882,7 +882,9 @@ export const experiences: Experience[] = [
     // stream, not a reef paddle (his own page sells "Clear Kayak Drone
     // Photoshoot"). The old reef-tour URL redirects here (next.config.mjs).
     title: "Clear Kayak Drone Photoshoot",
-    pricing: { mode: 'group', baseRate: 180, tierMax: 3, extraPerPerson: 160 },
+    // Collin, Nov 12 2026: "This price is per person". The sheet's "$180 1-3"
+    // for the kayak is per head ($160 each from 4), not a party rate.
+    pricing: { mode: 'per_person', baseRate: 180, tierMax: 3, extraPerPerson: 160 },
     price: 230,
     duration: "1 hr at the river",
     rating: 0,
