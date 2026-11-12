@@ -14,6 +14,7 @@ import {
   hasBaby,
   minAgeOf,
   priceJumps,
+  rateCardUnsettled,
   doorToDoorHours,
   upsellSendDueMs,
   upsellBlockedReason,
@@ -81,8 +82,22 @@ describe('reading the trip off the booking', () => {
   })
 
   test('free days exclude both travel days; a one way has none to count', () => {
-    expect(freeDays(booking())).toBe(5)
+    // Land the 10th, picked up the 17th: the 11th to the 16th, six days.
+    expect(freeDays(booking())).toBe(6)
     expect(freeDays(booking({}, { departure_at: null }))).toBeNull()
+  })
+
+  test('free days are calendar days in Jamaica, whatever the hour of either ride', () => {
+    // A morning ride home after an afternoon landing used to lose a day.
+    expect(freeDays(booking({}, { arrival_at: '2026-11-25T13:20:00Z', departure_at: '2026-11-28T10:33:00Z' }))).toBe(2)
+    // An afternoon ride home: the same two days.
+    expect(freeDays(booking({}, { arrival_at: '2026-11-25T13:20:00Z', departure_at: '2026-11-28T16:22:00Z' }))).toBe(2)
+    // Landing late at night still uses up that day.
+    expect(freeDays(booking({}, { arrival_at: '2026-11-25T23:40:00Z', departure_at: '2026-11-28T10:00:00Z' }))).toBe(2)
+    // Land one day, leave the next: nothing in between.
+    expect(freeDays(booking({}, { arrival_at: '2027-02-10T12:20:00Z', departure_at: '2027-02-11T09:00:00Z' }))).toBe(0)
+    // Across a month and a year end.
+    expect(freeDays(booking({}, { arrival_at: '2026-12-30T14:00:00Z', departure_at: '2027-01-03T08:00:00Z' }))).toBe(3)
   })
 
   test('the suggested tour day is the first full day after landing, never the flight home', () => {
@@ -177,6 +192,35 @@ describe('prices the rate card has not settled are never offered', () => {
         expect(p.total / 4, `${hotel}: ${p.title}`).toBeLessThanOrEqual((tourPrice(e.pricing, 3) / 3) * 1.25)
       }
     }
+  })
+
+  test('a tour whose rate card jumps at any size is offered to nobody, a couple included', () => {
+    // The clear kayak, Nov 12 2026: its jump at 4 meant the "up to 3" rate was
+    // really per person, so the couple's price was wrong too.
+    expect(rateCardUnsettled(tour('Bamboo Rafting on the Martha Brae').pricing)).toBe(true)
+    expect(rateCardUnsettled(tour('ATV Off-Road Adventure').pricing)).toBe(false)
+    expect(rateCardUnsettled(tour("Rick's Cafe Cliff Diving & Sunset").pricing)).toBe(false)
+    // Once the catalog says per person, the kayak passes by itself.
+    expect(rateCardUnsettled(tour('Clear Kayak Drone Photoshoot').pricing)).toBe(false)
+    for (const hotel of ['Couples Swept Away, Negril', 'Hyatt Ziva Rose Hall', 'Sandals Ochi Beach Resort', 'Iberostar Waves Rose Hall']) {
+      for (const party of [1, 2, 3, 4, 6]) {
+        for (const p of curateForStay(hotel, party)) {
+          expect(rateCardUnsettled(tour(p.title).pricing), `${hotel}, party ${party}: ${p.title}`).toBe(false)
+        }
+      }
+    }
+  })
+
+  test('a tour that needs a bigger party is never offered to a smaller one', () => {
+    // Collin, Nov 12 2026: the zipline runs for 2 or more.
+    expect(tour('Rainforest Zipline Adventure').minGuests).toBe(2)
+    for (const hotel of ['Couples Swept Away, Negril', 'Hyatt Ziva Rose Hall', 'Iberostar Waves Rose Hall', 'Hotel Riu Montego Bay']) {
+      expect(curateForStay(hotel, 1).map((p) => p.title), hotel).not.toContain('Rainforest Zipline Adventure')
+      for (const p of curateForStay(hotel, 1)) expect(tour(p.title).minGuests ?? 1, `${hotel}: ${p.title}`).toBeLessThanOrEqual(1)
+    }
+    // A couple is still offered it where it fits the stay.
+    const couple = ['Couples Swept Away, Negril', 'Hyatt Ziva Rose Hall', 'Iberostar Waves Rose Hall', 'Hotel Riu Montego Bay'].flatMap((h) => curateForStay(h, 2).map((p) => p.title))
+    expect(couple).toContain('Rainforest Zipline Adventure')
   })
 })
 
@@ -308,7 +352,7 @@ describe('planUpsell and the food tip', () => {
   test('returns everything the email needs', () => {
     const r = planUpsell(booking(), DUE, { hasTour: false })
     if (!('plan' in r)) throw new Error('unexpected skip')
-    expect(r.plan).toMatchObject({ email: 'taylor.guest@example.com', firstName: 'Taylor', hotel: 'Couples Swept Away, Negril', town: 'Negril', party: 2, freeDays: 5, tourDay: '2027-02-11', youngest: null })
+    expect(r.plan).toMatchObject({ email: 'taylor.guest@example.com', firstName: 'Taylor', hotel: 'Couples Swept Away, Negril', town: 'Negril', party: 2, freeDays: 6, tourDay: '2027-02-11', youngest: null })
     expect(r.plan.picks).toHaveLength(UPSELL_PICKS)
     expect(r.plan.eat?.mapsUrl).toMatch(/^https:\/\/www\.google\.com\/maps\/search\/\?api=1&query=/)
   })
@@ -348,8 +392,8 @@ describe('the email', async () => {
   })
 
   test('the words: subject, headline, preheader, party', () => {
-    expect(upsellSubject(props)).toBe('Taylor, your 5 free days in Negril')
-    expect(upsellSubject({ ...props, firstName: null })).toBe('Your 5 free days in Negril')
+    expect(upsellSubject(props)).toBe('Taylor, your 6 free days in Negril')
+    expect(upsellSubject({ ...props, firstName: null })).toBe('Your 6 free days in Negril')
     expect(upsellSubject({ ...props, freeDays: 1 })).toBe('Taylor, your free day in Negril')
     expect(upsellSubject({ ...props, freeDays: 0 })).toBe('Taylor, what to do near Negril')
     expect(upsellSubject({ ...props, freeDays: null, firstName: null })).toBe('What to do near Negril')
@@ -358,9 +402,9 @@ describe('the email', async () => {
     for (const s of [upsellSubject(props), upsellPreheader(props)]) {
       expect(s).not.toMatch(/[\u2013\u2014!]|days out|don't miss|hurry|sale|deal|off\b|%|\$/i)
     }
-    expect(upsellHeadline(props)).toBe('5 free days in Negril. Three good ways to spend one.')
+    expect(upsellHeadline(props)).toBe('6 free days in Negril. Three good ways to spend one.')
     expect(upsellHeadline({ ...props, freeDays: 0 })).toBe('Three good tours near Negril')
-    expect(upsellHeadline({ ...props, picks: props.picks.slice(0, 1) })).toBe('5 free days in Negril. A good way to spend one.')
+    expect(upsellHeadline({ ...props, picks: props.picks.slice(0, 1) })).toBe('6 free days in Negril. A good way to spend one.')
     expect(upsellPreheader(props)).toBe('Three tours that fit your trip, priced for both of you with hotel pickup.')
     expect(upsellPreheader({ ...props, party: 1, picks: props.picks.slice(0, 1) })).toBe('One tour that fits your trip, priced for you with hotel pickup.')
     expect([partyPhrase(1), partyPhrase(2), partyPhrase(4)]).toEqual(['you', 'both of you', 'all 4 of you'])

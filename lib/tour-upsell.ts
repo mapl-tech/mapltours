@@ -132,13 +132,21 @@ export function departureMs(booking: UpsellBooking): number | null {
 
 /**
  * Whole days with nothing else in them. The arrival and departure days are
- * both eaten by a flight and a transfer, so neither counts.
+ * both eaten by a flight and a transfer, so neither counts: the count is the
+ * calendar days strictly between the landing day and the day they leave, in
+ * Jamaica. It used to be elapsed time in whole days minus one, which lost a
+ * day whenever the ride home was earlier in the day than the landing (most
+ * stays: land 1 pm on the 25th, picked up 10 am on the 28th is two free days,
+ * the 26th and 27th, not one). Same leg choice as firstFreeDay.
  */
 export function freeDays(booking: UpsellBooking): number | null {
-  const a = arrivalMs(booking)
-  const d = departureMs(booking)
-  if (a == null || d == null) return null
-  return Math.max(0, Math.floor((d - a) / MS_PER_DAY) - 1)
+  const arrivals = legTimes(booking, 'arrival_at').sort()
+  const departures = legTimes(booking, 'departure_at').sort()
+  if (!arrivals.length || !departures.length) return null
+  const landing = arrivals[0].slice(0, 10)
+  const home = departures[departures.length - 1].slice(0, 10)
+  const between = Math.round((Date.parse(`${home}T12:00:00Z`) - Date.parse(`${landing}T12:00:00Z`)) / MS_PER_DAY) - 1
+  return Math.max(0, between)
 }
 
 /** "YYYY-MM-DD" plus n days, as calendar arithmetic (no time zone involved). */
@@ -321,6 +329,18 @@ export function priceJumps(pricing: TourPricing, party: number): boolean {
   return false
 }
 
+/**
+ * True when the jump appears at ANY party size the email could quote, not
+ * only up to this guest's party. The clear kayak (Nov 12 2026) showed why: its
+ * 3-to-4 jump meant the "party of up to 3" rate was really per person, so a
+ * couple was quoted $230 for a $360 shoot. A tour whose rate card jumps is not
+ * offered to anyone until the operator confirms it; fixing the catalog lifts
+ * this by itself.
+ */
+export function rateCardUnsettled(pricing: TourPricing): boolean {
+  return priceJumps(pricing, UPSELL_MAX_PARTY)
+}
+
 /* ── How long the day takes ───────────────────────────────────────────────── */
 
 export interface DoorToDoor {
@@ -482,7 +502,10 @@ export function curateForStay(
       const min = minAgeOf(e.ages)
       return min !== null && min <= youngest
     })
-    .filter(({ e }) => !priceJumps(e.pricing, party))
+    .filter(({ e }) => !rateCardUnsettled(e.pricing))
+    // A tour the operator only runs for a bigger party is never offered to a
+    // smaller one (the zipline needs 2 or more, Collin, Nov 12 2026).
+    .filter(({ e }) => party >= (e.minGuests ?? 1))
     .sort((a, b) => {
       if (!!a.d2d !== !!b.d2d) return a.d2d ? -1 : 1
       if (a.d2d && b.d2d && a.d2d.hi !== b.d2d.hi) return a.d2d.hi - b.d2d.hi

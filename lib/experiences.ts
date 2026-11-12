@@ -108,6 +108,13 @@ export interface Experience {
   /** Operator rate card. Source of truth for every price shown or charged. */
   pricing: TourPricing
   /**
+   * The smallest party the operator takes, when it is more than one. Read by
+   * the tour email so a party below it is never offered the tour. Checkout
+   * does not enforce it yet: how a solo guest is handled (pays for the
+   * minimum, or cannot book) waits on the operator.
+   */
+  minGuests?: number
+  /**
    * All-in price for the SMALLEST party, i.e. what the cards advertise. For a
    * group tour this covers up to `pricing.tierMax` people; for a per-person
    * tour it is one traveler. Derived from `pricing`, never set by hand.
@@ -630,6 +637,8 @@ export const experiences: Experience[] = [
     parish: "Hanover",
     title: "Rainforest Zipline Adventure",
     pricing: { mode: 'per_person', baseRate: 120, tierMax: 3, extraPerPerson: 110 },
+    // Collin, Nov 12 2026: "$120 per person however it have to be 2 or more persons".
+    minGuests: 2,
     price: 153,
     duration: "1 hr at the park",
     rating: 0,
