@@ -15,6 +15,9 @@ describe('money and words', () => {
     expect(money(162)).toBe('$162.00')
     expect(money(37.5)).toBe('$37.50')
     expect(money(null)).toBe('$0.00')
+    expect(money(1234.5)).toBe('$1,234.50')
+    expect(money(-12.5)).toBe('\u2212$12.50')
+    expect(money(-0.001)).toBe('$0.00')
   })
 
   test('the guest-facing reference, and counts that never break after the number', () => {

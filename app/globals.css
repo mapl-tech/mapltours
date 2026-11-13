@@ -3580,6 +3580,10 @@ a.pf-stat:hover { background: var(--surface); }
   --adm-ok-bg: #E3F3EA;    --adm-ok: #0F6B45;
   --adm-bad-bg: #FBE4E2;   --adm-bad: #B3261E;
   --adm-plain-bg: #EEEDE9; --adm-plain: #4E4C47;
+  /* Chart series, for marks only (text keeps the text colours). Validated with
+     the dataviz validator on the light surface, Nov 13 2026: lightness band,
+     chroma floor, CVD and normal-vision separation, 3:1 against the surface. */
+  --adm-viz-net: #1D7A50; --adm-viz-payout: #2F6FB0; --adm-viz-fee: #B87333; --adm-viz-remit: #6E4694;
   --adm-fs-meta: 0.875rem;                               /* 14px: help, labels, meta */
   --adm-fs-body: 0.875rem;                               /* 14px */
   --adm-fs-ui: 0.9375rem;                                /* 15px */
@@ -3813,7 +3817,7 @@ a.pf-stat:hover { background: var(--surface); }
 .adm-tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 9.5rem), 1fr)); gap: var(--adm-gap); margin-top: var(--adm-group); }
 .adm-tile { background: #fff; border: 1px solid var(--adm-hairline); border-radius: var(--r-lg); padding: 16px; }
 /* Well under the h1 (20px against 28 to 32): a tile is a fact, not the page's subject. */
-.adm-tile-v { margin-top: 4px; font-size: 1.25rem; font-weight: 800; letter-spacing: -0.02em; line-height: 1.2; font-variant-numeric: tabular-nums; }
+.adm-tile-v { margin-top: 4px; font-size: 1.25rem; font-weight: 800; letter-spacing: -0.02em; line-height: 1.2; }
 .adm-tile-sub { margin-top: 4px; font-size: var(--adm-fs-meta); line-height: 1.45; color: var(--adm-soft); font-variant-numeric: tabular-nums; }
 .adm-toolbar { display: flex; flex-direction: column; gap: var(--adm-gap); margin-top: var(--adm-section); }
 .adm-toolbar-row { display: flex; flex-wrap: wrap; gap: var(--adm-gap); }
@@ -3965,6 +3969,100 @@ a.pf-stat:hover { background: var(--surface); }
   .adm-rf-sum { justify-items: start; text-align: left; }
 }
 
+/* ── Admin: cash flow (components/admin/CashflowView.tsx, app/admin/cashflow) ──
+   Built by the dataviz method: one hero figure, stat tiles, a thin segmented
+   bar over the list that prints every part, single-series columns with a
+   tooltip and a table view, and a table whose booking column stays in view. */
+.adm-cf-filter { margin-top: var(--adm-group); }
+.adm-cf-hero { margin-top: var(--adm-group); }
+.adm-cf-hero-v { margin-top: 4px; font-size: 3rem; font-weight: 800; letter-spacing: -0.03em; line-height: 1.05; color: var(--adm-ink); }
+.adm-cf-hero-v--loss { color: var(--adm-bad); }
+.adm-cf-cur { font-size: var(--adm-fs-ui); font-weight: 600; letter-spacing: 0; color: var(--adm-faint); }
+.adm-cf-hero-sub { margin-top: 8px; max-width: 42.5rem; font-size: var(--adm-fs-ui); line-height: 1.5; color: var(--adm-soft); }
+.adm-cf-hero .adm-note { margin-top: var(--adm-gap); }
+/* The change against the period before: words and sign first, colour after. */
+.adm-cf-delta { display: inline-flex; align-items: center; gap: 4px; margin-top: 8px; font-size: var(--adm-fs-ui); font-weight: 700; color: var(--adm-soft); font-variant-numeric: tabular-nums; }
+.adm-cf-delta--up { color: var(--adm-ok); }
+.adm-cf-delta--down { color: var(--adm-bad); }
+/* On a phone the four periods sit as a tidy 2 by 2 grid, not a lopsided wrap. */
+@media (max-width: 30rem) {
+  .adm-cf-filter .adm-seg { display: grid; grid-template-columns: 1fr 1fr; border-radius: 26px; }
+  .adm-cf-filter .adm-seg-btn { justify-content: center; }
+}
+/* A swatch beside a label carries the series; the label stays ink. */
+.adm-cf-sw { display: inline-block; flex-shrink: 0; width: 10px; height: 10px; margin-right: 8px; border-radius: 3px; }
+.adm-cf-sw--net { background: var(--adm-viz-net); }
+.adm-cf-sw--payout { background: var(--adm-viz-payout); }
+.adm-cf-sw--fee { background: var(--adm-viz-fee); }
+.adm-cf-sw--remit { background: var(--adm-viz-remit); }
+.adm-cf-card { margin-top: var(--adm-gap); }
+.adm-cf-card .adm-card-in { display: grid; gap: var(--adm-gap); }
+@container (min-width: 40rem) { .adm-cf-card .adm-card-in { padding: 24px; } }
+.adm-cf-card-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 4px 12px; }
+.adm-cf-card-head .adm-meta { margin-top: 0; }
+/* The split reads name to amount across a short line, not the whole card. */
+.adm-cf-card--split .adm-card-in > * { max-width: 44rem; }
+/* The thin segmented bar: 8px, rounded ends, a 2px surface gap between parts. */
+.adm-cf-split { display: flex; gap: 2px; height: 8px; }
+.adm-cf-seg { flex-basis: 0; min-width: 2px; border-radius: 9999px; }
+.adm-cf-parts { list-style: none; padding: 0; display: grid; }
+.adm-cf-parts li { display: grid; grid-template-columns: auto minmax(0, 1fr) auto 3rem; align-items: center; column-gap: 8px; padding: 8px 0; border-top: 1px solid var(--adm-hairline); font-size: var(--adm-fs-body); }
+.adm-cf-parts li:first-child { border-top: 0; }
+.adm-cf-parts .adm-cf-sw { margin-right: 0; }
+.adm-cf-part-v { font-weight: 700; text-align: right; font-variant-numeric: tabular-nums; }
+.adm-cf-part-share { text-align: right; color: var(--adm-soft); font-variant-numeric: tabular-nums; }
+/* Collected by month: columns at most 24px wide, 4px rounded at the top and
+   square at the baseline, on solid hairline gridlines. */
+.adm-cf-chart { margin: 0; }
+.adm-cf-plot { position: relative; height: 180px; margin-top: 24px; }
+.adm-cf-grid, .adm-cf-cols { position: absolute; inset: 0 0 0 48px; }
+.adm-cf-grid { display: flex; flex-direction: column; justify-content: space-between; }
+.adm-cf-gridline { position: relative; height: 0; border-top: 1px solid var(--adm-hairline); }
+.adm-cf-tick { position: absolute; right: calc(100% + 8px); top: -0.65em; font-size: 0.75rem; line-height: 1.3; color: var(--adm-faint); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.adm-cf-cols { display: flex; gap: 8px; }
+.adm-cf-col { position: relative; flex: 1 1 0; min-width: 0; display: flex; justify-content: center; border-radius: 4px; outline-offset: -2px; }
+.adm-cf-col:hover, .adm-cf-col.is-on { background: rgba(23, 22, 20, 0.04); }
+.adm-cf-bar-wrap { position: relative; width: min(24px, 60%); height: 100%; }
+.adm-cf-bar { position: absolute; left: 0; right: 0; bottom: 0; border-radius: 4px 4px 0 0; background: var(--adm-ink); }
+.adm-cf-cap { position: absolute; left: 50%; transform: translate(-50%, -4px); font-size: 0.75rem; font-weight: 700; line-height: 1.3; color: var(--adm-ink); white-space: nowrap; font-variant-numeric: tabular-nums; }
+/* The value leads, the month follows; first and last columns anchor inward. */
+.adm-cf-tip {
+  position: absolute; left: 50%; transform: translateX(-50%); z-index: 2; display: grid; gap: 2px; padding: 8px 12px;
+  border-radius: 8px; background: var(--adm-ink); color: #fff; font-size: 0.8125rem; line-height: 1.35; white-space: nowrap;
+  pointer-events: none; box-shadow: 0 6px 22px rgba(0, 0, 0, 0.2);
+}
+.adm-cf-tip--start { left: 0; transform: none; }
+.adm-cf-tip--end { left: auto; right: 0; transform: none; }
+.adm-cf-tip strong { font-size: 0.9375rem; font-variant-numeric: tabular-nums; }
+@keyframes admFade { from { opacity: 0; } to { opacity: 1; } }
+.adm-cf-tip { animation: admFade 0.12s var(--ease-out) both; }
+.adm-cf-tip span { color: rgba(255, 255, 255, 0.8); }
+.adm-cf-xaxis { display: flex; gap: 8px; margin-top: 8px; padding-left: 48px; }
+.adm-cf-xaxis span { flex: 1 1 0; min-width: 0; text-align: center; font-size: 0.75rem; color: var(--adm-faint); white-space: nowrap; }
+/* The transactions table scrolls inside its frame; the booking stays in view. */
+.adm-cf-scroll { margin-top: var(--adm-gap); overflow-x: auto; border: 1px solid var(--adm-hairline); border-radius: var(--r-lg); background: #fff; }
+.adm-cf-table { width: 100%; min-width: 52rem; border-collapse: separate; border-spacing: 0; font-size: var(--adm-fs-body); }
+.adm-cf-table th, .adm-cf-table td { padding: 12px 16px; text-align: left; vertical-align: top; border-top: 1px solid var(--adm-hairline); }
+.adm-cf-table thead th { border-top: 0; vertical-align: bottom; font-size: var(--adm-fs-meta); font-weight: 600; color: var(--adm-faint); white-space: nowrap; }
+.adm-cf-table thead th .adm-cf-sw { margin-right: 6px; }
+.adm-cf-table .adm-num { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.adm-cf-table tbody th { font-weight: 600; }
+.adm-cf-table th:first-child { position: sticky; left: 0; z-index: 1; min-width: 11rem; background: #fff; }
+.adm-cf-table thead th:first-child { z-index: 2; }
+.adm-cf-table tfoot th, .adm-cf-table tfoot td, .adm-cf-table tfoot th:first-child { border-top: 2px solid var(--adm-rule); background: var(--adm-panel); font-weight: 700; }
+.adm-cf-who { display: block; }
+.adm-cf-ref { display: block; margin-top: 2px; font-size: var(--adm-fs-meta); font-weight: 400; color: var(--adm-faint); white-space: normal; }
+.adm-cf-table .adm-num .adm-cf-ref { white-space: nowrap; }
+.adm-cf-net { font-weight: 700; }
+.adm-cf-net--loss { color: var(--adm-bad); }
+.adm-cf-confirm .adm-h3 { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.adm-cf-confirm .adm-help { margin-top: 0; }
+.adm-cf-confirm .adm-cf-scroll { margin-top: 0; border: 0; border-radius: 0; background: none; }
+.adm-cf-confirm .adm-details { margin-top: -4px; }
+.adm-cf-rates { max-width: none; min-width: 30rem; margin-top: 0; }
+.adm-cf-method { margin-top: var(--adm-section); }
+.adm-cf-method-list { display: grid; gap: 8px; max-width: 46rem; margin: 4px 0 0; padding-left: 1.25rem; font-size: var(--adm-fs-body); line-height: 1.55; color: var(--adm-soft); }
+
 /* State changes arrive instead of popping in: transform and opacity only. */
 @keyframes admEnter { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
 .adm-enter { animation: admEnter 0.18s var(--ease-out) both; }
@@ -3975,7 +4073,7 @@ a.pf-stat:hover { background: var(--surface); }
 @keyframes admFresh { from { opacity: 0.35; } to { opacity: 1; } }
 .adm-rows { animation: admFresh 0.2s var(--ease-out) both; }
 @media (prefers-reduced-motion: reduce) {
-  .adm-enter, .adm-leave, .adm-dot, .adm-rows { animation: none; }
+  .adm-enter, .adm-leave, .adm-dot, .adm-rows, .adm-cf-tip { animation: none; }
   .adm-choice, .adm-input, .adm-chip, .adm-btn, .adm-seg-btn, .adm-bk-head, .adm-bk-chev, .adm-bk-panel, .adm-bk-clip { transition: none; }
   .adm-btn:active:not(:disabled):not([aria-disabled="true"]) { transform: none; }
 }

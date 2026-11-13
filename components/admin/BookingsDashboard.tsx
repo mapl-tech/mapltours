@@ -6,6 +6,7 @@ import { ChevronRight, Search } from 'lucide-react'
 import { nextStep, progress } from '@/lib/dispatch'
 import { AI_ASSISTANT_GROUP, aiAssistantLabel, attributionLabel, browserLabel, firstTouchLabel } from '@/lib/attribution'
 import Arrow, { RouteText } from '@/components/ui/Arrow'
+import Segmented from '@/components/admin/Segmented'
 import { ageLabel, bookingRef, clockTime, count, jamaicaToday, legTime, money, plural, stamp, tripDay } from '@/lib/admin-format'
 
 /**
@@ -341,40 +342,6 @@ export function viewOf(bookings: Row[], o: { status: Status; when: When; kind: K
   if (o.when === 'upcoming') return rows.filter((b) => (firstService(b)?.day ?? '') >= o.today).sort((a, b) => key(a).localeCompare(key(b)))
   if (o.when === 'past') return rows.filter((b) => { const d = firstService(b)?.day; return !!d && d < o.today }).sort((a, b) => key(b).localeCompare(key(a)))
   return [...rows].sort((a, b) => String(b.paid_at ?? b.created_at).localeCompare(String(a.paid_at ?? a.created_at)))
-}
-
-/**
- * A row of mutually exclusive choices: a native radio group (one tab stop,
- * arrow keys move the choice, read as "1 of 3"), drawn in the admin's one
- * selected state, the ink pill.
- */
-function Segmented<T extends string>({ label, value, options, onChange }: {
-  label: string
-  value: T
-  options: { key: T; label: string; count?: number }[]
-  onChange: (v: T) => void
-}) {
-  const name = useId()
-  return (
-    <fieldset className="adm-fieldset">
-      <legend className="visually-hidden">{label}</legend>
-      <div className="adm-seg">
-        {options.map((o) => (
-          <label key={o.key} className={value === o.key ? 'adm-seg-btn is-on' : 'adm-seg-btn'}>
-            {/* With a count, the choice is named in words ("Paid, 2 bookings")
-                and the pill it draws is hidden from screen readers. */}
-            <input
-              type="radio" className="adm-seg-input" name={name} value={o.key} checked={value === o.key} onChange={() => onChange(o.key)}
-              aria-label={o.count !== undefined ? `${o.label}, ${plural(o.count, 'booking')}` : undefined}
-            />
-            {o.count !== undefined ? (
-              <span className="adm-seg-text" aria-hidden="true">{o.label}<span className="adm-seg-count">{o.count}</span></span>
-            ) : o.label}
-          </label>
-        ))}
-      </div>
-    </fieldset>
-  )
 }
 
 const LIST_NAME = { upcoming: 'Upcoming trips', past: 'Past trips', recent: 'Recently paid', abandoned: 'Abandoned checkouts' } as const

@@ -2,8 +2,8 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { createServiceClient } from '@/lib/supabase/service'
 import { supplierPayout, round2, remitlyEstimate } from '@/lib/dispatch'
-import { estimatedRateDestinations, driverCost, getTransferPrice } from '@/lib/airport-transfers'
 import CashflowView, { type CashRow } from '@/components/admin/CashflowView'
+import CashflowNotes from '@/components/admin/CashflowNotes'
 
 /**
  * Cash-flow dashboard. Server component: confirms the caller is an admin, then
@@ -19,19 +19,15 @@ import CashflowView, { type CashRow } from '@/components/admin/CashflowView'
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
 
-const dm = 'var(--font-dm-sans)'
-const ink = 'var(--text-primary, #171614)'
-const soft = 'var(--text-secondary, #57534C)'
-
+/** The cash-flow page: the .adm classes in app/globals.css, like every admin screen. */
 function Shell({ children }: { children: React.ReactNode }) {
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--bg-warm, #F4F1EB)' }}>
-      <div style={{ width: '100%', padding: '40px clamp(20px, 3vw, 44px) 90px', fontFamily: dm, color: ink }}>
-        {children}
-      </div>
+    <div className="adm-page">
+      <div className="adm adm-wrap adm-wrap--wide">{children}</div>
     </div>
   )
 }
+
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Row = any
@@ -61,12 +57,12 @@ export default async function CashflowPage() {
   const session = createClient()
   const { data: { user } } = await session.auth.getUser()
   if (!user) {
-    return <Shell><h1 style={{ fontWeight: 700, fontSize: 22 }}>Cash flow</h1><p style={{ marginTop: 8, color: soft }}>Please <Link href="/login?redirect=/admin/cashflow" style={{ color: ink, fontWeight: 600 }}>sign in</Link>.</p></Shell>
+    return <Shell><h1 className="adm-h1">Cash flow</h1><p className="adm-lead">Please <Link href="/login?redirect=/admin/cashflow" className="adm-inline-link">sign in</Link> to view this page.</p></Shell>
   }
   const svc = createServiceClient()
   const { data: adminRow } = await svc.from('admins').select('user_id').eq('user_id', user.id).maybeSingle()
   if (!adminRow) {
-    return <Shell><h1 style={{ fontWeight: 700, fontSize: 22 }}>Not authorised</h1><p style={{ marginTop: 8, color: soft }}>This dashboard is limited to MAPL Tours Jamaica admins.</p></Shell>
+    return <Shell><h1 className="adm-h1">Not authorised</h1><p className="adm-lead">This dashboard is limited to MAPL Tours Jamaica admins.</p></Shell>
   }
 
   const { data: bookings } = await svc
@@ -111,53 +107,11 @@ export default async function CashflowPage() {
     }
   }))
 
-  // Driver rates we inferred rather than received from Collins. Surfaced here
-  // so they can be confirmed; each is set at or above the nearest quoted
-  // resort, so a booking can never sell below cost in the meantime.
-  const estimates = estimatedRateDestinations()
-
   return (
     <Shell>
       <CashflowView rows={rows} />
 
-      {estimates.length > 0 && (
-        <section style={{ marginTop: 28, background: '#fff', border: '1px solid #E7E1D6', borderRadius: 16, overflow: 'hidden' }}>
-          <div style={{ padding: '14px 18px', background: '#FCF6E4', borderBottom: '1px solid #F0E4BE' }}>
-            <span style={{ fontSize: 12, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#7A5A08' }}>
-              Driver rates to confirm with Collin · {estimates.length}
-            </span>
-          </div>
-          <div style={{ padding: '14px 18px' }}>
-            <p style={{ fontSize: 13, color: soft, margin: '0 0 12px', lineHeight: 1.55 }}>
-              These resorts are not on Collin&rsquo;s rate sheet, so each uses a conservative
-              estimate set at or above the nearest quoted resort. Confirm them and the
-              customer price updates automatically.
-            </p>
-            <div style={{ overflowX: 'auto' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
-                <thead>
-                  <tr style={{ textAlign: 'left', color: '#6E6A62' }}>
-                    <th style={{ padding: '6px 10px 6px 0', fontWeight: 600 }}>Resort</th>
-                    <th style={{ padding: '6px 10px', fontWeight: 600, textAlign: 'right' }}>Collin, one-way</th>
-                    <th style={{ padding: '6px 10px', fontWeight: 600, textAlign: 'right' }}>Customer, one-way</th>
-                    <th style={{ padding: '6px 0 6px 10px', fontWeight: 600, textAlign: 'right' }}>Customer, round trip</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {estimates.map((d) => (
-                    <tr key={d.id} style={{ borderTop: '1px solid #F1ECE3' }}>
-                      <td style={{ padding: '8px 10px 8px 0' }}>{d.name}</td>
-                      <td style={{ padding: '8px 10px', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>${driverCost(d.id, 'one_way')?.toFixed(2)}</td>
-                      <td style={{ padding: '8px 10px', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>${getTransferPrice(d.id, 'one_way')?.toFixed(2)}</td>
-                      <td style={{ padding: '8px 0 8px 10px', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>${getTransferPrice(d.id, 'round_trip')?.toFixed(2)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </section>
-      )}
+      <CashflowNotes />
     </Shell>
   )
 }

@@ -16,9 +16,11 @@
 /** The owner's clock, for what happened on our side. */
 export const OWNER_ZONE = 'America/Toronto'
 
-/** "$162.00". */
+/** "$1,162.00", and "−$12.50" below zero (a true minus sign). */
 export function money(n: number | null | undefined): string {
-  return '$' + Number(n ?? 0).toFixed(2)
+  const v = Number(n ?? 0)
+  const abs = Math.abs(v).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+  return (v < 0 && abs !== '0.00' ? '−$' : '$') + abs
 }
 
 /** "MAPL-ABCDEF12": the reference guests see on their confirmation. */
