@@ -6,6 +6,7 @@ import { ChevronRight, Search } from 'lucide-react'
 import { nextStep, progress } from '@/lib/dispatch'
 import { AI_ASSISTANT_GROUP, aiAssistantLabel, attributionLabel, browserLabel, firstTouchLabel } from '@/lib/attribution'
 import Arrow, { RouteText } from '@/components/ui/Arrow'
+import { ageLabel, bookingRef, clockTime, count, jamaicaToday, legTime, money, plural, stamp, tripDay } from '@/lib/admin-format'
 
 /**
  * Client dashboard for the admin bookings page. The parent server component
@@ -19,10 +20,9 @@ import Arrow, { RouteText } from '@/components/ui/Arrow'
  * what differs between rows: no "Paid" badge in the paid view (only
  * "Refunded"), no Ride or Tour badge once the list is filtered to one kind.
  *
- * Times: trip times are the guest's Jamaica wall-clock; our own events (paid,
- * emails sent) are on the owner's Toronto clock with the zone named. This
- * year's year is never printed. Money: every booking is in one currency, so
- * its code is printed once per block, on the block's headline amount.
+ * Money and time follow lib/admin-format: trip times in the guest's Jamaica
+ * wall-clock, our own events on the owner's Toronto clock with the zone named,
+ * never this year's year, and the currency code once per block.
  *
  * Styles: the .adm classes in app/globals.css.
  */
@@ -30,68 +30,6 @@ import Arrow, { RouteText } from '@/components/ui/Arrow'
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Row = any
 
-/** The owner's clock, for what happened on our side. One fixed zone, so the server render and the browser agree. */
-const OWNER_ZONE = 'America/Toronto'
-
-function money(n: number | null | undefined): string {
-  return '$' + Number(n ?? 0).toFixed(2)
-}
-function yearIn(d: Date, timeZone: string): string {
-  return new Intl.DateTimeFormat('en-US', { timeZone, year: 'numeric' }).format(d)
-}
-/** Today in Jamaica as YYYY-MM-DD: the day trips are planned in. */
-function jamaicaToday(): string {
-  return new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Jamaica', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date())
-}
-/** When something happened on our side, on the owner's clock: "Nov 11, 8:31 PM EST", or "Nov 11" for the day alone. */
-function stamp(iso: string | null | undefined, dayOnly = false): string {
-  if (!iso) return '-'
-  const d = new Date(iso)
-  if (Number.isNaN(d.getTime())) return '-'
-  const year = yearIn(d, OWNER_ZONE) === yearIn(new Date(), OWNER_ZONE) ? {} : { year: 'numeric' as const }
-  const time = dayOnly ? {} : { hour: 'numeric' as const, minute: '2-digit' as const, timeZoneName: 'short' as const }
-  return d.toLocaleString('en-US', { timeZone: OWNER_ZONE, month: 'short', day: 'numeric', ...year, ...time })
-}
-/*
- * Trip days and leg times. Leg times are the guest's Jamaica wall-clock,
- * stored verbatim, so they are read back in UTC: the same time the guest was
- * quoted on the confirmation and the day-of email. Read in the admin's own
- * zone, a Toronto operator once saw every pickup hours out from what the
- * driver and the guest had agreed.
- */
-/** "Sat, Dec 5". */
-function tripDay(day: string | null | undefined): string {
-  const s = String(day ?? '').slice(0, 10)
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(s)) return ''
-  const year = s.slice(0, 4) === jamaicaToday().slice(0, 4) ? {} : { year: 'numeric' as const }
-  return new Date(`${s}T12:00:00Z`).toLocaleDateString('en-US', { timeZone: 'UTC', weekday: 'short', month: 'short', day: 'numeric', ...year })
-}
-/** "Thu, Dec 3, 4:06 PM". */
-function legTime(iso: string | null | undefined): string {
-  if (!iso) return ''
-  const d = new Date(iso)
-  if (Number.isNaN(d.getTime())) return ''
-  const year = String(d.getUTCFullYear()) === jamaicaToday().slice(0, 4) ? {} : { year: 'numeric' as const }
-  return d.toLocaleString('en-US', { timeZone: 'UTC', weekday: 'short', month: 'short', day: 'numeric', ...year, hour: 'numeric', minute: '2-digit' })
-}
-/** "4:06 PM". */
-function clockTime(iso: string | null | undefined): string {
-  if (!iso) return ''
-  const d = new Date(iso)
-  return Number.isNaN(d.getTime()) ? '' : d.toLocaleTimeString('en-US', { timeZone: 'UTC', hour: 'numeric', minute: '2-digit' })
-}
-function ageLabel(iso: string): string {
-  const ms = Date.now() - new Date(iso).getTime()
-  if (ms < 0) return 'just now'
-  const h = Math.floor(ms / 3_600_000)
-  if (h < 1) return `${Math.max(1, Math.floor(ms / 60_000))} min ago`
-  if (h < 48) return `${h}h ago`
-  return `${Math.floor(h / 24)}d ago`
-}
-function ref(id: string): string { return 'MAPL-' + id.slice(0, 8).toUpperCase() }
-function plural(n: number, w: string): string { return `${n} ${w}${n === 1 ? '' : 's'}` }
-/** The same, kept on one line: "2 passengers" never breaks after the 2. */
-function count(n: number, w: string): string { return plural(n, w).replace(' ', '\u00a0') }
 
 /**
  * The first moment of service, as its Jamaica wall-clock value: a ride's
@@ -127,7 +65,7 @@ function lineTotal(i: Row): number {
 function haystack(b: Row): string {
   const items = (b.booking_items ?? []) as Row[]
   return [
-    ref(b.id), b.id, b.first_name, b.last_name, b.email, b.phone, b.pickup, b.dropoff,
+    bookingRef(b.id), b.id, b.first_name, b.last_name, b.email, b.phone, b.pickup, b.dropoff,
     ...items.flatMap((i) => [i.hotel, i.destination, i.title, i.arrival_flight, i.departure_flight]),
   ].filter(Boolean).join(' ').toLowerCase()
 }
@@ -262,7 +200,7 @@ export function BookingCard({ b, variant, open, onToggle, showType = true }: {
               <RouteText text={routeSummary} /> · {paxSummary}
             </span>
             <span id={id.meta} className="adm-bk-meta" suppressHydrationWarning>
-              <span className="adm-nowrap adm-bk-when">{when}</span> · <span className="adm-nowrap">{ref(b.id)}</span> · <span className="adm-nowrap">{variant === 'paid' ? `Paid ${stamp(b.paid_at ?? b.created_at, true)}` : `Started ${ageLabel(b.created_at)}`}</span>
+              <span className="adm-nowrap adm-bk-when">{when}</span> · <span className="adm-nowrap">{bookingRef(b.id)}</span> · <span className="adm-nowrap">{variant === 'paid' ? `Paid ${stamp(b.paid_at ?? b.created_at, true)}` : `Started ${ageLabel(b.created_at)}`}</span>
             </span>
           </span>
           <span id={id.side} className="adm-bk-side">
@@ -331,7 +269,7 @@ export function BookingCard({ b, variant, open, onToggle, showType = true }: {
 
               <section>
                 <h4 className="adm-kicker">Guest</h4>
-                <div className="adm-bk-contact">
+                <div className="adm-contact">
                   {b.email ? <a className="adm-inline-link" href={`mailto:${b.email}`}>{b.email}</a> : <p className="adm-meta">(no email)</p>}
                   {b.phone ? <a className="adm-inline-link adm-tnum" href={`tel:${String(b.phone).replace(/[^\d+]/g, '')}`}>{b.phone}</a> : null}
                 </div>
@@ -558,7 +496,7 @@ export default function BookingsDashboard({ bookings }: { bookings: Row[] }) {
         <div key={listKey} className="adm-bk-groups adm-rows">
           {groups.filter((g) => g.rows.length > 0 || g.none).map((g) => (
             <div key={g.key} className="adm-bk-group">
-              <h2 className={g.visible ? 'adm-bk-group-h' : 'visually-hidden'}>{g.title}</h2>
+              <h2 className={g.visible ? 'adm-h2' : 'visually-hidden'}>{g.title}</h2>
               {g.rows.length > 0 ? (
                 <ol className="adm-bk-list">
                   {g.rows.map((b) => (

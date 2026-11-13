@@ -3799,6 +3799,16 @@ a.pf-stat:hover { background: var(--surface); }
 .adm-badge--bad { background: var(--adm-bad-bg); color: var(--adm-bad); }
 .adm-badge--plain { background: var(--adm-plain-bg); color: var(--adm-plain); }
 .adm-btn--sm { padding: 0 16px; font-size: var(--adm-fs-body); }
+/* Confirm buttons that move money one way or the other (white on each, 6.5:1). */
+.adm-btn--ok { border-color: var(--adm-ok); background: var(--adm-ok); color: #fff; }
+.adm-btn--ok:hover:not(:disabled):not([aria-disabled="true"]) { border-color: #0B5537; background: #0B5537; }
+.adm-btn--bad { border-color: var(--adm-bad); background: var(--adm-bad); color: #fff; }
+.adm-btn--bad:hover:not(:disabled):not([aria-disabled="true"]) { border-color: #8F1E18; background: #8F1E18; }
+.adm-textarea { height: auto; min-height: 88px; padding: 10px 12px; line-height: 1.5; resize: vertical; }
+/* A guest's email and phone are the way to reach them: full 44px targets,
+   side by side while they fit, so the pair reads as one line of contact. */
+.adm-contact { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 24px; }
+.adm-contact .adm-inline-link { display: inline-flex; align-items: center; min-height: 44px; font-size: var(--adm-fs-body); overflow-wrap: anywhere; }
 /* Two to a row on a phone, four on a wide screen. */
 .adm-tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 9.5rem), 1fr)); gap: var(--adm-gap); margin-top: var(--adm-group); }
 .adm-tile { background: #fff; border: 1px solid var(--adm-hairline); border-radius: var(--r-lg); padding: 16px; }
@@ -3855,8 +3865,7 @@ a.pf-stat:hover { background: var(--surface); }
 .adm-bk-count { margin-top: var(--adm-group); }
 .adm-bk-groups { display: grid; gap: var(--adm-group); margin-top: var(--adm-gap); }
 .adm-bk-group { display: grid; gap: var(--adm-gap); }
-/* A list heading, not a label: ink, sentence case, a step above the cards' 12px section labels. */
-.adm-bk-group-h { font-size: var(--adm-fs-ui); font-weight: 700; line-height: 1.3; letter-spacing: -0.005em; color: var(--adm-ink); }
+
 .adm-bk-list { list-style: none; padding: 0; display: flex; flex-direction: column; gap: var(--adm-gap); }
 .adm-bk { container-type: inline-size; overflow: hidden; scroll-margin-top: 16px; background: #fff; border: 1px solid var(--adm-hairline); border-radius: var(--r-lg); }
 /* The heading around each card's button adds structure, not style. */
@@ -3929,10 +3938,32 @@ a.pf-stat:hover { background: var(--surface); }
 .adm-bk-item-line { font-size: var(--adm-fs-body); line-height: 1.45; color: var(--adm-soft); font-variant-numeric: tabular-nums; }
 .adm-bk-item-line--quiet { color: var(--adm-faint); }
 .adm-bk-rule { display: grid; gap: 4px; padding-top: var(--adm-gap); border-top: 1px solid var(--adm-hairline); }
-/* The guest's email and phone are the way to reach them: full 44px targets,
-   side by side while they fit, so the pair reads as one line of contact. */
-.adm-bk-contact { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 24px; }
-.adm-bk-part .adm-inline-link { display: inline-flex; align-items: center; min-height: 44px; font-size: var(--adm-fs-body); overflow-wrap: anywhere; }
+
+
+/* ── Admin: refunds (components/admin/RefundQueue.tsx) ──
+   Each request leads with the guest and the trip; the amount is the
+   headline while a decision is owed, and reads as what happened once it is
+   made. The confirmation is the shared .adm-ask box. */
+.adm-rf .adm-card-in { display: grid; gap: var(--adm-gap); }
+.adm-rf-head { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: var(--adm-gap) var(--adm-group); }
+.adm-rf-who { display: grid; gap: 4px; min-width: 0; flex: 1 1 18rem; }
+.adm-rf-items { list-style: none; padding: 0; display: grid; gap: 2px; font-size: var(--adm-fs-body); line-height: 1.45; color: var(--adm-soft); font-variant-numeric: tabular-nums; }
+.adm-rf-sum { display: grid; gap: 2px; justify-items: end; text-align: right; }
+.adm-rf-sum .adm-badge { margin-bottom: 4px; }
+.adm-rf-amount { font-size: 1.375rem; font-weight: 800; line-height: 1.2; letter-spacing: -0.01em; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.adm-rf-amount--quiet { font-size: var(--adm-fs-h3); font-weight: 700; color: var(--adm-soft); }
+.adm-rf-cur { font-size: 0.75rem; font-weight: 600; color: var(--adm-faint); }
+/* A split refund says where each part goes before anyone approves it. */
+.adm-rf-split { padding: 8px 12px; border-radius: var(--r-md); background: var(--adm-panel); font-size: var(--adm-fs-body); font-weight: 600; color: var(--adm-ink); font-variant-numeric: tabular-nums; }
+.adm-rf .adm-block, .adm-rf .adm-note { margin-top: 0; }
+.adm-rf-actions { padding-top: var(--adm-gap); border-top: 1px solid var(--adm-hairline); }
+.adm-rf-cap { margin-top: var(--adm-gap); }
+/* When they asked, against the policy's window: the fact a decision turns on. */
+.adm-rf-asked { font-size: var(--adm-fs-meta); line-height: 1.45; color: var(--adm-soft); font-weight: 600; }
+/* On a narrow card the amount joins the left edge under the guest. */
+@container (max-width: 30rem) {
+  .adm-rf-sum { justify-items: start; text-align: left; }
+}
 
 /* State changes arrive instead of popping in: transform and opacity only. */
 @keyframes admEnter { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
