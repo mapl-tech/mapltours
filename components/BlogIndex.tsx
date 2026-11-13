@@ -5,6 +5,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { BLOG_CATEGORIES, type BlogCard, formatPostDate } from '@/lib/blog'
 import Footer from './Footer'
+import Arrow from '@/components/ui/Arrow'
 
 /* ─── Small primitives ─── */
 
@@ -383,7 +384,7 @@ function FeaturedLead({ post }: { post: BlogCard }) {
               paddingBottom: 10,
             }}
           >
-            Read the essay →
+            Read the essay<Arrow />
           </Link>
         </div>
       </div>

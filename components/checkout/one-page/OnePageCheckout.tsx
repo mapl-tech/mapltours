@@ -28,6 +28,7 @@ import AskFirst from '@/components/AskFirst'
 import { Card, SectionTitle, TextField, SelectField, Stepper, Disclosure, Reassurance, LinkButton, focusFirstError } from './fields'
 import { useHydrated } from './useHydrated'
 import { PICKUP_PLACES, OTHER_PLACE, OTHER_PLACE_LABEL, isListedPlace, placeShown } from './pickup-places'
+import Arrow from '@/components/ui/Arrow'
 
 /**
  * The tour checkout, on one page.
@@ -641,7 +642,7 @@ export default function OnePageCheckout() {
                       <DayFlow compact />
                     </div>
                     <Link href="/explore" style={{ display: 'inline-flex', alignItems: 'center', minHeight: 44, marginTop: 8, fontFamily: FONT, fontSize: 13, fontWeight: 600, color: 'var(--text-primary)', textDecoration: 'underline', textUnderlineOffset: 3 }}>
-                      Browse more tours →
+                      Browse more tours<Arrow />
                     </Link>
                   </div>
                 </Disclosure>

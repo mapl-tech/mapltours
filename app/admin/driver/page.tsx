@@ -104,9 +104,6 @@ export default async function AdminDriverPreviewPage() {
             </span>
           </div>
         </div>
-        <Link href="/admin/bookings" style={{ display: 'inline-flex', alignItems: 'center', gap: 7, height: 44, padding: '0 18px', borderRadius: 9999, border: '1px solid #E7E1D6', background: '#fff', color: ink, fontSize: 13, fontWeight: 600, textDecoration: 'none' }}>
-          <span aria-hidden="true">←</span> Bookings
-        </Link>
       </div>
       <DriverDashboard trips={trips} tours={tours} driverLabel="your driver" adminPreview />
     </Shell>

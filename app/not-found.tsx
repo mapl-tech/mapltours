@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
+import Arrow from '@/components/ui/Arrow'
 
 export const metadata: Metadata = {
   title: 'Page not found',
@@ -59,7 +60,7 @@ export default function NotFound() {
         </p>
         <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
           <Link href="/" className="btn-primary" style={{ textDecoration: 'none' }}>
-            <span aria-hidden="true" style={{ fontSize: 16, lineHeight: 1 }}>&larr;</span>
+            <Arrow dir="left" place="before" />
             Back to the tours
           </Link>
           <Link href="/explore" className="btn-outline" style={{ textDecoration: 'none' }}>

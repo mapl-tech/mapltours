@@ -4,6 +4,8 @@ import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { progress } from '@/lib/dispatch'
 import { AI_ASSISTANT_GROUP, aiAssistantLabel, attributionLabel, browserLabel, firstTouchLabel } from '@/lib/attribution'
+import { ChevronRight } from 'lucide-react'
+import Arrow, { RouteText } from '@/components/ui/Arrow'
 
 /**
  * Client dashboard for the admin bookings page. The parent server component
@@ -148,13 +150,13 @@ export function BookingCard({ b, variant, open, onToggle }: { b: Row; variant: '
                   {variant === 'paid' ? `Paid ${dateTime(b.paid_at ?? b.created_at)}` : `Started ${ageLabel(b.created_at)}`}
                 </div>
               </div>
-              <span aria-hidden="true" style={{ display: 'inline-block', transform: open ? 'rotate(90deg)' : 'none', transition: 'transform 0.15s ease', color: faint, fontSize: 20, lineHeight: 1 }}>›</span>
+              <ChevronRight size={20} strokeWidth={2.25} aria-hidden style={{ flexShrink: 0, transform: open ? 'rotate(90deg)' : 'none', transition: 'transform 0.15s ease', color: faint }} />
             </div>
           </div>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginTop: 7, flexWrap: 'wrap' }}>
             <span style={{ fontSize: 14, fontWeight: 700, color: ink }}>{customerName}</span>
             <span aria-hidden="true" style={{ color: faint }}>·</span>
-            <span style={{ fontSize: 13, color: soft }}>{routeSummary}</span>
+            <span style={{ fontSize: 13, color: soft }}><RouteText text={routeSummary} /></span>
             {paxSummary && (
               <>
                 <span aria-hidden="true" style={{ color: faint }}>·</span>
@@ -167,7 +169,7 @@ export function BookingCard({ b, variant, open, onToggle }: { b: Row; variant: '
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 10, padding: '0 18px 12px', flexWrap: 'wrap' }}>
             <span style={{ fontSize: 12, color: faint, ...tnum }}>Dispatch {dispatchDone}/{dispatchTotal}</span>
             <Link href={`/admin/dispatch/${b.id}`} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, height: 32, padding: '0 13px', borderRadius: 9999, border: '1px solid var(--accent, #171614)', background: 'var(--accent, #171614)', color: '#fff', fontSize: 12, fontWeight: 600, textDecoration: 'none' }}>
-              Manage dispatch →
+              Manage dispatch<Arrow className="ui-arrow--flush" />
             </Link>
           </div>
         )}
@@ -183,7 +185,7 @@ export function BookingCard({ b, variant, open, onToggle }: { b: Row; variant: '
               <div key={idx} style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
                 {isTransfer ? (
                   <>
-                    <div style={{ fontWeight: 600, fontSize: 14 }}>{(i.airport ?? 'MBJ')} → {i.hotel ?? i.destination}</div>
+                    <div style={{ fontWeight: 600, fontSize: 14 }}>{(i.airport ?? 'MBJ')}<Arrow place="between" />{i.hotel ?? i.destination}</div>
                     <div style={{ fontSize: 12, color: soft }}>
                       {[i.zone ? `Zone ${i.zone}` : null, i.trip_type === 'round_trip' ? 'Round-trip' : 'One-way', plural(i.passengers ?? i.travelers ?? 1, 'passenger')].filter(Boolean).join(' · ')}
                     </div>
@@ -318,28 +320,7 @@ export default function BookingsDashboard({ bookings }: { bookings: Row[] }) {
 
   return (
     <div style={{ fontFamily: dm, color: ink }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 14, flexWrap: 'wrap' }}>
-        <div style={{ display: 'flex', alignItems: 'baseline', gap: 16, flexWrap: 'wrap' }}>
-          <h1 style={{ fontFamily: dm, fontWeight: 800, fontSize: 26, letterSpacing: '-0.025em', margin: 0 }}>Bookings</h1>
-          <Link href="/admin/cashflow" style={{ fontSize: 13, fontWeight: 600, color: soft, textDecoration: 'none' }}>Cash flow →</Link>
-          <Link href="/admin/driver" style={{ fontSize: 13, fontWeight: 600, color: soft, textDecoration: 'none' }}>Driver portal →</Link>
-          <Link href="/admin/videos" style={{ fontSize: 13, fontWeight: 600, color: soft, textDecoration: 'none' }}>Video moderation →</Link>
-          <Link href="/admin/tour-rates" style={{ fontSize: 13, fontWeight: 600, color: soft, textDecoration: 'none' }}>Tour prices →</Link>
-          <Link href="/admin/coupons" style={{ fontSize: 13, fontWeight: 600, color: soft, textDecoration: 'none' }}>Coupons →</Link>
-          <Link href="/admin/gift-cards" style={{ fontSize: 13, fontWeight: 600, color: soft, textDecoration: 'none' }}>Gift cards →</Link>
-          <Link href="/admin/refunds" style={{ fontSize: 13, fontWeight: 600, color: soft, textDecoration: 'none' }}>Refunds →</Link>
-        </div>
-        <Link
-          href="/"
-          style={{
-            display: 'inline-flex', alignItems: 'center', gap: 7, height: 38, padding: '0 16px',
-            borderRadius: 9999, border, background: '#fff', color: ink,
-            fontFamily: dm, fontSize: 13, fontWeight: 600, textDecoration: 'none',
-          }}
-        >
-          <span aria-hidden="true">←</span> Back to website
-        </Link>
-      </div>
+      <h1 style={{ fontFamily: dm, fontWeight: 800, fontSize: 26, letterSpacing: '-0.025em', margin: 0 }}>Bookings</h1>
 
       {/* Stat tiles */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 14, marginTop: 22 }}>

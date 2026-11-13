@@ -1,7 +1,6 @@
 'use client'
 
 import { useEffect, useId, useMemo, useRef, useState, useTransition } from 'react'
-import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { tourOperatorCost, tourPrice, type TourPricing } from '@/lib/experiences'
 import { describeRateCard, parseRateCard, rateCardChanges, sameCard, type RateCard, type RateField } from '@/lib/tour-rates'
@@ -351,7 +350,6 @@ export default function TourRatesDesk({ tours, changes, publishedAt, canPublish,
 
   return (
     <div className="rd">
-      <Link href="/admin/bookings" className="rd-back">← Bookings</Link>
       <h1 className="rd-h1">Tour prices</h1>
       <p className="rd-lead">
         Collin&rsquo;s rate for each tour, and exactly what guests pay once our margin and card fees are added.

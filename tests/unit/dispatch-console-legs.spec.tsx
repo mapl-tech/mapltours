@@ -65,7 +65,7 @@ describe('a hotel-to-airport one-way', () => {
   const text = page(html)
 
   test('shows its pickup, not an empty arrival', () => {
-    expect(text).toContain('Riu Negril → Sangster International Airport (MBJ)')
+    expect(text).toContain('Riu Negril to Sangster International Airport (MBJ)')
     expect(text).toContain('Hotel pickup 2:30 PM')
     expect(text).toContain('Departure')
     expect(text).not.toContain('Flight lands')
@@ -109,7 +109,7 @@ describe('an airport-to-hotel one-way', () => {
   const text = page(html)
 
   test('is unchanged: an arrival and no departure', () => {
-    expect(text).toContain('Sangster International Airport (MBJ) → Riu Negril')
+    expect(text).toContain('Sangster International Airport (MBJ) to Riu Negril')
     expect(text).toContain('Flight lands 9:05 PM')
     expect(text).toContain('Add arrival to Google Calendar')
     expect(text).toContain('Arrival flight')
@@ -171,7 +171,7 @@ describe('rows the old gates already handled are still handled the old way', () 
   test('a round trip with no times at all keeps its arrival block and both flight blocks', () => {
     const html = markup(booking({ trip_type: 'round_trip' }))
     const text = page(html)
-    expect(text).toContain('Sangster International Airport (MBJ) → Riu Negril')
+    expect(text).toContain('Sangster International Airport (MBJ) to Riu Negril')
     expect(text).toContain('Arrival flight')
     expect(text).toContain('Departure flight')
     expect(text).not.toContain('Add departure to Google Calendar')

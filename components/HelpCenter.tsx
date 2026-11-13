@@ -3,7 +3,7 @@
 import { useState, useMemo } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { CalendarDays, RotateCcw, Sparkles, CreditCard, UserRound, Mail, Search, Plane } from 'lucide-react'
+import { CalendarDays, RotateCcw, Sparkles, CreditCard, UserRound, Mail, Search, Plane, ChevronRight } from 'lucide-react'
 import Footer from './Footer'
 import { DESTINATION_IMAGES } from '@/lib/experiences'
 import { HELP_CATEGORIES } from '@/lib/help-faqs'
@@ -414,7 +414,7 @@ export default function HelpCenter() {
                     transition: 'color 0.15s ease',
                   }}>
                     {link.label}
-                    <span style={{ color: 'var(--text-tertiary)', fontSize: 16 }}>›</span>
+                    <ChevronRight size={16} strokeWidth={2.25} aria-hidden style={{ color: 'var(--text-tertiary)', flexShrink: 0 }} />
                   </Link>
                 ))}
               </div>

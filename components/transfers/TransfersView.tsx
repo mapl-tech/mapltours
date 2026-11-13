@@ -36,6 +36,7 @@ import { useI18n } from '@/lib/i18n'
 import { HERO, DESTINATIONS as DESTINATION_IMAGES } from '@/lib/images'
 import PlacePicker, { AIRPORT_ID, type PlaceOffer } from './PlacePicker'
 import FareTables from './FareTables'
+import Arrow, { RouteText } from '@/components/ui/Arrow'
 import {
   TRANSFER_REVIEWS as REVIEWS,
   TRANSFER_FAQS as FAQS,
@@ -540,7 +541,7 @@ export default function TransfersView({ initialDestinationId }: { initialDestina
                 onClick={() => scrollToQuote(true)}
                 style={{ height: 50, padding: '0 26px', fontSize: 14 }}
               >
-                Book now →
+                Book now<Arrow />
               </button>
               <div className="xfer-hero-rating">
                 <span className="xfer-hero-rating-text">
@@ -595,7 +596,7 @@ export default function TransfersView({ initialDestinationId }: { initialDestina
                   aria-label={`${r.searchPhrase}, round-trip from ${formatPrice(q.priceUsd)}`}
                 >
                   <div className="xfer-route-tile-top">
-                    <span className="xfer-route-tile-label">{r.label}</span>
+                    <span className="xfer-route-tile-label"><RouteText text={r.label} /></span>
                     <span className="xfer-route-tile-time">{r.travelTime}</span>
                   </div>
                   <div className="xfer-route-tile-bottom">
@@ -603,7 +604,7 @@ export default function TransfersView({ initialDestinationId }: { initialDestina
                     <span className="xfer-route-tile-price">{formatPrice(q.priceUsd)}</span>
                     <span className="xfer-route-tile-rt">round-trip</span>
                   </div>
-                  <span className="xfer-route-tile-cta">Book →</span>
+                  <span className="xfer-route-tile-cta">Book<Arrow /></span>
                 </button>
               )
             })}
@@ -847,13 +848,15 @@ export default function TransfersView({ initialDestinationId }: { initialDestina
                     they read as detail about the route rather than a heading. */}
                 <p className="xfer-quote-readout-kicker">Your price</p>
                 <p className="xfer-quote-readout-dest">
-                  {quote
-                    ? tripType === 'round_trip'
-                      ? `MBJ → ${quote.destinationName} → MBJ`
-                      : fromAirport
-                        ? `MBJ → ${quote.destinationName}`
-                        : `${quote.destinationName} → MBJ`
-                    : 'Pick your hotel to see your fare.'}
+                  {quote ? (
+                    <RouteText
+                      text={tripType === 'round_trip'
+                        ? `MBJ → ${quote.destinationName} → MBJ`
+                        : fromAirport
+                          ? `MBJ → ${quote.destinationName}`
+                          : `${quote.destinationName} → MBJ`}
+                    />
+                  ) : 'Pick your hotel to see your fare.'}
                 </p>
                 {quote && (
                   <p className="xfer-quote-readout-meta" style={{ marginTop: 4 }}>
@@ -888,7 +891,7 @@ export default function TransfersView({ initialDestinationId }: { initialDestina
                 cursor: quote ? 'pointer' : 'not-allowed',
               }}
             >
-              {quote ? `Book for ${formatUsd(quote.priceUsd)} →` : 'Select a destination to continue'}
+              {quote ? <>Book for {formatUsd(quote.priceUsd)}<Arrow /></> : 'Select a destination to continue'}
             </button>
 
             <p
@@ -1038,7 +1041,7 @@ export default function TransfersView({ initialDestinationId }: { initialDestina
                       {DESTINATIONS.filter((d) => d.zone === code).length > 4 ? ' · and more' : ''}
                     </p>
                     <a className="xfer-zone-fares-link" href={`#fares-${code}`}>
-                      All {DESTINATIONS.filter((d) => d.zone === code).length} hotels and fares →
+                      All {DESTINATIONS.filter((d) => d.zone === code).length} hotels and fares<Arrow />
                     </a>
                   </div>
                 </article>
@@ -1236,7 +1239,7 @@ export default function TransfersView({ initialDestinationId }: { initialDestina
               fontWeight: 600,
             }}
           >
-            Book now →
+            Book now<Arrow />
           </button>
           <p
             style={{
@@ -1288,7 +1291,7 @@ export default function TransfersView({ initialDestinationId }: { initialDestina
               onClick={() => scrollToQuote(true)}
               style={{ height: 46, padding: '0 20px', fontSize: 14, whiteSpace: 'nowrap' }}
             >
-              Book now →
+              Book now<Arrow />
             </button>
           </>
         )}
@@ -1909,7 +1912,8 @@ export default function TransfersView({ initialDestinationId }: { initialDestina
           content: '';
           position: absolute;
           left: 0;
-          right: 0;
+          /* Stops at the words: the drawn arrow after them is 1em plus its 0.3em margin. */
+          right: 1.3em;
           bottom: 8px;
           height: 1px;
           background: currentColor;
@@ -2762,7 +2766,7 @@ function SavingsRow({
   const { formatPrice } = useI18n()
   return (
     <div className="xfer-saving-cell">
-      <span className="xfer-saving-route">{route}</span>
+      <span className="xfer-saving-route"><RouteText text={route} /></span>
       <span className="xfer-saving-prices">
         <span className="xfer-saving-mapl">{formatPrice(mapl)}</span>
         <span className="xfer-saving-typical">taxi quotes ${typical}</span>
@@ -2803,7 +2807,7 @@ function RouteSection({
         className="xfer-route-block-cta"
         onClick={() => onSelect(destinationId)}
       >
-        Quote this route →
+        Quote this route<Arrow />
       </button>
     </article>
   )

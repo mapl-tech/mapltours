@@ -20,6 +20,7 @@ import { createIntentSession, type PostOutcome, type SendOptions } from '@/compo
 import AskFirst from '@/components/AskFirst'
 import { Card, SectionTitle, TextField, Stepper, Reassurance, LinkButton, focusFirstError } from '@/components/checkout/one-page/fields'
 import { useHydrated } from '@/components/checkout/one-page/useHydrated'
+import { RouteText } from '@/components/ui/Arrow'
 
 /**
  * The airport-transfer checkout, on one page.
@@ -375,7 +376,7 @@ export default function OnePageTransfersCheckout() {
                 </p>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
                   <p style={{ fontFamily: FONT, fontWeight: 700, fontSize: 19, lineHeight: 1.25, letterSpacing: '-0.01em' }}>
-                    {routeLine}{rt && <span style={{ fontWeight: 500, color: 'var(--text-tertiary)' }}> and back</span>}
+                    <RouteText text={routeLine} />{rt && <span style={{ fontWeight: 500, color: 'var(--text-tertiary)' }}> and back</span>}
                   </p>
                   <p style={{ fontFamily: FONT, fontWeight: 700, fontSize: 19, flexShrink: 0 }}>{formatUsd(item.priceUsd)}</p>
                 </div>

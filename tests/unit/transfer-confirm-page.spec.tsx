@@ -62,11 +62,11 @@ describe('a one-way hotel to airport ride', () => {
 
   test('shows its only leg: the hotel pickup, time and flight', async () => {
     const text = await page(ride)
-    expect(text).toContain('Departure · hotel → MBJ')
+    expect(text).toContain('Departure · hotel to MBJ')
     expect(text).toContain('Hotel pickup')
     expect(text).toMatch(/2:30\s?PM/)
     expect(text).toContain('VS0166')
-    expect(text).not.toContain('Arrival · MBJ → hotel')
+    expect(text).not.toContain('Arrival · MBJ to hotel')
   })
 
   test('tells the guest about the pickup, not about arrivals', async () => {
@@ -85,10 +85,10 @@ describe('a one-way airport to hotel ride', () => {
 
   test('keeps the arrival card and shows no departure leg', async () => {
     const text = await page(ride)
-    expect(text).toContain('Arrival · MBJ → hotel')
+    expect(text).toContain('Arrival · MBJ to hotel')
     for (const line of arrivalsCopy) expect(text, line).toContain(line)
     expect(text).not.toContain('Before you go')
-    expect(text).not.toContain('Departure · hotel → MBJ')
+    expect(text).not.toContain('Departure · hotel to MBJ')
   })
 
   test('names the brand in full on the sign the driver holds', async () => {
@@ -108,8 +108,8 @@ describe('a one-way that carries both timestamps (an old phantom second leg)', (
 
   test('shows only its arrival, exactly as before, and keeps the arrival card', async () => {
     const text = await page(ride)
-    expect(text).toContain('Arrival · MBJ → hotel')
-    expect(text).not.toContain('Departure · hotel → MBJ')
+    expect(text).toContain('Arrival · MBJ to hotel')
+    expect(text).not.toContain('Departure · hotel to MBJ')
     expect(text).not.toContain('VS0166')
     for (const line of arrivalsCopy) expect(text, line).toContain(line)
     expect(text).not.toContain('Before you go')
@@ -125,8 +125,8 @@ describe('a round trip', () => {
 
   test('shows both legs and keeps the arrival card', async () => {
     const text = await page(ride)
-    expect(text).toContain('Arrival · MBJ → hotel')
-    expect(text).toContain('Departure · hotel → MBJ')
+    expect(text).toContain('Arrival · MBJ to hotel')
+    expect(text).toContain('Departure · hotel to MBJ')
     for (const line of arrivalsCopy) expect(text, line).toContain(line)
     expect(text).not.toContain('Before you go')
   })

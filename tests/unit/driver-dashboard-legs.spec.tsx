@@ -63,11 +63,11 @@ describe('a hotel-to-airport one-way', () => {
   const text = page(html)
 
   test('the card header shows the pickup and the way the ride runs, not "Lands"', () => {
-    expect(text).toContain('Riu Negril → MBJ')
+    expect(text).toContain('Riu Negril to MBJ')
     expect(text).toContain('Hotel pickup')
     expect(text).toMatch(/2:30\s?PM/)
     expect(text).not.toContain('Lands')
-    expect(text).not.toContain('MBJ → Riu Negril')
+    expect(text).not.toContain('MBJ to Riu Negril')
   })
 
   test('the timeline is its departure, with the hotel map the arrival leg would have carried', () => {
@@ -105,7 +105,7 @@ describe('an airport-to-hotel one-way', () => {
   const text = page(html)
 
   test('is unchanged: lands, an arrival leg and no departure', () => {
-    expect(text).toContain('MBJ → Riu Negril')
+    expect(text).toContain('MBJ to Riu Negril')
     expect(text).toContain('Lands')
     expect(text).toMatch(/9:05\s?PM/)
     expect(text).toContain('Arrival · airport to hotel')
@@ -128,7 +128,7 @@ describe('a round trip', () => {
   const text = page(html)
 
   test('shows its arrival, its return pickup and both legs', () => {
-    expect(text).toContain('MBJ → Riu Negril')
+    expect(text).toContain('MBJ to Riu Negril')
     expect(text).toContain('Lands')
     expect(text).toContain('Return pickup')
     expect(text).toContain('Arrival · airport to hotel')

@@ -1,4 +1,9 @@
 import type { Metadata } from 'next'
+import Link from 'next/link'
+import { createClient } from '@/lib/supabase/server'
+import { createServiceClient } from '@/lib/supabase/service'
+import AdminNav from '@/components/admin/AdminNav'
+import Arrow from '@/components/ui/Arrow'
 
 // Admin section, make sure search engines never index it. RLS on the
 // underlying Supabase tables already prevents non-admins from reading
@@ -15,44 +20,43 @@ export const metadata: Metadata = {
   },
 }
 
-export default function AdminLayout({ children }: { children: React.ReactNode }) {
+/**
+ * Whether the visitor is a signed-in admin, the same check every admin page
+ * makes (session user, then the admins allowlist through the service client).
+ * Only an admin sees the section navigation; anyone else gets the brand and
+ * the page's own sign-in or not-authorised message. Any doubt is "no".
+ */
+async function viewerIsAdmin(): Promise<boolean> {
+  try {
+    const { data: { user } } = await createClient().auth.getUser()
+    if (!user) return false
+    const { data } = await createServiceClient().from('admins').select('user_id').eq('user_id', user.id).maybeSingle()
+    return !!data
+  } catch {
+    return false
+  }
+}
+
+export default async function AdminLayout({ children }: { children: React.ReactNode }) {
+  const isAdmin = await viewerIsAdmin()
   return (
     <>
-      {/* Brand bar shared by every admin surface (bookings, cash flow,
-          dispatch, refunds, videos). The views keep their own h1s; this only
-          anchors the console to the brand. */}
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 10,
-          padding: '10px 20px',
-          background: '#fff',
-          borderBottom: '1px solid rgba(23,22,20,0.10)',
-        }}
-      >
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src="/mapl-logo.svg"
-          alt="MAPL Tours Jamaica"
-          width={134}
-          height={32}
-          style={{ height: 32, width: 'auto', display: 'block' }}
-        />
-        <span
-          style={{
-            fontSize: 11,
-            fontWeight: 700,
-            letterSpacing: '0.1em',
-            textTransform: 'uppercase',
-            color: 'rgba(23,22,20,0.45)',
-            paddingLeft: 10,
-            borderLeft: '1px solid rgba(23,22,20,0.14)',
-          }}
-        >
-          Admin
-        </span>
-      </div>
+      {/* The bar every admin screen shares: the brand, the sections (admins
+          only) and the way back to the website. The screens keep their own
+          h1s. Styles: the .adm-bar block in app/globals.css. */}
+      <header className="adm-bar">
+        <div className="adm-bar-in">
+          <Link href={isAdmin ? '/admin/bookings' : '/'} className="adm-brand">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/mapl-logo.svg" alt="MAPL Tours Jamaica" width={134} height={32} className="adm-brand-logo" />
+            <span className="adm-brand-tag">Admin</span>
+          </Link>
+          <Link href="/" className="adm-bar-out">
+            <Arrow dir="left" place="before" />Back to website
+          </Link>
+          {isAdmin && <AdminNav />}
+        </div>
+      </header>
       {children}
     </>
   )

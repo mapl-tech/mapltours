@@ -6,6 +6,7 @@ import ConfirmClient from './ConfirmClient'
 import ClaimAccountCard from '@/components/ClaimAccountCard'
 import PrivateConfirmation from '@/components/checkout/PrivateConfirmation'
 import { canSeeConfirmation } from '@/lib/confirm-proof-server'
+import Arrow from '@/components/ui/Arrow'
 
 export const dynamic = 'force-dynamic'
 
@@ -478,7 +479,7 @@ function Success({ data }: { data: ConfirmData }) {
 
               {t.arrivalAt && (
                 <Leg
-                  label="Arrival · MBJ → hotel"
+                  label={<>Arrival · MBJ<Arrow place="between" />hotel</>}
                   whenLabel={`${formatDateTime(t.arrivalAt)} Jamaica time`}
                   flight={t.arrivalFlight}
                   dot="var(--emerald)"
@@ -490,7 +491,7 @@ function Success({ data }: { data: ConfirmData }) {
                   arrival keeps ignoring a stray departure, as dispatch does. */}
               {t.departureAt && (t.tripType === 'round_trip' || !t.arrivalAt) && (
                 <Leg
-                  label="Departure · hotel → MBJ"
+                  label={<>Departure · hotel<Arrow place="between" />MBJ</>}
                   whenLabel={`Hotel pickup ${formatDateTime(t.departureAt)} Jamaica time`}
                   flight={t.departureFlight}
                   dot="var(--gold)"
@@ -775,7 +776,7 @@ function Leg({
   flight,
   dot,
 }: {
-  label: string
+  label: React.ReactNode
   whenLabel: string | null
   flight: string | null
   dot: string

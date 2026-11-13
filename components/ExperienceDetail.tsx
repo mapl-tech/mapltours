@@ -1529,10 +1529,10 @@ function MobileCommentsSheet({ comments, commentText, setCommentText, addComment
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             {sheetHeight < 100 && (
-              <button onClick={() => setSheetHeight(100)} style={{ width: 32, height: 32, borderRadius: '50%', background: 'rgba(255,255,255,0.06)', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#cccccc', fontSize: 14 }}>↑</button>
+              <button type="button" aria-label="Show all comments" onClick={() => setSheetHeight(100)} style={{ width: 32, height: 32, borderRadius: '50%', background: 'rgba(255,255,255,0.06)', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#cccccc' }}><ChevronUp size={16} strokeWidth={2.5} aria-hidden /></button>
             )}
             {sheetHeight >= 100 && (
-              <button onClick={() => setSheetHeight(60)} style={{ width: 32, height: 32, borderRadius: '50%', background: 'rgba(255,255,255,0.06)', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#cccccc', fontSize: 14 }}>↓</button>
+              <button type="button" aria-label="Show fewer comments" onClick={() => setSheetHeight(60)} style={{ width: 32, height: 32, borderRadius: '50%', background: 'rgba(255,255,255,0.06)', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#cccccc' }}><ChevronDown size={16} strokeWidth={2.5} aria-hidden /></button>
             )}
             <button onClick={onClose} aria-label="Close comments" style={{ width: 32, height: 32, borderRadius: '50%', background: 'rgba(255,255,255,0.06)', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#cccccc' }}>
               <X size={16} />

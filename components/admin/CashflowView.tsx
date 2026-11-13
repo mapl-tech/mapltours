@@ -1,7 +1,6 @@
 'use client'
 
 import { useState } from 'react'
-import Link from 'next/link'
 
 export interface CashRow {
   id: string
@@ -82,15 +81,7 @@ export default function CashflowView({ rows }: { rows: CashRow[] }) {
   return (
     <div style={{ fontFamily: dm, color: ink, position: 'relative' }} onMouseLeave={() => setTip(null)}>
       {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 14, flexWrap: 'wrap' }}>
-        <div style={{ display: 'flex', alignItems: 'baseline', gap: 16, flexWrap: 'wrap' }}>
-          <h1 style={{ fontWeight: 800, fontSize: 26, letterSpacing: '-0.025em', margin: 0 }}>Cash flow</h1>
-          <Link href="/admin/bookings" style={{ fontSize: 13, fontWeight: 600, color: soft, textDecoration: 'none' }}>← Bookings</Link>
-        </div>
-        <Link href="/" style={{ display: 'inline-flex', alignItems: 'center', gap: 7, height: 38, padding: '0 16px', borderRadius: 9999, border, background: '#fff', color: ink, fontSize: 13, fontWeight: 600, textDecoration: 'none' }}>
-          <span aria-hidden="true">←</span> Back to website
-        </Link>
-      </div>
+      <h1 style={{ fontWeight: 800, fontSize: 26, letterSpacing: '-0.025em', margin: 0 }}>Cash flow</h1>
 
       {/* KPI tiles */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', gap: 14, marginTop: 22 }}>

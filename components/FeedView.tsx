@@ -18,7 +18,8 @@ import InView from './InView'
 import Footer from './Footer'
 import { useI18n } from '@/lib/i18n'
 import { useRef, useState, useEffect, type MouseEvent } from 'react'
-import { Award, Users, Headphones, ShieldCheck, Star, Heart, UtensilsCrossed, TrendingUp, ChevronLeft, ChevronRight, MapPin, PlaneLanding, Route, ArrowRight } from 'lucide-react'
+import { Award, Users, Headphones, ShieldCheck, Star, Heart, UtensilsCrossed, TrendingUp, ChevronLeft, ChevronRight, MapPin, PlaneLanding, Route } from 'lucide-react'
+import Arrow, { RouteText } from '@/components/ui/Arrow'
 
 
 /* Hero video, lazy loads on fast connections, shows poster on slow/mobile data */
@@ -169,7 +170,7 @@ function SectionHeader({ label, action }: { label: string; action?: { text: stri
       <span className="text-label">{t(label)}</span>
       {action && (
         <a href={action.href} style={{ fontSize: 14, fontFamily: 'var(--font-dm-sans)', fontWeight: 500, color: 'var(--text-tertiary)' }}>
-          {t(action.text)} →
+          {t(action.text)}<Arrow />
         </a>
       )}
     </div>
@@ -831,7 +832,7 @@ function PackagesSection() {
                         onMouseEnter={(e) => { e.currentTarget.style.filter = 'brightness(1.08)' }}
                         onMouseLeave={(e) => { e.currentTarget.style.filter = '' }}
                       >
-                        {t('\u2713 Added')} · {t('Checkout')} <ArrowRight size={15} />
+                        {t('\u2713 Added')} · {t('Checkout')}<Arrow className="ui-arrow--flush" />
                       </Link>
                     </>
                   ) : (
@@ -1466,7 +1467,7 @@ export default function FeedView() {
                       }}>
                         {i + 1}
                       </span>
-                      {step}
+                      <span><RouteText text={step} /></span>
                     </li>
                   ))}
                 </ul>
@@ -1483,7 +1484,7 @@ export default function FeedView() {
                     textDecoration: 'none',
                   }}
                 >
-                  {path.cta.text} <ArrowRight size={15} />
+                  {path.cta.text}<Arrow className="ui-arrow--flush" />
                 </a>
               </div>
             )

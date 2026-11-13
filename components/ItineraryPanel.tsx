@@ -10,6 +10,7 @@ import { X } from 'lucide-react'
 import { useI18n } from '@/lib/i18n'
 import TripTimeBar from '@/components/TripTimeBar'
 import DayFlow from '@/components/DayFlow'
+import Arrow from '@/components/ui/Arrow'
 
 export default function ItineraryPanel({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { items, stops, removeItem, removeStop, subtotal, grandTotal, pickupZone } = useCartStore()
@@ -267,7 +268,7 @@ export default function ItineraryPanel({ open, onClose }: { open: boolean; onClo
               width: '100%', height: 46, fontSize: 14, textDecoration: 'none',
             }}
           >
-            {t('Continue to checkout')} →
+            {t('Continue to checkout')}<Arrow />
           </Link>
           <p style={{ textAlign: 'center', fontSize: 12, color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-sans)', marginTop: 12 }}>
             {t('Flexible cancellation within 48 hrs of booking')}

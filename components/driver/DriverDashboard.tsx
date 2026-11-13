@@ -1,10 +1,11 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { PlaneLanding, PlaneTakeoff, MapPin, CalendarPlus, Phone, MessageCircle, Radar } from 'lucide-react'
+import { PlaneLanding, PlaneTakeoff, MapPin, CalendarPlus, Phone, MessageCircle, Radar, ChevronRight } from 'lucide-react'
 import type { DriverTrip, DriverTour } from '@/lib/driver'
 import { jaDate, jaTime, gcalLink, waLink, legInstantMs, MIN_PICKUP_LEAD_MIN } from '@/lib/dispatch'
 import { flightLinks, flightDate, type FlightStatus } from '@/lib/flight'
+import Arrow from '@/components/ui/Arrow'
 
 /**
  * Driver portal view. Renders ONLY DriverTrip data (built server-side by
@@ -210,7 +211,7 @@ function Leg({ role, from, to, dateIso, flightRaw, extra, actions }: {
       <div style={{ flex: 1, minWidth: 0, paddingBottom: 4 }}>
         <h3 style={{ ...eyebrow, color: tint }}>{isArr ? 'Arrival · airport to hotel' : 'Departure · hotel to airport'}</h3>
         <p style={{ fontSize: 17, fontWeight: 700, margin: '7px 0 0', lineHeight: 1.4, letterSpacing: '-0.01em' }}>
-          {from} <span aria-hidden="true" style={{ color: faint }}>→</span> {to}
+          {from}<span style={{ color: faint }}><Arrow place="between" /></span>{to}
         </p>
         <p style={{ fontSize: 14, color: soft, margin: '5px 0 0', ...tnum }}>
           {jaDate(dateIso)} · <strong style={{ color: ink, fontWeight: 700 }}>{isArr ? 'lands' : 'hotel pickup'} {jaTime(dateIso)}</strong> Jamaica time
@@ -277,7 +278,7 @@ export function TripCard({ t, open, onToggle }: { t: DriverTrip; open: boolean; 
           </div>
           <span style={{ display: 'inline-flex', alignItems: 'center', gap: 12 }}>
             <PayChip paid={t.fullyPaid} label={t.fullyPaid ? 'Paid in full' : 'Pay pending'} />
-            <span aria-hidden="true" style={{ display: 'inline-block', transform: open ? 'rotate(90deg)' : 'none', transition: 'transform 0.15s ease', color: faint, fontSize: 20, lineHeight: 1 }}>›</span>
+            <ChevronRight size={20} strokeWidth={2.25} aria-hidden style={{ flexShrink: 0, transform: open ? 'rotate(90deg)' : 'none', transition: 'transform 0.15s ease', color: faint }} />
           </span>
         </div>
         <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 12, marginTop: 9, flexWrap: 'wrap' }}>
@@ -285,7 +286,7 @@ export function TripCard({ t, open, onToggle }: { t: DriverTrip; open: boolean; 
             <span style={{ display: 'flex', alignItems: 'baseline', gap: 8, flexWrap: 'wrap' }}>
               <span style={{ fontSize: 14, fontWeight: 700, color: ink }}>{t.guestName}</span>
               <span aria-hidden="true" style={{ color: faint }}>·</span>
-              <span style={{ fontSize: 13, color: soft }}>{departureOnly ? t.hotel : t.airport} <span aria-hidden="true">→</span> {departureOnly ? t.airport : t.hotel}</span>
+              <span style={{ fontSize: 13, color: soft }}>{departureOnly ? t.hotel : t.airport}<Arrow place="between" />{departureOnly ? t.airport : t.hotel}</span>
               {t.specialRequests && (
                 <span style={{
                   fontSize: 12, fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase',
@@ -417,7 +418,7 @@ function TourCard({ t, open, onToggle }: { t: DriverTour; open: boolean; onToggl
             <h2 style={{ fontWeight: 800, fontSize: 16, letterSpacing: '0.01em', margin: 0, ...tnum }}>{t.ref}</h2>
             <span style={{ fontSize: 13, color: soft, fontWeight: 500 }}>Tour · {t.items.length} experience{t.items.length === 1 ? '' : 's'}</span>
           </div>
-          <span aria-hidden="true" style={{ display: 'inline-block', transform: open ? 'rotate(90deg)' : 'none', transition: 'transform 0.15s ease', color: faint, fontSize: 20, lineHeight: 1 }}>›</span>
+          <ChevronRight size={20} strokeWidth={2.25} aria-hidden style={{ flexShrink: 0, transform: open ? 'rotate(90deg)' : 'none', transition: 'transform 0.15s ease', color: faint }} />
         </div>
         <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginTop: 9, flexWrap: 'wrap' }}>
           <span style={{ fontSize: 14, fontWeight: 700, color: ink }}>{t.guestName}</span>

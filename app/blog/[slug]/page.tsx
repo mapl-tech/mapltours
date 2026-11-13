@@ -12,6 +12,7 @@ import {
   type BlogBlock,
   type BlogPost,
 } from '@/lib/blog'
+import Arrow from '@/components/ui/Arrow'
 
 const SITE_URL = 'https://mapltours.com'
 
@@ -604,7 +605,7 @@ export default function BlogPostPage({
                 color: 'var(--text-primary)',
               }}
             >
-              ← The MAPL Tours Journal
+              <Arrow dir="left" place="before" />The MAPL Tours Journal
             </Link>
             <Kicker size={10}>
               {post.category} · {formatPostDate(post.publishedAt)}
@@ -839,7 +840,7 @@ export default function BlogPostPage({
                   fontFamily: 'var(--font-dm-sans)', fontSize: 14, fontWeight: 700, textDecoration: 'none',
                 }}
               >
-                Book this transfer →
+                Book this transfer<Arrow />
               </Link>
             </aside>
           )
@@ -901,7 +902,7 @@ export default function BlogPostPage({
               textDecoration: 'none',
             }}
           >
-            Book a flat-rate airport transfer →
+            Book a flat-rate airport transfer<Arrow />
           </Link>
         </div>
       </div>

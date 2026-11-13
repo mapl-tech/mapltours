@@ -80,7 +80,7 @@ export default function AdminVideosPage() {
     return <Shell><p style={{ color: faint }}>Checking access…</p></Shell>
   }
   if (!user) {
-    return <Shell><p style={{ color: soft }}>You need to sign in to view moderation. <Link href="/login?redirect=/admin/videos" style={{ color: ink, fontWeight: 600 }}>Sign in →</Link></p></Shell>
+    return <Shell><p style={{ color: soft }}>You need to sign in to view moderation. <Link href="/login?redirect=/admin/videos" style={{ color: ink, fontWeight: 600 }}>Sign in</Link></p></Shell>
   }
   if (!isAdmin) {
     return (
@@ -96,24 +96,9 @@ export default function AdminVideosPage() {
   return (
     <Shell>
       {/* Header - consistent with the bookings dashboard */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 14, flexWrap: 'wrap' }}>
-        <div style={{ display: 'flex', alignItems: 'baseline', gap: 16, flexWrap: 'wrap' }}>
-          <h1 style={{ fontFamily: dm, fontWeight: 800, fontSize: 26, letterSpacing: '-0.025em', color: ink, margin: 0 }}>
-            Video moderation
-          </h1>
-          <Link href="/admin/bookings" style={{ fontSize: 13, fontWeight: 600, color: soft, textDecoration: 'none' }}>← Bookings</Link>
-        </div>
-        <Link
-          href="/"
-          style={{
-            display: 'inline-flex', alignItems: 'center', gap: 7, height: 38, padding: '0 16px',
-            borderRadius: 9999, border, background: '#fff', color: ink,
-            fontFamily: dm, fontSize: 13, fontWeight: 600, textDecoration: 'none',
-          }}
-        >
-          <span aria-hidden="true">←</span> Back to website
-        </Link>
-      </div>
+      <h1 style={{ fontFamily: dm, fontWeight: 800, fontSize: 26, letterSpacing: '-0.025em', color: ink, margin: 0 }}>
+        Video moderation
+      </h1>
 
       {/* At-a-glance line: what needs the moderator now */}
       <p style={{ marginTop: 10, fontSize: 14, color: soft, fontFamily: dm, display: 'flex', alignItems: 'center', gap: 7 }}>

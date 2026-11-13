@@ -7,6 +7,7 @@
 
 import { useEffect } from 'react'
 import Link from 'next/link'
+import Arrow from '@/components/ui/Arrow'
 
 export default function ErrorBoundary({
   error,
@@ -90,7 +91,7 @@ export default function ErrorBoundary({
             Try again
           </button>
           <Link href="/" className="btn-outline" style={{ textDecoration: 'none' }}>
-            <span aria-hidden="true" style={{ fontSize: 16, lineHeight: 1 }}>&larr;</span>
+            <Arrow dir="left" place="before" />
             Back to feed
           </Link>
         </div>

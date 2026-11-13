@@ -10,6 +10,7 @@ import {
   msgFlightLanded, msgCustomerFollowup, msgReviewRequest,
 } from '@/lib/dispatch'
 import { flightLinks, flightDate, type FlightStatus } from '@/lib/flight'
+import Arrow from '@/components/ui/Arrow'
 
 const dm = 'var(--font-dm-sans)'
 const ink = 'var(--text-primary, #171614)'
@@ -147,7 +148,7 @@ export default function DispatchConsole({ booking, stripeFee, driverEmailConfigu
           <span style={{ fontSize: 13, color: soft }}>{name} · {leg.tripType === 'round_trip' ? 'Round trip' : 'One-way'} · {leg.passengers} pax</span>
         </div>
         <Link href="/admin/bookings" style={{ display: 'inline-flex', alignItems: 'center', gap: 7, height: 38, padding: '0 16px', borderRadius: 9999, border, background: '#fff', color: ink, fontSize: 13, fontWeight: 600, textDecoration: 'none' }}>
-          <span aria-hidden="true">←</span> Bookings
+          <Arrow dir="left" place="before" className="ui-arrow--flush" />Bookings
         </Link>
       </div>
 
@@ -179,7 +180,7 @@ export default function DispatchConsole({ booking, stripeFee, driverEmailConfigu
           {!departureOnly && (
             <>
               <p style={{ ...tnum, fontSize: 12, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: faint, margin: '0 0 6px' }}>Arrival</p>
-              <div style={{ fontSize: 14, fontWeight: 600 }}>{AIRPORT} → {leg.hotel}</div>
+              <div style={{ fontSize: 14, fontWeight: 600 }}>{AIRPORT}<Arrow place="between" />{leg.hotel}</div>
               <div style={{ fontSize: 13, color: soft, marginTop: 2, ...tnum }}>{jaDate(leg.arrivalAt)}</div>
               <div style={{ fontSize: 13, color: soft, ...tnum }}>Flight lands {jaTime(leg.arrivalAt)}{leg.arrivalFlight ? ` (flight ${leg.arrivalFlight})` : ' (flight TBD)'}</div>
               <div style={{ fontSize: 12, color: faint, marginTop: 2, ...tnum }}>Customer usually clears customs ~{ARRIVAL_CLEAR_MIN} min after landing ({jaTime(leg.arrivalAt ? shiftIso(leg.arrivalAt, ARRIVAL_CLEAR_MIN) : null)}).</div>
@@ -193,7 +194,7 @@ export default function DispatchConsole({ booking, stripeFee, driverEmailConfigu
           {leg.departureAt && hasDepartureLeg && (
             <>
               <p style={{ ...tnum, fontSize: 12, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: faint, margin: departureOnly ? '0 0 6px' : '16px 0 6px' }}>Departure</p>
-              <div style={{ fontSize: 14, fontWeight: 600 }}>{leg.hotel} → {AIRPORT}</div>
+              <div style={{ fontSize: 14, fontWeight: 600 }}>{leg.hotel}<Arrow place="between" />{AIRPORT}</div>
               <div style={{ fontSize: 13, color: soft, marginTop: 2, ...tnum }}>{jaDate(leg.departureAt)}</div>
               <div style={{ fontSize: 13, color: soft, ...tnum }}>Hotel pickup {jaTime(leg.departureAt)}{leg.departureFlight ? ` · flight ${leg.departureFlight}` : ''}</div>
               <div style={{ fontSize: 12, color: amber, marginTop: 2, fontWeight: 600 }}>This is the pickup time the guest requested. Check it against the flight below.</div>

@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { getSafeRedirect } from '@/lib/safe-redirect'
 import { DESTINATION_IMAGES } from '@/lib/experiences'
+import Arrow from '@/components/ui/Arrow'
 
 // One module-level client, don't recreate on every render.
 const supabase = createClient()
@@ -133,7 +134,7 @@ function LoginContent() {
           zIndex: 3,
         }}
       >
-        <span aria-hidden style={{ fontSize: 17, lineHeight: 1, marginTop: -1 }}>←</span>
+        <Arrow dir="left" place="before" className="ui-arrow--flush" />
         <span className="login-back-label">Back to Home</span>
       </Link>
 

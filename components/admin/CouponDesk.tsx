@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
 import { describeCoupon, type CouponRow } from '@/lib/coupons'
+import Arrow from '@/components/ui/Arrow'
 
 /**
  * Coupon desk.
@@ -197,8 +198,6 @@ export default function CouponDesk() {
     <div>
       <div style={{ display: 'flex', alignItems: 'baseline', gap: 16, flexWrap: 'wrap' }}>
         <h1 style={{ fontFamily: dm, fontWeight: 800, fontSize: 26, letterSpacing: '-0.025em', margin: 0 }}>Coupons</h1>
-        <Link href="/admin/bookings" style={{ fontSize: 13, fontWeight: 600, color: soft, textDecoration: 'none' }}>← Bookings</Link>
-        <Link href="/admin/gift-cards" style={{ fontSize: 13, fontWeight: 600, color: soft, textDecoration: 'none' }}>Gift cards →</Link>
       </div>
       <p style={{ marginTop: 8, color: soft, fontSize: 14, maxWidth: 680, lineHeight: 1.6 }}>
         A coupon takes a percent or a fixed amount off a tour or an airport ride at checkout. It is not money: nothing is refunded on it,
@@ -409,7 +408,7 @@ export default function CouponDesk() {
                       <span>{when(r.created_at)}</span>
                       <span style={{ color: ink, fontWeight: 600 }}>−{money(r.amount)}</span>
                       <span>{r.email ?? '—'}</span>
-                      {r.booking_id && <Link href={`/admin/bookings?booking=${r.booking_id}`} style={{ color: ink, fontWeight: 600 }}>Booking →</Link>}
+                      {r.booking_id && <Link href={`/admin/bookings?booking=${r.booking_id}`} style={{ color: ink, fontWeight: 600 }}>Booking<Arrow /></Link>}
                     </li>
                   ))}
                 </ul>
