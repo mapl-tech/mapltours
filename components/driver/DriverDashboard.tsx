@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { PlaneLanding, PlaneTakeoff, MapPin, CalendarPlus, Phone, MessageCircle, Radar, ChevronRight } from 'lucide-react'
 import type { DriverTrip, DriverTour } from '@/lib/driver'
-import { jaDate, jaTime, gcalLink, waLink, legInstantMs, MIN_PICKUP_LEAD_MIN } from '@/lib/dispatch'
+import { jaTime, gcalLink, waLink, legInstantMs, MIN_PICKUP_LEAD_MIN } from '@/lib/dispatch'
 import { flightLinks, flightDate, type FlightStatus } from '@/lib/flight'
 import Arrow from '@/components/ui/Arrow'
 
@@ -40,18 +40,27 @@ function useScrollOnOpen(open: boolean) {
 }
 
 function money(n: number): string { return '$' + n.toFixed(2) }
-/** Compact Jamaica date for summary rows: "Wed, Nov 18, 2026". */
-function jaShort(iso: string | null): string {
+/** This year on Jamaica's calendar. */
+function jaYear(): string { return new Date().toLocaleDateString('en-CA', { timeZone: 'America/Jamaica' }).slice(0, 4) }
+/**
+ * A stored Jamaica wall-clock date ("Wed, Nov 18", or long: "Wednesday,
+ * November 18"), with the year only when it is not this year. Read in UTC
+ * like lib/dispatch's jaDate, because the stored value is Jamaica local.
+ */
+function jaDay(iso: string | null, long = false): string {
   if (!iso) return 'Date TBD'
-  try {
-    return new Date(iso).toLocaleDateString('en-US', { timeZone: 'UTC', weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })
-  } catch { return String(iso) }
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return String(iso)
+  const year = iso.slice(0, 4) !== jaYear()
+  return d.toLocaleDateString('en-US', { timeZone: 'UTC', weekday: long ? 'long' : 'short', month: long ? 'long' : 'short', day: 'numeric', ...(year ? { year: 'numeric' as const } : {}) })
 }
-function paidStamp(iso: string | null): string {
+/** The day a payout was sent, on Jamaica's calendar (a real instant, unlike leg times): "Nov 12". */
+function paidDay(iso: string | null): string {
   if (!iso) return ''
-  try {
-    return new Date(iso).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })
-  } catch { return '' }
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return ''
+  const year = d.toLocaleDateString('en-CA', { timeZone: 'America/Jamaica' }).slice(0, 4) !== jaYear()
+  return d.toLocaleDateString('en-US', { timeZone: 'America/Jamaica', month: 'short', day: 'numeric', ...(year ? { year: 'numeric' as const } : {}) })
 }
 /** "in 3 days" / "in 5 hrs" / "today" for the hero countdown. */
 function countdown(iso: string): string {
@@ -66,7 +75,7 @@ function countdown(iso: string): string {
   return `in ${d} day${d === 1 ? '' : 's'}`
 }
 
-/** Pill link/button: 48px tall for touch, full label. */
+/** Pill link/button: 48px tall for touch, full label on one line (a row that is too narrow wraps whole buttons). */
 function Act({ href, onClick, children, tone = 'outline', grow }: {
   href?: string; onClick?: () => void; children: React.ReactNode
   tone?: 'outline' | 'wa' | 'solid'; grow?: boolean
@@ -74,15 +83,18 @@ function Act({ href, onClick, children, tone = 'outline', grow }: {
   const style: React.CSSProperties = {
     display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8,
     minHeight: 48, padding: '0 16px', borderRadius: 12, cursor: 'pointer',
-    fontFamily: dm, fontSize: 14, fontWeight: 600, textDecoration: 'none',
+    fontFamily: dm, fontSize: 14, fontWeight: 600, textDecoration: 'none', whiteSpace: 'nowrap',
     transition: 'transform 0.12s ease, background 0.15s ease, filter 0.15s ease',
-    flexGrow: grow ? 1 : 0, flexBasis: grow ? 0 : 'auto', textAlign: 'center',
+    flexGrow: grow ? 1 : 0, flexBasis: 'auto', textAlign: 'center',
     // #0B6459 keeps the WhatsApp identity while giving white text 5.9:1 (AA).
     border: tone === 'wa' ? '1px solid #09564D' : tone === 'solid' ? `1px solid ${ink}` : border,
     background: tone === 'wa' ? '#0B6459' : tone === 'solid' ? ink : '#fff',
     color: tone === 'wa' || tone === 'solid' ? '#fff' : ink,
   }
-  if (href) return <a className="drv-act" href={href} target="_blank" rel="noreferrer" style={style}>{children}</a>
+  // A phone number opens the dialer in place; only web pages open a new tab.
+  if (href) return /^https?:/i.test(href)
+    ? <a className="drv-act" href={href} target="_blank" rel="noreferrer" style={style}>{children}</a>
+    : <a className="drv-act" href={href} style={style}>{children}</a>
   return <button className="drv-act" type="button" onClick={onClick} style={style}>{children}</button>
 }
 
@@ -91,9 +103,10 @@ function PayChip({ paid, label }: { paid: boolean; label: string }) {
     <span style={{
       display: 'inline-flex', alignItems: 'center', gap: 6, padding: '5px 12px', borderRadius: 9999,
       fontSize: 12, fontWeight: 700,
-      background: paid ? 'rgba(29,122,80,0.12)' : 'rgba(122,90,8,0.12)',
-      border: `1px solid ${paid ? 'rgba(29,122,80,0.35)' : 'rgba(122,90,8,0.35)'}`,
-      color: paid ? green : amber,
+      // Opaque tints so the text holds AA wherever the chip sits (the translucent green read 4.1:1 on the card header).
+      background: paid ? '#E3F3EA' : 'rgba(122,90,8,0.12)',
+      border: `1px solid ${paid ? 'rgba(15,107,69,0.35)' : 'rgba(122,90,8,0.35)'}`,
+      color: paid ? '#0F6B45' : amber,
     }}>
       <span aria-hidden="true">{paid ? '✓' : '·'}</span>{label}
     </span>
@@ -146,6 +159,8 @@ function FlightRow({ flightRaw, dateIso, mbjRole }: {
         {links && <Act tone="solid" onClick={check}><Radar size={16} aria-hidden="true" />{loading ? 'Checking…' : 'Live status'}</Act>}
         {!links && <span style={{ fontSize: 13, color: faint }}>No flight number yet. MAPL will send it.</span>}
       </div>
+      {/* Always present, so the answer to Live status is read out when it arrives. */}
+      <div role="status">
       {st && (
         <div style={{ marginTop: 8 }}>
           {st.found && authTime ? (
@@ -177,6 +192,7 @@ function FlightRow({ flightRaw, dateIso, mbjRole }: {
           )}
         </div>
       )}
+      </div>
     </div>
   )
 }
@@ -214,7 +230,7 @@ function Leg({ role, from, to, dateIso, flightRaw, extra, actions }: {
           {from}<span style={{ color: faint }}><Arrow place="between" /></span>{to}
         </p>
         <p style={{ fontSize: 14, color: soft, margin: '5px 0 0', ...tnum }}>
-          {jaDate(dateIso)} · <strong style={{ color: ink, fontWeight: 700 }}>{isArr ? 'lands' : 'hotel pickup'} {jaTime(dateIso)}</strong> Jamaica time
+          {jaDay(dateIso, true)} · <strong style={{ color: ink, fontWeight: 700 }}>{isArr ? 'lands' : 'hotel pickup'} {jaTime(dateIso)}</strong> Jamaica time
         </p>
         {extra}
         <p style={{ fontSize: 13, margin: '7px 0 0' }}>
@@ -258,30 +274,34 @@ export function TripCard({ t, open, onToggle }: { t: DriverTrip; open: boolean; 
 
   return (
     <article ref={ref} aria-label={`Trip ${t.ref}`} style={{ background: '#fff', border, borderLeft: `4px solid ${t.fullyPaid ? green : goldWarm}`, borderRadius: 16, overflow: 'hidden', boxShadow: '0 1px 2px rgba(23,22,20,0.04), 0 6px 22px rgba(23,22,20,0.05)', scrollMarginTop: 74 }}>
-      {/* Clickable summary header (collapsed view), admin-bookings style */}
-      <div
-        role="button"
-        tabIndex={0}
+      {/* The summary is a real button inside the trip's heading: named by the
+          ref and guest, described by the rest, so headings and buttons both work. */}
+      <h2 style={{ margin: 0, fontSize: 'inherit', fontWeight: 'inherit' }}>
+      <button
+        type="button"
+        id={`trip-${t.id}-btn`}
         aria-expanded={open}
-        className="drv-act"
+        aria-controls={`trip-${t.id}-panel`}
+        aria-label={`${t.ref}, ${t.guestName}`}
+        aria-describedby={`trip-${t.id}-sum`}
+        className="drv-act drv-head"
         onClick={onToggle}
-        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onToggle() } }}
         style={{
+          display: 'block', width: '100%', textAlign: 'left', border: 'none', font: 'inherit', color: 'inherit',
           cursor: 'pointer', padding: '15px 20px', background: '#FCFBF8',
           borderBottom: open ? borderSoft : undefined,
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap' }}>
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, flexWrap: 'wrap' }}>
-            <h2 style={{ fontWeight: 800, fontSize: 16, letterSpacing: '0.01em', margin: 0, ...tnum }}>{t.ref}</h2>
-            <span style={{ fontSize: 13, color: soft, fontWeight: 500 }}>{isRT ? 'Round trip' : 'One-way'} · {t.passengers} passenger{t.passengers === 1 ? '' : 's'}</span>
-          </div>
-          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 12 }}>
-            <PayChip paid={t.fullyPaid} label={t.fullyPaid ? 'Paid in full' : 'Pay pending'} />
-            <ChevronRight size={20} strokeWidth={2.25} aria-hidden style={{ flexShrink: 0, transform: open ? 'rotate(90deg)' : 'none', transition: 'transform 0.15s ease', color: faint }} />
-          </span>
-        </div>
-        <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 12, marginTop: 9, flexWrap: 'wrap' }}>
+        <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
+          <span style={{ fontWeight: 800, fontSize: 16, letterSpacing: '0.01em', ...tnum }}>{t.ref}</span>
+          <ChevronRight size={20} strokeWidth={2.25} aria-hidden style={{ flexShrink: 0, transform: open ? 'rotate(90deg)' : 'none', transition: 'transform 0.15s ease', color: faint }} />
+        </span>
+        <span id={`trip-${t.id}-sum`} style={{ display: 'block' }}>
+        <span style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginTop: 6 }}>
+          <PayChip paid={t.fullyPaid} label={t.fullyPaid ? 'Paid in full' : 'Pay pending'} />
+          <span style={{ fontSize: 13, color: soft, fontWeight: 500 }}>{isRT ? 'Round trip' : 'One-way'} · {t.passengers} passenger{t.passengers === 1 ? '' : 's'}</span>
+        </span>
+        <span style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 12, marginTop: 9, flexWrap: 'wrap' }}>
           <span style={{ display: 'flex', flexDirection: 'column', gap: 4, minWidth: 0 }}>
             <span style={{ display: 'flex', alignItems: 'baseline', gap: 8, flexWrap: 'wrap' }}>
               <span style={{ fontSize: 14, fontWeight: 700, color: ink }}>{t.guestName}</span>
@@ -292,16 +312,16 @@ export function TripCard({ t, open, onToggle }: { t: DriverTrip; open: boolean; 
                   fontSize: 12, fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase',
                   padding: '2px 9px', borderRadius: 9999, background: '#FCF6E4', border: '1px solid #E8D9A8', color: amber,
                 }}>
-                  Note
+                  Guest note
                 </span>
               )}
             </span>
             <span style={{ fontSize: 13, color: soft, ...tnum }}>
-              {departureOnly ? 'Hotel pickup' : 'Lands'} <strong style={{ color: ink, fontWeight: 600 }}>{jaShort(departureOnly ? t.departureAt : t.arrivalAt)} · {jaTime(departureOnly ? t.departureAt : t.arrivalAt)}</strong> Jamaica time
+              {departureOnly ? 'Hotel pickup' : 'Lands'} <strong style={{ color: ink, fontWeight: 600 }}>{jaDay(departureOnly ? t.departureAt : t.arrivalAt)} · {jaTime(departureOnly ? t.departureAt : t.arrivalAt)}</strong> Jamaica time
             </span>
             {t.tripType === 'round_trip' && t.departureAt && (
               <span style={{ fontSize: 13, color: soft, ...tnum }}>
-                Return pickup <strong style={{ color: ink, fontWeight: 600 }}>{jaShort(t.departureAt)} · {jaTime(t.departureAt)}</strong> Jamaica time
+                Return pickup <strong style={{ color: ink, fontWeight: 600 }}>{jaDay(t.departureAt)} · {jaTime(t.departureAt)}</strong> Jamaica time
               </span>
             )}
           </span>
@@ -309,11 +329,13 @@ export function TripCard({ t, open, onToggle }: { t: DriverTrip; open: boolean; 
             <span style={{ fontSize: 12, fontWeight: 600, color: faint }}>You get </span>
             <span style={{ fontSize: 15, fontWeight: 800, color: green, ...tnum }}>{money(t.payoutTotal)} <span style={{ fontSize: 12, fontWeight: 700 }}>USD</span></span>
           </span>
-        </div>
-      </div>
+        </span>
+        </span>
+      </button>
+      </h2>
 
       {open && (
-      <div style={{ padding: '18px 20px 20px', display: 'flex', flexDirection: 'column', gap: 18 }}>
+      <div id={`trip-${t.id}-panel`} style={{ padding: '18px 20px 20px', display: 'flex', flexDirection: 'column', gap: 18 }}>
         {/* Guest */}
         <div>
           <h3 style={eyebrow}>Guest</h3>
@@ -375,7 +397,7 @@ export function TripCard({ t, open, onToggle }: { t: DriverTrip; open: boolean; 
                 </span>
                 <span style={{ display: 'inline-flex', alignItems: 'center', gap: 10 }}>
                   <span style={{ fontSize: 16, fontWeight: 800, ...tnum }}>{money(p.amount)} <span style={{ fontSize: 12, fontWeight: 700, color: faint }}>USD</span></span>
-                  <PayChip paid={p.paid} label={p.paid ? `Paid ${paidStamp(p.paidAt)}` : 'Pending'} />
+                  <PayChip paid={p.paid} label={p.paid ? (p.paidAt ? `Paid ${paidDay(p.paidAt)}` : 'Paid') : 'Pending'} />
                 </span>
               </div>
             ))}
@@ -394,42 +416,43 @@ export function TripCard({ t, open, onToggle }: { t: DriverTrip; open: boolean; 
 /* ── Tour card: itinerary only, deliberately NO money anywhere ── */
 
 function tourDate(d: string | null): string {
-  if (!d) return 'Date TBD'
-  try {
-    return new Date(d + 'T00:00:00Z').toLocaleDateString('en-US', { timeZone: 'UTC', weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })
-  } catch { return d }
+  return d ? jaDay(`${d}T00:00:00Z`) : 'Date TBD'
 }
 
 function TourCard({ t, open, onToggle }: { t: DriverTour; open: boolean; onToggle: () => void }) {
   const ref = useScrollOnOpen(open)
   return (
     <article ref={ref} aria-label={`Tour booking ${t.ref}`} style={{ background: '#fff', border, borderLeft: `4px solid ${goldWarm}`, borderRadius: 16, overflow: 'hidden', boxShadow: '0 1px 2px rgba(23,22,20,0.04), 0 6px 22px rgba(23,22,20,0.05)', scrollMarginTop: 74 }}>
-      <div
-        role="button"
-        tabIndex={0}
+      <h2 style={{ margin: 0, fontSize: 'inherit', fontWeight: 'inherit' }}>
+      <button
+        type="button"
+        id={`tour-${t.id}-btn`}
         aria-expanded={open}
-        className="drv-act"
+        aria-controls={`tour-${t.id}-panel`}
+        aria-label={`${t.ref}, ${t.guestName}`}
+        aria-describedby={`tour-${t.id}-sum`}
+        className="drv-act drv-head"
         onClick={onToggle}
-        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onToggle() } }}
-        style={{ cursor: 'pointer', padding: '15px 20px', background: '#FCFBF8', borderBottom: open ? borderSoft : undefined }}
+        style={{ display: 'block', width: '100%', textAlign: 'left', border: 'none', font: 'inherit', color: 'inherit', cursor: 'pointer', padding: '15px 20px', background: '#FCFBF8', borderBottom: open ? borderSoft : undefined }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap' }}>
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, flexWrap: 'wrap' }}>
-            <h2 style={{ fontWeight: 800, fontSize: 16, letterSpacing: '0.01em', margin: 0, ...tnum }}>{t.ref}</h2>
-            <span style={{ fontSize: 13, color: soft, fontWeight: 500 }}>Tour · {t.items.length} experience{t.items.length === 1 ? '' : 's'}</span>
-          </div>
+        <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
+          <span style={{ fontWeight: 800, fontSize: 16, letterSpacing: '0.01em', ...tnum }}>{t.ref}</span>
           <ChevronRight size={20} strokeWidth={2.25} aria-hidden style={{ flexShrink: 0, transform: open ? 'rotate(90deg)' : 'none', transition: 'transform 0.15s ease', color: faint }} />
-        </div>
-        <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginTop: 9, flexWrap: 'wrap' }}>
+        </span>
+        <span id={`tour-${t.id}-sum`} style={{ display: 'block' }}>
+        <span style={{ display: 'block', fontSize: 13, color: soft, fontWeight: 500, marginTop: 6 }}>Tour · {t.items.length} experience{t.items.length === 1 ? '' : 's'}</span>
+        <span style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginTop: 9, flexWrap: 'wrap' }}>
           <span style={{ fontSize: 14, fontWeight: 700, color: ink }}>{t.guestName}</span>
           <span aria-hidden="true" style={{ color: faint }}>·</span>
           <span style={{ fontSize: 13, color: soft }}>{t.items[0].title}{t.items.length > 1 ? ` +${t.items.length - 1} more` : ''}</span>
           <span aria-hidden="true" style={{ color: faint }}>·</span>
           <span style={{ fontSize: 13, color: soft, ...tnum }}>{tourDate(t.firstDate)}</span>
-        </div>
-      </div>
+        </span>
+        </span>
+      </button>
+      </h2>
       {open && (
-        <div style={{ padding: '18px 20px 20px', display: 'flex', flexDirection: 'column', gap: 16 }}>
+        <div id={`tour-${t.id}-panel`} style={{ padding: '18px 20px 20px', display: 'flex', flexDirection: 'column', gap: 16 }}>
           <div>
             <h3 style={eyebrow}>Guest</h3>
             <p style={{ fontSize: 19, fontWeight: 800, margin: '6px 0 0', letterSpacing: '-0.01em' }}>{t.guestName}</p>
@@ -496,6 +519,20 @@ export default function DriverDashboard({ trips, tours = [], driverLabel, adminP
   const pendingTotal = Math.round((owedTotal - paidTotal) * 100) / 100
   const next = nextPickup(trips)
   const [tab, setTab] = useState<'transfers' | 'tours'>('transfers')
+  // Tabs: one tab stop; arrow keys, Home and End move between them (the ARIA tabs pattern).
+  const TAB_ORDER = ['transfers', 'tours'] as const
+  function onTabKey(e: React.KeyboardEvent) {
+    const i = TAB_ORDER.indexOf(tab)
+    const next = e.key === 'ArrowRight' ? TAB_ORDER[(i + 1) % TAB_ORDER.length]
+      : e.key === 'ArrowLeft' ? TAB_ORDER[(i - 1 + TAB_ORDER.length) % TAB_ORDER.length]
+      : e.key === 'Home' ? TAB_ORDER[0]
+      : e.key === 'End' ? TAB_ORDER[TAB_ORDER.length - 1]
+      : null
+    if (!next) return
+    e.preventDefault()
+    setTab(next)
+    document.getElementById(`tab-${next}`)?.focus()
+  }
   // Accordion: exactly one reservation card open at a time.
   const [openId, setOpenId] = useState<string | null>(null)
   const toggle = (id: string) => setOpenId((o) => (o === id ? null : id))
@@ -541,7 +578,7 @@ export default function DriverDashboard({ trips, tours = [], driverLabel, adminP
               </span>
             </div>
             <p style={{ fontSize: 'clamp(21px, 5vw, 26px)', fontWeight: 800, margin: '10px 0 0', lineHeight: 1.25, letterSpacing: '-0.015em', ...tnum }}>
-              {jaDate(next.iso)} · {jaTime(next.iso)}
+              {jaDay(next.iso, true)} · <span style={{ whiteSpace: 'nowrap' }}>{jaTime(next.iso)}</span>
             </p>
             <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.88)', margin: '6px 0 0', lineHeight: 1.5 }}>
               {next.t.guestName} · {next.t.ref} · {next.t.passengers} passenger{next.t.passengers === 1 ? '' : 's'}
@@ -551,10 +588,9 @@ export default function DriverDashboard({ trips, tours = [], driverLabel, adminP
         </section>
       )}
 
-      {/* Pay summary: the glanceable answer to "what am I owed?" */}
-      <section aria-label="Pay summary" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 10, marginTop: 14 }}>
+      {/* Pay summary: the glanceable answer to "what am I owed?" (the trip count is on the Transfers tab). */}
+      <section aria-label="Pay summary" style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 10, marginTop: 14 }}>
         {[
-          { k: 'Trips', v: String(trips.length), c: ink, bg: '#fff', bd: border },
           { k: 'Paid to you (USD)', v: money(paidTotal), c: green, bg: '#fff', bd: border },
           { k: 'Pending (USD)', v: money(pendingTotal), c: pendingTotal > 0 ? amber : faint, bg: pendingTotal > 0 ? '#FBF6E7' : '#fff', bd: pendingTotal > 0 ? '1px solid #EBDFC0' : border },
         ].map((s) => (
@@ -574,10 +610,12 @@ export default function DriverDashboard({ trips, tours = [], driverLabel, adminP
             role="tab"
             aria-selected={tab === key}
             aria-controls={`panel-${key}`}
+            tabIndex={tab === key ? 0 : -1}
             className="drv-act"
             onClick={() => setTab(key)}
+            onKeyDown={onTabKey}
             style={{
-              minHeight: 42, padding: '0 18px', borderRadius: 9999, border: 'none', cursor: 'pointer',
+              minHeight: 44, padding: '0 18px', borderRadius: 9999, border: 'none', cursor: 'pointer',
               fontFamily: dm, fontSize: 14, fontWeight: 700,
               background: tab === key ? ink : 'transparent',
               color: tab === key ? '#fff' : soft,
@@ -621,22 +659,6 @@ export default function DriverDashboard({ trips, tours = [], driverLabel, adminP
       <p style={{ fontSize: 12, color: faint, lineHeight: 1.6, marginTop: 24 }}>
         Times are Jamaica time. Pay is your agreed rate per trip; round trips are paid in two halves, one before each leg. Questions: contact@mapltours.com.
       </p>
-
-      <style jsx global>{`
-        .drv-act:focus-visible {
-          outline: 3px solid #171614;
-          outline-offset: 2px;
-        }
-        .drv-act:active {
-          transform: scale(0.98);
-        }
-        a.drv-act:hover, button.drv-act:hover {
-          filter: brightness(0.97);
-        }
-        @media (prefers-reduced-motion: reduce) {
-          .drv-act { transition: none !important; }
-        }
-      `}</style>
     </div>
   )
 }

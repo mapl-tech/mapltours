@@ -4147,6 +4147,22 @@ html:has(.adm-toast) { scroll-padding-bottom: 96px; }
 .adm-gc-fix { display: grid; gap: var(--adm-gap); padding: 16px; border: 1px solid var(--adm-hairline); border-radius: var(--r-md); background: var(--adm-panel); }
 .adm-gc-fix .adm-help { margin-top: 4px; }
 
+/* ── Driver portal (components/driver/DriverDashboard.tsx), also the admin preview ──
+   Focus, press and hover for its pills, tabs and card headers. A card
+   header sits flush in a card that clips its corners, so its ring is drawn
+   inside. */
+/* The admin preview shows the portal at the width the driver's phone gives it. */
+.adm-drv-preview { max-width: 45rem; }
+.adm-drv-allow { margin-bottom: var(--adm-gap); overflow-wrap: anywhere; }
+.drv-act:focus-visible { outline: 3px solid #171614; outline-offset: 2px; }
+.drv-head:focus-visible { outline-offset: -4px; }
+.drv-act:active { transform: scale(0.98); }
+.drv-head:active { transform: none; }
+a.drv-act:hover, button.drv-act:hover { filter: brightness(0.97); }
+@media (prefers-reduced-motion: reduce) {
+  .drv-act { transition: none !important; }
+}
+
 /* ── Admin: guest clips (components/admin/VideoQueue.tsx) ──
    What each decision does sits above the queue; each card is the clip, the
    tour it would go on, who posted it, the note, then three decisions that
