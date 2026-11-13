@@ -4147,6 +4147,21 @@ html:has(.adm-toast) { scroll-padding-bottom: 96px; }
 .adm-gc-fix { display: grid; gap: var(--adm-gap); padding: 16px; border: 1px solid var(--adm-hairline); border-radius: var(--r-md); background: var(--adm-panel); }
 .adm-gc-fix .adm-help { margin-top: 4px; }
 
+/* ── Admin: dispatch console (components/admin/DispatchConsole.tsx) ──
+   Its pills, fields and workflow ticks on the shared sizes: every control
+   44px; a tick is a 44px button around a 26px box. */
+.adm-dsp-btn { gap: 6px; }
+.adm-btn--wa { border-color: #128C7E; background: rgba(18, 140, 126, 0.10); color: #0B5E54; }
+.adm-btn--wa:hover:not(:disabled):not([aria-disabled="true"]) { border-color: #0B5E54; background: rgba(18, 140, 126, 0.18); }
+.adm-dsp-field { display: block; min-width: 0; }
+.adm-dsp-tick { flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; margin-top: -9px; padding: 0; border: none; border-radius: var(--r-md); background: none; cursor: pointer; }
+/* A step the platform completed stays reachable by keyboard so its reason can be read, but does nothing. */
+.adm-dsp-tick[aria-disabled="true"] { cursor: default; }
+.adm-dsp-tick:hover:not([aria-disabled="true"]) .adm-dsp-box { border-color: var(--adm-ink); }
+.adm-dsp-box { display: flex; align-items: center; justify-content: center; width: 26px; height: 26px; border: 1px solid var(--adm-edge); border-radius: 8px; background: #fff; color: #fff; font-size: 15px; line-height: 1; }
+.adm-dsp-tick[aria-pressed="true"] .adm-dsp-box { border-color: var(--adm-ok); background: var(--adm-ok); }
+.adm-dsp-ask { margin-top: var(--adm-gap); }
+
 /* ── Driver portal (components/driver/DriverDashboard.tsx), also the admin preview ──
    Focus, press and hover for its pills, tabs and card headers. A card
    header sits flush in a card that clips its corners, so its ring is drawn

@@ -14,16 +14,11 @@ import { driverNotifyEmail } from '@/lib/email/send'
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
 
-const dm = 'var(--font-dm-sans)'
-const ink = 'var(--text-primary, #171614)'
-const soft = 'var(--text-secondary, #57534C)'
-
+/** The dispatch page: the .adm classes in app/globals.css, like every admin screen. */
 function Shell({ children }: { children: React.ReactNode }) {
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--bg-warm, #F4F1EB)' }}>
-      <div style={{ width: '100%', maxWidth: 1500, margin: '0 auto', padding: '40px clamp(20px, 3vw, 44px) 90px', fontFamily: dm, color: ink }}>
-        {children}
-      </div>
+    <div className="adm-page">
+      <div className="adm adm-wrap adm-wrap--wide">{children}</div>
     </div>
   )
 }
@@ -52,21 +47,21 @@ export default async function DispatchPage({ params }: { params: { id: string } 
   const session = createClient()
   const { data: { user } } = await session.auth.getUser()
   if (!user) {
-    return <Shell><h1 style={{ fontWeight: 700, fontSize: 22 }}>Dispatch</h1><p style={{ marginTop: 8, color: soft }}>Please <Link href={`/login?redirect=/admin/dispatch/${params.id}`} style={{ color: ink, fontWeight: 600 }}>sign in</Link>.</p></Shell>
+    return <Shell><h1 className="adm-h1">Dispatch</h1><p className="adm-lead">Please <Link href={`/login?redirect=/admin/dispatch/${params.id}`} className="adm-inline-link">sign in</Link> to view this page.</p></Shell>
   }
 
   const svc = createServiceClient()
   const { data: adminRow } = await svc.from('admins').select('user_id').eq('user_id', user.id).maybeSingle()
   if (!adminRow) {
-    return <Shell><h1 style={{ fontWeight: 700, fontSize: 22 }}>Not authorised</h1><p style={{ marginTop: 8, color: soft }}>This page is limited to MAPL Tours Jamaica admins.</p></Shell>
+    return <Shell><h1 className="adm-h1">Not authorised</h1><p className="adm-lead">This page is limited to MAPL Tours Jamaica admins.</p></Shell>
   }
 
   const { data: booking } = await svc.from('bookings').select('*, booking_items(*)').eq('id', params.id).maybeSingle()
   if (!booking) {
-    return <Shell><h1 style={{ fontWeight: 700, fontSize: 22 }}>Booking not found</h1><p style={{ marginTop: 8 }}><Link href="/admin/bookings" style={{ color: ink, fontWeight: 600 }}>Back to bookings</Link></p></Shell>
+    return <Shell><h1 className="adm-h1">Booking not found</h1><p className="adm-lead"><Link href="/admin/bookings" className="adm-inline-link">Back to bookings</Link></p></Shell>
   }
   if (booking.booking_type !== 'transfer') {
-    return <Shell><h1 style={{ fontWeight: 700, fontSize: 22 }}>Not a transfer</h1><p style={{ marginTop: 8, color: soft }}>The dispatch console is for airport transfers. <Link href="/admin/bookings" style={{ color: ink, fontWeight: 600 }}>Back to bookings</Link></p></Shell>
+    return <Shell><h1 className="adm-h1">Not a transfer</h1><p className="adm-lead">The dispatch console is for airport transfers. <Link href="/admin/bookings" className="adm-inline-link">Back to bookings</Link></p></Shell>
   }
 
   const stripeFee = await stripeFeeFor(booking.stripe_payment_id)

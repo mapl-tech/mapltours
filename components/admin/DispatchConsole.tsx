@@ -1,9 +1,9 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import {
-  type Bk, firstLeg, bookingRef, moneyBlock, money,
+  type Bk, firstLeg, bookingRef, moneyBlock, money, round2,
   jaDate, jaTime, shiftIso, gcalLink, waLink, ARRIVAL_CLEAR_MIN, MIN_PICKUP_LEAD_MIN,
   visibleSteps, progress, autoStepDone,
   msgDriverRequest, msgCustomerConfirmation, msgFlightDetailsRequest, msgDriverReminder,
@@ -11,6 +11,8 @@ import {
 } from '@/lib/dispatch'
 import { flightLinks, flightDate, type FlightStatus } from '@/lib/flight'
 import Arrow from '@/components/ui/Arrow'
+import { stamp } from '@/lib/admin-format'
+import { useResultNote } from '@/components/admin/AdminUi'
 
 const dm = 'var(--font-dm-sans)'
 const ink = 'var(--text-primary, #171614)'
@@ -18,7 +20,6 @@ const soft = 'var(--text-secondary, #57534C)'
 const faint = '#6E6A62'
 const green = '#1D7A50'
 const amber = '#7A5A08'
-const accent = 'var(--accent, #171614)'
 const border = '1px solid var(--border, #E7E1D6)'
 const borderSoft = '1px solid var(--border-subtle, #F1ECE3)'
 const tnum = { fontVariantNumeric: 'tabular-nums' as const }
@@ -30,7 +31,7 @@ function Card({ title, children }: { title?: string; children: React.ReactNode }
     <section style={{ background: '#fff', border, borderRadius: 14, overflow: 'hidden' }}>
       {title && (
         <div style={{ padding: '13px 20px', borderBottom: borderSoft, background: '#FCFBF8' }}>
-          <span style={{ fontSize: 12, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: faint }}>{title}</span>
+          <h2 style={{ margin: 0, fontSize: 12, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: faint }}>{title}</h2>
         </div>
       )}
       <div style={{ padding: '18px 20px' }}>{children}</div>
@@ -47,18 +48,11 @@ function MRow({ k, v, em, big }: { k: string; v: string; em?: boolean; big?: boo
   )
 }
 
-/** A pill button that either opens a URL (new tab) or runs onClick. */
-function Btn({ href, onClick, children, tone = 'outline' }: { href?: string; onClick?: () => void; children: React.ReactNode; tone?: 'outline' | 'wa' | 'solid' }) {
-  const style: React.CSSProperties = {
-    display: 'inline-flex', alignItems: 'center', gap: 6, minHeight: 38, padding: '0 14px',
-    borderRadius: 9999, cursor: 'pointer', fontFamily: dm, fontSize: 13, fontWeight: 600,
-    textDecoration: 'none', transition: 'all 0.15s ease',
-    border: tone === 'wa' ? '1px solid #128C7E' : tone === 'solid' ? `1px solid ${accent}` : border,
-    background: tone === 'wa' ? 'rgba(18,140,126,0.10)' : tone === 'solid' ? accent : '#fff',
-    color: tone === 'wa' ? '#0B5E54' : tone === 'solid' ? '#fff' : ink,
-  }
-  if (href) return <a href={href} target="_blank" rel="noreferrer" style={style}>{children}</a>
-  return <button type="button" onClick={onClick} style={style}>{children}</button>
+/** A pill button (the shared .adm-btn: 44px, focus ring) that either opens a URL in a new tab or runs onClick. */
+function Btn({ href, onClick, children, tone = 'outline', busy }: { href?: string; onClick?: () => void; children: React.ReactNode; tone?: 'outline' | 'wa' | 'solid'; busy?: boolean }) {
+  const cls = `adm-btn adm-btn--sm adm-dsp-btn${tone === 'wa' ? ' adm-btn--wa' : tone === 'solid' ? ' adm-btn--primary' : ''}`
+  if (href) return <a href={href} target="_blank" rel="noreferrer" className={cls}>{children}</a>
+  return <button type="button" onClick={onClick} className={cls} aria-busy={busy || undefined}>{children}</button>
 }
 
 function CopyBtn({ text, label }: { text: string; label: string }) {
@@ -80,7 +74,17 @@ export default function DispatchConsole({ booking, stripeFee, driverEmailConfigu
     name: b0.driver_name ?? '', phone: b0.driver_phone ?? '', vehicle: b0.driver_vehicle ?? '', plate: b0.driver_plate ?? '',
   })
   const [savingDriver, setSavingDriver] = useState(false)
-  const [driverSaved, setDriverSaved] = useState(false)
+  // Results of saves, in the shared toast at the foot of the page.
+  const { setNote, keepClear, toast } = useResultNote()
+  // A driver payout tick waiting for its confirmation (it emails the driver).
+  const [askPay, setAskPay] = useState<string | null>(null)
+  const focusNext = useRef<string | null>(null)
+  useEffect(() => {
+    if (!focusNext.current) return
+    const el = document.getElementById(focusNext.current)
+    focusNext.current = null
+    el?.focus()
+  })
 
   // A booking object that reflects the current (possibly unsaved-to-render) driver fields for message templating.
   const b: Bk = { ...b0, driver_name: driver.name || null, driver_phone: driver.phone || null, driver_vehicle: driver.vehicle || null, driver_plate: driver.plate || null }
@@ -100,20 +104,35 @@ export default function DispatchConsole({ booking, stripeFee, driverEmailConfigu
   // actually went out, and the operator deserves to see that, not a log line.
   const [payNote, setPayNote] = useState<Record<string, 'sent' | 'failed'>>({})
 
-  async function toggle(step: string, done: boolean) {
+  // A tick shows at once, and is taken back (and the failure said) if the
+  // server does not confirm it: an unsaved step must never look done,
+  // least of all a driver payout.
+  async function toggle(step: string, done: boolean, label: string) {
+    const was = dispatch[step]
     setDispatch((d) => { const n = { ...d }; if (done) n[step] = new Date().toISOString(); else delete n[step]; return n })
     const r = await fetch('/api/admin/dispatch', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ bookingId: b.id, step, done }) }).catch(() => null)
-    if (done && (step === 'paid_first' || step === 'paid_second')) {
-      const j = r && r.ok ? await r.json().catch(() => null) : null
-      if (j && j.driverEmailed !== null && j.driverEmailed !== undefined) {
-        setPayNote((n) => ({ ...n, [step]: j.driverEmailed ? 'sent' : 'failed' }))
-      }
+    const j = r && r.ok ? await r.json().catch(() => null) : null
+    if (!j || !j.ok) {
+      setDispatch((d) => { const n = { ...d }; if (was) n[step] = was; else delete n[step]; return n })
+      setNote({ text: `"${label}" did not save, so it is shown as it was. Check the connection and try again.`, bad: true })
+      return
     }
+    if (done && (step === 'paid_first' || step === 'paid_second') && j.driverEmailed !== null && j.driverEmailed !== undefined) {
+      setPayNote((n) => ({ ...n, [step]: j.driverEmailed ? 'sent' : 'failed' }))
+    }
+    setNote({ text: done ? `"${label}" marked done.` : `"${label}" marked not done.`, quiet: true })
   }
   async function saveDriver() {
+    if (savingDriver) return
     setSavingDriver(true)
-    await fetch('/api/admin/dispatch', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ bookingId: b.id, driver }) }).catch(() => {})
-    setSavingDriver(false); setDriverSaved(true); setTimeout(() => setDriverSaved(false), 1800)
+    const r = await fetch('/api/admin/dispatch', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ bookingId: b.id, driver }) }).catch(() => null)
+    const j = r && r.ok ? await r.json().catch(() => null) : null
+    setSavingDriver(false)
+    setNote(j && j.ok ? { text: 'Driver details saved.' } : { text: 'Driver details did not save. Check the connection and try again.', bad: true })
+  }
+  // What a payout tick sends, said before it is sent (the server emails the driver once per half).
+  function payAmount(step: string): number {
+    return step === 'paid_second' ? round2(m.driverTotal - m.driverPerLeg) : m.driverPerLeg
   }
 
   // A hotel-to-airport one-way has a departure and no arrival. The departure
@@ -139,7 +158,7 @@ export default function DispatchConsole({ booking, stripeFee, driverEmailConfigu
   }) : null
 
   return (
-    <div style={{ fontFamily: dm, color: ink }}>
+    <div style={{ fontFamily: dm, color: ink }} onFocus={keepClear}>
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 14, flexWrap: 'wrap' }}>
         <div style={{ display: 'flex', alignItems: 'baseline', gap: 14, flexWrap: 'wrap' }}>
@@ -147,7 +166,7 @@ export default function DispatchConsole({ booking, stripeFee, driverEmailConfigu
           <span style={{ fontSize: 14, fontWeight: 700, ...tnum }}>{ref}</span>
           <span style={{ fontSize: 13, color: soft }}>{name} · {leg.tripType === 'round_trip' ? 'Round trip' : 'One-way'} · {leg.passengers} pax</span>
         </div>
-        <Link href="/admin/bookings" style={{ display: 'inline-flex', alignItems: 'center', gap: 7, height: 38, padding: '0 16px', borderRadius: 9999, border, background: '#fff', color: ink, fontSize: 13, fontWeight: 600, textDecoration: 'none' }}>
+        <Link href={`/admin/bookings?booking=${b.id}`} className="adm-btn adm-btn--sm">
           <Arrow dir="left" place="before" className="ui-arrow--flush" />Bookings
         </Link>
       </div>
@@ -228,19 +247,21 @@ export default function DispatchConsole({ booking, stripeFee, driverEmailConfigu
       <div style={{ marginTop: 14 }}>
         <Card title="Driver + vehicle">
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 10 }}>
-            {([['name', 'Driver name'], ['phone', 'Driver WhatsApp'], ['vehicle', 'Vehicle make + model + colour'], ['plate', 'License plate']] as const).map(([k, lbl]) => (
-              <label key={k} style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 12, color: soft, fontWeight: 600 }}>
-                {lbl}
+            {([['name', 'Driver name', 'name'], ['phone', 'Driver WhatsApp', 'tel'], ['vehicle', 'Vehicle make + model + colour', 'off'], ['plate', 'License plate', 'off']] as const).map(([k, lbl, ac]) => (
+              <label key={k} className="adm-dsp-field">
+                <span className="adm-label">{lbl}</span>
                 <input
+                  className="adm-input"
                   value={driver[k]}
+                  inputMode={k === 'phone' ? 'tel' : undefined}
+                  autoComplete={ac}
                   onChange={(e) => setDriver((d) => ({ ...d, [k]: e.target.value }))}
-                  style={{ height: 40, padding: '0 12px', borderRadius: 9, border, background: '#fff', fontFamily: dm, fontSize: 14, color: ink, outline: 'none' }}
                 />
               </label>
             ))}
           </div>
           <div style={{ marginTop: 12 }}>
-            <Btn tone="solid" onClick={saveDriver}>{savingDriver ? 'Saving…' : driverSaved ? '✓ Saved' : 'Save driver details'}</Btn>
+            <Btn tone="solid" onClick={saveDriver} busy={savingDriver}>{savingDriver ? 'Saving…' : 'Save driver details'}</Btn>
           </div>
         </Card>
       </div>
@@ -256,31 +277,51 @@ export default function DispatchConsole({ booking, stripeFee, driverEmailConfigu
               // is nothing for a human to record: the evidence IS the record.
               const auto = !doneAt ? autoStepDone({ ...b0, dispatch }, s.key, nowMs, { driverEmailConfigured }) : null
               const isDone = !!doneAt || !!auto
+              const isPay = s.key === 'paid_first' || s.key === 'paid_second'
+              const notified = !!dispatch[`${s.key}_notified`]
               return (
                 <div key={s.key} style={{ display: 'flex', gap: 12, padding: '14px 0', borderTop: idx === 0 ? undefined : borderSoft }}>
+                  {/* A 44px button around the 26px box. A driver payout asks first (it emails the driver). */}
                   <button
                     type="button"
-                    onClick={auto ? undefined : () => toggle(s.key, !doneAt)}
-                    disabled={!!auto}
-                    aria-pressed={isDone}
-                    aria-label={auto ? `Step ${s.num} completed automatically: ${auto}` : `Mark step ${s.num} ${doneAt ? 'not done' : 'done'}`}
-                    style={{
-                      flexShrink: 0, width: 26, height: 26, borderRadius: 8, marginTop: 1, cursor: auto ? 'default' : 'pointer',
-                      border: isDone ? `1px solid ${green}` : border, background: isDone ? green : '#fff',
-                      color: '#fff', fontSize: 15, lineHeight: 1, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    id={`tick-${s.key}`}
+                    className="adm-dsp-tick"
+                    onClick={auto ? undefined : () => {
+                      if (isPay && !doneAt) { focusNext.current = `ask-${s.key}-h`; setAskPay(s.key); return }
+                      void toggle(s.key, !doneAt, s.title)
                     }}
-                  >{isDone ? '✓' : ''}</button>
+                    aria-disabled={!!auto || undefined}
+                    aria-pressed={isDone}
+                    aria-label={auto ? `Step ${s.num} completed automatically: ${auto}` : `Mark step ${s.num} ${doneAt ? 'not done' : 'done'}: ${s.title}`}
+                  ><span className="adm-dsp-box" aria-hidden="true">{isDone ? '✓' : ''}</span></button>
 
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, flexWrap: 'wrap' }}>
                       <span style={{ fontSize: 12, fontWeight: 700, color: faint, ...tnum }}>{String(s.num).padStart(2, '0')}</span>
                       <span style={{ fontSize: 14, fontWeight: 600, color: isDone ? faint : ink, textDecoration: doneAt ? 'line-through' : undefined }}>{s.title}</span>
-                      {doneAt && <span style={{ fontSize: 12, color: green, ...tnum }}>✓ {jaDateOrTime(doneAt)}</span>}
+                      {doneAt && <span style={{ fontSize: 13, color: green, ...tnum }}>✓ {stamp(doneAt)}</span>}
                       {auto && <span style={{ fontSize: 12, color: green }}>✓ auto · {auto}</span>}
                       {payNote[s.key] === 'sent' && <span style={{ fontSize: 12, color: green }}>✉️ driver emailed</span>}
                       {payNote[s.key] === 'failed' && <span style={{ fontSize: 12, color: '#8A2A0A', fontWeight: 600 }}>payment saved, but the driver email did not send</span>}
                     </div>
-                    {s.hint && !isDone && <div style={{ fontSize: 12, color: faint, marginTop: 3 }}>{s.hint}</div>}
+                    {s.hint && !isDone && <div style={{ fontSize: 13, color: faint, marginTop: 3 }}>{s.hint}</div>}
+                    {askPay === s.key && (
+                      <section className="adm-ask adm-dsp-ask" aria-labelledby={`ask-${s.key}-h`}
+                        onKeyDown={(e) => { if (e.key === 'Escape') { e.preventDefault(); focusNext.current = `tick-${s.key}`; setAskPay(null) } }}>
+                        <h3 id={`ask-${s.key}-h`} tabIndex={-1} className="adm-h4 adm-h4--ask">Mark the {money(payAmount(s.key))} payout as paid?</h3>
+                        <p className="adm-block">
+                          {notified
+                            ? 'Do this once the money is on its way. The driver was already emailed about this payment, so no new email goes out.'
+                            : driverEmailConfigured
+                              ? `Do this once the money is on its way: ${b.driver_name?.trim() || 'the driver'} is emailed that ${money(payAmount(s.key))} was sent.`
+                              : 'Do this once the money is on its way. No driver email is set up, so nobody is emailed.'}
+                        </p>
+                        <div className="adm-actions">
+                          <button type="button" className="adm-btn adm-btn--ok" onClick={() => { focusNext.current = `tick-${s.key}`; setAskPay(null); void toggle(s.key, true, s.title) }}>Yes, it is paid</button>
+                          <button type="button" className="adm-btn" onClick={() => { focusNext.current = `tick-${s.key}`; setAskPay(null) }}>Back</button>
+                        </div>
+                      </section>
+                    )}
                     <StepActions stepKey={s.key} b={b} m={m} arrivalCal={arrivalCal} departureCal={departureCal} />
                   </div>
                 </div>
@@ -291,14 +332,11 @@ export default function DispatchConsole({ booking, stripeFee, driverEmailConfigu
       </div>
 
       <p style={{ fontSize: 12, color: faint, marginTop: 16, lineHeight: 1.5, maxWidth: 720 }}>
-        All amounts are in USD, the currency the customer was charged. Your Stripe account settles in CAD, so the Stripe fee (processing plus currency conversion) is converted back to USD here at the transaction rate. Times are shown in Jamaica time exactly as the customer entered them; calendar events use the America/Jamaica timezone. The suggested departure pickup is the flight time minus 4 hours; adjust for zone and traffic.
+        All amounts are in USD, the currency the customer was charged. Your Stripe account settles in CAD, so the Stripe fee (processing plus currency conversion) is converted back to USD here at the transaction rate. Trip times are Jamaica time exactly as the customer entered them; calendar events use the America/Jamaica timezone; ticked steps show when, on your own clock. Checkout suggests a departure pickup {Math.floor(MIN_PICKUP_LEAD_MIN / 60)} h {MIN_PICKUP_LEAD_MIN % 60} min before the flight; adjust for zone and traffic.
       </p>
+      {toast}
     </div>
   )
-}
-
-function jaDateOrTime(iso: string): string {
-  try { return new Date(iso).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) } catch { return '' }
 }
 
 function StepActions({ stepKey, b, m, arrivalCal, departureCal }: {
@@ -458,8 +496,10 @@ function FlightTracking({ legLabel, flightRaw, dateIso, bookedLabel, mbjRole }: 
         {links && <Btn href={links.google}>Google</Btn>}
         {links && <Btn href={links.flightaware}>FlightAware</Btn>}
         {links && <Btn href={links.flightradar24}>Flightradar24</Btn>}
-        {links && <Btn tone="solid" onClick={check}>{loading ? 'Checking…' : 'Check live status'}</Btn>}
+        {links && <Btn tone="solid" onClick={check} busy={loading}>{loading ? 'Checking…' : 'Check live status'}</Btn>}
       </div>
+      {/* Always present, so the answer to Check live status is read out when it arrives. */}
+      <div role="status">
       {st && (
         <div style={{ marginTop: 10 }}>
           {st.found && authTime ? (
@@ -508,6 +548,7 @@ function FlightTracking({ legLabel, flightRaw, dateIso, bookedLabel, mbjRole }: 
           )}
         </div>
       )}
+      </div>
     </div>
   )
 }
