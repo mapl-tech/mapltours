@@ -217,7 +217,8 @@ describe('admin card', () => {
     attribution,
   })
   const card = (a: Record<string, string> | null) => renderToStaticMarkup(<BookingCard b={booking(a)} variant="paid" open onToggle={() => {}} />)
-  const field = (html: string, k: string) => html.match(new RegExp(`<div[^>]*><span[^>]*>${k}</span>[\\s\\S]*?</div>`))?.[0] ?? ''
+  // A fact on the card (Nov 13 2026): <div><dt>label</dt><dd>value</dd></div>.
+  const field = (html: string, k: string) => html.match(new RegExp(`<div[^>]*><dt[^>]*>${k}</dt>[\\s\\S]*?</div>`))?.[0] ?? ''
   const text = (html: string) => html.replace(/<[^>]+>/g, '').replace(/&#x27;/g, "'").replace(/&amp;/g, '&')
   const LAST = { source: 'bio', medium: 'email', landing: '/transfers', ts: '2026-09-27T14:00:00.000Z' }
 

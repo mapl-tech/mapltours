@@ -443,6 +443,19 @@ export function visibleSteps(isRoundTrip: boolean, hasArrival = true): Step[] {
     (isRoundTrip || !s.roundTripOnly) && (hasArrival || !ARRIVAL_EVENT_STEPS.has(s.key)))
 }
 
+/**
+ * The first step still to do, in step order, or null once every step is
+ * done: what the bookings list names beside the progress. Same rules as
+ * progress(), so the two always agree.
+ */
+export function nextStep(b: Bk): Step | null {
+  const leg = firstLeg(b)
+  const steps = visibleSteps(leg?.tripType === 'round_trip', !!leg?.arrivalAt)
+  const dispatch = (b.dispatch ?? {}) as Record<string, string>
+  const now = Date.now()
+  return steps.find((s) => !(dispatch[s.key] || autoStepDone(b, s.key, now))) ?? null
+}
+
 export function progress(b: Bk): { done: number; total: number } {
   const leg = firstLeg(b)
   const steps = visibleSteps(leg?.tripType === 'round_trip', !!leg?.arrivalAt)

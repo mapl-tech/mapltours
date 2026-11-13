@@ -1,57 +1,84 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useId, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
-import { progress } from '@/lib/dispatch'
+import { ChevronRight, Search } from 'lucide-react'
+import { nextStep, progress } from '@/lib/dispatch'
 import { AI_ASSISTANT_GROUP, aiAssistantLabel, attributionLabel, browserLabel, firstTouchLabel } from '@/lib/attribution'
-import { ChevronRight } from 'lucide-react'
 import Arrow, { RouteText } from '@/components/ui/Arrow'
 
 /**
  * Client dashboard for the admin bookings page. The parent server component
  * has already confirmed the caller is an admin and fetched the rows with the
- * service role, so this component only renders. It owns the tab (paid vs
- * abandoned) and the Tours/Transfers filter.
+ * service role, so this component only renders.
+ *
+ * It leads with what an operator schedules around: each card opens with the
+ * day of the trip, then the guest and the route; upcoming trips list the
+ * soonest first, split into the next 14 days and later, and one field finds a
+ * guest by name, email, phone, reference, hotel or flight. A row shows only
+ * what differs between rows: no "Paid" badge in the paid view (only
+ * "Refunded"), no Ride or Tour badge once the list is filtered to one kind.
+ *
+ * Times: trip times are the guest's Jamaica wall-clock; our own events (paid,
+ * emails sent) are on the owner's Toronto clock with the zone named. This
+ * year's year is never printed. Money: every booking is in one currency, so
+ * its code is printed once per block, on the block's headline amount.
+ *
+ * Styles: the .adm classes in app/globals.css.
  */
 
-const ink = 'var(--text-primary, #171614)'
-const soft = 'var(--text-secondary, #57534C)'
-// AA hard floor: the site --text-tertiary (#8A857D) is only 3.66:1 on white,
-// which fails 4.5:1 for the small labels/timestamps used here. Use a darker
-// tertiary (5.38:1) so every value on a card is legible.
-const faint = '#6E6A62'
-const green = 'var(--green, #1D7A50)'
-const accent = 'var(--accent, #171614)'
-const border = '1px solid var(--border, #E7E1D6)'
-const borderSoft = '1px solid var(--border-subtle, #F1ECE3)'
-const dm = 'var(--font-dm-sans)'
-const tnum = { fontVariantNumeric: 'tabular-nums' as const }
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type Row = any
+
+/** The owner's clock, for what happened on our side. One fixed zone, so the server render and the browser agree. */
+const OWNER_ZONE = 'America/Toronto'
 
 function money(n: number | null | undefined): string {
   return '$' + Number(n ?? 0).toFixed(2)
 }
-function dateTime(iso: string | null | undefined): string {
-  if (!iso) return '-'
-  try {
-    return new Date(iso).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' })
-  } catch { return '-' }
+function yearIn(d: Date, timeZone: string): string {
+  return new Intl.DateTimeFormat('en-US', { timeZone, year: 'numeric' }).format(d)
 }
-function dateShort(iso: string | null | undefined): string {
-  if (!iso) return '-'
-  try {
-    return new Date(iso).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })
-  } catch { return String(iso) }
+/** Today in Jamaica as YYYY-MM-DD: the day trips are planned in. */
+function jamaicaToday(): string {
+  return new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Jamaica', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date())
 }
-function flightTime(iso: string | null | undefined): string {
+/** When something happened on our side, on the owner's clock: "Nov 11, 8:31 PM EST", or "Nov 11" for the day alone. */
+function stamp(iso: string | null | undefined, dayOnly = false): string {
+  if (!iso) return '-'
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return '-'
+  const year = yearIn(d, OWNER_ZONE) === yearIn(new Date(), OWNER_ZONE) ? {} : { year: 'numeric' as const }
+  const time = dayOnly ? {} : { hour: 'numeric' as const, minute: '2-digit' as const, timeZoneName: 'short' as const }
+  return d.toLocaleString('en-US', { timeZone: OWNER_ZONE, month: 'short', day: 'numeric', ...year, ...time })
+}
+/*
+ * Trip days and leg times. Leg times are the guest's Jamaica wall-clock,
+ * stored verbatim, so they are read back in UTC: the same time the guest was
+ * quoted on the confirmation and the day-of email. Read in the admin's own
+ * zone, a Toronto operator once saw every pickup hours out from what the
+ * driver and the guest had agreed.
+ */
+/** "Sat, Dec 5". */
+function tripDay(day: string | null | undefined): string {
+  const s = String(day ?? '').slice(0, 10)
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(s)) return ''
+  const year = s.slice(0, 4) === jamaicaToday().slice(0, 4) ? {} : { year: 'numeric' as const }
+  return new Date(`${s}T12:00:00Z`).toLocaleDateString('en-US', { timeZone: 'UTC', weekday: 'short', month: 'short', day: 'numeric', ...year })
+}
+/** "Thu, Dec 3, 4:06 PM". */
+function legTime(iso: string | null | undefined): string {
   if (!iso) return ''
-  try {
-    // Leg times are the guest's Jamaica wall-clock, stored verbatim. Read them
-    // back in UTC so this dashboard shows the SAME time the guest was quoted on
-    // the confirmation and the day-of email. Without the timeZone this rendered
-    // in the admin's own zone, so a Toronto operator saw every pickup 4 hours
-    // out from what the driver and the guest had agreed.
-    return new Date(iso).toLocaleString('en-US', { timeZone: 'UTC', month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' })
-  } catch { return '' }
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return ''
+  const year = String(d.getUTCFullYear()) === jamaicaToday().slice(0, 4) ? {} : { year: 'numeric' as const }
+  return d.toLocaleString('en-US', { timeZone: 'UTC', weekday: 'short', month: 'short', day: 'numeric', ...year, hour: 'numeric', minute: '2-digit' })
+}
+/** "4:06 PM". */
+function clockTime(iso: string | null | undefined): string {
+  if (!iso) return ''
+  const d = new Date(iso)
+  return Number.isNaN(d.getTime()) ? '' : d.toLocaleTimeString('en-US', { timeZone: 'UTC', hour: 'numeric', minute: '2-digit' })
 }
 function ageLabel(iso: string): string {
   const ms = Date.now() - new Date(iso).getTime()
@@ -63,341 +90,505 @@ function ageLabel(iso: string): string {
 }
 function ref(id: string): string { return 'MAPL-' + id.slice(0, 8).toUpperCase() }
 function plural(n: number, w: string): string { return `${n} ${w}${n === 1 ? '' : 's'}` }
+/** The same, kept on one line: "2 passengers" never breaks after the 2. */
+function count(n: number, w: string): string { return plural(n, w).replace(' ', '\u00a0') }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type Row = any
+/**
+ * The first moment of service, as its Jamaica wall-clock value: a ride's
+ * landing (or its pickup for the flight home when that is its only leg), a
+ * tour's day. Null when nothing names a day.
+ */
+export function firstService(b: Row): { day: string; at: string | null; kind: 'lands' | 'pickup' | 'tour' } | null {
+  const legs: { day: string; at: string | null; kind: 'lands' | 'pickup' | 'tour' }[] = []
+  for (const i of (b.booking_items ?? []) as Row[]) {
+    if (i.arrival_at) legs.push({ day: String(i.arrival_at).slice(0, 10), at: i.arrival_at, kind: 'lands' })
+    else if (i.departure_at) legs.push({ day: String(i.departure_at).slice(0, 10), at: i.departure_at, kind: 'pickup' })
+    else if (i.date) legs.push({ day: String(i.date).slice(0, 10), at: null, kind: 'tour' })
+  }
+  return legs.filter((l) => /^\d{4}-\d{2}-\d{2}$/.test(l.day)).sort((a, b) => (a.at ?? a.day).localeCompare(b.at ?? b.day))[0] ?? null
+}
 
-const label: React.CSSProperties = { fontSize: 12, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: faint, margin: 0 }
+/** A ride's two ends in travel order: a ride with only the leg home starts at the hotel. */
+function rideEnds(i: Row): [string, string] {
+  const airport = i?.airport ?? 'MBJ'
+  const place = i?.hotel ?? i?.destination ?? ''
+  return !i?.arrival_at && i?.departure_at ? [place, airport] : [airport, place]
+}
+function rideKind(i: Row): string {
+  if (i?.trip_type === 'round_trip') return 'Round trip'
+  return !i?.arrival_at && i?.departure_at ? 'One way to the airport' : 'One way from the airport'
+}
+/** A line's charge as checkout recorded it. line_total is authoritative; older rows multiply back. */
+function lineTotal(i: Row): number {
+  return i.line_total != null ? Number(i.line_total) : Number(i.price_per_person ?? 0) * Number(i.travelers ?? 1)
+}
 
-function Field({ k, v }: { k: string; v: React.ReactNode }) {
+/** Everything a search can match: reference, guest, contact, places, flights. */
+function haystack(b: Row): string {
+  const items = (b.booking_items ?? []) as Row[]
+  return [
+    ref(b.id), b.id, b.first_name, b.last_name, b.email, b.phone, b.pickup, b.dropoff,
+    ...items.flatMap((i) => [i.hotel, i.destination, i.title, i.arrival_flight, i.departure_flight]),
+  ].filter(Boolean).join(' ').toLowerCase()
+}
+
+function Fact({ k, v }: { k: string; v: React.ReactNode }) {
   if (v == null || v === '') return null
   return (
-    <div style={{ display: 'flex', gap: 8, fontSize: 13, lineHeight: 1.5 }}>
-      <span style={{ color: faint, minWidth: 78, flexShrink: 0 }}>{k}</span>
-      <span style={{ color: ink, ...tnum }}>{v}</span>
+    <div className="adm-fact">
+      <dt className="adm-fact-k">{k}</dt>
+      <dd className="adm-fact-v">{v}</dd>
     </div>
   )
 }
 
-function MoneyRow({ k, v, em }: { k: string; v: string | null; em?: boolean }) {
-  if (v == null) return null
+function MoneyRow({ k, v, em, total }: { k: string; v: React.ReactNode; em?: boolean; total?: boolean }) {
   return (
-    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}>
-      <span style={{ color: soft }}>{k}</span>
-      <span style={{ color: em ? green : ink, fontWeight: em ? 600 : 400, ...tnum }}>{v}</span>
+    <div className={total ? 'adm-money-row adm-money-row--total' : 'adm-money-row'}>
+      <dt>{k}</dt>
+      <dd className={em ? 'adm-money-v adm-money-v--em' : 'adm-money-v'}>{v}</dd>
     </div>
   )
 }
 
-// Exported for tests/unit/attribution-first-touch-dashboard.spec.tsx only.
-export function BookingCard({ b, variant, open, onToggle }: { b: Row; variant: 'abandoned' | 'paid'; open: boolean; onToggle: () => void }) {
-  // Smooth-scroll the card into view when it opens (honors reduced motion).
-  const cardRef = useRef<HTMLDivElement>(null)
-  useEffect(() => {
-    if (!open || !cardRef.current) return
-    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches
-    requestAnimationFrame(() => cardRef.current?.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' }))
-  }, [open])
-  const isTransfer = b.booking_type === 'transfer'
-  const currency = (b.currency ?? 'usd').toUpperCase()
-  const items = (b.booking_items ?? []) as Row[]
-  // Darker amber so the "Abandoned" label clears AA (4.5:1) on the card header;
-  // #B8873D was only 3.08:1.
-  const refunded = b.status === 'refunded'
-  const statusColor = refunded ? '#8A2A0A' : variant === 'paid' ? green : '#7A5A08'
-  const statusText = refunded ? 'REFUNDED' : variant === 'paid' ? 'Paid' : 'Abandoned'
-  const money2 = (n: number | null | undefined) => (n == null ? null : `${money(n)} ${currency}`)
+function RideItem({ i }: { i: Row }) {
+  const [from, to] = rideEnds(i)
+  return (
+    <>
+      <p className="adm-bk-item-title">{from}<Arrow place="between" />{to}</p>
+      <p className="adm-bk-item-line">{[i.zone ? `Zone ${i.zone}` : null, rideKind(i), count(i.passengers ?? i.travelers ?? 1, 'passenger')].filter(Boolean).join(' · ')}</p>
+      {i.arrival_at || i.arrival_flight ? (
+        <p className="adm-bk-item-line">Lands {legTime(i.arrival_at) || '(no time given)'}{i.arrival_flight ? ` · flight ${i.arrival_flight}` : ''}</p>
+      ) : null}
+      {i.departure_at || i.departure_flight ? (
+        <p className="adm-bk-item-line">Hotel pickup {legTime(i.departure_at) || '(no time given)'}{i.departure_flight ? ` · flight home ${i.departure_flight}` : ''}</p>
+      ) : null}
+    </>
+  )
+}
 
+function TourItem({ i }: { i: Row }) {
+  return (
+    <>
+      <p className="adm-bk-item-title">{i.title}</p>
+      <p className="adm-bk-item-line">{[i.destination, tripDay(i.date), count(i.travelers ?? 1, 'traveler')].filter(Boolean).join(' · ')}</p>
+    </>
+  )
+}
+
+// Exported for tests/unit/attribution-first-touch-dashboard.spec.tsx.
+export function BookingCard({ b, variant, open, onToggle, showType = true }: {
+  b: Row
+  variant: 'abandoned' | 'paid'
+  open: boolean
+  onToggle: () => void
+  /** The Ride or Tour badge; off once the list is filtered to one kind. */
+  showType?: boolean
+}) {
+  const cardRef = useRef<HTMLLIElement>(null)
+  const panelRef = useRef<HTMLDivElement>(null)
+  const uid = useId()
+  const id = { panel: `${uid}panel`, name: `${uid}name`, sub: `${uid}sub`, meta: `${uid}meta`, side: `${uid}side` }
+
+  // Once the card has opened, bring the whole of it into view.
+  useEffect(() => {
+    const card = cardRef.current
+    const panel = panelRef.current
+    if (!open || !card || !panel) return
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    let done = false
+    const reveal = () => {
+      if (done) return
+      done = true
+      card.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'nearest' })
+    }
+    const onEnd = (e: TransitionEvent) => { if (e.target === panel && e.propertyName === 'grid-template-rows') reveal() }
+    panel.addEventListener('transitionend', onEnd)
+    // Reduced motion has no transition to wait for; otherwise a fallback in case none ends.
+    const timer = window.setTimeout(reveal, reduce ? 0 : 400)
+    return () => { panel.removeEventListener('transitionend', onEnd); window.clearTimeout(timer) }
+  }, [open])
+
+  const isTransfer = b.booking_type === 'transfer'
+  const currency = String(b.currency ?? 'usd').toUpperCase()
+  const items = (b.booking_items ?? []) as Row[]
+  const refunded = b.status === 'refunded'
   const item0 = items[0]
   const customerName = [b.first_name, b.last_name].filter(Boolean).join(' ') || '(no name)'
   const routeSummary = isTransfer
-    ? `${item0?.airport ?? 'MBJ'} → ${item0?.hotel ?? item0?.destination ?? ''}`
+    ? rideEnds(item0).join(' → ')
     : items.length === 1 ? (item0?.title ?? 'Tour') : `${items.length} experiences`
-  const paxSummary = isTransfer ? plural(item0?.passengers ?? item0?.travelers ?? 1, 'passenger') : null
+  const paxSummary = isTransfer ? count(item0?.passengers ?? item0?.travelers ?? 1, 'passenger') : count(item0?.travelers ?? 1, 'traveler')
+  const first = firstService(b)
+  const firstDate = first ? new Date(`${first.day}T12:00:00Z`) : null
+  const when = first?.at
+    ? `${first.kind === 'lands' ? 'Lands' : 'Hotel pickup'} ${clockTime(first.at)}`
+    : b.pickup_time ? `Pickup ${formatPickupTime(b.pickup_time)}` : first ? 'Tour day' : 'No date'
   const prog = progress(b)
-  const dispatchDone = prog.done
-  const dispatchTotal = prog.total
+  const next = nextStep(b)
   // The first outside touch, shown only when it differs from "Found via".
   const firstVia = b.attribution ? firstTouchLabel(b.attribution) : null
   // "Found via" an AI assistant (ChatGPT, Muse, ...) says so, so they read as one group.
   const viaAi = b.attribution ? aiAssistantLabel(b.attribution) : null
+  const coupon = Number(b.coupon_discount ?? 0)
+  // A recovery email goes out from the hourly job once a cart is 30 minutes
+  // old, so by two hours one that has not gone was skipped.
+  const recoveryDue = Date.now() - new Date(b.created_at).getTime() < 2 * 3_600_000
 
   return (
-    <div ref={cardRef} style={{ background: '#fff', border, borderRadius: 14, overflow: 'hidden', scrollMarginTop: 20 }}>
-      {/* Clickable header + at-a-glance summary (collapsed view) */}
-      {/* Header block: the clickable toggle holds only text (no focusable
-          descendants - axe nested-interactive); the dispatch link sits on its
-          own row below it. */}
-      <div style={{ background: '#FCFBF8', borderBottom: open ? borderSoft : undefined }}>
-        <div
-          role="button"
-          tabIndex={0}
-          aria-expanded={open}
-          onClick={onToggle}
-          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onToggle() } }}
-          style={{ cursor: 'pointer', padding: '14px 18px' }}
+    <li ref={cardRef} className={open ? 'adm-bk is-open' : 'adm-bk'}>
+      {/* A heading holding one native button (the accordion pattern): the
+          name and route name it, the rest describes it. The dispatch link
+          sits on its own row below (no nested controls). */}
+      <h3 className="adm-bk-h">
+        <button
+          type="button" className="adm-bk-head" onClick={onToggle}
+          aria-expanded={open} aria-controls={id.panel}
+          aria-labelledby={`${id.name} ${id.sub}`} aria-describedby={`${id.meta} ${id.side}`}
         >
-          <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
-            <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, flexWrap: 'wrap' }}>
-              <span style={{ fontWeight: 700, fontSize: 15, ...tnum }}>{ref(b.id)}</span>
-              <span style={{ fontSize: 12, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', color: faint }}>{b.booking_type ?? 'tour'}</span>
-              <span style={{ fontSize: 12, fontWeight: 700, color: statusColor }}>{statusText}</span>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <div style={{ textAlign: 'right' }}>
-                <div style={{ fontWeight: 800, fontSize: 20, ...tnum }}>{money(b.total_paid)} <span style={{ fontSize: 12, fontWeight: 600, color: faint }}>{currency}</span></div>
-                <div style={{ fontSize: 12, color: faint }}>
-                  {variant === 'paid' ? `Paid ${dateTime(b.paid_at ?? b.created_at)}` : `Started ${ageLabel(b.created_at)}`}
-                </div>
-              </div>
-              <ChevronRight size={20} strokeWidth={2.25} aria-hidden style={{ flexShrink: 0, transform: open ? 'rotate(90deg)' : 'none', transition: 'transform 0.15s ease', color: faint }} />
-            </div>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginTop: 7, flexWrap: 'wrap' }}>
-            <span style={{ fontSize: 14, fontWeight: 700, color: ink }}>{customerName}</span>
-            <span aria-hidden="true" style={{ color: faint }}>·</span>
-            <span style={{ fontSize: 13, color: soft }}><RouteText text={routeSummary} /></span>
-            {paxSummary && (
+          <span className="adm-bk-date" aria-hidden="true">
+            {firstDate ? (
               <>
-                <span aria-hidden="true" style={{ color: faint }}>·</span>
-                <span style={{ fontSize: 13, color: soft }}>{paxSummary}</span>
+                <span className="adm-bk-date-m">{firstDate.toLocaleDateString('en-US', { timeZone: 'UTC', month: 'short' })}</span>
+                <span className="adm-bk-date-d">{firstDate.getUTCDate()}</span>
+                <span className="adm-bk-date-w">{firstDate.toLocaleDateString('en-US', { timeZone: 'UTC', weekday: 'short' })}</span>
               </>
+            ) : <span className="adm-bk-date-w">No date</span>}
+          </span>
+          <span className="adm-bk-who">
+            <span id={id.name} className="adm-bk-name">{customerName}</span>
+            <span id={id.sub} className="adm-bk-sub">
+              {first && <span className="visually-hidden">{tripDay(first.day)}, </span>}
+              <RouteText text={routeSummary} /> · {paxSummary}
+            </span>
+            <span id={id.meta} className="adm-bk-meta" suppressHydrationWarning>
+              <span className="adm-nowrap adm-bk-when">{when}</span> · <span className="adm-nowrap">{ref(b.id)}</span> · <span className="adm-nowrap">{variant === 'paid' ? `Paid ${stamp(b.paid_at ?? b.created_at, true)}` : `Started ${ageLabel(b.created_at)}`}</span>
+            </span>
+          </span>
+          <span id={id.side} className="adm-bk-side">
+            <span className="adm-bk-price">{money(b.total_paid)} <span className="adm-bk-cur">{currency}</span></span>
+            {(refunded || showType) && (
+              <span className="adm-bk-badges">
+                {refunded && <span className="adm-badge adm-badge--bad">Refunded</span>}
+                {showType && <span className="adm-badge adm-badge--plain">{isTransfer ? 'Ride' : 'Tour'}</span>}
+              </span>
             )}
-          </div>
+          </span>
+          <ChevronRight className="adm-bk-chev" size={20} strokeWidth={2.25} aria-hidden />
+        </button>
+      </h3>
+      {variant === 'paid' && isTransfer && (
+        <div className="adm-bk-dispatch">
+          {/* Progress, and the step to do next, so the list says what is
+              waiting without opening dispatch. A refunded ride has none. */}
+          <span className={next ? 'adm-meta' : 'adm-meta adm-good'} suppressHydrationWarning>
+            {!next ? 'Dispatch done' : <>Dispatch: {prog.done} of {prog.total} steps{!refunded && <> · <span className="adm-bk-next">Next: {next.title}</span></>}</>}
+          </span>
+          {/* Filled only on the open card, so one action leads at a time. */}
+          <Link href={`/admin/dispatch/${b.id}`} className={open ? 'adm-btn adm-btn--primary adm-btn--sm' : 'adm-btn adm-btn--sm'}>
+            Manage dispatch<Arrow />
+          </Link>
         </div>
-        {variant === 'paid' && isTransfer && (
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 10, padding: '0 18px 12px', flexWrap: 'wrap' }}>
-            <span style={{ fontSize: 12, color: faint, ...tnum }}>Dispatch {dispatchDone}/{dispatchTotal}</span>
-            <Link href={`/admin/dispatch/${b.id}`} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, height: 32, padding: '0 13px', borderRadius: 9999, border: '1px solid var(--accent, #171614)', background: 'var(--accent, #171614)', color: '#fff', fontSize: 12, fontWeight: 600, textDecoration: 'none' }}>
-              Manage dispatch<Arrow className="ui-arrow--flush" />
-            </Link>
-          </div>
-        )}
-      </div>
+      )}
 
-      {open && (
-      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1.35fr) minmax(0,1fr)', gap: 0 }} className="admin-card-grid">
-        <div style={{ padding: '16px 18px', borderRight: borderSoft }}>
-          <p style={{ ...label, marginBottom: 10 }}>Itinerary</p>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-            {items.length === 0 && <span style={{ fontSize: 13, color: faint }}>(no items recorded)</span>}
-            {items.map((i, idx) => (
-              <div key={idx} style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-                {isTransfer ? (
-                  <>
-                    <div style={{ fontWeight: 600, fontSize: 14 }}>{(i.airport ?? 'MBJ')}<Arrow place="between" />{i.hotel ?? i.destination}</div>
-                    <div style={{ fontSize: 12, color: soft }}>
-                      {[i.zone ? `Zone ${i.zone}` : null, i.trip_type === 'round_trip' ? 'Round-trip' : 'One-way', plural(i.passengers ?? i.travelers ?? 1, 'passenger')].filter(Boolean).join(' · ')}
-                    </div>
-                    {i.arrival_at || i.arrival_flight ? (
-                      <div style={{ fontSize: 12, color: soft, ...tnum }}>Arrive: {[i.arrival_flight ? `flight ${i.arrival_flight}` : null, flightTime(i.arrival_at)].filter(Boolean).join(', ')}</div>
-                    ) : null}
-                    {i.departure_at || i.departure_flight ? (
-                      <div style={{ fontSize: 12, color: soft, ...tnum }}>Departure pickup: {[flightTime(i.departure_at), i.departure_flight ? `flight ${i.departure_flight}` : null].filter(Boolean).join(' · ')}</div>
-                    ) : null}
-                    <div style={{ fontSize: 12, color: faint, ...tnum }}>{money2(i.price_per_person)}</div>
-                  </>
-                ) : (
-                  <>
-                    <div style={{ fontWeight: 600, fontSize: 14 }}>{i.title}</div>
-                    <div style={{ fontSize: 12, color: soft, ...tnum }}>{[i.destination, dateShort(i.date), plural(i.travelers ?? 1, 'traveler')].filter(Boolean).join(' · ')}</div>
-                    <div style={{ fontSize: 12, color: faint, ...tnum }}>{money(i.price_per_person)} each · line {money((i.price_per_person ?? 0) * (i.travelers ?? 1))} {currency}</div>
-                  </>
+      {/* Always in the page, so aria-controls always names it; collapsed and
+          hidden from everyone while the card is shut. */}
+      <div id={id.panel} ref={panelRef} className="adm-bk-panel">
+        <div className="adm-bk-clip">
+          <div className="adm-bk-body">
+            {/* What and who at the left; money and records at the right. */}
+            <div className="adm-bk-part">
+              <section className="adm-bk-trip">
+                <div className="adm-bk-sec">
+                  <h4 className="adm-kicker">{isTransfer || b.pickup_time ? 'Trip (Jamaica time)' : 'Trip'}</h4>
+                  <div className="adm-bk-items">
+                    {items.length === 0 && <p className="adm-meta">(no items recorded)</p>}
+                    {items.map((i, idx) => (
+                      <div key={i.id ?? idx} className="adm-bk-item">
+                        {isTransfer ? <RideItem i={i} /> : <TourItem i={i} />}
+                        {items.length > 1 && <p className="adm-bk-item-line adm-bk-item-line--quiet">{money(lineTotal(i))}</p>}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                {(b.pickup || b.dropoff || b.pickup_time) && (
+                  <dl className="adm-facts adm-bk-rule">
+                    {/* The requested start time leads: it is what dispatch
+                        schedules a driver around, and unlike the addresses it
+                        is a commitment made to the guest at checkout. */}
+                    <Fact k="Pickup time" v={b.pickup_time ? formatPickupTime(b.pickup_time) : null} />
+                    <Fact k="Pickup" v={b.pickup} />
+                    {b.dropoff && b.dropoff !== b.pickup && <Fact k="Drop-off" v={b.dropoff} />}
+                  </dl>
                 )}
-              </div>
-            ))}
-          </div>
+                {b.special_requests && (
+                  <div className="adm-callout adm-callout--warn">
+                    <p className="adm-kicker">Special requests</p>
+                    <p className="adm-callout-text">{b.special_requests}</p>
+                  </div>
+                )}
+              </section>
 
-          {(b.pickup || b.dropoff || b.pickup_time) && (
-            <div style={{ marginTop: 12, paddingTop: 12, borderTop: borderSoft }}>
-              {/* The requested start time leads: it is what dispatch schedules
-                  a driver around, and unlike the addresses it is a commitment
-                  made to the guest at checkout. */}
-              <Field k="Pickup time" v={b.pickup_time ? formatPickupTime(b.pickup_time) : null} />
-              <Field k="Pickup" v={b.pickup} />
-              {b.dropoff && b.dropoff !== b.pickup && <Field k="Drop-off" v={b.dropoff} />}
+              <section>
+                <h4 className="adm-kicker">Guest</h4>
+                <div className="adm-bk-contact">
+                  {b.email ? <a className="adm-inline-link" href={`mailto:${b.email}`}>{b.email}</a> : <p className="adm-meta">(no email)</p>}
+                  {b.phone ? <a className="adm-inline-link adm-tnum" href={`tel:${String(b.phone).replace(/[^\d+]/g, '')}`}>{b.phone}</a> : null}
+                </div>
+                {b.country ? <p className="adm-meta">{b.country}</p> : null}
+              </section>
             </div>
-          )}
-          {b.special_requests && (
-            <div style={{ marginTop: 12, padding: '10px 12px', background: '#FCF6E4', border: '1px solid #F0E4BE', borderRadius: 8 }}>
-              <p style={{ ...label, color: '#7A5A08', marginBottom: 4 }}>Special requests</p>
-              <p style={{ fontSize: 13, color: ink, margin: 0, whiteSpace: 'pre-wrap' }}>{b.special_requests}</p>
-            </div>
-          )}
-        </div>
 
-        <div style={{ padding: '16px 18px', display: 'flex', flexDirection: 'column', gap: 14 }}>
-          <div>
-            <p style={{ ...label, marginBottom: 8 }}>Customer</p>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-              <span style={{ fontWeight: 600, fontSize: 14 }}>{[b.first_name, b.last_name].filter(Boolean).join(' ') || '(no name)'}</span>
-              <a href={`mailto:${b.email}`} style={{ fontSize: 13, color: soft, textDecoration: 'none' }}>{b.email || '(no email)'}</a>
-              {b.phone ? <span style={{ fontSize: 13, color: soft, ...tnum }}>{b.phone}</span> : null}
-              {b.country ? <span style={{ fontSize: 13, color: faint }}>{b.country}</span> : null}
-            </div>
-          </div>
+            <div className="adm-bk-part">
+              <section>
+                <h4 className="adm-kicker">Payment</h4>
+                <dl className="adm-money">
+                  {b.subtotal != null && <MoneyRow k="Subtotal" v={money(b.subtotal)} />}
+                  {b.booking_fee != null && <MoneyRow k="Service fee" v={money(b.booking_fee)} />}
+                  {Number(b.transport_cost) > 0 && <MoneyRow k="Transport" v={money(b.transport_cost)} />}
+                  {Number(b.reward_discount) > 0 && <MoneyRow k="Reward" v={`−${money(b.reward_discount)}`} em />}
+                  {coupon > 0 && <MoneyRow k={b.coupon_code ? `Code ${b.coupon_code}` : 'Code'} v={`−${money(coupon)}`} em />}
+                  <MoneyRow total k={variant === 'paid' ? 'Total paid' : 'Cart total'} v={<>{money(b.total_paid)} <span className="adm-bk-cur">{currency}</span></>} />
+                </dl>
+              </section>
 
-          <div>
-            <p style={{ ...label, marginBottom: 8 }}>Payment</p>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
-              {b.subtotal != null && <MoneyRow k="Subtotal" v={money2(b.subtotal)} />}
-              {b.booking_fee != null && <MoneyRow k="Service fee" v={money2(b.booking_fee)} />}
-              {b.transport_cost != null && Number(b.transport_cost) > 0 && <MoneyRow k="Transport" v={money2(b.transport_cost)} />}
-              {b.reward_discount != null && Number(b.reward_discount) > 0 && <MoneyRow k="Reward" v={`- ${money2(b.reward_discount)}`} em />}
-              {(b as { coupon_discount?: number | string | null }).coupon_discount != null && Number((b as { coupon_discount?: number | string | null }).coupon_discount) > 0 && <MoneyRow k={`Code ${(b as { coupon_code?: string | null }).coupon_code ?? ''}`} v={`- ${money2(Number((b as { coupon_discount?: number | string | null }).coupon_discount))}`} em />}
-              <div style={{ display: 'flex', justifyContent: 'space-between', paddingTop: 6, marginTop: 2, borderTop: borderSoft }}>
-                <span style={{ fontSize: 13, fontWeight: 700 }}>{variant === 'paid' ? 'Total paid' : 'Cart total'}</span>
-                <span style={{ fontSize: 15, fontWeight: 800, ...tnum }}>{money(b.total_paid)}</span>
-              </div>
-            </div>
-          </div>
-
-          <div>
-            <p style={{ ...label, marginBottom: 8 }}>Status</p>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-              {variant === 'abandoned' ? (
-                <Field k="Recovery" v={b.recovery_email_sent_at
-                  ? <span style={{ color: green, fontWeight: 600 }}>✓ Sent {dateTime(b.recovery_email_sent_at)}{b.recovery_email_count > 1 ? ` (${b.recovery_email_count}x)` : ''}</span>
-                  : <span style={{ color: faint }}>Queued (auto-sends at 30 min)</span>} />
-              ) : (
-                <>
-                  <Field k="Guest email" v={b.confirmation_email_sent_at ? <span style={{ color: green }}>✓ {dateTime(b.confirmation_email_sent_at)}</span> : <span style={{ color: faint }}>not sent</span>} />
-                  <Field k="Ops alert" v={b.operator_email_sent_at ? <span style={{ color: green }}>✓ {dateTime(b.operator_email_sent_at)}</span> : <span style={{ color: faint }}>not sent</span>} />
-                </>
-              )}
-              {b.stripe_payment_id ? <Field k="Stripe" v={<span style={tnum}>{b.stripe_payment_id.slice(0, 20)}…</span>} /> : null}
-              <Field k="Found via" v={b.attribution
-                ? <span style={{ fontWeight: 600 }}>{attributionLabel(b.attribution)}{viaAi ? <span style={{ color: faint, fontWeight: 400 }}> · {AI_ASSISTANT_GROUP}</span> : null}{firstVia ? <span style={{ fontWeight: 400 }}> (first: {firstVia})</span> : null}{b.attribution.landing ? <span style={{ color: faint, fontWeight: 400 }}> · landed on {String(b.attribution.landing).slice(0, 40)}</span> : null}</span>
-                : <span style={{ color: faint }}>not captured</span>} />
-              <Field k="Browser" v={browserLabel(b.attribution?.ua)} />
+              <section>
+                <h4 className="adm-kicker">Status</h4>
+                <dl className="adm-facts">
+                  {variant === 'paid' ? <Fact k="Paid" v={stamp(b.paid_at ?? b.created_at)} /> : <Fact k="Started" v={stamp(b.created_at)} />}
+                  {variant === 'abandoned' ? (
+                    <Fact k="Recovery" v={b.recovery_email_sent_at
+                      ? <span className="adm-good">Sent {stamp(b.recovery_email_sent_at)}{b.recovery_email_count > 1 ? ` (${b.recovery_email_count} times)` : ''}</span>
+                      : <span className="adm-quiet" suppressHydrationWarning>{recoveryDue ? 'Queued, goes out within 90 minutes' : 'Not sent'}</span>} />
+                  ) : (
+                    <>
+                      <Fact k="Guest email" v={b.confirmation_email_sent_at ? <span className="adm-good">Sent {stamp(b.confirmation_email_sent_at)}</span> : <span className="adm-quiet">not sent</span>} />
+                      <Fact k="Ops alert" v={b.operator_email_sent_at ? <span className="adm-good">Sent {stamp(b.operator_email_sent_at)}</span> : <span className="adm-quiet">not sent</span>} />
+                    </>
+                  )}
+                  {b.stripe_payment_id ? <Fact k="Stripe" v={<span className="adm-tnum">{String(b.stripe_payment_id).slice(0, 20)}…</span>} /> : null}
+                  <Fact k="Found via" v={b.attribution
+                    ? <span className="adm-strong">{attributionLabel(b.attribution)}{viaAi ? <span className="adm-quiet"> · {AI_ASSISTANT_GROUP}</span> : null}{firstVia ? <span className="adm-plain"> (first: {firstVia})</span> : null}{b.attribution.landing ? <span className="adm-quiet"> · landed on {String(b.attribution.landing).slice(0, 40)}</span> : null}</span>
+                    : <span className="adm-quiet">not captured</span>} />
+                  <Fact k="Browser" v={browserLabel(b.attribution?.ua)} />
+                </dl>
+              </section>
             </div>
           </div>
         </div>
       </div>
+    </li>
+  )
+}
+
+type Status = 'paid' | 'abandoned'
+type When = 'upcoming' | 'past' | 'recent'
+type Kind = 'all' | 'tour' | 'transfer'
+const PAGE = 30
+
+/**
+ * The bookings a view shows, in its order. Paid views hold paid and refunded
+ * bookings: upcoming is every trip from today (Jamaica) on, soonest first;
+ * past is the rest, latest first; recent is newest payment first. Abandoned
+ * carts are newest first. The search matches anything haystack() lists.
+ * Pure, so tests/unit/bookings-dashboard.spec.ts pins it.
+ */
+export function viewOf(bookings: Row[], o: { status: Status; when: When; kind: Kind; query: string; today: string }): Row[] {
+  const q = o.query.trim().toLowerCase()
+  let rows = bookings.filter((b) => (o.status === 'abandoned' ? b.status === 'pending' : b.status === 'paid' || b.status === 'refunded'))
+  if (o.kind !== 'all') rows = rows.filter((b) => (b.booking_type ?? 'tour') === o.kind)
+  if (q) rows = rows.filter((b) => haystack(b).includes(q))
+  if (o.status === 'abandoned') return [...rows].sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)))
+  const key = (b: Row) => { const f = firstService(b); return f ? (f.at ?? f.day) : '' }
+  if (o.when === 'upcoming') return rows.filter((b) => (firstService(b)?.day ?? '') >= o.today).sort((a, b) => key(a).localeCompare(key(b)))
+  if (o.when === 'past') return rows.filter((b) => { const d = firstService(b)?.day; return !!d && d < o.today }).sort((a, b) => key(b).localeCompare(key(a)))
+  return [...rows].sort((a, b) => String(b.paid_at ?? b.created_at).localeCompare(String(a.paid_at ?? a.created_at)))
+}
+
+/**
+ * A row of mutually exclusive choices: a native radio group (one tab stop,
+ * arrow keys move the choice, read as "1 of 3"), drawn in the admin's one
+ * selected state, the ink pill.
+ */
+function Segmented<T extends string>({ label, value, options, onChange }: {
+  label: string
+  value: T
+  options: { key: T; label: string; count?: number }[]
+  onChange: (v: T) => void
+}) {
+  const name = useId()
+  return (
+    <fieldset className="adm-fieldset">
+      <legend className="visually-hidden">{label}</legend>
+      <div className="adm-seg">
+        {options.map((o) => (
+          <label key={o.key} className={value === o.key ? 'adm-seg-btn is-on' : 'adm-seg-btn'}>
+            {/* With a count, the choice is named in words ("Paid, 2 bookings")
+                and the pill it draws is hidden from screen readers. */}
+            <input
+              type="radio" className="adm-seg-input" name={name} value={o.key} checked={value === o.key} onChange={() => onChange(o.key)}
+              aria-label={o.count !== undefined ? `${o.label}, ${plural(o.count, 'booking')}` : undefined}
+            />
+            {o.count !== undefined ? (
+              <span className="adm-seg-text" aria-hidden="true">{o.label}<span className="adm-seg-count">{o.count}</span></span>
+            ) : o.label}
+          </label>
+        ))}
+      </div>
+    </fieldset>
+  )
+}
+
+const LIST_NAME = { upcoming: 'Upcoming trips', past: 'Past trips', recent: 'Recently paid', abandoned: 'Abandoned checkouts' } as const
+
+export default function BookingsDashboard({ bookings }: { bookings: Row[] }) {
+  const [status, setStatus] = useState<Status>('paid')
+  const [when, setWhen] = useState<When>('upcoming')
+  const [kind, setKind] = useState<Kind>('all')
+  const [query, setQuery] = useState('')
+  const [limit, setLimit] = useState(PAGE)
+  // Accordion: exactly one booking card open at a time.
+  const [openId, setOpenId] = useState<string | null>(null)
+  const searchId = useId()
+  const today = jamaicaToday()
+  const soonEnd = shiftDay(today, 14)
+
+  const abandoned = bookings.filter((b) => b.status === 'pending')
+  // Refunded bookings stay in the paid list with a badge: a trip that took
+  // money and gave it back is exactly what an operator needs to SEE, not lose.
+  const paid = bookings.filter((b) => b.status === 'paid' || b.status === 'refunded')
+  const genuinelyPaid = bookings.filter((b) => b.status === 'paid')
+  const refundedCount = paid.length - genuinelyPaid.length
+  const recovered = abandoned.filter((b) => b.recovery_email_sent_at)
+  const paidRevenue = genuinelyPaid.reduce((s, b) => s + Number(b.total_paid ?? 0), 0)
+  const abandonedValue = abandoned.reduce((s, b) => s + Number(b.total_paid ?? 0), 0)
+  const upcoming = genuinelyPaid.filter((b) => (firstService(b)?.day ?? '') >= today)
+  const inTwoWeeks = upcoming.filter((b) => (firstService(b)?.day ?? '') <= soonEnd)
+
+  const stats = [
+    { label: 'Upcoming trips', value: String(upcoming.length), sub: `${inTwoWeeks.length} in the next 14 days` },
+    { label: 'Paid bookings', value: String(genuinelyPaid.length), sub: `${money(paidRevenue)} USD collected${refundedCount ? `, ${refundedCount} refunded` : ''}` },
+    { label: 'Abandoned carts', value: String(abandoned.length), sub: `${money(abandonedValue)} USD recoverable` },
+    { label: 'Recovery emails sent', value: String(recovered.length), sub: `of ${abandoned.length} abandoned` },
+  ]
+
+  const list = useMemo(() => viewOf(bookings, { status, when, kind, query, today }), [bookings, status, when, kind, query, today])
+
+  // A new view starts at the top of its list.
+  useEffect(() => { setLimit(PAGE) }, [status, when, kind, query])
+  const shown = list.slice(0, limit)
+  const listKey = `${status}-${when}-${kind}`
+  const listName = LIST_NAME[status === 'abandoned' ? 'abandoned' : when]
+  const shownText = `Showing ${Math.min(shown.length, list.length)} of ${plural(list.length, 'booking')}.`
+
+  // Screen readers hear the result once the choices or the typing settle,
+  // not after every keystroke.
+  const spokenNow = `${listName}${kind === 'tour' ? ', tours' : kind === 'transfer' ? ', rides' : ''}${query.trim() ? `, matching "${query.trim()}"` : ''}: ${shownText.toLowerCase()}`
+  const [spoken, setSpoken] = useState(spokenNow)
+  useEffect(() => {
+    const t = window.setTimeout(() => setSpoken(spokenNow), 700)
+    return () => window.clearTimeout(t)
+  }, [spokenNow])
+
+  // Upcoming trips split at two weeks out, the stretch being prepared for;
+  // every other view is one list, named for screen readers only.
+  const groups = status === 'paid' && when === 'upcoming'
+    ? [
+        { key: 'soon', title: 'Next 14 days', visible: true, rows: shown.filter((b) => (firstService(b)?.day ?? '') <= soonEnd), none: 'None in the next 14 days.' },
+        { key: 'later', title: 'Later', visible: true, rows: shown.filter((b) => (firstService(b)?.day ?? '') > soonEnd), none: null },
+      ]
+    : [{ key: 'all', title: listName, visible: false, rows: shown, none: null }]
+
+  const describe = status === 'abandoned'
+    ? 'Checkouts that were never paid. A recovery email goes out by itself 30 to 90 minutes after a cart starts, if it is still unpaid.'
+    : when === 'upcoming' ? 'Paid trips from today on, soonest first.' : when === 'past' ? 'Trips that have happened, most recent first.' : 'Every paid booking, newest payment first.'
+  const empty = query.trim()
+    ? `Nothing matches "${query.trim()}". Try a surname, an email or the MAPL reference.`
+    : status === 'abandoned' ? 'No abandoned carts. 🇯🇲' : when === 'upcoming' ? 'No upcoming trips yet. New bookings show here as they come in. 🇯🇲' : 'No bookings here.'
+
+  return (
+    <div className="adm">
+      <h1 className="adm-h1">Bookings</h1>
+      <p className="adm-lead">Trip times are Jamaica time. Search finds a booking by guest, reference, hotel or flight.</p>
+
+      <dl className="adm-tiles">
+        {stats.map((s) => (
+          <div key={s.label} className="adm-tile">
+            <dt className="adm-kicker">{s.label}</dt>
+            <dd className="adm-tile-v">{s.value}</dd>
+            <dd className="adm-tile-sub">{s.sub}</dd>
+          </div>
+        ))}
+      </dl>
+
+      <div className="adm-toolbar">
+        <div className="adm-search">
+          <label htmlFor={searchId} className="visually-hidden">Search bookings</label>
+          <Search className="adm-search-icon" size={18} strokeWidth={2.25} aria-hidden />
+          <input
+            id={searchId} type="search" className="adm-input adm-search-input" value={query} onChange={(e) => setQuery(e.target.value)}
+            placeholder="Name, email, ref, hotel or flight" autoComplete="off" spellCheck={false} enterKeyHint="search"
+          />
+        </div>
+        <div className="adm-toolbar-row">
+          <Segmented label="Booking status" value={status} onChange={setStatus} options={[
+            { key: 'paid', label: 'Paid', count: paid.length },
+            { key: 'abandoned', label: 'Abandoned', count: abandoned.length },
+          ]} />
+          {status === 'paid' && (
+            <Segmented label="When" value={when} onChange={setWhen} options={[
+              { key: 'upcoming', label: 'Upcoming' },
+              { key: 'past', label: 'Past' },
+              { key: 'recent', label: 'Recently paid' },
+            ]} />
+          )}
+          <Segmented label="Type" value={kind} onChange={setKind} options={[
+            { key: 'all', label: 'All' },
+            { key: 'tour', label: 'Tours' },
+            { key: 'transfer', label: 'Rides' },
+          ]} />
+        </div>
+      </div>
+
+      <p className="adm-meta adm-bk-count">{describe} {shownText}</p>
+      <p className="visually-hidden" aria-live="polite" aria-atomic="true">{spoken}</p>
+      {list.length === 0 ? (
+        <p className="adm-empty adm-enter">{empty}</p>
+      ) : (
+        <div key={listKey} className="adm-bk-groups adm-rows">
+          {groups.filter((g) => g.rows.length > 0 || g.none).map((g) => (
+            <div key={g.key} className="adm-bk-group">
+              <h2 className={g.visible ? 'adm-bk-group-h' : 'visually-hidden'}>{g.title}</h2>
+              {g.rows.length > 0 ? (
+                <ol className="adm-bk-list">
+                  {g.rows.map((b) => (
+                    <BookingCard
+                      key={b.id} b={b} variant={status} showType={kind === 'all'}
+                      open={openId === b.id} onToggle={() => setOpenId((o) => (o === b.id ? null : b.id))}
+                    />
+                  ))}
+                </ol>
+              ) : (
+                <p className="adm-meta">{g.none}</p>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+      {list.length > shown.length && (
+        <button type="button" className="adm-btn adm-more" onClick={() => setLimit((n) => n + PAGE)}>
+          Show {Math.min(PAGE, list.length - shown.length)} more
+        </button>
       )}
     </div>
   )
 }
 
-type Tab = 'abandoned' | 'paid'
-type Filter = 'all' | 'tour' | 'transfer'
-
-export default function BookingsDashboard({ bookings }: { bookings: Row[] }) {
-  const [tab, setTab] = useState<Tab>('paid')
-  // Accordion: exactly one booking card open at a time.
-  const [openId, setOpenId] = useState<string | null>(null)
-  const [filter, setFilter] = useState<Filter>('all')
-
-  const abandoned = bookings.filter((b) => b.status === 'pending')
-  // Refunded bookings stay in this list with a badge: a trip that took money
-  // and gave it back is exactly what an operator needs to SEE, not lose.
-  const paid = bookings.filter((b) => b.status === 'paid' || b.status === 'refunded')
-  const genuinelyPaid = bookings.filter((b) => b.status === 'paid')
-  const recovered = abandoned.filter((b) => b.recovery_email_sent_at)
-  const paidRevenue = genuinelyPaid.reduce((s, b) => s + Number(b.total_paid ?? 0), 0)
-  const abandonedValue = abandoned.reduce((s, b) => s + Number(b.total_paid ?? 0), 0)
-
-  const stats = [
-    { label: 'Paid bookings', value: String(paid.length), sub: money(paidRevenue) + ' collected' },
-    { label: 'Abandoned carts', value: String(abandoned.length), sub: money(abandonedValue) + ' recoverable' },
-    { label: 'Recovery emails sent', value: String(recovered.length), sub: 'of ' + abandoned.length + ' abandoned' },
-    { label: 'Total bookings', value: String(bookings.length), sub: 'last 300' },
-  ]
-
-  const base = tab === 'abandoned' ? abandoned : paid
-  const list = filter === 'all' ? base : base.filter((b) => (b.booking_type ?? 'tour') === filter)
-  const shown = tab === 'paid' ? list.slice(0, 60) : list
-
-  const tabs: { key: Tab; label: string; count: number }[] = [
-    { key: 'paid', label: 'Recent paid bookings', count: paid.length },
-    { key: 'abandoned', label: 'Abandoned carts', count: abandoned.length },
-  ]
-  const filters: { key: Filter; label: string }[] = [
-    { key: 'all', label: 'All' },
-    { key: 'tour', label: 'Tours' },
-    { key: 'transfer', label: 'Transfers' },
-  ]
-
-  return (
-    <div style={{ fontFamily: dm, color: ink }}>
-      <h1 style={{ fontFamily: dm, fontWeight: 800, fontSize: 26, letterSpacing: '-0.025em', margin: 0 }}>Bookings</h1>
-
-      {/* Stat tiles */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 14, marginTop: 22 }}>
-        {stats.map((s) => (
-          <div key={s.label} style={{ background: '#fff', border, borderRadius: 14, padding: '18px 20px' }}>
-            <div style={label}>{s.label}</div>
-            <div style={{ fontFamily: dm, fontWeight: 800, fontSize: 30, letterSpacing: '-0.02em', marginTop: 8, ...tnum }}>{s.value}</div>
-            <div style={{ fontSize: 12, color: soft, marginTop: 2, ...tnum }}>{s.sub}</div>
-          </div>
-        ))}
-      </div>
-
-      {/* Tabs + filter */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, marginTop: 34, flexWrap: 'wrap' }}>
-        <div role="tablist" aria-label="Booking status" style={{ display: 'inline-flex', gap: 4, background: '#fff', border, borderRadius: 9999, padding: 4 }}>
-          {tabs.map((t) => {
-            const active = tab === t.key
-            return (
-              <button
-                key={t.key}
-                role="tab"
-                aria-selected={active}
-                onClick={() => setTab(t.key)}
-                style={{
-                  display: 'inline-flex', alignItems: 'center', gap: 8, height: 38, padding: '0 18px',
-                  borderRadius: 9999, border: 'none', cursor: 'pointer', fontFamily: dm, fontSize: 13, fontWeight: 600,
-                  background: active ? accent : 'transparent', color: active ? '#fff' : soft, transition: 'all 0.15s ease',
-                }}
-              >
-                {t.label}
-                <span style={{ ...tnum, fontSize: 12, fontWeight: 700, padding: '1px 8px', borderRadius: 9999, background: active ? 'rgba(255,255,255,0.22)' : 'var(--surface, #F1ECE3)', color: active ? '#fff' : faint }}>{t.count}</span>
-              </button>
-            )
-          })}
-        </div>
-
-        <div role="group" aria-label="Filter by type" style={{ display: 'inline-flex', gap: 6 }}>
-          {filters.map((f) => {
-            const active = filter === f.key
-            return (
-              <button
-                key={f.key}
-                aria-pressed={active}
-                onClick={() => setFilter(f.key)}
-                style={{
-                  height: 36, padding: '0 16px', borderRadius: 9999, cursor: 'pointer', fontFamily: dm, fontSize: 13, fontWeight: 600,
-                  border: active ? '1px solid var(--gold, #B8873D)' : border,
-                  background: active ? 'var(--gold-dim, rgba(184,135,58,0.12))' : '#fff',
-                  color: active ? 'var(--gold-text, #8A6D1F)' : soft, transition: 'all 0.15s ease',
-                }}
-              >
-                {f.label}
-              </button>
-            )
-          })}
-        </div>
-      </div>
-
-      {/* Active list */}
-      <div style={{ marginTop: 12 }}>
-        <p style={{ fontSize: 12, color: faint, margin: '10px 2px 0', minHeight: 18 }}>
-          {tab === 'abandoned'
-            ? 'Pending checkouts that were never paid. A recovery email is sent automatically once a cart is 30 minutes old and still unpaid.'
-            : 'Completed, paid bookings.'}
-          {'  '}Showing {shown.length}{filter !== 'all' ? ` ${filter === 'tour' ? 'tour' : 'transfer'}` : ''} {shown.length === 1 ? 'booking' : 'bookings'}.
-        </p>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 14, marginTop: 16 }}>
-          {shown.length === 0 && (
-            <div style={{ background: '#fff', border, borderRadius: 14, padding: 26, color: faint, textAlign: 'center' }}>
-              {tab === 'abandoned' ? 'No abandoned carts here. 🇯🇲' : 'No paid bookings here.'}
-            </div>
-          )}
-          {shown.map((b) => <BookingCard key={b.id} b={b} variant={tab} open={openId === b.id} onToggle={() => setOpenId((o) => (o === b.id ? null : b.id))} />)}
-        </div>
-      </div>
-    </div>
-  )
+/** YYYY-MM-DD plus n days. */
+function shiftDay(day: string, n: number): string {
+  const d = new Date(`${day}T12:00:00Z`)
+  d.setUTCDate(d.getUTCDate() + n)
+  return d.toISOString().slice(0, 10)
 }
 
 /** '08:30' -> '8:30 AM'. Returns the raw value if it is not HH:MM. */

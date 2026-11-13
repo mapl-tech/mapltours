@@ -3514,8 +3514,9 @@ a.pf-stat:hover { background: var(--surface); }
    44px tall; the current section is the one filled pill. */
 .adm-bar { background: #fff; border-bottom: 1px solid var(--border); font-family: var(--font-dm-sans); color: var(--text-primary); }
 .adm-bar-in {
+  /* The nav strip's own 4px padding plus this 4px gap keep 8px between the brand row and the nav row on a phone. */
   display: flex; flex-wrap: wrap; align-items: center; gap: 4px 24px;
-  padding: 6px clamp(16px, 3vw, 48px);
+  padding: 4px clamp(16px, 3vw, 48px);
 }
 .adm-brand { display: inline-flex; align-items: center; gap: 12px; min-height: 44px; color: inherit; text-decoration: none; flex-shrink: 0; }
 .adm-brand-logo { display: block; height: 32px; width: auto; }
@@ -3532,8 +3533,15 @@ a.pf-stat:hover { background: var(--surface); }
 .adm-bar-out:hover { color: var(--text-primary); }
 .adm-nav { order: 2; flex: 1 1 0; min-width: 0; }
 .adm-nav-list {
-  display: flex; gap: 4px; margin: 0; padding: 0; list-style: none;
+  /* 4px of room on every side for the focus ring, which the scroll box would clip. */
+  display: flex; gap: 8px; margin: 0; padding: 4px 32px 4px 4px; list-style: none;
   overflow-x: auto; scrollbar-width: none; overscroll-behavior-x: contain;
+  /* A link scrolled into view stops clear of the ring's 4px and the 32px fade. */
+  scroll-padding-inline: 4px 40px;
+  /* When the sections do not fit, the strip fades at its right edge so it
+     reads as scrollable; the 32px end padding lets the last one scroll clear
+     of the fade (and keeps it clear when everything fits). */
+  mask-image: linear-gradient(to right, #000 calc(100% - 32px), transparent);
 }
 .adm-nav-list::-webkit-scrollbar { display: none; }
 .adm-nav-link {
@@ -3546,245 +3554,397 @@ a.pf-stat:hover { background: var(--surface); }
 @media (max-width: 63.99rem) {
   .adm-bar-out { order: 2; }
   .adm-nav { order: 3; flex-basis: 100%; margin: 0 calc(-1 * clamp(16px, 3vw, 48px)); }
-  .adm-nav-list { padding: 0 clamp(16px, 3vw, 48px) 4px; scroll-padding-inline: clamp(16px, 3vw, 48px); }
+  .adm-nav-list { padding: 4px calc(clamp(16px, 3vw, 48px) + 32px) 4px clamp(16px, 3vw, 48px); scroll-padding-inline: clamp(16px, 3vw, 48px) 40px; }
 }
 @media (prefers-reduced-motion: reduce) { .adm-nav-link { transition: none; } }
 
-/* ── Admin tour prices desk (/admin/tour-rates) ──
+/* ── Admin screens: the shared .adm system (first used by /admin/tour-rates) ──
    One scoped token set; the desk's markup uses these classes and carries no
    colour or size of its own. Type in rem, spacing on the 4/8 px scale: 12px
    inside a group, 24px between groups, so space alone tells them apart.
    Contrast, measured: ink 18.1:1 on white, soft 8.58:1, faint 5.4:1 on white
    and 5.1:1 on the warm panel, warn 7.1:1 on white and 6.4:1 on its tint,
    ok 5.7:1 on its tint, bad 6.5:1 on white and 5.4:1 on its tint. */
-.rd {
-  --rd-ink: var(--text-primary);
-  --rd-soft: var(--text-secondary);
-  --rd-faint: #6E6A62;
-  --rd-hairline: var(--border);          /* cards, table rows */
-  --rd-rule: var(--border-strong);       /* dotted leaders in rate lists */
+.adm {
+  --adm-ink: var(--text-primary);
+  --adm-soft: var(--text-secondary);
+  --adm-faint: #6E6A62;
+  --adm-hairline: var(--border);          /* cards, table rows */
+  --adm-rule: var(--border-strong);       /* dotted leaders in rate lists */
   /* Fields and controls: 3.63:1 on white, 3.45:1 on the warm panel, the
      3:1 WCAG 1.4.11 asks of the edge that shows where a field is (the same
      grey as .cpop-input). */
-  --rd-edge: #8A867D;
-  --rd-panel: var(--bg-warm);
-  --rd-warn-bg: #FFF1D6;  --rd-warn: #7A4F00;
-  --rd-ok-bg: #E3F3EA;    --rd-ok: #0F6B45;
-  --rd-bad-bg: #FBE4E2;   --rd-bad: #B3261E;
-  --rd-plain-bg: #EEEDE9; --rd-plain: #4E4C47;
-  --rd-fs-meta: 0.875rem;                               /* 14px: help, labels, meta */
-  --rd-fs-body: 0.875rem;                               /* 14px */
-  --rd-fs-ui: 0.9375rem;                                /* 15px */
-  --rd-fs-field: 1rem;                                  /* 16px: iOS never zooms */
-  --rd-fs-h3: 1.0625rem;                                /* 17px */
-  --rd-fs-h2: 1.25rem;                                  /* 20px */
-  --rd-fs-h1: clamp(1.5rem, 1.25rem + 1vw, 1.75rem);    /* 24 to 28px */
-  --rd-gap: 12px;
-  --rd-group: 24px;
+  --adm-edge: #8A867D;
+  --adm-panel: var(--bg-warm);
+  --adm-warn-bg: #FFF1D6;  --adm-warn: #7A4F00;
+  --adm-ok-bg: #E3F3EA;    --adm-ok: #0F6B45;
+  --adm-bad-bg: #FBE4E2;   --adm-bad: #B3261E;
+  --adm-plain-bg: #EEEDE9; --adm-plain: #4E4C47;
+  --adm-fs-meta: 0.875rem;                               /* 14px: help, labels, meta */
+  --adm-fs-body: 0.875rem;                               /* 14px */
+  --adm-fs-ui: 0.9375rem;                                /* 15px */
+  --adm-fs-field: 1rem;                                  /* 16px: iOS never zooms */
+  --adm-fs-h3: 1.0625rem;                                /* 17px */
+  --adm-fs-h2: 1.25rem;                                  /* 20px */
+  --adm-fs-h1: clamp(1.75rem, 1.4rem + 1vw, 2rem);       /* 28 to 32px */
+  --adm-gap: 12px;
+  --adm-group: 24px;
+  --adm-section: 32px;                                    /* between a page's blocks (tiles, then the controls) */
+  --adm-open: 0.22s;                                      /* a card's details opening or shutting */
   color-scheme: light;
   font-family: var(--font-dm-sans);
-  color: var(--rd-ink);
+  color: var(--adm-ink);
 }
-/* On a phone the owner reads prices at arm's length: body, tables and buttons
-   at 16px, help and labels at 15px. */
-@media (max-width: 37.5rem) {
-  .rd { --rd-fs-body: 1rem; --rd-fs-ui: 1rem; --rd-fs-meta: 0.9375rem; }
+/* On a phone or any touch screen (a tablet too) the owner reads at arm's
+   length: body, tables and buttons at 16px, help and labels at 15px. */
+@media (max-width: 37.5rem), (pointer: coarse) {
+  .adm { --adm-fs-body: 1rem; --adm-fs-ui: 1rem; --adm-fs-meta: 0.9375rem; }
 }
-.rd-page { min-height: 100vh; background: var(--bg-warm); }
+.adm-page { min-height: 100vh; background: var(--bg-warm); }
 /* The page's top and bottom space compress on a phone (24 and 48px) and open to 40 and 96px on a wide screen. */
-.rd-wrap { width: 100%; max-width: 65rem; margin: 0 auto; padding: clamp(24px, 4vw, 40px) clamp(16px, 3vw, 48px) clamp(48px, 8vw, 96px); box-sizing: border-box; }
+.adm-wrap { width: 100%; max-width: 65rem; margin: 0 auto; padding: clamp(24px, 4vw, 40px) clamp(16px, 3vw, 48px) clamp(48px, 8vw, 96px); box-sizing: border-box; }
 /* Zero specificity, so every class below sets its own margin. */
-:where(.rd) :where(p, h1, h2, h3, h4, h5, dl, dd, ul, ol) { margin: 0; }
-.rd-inline-link { color: var(--rd-ink); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; }
-.rd-h1 { font-size: var(--rd-fs-h1); font-weight: 800; letter-spacing: -0.025em; line-height: 1.15; margin-top: 4px; }
-.rd-h2 { font-size: var(--rd-fs-h2); font-weight: 800; letter-spacing: -0.02em; line-height: 1.25; }
-.rd-h3 { font-size: var(--rd-fs-h3); font-weight: 700; letter-spacing: -0.01em; line-height: 1.3; }
-.rd-h4 { font-size: var(--rd-fs-ui); font-weight: 700; line-height: 1.35; }
-.rd-h4--ask { font-size: 1rem; font-weight: 800; }
-.rd-h5 { font-size: var(--rd-fs-body); font-weight: 700; line-height: 1.4; }
-.rd-lead { font-size: var(--rd-fs-ui); line-height: 1.55; color: var(--rd-soft); max-width: 42.5rem; margin-top: 8px; }
-.rd-meta { font-size: var(--rd-fs-meta); line-height: 1.45; color: var(--rd-faint); margin-top: 4px; }
-.rd-help { font-size: var(--rd-fs-meta); line-height: 1.45; color: var(--rd-faint); margin-top: 8px; }
-.rd-help--soft { color: var(--rd-soft); }
-.rd-help--warn { color: var(--rd-warn); }
-.rd-status { font-size: var(--rd-fs-meta); line-height: 1.45; color: var(--rd-faint); }
-.rd-overview { margin-top: 4px; font-size: var(--rd-fs-meta); line-height: 1.45; color: var(--rd-soft); font-weight: 600; }
+:where(.adm) :where(p, h1, h2, h3, h4, h5, dl, dd, ul, ol) { margin: 0; }
+.adm-inline-link { color: var(--adm-ink); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; }
+.adm-h1 { font-size: var(--adm-fs-h1); font-weight: 800; letter-spacing: -0.025em; line-height: 1.15; margin-top: 4px; }
+.adm-h2 { font-size: var(--adm-fs-h2); font-weight: 800; letter-spacing: -0.02em; line-height: 1.25; }
+.adm-h3 { font-size: var(--adm-fs-h3); font-weight: 700; letter-spacing: -0.01em; line-height: 1.3; }
+.adm-h4 { font-size: var(--adm-fs-ui); font-weight: 700; line-height: 1.35; }
+.adm-h4--ask { font-size: 1rem; font-weight: 800; }
+.adm-h5 { font-size: var(--adm-fs-body); font-weight: 700; line-height: 1.4; }
+.adm-lead { font-size: var(--adm-fs-ui); line-height: 1.55; color: var(--adm-soft); max-width: 42.5rem; margin-top: 8px; }
+.adm-meta { font-size: var(--adm-fs-meta); line-height: 1.45; color: var(--adm-faint); margin-top: 4px; }
+.adm-help { font-size: var(--adm-fs-meta); line-height: 1.45; color: var(--adm-faint); margin-top: 8px; }
+.adm-help--soft { color: var(--adm-soft); }
+.adm-help--warn { color: var(--adm-warn); }
+.adm-status { font-size: var(--adm-fs-meta); line-height: 1.45; color: var(--adm-faint); }
+.adm-overview { margin-top: 4px; font-size: var(--adm-fs-meta); line-height: 1.45; color: var(--adm-soft); font-weight: 600; }
 
-.rd-note { margin-top: 16px; padding: 12px 16px; border-radius: var(--r-md); font-size: var(--rd-fs-body); line-height: 1.5; }
-.rd-note--ok { background: var(--rd-ok-bg); color: var(--rd-ok); font-weight: 600; }
-.rd-note--warn { background: var(--rd-warn-bg); color: var(--rd-warn); }
-.rd-note--bad { background: var(--rd-bad-bg); color: var(--rd-bad); font-weight: 600; }
-.rd-banner { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--rd-gap); }
+.adm-note { margin-top: 16px; padding: 12px 16px; border-radius: var(--r-md); font-size: var(--adm-fs-body); line-height: 1.5; }
+.adm-note--ok { background: var(--adm-ok-bg); color: var(--adm-ok); font-weight: 600; }
+.adm-note--warn { background: var(--adm-warn-bg); color: var(--adm-warn); }
+.adm-note--bad { background: var(--adm-bad-bg); color: var(--adm-bad); font-weight: 600; }
+.adm-banner { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--adm-gap); }
 
-.rd-section { margin-top: 32px; }
-.rd-section--history { margin-top: 40px; }
-.rd-list { list-style: none; padding: 0; margin-top: var(--rd-gap); display: flex; flex-direction: column; gap: var(--rd-gap); }
+.adm-section { margin-top: 32px; }
+.adm-section--history { margin-top: 40px; }
+.adm-list { list-style: none; padding: 0; margin-top: var(--adm-gap); display: flex; flex-direction: column; gap: var(--adm-gap); }
 
 /* A tour card is a container: its padding follows its own width, not the
    window's, so it reads the same in a narrow column or a wide one. */
-.rd-card { container-type: inline-size; background: #fff; border: 1px solid var(--rd-hairline); border-radius: var(--r-lg); }
-.rd-card-in { padding: 16px; }
-@container (min-width: 37.5rem) { .rd-card-in { padding: 24px; } }
-.rd-card-head { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--rd-gap); flex-wrap: wrap; }
-.rd-card-main { min-width: 0; flex: 1 1 20rem; }
-.rd-title-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.adm-card { container-type: inline-size; background: #fff; border: 1px solid var(--adm-hairline); border-radius: var(--r-lg); }
+.adm-card-in { padding: 16px; }
+@container (min-width: 37.5rem) { .adm-card-in { padding: 24px; } }
+.adm-card-head { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--adm-gap); flex-wrap: wrap; }
+.adm-card-main { min-width: 0; flex: 1 1 20rem; }
+.adm-title-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 
-.rd-badge {
+.adm-badge {
   display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px; border-radius: 9999px;
   font-size: 0.75rem; font-weight: 700; letter-spacing: 0.04em; line-height: 1.4;
 }
-.rd-badge--default { background: var(--rd-plain-bg); color: var(--rd-plain); }
-.rd-badge--live { background: var(--rd-ok-bg); color: var(--rd-ok); }
-.rd-badge--publishing { background: var(--rd-warn-bg); color: var(--rd-warn); }
+.adm-badge--default { background: var(--adm-plain-bg); color: var(--adm-plain); }
+.adm-badge--live { background: var(--adm-ok-bg); color: var(--adm-ok); }
+.adm-badge--publishing { background: var(--adm-warn-bg); color: var(--adm-warn); }
 /* The in-progress cue: a dot that pulses three times (4.8 s, under the 5 s
    WCAG 2.2.2 allows without a pause control), then stays lit. */
-.rd-dot {
+.adm-dot {
   display: inline-block; flex-shrink: 0; width: 7px; height: 7px; border-radius: 50%; background: currentColor;
-  vertical-align: 0.1em; animation: rdPulse 1.6s ease-in-out 3;
+  vertical-align: 0.1em; animation: admPulse 1.6s ease-in-out 3;
 }
-.rd-banner-text .rd-dot { margin-right: 8px; }
-@keyframes rdPulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+.adm-banner-text .adm-dot { margin-right: 8px; }
+@keyframes admPulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
 
 /* A card described in full, or what changed in it. */
-.rd-block { margin-top: var(--rd-gap); font-size: var(--rd-fs-body); line-height: 1.5; color: var(--rd-soft); }
-.rd-block-label { display: block; color: var(--rd-ink); font-weight: 700; }
+.adm-block { margin-top: var(--adm-gap); font-size: var(--adm-fs-body); line-height: 1.5; color: var(--adm-soft); }
+.adm-block-label { display: block; color: var(--adm-ink); font-weight: 700; }
 /* Only the label carries the status colour; what changed reads as content. */
-.rd-block--warn .rd-block-label { color: var(--rd-warn); }
-.rd-rates {
+.adm-block--warn .adm-block-label { color: var(--adm-warn); }
+.adm-rates {
   display: grid; column-gap: 24px; margin: 4px 0;
   /* Three columns at most, so six areas read as 3 x 2 or 2 x 3, west to east. */
   grid-template-columns: repeat(auto-fill, minmax(max(12.5rem, calc((100% - 48px) / 3)), 1fr));
 }
-.rd-rate, .rd-change { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; padding: 4px 0; border-bottom: 1px dotted var(--rd-rule); }
-.rd-rate dd { font-weight: 700; color: var(--rd-ink); font-variant-numeric: tabular-nums; }
-.rd-changes { list-style: none; padding: 0; margin-top: 4px; max-width: 32rem; }
-.rd-change-value { text-align: right; font-variant-numeric: tabular-nums; }
-.rd-change-value b { color: var(--rd-ink); }
-.rd-was { font-weight: 400; }
+.adm-rate, .adm-change { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; padding: 4px 0; border-bottom: 1px dotted var(--adm-rule); }
+.adm-rate dd { font-weight: 700; color: var(--adm-ink); font-variant-numeric: tabular-nums; }
+.adm-changes { list-style: none; padding: 0; margin-top: 4px; max-width: 32rem; }
+.adm-change-value { text-align: right; font-variant-numeric: tabular-nums; }
+.adm-change-value b { color: var(--adm-ink); }
+.adm-was { font-weight: 400; }
 
 /* The editor. */
-.rd-editor { margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--rd-hairline); display: flex; flex-direction: column; gap: var(--rd-group); }
-.rd-fields { display: flex; flex-direction: column; gap: var(--rd-group); }
-.rd-fieldset { border: none; margin: 0; padding: 0; min-width: 0; }
-.rd-label, .rd-legend { display: block; padding: 0; margin: 0 0 8px; font-size: var(--rd-fs-meta); font-weight: 700; color: var(--rd-ink); line-height: 1.4; }
-.rd-label--area { font-weight: 600; }
-.rd-legend + .rd-help { margin: 0 0 var(--rd-gap); }
-.rd-grid3 {
-  display: grid; gap: var(--rd-gap);
+.adm-editor { margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--adm-hairline); display: flex; flex-direction: column; gap: var(--adm-group); }
+.adm-fields { display: flex; flex-direction: column; gap: var(--adm-group); }
+.adm-fieldset { border: none; margin: 0; padding: 0; min-width: 0; }
+.adm-label, .adm-legend { display: block; padding: 0; margin: 0 0 8px; font-size: var(--adm-fs-meta); font-weight: 700; color: var(--adm-ink); line-height: 1.4; }
+.adm-label--area { font-weight: 600; }
+.adm-legend + .adm-help { margin: 0 0 var(--adm-gap); }
+.adm-grid3 {
+  display: grid; gap: var(--adm-gap);
   /* One track set for every row of fields, so the inputs line up in three
      columns on a wide screen and stack on a phone. */
-  grid-template-columns: repeat(auto-fill, minmax(max(12.5rem, calc((100% - 2 * var(--rd-gap)) / 3)), 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(max(12.5rem, calc((100% - 2 * var(--adm-gap)) / 3)), 1fr));
 }
 /* The six area rates: two to a row even on a phone (a three-digit amount
    needs no more), cells aligned at the bottom so the inputs line up when a
    long area name wraps. */
-.rd-grid3--areas { grid-template-columns: repeat(auto-fill, minmax(max(8.5rem, calc((100% - 2 * var(--rd-gap)) / 3)), 1fr)); align-items: end; }
-.rd-choice {
-  display: flex; gap: var(--rd-gap); align-items: flex-start; padding: 12px 16px; border-radius: var(--r-md);
-  border: 1px solid var(--rd-edge); background: #fff; cursor: pointer;
+.adm-grid3--areas { grid-template-columns: repeat(auto-fill, minmax(max(8.5rem, calc((100% - 2 * var(--adm-gap)) / 3)), 1fr)); align-items: end; }
+.adm-choice {
+  display: flex; gap: var(--adm-gap); align-items: flex-start; padding: 12px 16px; border-radius: var(--r-md);
+  border: 1px solid var(--adm-edge); background: #fff; cursor: pointer;
   transition: border-color var(--dur-fast) var(--ease-out), background-color var(--dur-fast) var(--ease-out), box-shadow var(--dur-fast) var(--ease-out);
 }
-.rd-choice:hover { background: var(--rd-panel); }
+.adm-choice:hover { background: var(--adm-panel); }
 /* Selected: a 2px ink edge drawn as border plus inset ring, so nothing moves. */
-.rd-choice.is-on { border-color: var(--rd-ink); box-shadow: inset 0 0 0 1px var(--rd-ink); background: var(--rd-panel); }
-.rd-choice input { width: 20px; height: 20px; margin: 1px 0 0; flex-shrink: 0; accent-color: var(--rd-ink); cursor: pointer; }
+.adm-choice.is-on { border-color: var(--adm-ink); box-shadow: inset 0 0 0 1px var(--adm-ink); background: var(--adm-panel); }
+.adm-choice input { width: 20px; height: 20px; margin: 1px 0 0; flex-shrink: 0; accent-color: var(--adm-ink); cursor: pointer; }
 /* The whole card shows keyboard focus; the radio inside it does not ring twice. */
-.rd-choice:has(input:focus-visible) { outline: 3px solid var(--rd-ink); outline-offset: 2px; }
-.rd-choice input:focus-visible { outline: none !important; }
-.rd-choice-title { display: block; font-size: var(--rd-fs-ui); font-weight: 700; line-height: 1.35; }
-.rd-choice-detail { display: block; margin-top: 4px; font-size: var(--rd-fs-meta); line-height: 1.45; color: var(--rd-faint); }
+.adm-choice:has(input:focus-visible) { outline: 3px solid var(--adm-ink); outline-offset: 2px; }
+.adm-choice input:focus-visible { outline: none !important; }
+.adm-choice-title { display: block; font-size: var(--adm-fs-ui); font-weight: 700; line-height: 1.35; }
+.adm-choice-detail { display: block; margin-top: 4px; font-size: var(--adm-fs-meta); line-height: 1.45; color: var(--adm-faint); }
 
-.rd-input {
+.adm-input {
   box-sizing: border-box; width: 100%; height: 44px; padding: 0 12px; border-radius: var(--r-md);
-  border: 1px solid var(--rd-edge); background: #fff; color: var(--rd-ink);
-  font-family: inherit; font-size: var(--rd-fs-field); font-variant-numeric: tabular-nums;
+  border: 1px solid var(--adm-edge); background: #fff; color: var(--adm-ink);
+  font-family: inherit; font-size: var(--adm-fs-field); font-variant-numeric: tabular-nums;
   transition: border-color var(--dur-fast) var(--ease-out), box-shadow var(--dur-fast) var(--ease-out);
 }
-.rd-input:hover { border-color: var(--rd-soft); }
-.rd-input:focus { border-color: var(--rd-ink); }
-.rd-input::placeholder { color: var(--rd-faint); opacity: 1; }
-.rd-input[aria-invalid="true"] { border-color: var(--rd-bad); box-shadow: inset 0 0 0 1px var(--rd-bad); }
-.rd-error { font-size: var(--rd-fs-body); font-weight: 600; line-height: 1.45; color: var(--rd-bad); }
+.adm-input:hover { border-color: var(--adm-soft); }
+.adm-input:focus { border-color: var(--adm-ink); }
+.adm-input::placeholder { color: var(--adm-faint); opacity: 1; }
+.adm-input[aria-invalid="true"] { border-color: var(--adm-bad); box-shadow: inset 0 0 0 1px var(--adm-bad); }
+.adm-error { font-size: var(--adm-fs-body); font-weight: 600; line-height: 1.45; color: var(--adm-bad); }
 
-.rd-panel { padding: 16px; border-radius: var(--r-md); background: var(--rd-panel); border: 1px solid var(--rd-hairline); }
-.rd-panel > .rd-fieldset { margin-top: var(--rd-gap); }
-.rd-chips { display: flex; flex-wrap: wrap; gap: 8px; }
-.rd-chip {
+.adm-panel { padding: 16px; border-radius: var(--r-md); background: var(--adm-panel); border: 1px solid var(--adm-hairline); }
+.adm-panel > .adm-fieldset { margin-top: var(--adm-gap); }
+.adm-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.adm-chip {
   position: relative; display: inline-flex; align-items: center; justify-content: center;
   min-width: 44px; min-height: 44px; padding: 0 12px; box-sizing: border-box; border-radius: 9999px;
-  border: 1px solid var(--rd-edge); background: #fff; color: var(--rd-ink);
-  font-size: var(--rd-fs-ui); font-weight: 700; font-variant-numeric: tabular-nums; cursor: pointer;
+  border: 1px solid var(--adm-edge); background: #fff; color: var(--adm-ink);
+  font-size: var(--adm-fs-ui); font-weight: 700; font-variant-numeric: tabular-nums; cursor: pointer;
   transition: border-color var(--dur-fast) var(--ease-out), background-color var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out);
 }
-.rd-chip:hover { border-color: var(--rd-ink); }
-.rd-chip.is-on { border-color: var(--rd-ink); background: var(--rd-ink); color: #fff; }
-.rd-chip input { position: absolute; inset: 0; margin: 0; opacity: 0; cursor: pointer; }
-.rd-chip:has(input:focus-visible) { outline: 3px solid var(--rd-ink); outline-offset: 2px; }
+.adm-chip:hover { border-color: var(--adm-ink); }
+.adm-chip.is-on { border-color: var(--adm-ink); background: var(--adm-ink); color: #fff; }
+.adm-chip input { position: absolute; inset: 0; margin: 0; opacity: 0; cursor: pointer; }
+.adm-chip:has(input:focus-visible) { outline: 3px solid var(--adm-ink); outline-offset: 2px; }
 
 /* Capped, so an area and its price stay within one easy glance on a wide screen. */
-.rd-table { width: 100%; max-width: 36rem; border-collapse: collapse; margin-top: var(--rd-gap); font-size: var(--rd-fs-body); font-variant-numeric: tabular-nums; }
-.rd-table th, .rd-table td { padding: 8px 0; text-align: left; vertical-align: baseline; }
-.rd-table thead th { font-size: var(--rd-fs-meta); font-weight: 600; color: var(--rd-faint); }
-.rd-table tbody tr { border-top: 1px solid var(--rd-hairline); }
-.rd-table tbody th { padding-right: 8px; font-weight: 600; }
-.rd-table .rd-num { text-align: right; padding-left: 16px; white-space: nowrap; }
+.adm-table { width: 100%; max-width: 36rem; border-collapse: collapse; margin-top: var(--adm-gap); font-size: var(--adm-fs-body); font-variant-numeric: tabular-nums; }
+.adm-table th, .adm-table td { padding: 8px 0; text-align: left; vertical-align: baseline; }
+.adm-table thead th { font-size: var(--adm-fs-meta); font-weight: 600; color: var(--adm-faint); }
+.adm-table tbody tr { border-top: 1px solid var(--adm-hairline); }
+.adm-table tbody th { padding-right: 8px; font-weight: 600; }
+.adm-table .adm-num { text-align: right; padding-left: 16px; white-space: nowrap; }
 /* A narrow card gives the area names the room: 8px between the money columns. */
-@container (max-width: 25rem) { .rd-table .rd-num { padding-left: 8px; } }
-.rd-table .rd-strong { font-weight: 700; }
-.rd-table .rd-muted { color: var(--rd-soft); }
+@container (max-width: 25rem) { .adm-table .adm-num { padding-left: 8px; } }
+.adm-table .adm-strong { font-weight: 700; }
+.adm-table .adm-muted { color: var(--adm-soft); }
 
-.rd-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
-.rd-btn {
-  min-height: 44px; padding: 0 20px; border-radius: 9999px; border: 1px solid var(--rd-edge); background: #fff; color: var(--rd-ink);
-  font-family: inherit; font-size: var(--rd-fs-ui); font-weight: 700; cursor: pointer;
+.adm-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
+/* A button or a link that looks like one: centred on a 44px pill either way. */
+.adm-btn {
+  display: inline-flex; align-items: center; justify-content: center; text-decoration: none;
+  min-height: 44px; padding: 0 20px; border-radius: 9999px; border: 1px solid var(--adm-edge); background: #fff; color: var(--adm-ink);
+  font-family: inherit; font-size: var(--adm-fs-ui); font-weight: 700; cursor: pointer;
   transition: background-color var(--dur-fast) var(--ease-out), border-color var(--dur-fast) var(--ease-out), transform var(--dur-fast) var(--ease-out);
 }
-.rd-btn:hover:not(:disabled):not([aria-disabled="true"]) { border-color: var(--rd-ink); background: var(--rd-panel); }
-.rd-btn--primary { border-color: var(--rd-ink); background: var(--rd-ink); color: #fff; }
-.rd-btn--primary:hover:not(:disabled):not([aria-disabled="true"]) { background: #000; border-color: #000; }
-.rd-btn:active:not(:disabled):not([aria-disabled="true"]) { transform: scale(0.98); }
-.rd-btn:disabled, .rd-btn[aria-disabled="true"] { opacity: 0.45; cursor: not-allowed; }
-.rd-btn[aria-busy="true"] { opacity: 0.7; cursor: progress; }
-.rd-link {
+.adm-btn:hover:not(:disabled):not([aria-disabled="true"]) { border-color: var(--adm-ink); background: var(--adm-panel); }
+.adm-btn--primary { border-color: var(--adm-ink); background: var(--adm-ink); color: #fff; }
+.adm-btn--primary:hover:not(:disabled):not([aria-disabled="true"]) { background: #000; border-color: #000; }
+.adm-btn:active:not(:disabled):not([aria-disabled="true"]) { transform: scale(0.98); }
+.adm-btn:disabled, .adm-btn[aria-disabled="true"] { opacity: 0.45; cursor: not-allowed; }
+.adm-btn[aria-busy="true"] { opacity: 0.7; cursor: progress; }
+.adm-link {
   min-height: 44px; padding: 0 8px; border: none; background: none; cursor: pointer;
-  font-family: inherit; font-size: var(--rd-fs-body); font-weight: 600; color: var(--rd-soft);
+  font-family: inherit; font-size: var(--adm-fs-body); font-weight: 600; color: var(--adm-soft);
   text-decoration: underline; text-underline-offset: 3px;
 }
-.rd-link:hover { color: var(--rd-ink); }
-.rd-link--flush { margin-left: -8px; }
+.adm-link:hover { color: var(--adm-ink); }
+.adm-link--flush { margin-left: -8px; }
 /* Two 44px targets stacked in a history entry keep 8px between them. */
-.rd-history-item .rd-link--flush { margin-top: 8px; }
+.adm-history-item .adm-link--flush { margin-top: 8px; }
 
 /* Review and reset: the question, what moves, what guests pay, then act. */
-.rd-ask { padding: 16px; border-radius: var(--r-md); border: 2px solid var(--rd-ink); display: flex; flex-direction: column; gap: 16px; }
-.rd-ask > .rd-block, .rd-ask > .rd-help { margin-top: 0; }
+.adm-ask { padding: 16px; border-radius: var(--r-md); border: 2px solid var(--adm-ink); display: flex; flex-direction: column; gap: 16px; }
+.adm-ask > .adm-block, .adm-ask > .adm-help { margin-top: 0; }
 /* The summary keeps its 44px target; the margin gives back the space its padding adds. */
-.rd-ask > .rd-details { margin-block: -8px; }
-.rd-impact .rd-fieldset { margin-top: var(--rd-gap); }
-.rd-impact .rd-help { margin-top: 4px; }
-.rd-details summary {
+.adm-ask > .adm-details { margin-block: -8px; }
+.adm-impact .adm-fieldset { margin-top: var(--adm-gap); }
+.adm-impact .adm-help { margin-top: 4px; }
+.adm-details summary {
   display: list-item; padding: 12px 0; line-height: 20px; cursor: pointer;
-  font-size: var(--rd-fs-body); font-weight: 600; color: var(--rd-soft);
+  font-size: var(--adm-fs-body); font-weight: 600; color: var(--adm-soft);
 }
-.rd-details summary:hover { color: var(--rd-ink); }
-.rd-details .rd-compare { margin: 4px 0 8px; }
+.adm-details summary:hover { color: var(--adm-ink); }
+.adm-details .adm-compare { margin: 4px 0 8px; }
 /* Side by side, one column each, so the same area sits on the same row in both cards. */
-.rd-compare .rd-rates { grid-template-columns: 1fr; }
-.rd-compare { display: grid; grid-template-columns: repeat(auto-fit, minmax(16.25rem, 1fr)); gap: 16px; font-size: var(--rd-fs-body); line-height: 1.5; color: var(--rd-soft); }
-.rd-history-item { background: #fff; border: 1px solid var(--rd-hairline); border-radius: var(--r-lg); padding: 16px; }
-.rd-history-title { font-size: var(--rd-fs-body); font-weight: 700; }
+.adm-compare .adm-rates { grid-template-columns: 1fr; }
+.adm-compare { display: grid; grid-template-columns: repeat(auto-fit, minmax(16.25rem, 1fr)); gap: 16px; font-size: var(--adm-fs-body); line-height: 1.5; color: var(--adm-soft); }
+.adm-history-item { background: #fff; border: 1px solid var(--adm-hairline); border-radius: var(--r-lg); padding: 16px; }
+.adm-history-title { font-size: var(--adm-fs-body); font-weight: 700; }
+
+/* ── Admin: shared pieces the screens reuse ── */
+.adm-wrap--wide { max-width: 80rem; }
+.adm-kicker { font-size: 0.75rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--adm-faint); }
+.adm-tnum { font-variant-numeric: tabular-nums; }
+.adm-good { color: var(--adm-ok); font-weight: 600; }
+.adm-quiet { color: var(--adm-faint); font-weight: 400; }
+.adm-plain { font-weight: 400; }
+.adm-strong { font-weight: 600; }
+.adm-badge--ok { background: var(--adm-ok-bg); color: var(--adm-ok); }
+.adm-badge--warn { background: var(--adm-warn-bg); color: var(--adm-warn); }
+.adm-badge--bad { background: var(--adm-bad-bg); color: var(--adm-bad); }
+.adm-badge--plain { background: var(--adm-plain-bg); color: var(--adm-plain); }
+.adm-btn--sm { padding: 0 16px; font-size: var(--adm-fs-body); }
+/* Two to a row on a phone, four on a wide screen. */
+.adm-tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 9.5rem), 1fr)); gap: var(--adm-gap); margin-top: var(--adm-group); }
+.adm-tile { background: #fff; border: 1px solid var(--adm-hairline); border-radius: var(--r-lg); padding: 16px; }
+/* Well under the h1 (20px against 28 to 32): a tile is a fact, not the page's subject. */
+.adm-tile-v { margin-top: 4px; font-size: 1.25rem; font-weight: 800; letter-spacing: -0.02em; line-height: 1.2; font-variant-numeric: tabular-nums; }
+.adm-tile-sub { margin-top: 4px; font-size: var(--adm-fs-meta); line-height: 1.45; color: var(--adm-soft); font-variant-numeric: tabular-nums; }
+.adm-toolbar { display: flex; flex-direction: column; gap: var(--adm-gap); margin-top: var(--adm-section); }
+.adm-toolbar-row { display: flex; flex-wrap: wrap; gap: var(--adm-gap); }
+.adm-search { position: relative; max-width: 36rem; }
+.adm-search-icon { position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: var(--adm-faint); pointer-events: none; }
+.adm-search-input { padding-left: 44px; border-radius: 9999px; }
+/* One selected state for every choice row in the admin: the ink pill. Each
+   row is a native radio group (one tab stop, arrow keys move the choice):
+   the input lies invisible over its label, and the label shows the state. */
+/* The pills sit 8px apart inside their outline, as any two targets do. */
+.adm-seg { display: inline-flex; flex-wrap: wrap; gap: 8px; padding: 3px; background: #fff; border: 1px solid var(--adm-edge); border-radius: 26px; }
+.adm-seg-btn {
+  position: relative; display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 16px;
+  border-radius: 9999px; background: transparent; color: var(--adm-soft); cursor: pointer; user-select: none;
+  font-size: var(--adm-fs-ui); font-weight: 600;
+  transition: background-color var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out);
+}
+.adm-seg-input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; }
+.adm-seg-btn:hover { background: var(--adm-panel); color: var(--adm-ink); }
+.adm-seg-btn.is-on { background: var(--adm-ink); color: #fff; }
+/* The site's focus ring, drawn on the pill the invisible input sits in. */
+.adm-seg-btn:has(.adm-seg-input:focus-visible) { outline: 2px solid var(--gold-text); outline-offset: 2px; }
+.adm-seg-text { display: inline-flex; align-items: center; gap: 8px; }
+.adm-seg-count { padding: 2px 8px; border-radius: 9999px; background: var(--surface); color: var(--adm-soft); font-size: 0.75rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+.adm-seg-btn.is-on .adm-seg-count { background: rgba(255, 255, 255, 0.2); color: #fff; }
+.adm-empty { margin-top: var(--adm-gap); padding: 24px; border: 1px solid var(--adm-hairline); border-radius: var(--r-lg); background: #fff; color: var(--adm-soft); font-size: var(--adm-fs-ui); text-align: center; }
+.adm-more { margin-top: var(--adm-gap); }
+.adm-callout { padding: 12px 16px; border-radius: var(--r-md); }
+.adm-callout--warn { background: var(--adm-warn-bg); }
+.adm-callout--warn .adm-kicker { color: var(--adm-warn); }
+.adm-callout-text { margin-top: 4px; font-size: var(--adm-fs-body); line-height: 1.5; white-space: pre-wrap; }
+/* Label and value pairs (a <dl>): the label column lines up, the value wraps. */
+.adm-facts { display: grid; gap: 4px; }
+.adm-fact { display: flex; gap: 8px; font-size: var(--adm-fs-body); line-height: 1.5; }
+.adm-fact-k { flex-shrink: 0; min-width: 6.5rem; color: var(--adm-faint); }
+.adm-fact-v { min-width: 0; color: var(--adm-ink); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.adm-money { display: grid; gap: 4px; }
+.adm-money-row { display: flex; justify-content: space-between; gap: 8px; font-size: var(--adm-fs-body); color: var(--adm-soft); }
+.adm-money-v { color: var(--adm-ink); font-variant-numeric: tabular-nums; }
+.adm-money-v--em { color: var(--adm-ok); font-weight: 600; }
+.adm-money-row--total { margin-top: 4px; padding-top: 8px; border-top: 1px solid var(--adm-hairline); color: var(--adm-ink); font-weight: 700; }
+.adm-money-row--total .adm-money-v { font-size: var(--adm-fs-h3); font-weight: 800; }
+
+/* ── Admin: bookings (components/admin/BookingsDashboard.tsx) ──
+   A card leads with the day of the trip (a calendar chip), then the guest
+   and the route; price and status sit after. Each card is a container: on
+   a narrow card the price drops under the guest, on a wide one it sits at
+   the right; the open card's parts stack until there is room for two. */
+.adm-bk-count { margin-top: var(--adm-group); }
+.adm-bk-groups { display: grid; gap: var(--adm-group); margin-top: var(--adm-gap); }
+.adm-bk-group { display: grid; gap: var(--adm-gap); }
+/* A list heading, not a label: ink, sentence case, a step above the cards' 12px section labels. */
+.adm-bk-group-h { font-size: var(--adm-fs-ui); font-weight: 700; line-height: 1.3; letter-spacing: -0.005em; color: var(--adm-ink); }
+.adm-bk-list { list-style: none; padding: 0; display: flex; flex-direction: column; gap: var(--adm-gap); }
+.adm-bk { container-type: inline-size; overflow: hidden; scroll-margin-top: 16px; background: #fff; border: 1px solid var(--adm-hairline); border-radius: var(--r-lg); }
+/* The heading around each card's button adds structure, not style. */
+.adm-bk-h { margin: 0; font: inherit; letter-spacing: inherit; text-wrap: inherit; }
+.adm-bk-head {
+  display: grid; grid-template-columns: auto minmax(0, 1fr) auto; grid-template-areas: "date who chev" "date side chev";
+  align-items: center; column-gap: 16px; row-gap: 8px;
+  width: 100%; padding: 16px; border: none; background: none; color: inherit; text-align: left; cursor: pointer;
+  font-family: inherit; transition: background-color var(--dur-fast) var(--ease-out);
+}
+.adm-bk-head:hover { background: var(--adm-panel); }
+/* The card clips its overflow, so the site's ring (2px outside) would show
+   only along the bottom: here it is drawn inside the card's edge. */
+.adm-bk-head:focus-visible { outline-offset: -4px; border-radius: calc(var(--r-lg) - 1px); }
+@container (min-width: 40rem) {
+  .adm-bk-head { grid-template-columns: auto minmax(0, 1fr) auto auto; grid-template-areas: "date who side chev"; padding: 16px 24px; }
+  .adm-bk-date, .adm-bk-chev { align-self: center; margin-top: 0; }
+  .adm-bk-side { justify-items: end; text-align: right; }
+  .adm-bk-dispatch { padding: 8px 24px 16px; }
+}
+.adm-bk-date {
+  grid-area: date; align-self: start; display: grid; justify-items: center; align-content: center; width: 56px; min-height: 64px; padding: 4px 0;
+  border: 1px solid var(--adm-hairline); border-radius: var(--r-md); background: var(--adm-panel); line-height: 1.15;
+}
+.adm-bk-date-m, .adm-bk-date-w { font-size: 0.75rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--adm-soft); }
+.adm-bk-date-d { font-size: 1.375rem; font-weight: 800; color: var(--adm-ink); font-variant-numeric: tabular-nums; }
+.adm-bk-who { grid-area: who; display: grid; gap: 2px; min-width: 0; }
+.adm-bk-name { font-size: var(--adm-fs-h3); font-weight: 700; letter-spacing: -0.01em; overflow-wrap: anywhere; }
+.adm-bk-sub { font-size: var(--adm-fs-body); line-height: 1.45; color: var(--adm-soft); }
+.adm-bk-meta { font-size: var(--adm-fs-meta); line-height: 1.45; color: var(--adm-faint); font-variant-numeric: tabular-nums; }
+/* The service time is what an operator scans for: it leads the line. */
+.adm-bk-when { color: var(--adm-soft); font-weight: 600; }
+.adm-bk-side { grid-area: side; display: grid; gap: 4px; justify-items: start; }
+.adm-bk-price { font-size: var(--adm-fs-h3); font-weight: 800; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.adm-bk-cur { font-size: 0.75rem; font-weight: 600; color: var(--adm-faint); }
+.adm-bk-badges { display: flex; flex-wrap: wrap; gap: 4px; }
+/* On a narrow card the chip and the chevron sit beside the name, at the top. */
+.adm-bk-chev { grid-area: chev; align-self: start; margin-top: 3px; color: var(--adm-faint); transition: transform var(--adm-open) var(--ease-out); }
+.adm-bk.is-open .adm-bk-chev { transform: rotate(90deg); }
+/* Progress and the next step at the left, the way in at the right; 8px
+   above, so the link never touches the header button's edge. */
+.adm-bk-dispatch { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 12px; padding: 8px 16px 16px; }
+.adm-bk-dispatch .adm-btn { margin-left: auto; }
+.adm-bk-next { color: var(--adm-soft); font-weight: 600; }
+.adm-bk-dispatch .adm-meta { margin-top: 0; }
+/* The details ease open and shut (grid rows 0fr to 1fr), and while shut
+   they are hidden from everyone: visibility flips once the height is gone. */
+.adm-bk-panel { display: grid; grid-template-rows: 0fr; visibility: hidden; transition: grid-template-rows var(--adm-open) var(--ease-out), visibility 0s linear var(--adm-open); }
+.adm-bk.is-open .adm-bk-panel { grid-template-rows: 1fr; visibility: visible; transition: grid-template-rows var(--adm-open) var(--ease-out), visibility 0s; }
+/* The content fades with the height, chevron and panel on one clock. */
+.adm-bk-clip { min-height: 0; overflow: hidden; opacity: 0; transition: opacity var(--adm-open) var(--ease-out); }
+.adm-bk.is-open .adm-bk-clip { opacity: 1; }
+.adm-bk-body { display: grid; grid-template-columns: minmax(0, 1fr); border-top: 1px solid var(--adm-hairline); }
+.adm-bk-part { display: grid; align-content: start; gap: var(--adm-group); padding: 16px; }
+.adm-bk-part + .adm-bk-part { border-top: 1px solid var(--adm-hairline); }
+.adm-bk-part section { display: grid; gap: 4px; justify-items: start; }
+/* The trip holds its items, the pickup facts and the guest's requests. */
+.adm-bk-part section.adm-bk-trip { gap: var(--adm-gap); justify-items: stretch; }
+.adm-bk-sec { display: grid; gap: 4px; }
+.adm-bk-part section > .adm-money, .adm-bk-part section > .adm-facts { justify-self: stretch; max-width: 24rem; }
+.adm-nowrap { white-space: nowrap; }
+@container (min-width: 44rem) {
+  .adm-bk-body { grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); }
+  .adm-bk-part { padding: 16px 24px; }
+  .adm-bk-part + .adm-bk-part { border-top: none; border-left: 1px solid var(--adm-hairline); }
+}
+.adm-bk-items { display: grid; gap: var(--adm-gap); }
+.adm-bk-item { display: grid; gap: 2px; }
+.adm-bk-item-title { font-size: var(--adm-fs-ui); font-weight: 700; }
+.adm-bk-item-line { font-size: var(--adm-fs-body); line-height: 1.45; color: var(--adm-soft); font-variant-numeric: tabular-nums; }
+.adm-bk-item-line--quiet { color: var(--adm-faint); }
+.adm-bk-rule { display: grid; gap: 4px; padding-top: var(--adm-gap); border-top: 1px solid var(--adm-hairline); }
+/* The guest's email and phone are the way to reach them: full 44px targets,
+   side by side while they fit, so the pair reads as one line of contact. */
+.adm-bk-contact { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 24px; }
+.adm-bk-part .adm-inline-link { display: inline-flex; align-items: center; min-height: 44px; font-size: var(--adm-fs-body); overflow-wrap: anywhere; }
 
 /* State changes arrive instead of popping in: transform and opacity only. */
-@keyframes rdEnter { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
-.rd-enter { animation: rdEnter 0.18s var(--ease-out) both; }
-@keyframes rdLeave { from { opacity: 1; transform: none; } to { opacity: 0; transform: translateY(4px); } }
-.rd-leave { animation: rdLeave 0.16s var(--ease-out) both; pointer-events: none; }
+@keyframes admEnter { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+.adm-enter { animation: admEnter 0.18s var(--ease-out) both; }
+@keyframes admLeave { from { opacity: 1; transform: none; } to { opacity: 0; transform: translateY(4px); } }
+.adm-leave { animation: admLeave 0.16s var(--ease-out) both; pointer-events: none; }
 /* New numbers after a group-size change: a short fade from part-visible, so
    the eye sees that they changed without the table ever going blank. */
-@keyframes rdFresh { from { opacity: 0.35; } to { opacity: 1; } }
-.rd-rows { animation: rdFresh 0.2s var(--ease-out) both; }
+@keyframes admFresh { from { opacity: 0.35; } to { opacity: 1; } }
+.adm-rows { animation: admFresh 0.2s var(--ease-out) both; }
 @media (prefers-reduced-motion: reduce) {
-  .rd-enter, .rd-leave, .rd-dot, .rd-rows { animation: none; }
-  .rd-choice, .rd-input, .rd-chip, .rd-btn { transition: none; }
-  .rd-btn:active:not(:disabled):not([aria-disabled="true"]) { transform: none; }
+  .adm-enter, .adm-leave, .adm-dot, .adm-rows { animation: none; }
+  .adm-choice, .adm-input, .adm-chip, .adm-btn, .adm-seg-btn, .adm-bk-head, .adm-bk-chev, .adm-bk-panel, .adm-bk-clip { transition: none; }
+  .adm-btn:active:not(:disabled):not([aria-disabled="true"]) { transform: none; }
 }

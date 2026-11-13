@@ -13,7 +13,7 @@ import { TOUR_ZONES, TOUR_ZONE_LABEL, type TourZone } from '@/lib/tour-zones'
  * with. A save goes to /api/admin/tour-rates, which validates it again,
  * stores it with its change-log row and starts the deploy that publishes it.
  *
- * Styles: the .rd classes in app/globals.css (one scoped token set; this file
+ * Styles: the .adm classes in app/globals.css (one scoped token set; this file
  * carries no colours or sizes of its own).
  */
 
@@ -55,9 +55,9 @@ interface Draft {
 }
 
 const BADGE = {
-  default: { cls: 'rd-badge--default', label: 'Default' },
-  live: { cls: 'rd-badge--live', label: 'Edited, live' },
-  publishing: { cls: 'rd-badge--publishing', label: 'Publishing' },
+  default: { cls: 'adm-badge--default', label: 'Default' },
+  live: { cls: 'adm-badge--live', label: 'Edited, live' },
+  publishing: { cls: 'adm-badge--publishing', label: 'Publishing' },
 } as const
 
 const KINDS: { value: Kind; title: string; detail: string }[] = [
@@ -91,7 +91,7 @@ function clock(iso: string): string {
 }
 
 /**
- * Leaving takes as long as arriving (160ms, .rd-leave), so a closing panel
+ * Leaving takes as long as arriving (160ms, .adm-leave), so a closing panel
  * fades out instead of vanishing; at once for anyone who asked for less motion.
  */
 function useLeave(): [boolean, (then: () => void) => void] {
@@ -166,9 +166,9 @@ function RateSummary({ card }: { card: RateCard }) {
   return (
     <div>
       <p>By pickup area, for {p.tierMax === 1 ? '1 person' : `1 to ${p.tierMax} people`}:</p>
-      <dl className="rd-rates">
+      <dl className="adm-rates">
         {zones.map((z) => (
-          <div key={z} className="rd-rate">
+          <div key={z} className="adm-rate">
             <dt>{TOUR_ZONE_LABEL[z]}</dt>
             <dd>{usd(p.zoneRates![z]!)}</dd>
           </div>
@@ -185,11 +185,11 @@ function RateChanges({ before, after }: { before: RateCard; after: RateCard }) {
   if (lines === null) return (<><p>Priced a new way:</p><RateSummary card={after} /></>)
   if (!lines.length) return <p>No change to the rates.</p>
   return (
-    <ul className="rd-changes">
+    <ul className="adm-changes">
       {lines.map((l) => (
-        <li key={l.label} className="rd-change">
+        <li key={l.label} className="adm-change">
           <span>{l.label}</span>
-          <span className="rd-change-value"><b>{l.now}</b> <span className="rd-was">(was {lowerFirst(l.was)})</span></span>
+          <span className="adm-change-value"><b>{l.now}</b> <span className="adm-was">(was {lowerFirst(l.was)})</span></span>
         </li>
       ))}
     </ul>
@@ -206,18 +206,18 @@ function MoneyTable({ head, rows, strong, caption, freshKey }: {
   /** Changing it fades the rows in, so a new set of numbers is seen to change. */
   freshKey: number
 }) {
-  const cls = (col: 'a' | 'b') => (col === strong ? 'rd-num rd-strong' : 'rd-num rd-muted')
+  const cls = (col: 'a' | 'b') => (col === strong ? 'adm-num adm-strong' : 'adm-num adm-muted')
   return (
-    <table className="rd-table">
+    <table className="adm-table">
       <caption className="visually-hidden">{caption}</caption>
       <thead>
         <tr>
           <th scope="col">{head[0]}</th>
-          <th scope="col" className="rd-num">{head[1]}</th>
-          <th scope="col" className="rd-num">{head[2]}</th>
+          <th scope="col" className="adm-num">{head[1]}</th>
+          <th scope="col" className="adm-num">{head[2]}</th>
         </tr>
       </thead>
-      <tbody key={freshKey} className="rd-rows">
+      <tbody key={freshKey} className="adm-rows">
         {rows.map((r) => (
           <tr key={r.key}>
             <th scope="row">{r.label}</th>
@@ -233,11 +233,11 @@ function MoneyTable({ head, rows, strong, caption, freshKey }: {
 /** The group sizes a price can be shown for, as one row of chips. */
 function PartyChips({ name, party, onParty }: { name: string; party: number; onParty: (n: number) => void }) {
   return (
-    <fieldset className="rd-fieldset">
-      <legend className="rd-legend">Group size</legend>
-      <div className="rd-chips">
+    <fieldset className="adm-fieldset">
+      <legend className="adm-legend">Group size</legend>
+      <div className="adm-chips">
         {PARTIES.map((n) => (
-          <label key={n} className={party === n ? 'rd-chip is-on' : 'rd-chip'}>
+          <label key={n} className={party === n ? 'adm-chip is-on' : 'adm-chip'}>
             <input type="radio" name={name} value={n} checked={party === n} onChange={() => onParty(n)} aria-label={people(n)} />
             {n}
           </label>
@@ -263,9 +263,9 @@ function GuestImpact({ before, after, party, onParty, name }: {
   const moved = partiesMoved(before, after)
   if (!moved.length) {
     return (
-      <div className="rd-impact">
-        <h5 className="rd-h5">Guest prices</h5>
-        <p className="rd-help">No change for any group size.</p>
+      <div className="adm-impact">
+        <h5 className="adm-h5">Guest prices</h5>
+        <p className="adm-help">No change for any group size.</p>
       </div>
     )
   }
@@ -277,14 +277,14 @@ function GuestImpact({ before, after, party, onParty, name }: {
     .filter((r) => r.was !== r.now)
     .map((r) => ({ key: r.z ?? 'all', label: r.z ? TOUR_ZONE_LABEL[r.z] : flat ? people(party) : 'Anywhere else', a: money(r.was), b: money(r.now) }))
   return (
-    <div className="rd-impact">
-      <h5 className="rd-h5">Guest prices</h5>
-      <p className="rd-help">Changes for {describeParties(moved)}.</p>
+    <div className="adm-impact">
+      <h5 className="adm-h5">Guest prices</h5>
+      <p className="adm-help">Changes for {describeParties(moved)}.</p>
       <PartyChips name={name} party={party} onParty={onParty} />
       {rows.length ? (
         <MoneyTable head={[flat ? 'Group' : 'Pickup area', 'Was', 'New']} rows={rows} strong="b" caption={`Guest prices for ${people(party)}, before and after`} freshKey={party} />
       ) : (
-        <p className="rd-help">Nothing changes for {people(party)}.</p>
+        <p className="adm-help">Nothing changes for {people(party)}.</p>
       )}
     </div>
   )
@@ -300,11 +300,11 @@ function previewRows(p: TourPricing, party: number): { area: string | null; gues
 /** The two cards side by side, for anyone who wants to check every line. */
 function BothCards({ before, after, beforeLabel, afterLabel }: { before: RateCard; after: RateCard; beforeLabel: string; afterLabel: string }) {
   return (
-    <details className="rd-details">
+    <details className="adm-details">
       <summary>Both cards in full</summary>
-      <div className="rd-compare">
-        <div><span className="rd-block-label">{beforeLabel}</span><RateSummary card={before} /></div>
-        <div><span className="rd-block-label">{afterLabel}</span><RateSummary card={after} /></div>
+      <div className="adm-compare">
+        <div><span className="adm-block-label">{beforeLabel}</span><RateSummary card={before} /></div>
+        <div><span className="adm-block-label">{afterLabel}</span><RateSummary card={after} /></div>
       </div>
     </details>
   )
@@ -349,35 +349,35 @@ export default function TourRatesDesk({ tours, changes, publishedAt, canPublish,
   }
 
   return (
-    <div className="rd">
-      <h1 className="rd-h1">Tour prices</h1>
-      <p className="rd-lead">
+    <div className="adm">
+      <h1 className="adm-h1">Tour prices</h1>
+      <p className="adm-lead">
         Collin&rsquo;s rate for each tour, and exactly what guests pay once our margin and card fees are added.
         Saving publishes it: the tour page and checkout change together in about 3 minutes.
       </p>
-      <p className="rd-meta">
+      <p className="adm-meta">
         {publishedAt ? `Prices on the site were published ${when(publishedAt)}.` : 'The site is on the catalog’s default rates.'}
       </p>
-      <p className="rd-overview">{overview(tours)}</p>
+      <p className="adm-overview">{overview(tours)}</p>
 
       <div aria-live="polite" role="status">
-        {notice && <p className="rd-note rd-note--ok rd-enter">{notice}</p>}
+        {notice && <p className="adm-note adm-note--ok adm-enter">{notice}</p>}
       </div>
-      {loadError && <p role="alert" className="rd-note rd-note--bad">{loadError}</p>}
+      {loadError && <p role="alert" className="adm-note adm-note--bad">{loadError}</p>}
       {!canPublish && !loadError && (
-        <p className="rd-note rd-note--warn">
+        <p className="adm-note adm-note--warn">
           Saving stores the rate, but this site cannot start a deploy by itself yet, so it reaches the site with the next deploy.
         </p>
       )}
       {publishing.length > 0 && (
-        <div className="rd-note rd-note--warn rd-banner">
-          <p className="rd-banner-text">
-            <span className="rd-dot" aria-hidden="true" />
+        <div className="adm-note adm-note--warn adm-banner">
+          <p className="adm-banner-text">
+            <span className="adm-dot" aria-hidden="true" />
             <b>Publishing</b> {publishing.map((t) => t.title).join(', ')}. Saved changes reach the site in about 3 minutes.
             <span aria-live="polite">{checkedAt && !checking ? ` Still publishing at ${clock(checkedAt)}.` : ''}</span>
           </p>
           <button
-            type="button" className="rd-btn" aria-disabled={checking || undefined} aria-busy={checking || undefined}
+            type="button" className="adm-btn" aria-disabled={checking || undefined} aria-busy={checking || undefined}
             onClick={() => { if (!checking) startCheck(() => router.refresh()) }}
           >
             {checking ? 'Checking…' : 'Check again'}
@@ -388,23 +388,23 @@ export default function TourRatesDesk({ tours, changes, publishedAt, canPublish,
       <TourGroup heading="Tours" tours={singles} onSaved={saved} locked={!!loadError} canPublish={canPublish} restore={restore} />
       <TourGroup heading="Day packages" tours={packages} onSaved={saved} locked={!!loadError} canPublish={canPublish} restore={restore} />
 
-      <section aria-labelledby="rate-history" className="rd-section rd-section--history">
-        <h2 id="rate-history" className="rd-h2">Recent changes</h2>
+      <section aria-labelledby="rate-history" className="adm-section adm-section--history">
+        <h2 id="rate-history" className="adm-h2">Recent changes</h2>
         {changes.length === 0 ? (
-          <p className="rd-lead">No rate has been changed here yet. Every save and every reset will be listed, with who made it.</p>
+          <p className="adm-lead">No rate has been changed here yet. Every save and every reset will be listed, with who made it.</p>
         ) : (
-          <ol className="rd-list">
+          <ol className="adm-list">
             {changes.map((c) => (
-              <li key={c.id} className="rd-history-item">
-                <p className="rd-history-title">{c.tourTitle}{c.action === 'reset' ? ', back to the default' : ''}</p>
-                <p className="rd-meta">{when(c.at)}{c.by ? ` · ${c.by}` : ''}</p>
-                <div className="rd-block">
+              <li key={c.id} className="adm-history-item">
+                <p className="adm-history-title">{c.tourTitle}{c.action === 'reset' ? ', back to the default' : ''}</p>
+                <p className="adm-meta">{when(c.at)}{c.by ? ` · ${c.by}` : ''}</p>
+                <div className="adm-block">
                   {c.before && c.after ? <RateChanges before={c.before} after={c.after} /> : c.after ? <RateSummary card={c.after} /> : <p>Not recorded</p>}
                 </div>
                 {c.before && c.after && <BothCards before={c.before} after={c.after} beforeLabel="Was" afterLabel="Now" />}
                 {c.before && !loadError && tours.some((t) => t.id === c.experienceId) && (
                   <button
-                    type="button" className="rd-link rd-link--flush" aria-label={`Restore the old rate, ${c.tourTitle}`}
+                    type="button" className="adm-link adm-link--flush" aria-label={`Restore the old rate, ${c.tourTitle}`}
                     onClick={() => setRestore({ id: c.experienceId, card: c.before!, n: ++restores.current })}
                   >
                     Restore the old rate
@@ -433,9 +433,9 @@ function TourGroup({ heading, tours, onSaved, locked, canPublish, restore }: {
   const id = useId()
   if (!tours.length) return null
   return (
-    <section aria-labelledby={id} className="rd-section">
-      <h2 id={id} className="rd-h2">{heading}</h2>
-      <ul className="rd-list">
+    <section aria-labelledby={id} className="adm-section">
+      <h2 id={id} className="adm-h2">{heading}</h2>
+      <ul className="adm-list">
         {tours.map((t) => <TourRow key={t.id} tour={t} onSaved={onSaved} locked={locked} canPublish={canPublish} restore={restore?.id === t.id ? restore : null} />)}
       </ul>
     </section>
@@ -479,32 +479,32 @@ function TourRow({ tour, onSaved, locked, canPublish, restore }: {
     if (lastStatus.current !== s) { lastStatus.current = s; setStatusChanged(true) }
   }, [s])
   return (
-    <li className="rd-card">
-      <div className="rd-card-in">
-        <div className="rd-card-head">
-          <div className="rd-card-main">
-            <div className="rd-title-row">
-              <h3 className="rd-h3">{tour.title}</h3>
-              <span key={s} className={`rd-badge ${BADGE[s].cls}${statusChanged ? ' rd-enter' : ''}`}>
-                {s === 'publishing' && <span className="rd-dot" aria-hidden="true" />}
+    <li className="adm-card">
+      <div className="adm-card-in">
+        <div className="adm-card-head">
+          <div className="adm-card-main">
+            <div className="adm-title-row">
+              <h3 className="adm-h3">{tour.title}</h3>
+              <span key={s} className={`adm-badge ${BADGE[s].cls}${statusChanged ? ' adm-enter' : ''}`}>
+                {s === 'publishing' && <span className="adm-dot" aria-hidden="true" />}
                 {BADGE[s].label}
               </span>
             </div>
-            <p className="rd-meta">{tour.place}</p>
-            <div className="rd-block">
-              <span className="rd-block-label">On the site</span>
+            <p className="adm-meta">{tour.place}</p>
+            <div className="adm-block">
+              <span className="adm-block-label">On the site</span>
               <RateSummary card={tour.live} />
             </div>
             {s === 'publishing' && (
-              <div className="rd-block rd-block--warn">
-                <span className="rd-block-label">Saved, publishing</span>
+              <div className="adm-block adm-block--warn">
+                <span className="adm-block-label">Saved, publishing</span>
                 <RateChanges before={tour.live} after={target} />
               </div>
             )}
-            {tour.saved && tour.savedAt && <p className="rd-meta">Edited {when(tour.savedAt)}{tour.savedBy ? ` by ${tour.savedBy}` : ''}</p>}
+            {tour.saved && tour.savedAt && <p className="adm-meta">Edited {when(tour.savedAt)}{tour.savedBy ? ` by ${tour.savedBy}` : ''}</p>}
           </div>
           {!open && (
-            <button ref={editButton} type="button" className={closedOnce ? 'rd-btn rd-enter' : 'rd-btn'} onClick={() => setOpen(true)} disabled={locked} aria-label={`Edit price, ${tour.title}`}>
+            <button ref={editButton} type="button" className={closedOnce ? 'adm-btn adm-enter' : 'adm-btn'} onClick={() => setOpen(true)} disabled={locked} aria-label={`Edit price, ${tour.title}`}>
               Edit price
             </button>
           )}
@@ -626,7 +626,7 @@ function RateEditor({ tour, start, initial, onClose, onSaved, canPublish }: {
   // The field a refusal is about is marked and points at the sentence.
   const flag = (bad: boolean) => (bad ? { 'aria-invalid': true as const, 'aria-describedby': errId } : {})
   const field = (k: keyof Omit<Draft, 'zones' | 'kind'>, extra: Partial<React.InputHTMLAttributes<HTMLInputElement>> = {}) => ({
-    value: draft[k], onChange: set(k), inputMode: 'decimal' as const, autoComplete: 'off', className: 'rd-input',
+    value: draft[k], onChange: set(k), inputMode: 'decimal' as const, autoComplete: 'off', className: 'adm-input',
     ...flag(errField === k), ...extra,
   })
   const rows = parsed.ok ? previewRows(parsed.card.pricing, party) : []
@@ -644,20 +644,20 @@ function RateEditor({ tour, start, initial, onClose, onSaved, canPublish }: {
       : null
 
   return (
-    <div className={editorLeaving ? 'rd-editor rd-leave' : 'rd-editor rd-enter'}>
+    <div className={editorLeaving ? 'adm-editor adm-leave' : 'adm-editor adm-enter'}>
       {step === 'edit' && (
-        <div className={returned ? 'rd-fields rd-enter' : 'rd-fields'}>
-          <fieldset className="rd-fieldset">
-            <legend className="rd-legend">How Collin charges for it</legend>
-            <div className="rd-grid3">
+        <div className={returned ? 'adm-fields adm-enter' : 'adm-fields'}>
+          <fieldset className="adm-fieldset">
+            <legend className="adm-legend">How Collin charges for it</legend>
+            <div className="adm-grid3">
               {KINDS.map((k) => {
                 const on = draft.kind === k.value
                 return (
-                  <label key={k.value} className={on ? 'rd-choice is-on' : 'rd-choice'}>
+                  <label key={k.value} className={on ? 'adm-choice is-on' : 'adm-choice'}>
                     <input type="radio" name={`${uid}-kind`} value={k.value} checked={on} onChange={() => setKind(k.value)} />
                     <span>
-                      <span className="rd-choice-title">{k.title}</span>
-                      <span className="rd-choice-detail">{k.detail}</span>
+                      <span className="adm-choice-title">{k.title}</span>
+                      <span className="adm-choice-detail">{k.detail}</span>
                     </span>
                   </label>
                 )
@@ -665,35 +665,35 @@ function RateEditor({ tour, start, initial, onClose, onSaved, canPublish }: {
             </div>
           </fieldset>
 
-          <div className="rd-grid3">
+          <div className="adm-grid3">
             {draft.kind !== 'area' && (
               <div>
-                <label htmlFor={`${uid}-base`} className="rd-label">{draft.kind === 'group' ? 'Rate for the group ($)' : 'Rate per person ($)'}</label>
+                <label htmlFor={`${uid}-base`} className="adm-label">{draft.kind === 'group' ? 'Rate for the group ($)' : 'Rate per person ($)'}</label>
                 <input id={`${uid}-base`} ref={firstField} {...field('baseRate')} />
               </div>
             )}
             <div>
-              <label htmlFor={`${uid}-tier`} className="rd-label">{draft.kind === 'per_person' ? 'That rate is for up to (people)' : 'Covers up to (people)'}</label>
+              <label htmlFor={`${uid}-tier`} className="adm-label">{draft.kind === 'per_person' ? 'That rate is for up to (people)' : 'Covers up to (people)'}</label>
               <input id={`${uid}-tier`} ref={draft.kind === 'area' ? firstField : undefined} {...field('tierMax', { inputMode: 'numeric' })} />
             </div>
             <div>
-              <label htmlFor={`${uid}-extra`} className="rd-label">{draft.kind === 'area' ? 'Each extra person ($)' : 'Bigger groups, per person ($)'}</label>
+              <label htmlFor={`${uid}-extra`} className="adm-label">{draft.kind === 'area' ? 'Each extra person ($)' : 'Bigger groups, per person ($)'}</label>
               <input id={`${uid}-extra`} {...field('extraPerPerson')} />
-              <p className="rd-help">{draft.kind === 'area' ? 'Added for each guest past the number above.' : 'Once the group is bigger than that, every guest pays this.'}</p>
+              <p className="adm-help">{draft.kind === 'area' ? 'Added for each guest past the number above.' : 'Once the group is bigger than that, every guest pays this.'}</p>
             </div>
           </div>
 
           {draft.kind === 'area' && (
-            <fieldset className="rd-fieldset">
-              <legend className="rd-legend">Rate by pickup area ($)</legend>
-              <p className="rd-help">Leave an area empty to stop selling the tour online from there; guests there are asked to write for a price.</p>
-              <div className="rd-grid3 rd-grid3--areas">
+            <fieldset className="adm-fieldset">
+              <legend className="adm-legend">Rate by pickup area ($)</legend>
+              <p className="adm-help">Leave an area empty to stop selling the tour online from there; guests there are asked to write for a price.</p>
+              <div className="adm-grid3 adm-grid3--areas">
                 {TOUR_ZONES.map((z) => (
                   <div key={z}>
-                    <label htmlFor={`${uid}-zone-${z}`} className="rd-label rd-label--area">{TOUR_ZONE_LABEL[z]}</label>
+                    <label htmlFor={`${uid}-zone-${z}`} className="adm-label adm-label--area">{TOUR_ZONE_LABEL[z]}</label>
                     <input
                       id={`${uid}-zone-${z}`} value={draft.zones[z]} onChange={setZone(z)} inputMode="decimal" autoComplete="off"
-                      placeholder="Not sold online" className="rd-input" {...flag(errField === z || errField === 'zoneRates')}
+                      placeholder="Not sold online" className="adm-input" {...flag(errField === z || errField === 'zoneRates')}
                     />
                   </div>
                 ))}
@@ -701,29 +701,29 @@ function RateEditor({ tour, start, initial, onClose, onSaved, canPublish }: {
             </fieldset>
           )}
 
-          <div className="rd-grid3">
+          <div className="adm-grid3">
             <div>
-              <label htmlFor={`${uid}-addon`} className="rd-label">Added for every person ($, optional)</label>
+              <label htmlFor={`${uid}-addon`} className="adm-label">Added for every person ($, optional)</label>
               <input id={`${uid}-addon`} {...field('perPersonAddon')} placeholder="None" />
-              <p className="rd-help">A cost each guest adds on top, such as the second entry fee on a two-stop day.</p>
+              <p className="adm-help">A cost each guest adds on top, such as the second entry fee on a two-stop day.</p>
             </div>
             <div>
-              <label htmlFor={`${uid}-min`} className="rd-label">Smallest party</label>
+              <label htmlFor={`${uid}-min`} className="adm-label">Smallest party</label>
               <input id={`${uid}-min`} {...field('minGuests', { inputMode: 'numeric' })} />
-              <p className="rd-help">1 means anyone. Tour emails never offer it to a smaller party.</p>
+              <p className="adm-help">1 means anyone. Tour emails never offer it to a smaller party.</p>
             </div>
           </div>
 
-          {err && <p id={errId} role="alert" className="rd-error">{err}</p>}
+          {err && <p id={errId} role="alert" className="adm-error">{err}</p>}
         </div>
       )}
 
       {parsed.ok && step === 'edit' && (
-        <section aria-labelledby={`${uid}-preview`} className={returned ? 'rd-panel rd-enter' : 'rd-panel'}>
-          <h4 id={`${uid}-preview`} className="rd-h4">What guests pay</h4>
+        <section aria-labelledby={`${uid}-preview`} className={returned ? 'adm-panel adm-enter' : 'adm-panel'}>
+          <h4 id={`${uid}-preview`} className="adm-h4">What guests pay</h4>
           <PartyChips name={`${uid}-party`} party={party} onParty={setParty} />
           {parsed.card.minGuests > party && (
-            <p className="rd-help rd-help--warn">Below the smallest party: tour emails will not offer it to {party === 1 ? 'one person' : people(party)}.</p>
+            <p className="adm-help adm-help--warn">Below the smallest party: tour emails will not offer it to {party === 1 ? 'one person' : people(party)}.</p>
           )}
           <MoneyTable
             head={[rows[0]?.area ? 'Pickup area' : 'Group', 'Guest pays', 'Collin gets']} strong="a" freshKey={party}
@@ -733,54 +733,54 @@ function RateEditor({ tour, start, initial, onClose, onSaved, canPublish }: {
         </section>
       )}
 
-      {serverError && <p role="alert" className="rd-error">{serverError}</p>}
+      {serverError && <p role="alert" className="adm-error">{serverError}</p>}
 
       {ask ? (
-        <section aria-labelledby={`${uid}-ask`} className={askLeaving ? 'rd-ask rd-leave' : 'rd-ask rd-enter'}>
-          <h4 id={`${uid}-ask`} ref={askHeading} tabIndex={-1} className="rd-h4 rd-h4--ask">{ask.question}</h4>
-          <div className="rd-block">
-            <span className="rd-block-label">Collin&rsquo;s rate</span>
+        <section aria-labelledby={`${uid}-ask`} className={askLeaving ? 'adm-ask adm-leave' : 'adm-ask adm-enter'}>
+          <h4 id={`${uid}-ask`} ref={askHeading} tabIndex={-1} className="adm-h4 adm-h4--ask">{ask.question}</h4>
+          <div className="adm-block">
+            <span className="adm-block-label">Collin&rsquo;s rate</span>
             <RateChanges before={start} after={ask.after} />
           </div>
           <GuestImpact before={start} after={ask.after} party={party} onParty={setParty} name={`${uid}-party`} />
           <BothCards before={start} after={ask.after} beforeLabel="Now" afterLabel="New" />
-          <p className="rd-help rd-help--soft">
+          <p className="adm-help adm-help--soft">
             {canPublish
               ? 'The site and checkout switch to the new price together when the deploy goes live, in about 3 minutes.'
               : 'It is stored now and reaches the site and checkout together with the next deploy.'}{' '}
             Bookings already paid keep their price.
           </p>
-          <div className="rd-actions">
+          <div className="adm-actions">
             {/* aria-disabled, not disabled: a button that disables under the
                 keyboard drops focus to the page body mid-save. */}
             <button
-              type="button" className="rd-btn rd-btn--primary" aria-disabled={busy || undefined} aria-busy={busy || undefined}
+              type="button" className="adm-btn adm-btn--primary" aria-disabled={busy || undefined} aria-busy={busy || undefined}
               onClick={() => { if (!busy) void send(ask.method) }}
             >
               {busy ? 'Saving…' : ask.confirm}
             </button>
-            <button type="button" className="rd-btn" aria-disabled={busy || undefined} onClick={() => { if (!busy) leaveAsk(() => { setReturned(true); setStep('edit') }) }}>
+            <button type="button" className="adm-btn" aria-disabled={busy || undefined} onClick={() => { if (!busy) leaveAsk(() => { setReturned(true); setStep('edit') }) }}>
               {ask.cancel}
             </button>
           </div>
         </section>
       ) : (
-        <div className={returned ? 'rd-actions rd-enter' : 'rd-actions'}>
+        <div className={returned ? 'adm-actions adm-enter' : 'adm-actions'}>
           {/* aria-disabled with its reason, not disabled: the button stays in
               the tab order and says why it cannot be used yet. */}
           <button
-            ref={reviewButton} type="button" className="rd-btn rd-btn--primary"
+            ref={reviewButton} type="button" className="adm-btn adm-btn--primary"
             aria-disabled={!parsed.ok || unchanged || undefined}
             aria-describedby={!parsed.ok ? errId : unchanged ? `${uid}-same` : undefined}
             onClick={() => { if (parsed.ok && !unchanged) openAsk('review', parsed.card) }}
           >
             Review the change
           </button>
-          <button type="button" className="rd-btn" onClick={() => leaveEditor(onClose)}>Cancel</button>
+          <button type="button" className="adm-btn" onClick={() => leaveEditor(onClose)}>Cancel</button>
           {tour.saved && (
-            <button ref={resetButton} type="button" className="rd-link" onClick={() => openAsk('reset', tour.fallback)}>Back to the default</button>
+            <button ref={resetButton} type="button" className="adm-link" onClick={() => openAsk('reset', tour.fallback)}>Back to the default</button>
           )}
-          {unchanged && parsed.ok && <span id={`${uid}-same`} className="rd-status">No change yet.</span>}
+          {unchanged && parsed.ok && <span id={`${uid}-same`} className="adm-status">No change yet.</span>}
         </div>
       )}
     </div>

@@ -30,21 +30,23 @@ const booking = (attribution: Record<string, string> | null) => ({
 const card = (attribution: Record<string, string> | null) =>
   renderToStaticMarkup(<BookingCard b={booking(attribution)} variant="paid" open onToggle={() => {}} />)
 
-/** The Found via field's markup: its <div>, label and value. */
-const foundVia = (html: string) => html.match(/<div[^>]*><span[^>]*>Found via<\/span>[\s\S]*?<\/div>/)?.[0] ?? ''
+/** The Found via fact's markup: its <div>, <dt> label and <dd> value. */
+const foundVia = (html: string) => html.match(/<div[^>]*><dt[^>]*>Found via<\/dt>[\s\S]*?<\/div>/)?.[0] ?? ''
 const text = (html: string) => html.replace(/<[^>]+>/g, '').replace(/&#x27;/g, "'").replace(/&amp;/g, '&')
 
 describe('admin card: Found via with a first touch', () => {
-  test('a booking with no first touch renders the field exactly as before the change', () => {
-    // Pinned from the card as it rendered at 45f2894, before first touch existed.
+  test('a booking with no first touch renders the field with no first-touch part', () => {
+    // Pinned from the card as the Nov 13 2026 redesign renders it (a <dl> of
+    // facts, shared .adm classes); the words are the ones it has shown since 45f2894, before
+    // first touch existed.
     expect(foundVia(card(LAST))).toBe(
-      '<div style="display:flex;gap:8px;font-size:13px;line-height:1.5">' +
-        '<span style="color:#6E6A62;min-width:78px;flex-shrink:0">Found via</span>' +
-        '<span style="color:var(--text-primary, #171614);font-variant-numeric:tabular-nums">' +
-          '<span style="font-weight:600">bio / email' +
-            '<span style="color:#6E6A62;font-weight:400"> · landed on /transfers</span>' +
+      '<div class="adm-fact">' +
+        '<dt class="adm-fact-k">Found via</dt>' +
+        '<dd class="adm-fact-v">' +
+          '<span class="adm-strong">bio / email' +
+            '<span class="adm-quiet"> · landed on /transfers</span>' +
           '</span>' +
-        '</span>' +
+        '</dd>' +
       '</div>',
     )
   })
@@ -60,7 +62,7 @@ describe('admin card: Found via with a first touch', () => {
   test('a different first touch shows beside the source, before the landing page', () => {
     const html = foundVia(card({ ...LAST, first_source: 'chatgpt.com', first_referrer: 'https://chatgpt.com/', first_landing: '/', first_ts: '2026-09-20T15:00:00.000Z' }))
     expect(text(html)).toBe('Found viabio / email (first: chatgpt.com) · landed on /transfers')
-    expect(html).toContain('<span style="font-weight:400"> (first: chatgpt.com)</span>')
+    expect(html).toContain('<span class="adm-plain"> (first: chatgpt.com)</span>')
   })
 
   test('an ad click alone as the first touch is named as the ad', () => {

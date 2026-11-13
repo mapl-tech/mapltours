@@ -18,11 +18,11 @@ import TourRatesDesk, { type TourRateView, type RateChangeView } from '@/compone
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
 
-/** The desk's page: the .rd classes in app/globals.css, like the desk itself. */
+/** The desk's page: the .adm classes in app/globals.css, like the desk itself. */
 function Shell({ children }: { children: React.ReactNode }) {
   return (
-    <div className="rd-page">
-      <div className="rd rd-wrap">{children}</div>
+    <div className="adm-page">
+      <div className="adm adm-wrap">{children}</div>
     </div>
   )
 }
@@ -33,9 +33,9 @@ export default async function AdminTourRatesPage() {
   if (!user) {
     return (
       <Shell>
-        <h1 className="rd-h1">Tour prices</h1>
-        <p className="rd-lead">
-          Please <Link href="/login?redirect=/admin/tour-rates" className="rd-inline-link">sign in</Link> to view this page.
+        <h1 className="adm-h1">Tour prices</h1>
+        <p className="adm-lead">
+          Please <Link href="/login?redirect=/admin/tour-rates" className="adm-inline-link">sign in</Link> to view this page.
         </p>
       </Shell>
     )
@@ -46,8 +46,8 @@ export default async function AdminTourRatesPage() {
   if (!adminRow) {
     return (
       <Shell>
-        <h1 className="rd-h1">Not authorised</h1>
-        <p className="rd-lead">This dashboard is limited to MAPL Tours Jamaica admins.</p>
+        <h1 className="adm-h1">Not authorised</h1>
+        <p className="adm-lead">This dashboard is limited to MAPL Tours Jamaica admins.</p>
       </Shell>
     )
   }
