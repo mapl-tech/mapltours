@@ -3855,6 +3855,8 @@ html:has(.adm-toast) { scroll-padding-bottom: 96px; }
 @media (max-width: 30rem) {
   .adm-seg--grid { display: grid; grid-template-columns: 1fr 1fr; border-radius: 26px; }
   .adm-seg--grid .adm-seg-btn { justify-content: center; }
+  /* An odd last choice takes the whole row instead of half of it. */
+  .adm-seg--grid > .adm-seg-btn:last-child:nth-child(odd) { grid-column: 1 / -1; }
 }
 .adm-empty { margin-top: var(--adm-gap); padding: 24px; border: 1px solid var(--adm-hairline); border-radius: var(--r-lg); background: #fff; color: var(--adm-soft); font-size: var(--adm-fs-ui); text-align: center; }
 .adm-more { margin-top: var(--adm-gap); }
@@ -4138,12 +4140,55 @@ html:has(.adm-toast) { scroll-padding-bottom: 96px; }
 .adm-gc-soft { color: var(--adm-soft); }
 .adm-gc-warn { color: var(--adm-warn); font-weight: 700; }
 /* The buyer's own words, set apart as a quotation. */
-.adm-gc-msg { margin: 0; padding: 4px 0 4px 16px; border-left: 3px solid var(--adm-edge); }
-.adm-gc-msg blockquote { margin: 0; font-size: var(--adm-fs-body); line-height: 1.5; font-style: italic; color: var(--adm-ink); overflow-wrap: anywhere; }
-.adm-gc-msg figcaption { margin-top: 4px; font-size: var(--adm-fs-meta); color: var(--adm-soft); }
+.adm-gc-msg, .adm-quote { margin: 0; padding: 4px 0 4px 16px; border-left: 3px solid var(--adm-edge); }
+.adm-gc-msg blockquote, .adm-quote blockquote { margin: 0; font-size: var(--adm-fs-body); line-height: 1.5; font-style: italic; color: var(--adm-ink); overflow-wrap: anywhere; }
+.adm-gc-msg figcaption, .adm-quote figcaption { margin-top: 4px; font-size: var(--adm-fs-meta); color: var(--adm-soft); }
 .adm-gc-actions { padding-top: var(--adm-gap); border-top: 1px solid var(--adm-hairline); }
 .adm-gc-fix { display: grid; gap: var(--adm-gap); padding: 16px; border: 1px solid var(--adm-hairline); border-radius: var(--r-md); background: var(--adm-panel); }
 .adm-gc-fix .adm-help { margin-top: 4px; }
+
+/* ── Admin: guest clips (components/admin/VideoQueue.tsx) ──
+   What each decision does sits above the queue; each card is the clip, the
+   tour it would go on, who posted it, the note, then three decisions that
+   never move (the current one shows pressed). */
+.adm-vid-rules { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr)); gap: var(--adm-gap) var(--adm-group); margin: var(--adm-gap) 0 0; padding: 16px; border: 1px solid var(--adm-hairline); border-radius: var(--r-lg); background: #fff; }
+.adm-vid-rules dt { font-size: var(--adm-fs-ui); font-weight: 700; color: var(--adm-ink); }
+.adm-vid-rules dd { margin: 4px 0 0; font-size: var(--adm-fs-body); line-height: 1.5; color: var(--adm-soft); }
+.adm-vid-waiting { margin-top: var(--adm-group); font-size: var(--adm-fs-ui); line-height: 1.5; color: var(--adm-soft); }
+.adm-vid-waiting--on strong { color: var(--adm-ink); }
+.adm-vid-filter { margin-top: var(--adm-gap); }
+.adm-vid-grid { list-style: none; padding: 0; margin: var(--adm-group) 0 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 18rem), 1fr)); gap: var(--adm-group); align-items: start; }
+/* The clip keeps its 9:16 frame but never takes more than most of a phone screen. */
+.adm-vid-media { position: relative; width: 100%; aspect-ratio: 9 / 16; max-height: min(70svh, 40rem); background: #000; border-radius: calc(var(--r-lg) - 1px) calc(var(--r-lg) - 1px) 0 0; overflow: hidden; }
+/* An approved clip's way to its tour page sits over the top of the clip: solid, so its contrast never depends on the footage. */
+.adm-vid-live { position: absolute; top: 12px; left: 12px; display: inline-flex; align-items: center; gap: 6px; min-height: 44px; padding: 0 16px; border-radius: 9999px; background: #fff; color: var(--adm-ink); font-size: var(--adm-fs-body); font-weight: 700; text-decoration: none; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25); }
+.adm-vid-live:hover { text-decoration: underline; text-underline-offset: 3px; }
+.adm-vid-live:focus-visible { outline-offset: -4px; }
+.adm-vid-note[readonly] { background: var(--adm-panel); color: var(--adm-soft); }
+.adm-vid-media video { display: block; width: 100%; height: 100%; object-fit: contain; background: #000; }
+.adm-vid .adm-card-in { display: grid; gap: var(--adm-gap); }
+.adm-vid-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 12px; }
+.adm-vid-h { margin: 0; font-size: var(--adm-fs-h3); font-weight: 800; line-height: 1.3; color: var(--adm-ink); }
+.adm-vid-note { margin-top: 4px; }
+.adm-vid .adm-help { margin-top: 4px; }
+/* Approve across the top, Reject and Flag under it: positions fixed whatever the state. */
+.adm-vid-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.adm-vid-actions .adm-vid-btn--ok { grid-column: 1 / -1; }
+.adm-vid-btn { gap: 6px; padding: 0 12px; }
+/* Each tone keeps its colours on hover (these follow, and match, the shared
+   .adm-btn hover rule's weight); the pressed one does not react at all. */
+.adm-vid-btn--ok { border-color: var(--adm-ok); color: var(--adm-ok); }
+.adm-vid-btn--ok:hover:not(:disabled):not([aria-disabled="true"]) { border-color: var(--adm-ok); background: var(--adm-ok-bg); }
+.adm-vid.is-pending .adm-vid-btn--ok, .adm-vid-btn--ok.is-on,
+.adm-vid.is-pending .adm-vid-btn--ok:hover:not(:disabled):not([aria-disabled="true"]) { border-color: var(--adm-ok); background: var(--adm-ok); color: #fff; }
+.adm-vid.is-pending .adm-vid-btn--ok:hover:not(:disabled):not([aria-disabled="true"]):not(.is-on) { border-color: #0B5537; background: #0B5537; }
+.adm-vid-btn--bad { border-color: var(--adm-bad); color: var(--adm-bad); }
+.adm-vid-btn--bad.is-on, .adm-vid-btn--bad:hover:not(:disabled):not([aria-disabled="true"]) { border-color: var(--adm-bad); background: var(--adm-bad-bg); }
+.adm-vid-btn--plain.is-on, .adm-vid-btn--plain.is-on:hover:not(:disabled):not([aria-disabled="true"]) { border-color: var(--adm-plain); background: var(--adm-plain-bg); color: var(--adm-plain); }
+.adm-vid-btn--ok.is-on:hover:not(:disabled):not([aria-disabled="true"]) { border-color: var(--adm-ok); background: var(--adm-ok); color: #fff; }
+.adm-vid-btn[aria-pressed="true"] { cursor: default; }
+.adm-vid-btn[aria-pressed="true"]:active:not(:disabled):not([aria-disabled="true"]) { transform: none; }
+.adm-vid.is-target { outline: 3px solid var(--gold-text); outline-offset: 3px; }
 
 /* State changes arrive instead of popping in: transform and opacity only. */
 @keyframes admEnter { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
