@@ -1,4 +1,7 @@
 import { HERO, DESTINATIONS } from './images'
+import { TOUR_ZONES, type TourZone } from './tour-zones'
+import { applyRateCards, type RateCard } from './tour-rates'
+import rateSnapshot from './tour-rates.snapshot.json'
 
 export type ExperienceCategory = 'Adventure' | 'Nature' | 'Music' | 'Food' | 'Culture' | 'Water'
 
@@ -12,24 +15,74 @@ export interface Comment {
 }
 
 /**
- * How the operator charges for a tour. Two shapes cover the whole rate sheet:
+ * How the operator charges for a tour. Three shapes cover the whole rate sheet:
  *
  *  group      a flat rate covering a party of 1..tierMax (a private tour: one
  *             person or three pay the same), then `extraPerPerson` x party
  *             size once the party is larger.
  *  per_person `baseRate` per head up to tierMax, then the discounted
  *             `extraPerPerson` per head for larger parties.
+ *  by area    a group tour with `zoneRates`: the flat rate for 1..tierMax
+ *             depends on the zone the guest is picked up from (lib/tour-zones),
+ *             and each guest past tierMax ADDS `extraPerPerson` on top of it
+ *             (Collin, Nov 12 2026: "Any additional person is $50 per person").
+ *
+ * `perPersonAddon` is added for every guest in any shape: the second site's
+ * entry when two sights share one day ($30 a head for Dunn's River + Blue Hole).
  *
  * These are the OPERATOR's costs. What the customer pays is derived from them
- * by tourPrice(), which adds MAPL's margin and covers card processing.
+ * by tourPrice(), which adds MAPL's margin and covers card processing. The
+ * live rate cards are edited in /admin/tour-rates and published with each
+ * deploy (lib/tour-rates.ts); the values in the catalog below are the
+ * defaults they start from.
  */
 export interface TourPricing {
   mode: 'group' | 'per_person'
-  /** Operator cost for a party of 1..tierMax (flat for group, per head otherwise). */
+  /**
+   * Operator cost for a party of 1..tierMax (flat for group, per head
+   * otherwise). For a tour priced by area it is the cheapest zone's rate, kept
+   * so a reader that knows nothing of zones still prints a true "from".
+   */
   baseRate: number
   tierMax: number
-  /** Operator cost PER PERSON once the party exceeds tierMax. */
+  /**
+   * Operator cost PER PERSON once the party exceeds tierMax: the whole party
+   * per head for group and per_person, each extra guest on top of the zone
+   * rate for a tour priced by area.
+   */
   extraPerPerson: number
+  /** Operator rate for 1..tierMax by pickup zone. A zone left out is not sold online. */
+  zoneRates?: Partial<Record<TourZone, number>>
+  /** Added for every guest on top of everything else. */
+  perPersonAddon?: number
+}
+
+/** True when the price depends on where the guest is picked up. */
+export function isZonePriced(p: TourPricing): boolean {
+  return !!p.zoneRates && Object.values(p.zoneRates).some((v) => typeof v === 'number')
+}
+
+/** The zones this tour is sold from, west to east. */
+export function zonesSold(p: TourPricing): TourZone[] {
+  return isZonePriced(p) ? TOUR_ZONES.filter((z) => typeof p.zoneRates?.[z] === 'number') : []
+}
+
+/** Whether a guest picked up in this zone can book it online. Always true for a tour not priced by area. */
+export function zoneSells(p: TourPricing, zone: TourZone | null | undefined): boolean {
+  if (!isZonePriced(p)) return true
+  return !!zone && typeof p.zoneRates?.[zone] === 'number'
+}
+
+/**
+ * The flat rate for 1..tierMax: the zone's when it is sold there, otherwise
+ * the cheapest zone's, which is what every "from" price shows. Checkout never
+ * relies on the fallback: priceTourCart refuses a tour priced by area unless
+ * zoneSells() is true for the guest's zone.
+ */
+function partyRate(p: TourPricing, zone: TourZone | null | undefined): number {
+  if (!isZonePriced(p)) return p.baseRate
+  if (zone && typeof p.zoneRates?.[zone] === 'number') return p.zoneRates[zone] as number
+  return Math.min(...zonesSold(p).map((z) => p.zoneRates?.[z] as number))
 }
 
 /** MAPL's margin on tours. */
@@ -42,13 +95,21 @@ export const TOUR_REMITLY_COVER = 0.05
 const CARD_RATE = 0.057
 const CARD_FIXED = 0.22
 
-/** What MAPL owes the operator for a party of this size. */
-export function tourOperatorCost(p: TourPricing, travelers: number): number {
+/**
+ * What MAPL owes the operator for a party of this size. `zone` matters only
+ * for a tour priced by area; without one (or from a zone it is not sold in)
+ * the cheapest zone is used, which is the "from" price.
+ */
+export function tourOperatorCost(p: TourPricing, travelers: number, zone?: TourZone | null): number {
   const n = Math.max(1, Math.round(travelers))
-  if (n <= p.tierMax) {
-    return p.mode === 'group' ? p.baseRate : p.baseRate * n
+  const addon = (p.perPersonAddon ?? 0) * n
+  if (isZonePriced(p)) {
+    return partyRate(p, zone) + p.extraPerPerson * Math.max(0, n - p.tierMax) + addon
   }
-  return p.extraPerPerson * n
+  if (n <= p.tierMax) {
+    return (p.mode === 'group' ? p.baseRate : p.baseRate * n) + addon
+  }
+  return p.extraPerPerson * n + addon
 }
 
 /**
@@ -56,9 +117,14 @@ export function tourOperatorCost(p: TourPricing, travelers: number): number {
  * MAPL's margin, grossed up so card processing does not eat it. Rounded UP so
  * a booking can never come in under cost.
  */
-export function tourPrice(p: TourPricing, travelers: number): number {
-  const cost = tourOperatorCost(p, travelers)
+export function tourPrice(p: TourPricing, travelers: number, zone?: TourZone | null): number {
+  const cost = tourOperatorCost(p, travelers, zone)
   return Math.ceil((cost * (1 + TOUR_MARGIN + TOUR_REMITLY_COVER) + CARD_FIXED) / (1 - CARD_RATE))
+}
+
+/** The price for this party from every zone the tour is sold in, west to east. */
+export function zonePrices(p: TourPricing, travelers: number): { zone: TourZone; price: number }[] {
+  return zonesSold(p).map((zone) => ({ zone, price: tourPrice(p, travelers, zone) }))
 }
 
 /**
@@ -76,7 +142,10 @@ export function placeLabel(p: { destination: string; parish?: string | null }): 
 }
 
 export function priceUnitLabel(p: TourPricing): string {
-  return p.mode === 'group' ? `up to ${p.tierMax} people` : 'per person'
+  if (p.mode !== 'group') return 'per person'
+  // Every guest adds to a price with a per-person add-on, so its headline
+  // (the price for one) is not a group price.
+  return p.perPersonAddon ? 'for 1 person' : `up to ${p.tierMax} people`
 }
 
 /**
@@ -88,12 +157,13 @@ export function priceUnitLabel(p: TourPricing): string {
  * Returns null when no per-head figure is meaningful (a flat group rate), so
  * the caller can render the tier language instead of fake arithmetic.
  */
-export function perTravelerPrice(p: TourPricing, travelers: number): number | null {
+export function perTravelerPrice(p: TourPricing, travelers: number, zone?: TourZone | null): number | null {
   const n = Math.max(1, Math.round(travelers))
   // A flat group rate covers the whole party: dividing it by heads would
-  // invent a per-person price that is not what anyone is charged.
-  if (p.mode === 'group' && n <= p.tierMax) return null
-  const total = tourPrice(p, n)
+  // invent a per-person price that is not what anyone is charged. A tour
+  // priced by area is a flat rate plus extras, never a per-head price.
+  if (p.mode === 'group' && (n <= p.tierMax || isZonePriced(p))) return null
+  const total = tourPrice(p, n, zone)
   // Only claim "N x $X" when it multiplies back to the exact total. A party
   // of 5 on a $478 tour is $95.60 each, which displays as $96 and reads as
   // $480: the caption would contradict the total sitting beside it.
@@ -117,7 +187,9 @@ export interface Experience {
   /**
    * All-in price for the SMALLEST party, i.e. what the cards advertise. For a
    * group tour this covers up to `pricing.tierMax` people; for a per-person
-   * tour it is one traveler. Derived from `pricing`, never set by hand.
+   * tour it is one traveler; for a tour priced by area it is the cheapest
+   * zone's, shown as a "from". Derived from `pricing` when the catalog loads,
+   * never set by hand.
    */
   price: number
   /**
@@ -376,14 +448,20 @@ export function reelPoster(exp: Pick<Experience, 'video' | 'genericClip' | 'imag
  * terms are commercial facts only MAPL and the operator can confirm, so every
  * line needs verifying against the real product before a customer is shown it.
  */
-export const experiences: Experience[] = [
+/** A catalog entry as written below: its headline `price` is derived, never typed. */
+type CatalogEntry = Omit<Experience, 'price'>
+
+const CATALOG: CatalogEntry[] = [
   {
     id: 1,
     destination: "Ocho Rios",
     parish: "St. Ann",
     title: "Dunn's River Falls Climb",
-    pricing: { mode: 'group', baseRate: 275, tierMax: 3, extraPerPerson: 75 },
-    price: 351,
+    // Collin, Nov 12 2026: priced by the zone he drives from, for 1 to 4
+    // people, entrance fees included ("Ocho zone $190 ... Negril zone $400",
+    // Runaway Bay / Discovery Bay corrected to $220), and "any additional
+    // person is $50". Edited live in /admin/tour-rates.
+    pricing: { mode: 'group', baseRate: 190, tierMax: 4, extraPerPerson: 50, zoneRates: { negril: 400, lucea: 300, montego_bay: 280, trelawny: 230, runaway_bay: 220, ocho_rios: 190 } },
     duration: "2 hrs at the falls",
     rating: 0,
     reviews: 0,
@@ -432,8 +510,11 @@ export const experiences: Experience[] = [
     destination: "Ocho Rios",
     parish: "St. Ann",
     title: "Blue Hole & Secret Falls",
-    pricing: { mode: 'group', baseRate: 275, tierMax: 3, extraPerPerson: 75 },
-    price: 351,
+    // Collin, Nov 12 2026: priced by the zone he drives from, for 1 to 4
+    // people, entrance fees included ("Ocho zone $190 ... Negril zone $400",
+    // Runaway Bay / Discovery Bay corrected to $220), and "any additional
+    // person is $50". Edited live in /admin/tour-rates.
+    pricing: { mode: 'group', baseRate: 190, tierMax: 4, extraPerPerson: 50, zoneRates: { negril: 400, lucea: 300, montego_bay: 280, trelawny: 230, runaway_bay: 220, ocho_rios: 190 } },
     duration: "2 hrs at the falls",
     rating: 0,
     reviews: 0,
@@ -484,7 +565,6 @@ export const experiences: Experience[] = [
     parish: "Trelawny",
     title: "Bamboo Rafting on the Martha Brae",
     pricing: { mode: 'group', baseRate: 100, tierMax: 3, extraPerPerson: 90 },
-    price: 128,
     duration: "1.5 hrs at the river",
     rating: 0,
     reviews: 0,
@@ -534,7 +614,6 @@ export const experiences: Experience[] = [
     parish: "Westmoreland",
     title: "Rasta Cultural ATV Safari",
     pricing: { mode: 'group', baseRate: 150, tierMax: 3, extraPerPerson: 140 },
-    price: 192,
     duration: "3 hrs at the village",
     rating: 0,
     reviews: 0,
@@ -587,7 +666,6 @@ export const experiences: Experience[] = [
     parish: "Hanover",
     title: "ATV Off-Road Adventure",
     pricing: { mode: 'per_person', baseRate: 130, tierMax: 3, extraPerPerson: 125 },
-    price: 166,
     duration: "2 hrs at the park",
     rating: 0,
     reviews: 0,
@@ -639,7 +717,6 @@ export const experiences: Experience[] = [
     pricing: { mode: 'per_person', baseRate: 120, tierMax: 3, extraPerPerson: 110 },
     // Collin, Nov 12 2026: "$120 per person however it have to be 2 or more persons".
     minGuests: 2,
-    price: 153,
     duration: "1 hr at the park",
     rating: 0,
     reviews: 0,
@@ -689,7 +766,6 @@ export const experiences: Experience[] = [
     parish: "St. Ann",
     title: "Horseback Riding Trail",
     pricing: { mode: 'per_person', baseRate: 100, tierMax: 3, extraPerPerson: 95 },
-    price: 128,
     duration: "2 hrs at the stable",
     rating: 0,
     reviews: 0,
@@ -739,7 +815,6 @@ export const experiences: Experience[] = [
     parish: "St. Ann",
     title: "Horseback Ride 'n' Swim",
     pricing: { mode: 'per_person', baseRate: 100, tierMax: 3, extraPerPerson: 95 },
-    price: 128,
     duration: "2 hrs at the stable",
     rating: 0,
     reviews: 0,
@@ -789,7 +864,6 @@ export const experiences: Experience[] = [
     parish: "St. James",
     title: "Jet Ski the Caribbean",
     pricing: { mode: 'group', baseRate: 130, tierMax: 3, extraPerPerson: 100 },
-    price: 166,
     duration: "1 hr at the beach",
     rating: 0,
     reviews: 0,
@@ -839,7 +913,6 @@ export const experiences: Experience[] = [
     parish: "St. James",
     title: "Parasailing Over the Bay",
     pricing: { mode: 'group', baseRate: 120, tierMax: 3, extraPerPerson: 90 },
-    price: 153,
     duration: "1 hr on the boat",
     rating: 0,
     reviews: 0,
@@ -894,7 +967,6 @@ export const experiences: Experience[] = [
     // Collin, Nov 12 2026: "This price is per person". The sheet's "$180 1-3"
     // for the kayak is per head ($160 each from 4), not a party rate.
     pricing: { mode: 'per_person', baseRate: 180, tierMax: 3, extraPerPerson: 160 },
-    price: 230,
     duration: "1 hr at the river",
     rating: 0,
     reviews: 0,
@@ -942,7 +1014,6 @@ export const experiences: Experience[] = [
     parish: "St. Ann",
     title: "River Tubing",
     pricing: { mode: 'per_person', baseRate: 100, tierMax: 3, extraPerPerson: 80 },
-    price: 128,
     duration: "1.5 hrs at the river",
     rating: 0,
     reviews: 0,
@@ -993,7 +1064,6 @@ export const experiences: Experience[] = [
     parish: "Westmoreland",
     title: "Rick's Cafe Cliff Diving & Sunset",
     pricing: { mode: 'group', baseRate: 200, tierMax: 4, extraPerPerson: 40 },
-    price: 255,
     duration: "3 hrs at Rick's",
     rating: 0,
     reviews: 0,
@@ -1045,7 +1115,6 @@ export const experiences: Experience[] = [
     parish: "St. Ann",
     title: "Bob Marley Nine Mile Pilgrimage",
     pricing: { mode: 'group', baseRate: 360, tierMax: 3, extraPerPerson: 100 },
-    price: 459,
     duration: "Full day",
     rating: 0,
     reviews: 0,
@@ -1097,7 +1166,6 @@ export const experiences: Experience[] = [
     parish: "St. Ann",
     title: "Tubing + Clear Kayak Combo",
     pricing: { mode: 'per_person', baseRate: 280, tierMax: 3, extraPerPerson: 280 },
-    price: 357,
     duration: "Full day",
     rating: 0,
     reviews: 0,
@@ -1149,7 +1217,6 @@ export const experiences: Experience[] = [
     parish: "St. James",
     title: "Bamboo Raft + Clear Kayak + Drone Photos",
     pricing: { mode: 'per_person', baseRate: 260, tierMax: 3, extraPerPerson: 260 },
-    price: 332,
     duration: "Half day",
     rating: 0,
     reviews: 0,
@@ -1200,8 +1267,10 @@ export const experiences: Experience[] = [
     destination: "Ocho Rios",
     parish: "St. Ann",
     title: "Dunn's River + Blue Hole",
-    pricing: { mode: 'group', baseRate: 150, tierMax: 3, extraPerPerson: 100 },
-    price: 192,
+    // Collin, Nov 12 2026: the same zone rate as either falls on its own, plus
+    // $30 for every guest (the second site's entry; both are in the same area,
+    // so no more driving), extra guests past 4 included: $50 + $30 each.
+    pricing: { mode: 'group', baseRate: 190, tierMax: 4, extraPerPerson: 50, perPersonAddon: 30, zoneRates: { negril: 400, lucea: 300, montego_bay: 280, trelawny: 230, runaway_bay: 220, ocho_rios: 190 } },
     duration: "Full day",
     rating: 0,
     reviews: 0,
@@ -1253,7 +1322,6 @@ export const experiences: Experience[] = [
     parish: "Hanover",
     title: "Zipline + ATV",
     pricing: { mode: 'per_person', baseRate: 235, tierMax: 3, extraPerPerson: 235 },
-    price: 300,
     duration: "Full day",
     rating: 0,
     reviews: 0,
@@ -1305,7 +1373,6 @@ export const experiences: Experience[] = [
     parish: "Hanover",
     title: "Bamboo Rafting + Zipline",
     pricing: { mode: 'per_person', baseRate: 210, tierMax: 3, extraPerPerson: 210 },
-    price: 268,
     duration: "Full day",
     rating: 0,
     reviews: 0,
@@ -1356,7 +1423,6 @@ export const experiences: Experience[] = [
     parish: "Hanover",
     title: "Triple Pack: ATV + Zipline + Rick's Cafe",
     pricing: { mode: 'per_person', baseRate: 250, tierMax: 3, extraPerPerson: 250 },
-    price: 319,
     duration: "Full day",
     rating: 0,
     reviews: 0,
@@ -1403,6 +1469,35 @@ export const experiences: Experience[] = [
     comments: [],
   },
 ]
+
+/**
+ * The live catalog: the entries above with the rate cards published from
+ * /admin/tour-rates applied (lib/tour-rates.snapshot.json, written by
+ * scripts/snapshot-tour-rates.mjs at the start of each deploy), and every
+ * headline price worked out from the result. A card that does not validate
+ * throws here, so a bad card fails the deploy instead of selling at a wrong
+ * price; the deploy already live keeps serving.
+ */
+export const experiences: Experience[] = CATALOG.map((e) => ({ ...e, price: 0 }))
+applyRateCards(experiences, rateSnapshot.cards)
+for (const e of experiences) e.price = tourPrice(e.pricing, 1)
+
+/** The catalog's own card for a tour, before any published change: what "back to the default" restores. */
+export function defaultRateCard(id: number): RateCard | null {
+  const e = CATALOG.find((x) => x.id === id)
+  return e ? { pricing: e.pricing, minGuests: e.minGuests ?? 1 } : null
+}
+
+/**
+ * When this deploy published its rate cards and the newest change among them;
+ * both null for a build that published none (a local build, the catalog's
+ * defaults). /admin/tour-rates compares them with what is saved to say
+ * whether a change is live yet.
+ */
+export const RATES_PUBLISHED: { snapshotAt: string | null; latestChange: string | null } = {
+  snapshotAt: rateSnapshot.snapshotAt,
+  latestChange: rateSnapshot.latestChange,
+}
 
 /**
  * Destinations where Collins actually runs tours, derived from the catalog

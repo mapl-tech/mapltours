@@ -3475,3 +3475,247 @@ a.pf-stat:hover { background: var(--surface); }
 }
 @keyframes pcRise { from { transform: translateY(8px); } to { transform: none; } }
 @media (prefers-reduced-motion: reduce) { .pc-card { animation: none; } }
+
+/* ── Admin tour prices desk (/admin/tour-rates) ──
+   One scoped token set; the desk's markup uses these classes and carries no
+   colour or size of its own. Type in rem, spacing on the 4/8 px scale: 12px
+   inside a group, 24px between groups, so space alone tells them apart.
+   Contrast, measured: ink 18.1:1 on white, soft 8.58:1, faint 5.4:1 on white
+   and 5.1:1 on the warm panel, warn 7.1:1 on white and 6.4:1 on its tint,
+   ok 5.7:1 on its tint, bad 6.5:1 on white and 5.4:1 on its tint. */
+.rd {
+  --rd-ink: var(--text-primary);
+  --rd-soft: var(--text-secondary);
+  --rd-faint: #6E6A62;
+  --rd-hairline: var(--border);          /* cards, table rows */
+  --rd-rule: var(--border-strong);       /* dotted leaders in rate lists */
+  /* Fields and controls: 3.63:1 on white, 3.45:1 on the warm panel, the
+     3:1 WCAG 1.4.11 asks of the edge that shows where a field is (the same
+     grey as .cpop-input). */
+  --rd-edge: #8A867D;
+  --rd-panel: var(--bg-warm);
+  --rd-warn-bg: #FFF1D6;  --rd-warn: #7A4F00;
+  --rd-ok-bg: #E3F3EA;    --rd-ok: #0F6B45;
+  --rd-bad-bg: #FBE4E2;   --rd-bad: #B3261E;
+  --rd-plain-bg: #EEEDE9; --rd-plain: #4E4C47;
+  --rd-fs-meta: 0.875rem;                               /* 14px: help, labels, meta */
+  --rd-fs-body: 0.875rem;                               /* 14px */
+  --rd-fs-ui: 0.9375rem;                                /* 15px */
+  --rd-fs-field: 1rem;                                  /* 16px: iOS never zooms */
+  --rd-fs-h3: 1.0625rem;                                /* 17px */
+  --rd-fs-h2: 1.25rem;                                  /* 20px */
+  --rd-fs-h1: clamp(1.5rem, 1.25rem + 1vw, 1.75rem);    /* 24 to 28px */
+  --rd-gap: 12px;
+  --rd-group: 24px;
+  color-scheme: light;
+  font-family: var(--font-dm-sans);
+  color: var(--rd-ink);
+}
+/* On a phone the owner reads prices at arm's length: body, tables and buttons
+   at 16px, help and labels at 15px. */
+@media (max-width: 37.5rem) {
+  .rd { --rd-fs-body: 1rem; --rd-fs-ui: 1rem; --rd-fs-meta: 0.9375rem; }
+}
+.rd-page { min-height: 100vh; background: var(--bg-warm); }
+/* The page's top and bottom space compress on a phone (24 and 48px) and open to 40 and 96px on a wide screen. */
+.rd-wrap { width: 100%; max-width: 65rem; margin: 0 auto; padding: clamp(24px, 4vw, 40px) clamp(16px, 3vw, 48px) clamp(48px, 8vw, 96px); box-sizing: border-box; }
+/* Zero specificity, so every class below sets its own margin. */
+:where(.rd) :where(p, h1, h2, h3, h4, h5, dl, dd, ul, ol) { margin: 0; }
+.rd-back {
+  display: inline-flex; align-items: center; min-height: 44px;
+  font-size: var(--rd-fs-body); font-weight: 600; color: var(--rd-soft); text-decoration: none;
+}
+.rd-back:hover { color: var(--rd-ink); }
+.rd-inline-link { color: var(--rd-ink); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; }
+.rd-h1 { font-size: var(--rd-fs-h1); font-weight: 800; letter-spacing: -0.025em; line-height: 1.15; margin-top: 4px; }
+.rd-h2 { font-size: var(--rd-fs-h2); font-weight: 800; letter-spacing: -0.02em; line-height: 1.25; }
+.rd-h3 { font-size: var(--rd-fs-h3); font-weight: 700; letter-spacing: -0.01em; line-height: 1.3; }
+.rd-h4 { font-size: var(--rd-fs-ui); font-weight: 700; line-height: 1.35; }
+.rd-h4--ask { font-size: 1rem; font-weight: 800; }
+.rd-h5 { font-size: var(--rd-fs-body); font-weight: 700; line-height: 1.4; }
+.rd-lead { font-size: var(--rd-fs-ui); line-height: 1.55; color: var(--rd-soft); max-width: 42.5rem; margin-top: 8px; }
+.rd-meta { font-size: var(--rd-fs-meta); line-height: 1.45; color: var(--rd-faint); margin-top: 4px; }
+.rd-help { font-size: var(--rd-fs-meta); line-height: 1.45; color: var(--rd-faint); margin-top: 8px; }
+.rd-help--soft { color: var(--rd-soft); }
+.rd-help--warn { color: var(--rd-warn); }
+.rd-status { font-size: var(--rd-fs-meta); line-height: 1.45; color: var(--rd-faint); }
+.rd-overview { margin-top: 4px; font-size: var(--rd-fs-meta); line-height: 1.45; color: var(--rd-soft); font-weight: 600; }
+
+.rd-note { margin-top: 16px; padding: 12px 16px; border-radius: var(--r-md); font-size: var(--rd-fs-body); line-height: 1.5; }
+.rd-note--ok { background: var(--rd-ok-bg); color: var(--rd-ok); font-weight: 600; }
+.rd-note--warn { background: var(--rd-warn-bg); color: var(--rd-warn); }
+.rd-note--bad { background: var(--rd-bad-bg); color: var(--rd-bad); font-weight: 600; }
+.rd-banner { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--rd-gap); }
+
+.rd-section { margin-top: 32px; }
+.rd-section--history { margin-top: 40px; }
+.rd-list { list-style: none; padding: 0; margin-top: var(--rd-gap); display: flex; flex-direction: column; gap: var(--rd-gap); }
+
+/* A tour card is a container: its padding follows its own width, not the
+   window's, so it reads the same in a narrow column or a wide one. */
+.rd-card { container-type: inline-size; background: #fff; border: 1px solid var(--rd-hairline); border-radius: var(--r-lg); }
+.rd-card-in { padding: 16px; }
+@container (min-width: 37.5rem) { .rd-card-in { padding: 24px; } }
+.rd-card-head { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--rd-gap); flex-wrap: wrap; }
+.rd-card-main { min-width: 0; flex: 1 1 20rem; }
+.rd-title-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+
+.rd-badge {
+  display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px; border-radius: 9999px;
+  font-size: 0.75rem; font-weight: 700; letter-spacing: 0.04em; line-height: 1.4;
+}
+.rd-badge--default { background: var(--rd-plain-bg); color: var(--rd-plain); }
+.rd-badge--live { background: var(--rd-ok-bg); color: var(--rd-ok); }
+.rd-badge--publishing { background: var(--rd-warn-bg); color: var(--rd-warn); }
+/* The in-progress cue: a dot that pulses three times (4.8 s, under the 5 s
+   WCAG 2.2.2 allows without a pause control), then stays lit. */
+.rd-dot {
+  display: inline-block; flex-shrink: 0; width: 7px; height: 7px; border-radius: 50%; background: currentColor;
+  vertical-align: 0.1em; animation: rdPulse 1.6s ease-in-out 3;
+}
+.rd-banner-text .rd-dot { margin-right: 8px; }
+@keyframes rdPulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+/* A card described in full, or what changed in it. */
+.rd-block { margin-top: var(--rd-gap); font-size: var(--rd-fs-body); line-height: 1.5; color: var(--rd-soft); }
+.rd-block-label { display: block; color: var(--rd-ink); font-weight: 700; }
+/* Only the label carries the status colour; what changed reads as content. */
+.rd-block--warn .rd-block-label { color: var(--rd-warn); }
+.rd-rates {
+  display: grid; column-gap: 24px; margin: 4px 0;
+  /* Three columns at most, so six areas read as 3 x 2 or 2 x 3, west to east. */
+  grid-template-columns: repeat(auto-fill, minmax(max(12.5rem, calc((100% - 48px) / 3)), 1fr));
+}
+.rd-rate, .rd-change { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; padding: 4px 0; border-bottom: 1px dotted var(--rd-rule); }
+.rd-rate dd { font-weight: 700; color: var(--rd-ink); font-variant-numeric: tabular-nums; }
+.rd-changes { list-style: none; padding: 0; margin-top: 4px; max-width: 32rem; }
+.rd-change-value { text-align: right; font-variant-numeric: tabular-nums; }
+.rd-change-value b { color: var(--rd-ink); }
+.rd-was { font-weight: 400; }
+
+/* The editor. */
+.rd-editor { margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--rd-hairline); display: flex; flex-direction: column; gap: var(--rd-group); }
+.rd-fields { display: flex; flex-direction: column; gap: var(--rd-group); }
+.rd-fieldset { border: none; margin: 0; padding: 0; min-width: 0; }
+.rd-label, .rd-legend { display: block; padding: 0; margin: 0 0 8px; font-size: var(--rd-fs-meta); font-weight: 700; color: var(--rd-ink); line-height: 1.4; }
+.rd-label--area { font-weight: 600; }
+.rd-legend + .rd-help { margin: 0 0 var(--rd-gap); }
+.rd-grid3 {
+  display: grid; gap: var(--rd-gap);
+  /* One track set for every row of fields, so the inputs line up in three
+     columns on a wide screen and stack on a phone. */
+  grid-template-columns: repeat(auto-fill, minmax(max(12.5rem, calc((100% - 2 * var(--rd-gap)) / 3)), 1fr));
+}
+/* The six area rates: two to a row even on a phone (a three-digit amount
+   needs no more), cells aligned at the bottom so the inputs line up when a
+   long area name wraps. */
+.rd-grid3--areas { grid-template-columns: repeat(auto-fill, minmax(max(8.5rem, calc((100% - 2 * var(--rd-gap)) / 3)), 1fr)); align-items: end; }
+.rd-choice {
+  display: flex; gap: var(--rd-gap); align-items: flex-start; padding: 12px 16px; border-radius: var(--r-md);
+  border: 1px solid var(--rd-edge); background: #fff; cursor: pointer;
+  transition: border-color var(--dur-fast) var(--ease-out), background-color var(--dur-fast) var(--ease-out), box-shadow var(--dur-fast) var(--ease-out);
+}
+.rd-choice:hover { background: var(--rd-panel); }
+/* Selected: a 2px ink edge drawn as border plus inset ring, so nothing moves. */
+.rd-choice.is-on { border-color: var(--rd-ink); box-shadow: inset 0 0 0 1px var(--rd-ink); background: var(--rd-panel); }
+.rd-choice input { width: 20px; height: 20px; margin: 1px 0 0; flex-shrink: 0; accent-color: var(--rd-ink); cursor: pointer; }
+/* The whole card shows keyboard focus; the radio inside it does not ring twice. */
+.rd-choice:has(input:focus-visible) { outline: 3px solid var(--rd-ink); outline-offset: 2px; }
+.rd-choice input:focus-visible { outline: none !important; }
+.rd-choice-title { display: block; font-size: var(--rd-fs-ui); font-weight: 700; line-height: 1.35; }
+.rd-choice-detail { display: block; margin-top: 4px; font-size: var(--rd-fs-meta); line-height: 1.45; color: var(--rd-faint); }
+
+.rd-input {
+  box-sizing: border-box; width: 100%; height: 44px; padding: 0 12px; border-radius: var(--r-md);
+  border: 1px solid var(--rd-edge); background: #fff; color: var(--rd-ink);
+  font-family: inherit; font-size: var(--rd-fs-field); font-variant-numeric: tabular-nums;
+  transition: border-color var(--dur-fast) var(--ease-out), box-shadow var(--dur-fast) var(--ease-out);
+}
+.rd-input:hover { border-color: var(--rd-soft); }
+.rd-input:focus { border-color: var(--rd-ink); }
+.rd-input::placeholder { color: var(--rd-faint); opacity: 1; }
+.rd-input[aria-invalid="true"] { border-color: var(--rd-bad); box-shadow: inset 0 0 0 1px var(--rd-bad); }
+.rd-error { font-size: var(--rd-fs-body); font-weight: 600; line-height: 1.45; color: var(--rd-bad); }
+
+.rd-panel { padding: 16px; border-radius: var(--r-md); background: var(--rd-panel); border: 1px solid var(--rd-hairline); }
+.rd-panel > .rd-fieldset { margin-top: var(--rd-gap); }
+.rd-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.rd-chip {
+  position: relative; display: inline-flex; align-items: center; justify-content: center;
+  min-width: 44px; min-height: 44px; padding: 0 12px; box-sizing: border-box; border-radius: 9999px;
+  border: 1px solid var(--rd-edge); background: #fff; color: var(--rd-ink);
+  font-size: var(--rd-fs-ui); font-weight: 700; font-variant-numeric: tabular-nums; cursor: pointer;
+  transition: border-color var(--dur-fast) var(--ease-out), background-color var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out);
+}
+.rd-chip:hover { border-color: var(--rd-ink); }
+.rd-chip.is-on { border-color: var(--rd-ink); background: var(--rd-ink); color: #fff; }
+.rd-chip input { position: absolute; inset: 0; margin: 0; opacity: 0; cursor: pointer; }
+.rd-chip:has(input:focus-visible) { outline: 3px solid var(--rd-ink); outline-offset: 2px; }
+
+/* Capped, so an area and its price stay within one easy glance on a wide screen. */
+.rd-table { width: 100%; max-width: 36rem; border-collapse: collapse; margin-top: var(--rd-gap); font-size: var(--rd-fs-body); font-variant-numeric: tabular-nums; }
+.rd-table th, .rd-table td { padding: 8px 0; text-align: left; vertical-align: baseline; }
+.rd-table thead th { font-size: var(--rd-fs-meta); font-weight: 600; color: var(--rd-faint); }
+.rd-table tbody tr { border-top: 1px solid var(--rd-hairline); }
+.rd-table tbody th { padding-right: 8px; font-weight: 600; }
+.rd-table .rd-num { text-align: right; padding-left: 16px; white-space: nowrap; }
+/* A narrow card gives the area names the room: 8px between the money columns. */
+@container (max-width: 25rem) { .rd-table .rd-num { padding-left: 8px; } }
+.rd-table .rd-strong { font-weight: 700; }
+.rd-table .rd-muted { color: var(--rd-soft); }
+
+.rd-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
+.rd-btn {
+  min-height: 44px; padding: 0 20px; border-radius: 9999px; border: 1px solid var(--rd-edge); background: #fff; color: var(--rd-ink);
+  font-family: inherit; font-size: var(--rd-fs-ui); font-weight: 700; cursor: pointer;
+  transition: background-color var(--dur-fast) var(--ease-out), border-color var(--dur-fast) var(--ease-out), transform var(--dur-fast) var(--ease-out);
+}
+.rd-btn:hover:not(:disabled):not([aria-disabled="true"]) { border-color: var(--rd-ink); background: var(--rd-panel); }
+.rd-btn--primary { border-color: var(--rd-ink); background: var(--rd-ink); color: #fff; }
+.rd-btn--primary:hover:not(:disabled):not([aria-disabled="true"]) { background: #000; border-color: #000; }
+.rd-btn:active:not(:disabled):not([aria-disabled="true"]) { transform: scale(0.98); }
+.rd-btn:disabled, .rd-btn[aria-disabled="true"] { opacity: 0.45; cursor: not-allowed; }
+.rd-btn[aria-busy="true"] { opacity: 0.7; cursor: progress; }
+.rd-link {
+  min-height: 44px; padding: 0 8px; border: none; background: none; cursor: pointer;
+  font-family: inherit; font-size: var(--rd-fs-body); font-weight: 600; color: var(--rd-soft);
+  text-decoration: underline; text-underline-offset: 3px;
+}
+.rd-link:hover { color: var(--rd-ink); }
+.rd-link--flush { margin-left: -8px; }
+/* Two 44px targets stacked in a history entry keep 8px between them. */
+.rd-history-item .rd-link--flush { margin-top: 8px; }
+
+/* Review and reset: the question, what moves, what guests pay, then act. */
+.rd-ask { padding: 16px; border-radius: var(--r-md); border: 2px solid var(--rd-ink); display: flex; flex-direction: column; gap: 16px; }
+.rd-ask > .rd-block, .rd-ask > .rd-help { margin-top: 0; }
+/* The summary keeps its 44px target; the margin gives back the space its padding adds. */
+.rd-ask > .rd-details { margin-block: -8px; }
+.rd-impact .rd-fieldset { margin-top: var(--rd-gap); }
+.rd-impact .rd-help { margin-top: 4px; }
+.rd-details summary {
+  display: list-item; padding: 12px 0; line-height: 20px; cursor: pointer;
+  font-size: var(--rd-fs-body); font-weight: 600; color: var(--rd-soft);
+}
+.rd-details summary:hover { color: var(--rd-ink); }
+.rd-details .rd-compare { margin: 4px 0 8px; }
+/* Side by side, one column each, so the same area sits on the same row in both cards. */
+.rd-compare .rd-rates { grid-template-columns: 1fr; }
+.rd-compare { display: grid; grid-template-columns: repeat(auto-fit, minmax(16.25rem, 1fr)); gap: 16px; font-size: var(--rd-fs-body); line-height: 1.5; color: var(--rd-soft); }
+.rd-history-item { background: #fff; border: 1px solid var(--rd-hairline); border-radius: var(--r-lg); padding: 16px; }
+.rd-history-title { font-size: var(--rd-fs-body); font-weight: 700; }
+
+/* State changes arrive instead of popping in: transform and opacity only. */
+@keyframes rdEnter { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+.rd-enter { animation: rdEnter 0.18s var(--ease-out) both; }
+@keyframes rdLeave { from { opacity: 1; transform: none; } to { opacity: 0; transform: translateY(4px); } }
+.rd-leave { animation: rdLeave 0.16s var(--ease-out) both; pointer-events: none; }
+/* New numbers after a group-size change: a short fade from part-visible, so
+   the eye sees that they changed without the table ever going blank. */
+@keyframes rdFresh { from { opacity: 0.35; } to { opacity: 1; } }
+.rd-rows { animation: rdFresh 0.2s var(--ease-out) both; }
+@media (prefers-reduced-motion: reduce) {
+  .rd-enter, .rd-leave, .rd-dot, .rd-rows { animation: none; }
+  .rd-choice, .rd-input, .rd-chip, .rd-btn { transition: none; }
+  .rd-btn:active:not(:disabled):not([aria-disabled="true"]) { transform: none; }
+}

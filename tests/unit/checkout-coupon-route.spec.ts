@@ -83,9 +83,11 @@ vi.mock('@/lib/supabase/service', () => ({ createServiceClient: () => ({ from: (
 
 const DATE = '2027-06-15'
 const items = [{ id: 1, title: 'x', destination: 'x', travelers: 2, date: DATE, price: 0 }]
-const pricing = priceTourCart(items.map((i) => ({ id: i.id, travelers: i.travelers, date: i.date })), {}, {})
+const pricing = priceTourCart(items.map((i) => ({ id: i.id, travelers: i.travelers, date: i.date })), {}, { zone: 'ocho_rios' })
 const baseCents = Math.round(pricing.total * 100)
-const customer = { email: 'jane@example.com', firstName: 'Jane', lastName: 'Doe' }
+// Dunn's River (tour 1) is priced by pickup area since Nov 12 2026: a
+// listed Ocho Rios hotel prices it from the Ocho Rios zone, here and in the route.
+const customer = { email: 'jane@example.com', firstName: 'Jane', lastName: 'Doe', pickup: 'Moon Palace Jamaica, Ocho Rios' }
 const waiverAccepted = true
 
 const liveCoupon = () => ({ id: 'c_test', code: 'MAPL-AAAA-AAAA', kind: 'percent', value: 5, applies_to: 'tour', email: null, max_uses: 1, uses: 0, uses_per_email: null, min_total: null, starts_at: '2026-01-01T00:00:00Z', expires_at: '2030-01-01T00:00:00Z', status: 'active' })

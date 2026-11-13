@@ -5,14 +5,17 @@ import Image from 'next/image'
 import { useEffect, useRef } from 'react'
 import { useCartStore } from '@/lib/cart'
 import { useHydrated } from '@/lib/use-hydrated'
-import { tourPrice } from '@/lib/experiences'
+import { tourPrice, zoneSells } from '@/lib/experiences'
 import { X } from 'lucide-react'
 import { useI18n } from '@/lib/i18n'
 import TripTimeBar from '@/components/TripTimeBar'
 import DayFlow from '@/components/DayFlow'
 
 export default function ItineraryPanel({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const { items, stops, removeItem, removeStop, subtotal, grandTotal } = useCartStore()
+  const { items, stops, removeItem, removeStop, subtotal, grandTotal, pickupZone } = useCartStore()
+  // A tour priced by pickup area shows its "from" price until checkout knows
+  // where the guest is staying (the store keeps that zone in step).
+  const fromTotal = items.some((i) => !zoneSells(i.pricing, pickupZone))
   const { t, formatPrice } = useI18n()
 
   const asideRef = useRef<HTMLElement>(null)
@@ -174,7 +177,7 @@ export default function ItineraryPanel({ open, onClose }: { open: boolean; onClo
                 </p>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                   <span style={{ fontSize: 13, fontFamily: 'var(--font-dm-sans)', fontWeight: 700 }}>
-                    {formatPrice(tourPrice(item.pricing, item.travelers))} · {item.travelers} {item.travelers === 1 ? 'traveler' : 'travelers'}
+                    {zoneSells(item.pricing, pickupZone) ? '' : `${t('From')} `}{formatPrice(tourPrice(item.pricing, item.travelers, pickupZone))} · {item.travelers} {item.travelers === 1 ? 'traveler' : 'travelers'}
                   </span>
                   <button onClick={() => removeItem(item.id)} style={{
                     background: 'none', border: 'none', color: 'var(--text-tertiary)',
@@ -243,12 +246,12 @@ export default function ItineraryPanel({ open, onClose }: { open: boolean; onClo
           ].map((row) => (
             <div key={row.label} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, fontFamily: 'var(--font-dm-sans)', color: 'var(--text-secondary)', marginBottom: 6 }}>
               <span>{row.label}</span>
-              <span>{formatPrice(row.value)}</span>
+              <span>{fromTotal ? `${t('From')} ` : ''}{formatPrice(row.value)}</span>
             </div>
           ))}
           <div style={{ display: 'flex', justifyContent: 'space-between', fontFamily: 'var(--font-dm-sans)', fontWeight: 800, fontSize: 18, marginTop: 8, marginBottom: 18 }}>
             <span>{t('Total')}</span>
-            <span>{formatPrice(grandTotal())}</span>
+            <span>{fromTotal ? `${t('From')} ` : ''}{formatPrice(grandTotal())}</span>
           </div>
           {/* One interactive element, not a <button> nested in a <Link>.
               The nested form is invalid HTML, and closing the panel from the

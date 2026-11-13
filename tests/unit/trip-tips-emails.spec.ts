@@ -481,10 +481,14 @@ describe('the numbers and names come from the site', () => {
     const t = pick('p2_tours').text
     for (const id of P2_IDS) {
       const e = exp(id)
-      const unit = e.pricing.mode === 'group' ? `for ${priceUnitLabel(e.pricing)}` : priceUnitLabel(e.pricing)
-      expect(unit).toMatch(/for up to \d people|per person/)
+      // The unit read as a phrase: a group price "for up to N people", a price
+      // every guest adds to "for 1 person", else "per person"; a tour priced
+      // by pickup area is a "from" price and says so (Nov 12 2026).
+      const zoned = !!e.pricing.zoneRates
+      const unit = `${e.pricing.mode !== 'group' ? 'per person' : e.pricing.perPersonAddon ? 'for 1 person' : `for up to ${e.pricing.tierMax} people`}${zoned ? ', by pickup area' : ''}`
+      expect(unit).toMatch(/^(for up to \d people|for 1 person|per person)/)
       const dur = e.duration.replace(/^([A-Z])(?=[a-z])/, (x) => x.toLowerCase())
-      expect(t).toContain(`${e.title.replace(/'/g, '’')} (${e.destination}, ${dur}): $${tourPrice(e.pricing, 1)} ${unit}`)
+      expect(t).toContain(`${e.title.replace(/'/g, '’')} (${e.destination}, ${dur}): ${zoned ? 'from ' : ''}$${tourPrice(e.pricing, 1)} ${unit}`)
     }
     expect(new Set(P2_IDS.map((id) => exp(id).destination)).size).toBe(3)
     expect(t).toContain(`Three we’d start with, in ${exp(3).destination}, ${exp(14).destination} and ${exp(18).destination}:`)

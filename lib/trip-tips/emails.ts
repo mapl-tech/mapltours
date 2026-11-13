@@ -75,7 +75,7 @@
 import type { TipKey, Track } from './plan'
 import { FACEBOOK_GROUP } from '../facebook-group'
 import { DESTINATIONS, MAX_TRANSFER_PASSENGERS, ZONES, getTransferPrice, zonePriceRange, type TransferDestination, type TransferTripType, type TransferZone } from '../airport-transfers'
-import { experiences, getSlug, priceUnitLabel, tourPrice, type Experience } from '../experiences'
+import { experiences, getSlug, isZonePriced, priceUnitLabel, tourPrice, type Experience } from '../experiences'
 import { POPUP_CODE, POPUP_PERCENT } from '../coupon-popup'
 import { TRIP_TIPS_POSTAL_ADDRESS } from './postal'
 
@@ -429,7 +429,10 @@ export function p2Tours(): Experience[] {
 }
 
 /** "$128 for up to 3 people" or "$166 per person": tourPrice for the smallest party, and the site's own unit label. */
-export const tourFrom = (e: Experience) => `${usd(tourPrice(e.pricing, 1))} ${e.pricing.mode === 'group' ? 'for ' : ''}${priceUnitLabel(e.pricing)}`
+/** "$255 for up to 4 people", "$153 per person", "from $281 for 1 person, by pickup area". */
+export const tourFrom = (e: Experience) => `${isZonePriced(e.pricing) ? 'from ' : ''}${usd(tourPrice(e.pricing, 1))} ${unitPhrase(e)}`
+/** The unit after a price, read as a phrase: "for up to 4 people", "for 1 person", "per person", plus the area note for a tour priced by pickup area. */
+const unitPhrase = (e: Experience) => `${e.pricing.mode === 'group' && !e.pricing.perPersonAddon ? 'for ' : ''}${priceUnitLabel(e.pricing)}${isZonePriced(e.pricing) ? ', by pickup area' : ''}`
 
 /* ── Inline text: plain strings, bold runs and links, never markup parsed from data ── */
 
@@ -1038,8 +1041,8 @@ function p2(): Draft {
         rows: tours.map((e) => ({
           main: typo(e.title),
           sub: `${e.destination}, ${durIn(e.duration)}`,
-          value: usd(tourPrice(e.pricing, 1)),
-          valueSub: `${e.pricing.mode === 'group' ? 'for ' : ''}${priceUnitLabel(e.pricing)}`,
+          value: `${isZonePriced(e.pricing) ? 'from ' : ''}${usd(tourPrice(e.pricing, 1))}`,
+          valueSub: unitPhrase(e),
           href: siteLink(`/experience/${getSlug(e)}`, `p2_tours_tour_${e.id}`),
         })),
       },

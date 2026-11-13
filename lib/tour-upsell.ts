@@ -1,5 +1,6 @@
 import { driveMinutes } from './day-route'
-import { experiences, tourPrice, slugify, type Experience, type TourPricing } from './experiences'
+import { experiences, tourPrice, slugify, zoneSells, type Experience, type TourPricing } from './experiences'
+import { zoneOfPickup } from './tour-zone-of'
 import { EATS, type Eat } from './eats'
 import { DESTINATIONS } from './airport-transfers'
 
@@ -481,8 +482,11 @@ export interface UpsellPick {
  * Out: packages (they repeat the singles), anything longer than
  * UPSELL_MAX_DAY_HOURS door to door or beyond UPSELL_MAX_DRIVE_MIN when no
  * time is published, anything the youngest child is too young for (a tour
- * with no age line counts as too young), and any tour whose price for this
- * party rests on the unconfirmed 3-to-4 step (priceJumps).
+ * with no age line counts as too young), any tour whose rate card is not
+ * settled (rateCardUnsettled), and a tour priced by pickup area that is not
+ * sold from the guest's hotel. A tour priced by area is quoted from the
+ * hotel's own zone (lib/tour-zone-of), the zone checkout charges from when
+ * the email's link opens it.
  */
 export function curateForStay(
   hotel: string | null,
@@ -492,6 +496,7 @@ export function curateForStay(
 ): UpsellPick[] {
   if (!hotel) return []
   const area = stayArea(hotel)
+  const zone = zoneOfPickup(hotel)
   const youngest = opts.youngest ?? null
   return catalog
     .filter((e) => e.kind === 'single')
@@ -506,6 +511,7 @@ export function curateForStay(
     // A tour the operator only runs for a bigger party is never offered to a
     // smaller one (the zipline needs 2 or more, Collin, Nov 12 2026).
     .filter(({ e }) => party >= (e.minGuests ?? 1))
+    .filter(({ e }) => zoneSells(e.pricing, zone))
     .sort((a, b) => {
       if (!!a.d2d !== !!b.d2d) return a.d2d ? -1 : 1
       if (a.d2d && b.d2d && a.d2d.hi !== b.d2d.hi) return a.d2d.hi - b.d2d.hi
@@ -526,7 +532,7 @@ export function curateForStay(
         image: e.image,
         doorToDoor: d2d,
         driveMinutes: mins === null ? null : Math.round(mins),
-        total: tourPrice(e.pricing, party),
+        total: tourPrice(e.pricing, party, zone),
         partySize: party,
         emailImage: `/email/tours/${slug}.jpg`,
       }

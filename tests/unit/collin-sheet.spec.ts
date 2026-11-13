@@ -17,8 +17,8 @@ import { getCoords } from '@/lib/transportation'
  * the sheet marks DISABLE.
  */
 const TOURS: Record<number, { mode: 'group' | 'per_person'; baseRate: number; tierMax: number; extraPerPerson: number; place?: string }> = {
-  1: { mode: 'group', baseRate: 275, tierMax: 3, extraPerPerson: 75, place: 'Ocho Rios' },
-  2: { mode: 'group', baseRate: 275, tierMax: 3, extraPerPerson: 75, place: 'Ocho Rios' },
+  // Dunn's River (1), Blue Hole (2) and the day with both (18) are priced by
+  // pickup area since Nov 12 2026: see BY_AREA below.
   5: { mode: 'group', baseRate: 150, tierMax: 3, extraPerPerson: 140, place: 'Negril' },
   6: { mode: 'per_person', baseRate: 130, tierMax: 3, extraPerPerson: 125, place: 'Hanover' },
   7: { mode: 'per_person', baseRate: 120, tierMax: 3, extraPerPerson: 110, place: 'Hanover' },
@@ -34,7 +34,6 @@ const TOURS: Record<number, { mode: 'group' | 'per_person'; baseRate: number; ti
   // Ready-made days ("Adventure Packs"): per person unless the sheet gives a 1-3 rate.
   16: { mode: 'per_person', baseRate: 280, tierMax: 3, extraPerPerson: 280 },
   17: { mode: 'per_person', baseRate: 260, tierMax: 3, extraPerPerson: 260, place: 'Montego Bay' },
-  18: { mode: 'group', baseRate: 150, tierMax: 3, extraPerPerson: 100 },
   19: { mode: 'per_person', baseRate: 235, tierMax: 3, extraPerPerson: 235 },
   21: { mode: 'per_person', baseRate: 210, tierMax: 3, extraPerPerson: 210 },
   22: { mode: 'per_person', baseRate: 250, tierMax: 3, extraPerPerson: 250 },
@@ -78,7 +77,34 @@ const exp = (id: number) => {
   return e
 }
 
+/**
+ * Collin, Nov 12 2026, by WhatsApp: Dunn's River and Blue Hole each cost him
+ * a flat rate for 1 to 4 people by the zone he drives from ("Ocho zone $190
+ * ... Negril zone $400", Runaway Bay / Discovery Bay corrected to $220),
+ * entrance fees included, and "any additional person is $50". The day with
+ * both: the same zone rate, plus $30 for every guest (the second entry),
+ * extra guests included.
+ */
+const AREA_RATES = { negril: 400, lucea: 300, montego_bay: 280, trelawny: 230, runaway_bay: 220, ocho_rios: 190 } as const
+const BY_AREA: Record<number, { addon: number; place: string }> = {
+  1: { addon: 0, place: 'Ocho Rios' },
+  2: { addon: 0, place: 'Ocho Rios' },
+  18: { addon: 30, place: 'Ocho Rios' },
+}
+
 describe("the catalogue agrees with Collin's sheet", () => {
+  it.each(Object.entries(BY_AREA))('tour %s: priced by pickup area, party by party, area by area', (id, sheet) => {
+    const e = exp(Number(id))
+    expect(e.pricing).toEqual({ mode: 'group', baseRate: 190, tierMax: 4, extraPerPerson: 50, zoneRates: AREA_RATES, ...(sheet.addon ? { perPersonAddon: sheet.addon } : {}) })
+    for (const [zone, rate] of Object.entries(AREA_RATES) as [keyof typeof AREA_RATES, number][]) {
+      for (let n = 1; n <= 7; n++) {
+        // The zone rate covers 1 to 4; each guest past 4 adds $50; the add-on is for every guest.
+        expect(tourOperatorCost(e.pricing, n, zone), `${zone}, ${n} guests`).toBe(rate + 50 * Math.max(0, n - 4) + sheet.addon * n)
+      }
+    }
+    expect(e.destination).toBe(sheet.place)
+  })
+
   it.each(Object.entries(TOURS))('tour %s: rate card and place', (id, sheet) => {
     const e = exp(Number(id))
     expect(e.pricing).toEqual({ mode: sheet.mode, baseRate: sheet.baseRate, tierMax: sheet.tierMax, extraPerPerson: sheet.extraPerPerson })

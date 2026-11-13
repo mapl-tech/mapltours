@@ -80,7 +80,8 @@ const LOCATIONS: Record<string, { lat: number; lng: number }> = {
   'Hyatt Ziva Rose Hall, Montego Bay':    { lat: 18.5100, lng: -77.8500 },
   'Hilton Rose Hall Resort, Montego Bay': { lat: 18.5090, lng: -77.8480 },
   'Grand Palladium Jamaica, Lucea':       { lat: 18.4600, lng: -78.1700 },
-  'Royalton Blue Waters, Montego Bay':    { lat: 18.4700, lng: -77.9300 },
+  // Sells as Montego Bay, stands at Coopers Pen, Falmouth (Trelawny).
+  'Royalton Blue Waters, Montego Bay':    { lat: 18.4890, lng: -77.6920 },
   'Royalton Negril':                      { lat: 18.2780, lng: -78.3480 },
   'Secrets Wild Orchid, Montego Bay':     { lat: 18.4490, lng: -77.9360 },
   'Secrets St. James, Montego Bay':       { lat: 18.4480, lng: -77.9370 },

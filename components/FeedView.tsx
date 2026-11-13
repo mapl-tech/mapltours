@@ -4,7 +4,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { experiences, singleExperiences, packageExperiences, DESTINATION_IMAGES, TOUR_DESTINATIONS, slugify, type Experience } from '@/lib/experiences'
 import { EATS } from '@/lib/eats'
-import { priceUnitLabel } from '@/lib/experiences'
+import { priceUnitLabel, isZonePriced } from '@/lib/experiences'
 import { useCartStore } from '@/lib/cart'
 import { addPackageToTrip } from '@/lib/add-to-trip'
 import { isKeyOrReaderClick } from '@/lib/press'
@@ -778,7 +778,7 @@ function PackagesSection() {
                         fontFamily: 'var(--font-dm-sans)', fontWeight: 700,
                         fontSize: 20, color: 'var(--text-primary)', letterSpacing: '-0.01em',
                       }}>
-                        {formatPrice(pkg.price)}
+                        {isZonePriced(pkg.pricing) ? `${t('From')} ` : ''}{formatPrice(pkg.price)}
                       </span>{' '}
                       <span style={{ fontSize: 13, color: 'var(--text-tertiary)', fontFamily: 'var(--font-dm-sans)' }}>
                         {priceUnitLabel(pkg.pricing)}

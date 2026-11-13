@@ -4,6 +4,27 @@ import './globals.css'
 import LayoutShell from '@/components/LayoutShell'
 import StyledJsxRegistry from '@/components/StyledJsxRegistry'
 import Trackers from '@/components/Trackers'
+import { experiences, isZonePriced, zonePrices, type Experience } from '@/lib/experiences'
+import { DESTINATIONS, getTransferPrice } from '@/lib/airport-transfers'
+
+// Prices in the site-wide structured data, worked out from the live rate
+// cards like every other price on the site (they were typed by hand, and
+// Dunn's River's went stale when it became priced by pickup area).
+const tourById = (id: number): Experience => {
+  const e = experiences.find((x) => x.id === id)
+  if (!e) throw new Error(`tour ${id} is not in the catalog`)
+  return e
+}
+/** Every price a tour's headline can show: one, or one per pickup area. */
+const headlinePrices = (e: Experience): number[] => (isZonePriced(e.pricing) ? zonePrices(e.pricing, 1).map((z) => z.price) : [e.price])
+const catalogOffer = (e: Experience) => {
+  const prices = headlinePrices(e)
+  return prices.length > 1
+    ? { '@type': 'AggregateOffer', lowPrice: String(Math.min(...prices)), highPrice: String(Math.max(...prices)), priceCurrency: 'USD' }
+    : { '@type': 'Offer', price: String(prices[0]), priceCurrency: 'USD' }
+}
+const cheapestRide = Math.min(...DESTINATIONS.map((d) => getTransferPrice(d.id, 'one_way') ?? Number.POSITIVE_INFINITY))
+const dearestTour = Math.max(...experiences.flatMap(headlinePrices))
 
 // DM Sans is the ENTIRE typographic system, display headings, body, UI, and
 // every numeral. There is deliberately no second family: hierarchy is carried
@@ -155,7 +176,7 @@ function JsonLd() {
       { '@type': 'City', name: 'Lucea' },
       { '@type': 'City', name: 'Negril' },
     ],
-    priceRange: '$22 - $459',
+    priceRange: `$${cheapestRide} - $${dearestTour}`,
     // Note: aggregateRating intentionally omitted from the site-wide entity.
     // Google rejects "self-serving" reviews, ratings/reviews belong on the
     // specific thing reviewed (Product / Service / TouristTrip), not on the
@@ -171,7 +192,7 @@ function JsonLd() {
             name: "Rick's Cafe Cliff Diving & Sunset",
             description: 'Jump from legendary cliffs as the sun melts into the Caribbean.',
             touristType: 'Adventure',
-            offers: { '@type': 'Offer', price: '255', priceCurrency: 'USD' },
+            offers: catalogOffer(tourById(14)),
           },
         },
         {
@@ -181,7 +202,7 @@ function JsonLd() {
             name: 'Bob Marley Nine Mile Pilgrimage',
             description: 'Walk where Bob walked. Feel the spirit of One Love.',
             touristType: 'Culture',
-            offers: { '@type': 'Offer', price: '459', priceCurrency: 'USD' },
+            offers: catalogOffer(tourById(15)),
           },
         },
         {
@@ -191,7 +212,7 @@ function JsonLd() {
             name: "Dunn's River Falls Climb",
             description: 'Climb 600 feet of cascading falls hand-in-hand.',
             touristType: 'Adventure',
-            offers: { '@type': 'Offer', price: '351', priceCurrency: 'USD' },
+            offers: catalogOffer(tourById(1)),
           },
         },
       ],

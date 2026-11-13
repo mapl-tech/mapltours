@@ -5,7 +5,8 @@ import { createPortal } from 'react-dom'
 import { useFocusTrap } from '@/lib/use-focus-trap'
 import { X, Check, Backpack, Users, Activity, Info, MapPin, Clock } from 'lucide-react'
 import type { Experience } from '@/lib/experiences'
-import { priceUnitLabel, placeLabel } from '@/lib/experiences'
+import { priceUnitLabel, placeLabel, isZonePriced } from '@/lib/experiences'
+import ZonePriceList from './ZonePriceList'
 import { useI18n } from '@/lib/i18n'
 import { CANCELLATION_SUMMARY } from '@/lib/refund-pricing'
 
@@ -123,7 +124,10 @@ export default function TourDetailsSheet({ exp, onClose, cta }: { exp: Experienc
     return () => { document.body.style.overflow = prev }
   }, [])
 
-  const groupMax = exp.pricing.mode === 'group' ? exp.pricing.tierMax : null
+  // "One price for up to N" is only true of a flat group rate: not where
+  // every guest adds to it (the both-falls day).
+  const groupMax = exp.pricing.mode === 'group' && !exp.pricing.perPersonAddon ? exp.pricing.tierMax : null
+  const fromWord = isZonePriced(exp.pricing) ? `${t('From')} ` : ''
   const hasGoodToKnow = Boolean(exp.meetingPoint || exp.fromHotel || exp.ages || exp.fitness || exp.additionalInfo?.length)
 
   // PORTALED to <body>: rendered in place, the dialog lives inside the
@@ -189,7 +193,7 @@ export default function TourDetailsSheet({ exp, onClose, cta }: { exp: Experienc
               <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><MapPin size={12} /> {placeLabel(exp)}</span>
               <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><Clock size={12} /> {exp.duration}</span>
               <span style={{ fontWeight: 700, color: 'var(--text-primary)' }}>
-                {formatPrice(exp.price)} <span style={{ fontWeight: 400, color: 'var(--text-tertiary)' }}>{priceUnitLabel(exp.pricing)}</span>
+                {fromWord}{formatPrice(exp.price)} <span style={{ fontWeight: 400, color: 'var(--text-tertiary)' }}>{priceUnitLabel(exp.pricing)}</span>
               </span>
             </p>
           </div>
@@ -240,6 +244,12 @@ export default function TourDetailsSheet({ exp, onClose, cta }: { exp: Experienc
               <Bullets items={exp.bring} />
             </Section>
           ) : null}
+
+          {isZonePriced(exp.pricing) && (
+            <Section icon={<MapPin size={15} />} title={t('Price by where you stay')}>
+              <ZonePriceList exp={exp} formatPrice={formatPrice} />
+            </Section>
+          )}
 
           {hasGoodToKnow && (
             <Section icon={<Info size={15} />} title={t('Good to know')}>
@@ -296,7 +306,7 @@ export default function TourDetailsSheet({ exp, onClose, cta }: { exp: Experienc
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
               <div style={{ display: 'flex', alignItems: 'baseline', columnGap: 4, flexWrap: 'wrap', minWidth: 0, fontFamily: 'var(--font-dm-sans)' }}>
                 <span style={{ fontWeight: 800, fontSize: 19, letterSpacing: '-0.02em', color: 'var(--text-primary)' }}>
-                  {formatPrice(exp.price)}
+                  {fromWord}{formatPrice(exp.price)}
                 </span>
                 {/* Drops to its own line as a whole phrase beside a wide button. */}
                 <span style={{ fontSize: 14, color: 'var(--text-tertiary)', whiteSpace: 'nowrap' }}>{priceUnitLabel(exp.pricing)}</span>

@@ -403,8 +403,10 @@ vi.mock('@/lib/supabase/server', () => ({
 
 const DATE = '2027-06-15'
 const cart = (travelers: number) => [{ id: 1, title: 'x', destination: 'x', travelers, date: DATE, price: 0 }]
-const priced = (travelers: number, pct: number) => priceTourCart([{ id: 1, travelers, date: DATE }], {}, { rewardPercent: pct })
-const customer = { email: 'supersede@example.com', firstName: 'Sam', lastName: 'Page', phone: '+1 555 0100', pickup: 'Hotel' }
+const priced = (travelers: number, pct: number) => priceTourCart([{ id: 1, travelers, date: DATE }], {}, { rewardPercent: pct, zone: 'ocho_rios' })
+// Dunn's River (tour 1) is priced by pickup area since Nov 12 2026: a
+// listed Ocho Rios hotel prices it from the Ocho Rios zone, here and in the route.
+const customer = { email: 'supersede@example.com', firstName: 'Sam', lastName: 'Page', phone: '+1 555 0100', pickup: 'Moon Palace Jamaica, Ocho Rios' }
 
 type Answer = { status: number; data: Record<string, unknown> }
 /** The page's POST, reduced to what the session needs: the wire call and its reading of the answer. */

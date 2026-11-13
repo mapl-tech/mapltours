@@ -2,7 +2,8 @@
 
 import { useState, useRef, useEffect, useLayoutEffect, useCallback, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
-import { singleExperiences, packageExperiences, Experience, slugify , priceUnitLabel, placeLabel, mobileVideo, mobileHevcVideo, reelPoster, HEVC_SOURCE_TYPE } from '@/lib/experiences'
+import { singleExperiences, packageExperiences, Experience, slugify , priceUnitLabel, placeLabel, mobileVideo, mobileHevcVideo, reelPoster, HEVC_SOURCE_TYPE, isZonePriced } from '@/lib/experiences'
+import ZonePriceList from './ZonePriceList'
 import { trackViewItem, trackReelDetailsOpen, trackReelCtaTap, trackClipsEvent, trackReelVideo } from '@/lib/analytics'
 import { CLIPS_POST_QUERY } from '@/lib/safe-redirect'
 import { useI18n } from '@/lib/i18n'
@@ -1344,6 +1345,12 @@ function DesktopTourPanel({ exp }: { exp: Experience }) {
           {t('Full policy')}
         </a>
       </p>
+      {isZonePriced(exp.pricing) ? (
+        <div style={{ marginTop: 22, paddingTop: 18, borderTop: '1px solid rgba(255,255,255,0.08)' }}>
+          <h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 4 }}>{t('Price by where you stay')}</h3>
+          <ZonePriceList exp={exp} formatPrice={formatPrice} tone="dark" />
+        </div>
+      ) : null}
       {exp.included?.length ? (
         <div style={{ marginTop: 22, paddingTop: 18, borderTop: '1px solid rgba(255,255,255,0.08)' }}>
           <h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 10 }}>{t('What is included')}</h3>
@@ -2395,7 +2402,7 @@ export default function ExperienceDetail({ slug }: { slug: string }) {
             background: 'rgba(255,255,255,0.08)',
             fontSize: 13, fontFamily: 'var(--font-dm-sans)', fontWeight: 700, color: 'white',
           }}>
-            ${activeExp.price}
+            {isZonePriced(activeExp.pricing) ? `${t('From')} ` : ''}${activeExp.price}
           </div>
         </div>
 

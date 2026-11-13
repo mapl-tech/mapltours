@@ -215,6 +215,42 @@ The connector's paying tool stays unlisted until `AGENT_PAYMENTS_ENABLED=1`. Bef
 
 ---
 
+## 9. Tour rate cards (`/admin/tour-rates`, migration 037)
+
+Collin's rate for every tour is edited at `/admin/tour-rates` and published
+by a deploy (how it flows: the header of `lib/tour-rates.ts`). Three pieces,
+in this order:
+
+1. **Apply migration 037 BEFORE the first deploy that carries the prebuild.**
+   `scripts/snapshot-tour-rates.mjs` runs before every `next build` and, on
+   Netlify, must read `public.tour_rate_cards` or it fails the build (on
+   purpose: a deploy that cannot read the saved cards must not publish the
+   defaults over them). Apply with
+   `node --env-file=.env.local scripts/apply-migrations.mjs 037_tour_rate_cards.sql`,
+   then confirm:
+   ```sql
+   select table_name from information_schema.tables
+   where table_schema = 'public' and table_name in ('tour_rate_cards', 'tour_rate_changes');
+   select routine_name from information_schema.routines
+   where routine_schema = 'public' and routine_name in ('save_tour_rate_card', 'reset_tour_rate_card');
+   ```
+   Both return two rows. RLS is on and anon/authenticated are revoked; only
+   the service role (the admin route and the build) touches them.
+2. **Create a Netlify build hook** for the `mapltours` site on branch `main`
+   and set its URL as `NETLIFY_RATES_BUILD_HOOK` (Functions scope). A save
+   POSTs to it with `trigger_title=Tour rates: <tour>`; the new price is
+   live about 3 minutes later. Without it a save is stored and reaches the
+   site with the next ordinary deploy (the desk says so).
+3. **Verify:** `/admin/tour-rates` signed out shows the sign-in prompt, and
+   `curl -X POST https://mapltours.com/api/admin/tour-rates` answers 401.
+
+A saved card that does not validate throws while the catalog loads, which
+fails that deploy and leaves the live one in place. To undo a change, use
+"Restore the old rate" in the desk's history (it goes through the same
+review), or "Back to the default".
+
+---
+
 ## Fast reference — env vars
 
 | Var | Scope | Purpose |
@@ -240,6 +276,7 @@ The connector's paying tool stays unlisted until `AGENT_PAYMENTS_ENABLED=1`. Bef
 | `TIKTOK_CLIENT_SECRET` | server | TikTok Login Kit client secret |
 | `TIKTOK_REDIRECT_URI` | server | must exactly match the URI registered with TikTok |
 | `NEXT_PUBLIC_TIKTOK_ENABLED` | client | `1` shows the Connect TikTok button on the profile page |
+| `NETLIFY_RATES_BUILD_HOOK` | server | build hook a tour-rate save calls to publish (§9); unset = saves wait for the next deploy |
 
 Calendar sync setup (already done once, recorded here for rebuilds): Calendar
 API enabled on the `mapl-tours` Google Cloud project; the service account

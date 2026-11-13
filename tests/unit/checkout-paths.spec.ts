@@ -253,9 +253,11 @@ vi.mock('@/lib/supabase/server', () => ({
 const DATE = '2027-06-15'
 const cart = (travelers: number) => [{ id: 1, title: 'x', destination: 'x', travelers, date: DATE, price: 0 }]
 const total = (travelers: number, pct = 0) =>
-  priceTourCart([{ id: 1, travelers, date: DATE }], {}, { rewardPercent: pct }).total
+  priceTourCart([{ id: 1, travelers, date: DATE }], {}, { rewardPercent: pct, zone: 'ocho_rios' }).total
 const cents = (usd: number) => Math.round(usd * 100)
-const customer = { email: 'guest@example.com', firstName: 'Guest', lastName: 'Example', phone: '+1 555 0100', pickup: 'Hotel' }
+// Dunn's River (tour 1) is priced by pickup area since Nov 12 2026: a
+// listed Ocho Rios hotel prices it from the Ocho Rios zone, here and in the route.
+const customer = { email: 'guest@example.com', firstName: 'Guest', lastName: 'Example', phone: '+1 555 0100', pickup: 'Moon Palace Jamaica, Ocho Rios' }
 
 const bookingRow = (id: string) => (db.tables.bookings ?? []).find((b) => b.id === id)!
 const intentOf = (bookingId: string) => db.intents.get(String(bookingRow(bookingId).stripe_payment_id))!
@@ -577,7 +579,7 @@ describe('POST /api/checkout: guest-facing refusals', () => {
   it('refuses a day over the hour cap in two plain sentences', async () => {
     // 2 + 2 + 1.5 + 3 hours on one date.
     const lines = [1, 2, 3, 5].map((id) => ({ id, travelers: 2, date: DATE }))
-    const amount = priceTourCart(lines, {}, {}).total
+    const amount = priceTourCart(lines, {}, { zone: 'ocho_rios' }).total
     const res = await post({
       amount, items: lines.map((l) => ({ ...l, title: 'x', destination: 'x', price: 0 })), customer, waiverAccepted: true,
     })
@@ -655,5 +657,63 @@ describe('POST /api/checkout: a booking the gift card settles reaches the ops ca
       vi.useRealTimers()
       errors.mockRestore()
     }
+  })
+})
+
+describe('POST /api/checkout: tours priced by where the guest is staying (Nov 12 2026)', () => {
+  // Dunn's River (tour 1) costs Collin a different rate from each pickup zone.
+  // The refusals below are decided before the amount is compared, so they claim any real price.
+  const priced = (zone: 'negril' | 'ocho_rios', travelers = 2) =>
+    priceTourCart([{ id: 1, travelers, date: DATE }], {}, { zone }).total
+  const at = (pickup: string, extra: Record<string, unknown> = {}) => ({ ...customer, pickup, ...extra })
+
+  it('prices a listed place from its own zone and charges exactly that', async () => {
+    const res = await post({ amount: priced('negril'), items: cart(2), customer: at('Sandals Negril Beach Resort'), waiverAccepted: true })
+    const data = await res.json()
+    expect(res.status).toBe(200)
+    expect(priced('negril')).toBeGreaterThan(priced('ocho_rios'))
+    expect(intentOf(data.bookingId).amount).toBe(cents(priced('negril')))
+    expect(bookingRow(data.bookingId).pickup).toBe('Sandals Negril Beach Resort')
+  })
+
+  it('never lets a named area undercut a place it knows: a Negril hotel claimed as Ocho Rios is refused', async () => {
+    const res = await post({ amount: priced('ocho_rios'), items: cart(2), customer: at('Sandals Negril Beach Resort', { pickupArea: 'ocho_rios' }), waiverAccepted: true })
+    expect(res.status).toBe(400)
+    expect((await res.json()).error).toMatch(/mismatch/i)
+    expect(db.tables.bookings ?? []).toHaveLength(0)
+    expect(db.intents.size).toBe(0)
+  })
+
+  it('prices a typed hotel or villa from the area the guest chose, and stores that area beside the name', async () => {
+    const res = await post({ amount: priced('negril'), items: cart(2), customer: at('Seaview Villa', { pickupArea: 'negril' }), waiverAccepted: true })
+    const data = await res.json()
+    expect(res.status).toBe(200)
+    expect(intentOf(data.bookingId).amount).toBe(cents(priced('negril')))
+    expect(bookingRow(data.bookingId).pickup).toBe('Seaview Villa (Negril)')
+  })
+
+  it('refuses a typed place with no area, in a sentence, before any row or intent exists', async () => {
+    const res = await post({ amount: priced('ocho_rios'), items: cart(2), customer: at('Seaview Villa'), waiverAccepted: true })
+    expect(res.status).toBe(400)
+    const { error } = await res.json()
+    expect(error).toMatch(/priced by where you are staying/)
+    expect(error).not.toMatch(/[–—]/)
+    expect(db.tables.bookings ?? []).toHaveLength(0)
+    expect(db.intents.size).toBe(0)
+  })
+
+  it('refuses a pickup outside every zone and says how to get a price', async () => {
+    const res = await post({ amount: priced('ocho_rios'), items: cart(2), customer: at('Spanish Court Hotel, Kingston'), waiverAccepted: true })
+    expect(res.status).toBe(400)
+    expect((await res.json()).error).toMatch(/not sold online from that pickup\. Write to contact@mapltours\.com/)
+    expect(db.tables.bookings ?? []).toHaveLength(0)
+  })
+
+  it('leaves a tour with one price everywhere alone: Rick’s Cafe from Kingston is sold as before', async () => {
+    const items = [{ id: 14, title: 'x', destination: 'x', travelers: 2, date: DATE, price: 0 }]
+    const amount = priceTourCart([{ id: 14, travelers: 2, date: DATE }], {}, {}).total
+    const res = await post({ amount, items, customer: at('Spanish Court Hotel, Kingston'), waiverAccepted: true })
+    expect(res.status).toBe(200)
+    expect(bookingRow((await res.json()).bookingId).pickup).toBe('Spanish Court Hotel, Kingston')
   })
 })

@@ -23,7 +23,8 @@
  * client could name its own discount.
  */
 
-import { experiences, type Experience , tourPrice, tourOperatorCost } from './experiences'
+import { experiences, type Experience , tourPrice, tourOperatorCost, isZonePriced, zoneSells } from './experiences'
+import type { TourZone } from './tour-zones'
 
 
 /** Reward discount can never exceed this % of (subtotal + fee + transport),
@@ -49,6 +50,19 @@ export interface PriceOptions {
   /** Server-verified reward percentage (0–100) for the authenticated user.
    *  Anything outside [0, REWARD_DISCOUNT_MAX_PCT] is clamped. */
   rewardPercent?: number
+  /**
+   * The pickup zone, for tours priced by where the guest is staying. The
+   * route works it out itself from the pickup (lib/tour-zone-of
+   * zoneOfPickup), never from a zone the client names. A tour priced by area
+   * is refused without a zone it is sold in.
+   */
+  zone?: TourZone | null
+  /**
+   * The pickup is a place we know (a listed place or a transfer hotel), so a
+   * missing zone means it is outside every zone rather than an area not yet
+   * chosen. Only changes the words of the refusal.
+   */
+  pickupKnown?: boolean
 }
 
 export interface PricedLine {
@@ -57,6 +71,8 @@ export interface PricedLine {
   date: string
   pricePerPerson: number
   lineTotal: number
+  /** The pickup zone this line was priced from, for a tour priced by area; otherwise null. */
+  zone: TourZone | null
 }
 
 export interface ServerPricing {
@@ -73,7 +89,7 @@ export interface ServerPricing {
 }
 
 export class PricingError extends Error {
-  readonly code: 'unknown_experience' | 'invalid_travelers' | 'amount_mismatch'
+  readonly code: 'unknown_experience' | 'invalid_travelers' | 'amount_mismatch' | 'pickup_area'
   readonly detail: string
   constructor(code: PricingError['code'], detail: string) {
     super(`${code}: ${detail}`)
@@ -111,11 +127,23 @@ export function priceTourCart(
         `experience ${raw.id} traveler count out of bounds (got ${raw.travelers})`,
       )
     }
+    // A tour priced by where the guest is staying is only sold from a zone it
+    // has a rate for: never quietly priced from the cheapest zone.
+    const zoned = isZonePriced(experience.pricing)
+    const zone = zoned ? options.zone ?? null : null
+    if (zoned && !zoneSells(experience.pricing, zone)) {
+      throw new PricingError(
+        'pickup_area',
+        zone || options.pickupKnown
+          ? `${experience.title} is not sold online from that pickup. Write to contact@mapltours.com and we will send you a price.`
+          : `${experience.title} is priced by where you are staying. Choose your hotel or its area, or write to contact@mapltours.com for a price.`,
+      )
+    }
     // `lineTotal` is what the CUSTOMER pays for this line (all-in, group-tier
     // aware); `subtotal` accumulates what MAPL owes the OPERATOR, so the
     // booking stores supplier-cost vs margin exactly like transfers do.
-    const lineTotal = tourPrice(experience.pricing, travelers)
-    const operatorCost = tourOperatorCost(experience.pricing, travelers)
+    const lineTotal = tourPrice(experience.pricing, travelers, zone)
+    const operatorCost = tourOperatorCost(experience.pricing, travelers, zone)
     lines.push({
       experience,
       travelers,
@@ -126,6 +154,7 @@ export function priceTourCart(
       // group tour this is the party price divided across the party.
       pricePerPerson: Math.round((lineTotal / travelers) * 100) / 100,
       lineTotal,
+      zone,
     })
     subtotal += operatorCost
     customerTotal += lineTotal

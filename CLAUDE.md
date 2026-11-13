@@ -377,6 +377,18 @@ The confirmation address carries the PaymentIntent id (or a gift-covered booking
 - **Sign-in is Google or email** (Apple is not enabled in Supabase, so its button was removed). A guest sees their bookings once their email is verified; `mailer_autoconfirm` is off, which that rule depends on.
 - Any doubt is the private view, never an error. Tested in `confirm-proof.spec.ts`, both page specs and the real tour route (`one-page-supersede.spec.ts`).
 
+### Tour prices by pickup area, and the prices desk (Nov 2026)
+
+Dunn's River (1), Blue Hole (2) and the both-falls package (18) are priced by where we pick the guest up (Collin, Nov 12 2026): a flat rate for 1 to `tierMax` per zone, `extraPerPerson` for each guest past it, plus `perPersonAddon` for every guest on the package. Zones, west to east: `negril`, `lucea`, `montego_bay`, `trelawny`, `runaway_bay`, `ocho_rios` (`lib/tour-zones.ts`). A zone left out of `zoneRates` is not sold online from there.
+
+Rules, enforced in code:
+- **One resolver.** `zoneOfPickup` (`lib/tour-zone-of.ts`) decides the zone for the checkout page, the checkout server, the agent tools and the tour emails alike. Precedence: a listed pickup place, then an exact transfer-hotel name, then the area the guest chose for a typed place. Text naming two areas, or none we price, gets no zone, so nobody is quoted the cheaper one by accident.
+- **Checkout never guesses.** `priceTourCart` refuses a zone-priced tour without a zone it sells, in words that say what to do; the guest's area travels as `customer.pickupArea`, a typed place is stored with its area label, and the pickup is part of the order key, so changing it supersedes the intent. Without a zone the site shows the cheapest zone as a "from", never as a price.
+- **Prices are never typed.** Every headline price is derived from the rate card. Cards are edited at `/admin/tour-rates` (`components/admin/TourRatesDesk.tsx`, styles: the `.rd` block in `globals.css`), validated by `parseRateCard`, stored with a change-log row by one database function (migration 037), and published by a deploy: `scripts/snapshot-tour-rates.mjs` (prebuild) copies them into `lib/tour-rates.snapshot.json`, `lib/experiences.ts` applies them at load, and a card that does not validate throws, failing that deploy. So the page, checkout, emails, llms.txt and the agents always price from the same cards. Go-live order and the build hook: GO-LIVE.md section 9.
+- **The desk's review shows the guest's consequence**, not only Collin's: `lib/tour-rate-impact.ts` finds every group size whose guest price moves, so a change that only touches big groups never reads as "no change".
+
+Tests: `tests/unit/tour-zones.spec.ts` (every transfer hotel has a deliberate zone), `tour-rates.spec.ts`, `tour-rate-impact.spec.ts`, `admin-tour-rates-route.spec.ts`, and the zone cases in `checkout-paths.spec.ts` and `webmcp-tools.spec.ts`.
+
 ### ProfileView
 - Hero banner: Jamaica-green gradient, avatar (80px, gold gradient circle), name "Alex Wanderlust", "Toronto - Member since 2024"
 - Stats row: Trips (3), Parishes (4), Experiences Saved — Syne gold numbers

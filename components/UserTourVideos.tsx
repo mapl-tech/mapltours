@@ -33,7 +33,7 @@ import {
   VIDEO_REWARD_MILESTONE,
   type TourVideo,
 } from '@/lib/tour-videos'
-import { priceUnitLabel, slugify, type Experience } from '@/lib/experiences'
+import { priceUnitLabel, slugify, isZonePriced, type Experience } from '@/lib/experiences'
 import { useAuth } from '@/lib/supabase/auth-context'
 import { createClient } from '@/lib/supabase/client'
 import { normalizeSocialHandle } from '@/lib/social-handle'
@@ -214,7 +214,7 @@ function BuyRow({ exp, cta, onAdd }: { exp: Experience; cta: TourDetailsCta; onA
     <div className="clips-buy">
       <div style={{ minWidth: 0 }}>
         <div className="clips-price">
-          <b>{formatPrice(exp.price)}</b>
+          <b>{isZonePriced(exp.pricing) ? `${t('From')} ` : ''}{formatPrice(exp.price)}</b>
           <span>{priceUnitLabel(exp.pricing)}</span>
         </div>
       </div>

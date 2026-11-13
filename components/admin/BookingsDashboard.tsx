@@ -324,6 +324,7 @@ export default function BookingsDashboard({ bookings }: { bookings: Row[] }) {
           <Link href="/admin/cashflow" style={{ fontSize: 13, fontWeight: 600, color: soft, textDecoration: 'none' }}>Cash flow →</Link>
           <Link href="/admin/driver" style={{ fontSize: 13, fontWeight: 600, color: soft, textDecoration: 'none' }}>Driver portal →</Link>
           <Link href="/admin/videos" style={{ fontSize: 13, fontWeight: 600, color: soft, textDecoration: 'none' }}>Video moderation →</Link>
+          <Link href="/admin/tour-rates" style={{ fontSize: 13, fontWeight: 600, color: soft, textDecoration: 'none' }}>Tour prices →</Link>
           <Link href="/admin/coupons" style={{ fontSize: 13, fontWeight: 600, color: soft, textDecoration: 'none' }}>Coupons →</Link>
           <Link href="/admin/gift-cards" style={{ fontSize: 13, fontWeight: 600, color: soft, textDecoration: 'none' }}>Gift cards →</Link>
           <Link href="/admin/refunds" style={{ fontSize: 13, fontWeight: 600, color: soft, textDecoration: 'none' }}>Refunds →</Link>

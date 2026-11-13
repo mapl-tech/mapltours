@@ -1,4 +1,5 @@
 import { tourPrice, experiences } from './experiences'
+import type { TourZone } from './tour-zones'
 import { trackAddToCart } from './analytics'
 import { bestInsertIndex, bestSlotForStop, canMoveItem, fitStopAfter, fitTourToDay, movedOrder } from './day-route'
 import { create } from 'zustand'
@@ -84,6 +85,19 @@ interface CartStore {
   items: CartItem[]
   stops: FoodStop[]
   pickup: string
+  /**
+   * The pickup area the guest chose for a hotel or villa no list knows
+   * (lib/tour-zones id, or 'elsewhere'), '' when none was asked for.
+   */
+  pickupArea: string
+  /**
+   * The pickup zone tours priced by area are quoted from, resolved from
+   * `pickup` and `pickupArea` by lib/tour-zone-of (the checkout and the agent
+   * tools keep it in step). Null until known. The cart drawer prices from it;
+   * checkout works the zone out again itself, and the server again from the
+   * pickup, so a stale value here can only change a drawer figure.
+   */
+  pickupZone: TourZone | null
   dropoff: string
   /**
    * When the day starts, as 'HH:MM'. Dispatch information only — the refund
@@ -117,6 +131,8 @@ interface CartStore {
   updateTravelers: (id: number, travelers: number) => void
   updateDate: (id: number, date: string) => void
   setPickup: (location: string) => void
+  setPickupArea: (area: string) => void
+  setPickupZone: (zone: TourZone | null) => void
   setPickupTime: (time: string) => void
   setDropoff: (location: string) => void
   clearCart: () => void
@@ -171,15 +187,15 @@ function defaultDate(): string {
 // (the reel, explore, the detail page, package cards and the day builder) and
 // instrumenting each one is five chances to miss one. Called only after the
 // line is really in the cart, so a refused add is never counted as an add.
-function reportAdd(line: CartItem): void {
+function reportAdd(line: CartItem, zone: TourZone | null): void {
   trackAddToCart({
-    value: tourPrice(line.pricing, line.travelers),
+    value: tourPrice(line.pricing, line.travelers, zone),
     currency: 'USD',
     items: [{
       id: String(line.id),
       name: line.title,
       category: line.kind === 'package' ? 'tour package' : 'tour',
-      price: tourPrice(line.pricing, line.travelers),
+      price: tourPrice(line.pricing, line.travelers, zone),
       quantity: 1,
     }],
   })
@@ -191,6 +207,8 @@ export const useCartStore = create<CartStore>()(
       items: [],
       stops: [],
       pickup: '',
+      pickupArea: '',
+      pickupZone: null,
       pickupTime: '',
       dropoff: '',
       /**
@@ -291,7 +309,7 @@ export const useCartStore = create<CartStore>()(
         const next = [...kept]
         next.splice(at, 0, line)
         set({ items: next, droppedStops: [] })
-        reportAdd(line)
+        reportAdd(line, get().pickupZone)
       },
 
       swapDayFor: (exp: Experience) => {
@@ -307,7 +325,7 @@ export const useCartStore = create<CartStore>()(
           date: items[0]?.date || defaultDate(),
         }
         set({ items: [line], stops: [], droppedStops: stops.map((s) => s.name) })
-        reportAdd(line)
+        reportAdd(line, get().pickupZone)
         return snapshot
       },
 
@@ -377,19 +395,23 @@ export const useCartStore = create<CartStore>()(
       },
 
       setPickup: (location: string) => set({ pickup: location }),
+      setPickupArea: (area: string) => set({ pickupArea: area }),
+      setPickupZone: (zone: TourZone | null) => set({ pickupZone: zone }),
       setPickupTime: (time: string) => set({ pickupTime: time }),
       setDropoff: (location: string) => set({ dropoff: location }),
 
-      clearCart: () => set({ items: [], stops: [], pickup: '', dropoff: '', pickupTime: '', droppedStops: [] }),
+      clearCart: () => set({ items: [], stops: [], pickup: '', pickupArea: '', pickupZone: null, dropoff: '', pickupTime: '', droppedStops: [] }),
 
       isInCart: (id: number) => get().items.some((i) => i.id === id),
 
       // Tours are quoted ALL-IN from the operator's group-tier rate card:
       // the price already covers MAPL's margin and card processing, and a
       // group tour charges one price for the whole party (1..tierMax).
+      // A tour priced by pickup area is quoted from the guest's zone once it
+      // is known, and from its cheapest zone ("from") until then.
       subtotal: () =>
         get().items.reduce(
-          (sum, i) => sum + tourPrice(i.pricing, i.travelers),
+          (sum, i) => sum + tourPrice(i.pricing, i.travelers, get().pickupZone),
           0,
         ),
 

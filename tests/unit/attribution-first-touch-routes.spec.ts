@@ -217,9 +217,11 @@ const FIRST = {
 }
 const WITH_FIRST = { ...LAST_ONLY, ...FIRST }
 
-const customer = { email: 'guest@example.com', firstName: 'Guest', lastName: 'Example', phone: '+1 555 0100', pickup: 'Hotel' }
+// Dunn's River (tour 1) is priced by pickup area since Nov 12 2026: a
+// listed Ocho Rios hotel prices it from the Ocho Rios zone, here and in the route.
+const customer = { email: 'guest@example.com', firstName: 'Guest', lastName: 'Example', phone: '+1 555 0100', pickup: 'Moon Palace Jamaica, Ocho Rios' }
 const DATE = '2027-06-15'
-const tourTotal = priceTourCart([{ id: 1, travelers: 2, date: DATE }], {}, { rewardPercent: 0 }).total
+const tourTotal = priceTourCart([{ id: 1, travelers: 2, date: DATE }], {}, { rewardPercent: 0, zone: 'ocho_rios' }).total
 const tourOrder = (attribution: unknown) => ({
   amount: tourTotal,
   items: [{ id: 1, title: 'x', destination: 'x', travelers: 2, date: DATE, price: 0 }],

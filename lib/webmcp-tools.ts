@@ -62,9 +62,14 @@ import {
   placeLabel,
   priceUnitLabel,
   tourPrice,
+  isZonePriced,
+  zonePrices,
+  zoneSells,
   type Experience,
 } from './experiences'
 import { CANCELLATION_SUMMARY } from './refund-pricing'
+import { TOUR_ZONE_LABEL, type TourZone } from './tour-zones'
+import { pickupNeedsArea, zoneFromPlaceText, zoneOfPickup } from './tour-zone-of'
 
 export interface WebMcpTool {
   name: string
@@ -113,6 +118,9 @@ export interface TourCartLike {
   updateDate: (id: number, date: string) => void
   setPickup: (location: string) => void
   setDropoff: (location: string) => void
+  /** The real store has both; a test double may leave them out. */
+  setPickupArea?: (area: string) => void
+  setPickupZone?: (zone: TourZone | null) => void
 }
 
 /**
@@ -154,6 +162,12 @@ export function addTourToCart(
   if (pickupHotel) {
     after.setPickup(pickupHotel)
     after.setDropoff(pickupHotel)
+    // A place no list knows ("a villa in Negril") opens checkout with its
+    // area already chosen from the words in it, the area this tool's quote
+    // used; the guest can change it there.
+    const area = pickupNeedsArea(pickupHotel) ? zoneFromPlaceText(pickupHotel) ?? '' : ''
+    after.setPickupArea?.(area)
+    after.setPickupZone?.(zoneOfPickup(pickupHotel, area))
   }
   const sharedWith = getState().items.filter((i) => i.id !== exp.id).map((i) => i.title)
   return { added: true, replaced: evicted.map((i) => i.title), sharedWith }
@@ -312,7 +326,7 @@ function tourRow(exp: Experience) {
     area: placeLabel(exp),
     duration: exp.duration,
     fromPriceUsd: exp.price,
-    priceUnit: priceUnitLabel(exp.pricing),
+    priceUnit: isZonePriced(exp.pricing) ? `${priceUnitLabel(exp.pricing)}, priced by pickup area` : priceUnitLabel(exp.pricing),
   }
 }
 
@@ -320,9 +334,26 @@ function tourSummary(exp: Experience, origin: string) {
   return { ...tourRow(exp), url: `${origin}/experience/${getSlug(exp)}` }
 }
 
-/** The one number the traveller pays for this party, and what it covers. */
-function priceForParty(exp: Experience, guests: number) {
+/**
+ * The one number the traveller pays for this party, and what it covers. A
+ * tour priced by where the traveller is staying is quoted for their area when
+ * the pickup names one; otherwise every area's price is listed and priceUsd is
+ * only the lowest, said so in so many words.
+ */
+function priceForParty(exp: Experience, guests: number, zone: TourZone | null = null) {
   const p = exp.pricing
+  if (isZonePriced(p)) {
+    if (zone && zoneSells(p, zone)) {
+      return { guests, pickupArea: TOUR_ZONE_LABEL[zone], priceUsd: tourPrice(p, guests, zone), covers: `total for ${guests} guests picked up in ${TOUR_ZONE_LABEL[zone]}; this tour is priced by pickup area` }
+    }
+    return {
+      guests,
+      priceUsd: tourPrice(p, guests),
+      priceIsFrom: true,
+      covers: `priced by where the traveller is staying; priceUsd is the lowest area's price. Quote the price for their area from pricesByArea${zone ? '' : ', or give pickup_hotel'}`,
+      pricesByArea: zonePrices(p, guests).map((x) => ({ area: TOUR_ZONE_LABEL[x.zone], priceUsd: x.price })),
+    }
+  }
   const total = tourPrice(p, guests)
   const per = perTravelerPrice(p, guests)
   const covers =
@@ -582,6 +613,7 @@ export function buildWebMcpTools(actions: WebMcpActions): WebMcpTool[] {
       properties: {
         tour: { type: 'string', description: 'Tour title or slug from list_tours' },
         guests: { type: 'integer', minimum: 1, maximum: 12, description: 'Party size to price, default 2' },
+        pickup_hotel: { type: 'string', description: 'Where the traveller is staying (hotel or area). Some tours are priced by pickup area' },
       },
       required: ['tour'],
     },
@@ -597,7 +629,7 @@ export function buildWebMcpTools(actions: WebMcpActions): WebMcpTool[] {
         ...tourSummary(e, origin),
         summary: e.description,
         about: (e.about ?? '').slice(0, 400),
-        priceForParty: priceForParty(e, guests),
+        priceForParty: priceForParty(e, guests, zoneFromPlaceText(str(input.pickup_hotel).slice(0, 120))),
         included: few(e.included),
         notIncluded: few(e.notIncluded),
         ages: e.ages ?? null,
@@ -649,7 +681,7 @@ export function buildWebMcpTools(actions: WebMcpActions): WebMcpTool[] {
         status: 'checkout_opened',
         url: `${origin}/checkout`,
         tour: tourSummary(r.exp, origin),
-        priceForParty: priceForParty(r.exp, guests),
+        priceForParty: priceForParty(r.exp, guests, zoneFromPlaceText(str(input.pickup_hotel).slice(0, 120))),
         date: date ?? `to be chosen on the page (earliest ${earliest})`,
         ...(res.replaced?.length ? { replaced: res.replaced, replacedWhy: 'A day is either one package or self-built single tours, and no attraction can be on it twice; those were removed.' } : {}),
         ...(res.sharedWith?.length ? { sharedWith: res.sharedWith, sharedWhy: 'One day, one party: every tour in the cart now has this date and party size.' } : {}),

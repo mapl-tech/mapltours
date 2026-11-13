@@ -8,7 +8,9 @@ import { useCartStore, DAILY_HOUR_LIMIT, parseDurationHours } from '@/lib/cart'
 import { couponDiscountCents } from '@/lib/coupons'
 import { priceTourCart } from '@/lib/checkout-pricing'
 import CodeField from './CodeField'
-import { tourPrice, perTravelerPrice, placeLabel } from '@/lib/experiences'
+import { tourPrice, perTravelerPrice, placeLabel, isZonePriced, zoneSells, type Experience } from '@/lib/experiences'
+import { zoneOfPickup, pickupNeedsArea } from '@/lib/tour-zone-of'
+import { TOUR_ZONES, TOUR_ZONE_LABEL, isTourZone, type TourZone } from '@/lib/tour-zones'
 import { earliestBookableExperienceDate } from '@/lib/booking-window'
 import { getStoredAttribution } from '@/lib/attribution'
 import { trackBeginCheckout, trackCheckoutStep, trackCheckoutMissing, type CheckoutStep } from '@/lib/analytics'
@@ -16,7 +18,7 @@ import { planDay } from '@/lib/day-route'
 import { useAvailableReward } from '@/lib/tour-videos'
 import { useI18n } from '@/lib/i18n'
 import { useFocusTrap } from '@/lib/use-focus-trap'
-import { validateTourForm, validateContact, orderKey, readCheckoutAnswer, formatDate, PAYMENT_SERVICE_UNREACHABLE, DATE_VALUE_FORMAT, incompleteDateMessage, attentionLine, messageOnLeave, reconcileShown, type FieldErrors } from '@/lib/checkout-form'
+import { validateTourForm, validateContact, orderKey, readCheckoutAnswer, formatDate, PAYMENT_SERVICE_UNREACHABLE, DATE_VALUE_FORMAT, incompleteDateMessage, attentionLine, messageOnLeave, reconcileShown, zonePickupErrors, type FieldErrors, type ZoneRule } from '@/lib/checkout-form'
 import LegalModal from '@/components/checkout/LegalModal'
 import TripTimeBar from '@/components/TripTimeBar'
 import DayFlow from '@/components/DayFlow'
@@ -47,10 +49,10 @@ import { PICKUP_PLACES, OTHER_PLACE, OTHER_PLACE_LABEL, isListedPlace, placeShow
  */
 
 const FONT = 'var(--font-dm-sans)'
-const FIELD_ORDER = ['tripDate', 'pickup', 'pickupName', 'firstName', 'lastName', 'email', 'phone', 'waiver']
+const FIELD_ORDER = ['tripDate', 'pickup', 'pickupName', 'pickupArea', 'firstName', 'lastName', 'email', 'phone', 'waiver']
 /** The visible label of each field, for the line announced when Pay finds problems. */
 const FIELD_LABELS: Record<string, string> = {
-  tripDate: 'Trip date', pickup: 'Where we pick you up', pickupName: 'Hotel or villa name', firstName: 'First name', lastName: 'Last name',
+  tripDate: 'Trip date', pickup: 'Where we pick you up', pickupName: 'Hotel or villa name', pickupArea: 'Area', firstName: 'First name', lastName: 'Last name',
   email: 'Email', phone: 'Phone', waiver: 'the Activity Waiver box',
 }
 
@@ -60,10 +62,24 @@ const FIELD_LABELS: Record<string, string> = {
  * abandoned checkout stays visible), and Pay rewrites the saved row's pickup
  * with the name, but Pay needs the name first.
  */
-function tourRules(input: Parameters<typeof validateTourForm>[0]): FieldErrors {
+function tourRules(input: Parameters<typeof validateTourForm>[0], zone?: ZoneRule): FieldErrors {
   const e = validateTourForm(input)
   if (input.pickup === OTHER_PLACE) e.pickupName = 'Add the name of your hotel or villa'
-  return e
+  // A tour priced by where the guest is staying needs a pickup we can price:
+  // the area of a hotel no list knows, and a zone the tour is sold in.
+  return { ...e, ...zonePickupErrors(input.pickup, zone) }
+}
+
+/** The area choices for a hotel or villa no list knows, west to east, then "elsewhere". */
+const ELSEWHERE = 'elsewhere'
+
+/** The line under "Guests": how the party size moves the price. */
+function guestsNote(e: Pick<Experience, 'pricing'>, guests: number): string {
+  const p = e.pricing
+  if (p.mode !== 'group') return 'Priced per guest'
+  if (p.perPersonAddon) return 'Each guest adds to the price'
+  if (guests > p.tierMax) return isZonePriced(p) ? `Each guest over ${p.tierMax} adds to the price` : `Groups over ${p.tierMax} are priced per guest`
+  return `One price for up to ${p.tierMax}`
 }
 const AUTO_SAVE_DELAY_MS = 2500
 
@@ -72,7 +88,7 @@ const EMPTY_FORM: Form = { firstName: '', lastName: '', email: '', phone: '', sp
 
 export default function OnePageCheckout() {
   const hydrated = useHydrated(useCartStore)
-  const { items, stops, pickup, setPickup, setDropoff, updateDate, updateTravelers, removeItem, subtotal, fee, grandTotal, isDayOverLimit, hoursByDate, pickupTime } = useCartStore()
+  const { items, stops, pickup, pickupArea, pickupZone, setPickup, setPickupArea, setPickupZone, setDropoff, updateDate, updateTravelers, removeItem, fee, isDayOverLimit, hoursByDate, pickupTime } = useCartStore()
   const { t, formatUsd } = useI18n()
 
   const [form, setForm] = useState<Form>(EMPTY_FORM)
@@ -105,8 +121,29 @@ export default function OnePageCheckout() {
   const [rewardConflict, setRewardConflict] = useState(false)
   const chooseReward = useCallback((b: boolean) => { setRewardApplied(b); setRewardConflict(false) }, [])
 
+  // ── Where the tours are priced from ──
+  // A tour priced by where the guest is staying (Dunn's River, Blue Hole)
+  // takes the zone of the pickup: a listed place or a known hotel says it
+  // itself; a hotel or villa no list knows needs the guest to name its area.
+  // The server works the zone out again from the same pickup and area
+  // (lib/tour-zone-of zoneOfPickup), so the two always agree.
+  const zonedItems = items.filter((i) => isZonePriced(i.pricing))
+  const needsArea = zonedItems.length > 0 && pickupNeedsArea(pickup)
+  const zone: TourZone | null = zoneOfPickup(pickup, needsArea ? pickupArea : null)
+  const unsold = zonedItems.find((i) => !zoneSells(i.pricing, zone)) ?? null
+  const unsoldTitle = unsold ? unsold.title : null
+  const hasZoned = zonedItems.length > 0
+  const zoneRule = useMemo<ZoneRule | undefined>(
+    () => (hasZoned ? { needsArea, area: pickupArea, unsoldTitle } : undefined),
+    [hasZoned, needsArea, pickupArea, unsoldTitle],
+  )
+  // Until the zone is known a tour priced by area shows its "from" price.
+  const priceIsFrom = !!unsold
+  // The cart drawer prices from the zone the store holds; keep it in step.
+  useEffect(() => { if (hydrated && pickupZone !== zone) setPickupZone(zone) }, [hydrated, zone, pickupZone, setPickupZone])
+
   // ── Money, computed exactly as the server will ──
-  const baseTotal = grandTotal()
+  const baseTotal = items.reduce((sum, i) => sum + tourPrice(i.pricing, i.travelers, zone), 0)
   const rewardDiscount = activeReward ? Math.round(baseTotal * (activeReward.percent / 100)) : 0
   const afterReward = Math.max(0, baseTotal - rewardDiscount)
   // The coupon comes off after the reward, in the same integer cents the
@@ -120,10 +157,10 @@ export default function OnePageCheckout() {
   const marginCents = useMemo<number | undefined>(() => {
     if (!items.length) return undefined
     try {
-      const p = priceTourCart(items.map((i) => ({ id: i.id, travelers: i.travelers, date: i.date })), {}, {})
+      const p = priceTourCart(items.map((i) => ({ id: i.id, travelers: i.travelers, date: i.date })), {}, { zone })
       return Math.max(0, Math.round((p.fee - rewardDiscount) * 100))
     } catch { return undefined }
-  }, [items, rewardDiscount])
+  }, [items, rewardDiscount, zone])
   const couponPreviewLocal = coupon
     ? Math.min(couponDiscountCents(coupon.kind, coupon.value, Math.round(afterReward * 100)), marginCents ?? Number.MAX_SAFE_INTEGER) / 100
     : 0
@@ -175,7 +212,7 @@ export default function OnePageCheckout() {
   // The rules as they stand right now: the message a field gets when the
   // guest leaves it, and the test that clears a message once it is fixed.
   // Same function Pay runs, so the two can never disagree.
-  const liveErrors = useMemo(() => tourRules({ contact: form, pickup, tripDate, waiverAccepted: waiver }), [form, pickup, tripDate, waiver])
+  const liveErrors = useMemo(() => tourRules({ contact: form, pickup, tripDate, waiverAccepted: waiver }, zoneRule), [form, pickup, tripDate, waiver, zoneRule])
   useEffect(() => { setErrors((shown) => reconcileShown(shown, liveErrors)) }, [liveErrors])
   const leave = (k: string, v: string) => {
     const m = messageOnLeave(liveErrors, k, v)
@@ -213,6 +250,10 @@ export default function OnePageCheckout() {
     setOtherName(v)
     setPlace(v.trim() || OTHER_PLACE)
   }
+  const chooseArea = (v: string) => {
+    setPickupArea(v)
+    if (errors.pickupArea) setErrors((e) => { const n = { ...e }; delete n.pickupArea; return n })
+  }
 
   // Where a guest stops on this page (lib/analytics trackCheckoutStep): each
   // step once per page load, and each field a refused Pay names once.
@@ -229,7 +270,7 @@ export default function OnePageCheckout() {
     fresh.forEach((f) => missingSent.current.add(f))
     if (fresh.length) trackCheckoutMissing('tour', fresh)
   }, [step])
-  const tripReady = !!pickup && !!tripDate && !liveErrors.pickup && !liveErrors.pickupName && !liveErrors.tripDate
+  const tripReady = !!pickup && !!tripDate && !liveErrors.pickup && !liveErrors.pickupName && !liveErrors.pickupArea && !liveErrors.tripDate
   const contactReady = !liveErrors.firstName && !liveErrors.lastName && !liveErrors.email && !liveErrors.phone
   useEffect(() => {
     if (!hydrated || items.length === 0) return
@@ -248,6 +289,9 @@ export default function OnePageCheckout() {
       lastName: form.lastName.trim(),
       phone: form.phone.trim(),
       pickup,
+      // Only for a hotel or villa no list knows, in a cart with a tour priced
+      // by area; the server ignores it for any pickup it can place itself.
+      pickupArea: needsArea && isTourZone(pickupArea) ? pickupArea : undefined,
       // Tours return to the pickup point. Admin, dispatch and the operator
       // alert all read the column, so it is mirrored rather than left null.
       dropoff: pickup,
@@ -263,14 +307,14 @@ export default function OnePageCheckout() {
           : '',
       ].filter(Boolean).join('\n'),
     },
-    breakdown: { subtotal: subtotal(), fee: fee(), rewardDiscount },
+    breakdown: { subtotal: baseTotal, fee: fee(), rewardDiscount },
     applyReward: rewardApplied,
     giftCode: giftCard?.code,
     couponCode: coupon?.code,
     // The waiver is required client-side today and by the server once the
     // waiver migration ships; sending it now keeps both versions happy.
     waiverAccepted: waiver,
-  }), [afterReward, items, form, pickup, pickupTime, stops, subtotal, fee, rewardDiscount, rewardApplied, giftCard, coupon, waiver])
+  }), [afterReward, items, form, pickup, needsArea, pickupArea, pickupTime, stops, baseTotal, fee, rewardDiscount, rewardApplied, giftCard, coupon, waiver])
 
   // Any change to what is bought invalidates the server's last answer.
   /**
@@ -368,7 +412,7 @@ export default function OnePageCheckout() {
   //      the button, never a pause after typing a phone number.
   //    · NEVER navigates. This request is unattended; moving the guest off a
   //      page they are still reading is not ours to do. ──
-  const detailsComplete = hydrated && items.length > 0 && !!pickup && !!tripDate && (!minDate || tripDate >= minDate) && Object.keys(validateContact(form)).length === 0
+  const detailsComplete = hydrated && items.length > 0 && !!pickup && !unsold && !!tripDate && (!minDate || tripDate >= minDate) && Object.keys(validateContact(form)).length === 0
   const autoSaved = useRef(false)
   useEffect(() => {
     if (!detailsComplete || autoSaved.current || giftCard) return
@@ -387,7 +431,7 @@ export default function OnePageCheckout() {
   // ── The gate before any payment attempt ──
   const validate = useCallback((): boolean => {
     if (isDayOverLimit()) { setLimitOpen(true); blocked(['dayLimit']); return false }
-    const errs = tourRules({ contact: form, pickup, tripDate, waiverAccepted: waiver })
+    const errs = tourRules({ contact: form, pickup, tripDate, waiverAccepted: waiver }, zoneRule)
     // A half-filled date reads as empty, so the rule above calls it missing;
     // the half-filled message is the accurate one (same as on blur).
     if (errs.tripDate && (document.getElementById('opc-date') as HTMLInputElement | null)?.validity?.badInput) errs.tripDate = incompleteDateMessage('Trip date', 'date')
@@ -401,7 +445,7 @@ export default function OnePageCheckout() {
     step('pay_tap')
     setAnnouncement('')
     return true
-  }, [form, pickup, tripDate, waiver, isDayOverLimit, blocked, step])
+  }, [form, pickup, tripDate, waiver, zoneRule, isDayOverLimit, blocked, step])
 
   /**
    * One field, two kinds of code. A coupon is tried first (it is what the
@@ -490,9 +534,17 @@ export default function OnePageCheckout() {
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <p style={{ fontFamily: FONT, fontWeight: 700, fontSize: 15, lineHeight: 1.25, color: 'var(--text-primary)' }}>{t(item.title)}</p>
                       <p style={{ fontFamily: FONT, fontSize: 13, color: 'var(--text-tertiary)', marginTop: 3 }}>{placeLabel(item)}<br />{item.duration.replace(/ /g, '\u00a0')}</p>
+                      {isZonePriced(item.pricing) ? (
+                        <p style={{ fontFamily: FONT, fontSize: 13, color: 'var(--text-secondary)', marginTop: 3 }}>
+                          {zone && zoneSells(item.pricing, zone) ? `Priced for pickup in ${TOUR_ZONE_LABEL[zone]}` : 'Priced by where we pick you up'}
+                        </p>
+                      ) : null}
                     </div>
                     <div style={{ textAlign: 'right', flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
-                      <p className="opc-num" style={{ fontFamily: FONT, fontWeight: 700, fontSize: 15, whiteSpace: 'nowrap' }}>{formatUsd(tourPrice(item.pricing, item.travelers))}</p>
+                      <p className="opc-num" style={{ fontFamily: FONT, fontWeight: 700, fontSize: 15, whiteSpace: 'nowrap' }}>
+                        {zoneSells(item.pricing, zone) ? null : <span style={{ fontWeight: 500, fontSize: 13, color: 'var(--text-tertiary)' }}>{t('From')} </span>}
+                        {formatUsd(tourPrice(item.pricing, item.travelers, zone))}
+                      </p>
                       <button type="button" onClick={() => removeItem(item.id)} aria-label={`Remove ${item.title}`} style={{ background: 'none', border: 'none', padding: '12px 0 4px', fontFamily: FONT, fontSize: 13, color: 'var(--text-tertiary)', textDecoration: 'underline', cursor: 'pointer', minHeight: 44, minWidth: 44 }}>Remove</button>
                     </div>
                   </div>
@@ -505,7 +557,7 @@ export default function OnePageCheckout() {
                     <Users size={18} color="var(--text-secondary)" style={{ flexShrink: 0 }} />
                     <div>
                       <span style={{ display: 'block', fontFamily: FONT, fontSize: 15, fontWeight: 600 }}>{t('Guests')}</span>
-                      <span style={{ display: 'block', fontFamily: FONT, fontSize: 13, color: 'var(--text-tertiary)' }}>{items.length > 1 ? 'Applies to every tour' : items[0].pricing.mode === 'group' ? (guests > items[0].pricing.tierMax ? `Groups over ${items[0].pricing.tierMax} are priced per guest` : `One price for up to ${items[0].pricing.tierMax}`) : 'Priced per guest'}</span>
+                      <span style={{ display: 'block', fontFamily: FONT, fontSize: 13, color: 'var(--text-tertiary)' }}>{items.length > 1 ? 'Applies to every tour' : guestsNote(items[0], guests)}</span>
                     </div>
                   </div>
                   <Stepper value={guests} min={1} max={12} onChange={setGuests} label="Guests" />
@@ -534,7 +586,7 @@ export default function OnePageCheckout() {
                 </div>
 
                 <div style={{ padding: '14px 0 16px' }}>
-                  <SelectField id="opc-pickup" fieldKey="pickup" label="Where we pick you up" value={otherMode ? OTHER_PLACE : pickup || ''} onChange={choosePlace} error={errors.pickup}
+                  <SelectField id="opc-pickup" fieldKey="pickup" label="Where we pick you up" value={otherMode ? OTHER_PLACE : pickup || ''} onChange={choosePlace} error={errors.pickup ?? (hasZoned && !needsArea && unsold && pickup ? liveErrors.pickup : undefined)}
                     hint={pickup && pickup !== OTHER_PLACE ? PICKUP_PLACES.find((p) => p.name === pickup)?.address ?? 'We bring you back to the same place.' : 'Your hotel, resort, the airport or a cruise port. We bring you back to the same place.'}>
                     <option value="">Choose your hotel, resort or airport</option>
                     <optgroup label="Airport">
@@ -559,6 +611,20 @@ export default function OnePageCheckout() {
                         onChange={typeOtherName} maxLength={200}
                         autoComplete="off" placeholder="e.g. Iberostar Rose Hall"
                         hint="So your driver finds you. Add the area for a villa or a private home." />
+                    </div>
+                  ) : null}
+                  {/* Only when a tour in the cart is priced by where we pick
+                      the guest up and no list knows the place: the area is
+                      what the price is set from. */}
+                  {needsArea ? (
+                    <div style={{ marginTop: 12 }}>
+                      <SelectField id="opc-pickup-area" fieldKey="pickupArea" label="Which area is it in?" value={pickupArea} onChange={chooseArea}
+                        error={errors.pickupArea ?? (pickupArea === ELSEWHERE ? liveErrors.pickupArea : undefined)}
+                        hint={`${zonedItems.map((i) => t(i.title)).join(' and ')} ${zonedItems.length > 1 ? 'are' : 'is'} priced by where we pick you up.`}>
+                        <option value="">Choose the area</option>
+                        {TOUR_ZONES.map((z) => <option key={z} value={z}>{TOUR_ZONE_LABEL[z]}</option>)}
+                        <option value={ELSEWHERE}>Somewhere else in Jamaica</option>
+                      </SelectField>
                     </div>
                   ) : null}
                   <p style={{ display: 'flex', gap: 8, alignItems: 'flex-start', marginTop: 12, fontFamily: FONT, fontSize: 13, lineHeight: 1.5, color: 'var(--text-tertiary)' }}>
@@ -610,7 +676,7 @@ export default function OnePageCheckout() {
             {/* Mobile: the summary sits between the details and payment so the
                 gift card and total are reachable without leaving the flow. */}
             <div className="opc-mobile-only">
-              <OrderSummary items={items} formatUsd={formatUsd} t={t} availableReward={availableReward} rewardApplied={rewardApplied} setRewardApplied={chooseReward} rewardDiscount={rewardDiscount}
+              <OrderSummary items={items} zone={zone} priceIsFrom={priceIsFrom} formatUsd={formatUsd} t={t} availableReward={availableReward} rewardApplied={rewardApplied} setRewardApplied={chooseReward} rewardDiscount={rewardDiscount}
                 giftCard={giftCard} giftPreview={giftPreview} coupon={coupon} couponPreview={couponPreview} codeInput={codeInput} setCodeInput={setCodeInput} codeChecking={codeChecking} codeError={codeError} applyCode={applyCode}
                 removeGift={() => { setGiftCard(null); setCodeError(null) }} removeCoupon={() => { setCoupon(null); setCodeError(null) }} finalTotal={finalTotal} openPolicy={() => setLegal('cancellation')} facts={summaryFacts} />
             </div>
@@ -618,11 +684,12 @@ export default function OnePageCheckout() {
             {/* ── 3. Payment ── */}
             <div ref={payCardRef}>
               <Card className="opc-pad opc-card-pay">
-                <SectionTitle step={3} title={t('Payment')} sub={amountCents >= 50 ? `${formatUsd(finalTotal)} today. Nothing is charged until you press the button below.` : 'Nothing to charge today.'} />
+                <SectionTitle step={3} title={t('Payment')} sub={priceIsFrom ? 'Your total is set once you choose where we pick you up. Nothing is charged until you press the button below.' : amountCents >= 50 ? `${formatUsd(finalTotal)} today. Nothing is charged until you press the button below.` : 'Nothing to charge today.'} />
                 <DeferredPaymentPanel
                   amountCents={amountCents}
                   returnUrl="/checkout/confirm"
-                  payLabel={amountCents >= 50 ? `Pay ${formatUsd(finalTotal)}` : 'Complete booking'}
+                  // Until the pickup sets a price by area, the button names no amount.
+                  payLabel={priceIsFrom ? 'Pay' : amountCents >= 50 ? `Pay ${formatUsd(finalTotal)}` : 'Complete booking'}
                   validate={validate}
                   createIntent={createIntent}
                   registerPay={registerPay}
@@ -658,7 +725,7 @@ export default function OnePageCheckout() {
           </div>
 
           <aside className="opc-rail" aria-label="Order summary">
-            <OrderSummary items={items} formatUsd={formatUsd} t={t} availableReward={availableReward} rewardApplied={rewardApplied} setRewardApplied={chooseReward} rewardDiscount={rewardDiscount}
+            <OrderSummary items={items} zone={zone} priceIsFrom={priceIsFrom} formatUsd={formatUsd} t={t} availableReward={availableReward} rewardApplied={rewardApplied} setRewardApplied={chooseReward} rewardDiscount={rewardDiscount}
               giftCard={giftCard} giftPreview={giftPreview} coupon={coupon} couponPreview={couponPreview} codeInput={codeInput} setCodeInput={setCodeInput} codeChecking={codeChecking} codeError={codeError} applyCode={applyCode}
               removeGift={() => { setGiftCard(null); setCodeError(null) }} removeCoupon={() => { setCoupon(null); setCodeError(null) }} finalTotal={finalTotal} openPolicy={() => setLegal('cancellation')} facts={summaryFacts} />
           </aside>
@@ -669,7 +736,7 @@ export default function OnePageCheckout() {
         <div className="opc-sticky" data-visible={!payInView} aria-hidden={payInView}>
           <div>
             <span className="opc-sticky-label">{t('Total')}</span>
-            <span className="opc-sticky-total opc-num">{formatUsd(finalTotal)}</span>
+            <span className="opc-sticky-total opc-num">{priceIsFrom ? `${t('From')} ` : ''}{formatUsd(finalTotal)}</span>
           </div>
           <button type="button" className="btn-primary" tabIndex={payInView ? -1 : 0}
             onClick={() => {
@@ -766,6 +833,10 @@ function OrderSummary(p: {
   removeGift: () => void
   removeCoupon: () => void
   finalTotal: number
+  /** The pickup zone tours priced by area are quoted from (null until known). */
+  zone: TourZone | null
+  /** A tour priced by area cannot be priced yet, so the total is a "from". */
+  priceIsFrom: boolean
   openPolicy: () => void
   facts: { label: string; value: string }[]
 }) {
@@ -814,15 +885,15 @@ function OrderSummary(p: {
                     (2 guests at $127.50) has no per-head figure to show, but
                     it is still not one price for the party. */}
                 {(() => {
-                  const per = perTravelerPrice(item.pricing, item.travelers)
+                  const per = perTravelerPrice(item.pricing, item.travelers, p.zone)
                   const guests = `${item.travelers} ${item.travelers === 1 ? t('guest') : t('guests')}`
                   if (per !== null) return `${item.travelers} × ${formatUsd(per)}`
-                  return item.pricing.mode === 'group' && item.travelers <= item.pricing.tierMax ? `${guests} · one price` : guests
+                  return item.pricing.mode === 'group' && item.travelers <= item.pricing.tierMax && !item.pricing.perPersonAddon ? `${guests} · one price` : guests
                 })()}
                 {item.date ? ` · ${formatDate(item.date)}` : ''}
               </p>
             </div>
-            <span className="opc-num" style={{ fontSize: 13, fontWeight: 700, flexShrink: 0 }}>{formatUsd(tourPrice(item.pricing, item.travelers))}</span>
+            <span className="opc-num" style={{ fontSize: 13, fontWeight: 700, flexShrink: 0 }}>{zoneSells(item.pricing, p.zone) ? '' : `${t('From')} `}{formatUsd(tourPrice(item.pricing, item.travelers, p.zone))}</span>
           </div>
         ))}
       </div>
@@ -853,7 +924,7 @@ function OrderSummary(p: {
         </div>
 
         <div className="opc-num" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', fontFamily: FONT, fontWeight: 700, fontSize: 20, marginTop: 10, paddingTop: 14, borderTop: '1px solid var(--border)' }}>
-          <span>{t('Total')}</span><span>{formatUsd(p.finalTotal)}</span>
+          <span>{t('Total')}</span><span>{p.priceIsFrom ? `${t('From')} ` : ''}{formatUsd(p.finalTotal)}</span>
         </div>
         <p style={{ marginTop: 8, fontSize: 13, lineHeight: 1.5, color: 'var(--text-tertiary)', fontFamily: FONT }}>
           Private tour, all-in. <LinkButton onClick={p.openPolicy}>Cancellation policy</LinkButton>

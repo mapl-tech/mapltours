@@ -122,7 +122,9 @@ export function SelectField({ id, label, value, onChange, error, hint, children,
         value={value}
         onChange={(e) => onChange(e.target.value)}
         aria-invalid={error ? true : undefined}
-        aria-describedby={[error ? errId : null, hint ? hintId : null].filter(Boolean).join(' ') || undefined}
+        // The error replaces the hint on screen, so it replaces it here too:
+        // never point a screen reader at text that is not on the page.
+        aria-describedby={(error ? errId : hint ? hintId : '') || undefined}
         className="field-input"
         style={{ height: 50, fontSize: 16, width: '100%', background: '#fff', fontWeight: 500, borderColor: error ? 'rgba(176,0,32,0.55)' : 'rgba(23,22,20,0.16)' }}
       >

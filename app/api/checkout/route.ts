@@ -21,6 +21,8 @@ import { sendEmail, operatorAlertRecipients } from '@/lib/email/send'
 import OpsAlert from '@/emails/OpsAlert'
 import { addSettledBookingToOpsCalendar } from '@/lib/ops-calendar'
 import { withConfirmProof } from '@/lib/confirm-proof-server'
+import { zoneOfPickup, pickupNeedsArea } from '@/lib/tour-zone-of'
+import { TOUR_ZONE_LABEL, type TourZone } from '@/lib/tour-zones'
 
 /**
  * Tour checkout, creates (or atomically reuses) a pending booking row
@@ -92,6 +94,12 @@ interface CheckoutBody {
     phone?: string
     country?: string
     pickup?: string
+    /**
+     * The pickup zone the guest chose for a hotel or villa no list knows
+     * (lib/tour-zones). Read only for such a pickup: a listed place or a known
+     * transfer hotel always prices from its own zone (zoneOfPickup).
+     */
+    pickupArea?: string
     dropoff?: string
     /** 'HH:MM' local Jamaica time the day starts. Dispatch only. */
     pickupTime?: string
@@ -103,6 +111,18 @@ interface CheckoutBody {
     transport?: number
     rewardDiscount?: number
   }
+}
+
+/**
+ * The pickup as the booking stores it. For a hotel or villa no list knows,
+ * priced from the area the guest chose, that area goes next to the name
+ * ("Seaview Villa (Negril)") so Collin and the driver see what the price
+ * assumed. Everything else is stored as sent.
+ */
+function storedPickup(raw: string | undefined, zone: TourZone | null, zonePricedCart: boolean): string | null {
+  if (!raw) return null
+  const named = zonePricedCart && zone && pickupNeedsArea(raw) ? `${raw.trim()} (${TOUR_ZONE_LABEL[zone]})` : raw
+  return named.slice(0, 200)
 }
 
 // Hash from the SERVER-priced total (not the client's body.amount) so the
@@ -258,11 +278,17 @@ async function checkout(request: NextRequest) {
     }
 
     // 1. Server-side pricing, single source of truth. Reward comes from the
-    //    server-verified percent above, NOT from the request body.
+    //    server-verified percent above, NOT from the request body. The pickup
+    //    zone, for tours priced by where the guest is staying, is worked out
+    //    here from the pickup the booking will store, the same way the page
+    //    worked it out (lib/tour-zone-of): a place we know prices from its own
+    //    zone whatever area the request names.
+    const pickupZone = zoneOfPickup(body.customer?.pickup, body.customer?.pickupArea)
+    const pickupKnown = !!body.customer?.pickup?.trim() && !pickupNeedsArea(body.customer?.pickup)
     let pricing = priceTourCart(
       body.items.map((i) => ({ id: i.id, travelers: i.travelers, date: i.date })),
       body.breakdown ?? {},
-      { rewardPercent },
+      { rewardPercent, zone: pickupZone, pickupKnown },
     )
     // The client claims the total BEFORE any coupon; a code that dies between
     // apply and pay is then a clean refusal below, never a cart mismatch.
@@ -349,7 +375,7 @@ async function checkout(request: NextRequest) {
       email: (c.email ?? '').trim().toLowerCase().slice(0, 200),
       phone: c.phone ? c.phone.slice(0, 40) : null,
       country: c.country ? c.country.slice(0, 80) : null,
-      pickup: c.pickup ? c.pickup.slice(0, 200) : null,
+      pickup: storedPickup(c.pickup, pickupZone, pricing.lines.some((l) => l.zone !== null)),
       dropoff: c.dropoff ? c.dropoff.slice(0, 200) : null,
       // Validated shape, not trusted length. Deliberately NOT fed into
       // earliestServiceStart(): the refund window stays on the midnight

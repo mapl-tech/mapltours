@@ -55,6 +55,28 @@ export function validateTourForm(input: TourFormInput): FieldErrors {
 }
 
 /**
+ * What the pickup rules need to know about a cart holding a tour priced by
+ * where the guest is staying (lib/tour-zones): whether the pickup is a place
+ * no list knows (so its area must be chosen), the area chosen, and the first
+ * tour that cannot be sold from the pickup's zone.
+ */
+export type ZoneRule = { needsArea: boolean; area: string; unsoldTitle: string | null }
+
+/**
+ * The pickup errors such a cart adds: choose the area of a hotel or villa we
+ * do not know, or, when the pickup is outside the tour's areas, a sentence on
+ * where to get a price. Nothing for an empty pickup (the pickup rule above
+ * asks for one) or a cart with no tour priced by area.
+ */
+export function zonePickupErrors(pickup: string | undefined, zone: ZoneRule | undefined): FieldErrors {
+  const e: FieldErrors = {}
+  if (!zone || !pickup?.trim()) return e
+  if (zone.needsArea && !zone.area) e.pickupArea = 'Choose the area your hotel or villa is in'
+  else if (zone.unsoldTitle) e[zone.needsArea ? 'pickupArea' : 'pickup'] = `${zone.unsoldTitle} is not sold online from there. Choose a pickup in one of our areas, or write to contact@mapltours.com for a price.`
+  return e
+}
+
+/**
  * The one value a native date or date-and-time field accepts when it is set
  * by anything other than its picker: a browsing agent, autofill, a paste.
  * A person on a phone never needs it (the picker shows "Sat, Dec 5, 2:30 PM"),

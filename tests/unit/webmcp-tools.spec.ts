@@ -353,3 +353,58 @@ describe('addTourToCart against the real store', () => {
     expect(s().items.map((i) => i.id)).toEqual([ricks.id])
   })
 })
+
+describe('tours priced by where the traveller is staying (Nov 12 2026)', () => {
+  const s = () => useCartStore.getState()
+  beforeEach(() => s().clearCart())
+  const dunns = experiences.find((e) => e.id === 1)!
+
+  test('get_tour with no pickup lists every area and says its number is only the lowest', async () => {
+    vi.useFakeTimers({ now: NOW })
+    const { t } = tool('get_tour')
+    const r = (await t.execute({ tour: 'dunns-river-falls-climb', guests: 2 })) as R
+    vi.useRealTimers()
+    expect(r.priceUnit).toBe('up to 4 people, priced by pickup area')
+    expect(r.priceForParty).toMatchObject({ guests: 2, priceUsd: 243, priceIsFrom: true })
+    expect(r.priceForParty.pricesByArea).toEqual([
+      { area: 'Negril', priceUsd: 510 }, { area: 'Lucea & Hanover', priceUsd: 382 }, { area: 'Montego Bay & Rose Hall', priceUsd: 357 },
+      { area: 'Falmouth & Trelawny', priceUsd: 293 }, { area: 'Runaway Bay & Discovery Bay', priceUsd: 281 }, { area: 'Ocho Rios', priceUsd: 243 },
+    ])
+  })
+
+  test('get_tour with a pickup quotes that area, the price checkout charges from there', async () => {
+    const { t } = tool('get_tour')
+    const hotel = (await t.execute({ tour: 'dunns-river-falls-climb', guests: 2, pickup_hotel: 'Sandals Negril Beach Resort' })) as R
+    expect(hotel.priceForParty).toEqual({ guests: 2, pickupArea: 'Negril', priceUsd: tourPrice(dunns.pricing, 2, 'negril'), covers: 'total for 2 guests picked up in Negril; this tour is priced by pickup area' })
+    const area = (await t.execute({ tour: 'dunns-river-falls-climb', guests: 6, pickup_hotel: 'a villa in Runaway Bay' })) as R
+    expect(area.priceForParty).toMatchObject({ pickupArea: 'Runaway Bay & Discovery Bay', priceUsd: tourPrice(dunns.pricing, 6, 'runaway_bay') })
+    const kingston = (await t.execute({ tour: 'dunns-river-falls-climb', guests: 2, pickup_hotel: 'Kingston' })) as R
+    expect(kingston.priceForParty.priceIsFrom).toBe(true)
+  })
+
+  test('a tour with one price everywhere is quoted as before, whatever the pickup', async () => {
+    const { t } = tool('get_tour')
+    const r = (await t.execute({ tour: 'ricks-cafe-cliff-diving-and-sunset', guests: 2, pickup_hotel: 'Kingston' })) as R
+    expect(r.priceForParty.priceIsFrom).toBeUndefined()
+    expect(r.priceForParty.priceUsd).toBe(tourPrice(experiences.find((e) => e.id === 14)!.pricing, 2))
+  })
+
+  test('booking from a known hotel: the cart holds its zone, and checkout will price the quote', async () => {
+    const a = fakeActions({ addTour: (exp, guests, date, hotel) => addTourToCart(s, exp, guests, date, hotel) })
+    const { t } = tool('start_tour_booking', a)
+    const r = (await t.execute({ tour: 'dunns-river-falls-climb', guests: 2, date: '2026-10-12', pickup_hotel: 'Iberostar Waves Rose Hall' })) as R
+    expect(r.status).toBe('checkout_opened')
+    expect(r.priceForParty).toMatchObject({ pickupArea: 'Montego Bay & Rose Hall', priceUsd: 357 })
+    expect(s()).toMatchObject({ pickup: 'Iberostar Waves Rose Hall', pickupArea: '', pickupZone: 'montego_bay' })
+    expect(s().subtotal()).toBe(357)
+  })
+
+  test('booking from a place no list knows: its area is chosen from the words, the one the quote used', async () => {
+    const a = fakeActions({ addTour: (exp, guests, date, hotel) => addTourToCart(s, exp, guests, date, hotel) })
+    const { t } = tool('start_tour_booking', a)
+    const r = (await t.execute({ tour: 'dunns-river-falls-climb', guests: 2, date: '2026-10-12', pickup_hotel: 'Seaview villa in Negril' })) as R
+    expect(r.priceForParty).toMatchObject({ pickupArea: 'Negril', priceUsd: 510 })
+    expect(s()).toMatchObject({ pickup: 'Seaview villa in Negril', pickupArea: 'negril', pickupZone: 'negril' })
+    expect(s().subtotal()).toBe(510)
+  })
+})

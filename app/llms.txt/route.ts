@@ -1,4 +1,5 @@
-import { experiences, slugify, priceUnitLabel, placeLabel } from '@/lib/experiences'
+import { experiences, slugify, priceUnitLabel, placeLabel, isZonePriced, zonePrices, type Experience } from '@/lib/experiences'
+import { TOUR_ZONE_LABEL } from '@/lib/tour-zones'
 import {
   DESTINATIONS,
   ZONES,
@@ -69,26 +70,38 @@ export function GET() {
     })
     .join('\n\n')
 
+  // A tour priced by where the traveller is picked up gets every area's price,
+  // the exact figure checkout charges from there, never one area's as all.
+  const zonePriceLine = (exp: Experience) => {
+    const p = exp.pricing
+    const flatGroup = !p.perPersonAddon
+    const areas = zonePrices(p, flatGroup ? p.tierMax : 1)
+    return `Priced by pickup area, ${flatGroup ? `one price for up to ${p.tierMax} people` : 'for 1 person, each guest adding to it'}: ${areas.map((a) => `${TOUR_ZONE_LABEL[a.zone]} $${a.price}`).join(', ')}; elsewhere in Jamaica, ask for a price`
+  }
   const experienceLines = experiences
     .map((exp) => {
       const url = `${baseUrl}/experience/${slugify(exp.title)}`
       const fromHotel = exp.fromHotel ? ` From your hotel and back: ${exp.fromHotel.charAt(0).toLowerCase()}${exp.fromHotel.slice(1)}` : ''
-      const summary = `${placeLabel(exp)}. ${exp.category}. ${exp.duration}. $${exp.price} ${priceUnitLabel(exp.pricing)}. ${exp.description}${fromHotel}`
+      const price = isZonePriced(exp.pricing) ? zonePriceLine(exp) : `$${exp.price} ${priceUnitLabel(exp.pricing)}`
+      const summary = `${placeLabel(exp)}. ${exp.category}. ${exp.duration}. ${price}. ${exp.description}${fromHotel}`
       return `- [${exp.title}](${url}): ${summary}`
     })
     .join('\n')
 
   // Derived from the catalog so the quoted ranges cannot drift out of date
-  // (they read $103 to $459 and $192 to $332 by hand, both stale).
+  // (they read $103 to $459 and $192 to $332 by hand, both stale). A tour
+  // priced by pickup area counts with every area's price.
+  const headlinePrices = (e: Experience) => (isZonePriced(e.pricing) ? zonePrices(e.pricing, 1).map((z) => z.price) : [e.price])
   const priceRange = (kind: 'single' | 'package') => {
-    const prices = experiences.filter((e) => e.kind === kind).map((e) => e.price)
+    const prices = experiences.filter((e) => e.kind === kind).flatMap(headlinePrices)
     return `$${Math.min(...prices)} to $${Math.max(...prices)}`
   }
   // Counted, not written by hand: "most are group tours, a few per person"
   // went wrong when the clear kayak turned out to be per person (Nov 2026).
   const singles = experiences.filter((e) => e.kind === 'single')
   const groupSingles = singles.filter((e) => e.pricing.mode === 'group').length
-  const pricingModes = `${groupSingles} of the ${singles.length} tours are private group tours priced per vehicle for a party of up to 3 or 4; the other ${singles.length - groupSingles} are priced per person, and each tour page says which.`
+  const zonedSingles = singles.filter((e) => isZonePriced(e.pricing)).length
+  const pricingModes = `${groupSingles} of the ${singles.length} tours are private group tours priced per vehicle for a party of up to 3 or 4${zonedSingles ? ` (${zonedSingles} of them priced by the pickup area)` : ''}; the other ${singles.length - groupSingles} are priced per person, and each tour page says which.`
 
   const blogLines = BLOG_POSTS
     .slice()

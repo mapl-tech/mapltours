@@ -3,11 +3,43 @@ import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { preload } from 'react-dom'
 import ExperienceDetail from '@/components/ExperienceDetail'
-import { getExperienceBySlug, reelPoster } from '@/lib/experiences'
+import { getExperienceBySlug, reelPoster, isZonePriced, zonePrices, type Experience } from '@/lib/experiences'
+import { TOUR_ZONE_LABEL } from '@/lib/tour-zones'
 import { createServiceClient } from '@/lib/supabase/service'
 import { isMaplAccount } from '@/lib/creator'
 
 const SITE_URL = 'https://mapltours.com'
+
+/**
+ * A tour priced by where the guest is picked up, as structured data: the
+ * range across the areas it is sold from, each area's exact price in the
+ * description, and the party the price covers. A single `price` would be one
+ * area's figure presented as everyone's.
+ */
+function zoneOffer(exp: Experience, url: string) {
+  const p = exp.pricing
+  const flatGroup = !p.perPersonAddon
+  const party = flatGroup ? p.tierMax : 1
+  const areas = zonePrices(p, party)
+  const prices = areas.map((a) => a.price)
+  return {
+    '@type': 'AggregateOffer',
+    url,
+    priceCurrency: 'USD',
+    availability: 'https://schema.org/InStock',
+    lowPrice: Math.min(...prices),
+    highPrice: Math.max(...prices),
+    offerCount: areas.length,
+    description: `${flatGroup ? `Private tour, one price for up to ${p.tierMax} people` : 'Price for 1 person; each guest adds to it'}, set by the pickup area: ${areas.map((a) => `${TOUR_ZONE_LABEL[a.zone]} $${a.price}`).join(', ')}.`,
+    eligibleQuantity: {
+      '@type': 'QuantitativeValue',
+      minValue: 1,
+      maxValue: party,
+      unitCode: 'IE',
+      unitText: 'person',
+    },
+  }
+}
 
 // Per-experience metadata so each of the commercial landing pages ranks on
 // its own and gets a correct social preview. Without this, all experience
@@ -129,7 +161,7 @@ export default function ExperienceRoute({ params }: { params: { slug: string } }
     ].filter(Boolean).join(' '),
     // Absolute: Google discards relative image URLs in structured data.
     image: exp.image?.startsWith('http') ? exp.image : `${SITE_URL}${exp.image}`,
-    offers: {
+    offers: isZonePriced(exp.pricing) ? zoneOffer(exp, `${SITE_URL}/experience/${params.slug}`) : {
       '@type': 'Offer',
       url: `${SITE_URL}/experience/${params.slug}`,
       price: exp.price,
@@ -137,10 +169,10 @@ export default function ExperienceRoute({ params }: { params: { slug: string } }
       availability: 'https://schema.org/InStock',
       // The UNIT, which a bare `price` cannot carry.
       //
-      // Two thirds of the catalogue is priced for a party, not a head: Dunn's
-      // River is $351 for up to three people. Published as a bare number, every
-      // shopping surface and every answer engine reads that as $351 per person
-      // and quotes a family of three $1,053 for a tour that costs $351. The
+      // Much of the catalogue is priced for a party, not a head: Rick's Cafe
+      // is $255 for up to four people. Published as a bare number, every
+      // shopping surface and every answer engine reads that as $255 per person
+      // and quotes a family of four $1,020 for a tour that costs $255. The
       // error runs against us, so it is a booking lost to markup rather than to
       // price. referenceQuantity says what the figure buys; eligibleQuantity
       // says how many that covers.
