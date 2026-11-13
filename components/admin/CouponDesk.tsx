@@ -2,10 +2,11 @@
 
 import { useCallback, useEffect, useId, useRef, useState } from 'react'
 import Link from 'next/link'
-import { Check, Copy, Search } from 'lucide-react'
+import { Search } from 'lucide-react'
 import { describeCoupon, type CouponRow } from '@/lib/coupons'
 import Arrow from '@/components/ui/Arrow'
 import Segmented from '@/components/admin/Segmented'
+import { CopyButton, focusIsWithin, useBusy, useClosing, useResultNote } from '@/components/admin/AdminUi'
 import { money, stamp } from '@/lib/admin-format'
 
 /**
@@ -123,27 +124,6 @@ function previewOf(d: EditDraft): string {
   })
 }
 
-/** Close a panel after its leave animation; at once under reduced motion. The functions are stable across renders. */
-function useClosing() {
-  const [closing, setClosing] = useState<string | null>(null)
-  const pending = useRef<(() => void) | null>(null)
-  const close = useCallback((key: string, done: () => void) => {
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) { done(); return }
-    pending.current = done
-    setClosing(key)
-  }, [])
-  /** Forget a close in progress (the panel is staying after all). */
-  const cancel = useCallback(() => { pending.current = null; setClosing(null) }, [])
-  const onEnd = useCallback((e: React.AnimationEvent<HTMLElement>) => {
-    if (e.target !== e.currentTarget || !pending.current) return
-    const done = pending.current
-    pending.current = null
-    setClosing(null)
-    done()
-  }, [])
-  return { closing, close, cancel, onEnd }
-}
-
 /** What a code has taken off so far, summed in cents from its uses. Exported for tests/unit/coupon-desk.spec.tsx. */
 export function givenOf(uses: Pick<Redemption, 'amount'>[]): number {
   return uses.reduce((cents, r) => cents + Math.round(Number(r.amount || 0) * 100), 0) / 100
@@ -157,22 +137,19 @@ export default function CouponDesk() {
   const [q, setQ] = useState('')
   const [filter, setFilter] = useState<Filter>('all')
   const [loading, setLoading] = useState(true)
-  // The result of the last action. It sits at the foot of the list and stays
-  // in view at the bottom of the screen (position: sticky), so it never pushes
-  // the list down under the pointer. A quiet note is only spoken.
-  const [note, setNoteRaw] = useState<{ text: string; bad?: boolean; quiet?: boolean } | null>(null)
-  const { closing: noteClosing, close: closeNote, cancel: keepNote, onEnd: noteEnd } = useClosing()
-  const setNote = useCallback((n: { text: string; bad?: boolean; quiet?: boolean } | null) => { keepNote(); setNoteRaw(n) }, [keepNote])
-  const toastRef = useRef<HTMLParagraphElement>(null)
-  const [copied, setCopied] = useState<string | null>(null)
-  const [busy, setBusy] = useState<string | null>(null)
+  // The result of the last action, in a toast at the foot of the list.
+  const { setNote, keepClear, toast } = useResultNote()
+  const { busy, start, end } = useBusy()
   const [confirmVoid, setConfirmVoid] = useState<string | null>(null)
   const [open, setOpen] = useState<string | null>(null)
   // The card being edited and its draft. One at a time.
   const [editing, setEditing] = useState<string | null>(null)
   const [draft, setDraft] = useState<EditDraft | null>(null)
-  const [editError, setEditError] = useState<string | null>(null)
-  const [saving, setSaving] = useState(false)
+  // Keyed by card, so a slow answer never lands in another card's form.
+  const [editError, setEditError] = useState<{ id: string; text: string } | null>(null)
+  const [saving, setSaving] = useState<string | null>(null)
+  const editingNow = useRef<string | null>(null)
+  useEffect(() => { editingNow.current = editing }, [editing])
   // The new-coupon form opens on request, set up for the common case: a
   // shared word code, 5% off tours and rides, once per guest, six months.
   const [making, setMaking] = useState(false)
@@ -185,28 +162,16 @@ export default function CouponDesk() {
   const leave = useClosing()
   const motion = (key: string) => (leave.closing === key ? 'adm-leave' : 'adm-enter')
   // Where focus goes once React has committed the change that showed or hid
-  // it: a panel's heading as it opens, the button that opened it as it closes.
-  const focusNext = useRef<string | null>(null)
+  // it (the first of these ids that exists): a panel's heading as it opens,
+  // the button that opened it as it closes, the card itself after an action
+  // that replaced the button pressed.
+  const focusNext = useRef<string[] | null>(null)
   useEffect(() => {
     if (!focusNext.current) return
-    const el = document.getElementById(focusNext.current)
+    const el = focusNext.current.map((id) => document.getElementById(id)).find(Boolean)
     focusNext.current = null
     el?.focus()
   })
-
-  // A success note clears itself (a problem stays until the next action): a
-  // shown one fades out, a spoken one (never drawn, so it has no fade) just
-  // goes. The copied tick goes back to the copy icon.
-  useEffect(() => {
-    if (!note || note.bad) return
-    const t = window.setTimeout(() => (note.quiet ? setNoteRaw(null) : closeNote('note', () => setNoteRaw(null))), note.quiet ? 2000 : 6000)
-    return () => window.clearTimeout(t)
-  }, [note, closeNote])
-  useEffect(() => {
-    if (!copied) return
-    const t = window.setTimeout(() => setCopied(null), 1600)
-    return () => window.clearTimeout(t)
-  }, [copied])
 
   useEffect(() => {
     if (!justMade) return
@@ -235,12 +200,12 @@ export default function CouponDesk() {
   function openForm() {
     setForm({ ...FRESH, expiresAt: plusDays(180) })
     setFormError(null)
-    focusNext.current = 'cp-new-h'
+    focusNext.current = ['cp-new-h']
     setMaking(true)
   }
   function closeForm() {
     leave.close('new', () => {
-      focusNext.current = 'cp-new-btn'
+      focusNext.current = ['cp-new-btn']
       setMaking(false)
     })
   }
@@ -266,8 +231,10 @@ export default function CouponDesk() {
       const data = await res.json()
       if (!res.ok) { setFormError(data.error ?? 'That did not work.'); return }
       setNote({ text: `Created ${data.coupon.code}: ${describeCoupon(data.coupon)}.` })
+      focusNext.current = ['cp-new-btn']
       setMaking(false)
       await load()
+      focusNext.current = [`coupon-${data.coupon.id}-h`, 'cp-new-btn']
       setJustMade(data.coupon.id)
     } catch {
       setFormError('That did not work. Please try again.')
@@ -277,20 +244,25 @@ export default function CouponDesk() {
   }
 
   async function act(id: string, action: 'pause' | 'resume' | 'void') {
-    if (busy) return
-    setBusy(id + action)
+    if (busy[id]) return
+    start(id, action)
     setNote(null)
     try {
       const res = await fetch('/api/admin/coupons', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, action }) })
       const data = await res.json()
       if (!res.ok) { setNote({ text: data.error ?? 'That did not work.', bad: true }); return }
       setNote({ text: action === 'void' ? 'Coupon voided. It can no longer be used.' : action === 'pause' ? 'Coupon paused. Resume it any time.' : 'Coupon is live again.' })
-      setConfirmVoid(null)
+      // The button pressed is replaced (Pause by Resume, the box by nothing): focus lands on the card,
+      // or on the page heading if the filter no longer shows it; never if the owner has moved on meanwhile.
+      const back = [`coupon-${id}-h`, 'cp-h1']
+      if (focusIsWithin(`coupon-${id}`)) focusNext.current = back
+      setConfirmVoid((v) => (v === id ? null : v))
       await load()
+      if (focusIsWithin(`coupon-${id}`)) focusNext.current = back
     } catch {
       setNote({ text: 'That did not work. Please try again.', bad: true })
     } finally {
-      setBusy(null)
+      end(id)
     }
   }
 
@@ -302,69 +274,54 @@ export default function CouponDesk() {
       minTotal: c.min_total == null ? '' : String(Number(c.min_total)), expiresAt: c.expires_at ? c.expires_at.slice(0, 10) : '',
       email: c.email ?? '', note: c.note ?? '',
     })
-    focusNext.current = `edit-${c.id}-h`
+    focusNext.current = [`edit-${c.id}-h`]
   }
   function stopEdit(id: string) {
     leave.close(`edit-${id}`, () => {
-      focusNext.current = `edit-btn-${id}`
+      focusNext.current = [`edit-btn-${id}`]
       setEditing(null); setDraft(null); setEditError(null)
     })
   }
 
   async function saveEdit(id: string) {
-    if (!draft || saving) return
-    setSaving(true); setEditError(null)
+    if (!draft || saving === id) return
+    setSaving(id); setEditError(null)
     try {
       const res = await fetch('/api/admin/coupons', {
         method: 'PATCH', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id, action: 'update', kind: draft.kind, value: Number(draft.value), appliesTo: draft.appliesTo, maxUses: draft.maxUses.trim() ? Number(draft.maxUses) : null, usesPerEmail: draft.usesPerEmail.trim() ? Number(draft.usesPerEmail) : null, minTotal: draft.minTotal.trim() || null, expiresAt: draft.expiresAt ? `${draft.expiresAt}T23:59:59-05:00` : null, email: draft.email.trim() || undefined, note: draft.note.trim() || undefined }),
       })
       const data = await res.json()
-      if (!res.ok) { setEditError(data.error ?? 'That did not work.'); return }
+      if (!res.ok) { setEditError({ id, text: data.error ?? 'That did not work.' }); return }
       setNote({ text: `Saved ${data.coupon.code}: ${describeCoupon(data.coupon)}.` })
-      setEditing(null); setDraft(null)
+      const back = [`edit-btn-${id}`, `coupon-${id}-h`, 'cp-h1']
+      if (focusIsWithin(`coupon-${id}`)) focusNext.current = back
+      // Close this card's form only; another card's form opened meanwhile stays.
+      if (editingNow.current === id) { setEditing(null); setDraft(null) }
       await load()
+      if (focusIsWithin(`coupon-${id}`)) focusNext.current = back
     } catch {
-      setEditError('That did not work. Please try again.')
+      setEditError({ id, text: 'That did not work. Please try again.' })
     } finally {
-      setSaving(false)
+      setSaving((v) => (v === id ? null : v))
     }
   }
 
   function askVoid(id: string) {
-    focusNext.current = `void-${id}-h`
+    focusNext.current = [`void-${id}-h`]
     setConfirmVoid(id)
   }
   function backFromVoid(id: string) {
     leave.close(`void-${id}`, () => {
-      focusNext.current = `void-btn-${id}`
+      focusNext.current = [`void-btn-${id}`]
       setConfirmVoid(null)
     })
-  }
-
-  async function copy(text: string) {
-    try {
-      await navigator.clipboard.writeText(text)
-      setCopied(text)
-      setNote({ text: `${text} copied.`, quiet: true })
-    } catch {
-      setNote({ text: 'Could not copy. Select the code and copy it by hand.', bad: true })
-    }
-  }
-
-  // A control reached by Tab while the note covers it is scrolled clear
-  // (scroll-padding keeps it above the note): nothing focused is ever hidden.
-  function keepClear(e: React.FocusEvent<HTMLElement>) {
-    const t = toastRef.current
-    if (!t || !t.classList.contains('adm-toast')) return
-    const a = e.target.getBoundingClientRect(), b = t.getBoundingClientRect()
-    if (a.bottom > b.top && a.top < b.bottom) e.target.scrollIntoView({ block: 'nearest' })
   }
 
   return (
     <div className="adm" onFocus={keepClear}>
       <div className="adm-cp-top">
-        <h1 className="adm-h1">Coupons</h1>
+        <h1 id="cp-h1" tabIndex={-1} className="adm-h1">Coupons</h1>
         {!making && <button id="cp-new-btn" type="button" className="adm-btn adm-btn--primary" onClick={openForm}>New coupon</button>}
       </div>
       <p className="adm-lead">
@@ -418,10 +375,8 @@ export default function CouponDesk() {
             <li key={c.id} id={`coupon-${c.id}`} className={justMade === c.id ? 'adm-card adm-cp is-new' : 'adm-card adm-cp'}>
               <div className="adm-card-in">
                 <div className="adm-cp-head">
-                  <h2 className="adm-cp-h">{c.code}</h2>
-                  <button type="button" className={copied === c.code ? 'adm-cp-copy is-done' : 'adm-cp-copy'} onClick={() => copy(c.code)} aria-label={`Copy ${c.code}`}>
-                    {copied === c.code ? <Check size={18} strokeWidth={2.5} aria-hidden /> : <Copy size={18} strokeWidth={2.25} aria-hidden />}
-                  </button>
+                  <h2 id={`coupon-${c.id}-h`} tabIndex={-1} className="adm-code">{c.code}</h2>
+                  <CopyButton text={c.code} report={setNote} />
                   <span className={`adm-badge ${STATE[s].cls}`}>{STATE[s].label}</span>
                   <span className="adm-cp-uses">
                     {c.max_uses == null ? `${c.uses} used` : `${c.uses} of ${c.max_uses} used`}
@@ -442,8 +397,8 @@ export default function CouponDesk() {
                     )}
                     {c.status !== 'void' && <button id={`edit-btn-${c.id}`} type="button" className="adm-btn adm-btn--sm" onClick={() => startEdit(c)}>Edit{code}</button>}
                     {/* Pausing only means something while the code can be used. */}
-                    {s === 'active' && <button type="button" className="adm-btn adm-btn--sm" aria-busy={busy === c.id + 'pause' || undefined} onClick={() => void act(c.id, 'pause')}>{busy === c.id + 'pause' ? 'Pausing…' : 'Pause'}{code}</button>}
-                    {c.status === 'paused' && <button type="button" className="adm-btn adm-btn--sm" aria-busy={busy === c.id + 'resume' || undefined} onClick={() => void act(c.id, 'resume')}>{busy === c.id + 'resume' ? 'Resuming…' : 'Resume'}{code}</button>}
+                    {s === 'active' && <button type="button" className="adm-btn adm-btn--sm" aria-busy={busy[c.id] === 'pause' || undefined} onClick={() => void act(c.id, 'pause')}>{busy[c.id] === 'pause' ? 'Pausing…' : 'Pause'}{code}</button>}
+                    {c.status === 'paused' && <button type="button" className="adm-btn adm-btn--sm" aria-busy={busy[c.id] === 'resume' || undefined} onClick={() => void act(c.id, 'resume')}>{busy[c.id] === 'resume' ? 'Resuming…' : 'Resume'}{code}</button>}
                     {c.status !== 'void' && <button id={`void-btn-${c.id}`} type="button" className="adm-btn adm-btn--sm adm-btn--danger" onClick={() => askVoid(c.id)}>Void{code}</button>}
                   </div>
                 )}
@@ -453,8 +408,8 @@ export default function CouponDesk() {
                     <h3 id={`void-${c.id}-h`} tabIndex={-1} className="adm-h4 adm-h4--ask">Void {c.code}?</h3>
                     <p className="adm-block">Nobody can use it after this. It cannot be undone.</p>
                     <div className="adm-actions">
-                      <button type="button" className="adm-btn adm-btn--bad" aria-disabled={busy === c.id + 'void' || undefined} aria-busy={busy === c.id + 'void' || undefined} onClick={() => void act(c.id, 'void')}>
-                        {busy === c.id + 'void' ? 'Voiding…' : 'Yes, void it'}
+                      <button type="button" className="adm-btn adm-btn--bad" aria-disabled={busy[c.id] === 'void' || undefined} aria-busy={busy[c.id] === 'void' || undefined} onClick={() => void act(c.id, 'void')}>
+                        {busy[c.id] === 'void' ? 'Voiding…' : 'Yes, void it'}
                       </button>
                       <button type="button" className="adm-btn" onClick={() => backFromVoid(c.id)}>Back</button>
                     </div>
@@ -468,9 +423,9 @@ export default function CouponDesk() {
                     <p className="adm-help adm-help--soft">The code and its uses so far stay as they are.</p>
                     <CouponFields id={`ed-${c.id}`} d={draft} set={(p) => setDraft((d) => (d ? { ...d, ...p } : d))} />
                     <p className="adm-cp-preview">This coupon will be: <strong>{previewOf(draft)}</strong>.</p>
-                    {editError && <p role="alert" className="adm-error">{editError}</p>}
+                    {editError?.id === c.id && <p role="alert" className="adm-error">{editError.text}</p>}
                     <div className="adm-actions">
-                      <button type="submit" className="adm-btn adm-btn--primary" aria-disabled={saving || undefined} aria-busy={saving || undefined}>{saving ? 'Saving…' : 'Save changes'}</button>
+                      <button type="submit" className="adm-btn adm-btn--primary" aria-disabled={saving === c.id || undefined} aria-busy={saving === c.id || undefined}>{saving === c.id ? 'Saving…' : 'Save changes'}</button>
                       <button type="button" className="adm-btn" onClick={() => stopEdit(c.id)}>Cancel</button>
                     </div>
                   </form>
@@ -494,10 +449,7 @@ export default function CouponDesk() {
         })}
       </ol>
 
-      <p role="status" ref={toastRef} onAnimationEnd={noteEnd}
-        className={!note || note.quiet ? 'visually-hidden' : `adm-note adm-toast ${note.bad ? 'adm-note--bad' : 'adm-note--ok'} ${noteClosing === 'note' ? 'adm-leave' : 'adm-enter'}`}>
-        {note?.text ?? ''}
-      </p>
+      {toast}
     </div>
   )
 }

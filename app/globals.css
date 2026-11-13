@@ -4097,14 +4097,15 @@ html:has(.adm-toast) { scroll-padding-bottom: 96px; }
 .adm-cp-search .adm-search { flex: 1 1 18rem; }
 .adm-cp-list { margin-top: var(--adm-gap); }
 .adm-cp-head { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
-/* The code is the card's heading; copying it is its own 44px button beside it. */
-.adm-cp-h { margin: 0; font-size: 1.125rem; font-weight: 800; letter-spacing: 0.06em; line-height: 1.3; color: var(--adm-ink); overflow-wrap: anywhere; }
-.adm-cp-copy {
+/* A code (coupon or gift card) is its card's heading; copying it is its own
+   44px button beside it (components/admin/AdminUi CopyButton). */
+.adm-code { margin: 0; font-size: 1.125rem; font-weight: 800; letter-spacing: 0.06em; line-height: 1.3; color: var(--adm-ink); overflow-wrap: anywhere; }
+.adm-copy {
   display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; margin-left: -8px;
   border: none; border-radius: var(--r-md); background: none; color: var(--adm-faint); cursor: pointer;
 }
-.adm-cp-copy:hover { background: var(--adm-panel); color: var(--adm-ink); }
-.adm-cp-copy.is-done, .adm-cp-copy.is-done:hover { color: var(--adm-ok); }
+.adm-copy:hover { background: var(--adm-panel); color: var(--adm-ink); }
+.adm-copy.is-done, .adm-copy.is-done:hover { color: var(--adm-ok); }
 .adm-cp-uses { margin-left: auto; font-size: var(--adm-fs-body); font-weight: 700; font-variant-numeric: tabular-nums; }
 .adm-cp-given { font-weight: 500; color: var(--adm-soft); }
 .adm-cp-rule { font-size: var(--adm-fs-ui); line-height: 1.5; color: var(--adm-ink); }
@@ -4118,6 +4119,31 @@ html:has(.adm-toast) { scroll-padding-bottom: 96px; }
 /* A coupon just made glows once, then settles. */
 @keyframes admNew { from { background-color: var(--adm-warn-bg); border-color: #C9A94E; } to { background-color: #fff; border-color: var(--adm-hairline); } }
 .adm-cp.is-new { animation: admNew 2.4s var(--ease-out) both; }
+
+/* ── Admin: gift cards (components/admin/GiftCardDesk.tsx) ──
+   Search first; each card leads with its code, its state and what is left,
+   then the facts, then only the actions its state allows. A card that was
+   never delivered says so in a badge and puts sending it first. */
+.adm-gc-search { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin-top: var(--adm-group); }
+.adm-gc-search .adm-search { flex: 1 1 18rem; }
+.adm-gc-count { margin-top: var(--adm-group); font-size: var(--adm-fs-body); line-height: 1.5; color: var(--adm-soft); overflow-wrap: anywhere; }
+.adm-gc-count--warn { padding: 12px 16px; border-radius: var(--r-md); background: var(--adm-warn-bg); color: var(--adm-ink); }
+.adm-gc-count--warn strong { color: var(--adm-warn); font-weight: 700; }
+.adm-gc .adm-card-in { display: grid; gap: var(--adm-gap); }
+.adm-gc-head { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
+.adm-gc-bal { margin-left: auto; font-size: var(--adm-fs-body); color: var(--adm-soft); font-variant-numeric: tabular-nums; }
+.adm-gc-bal strong { font-size: var(--adm-fs-ui); font-weight: 800; color: var(--adm-ink); }
+/* Facts in two columns where they fit: To and From, Paid and Delivered. */
+.adm-gc-facts { grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr)); gap: 4px var(--adm-group); }
+.adm-gc-soft { color: var(--adm-soft); }
+.adm-gc-warn { color: var(--adm-warn); font-weight: 700; }
+/* The buyer's own words, set apart as a quotation. */
+.adm-gc-msg { margin: 0; padding: 4px 0 4px 16px; border-left: 3px solid var(--adm-edge); }
+.adm-gc-msg blockquote { margin: 0; font-size: var(--adm-fs-body); line-height: 1.5; font-style: italic; color: var(--adm-ink); overflow-wrap: anywhere; }
+.adm-gc-msg figcaption { margin-top: 4px; font-size: var(--adm-fs-meta); color: var(--adm-soft); }
+.adm-gc-actions { padding-top: var(--adm-gap); border-top: 1px solid var(--adm-hairline); }
+.adm-gc-fix { display: grid; gap: var(--adm-gap); padding: 16px; border: 1px solid var(--adm-hairline); border-radius: var(--r-md); background: var(--adm-panel); }
+.adm-gc-fix .adm-help { margin-top: 4px; }
 
 /* State changes arrive instead of popping in: transform and opacity only. */
 @keyframes admEnter { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }

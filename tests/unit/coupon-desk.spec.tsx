@@ -39,7 +39,7 @@ describe('the desk before its list arrives', () => {
   test('says it is loading instead of showing an empty desk', () => {
     const html = renderToStaticMarkup(<CouponDesk />)
     expect(html).toContain('Loading coupons…')
-    expect(html).toContain('<h1 class="adm-h1">Coupons</h1>')
+    expect(html).toMatch(/<h1 [^>]*class="adm-h1"[^>]*>Coupons<\/h1>/)
     expect(html).not.toContain('No coupons yet')
     expect(html).not.toContain('adm-cp-head')
   })

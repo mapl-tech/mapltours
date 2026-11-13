@@ -33,16 +33,37 @@ async function requireAdmin() {
   return { svc, user }
 }
 
-/** Look a card up by code, recipient email, or buyer email. */
+/**
+ * Look a card up by code, recipient email, or buyer email.
+ *
+ * With no query and `attention=1`: the paid cards whose email never went out
+ * (live, not expired, no delivery, paid over five minutes ago so a delivery
+ * still under way is not counted), newest first. Support should hear about
+ * those before the guest writes in.
+ */
 export async function GET(req: Request) {
   const gate = await requireAdmin()
   if (gate.error) return gate.error
   const svc = gate.svc!
 
-  const q = (new URL(req.url).searchParams.get('q') ?? '').trim()
-  if (!q) return NextResponse.json({ cards: [] })
-
   const COLS = 'id, code, initial_amount, balance, currency, status, purchaser_name, purchaser_email, recipient_name, recipient_email, message, created_at, paid_at, delivered_at, expires_at, stripe_payment_id'
+  const url = new URL(req.url)
+  const q = (url.searchParams.get('q') ?? '').trim()
+  if (!q) {
+    if (url.searchParams.get('attention') !== '1') return NextResponse.json({ cards: [] })
+    const now = Date.now()
+    const { data, error } = await svc
+      .from('gift_cards')
+      .select(COLS)
+      .eq('status', 'active')
+      .is('delivered_at', null)
+      .lt('paid_at', new Date(now - 5 * 60_000).toISOString())
+      .or(`expires_at.is.null,expires_at.gt.${new Date(now).toISOString()}`)
+      .order('paid_at', { ascending: false })
+      .limit(20)
+    if (error) return NextResponse.json({ error: 'Could not check deliveries.' }, { status: 500 })
+    return NextResponse.json({ cards: data ?? [] })
+  }
 
   // Try an exact code first — that is what support will usually be handed.
   const code = normalizeGiftCode(q)
@@ -78,7 +99,7 @@ export async function GET(req: Request) {
  *   resend          re-deliver the card (clears the delivery claim first)
  *   correct_email   fix a mistyped recipient address, then re-deliver
  *   void            kill a card, e.g. after a chargeback on the purchase
- *   reactivate      undo a void
+ *   reactivate      undo a void, only for a card that was paid for
  */
 export async function POST(req: Request) {
   const gate = await requireAdmin()
@@ -97,7 +118,7 @@ export async function POST(req: Request) {
 
   const { data: card } = await svc
     .from('gift_cards')
-    .select('id, status, balance, recipient_email')
+    .select('id, status, balance, recipient_email, paid_at')
     .eq('id', id)
     .maybeSingle()
   if (!card) return NextResponse.json({ error: 'No such gift card.' }, { status: 404 })
@@ -140,11 +161,19 @@ export async function POST(req: Request) {
     }
 
     case 'reactivate': {
+      // A card is created at checkout holding its full balance and only turns
+      // active when its payment succeeds. One voided before it was ever paid
+      // must stay dead: reviving it would make that balance spendable for
+      // nothing. The conditions repeat in the update so a race cannot slip by.
+      if (!card.paid_at) {
+        return NextResponse.json({ error: 'This card was never paid for, so it cannot be reactivated.' }, { status: 409 })
+      }
       const { data: revived } = await svc
         .from('gift_cards')
         .update({ status: Number(card.balance) > 0 ? 'active' : 'depleted' })
         .eq('id', id)
         .eq('status', 'void')
+        .not('paid_at', 'is', null)
         .select('id')
         .maybeSingle()
       return NextResponse.json({ ok: true, changed: !!revived })
