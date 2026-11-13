@@ -346,14 +346,19 @@ export function viewOf(bookings: Row[], o: { status: Status; when: When; kind: K
 
 const LIST_NAME = { upcoming: 'Upcoming trips', past: 'Past trips', recent: 'Recently paid', abandoned: 'Abandoned checkouts' } as const
 
-export default function BookingsDashboard({ bookings }: { bookings: Row[] }) {
-  const [status, setStatus] = useState<Status>('paid')
-  const [when, setWhen] = useState<When>('upcoming')
+export default function BookingsDashboard({ bookings, focusId = null }: {
+  bookings: Row[]
+  /** A booking to open on arrival (/admin/bookings?booking=<id>, as the coupon desk links): found by its reference, whatever its date. */
+  focusId?: string | null
+}) {
+  const focus = focusId ? bookings.find((b) => b.id === focusId) ?? null : null
+  const [status, setStatus] = useState<Status>(focus?.status === 'pending' ? 'abandoned' : 'paid')
+  const [when, setWhen] = useState<When>(focus ? 'recent' : 'upcoming')
   const [kind, setKind] = useState<Kind>('all')
-  const [query, setQuery] = useState('')
+  const [query, setQuery] = useState(focus ? bookingRef(focus.id) : '')
   const [limit, setLimit] = useState(PAGE)
   // Accordion: exactly one booking card open at a time.
-  const [openId, setOpenId] = useState<string | null>(null)
+  const [openId, setOpenId] = useState<string | null>(focus?.id ?? null)
   const searchId = useId()
   const today = jamaicaToday()
   const soonEnd = shiftDay(today, 14)

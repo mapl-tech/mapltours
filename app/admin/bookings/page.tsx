@@ -27,7 +27,7 @@ function Shell({ children }: { children: React.ReactNode }) {
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Row = any
 
-export default async function AdminBookingsPage() {
+export default async function AdminBookingsPage({ searchParams }: { searchParams: { booking?: string | string[] } }) {
   const session = createClient()
   const { data: { user } } = await session.auth.getUser()
   if (!user) {
@@ -40,6 +40,10 @@ export default async function AdminBookingsPage() {
       </Shell>
     )
   }
+
+  // /admin/bookings?booking=<id> opens that booking; only a well-formed id is used.
+  const wanted = typeof searchParams.booking === 'string' ? searchParams.booking : null
+  const focusId = wanted && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(wanted) ? wanted : null
 
   const svc = createServiceClient()
   const { data: adminRow } = await svc.from('admins').select('user_id').eq('user_id', user.id).maybeSingle()
@@ -60,7 +64,7 @@ export default async function AdminBookingsPage() {
 
   return (
     <Shell>
-      <BookingsDashboard bookings={(bookings ?? []) as Row[]} />
+      <BookingsDashboard bookings={(bookings ?? []) as Row[]} focusId={focusId} />
     </Shell>
   )
 }

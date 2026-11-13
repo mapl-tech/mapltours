@@ -159,6 +159,16 @@ export function applyCoupon(row: CouponRow | null | undefined, ctx: CouponContex
   return { applicable: true, discountCents, chargeCents: ctx.baseCents - discountCents }
 }
 
+/**
+ * Dollars as people read them: cents only when there are some ($20, $12.50,
+ * $1,000). Amounts are stored to the cent (numeric(10,2)), so rounding to
+ * whole dollars would misstate a $12.50 coupon as "$13 off".
+ */
+export function couponUsd(n: number): string {
+  const cents = Math.round(Number(n) * 100)
+  return '$' + (cents / 100).toLocaleString('en-US', { minimumFractionDigits: cents % 100 === 0 ? 0 : 2, maximumFractionDigits: 2 })
+}
+
 /** What the guest reads. Plain, specific, never blaming. */
 export function couponBlockedMessage(reason: CouponBlockedReason, row?: Pick<CouponRow, 'min_total' | 'email'> | null): string {
   switch (reason) {
@@ -169,7 +179,7 @@ export function couponBlockedMessage(reason: CouponBlockedReason, row?: Pick<Cou
     case 'exhausted': return 'That code has already been used.'
     case 'wrong_email': return 'That code was sent to a different email address. Enter the address it was sent to and try again.'
     case 'email_limit': return 'That code has already been used with this email address.'
-    case 'min_total': return `That code needs a booking of at least $${Number(row?.min_total ?? 0).toFixed(0)}.`
+    case 'min_total': return `That code needs a booking of at least ${couponUsd(Number(row?.min_total ?? 0))}.`
     case 'not_tours': return 'That code works on tours, not on airport rides.'
     case 'not_rides': return 'That code works on airport rides, not on tours.'
     case 'too_small': return 'That code cannot be applied to this total.'
@@ -179,13 +189,13 @@ export function couponBlockedMessage(reason: CouponBlockedReason, row?: Pick<Cou
 
 /** A short rule in plain words, for the admin and the receipt. */
 export function describeCoupon(row: Pick<CouponRow, 'kind' | 'value' | 'applies_to' | 'max_uses' | 'email' | 'min_total' | 'expires_at'> & { uses_per_email?: number | null }): string {
-  const off = row.kind === 'percent' ? `${Number(row.value)}% off` : `$${Number(row.value).toFixed(0)} off`
+  const off = row.kind === 'percent' ? `${Number(row.value)}% off` : `${couponUsd(Number(row.value))} off`
   const what = row.applies_to === 'both' ? 'tours and rides' : row.applies_to === 'transfer' ? 'airport rides' : 'tours'
   const uses = row.max_uses == null ? 'unlimited uses' : Number(row.max_uses) === 1 ? 'one use' : `${row.max_uses} uses`
   const parts = [`${off} ${what}`, uses]
   if (row.uses_per_email != null) parts.push(Number(row.uses_per_email) === 1 ? 'one per guest' : `${row.uses_per_email} per guest`)
   if (row.email) parts.push(`for ${row.email}`)
-  if (row.min_total) parts.push(`on $${Number(row.min_total).toFixed(0)} or more`)
+  if (row.min_total) parts.push(`on ${couponUsd(Number(row.min_total))} or more`)
   if (row.expires_at) parts.push(`until ${new Date(row.expires_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'America/Jamaica' })}`)
   return parts.join(', ')
 }

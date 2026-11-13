@@ -3628,6 +3628,11 @@ a.pf-stat:hover { background: var(--surface); }
 .adm-note--ok { background: var(--adm-ok-bg); color: var(--adm-ok); font-weight: 600; }
 .adm-note--warn { background: var(--adm-warn-bg); color: var(--adm-warn); }
 .adm-note--bad { background: var(--adm-bad-bg); color: var(--adm-bad); font-weight: 600; }
+/* A result that must not move the list: it sits at the foot of the list and
+   stays in view at the bottom of the screen while the list scrolls. */
+.adm-toast { position: sticky; bottom: 16px; z-index: 3; margin-top: var(--adm-gap); box-shadow: 0 8px 24px rgba(20, 20, 20, 0.14); pointer-events: none; }
+/* Clicks pass through it, and a control reached by Tab is scrolled clear of it (WCAG 2.4.11). */
+html:has(.adm-toast) { scroll-padding-bottom: 96px; }
 .adm-banner { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--adm-gap); }
 
 .adm-section { margin-top: 32px; }
@@ -3808,6 +3813,9 @@ a.pf-stat:hover { background: var(--surface); }
 .adm-btn--ok:hover:not(:disabled):not([aria-disabled="true"]) { border-color: #0B5537; background: #0B5537; }
 .adm-btn--bad { border-color: var(--adm-bad); background: var(--adm-bad); color: #fff; }
 .adm-btn--bad:hover:not(:disabled):not([aria-disabled="true"]) { border-color: #8F1E18; background: #8F1E18; }
+/* The step before a destructive confirm: outlined in the warning colour (6.5:1 on white). */
+.adm-btn--danger { border-color: var(--adm-bad); color: var(--adm-bad); }
+.adm-btn--danger:hover:not(:disabled):not([aria-disabled="true"]) { border-color: var(--adm-bad); background: var(--adm-bad-bg); }
 .adm-textarea { height: auto; min-height: 88px; padding: 10px 12px; line-height: 1.5; resize: vertical; }
 /* A guest's email and phone are the way to reach them: full 44px targets,
    side by side while they fit, so the pair reads as one line of contact. */
@@ -3843,6 +3851,11 @@ a.pf-stat:hover { background: var(--surface); }
 .adm-seg-text { display: inline-flex; align-items: center; gap: 8px; }
 .adm-seg-count { padding: 2px 8px; border-radius: 9999px; background: var(--surface); color: var(--adm-soft); font-size: 0.75rem; font-weight: 700; font-variant-numeric: tabular-nums; }
 .adm-seg-btn.is-on .adm-seg-count { background: rgba(255, 255, 255, 0.2); color: #fff; }
+/* A long row of choices sits two to a row on a phone, not in a lopsided wrap. */
+@media (max-width: 30rem) {
+  .adm-seg--grid { display: grid; grid-template-columns: 1fr 1fr; border-radius: 26px; }
+  .adm-seg--grid .adm-seg-btn { justify-content: center; }
+}
 .adm-empty { margin-top: var(--adm-gap); padding: 24px; border: 1px solid var(--adm-hairline); border-radius: var(--r-lg); background: #fff; color: var(--adm-soft); font-size: var(--adm-fs-ui); text-align: center; }
 .adm-more { margin-top: var(--adm-gap); }
 .adm-callout { padding: 12px 16px; border-radius: var(--r-md); }
@@ -3984,11 +3997,6 @@ a.pf-stat:hover { background: var(--surface); }
 .adm-cf-delta { display: inline-flex; align-items: center; gap: 4px; margin-top: 8px; font-size: var(--adm-fs-ui); font-weight: 700; color: var(--adm-soft); font-variant-numeric: tabular-nums; }
 .adm-cf-delta--up { color: var(--adm-ok); }
 .adm-cf-delta--down { color: var(--adm-bad); }
-/* On a phone the four periods sit as a tidy 2 by 2 grid, not a lopsided wrap. */
-@media (max-width: 30rem) {
-  .adm-cf-filter .adm-seg { display: grid; grid-template-columns: 1fr 1fr; border-radius: 26px; }
-  .adm-cf-filter .adm-seg-btn { justify-content: center; }
-}
 /* A swatch beside a label carries the series; the label stays ink. */
 .adm-cf-sw { display: inline-block; flex-shrink: 0; width: 10px; height: 10px; margin-right: 8px; border-radius: 3px; }
 .adm-cf-sw--net { background: var(--adm-viz-net); }
@@ -4063,6 +4071,54 @@ a.pf-stat:hover { background: var(--surface); }
 .adm-cf-method { margin-top: var(--adm-section); }
 .adm-cf-method-list { display: grid; gap: 8px; max-width: 46rem; margin: 4px 0 0; padding-left: 1.25rem; font-size: var(--adm-fs-body); line-height: 1.55; color: var(--adm-soft); }
 
+/* ── Admin: coupons (components/admin/CouponDesk.tsx) ──
+   The list leads; a new code opens on request in one card whose heading
+   takes focus. Each coupon says its rule in words, and the only destructive
+   action asks once in the shared confirmation box. */
+.adm-cp-top { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--adm-gap); }
+.adm-cp-new { margin-top: var(--adm-group); }
+.adm-cp-new .adm-card-in, .adm-cp .adm-card-in { display: grid; gap: var(--adm-gap); }
+@container (min-width: 40rem) { .adm-cp-new .adm-card-in { padding: 24px; } }
+.adm-cp-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 14rem), 1fr)); gap: 16px var(--adm-group); align-items: start; }
+.adm-cp-field { min-width: 0; container-type: inline-size; }
+/* In a narrow field (the edit form inside a card, on a phone) a choice row
+   shares the width in equal parts instead of wrapping one choice onto a line
+   of its own. */
+@container (max-width: 16rem) {
+  .adm-cp-field .adm-seg { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; width: 100%; }
+  .adm-cp-field .adm-seg-btn { justify-content: center; padding: 0 8px; }
+}
+.adm-cp-field .adm-help { margin-top: 4px; }
+.adm-cp-code-input { text-transform: uppercase; letter-spacing: 0.04em; }
+/* The rule in words, as the guest's coupon will behave, before it is saved. */
+.adm-cp-preview { padding: 12px 16px; border-radius: var(--r-md); background: var(--adm-panel); font-size: var(--adm-fs-body); line-height: 1.5; color: var(--adm-soft); }
+.adm-cp-preview strong { color: var(--adm-ink); font-weight: 700; }
+.adm-cp-search { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
+.adm-cp-search .adm-search { flex: 1 1 18rem; }
+.adm-cp-list { margin-top: var(--adm-gap); }
+.adm-cp-head { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
+/* The code is the card's heading; copying it is its own 44px button beside it. */
+.adm-cp-h { margin: 0; font-size: 1.125rem; font-weight: 800; letter-spacing: 0.06em; line-height: 1.3; color: var(--adm-ink); overflow-wrap: anywhere; }
+.adm-cp-copy {
+  display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; margin-left: -8px;
+  border: none; border-radius: var(--r-md); background: none; color: var(--adm-faint); cursor: pointer;
+}
+.adm-cp-copy:hover { background: var(--adm-panel); color: var(--adm-ink); }
+.adm-cp-copy.is-done, .adm-cp-copy.is-done:hover { color: var(--adm-ok); }
+.adm-cp-uses { margin-left: auto; font-size: var(--adm-fs-body); font-weight: 700; font-variant-numeric: tabular-nums; }
+.adm-cp-given { font-weight: 500; color: var(--adm-soft); }
+.adm-cp-rule { font-size: var(--adm-fs-ui); line-height: 1.5; color: var(--adm-ink); }
+.adm-cp-actions { padding-top: var(--adm-gap); border-top: 1px solid var(--adm-hairline); }
+.adm-cp-edit { display: grid; gap: var(--adm-gap); padding: 16px; border: 1px solid var(--adm-hairline); border-radius: var(--r-md); background: var(--adm-panel); }
+.adm-cp-edit > .adm-help { margin-top: -8px; }
+.adm-cp-usage { list-style: none; padding: 0; border-top: 1px solid var(--adm-hairline); }
+.adm-cp-usage li { display: flex; flex-wrap: wrap; align-items: center; gap: 0 16px; min-height: 44px; padding: 4px 0; border-bottom: 1px solid var(--adm-hairline); font-size: var(--adm-fs-body); color: var(--adm-soft); font-variant-numeric: tabular-nums; }
+.adm-cp-usage-v { font-weight: 700; color: var(--adm-ink); }
+.adm-cp-usage .adm-inline-link { display: inline-flex; align-items: center; min-height: 44px; }
+/* A coupon just made glows once, then settles. */
+@keyframes admNew { from { background-color: var(--adm-warn-bg); border-color: #C9A94E; } to { background-color: #fff; border-color: var(--adm-hairline); } }
+.adm-cp.is-new { animation: admNew 2.4s var(--ease-out) both; }
+
 /* State changes arrive instead of popping in: transform and opacity only. */
 @keyframes admEnter { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
 .adm-enter { animation: admEnter 0.18s var(--ease-out) both; }
@@ -4073,7 +4129,7 @@ a.pf-stat:hover { background: var(--surface); }
 @keyframes admFresh { from { opacity: 0.35; } to { opacity: 1; } }
 .adm-rows { animation: admFresh 0.2s var(--ease-out) both; }
 @media (prefers-reduced-motion: reduce) {
-  .adm-enter, .adm-leave, .adm-dot, .adm-rows, .adm-cf-tip { animation: none; }
+  .adm-enter, .adm-leave, .adm-dot, .adm-rows, .adm-cf-tip, .adm-cp.is-new { animation: none; }
   .adm-choice, .adm-input, .adm-chip, .adm-btn, .adm-seg-btn, .adm-bk-head, .adm-bk-chev, .adm-bk-panel, .adm-bk-clip { transition: none; }
   .adm-btn:active:not(:disabled):not([aria-disabled="true"]) { transform: none; }
 }

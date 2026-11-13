@@ -1,64 +1,155 @@
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useId, useRef, useState } from 'react'
 import Link from 'next/link'
+import { Check, Copy, Search } from 'lucide-react'
 import { describeCoupon, type CouponRow } from '@/lib/coupons'
 import Arrow from '@/components/ui/Arrow'
+import Segmented from '@/components/admin/Segmented'
+import { money, stamp } from '@/lib/admin-format'
 
 /**
  * Coupon desk.
  *
  * Three jobs, in the order they come up: see what is live and what has been
  * used; make a new code in under thirty seconds with no invalid state
- * possible; stop one. Every rule is spelled out in plain words on its row,
- * and the only destructive action (void) asks once, inline.
+ * possible; stop one. Every rule is spelled out in plain words on its row.
+ *
+ * The requests (GET, POST, PATCH to /api/admin/coupons) and their bodies are
+ * unchanged by the Nov 13 2026 redesign, which moved the desk onto the shared
+ * .adm system: native radio groups, one confirmation pattern (a box whose
+ * question takes focus, Back or Escape returning focus), forms whose heading
+ * takes focus as they open, and times on the owner's clock with the zone
+ * named. Styles: the .adm-cp block in app/globals.css.
  */
-
-const dm = 'var(--font-dm-sans)'
-const ink = 'var(--text-primary, #171614)'
-const soft = 'var(--text-secondary, #57534C)'
-const faint = '#6E6A62'
-const border = '1px solid var(--border, #E7E1D6)'
-const tnum = { fontVariantNumeric: 'tabular-nums' as const }
 
 interface Coupon extends CouponRow { source: string | null; note: string | null; created_at: string; updated_at: string }
 interface Redemption { coupon_id: string; booking_id: string | null; email: string | null; amount: number | string; created_at: string }
 
-type Filter = 'all' | 'active' | 'used' | 'paused' | 'expired' | 'void'
+type State = 'active' | 'used' | 'paused' | 'expired' | 'void'
+type Filter = 'all' | State
 
 interface EditDraft {
   kind: 'percent' | 'fixed'; value: string; appliesTo: 'tour' | 'transfer' | 'both'
   maxUses: string; usesPerEmail: string; minTotal: string; expiresAt: string; email: string; note: string
 }
 
-const BADGE: Record<string, { bg: string; fg: string; label: string }> = {
-  active:  { bg: '#E3F3EA', fg: '#0F7B4F', label: 'Live' },
-  used:    { bg: '#EEEDE9', fg: '#4E4C47', label: 'Used' },
-  paused:  { bg: '#FFF1D6', fg: '#8A5A00', label: 'Paused' },
-  expired: { bg: '#EEEDE9', fg: '#6E6A62', label: 'Expired' },
-  void:    { bg: '#FBE4E2', fg: '#B3261E', label: 'Void' },
+const STATE: Record<State, { cls: string; label: string }> = {
+  active: { cls: 'adm-badge--ok', label: 'Live' },
+  used: { cls: 'adm-badge--plain', label: 'Used up' },
+  paused: { cls: 'adm-badge--warn', label: 'Paused' },
+  expired: { cls: 'adm-badge--plain', label: 'Expired' },
+  void: { cls: 'adm-badge--bad', label: 'Void' },
 }
 
-function state(c: Coupon): keyof typeof BADGE {
+/** A coupon's state as a guest would meet it. Exported for tests/unit/coupon-desk.spec.tsx. */
+export function couponState(c: Pick<Coupon, 'status' | 'expires_at' | 'max_uses' | 'uses'>, now = Date.now()): State {
   if (c.status === 'void') return 'void'
   if (c.status === 'paused') return 'paused'
-  if (c.expires_at && Date.parse(c.expires_at) < Date.now()) return 'expired'
+  if (c.expires_at && Date.parse(c.expires_at) < now) return 'expired'
   if (c.max_uses != null && Number(c.uses) >= Number(c.max_uses)) return 'used'
   return 'active'
 }
 
-function when(iso: string | null) {
-  if (!iso) return '—'
-  try { return new Date(iso).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' }) } catch { return iso }
-}
-function money(n: number | string) { const v = Number(n); return `$${(Number.isFinite(v) ? v : 0).toFixed(2)}` }
-function plusDays(d: number) { const t = new Date(Date.now() + d * 86_400_000); return t.toISOString().slice(0, 10) }
+function plusDays(d: number) { return new Date(Date.now() + d * 86_400_000).toISOString().slice(0, 10) }
 
-const input: React.CSSProperties = {
-  height: 44, borderRadius: 10, padding: '0 12px', border: '1px solid rgba(0,0,0,0.16)', fontFamily: dm, fontSize: 16,
-  color: ink, background: '#fff', outline: 'none', boxSizing: 'border-box', width: '100%',
+const KINDS = [{ key: 'percent' as const, label: 'Percent' }, { key: 'fixed' as const, label: 'Dollars' }]
+const APPLIES = [{ key: 'both' as const, label: 'Both' }, { key: 'tour' as const, label: 'Tours' }, { key: 'transfer' as const, label: 'Rides' }]
+
+/** The fields both forms share, laid out the same way; `id` keeps each form's labels unique. */
+function CouponFields({ id, d, set, withCode }: {
+  id: string
+  d: EditDraft & { code?: string }
+  set: (patch: Partial<EditDraft & { code: string }>) => void
+  withCode?: boolean
+}) {
+  return (
+    <div className="adm-cp-grid">
+      <div className="adm-cp-field">
+        <Segmented label="Discount" showLabel value={d.kind} options={KINDS} onChange={(kind) => set({ kind })} />
+      </div>
+      <div className="adm-cp-field">
+        <label className="adm-label" htmlFor={`${id}-value`}>{d.kind === 'percent' ? 'Percent off' : 'Dollars off'}</label>
+        <input id={`${id}-value`} className="adm-input" inputMode="decimal" value={d.value} onChange={(e) => set({ value: e.target.value })} required />
+      </div>
+      <div className="adm-cp-field">
+        <Segmented label="Applies to" showLabel value={d.appliesTo} options={APPLIES} onChange={(appliesTo) => set({ appliesTo })} />
+      </div>
+      <div className="adm-cp-field">
+        <label className="adm-label" htmlFor={`${id}-uses`}>Uses in total</label>
+        <input id={`${id}-uses`} className="adm-input" inputMode="numeric" value={d.maxUses} onChange={(e) => set({ maxUses: e.target.value })} placeholder="Unlimited" aria-describedby={`${id}-uses-h`} />
+        <p id={`${id}-uses-h`} className="adm-help">Leave blank for no limit.</p>
+      </div>
+      <div className="adm-cp-field">
+        <label className="adm-label" htmlFor={`${id}-per`}>Uses per guest</label>
+        <input id={`${id}-per`} className="adm-input" inputMode="numeric" value={d.usesPerEmail} onChange={(e) => set({ usesPerEmail: e.target.value })} placeholder="No limit" aria-describedby={`${id}-per-h`} />
+        <p id={`${id}-per-h`} className="adm-help">Counted by email. Blank for no limit.</p>
+      </div>
+      <div className="adm-cp-field">
+        <label className="adm-label" htmlFor={`${id}-exp`}>Expires</label>
+        <input id={`${id}-exp`} className="adm-input" type="date" value={d.expiresAt} onChange={(e) => set({ expiresAt: e.target.value })} aria-describedby={`${id}-exp-h`} />
+        <p id={`${id}-exp-h`} className="adm-help">At the end of that day, Jamaica time. Blank for never.</p>
+      </div>
+      {withCode && (
+        <div className="adm-cp-field">
+          <label className="adm-label" htmlFor={`${id}-code`}>Code</label>
+          <input id={`${id}-code`} className="adm-input adm-cp-code-input" value={d.code ?? ''} onChange={(e) => set({ code: e.target.value })} placeholder="JAMAICA5" autoCapitalize="characters" aria-describedby={`${id}-code-h`} />
+          <p id={`${id}-code-h`} className="adm-help">Blank makes a random MAPL-XXXX-XXXX.</p>
+        </div>
+      )}
+      <div className="adm-cp-field">
+        <label className="adm-label" htmlFor={`${id}-email`}>Only for this email</label>
+        <input id={`${id}-email`} className="adm-input" type="email" inputMode="email" value={d.email} onChange={(e) => set({ email: e.target.value })} placeholder="Anyone" />
+      </div>
+      <div className="adm-cp-field">
+        <label className="adm-label" htmlFor={`${id}-min`}>Minimum booking, $</label>
+        <input id={`${id}-min`} className="adm-input" inputMode="decimal" value={d.minTotal} onChange={(e) => set({ minTotal: e.target.value })} placeholder="None" />
+      </div>
+      <div className="adm-cp-field">
+        <label className="adm-label" htmlFor={`${id}-note`}>Note</label>
+        <input id={`${id}-note`} className="adm-input" value={d.note} onChange={(e) => set({ note: e.target.value })} placeholder="Instagram giveaway, March" />
+      </div>
+    </div>
+  )
 }
-const label: React.CSSProperties = { display: 'block', fontSize: 12.5, fontWeight: 700, color: faint, marginBottom: 6, letterSpacing: '0.02em' }
+
+/** The rule in words, as the guest's coupon will behave. */
+function previewOf(d: EditDraft): string {
+  return describeCoupon({
+    kind: d.kind, value: Number(d.value) || 0, applies_to: d.appliesTo,
+    max_uses: d.maxUses.trim() ? Number(d.maxUses) : null, uses_per_email: d.usesPerEmail.trim() ? Number(d.usesPerEmail) : null,
+    email: d.email.trim() || null, min_total: d.minTotal.trim() ? Number(d.minTotal) : null,
+    expires_at: d.expiresAt ? `${d.expiresAt}T23:59:59-05:00` : null,
+  })
+}
+
+/** Close a panel after its leave animation; at once under reduced motion. The functions are stable across renders. */
+function useClosing() {
+  const [closing, setClosing] = useState<string | null>(null)
+  const pending = useRef<(() => void) | null>(null)
+  const close = useCallback((key: string, done: () => void) => {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) { done(); return }
+    pending.current = done
+    setClosing(key)
+  }, [])
+  /** Forget a close in progress (the panel is staying after all). */
+  const cancel = useCallback(() => { pending.current = null; setClosing(null) }, [])
+  const onEnd = useCallback((e: React.AnimationEvent<HTMLElement>) => {
+    if (e.target !== e.currentTarget || !pending.current) return
+    const done = pending.current
+    pending.current = null
+    setClosing(null)
+    done()
+  }, [])
+  return { closing, close, cancel, onEnd }
+}
+
+/** What a code has taken off so far, summed in cents from its uses. Exported for tests/unit/coupon-desk.spec.tsx. */
+export function givenOf(uses: Pick<Redemption, 'amount'>[]): number {
+  return uses.reduce((cents, r) => cents + Math.round(Number(r.amount || 0) * 100), 0) / 100
+}
+
+const FRESH: EditDraft & { code: string } = { kind: 'percent', value: '5', appliesTo: 'both', maxUses: '', usesPerEmail: '1', minTotal: '', expiresAt: '', email: '', note: '', code: '' }
 
 export default function CouponDesk() {
   const [coupons, setCoupons] = useState<Coupon[] | null>(null)
@@ -66,7 +157,14 @@ export default function CouponDesk() {
   const [q, setQ] = useState('')
   const [filter, setFilter] = useState<Filter>('all')
   const [loading, setLoading] = useState(true)
-  const [note, setNote] = useState<string | null>(null)
+  // The result of the last action. It sits at the foot of the list and stays
+  // in view at the bottom of the screen (position: sticky), so it never pushes
+  // the list down under the pointer. A quiet note is only spoken.
+  const [note, setNoteRaw] = useState<{ text: string; bad?: boolean; quiet?: boolean } | null>(null)
+  const { closing: noteClosing, close: closeNote, cancel: keepNote, onEnd: noteEnd } = useClosing()
+  const setNote = useCallback((n: { text: string; bad?: boolean; quiet?: boolean } | null) => { keepNote(); setNoteRaw(n) }, [keepNote])
+  const toastRef = useRef<HTMLParagraphElement>(null)
+  const [copied, setCopied] = useState<string | null>(null)
   const [busy, setBusy] = useState<string | null>(null)
   const [confirmVoid, setConfirmVoid] = useState<string | null>(null)
   const [open, setOpen] = useState<string | null>(null)
@@ -75,9 +173,41 @@ export default function CouponDesk() {
   const [draft, setDraft] = useState<EditDraft | null>(null)
   const [editError, setEditError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
+  // The new-coupon form opens on request, set up for the common case: a
+  // shared word code, 5% off tours and rides, once per guest, six months.
+  const [making, setMaking] = useState(false)
+  const [form, setForm] = useState({ ...FRESH, expiresAt: '' })
+  const [formError, setFormError] = useState<string | null>(null)
   const [creating, setCreating] = useState(false)
   // The card just created, so the eye lands on it after the list reloads.
   const [justMade, setJustMade] = useState<string | null>(null)
+  const searchId = useId()
+  const leave = useClosing()
+  const motion = (key: string) => (leave.closing === key ? 'adm-leave' : 'adm-enter')
+  // Where focus goes once React has committed the change that showed or hid
+  // it: a panel's heading as it opens, the button that opened it as it closes.
+  const focusNext = useRef<string | null>(null)
+  useEffect(() => {
+    if (!focusNext.current) return
+    const el = document.getElementById(focusNext.current)
+    focusNext.current = null
+    el?.focus()
+  })
+
+  // A success note clears itself (a problem stays until the next action): a
+  // shown one fades out, a spoken one (never drawn, so it has no fade) just
+  // goes. The copied tick goes back to the copy icon.
+  useEffect(() => {
+    if (!note || note.bad) return
+    const t = window.setTimeout(() => (note.quiet ? setNoteRaw(null) : closeNote('note', () => setNoteRaw(null))), note.quiet ? 2000 : 6000)
+    return () => window.clearTimeout(t)
+  }, [note, closeNote])
+  useEffect(() => {
+    if (!copied) return
+    const t = window.setTimeout(() => setCopied(null), 1600)
+    return () => window.clearTimeout(t)
+  }, [copied])
+
   useEffect(() => {
     if (!justMade) return
     document.getElementById(`coupon-${justMade}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' })
@@ -85,53 +215,58 @@ export default function CouponDesk() {
     return () => window.clearTimeout(t)
   }, [justMade, coupons])
 
-  // The form, set up for the common case: a shared word code, 5% off tours
-  // and rides, no overall limit, once per guest, six months.
-  const [kind, setKind] = useState<'percent' | 'fixed'>('percent')
-  const [value, setValue] = useState('5')
-  const [appliesTo, setAppliesTo] = useState<'tour' | 'transfer' | 'both'>('both')
-  const [code, setCode] = useState('')
-  const [email, setEmail] = useState('')
-  const [maxUses, setMaxUses] = useState('')
-  const [usesPerEmail, setUsesPerEmail] = useState('1')
-  const [minTotal, setMinTotal] = useState('')
-  const [expiresAt, setExpiresAt] = useState(plusDays(180))
-  const [formNote, setFormNote] = useState('')
-  const [formError, setFormError] = useState<string | null>(null)
-
   const load = useCallback(async () => {
     setLoading(true)
     try {
       const res = await fetch(`/api/admin/coupons?q=${encodeURIComponent(q)}`)
       const data = await res.json()
-      if (!res.ok) { setNote(data.error ?? 'Could not load coupons.'); return }
+      if (!res.ok) { setNote({ text: data.error ?? 'Could not load coupons.', bad: true }); return }
       setCoupons(data.coupons ?? [])
       setRedemptions(data.redemptions ?? [])
     } catch {
-      setNote('Could not load coupons. Please try again.')
+      setNote({ text: 'Could not load coupons. Please try again.', bad: true })
     } finally {
       setLoading(false)
     }
-  }, [q])
+  }, [q, setNote])
 
   useEffect(() => { void load() }, [load])
 
-  const shown = (coupons ?? []).filter((c) => filter === 'all' || state(c) === filter)
-  const counts = (coupons ?? []).reduce<Record<string, number>>((m, c) => { const s = state(c); m[s] = (m[s] ?? 0) + 1; return m }, {})
+  function openForm() {
+    setForm({ ...FRESH, expiresAt: plusDays(180) })
+    setFormError(null)
+    focusNext.current = 'cp-new-h'
+    setMaking(true)
+  }
+  function closeForm() {
+    leave.close('new', () => {
+      focusNext.current = 'cp-new-btn'
+      setMaking(false)
+    })
+  }
+
+  const all = coupons ?? []
+  const shown = all.filter((c) => filter === 'all' || couponState(c) === filter)
+  const counts = all.reduce<Record<string, number>>((m, c) => { const s = couponState(c); m[s] = (m[s] ?? 0) + 1; return m }, {})
+  const filters = [
+    { key: 'all' as const, label: 'All', count: all.length },
+    ...(['active', 'used', 'paused', 'expired', 'void'] as const).map((s) => ({ key: s, label: STATE[s].label, count: counts[s] ?? 0 })),
+  ]
 
   async function create(e: React.FormEvent) {
     e.preventDefault()
+    if (creating) return
     setFormError(null)
     setCreating(true)
     try {
       const res = await fetch('/api/admin/coupons', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ kind, value: Number(value), appliesTo, code: code.trim() || undefined, email: email.trim() || undefined, maxUses: maxUses.trim() ? Number(maxUses) : null, usesPerEmail: usesPerEmail.trim() ? Number(usesPerEmail) : null, minTotal: minTotal.trim() || undefined, expiresAt: expiresAt ? `${expiresAt}T23:59:59-05:00` : undefined, note: formNote.trim() || undefined }),
+        body: JSON.stringify({ kind: form.kind, value: Number(form.value), appliesTo: form.appliesTo, code: form.code.trim() || undefined, email: form.email.trim() || undefined, maxUses: form.maxUses.trim() ? Number(form.maxUses) : null, usesPerEmail: form.usesPerEmail.trim() ? Number(form.usesPerEmail) : null, minTotal: form.minTotal.trim() || undefined, expiresAt: form.expiresAt ? `${form.expiresAt}T23:59:59-05:00` : undefined, note: form.note.trim() || undefined }),
       })
       const data = await res.json()
       if (!res.ok) { setFormError(data.error ?? 'That did not work.'); return }
-      setNote(`Created ${data.coupon.code}: ${describeCoupon(data.coupon)}.`)
-      setCode(''); setEmail(''); setFormNote('')
+      setNote({ text: `Created ${data.coupon.code}: ${describeCoupon(data.coupon)}.` })
+      setMaking(false)
       await load()
       setJustMade(data.coupon.id)
     } catch {
@@ -142,17 +277,18 @@ export default function CouponDesk() {
   }
 
   async function act(id: string, action: 'pause' | 'resume' | 'void') {
+    if (busy) return
     setBusy(id + action)
     setNote(null)
     try {
       const res = await fetch('/api/admin/coupons', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, action }) })
       const data = await res.json()
-      if (!res.ok) { setNote(data.error ?? 'That did not work.'); return }
-      setNote(action === 'void' ? 'Coupon voided. It can no longer be used.' : action === 'pause' ? 'Coupon paused. Resume it any time.' : 'Coupon is live again.')
+      if (!res.ok) { setNote({ text: data.error ?? 'That did not work.', bad: true }); return }
+      setNote({ text: action === 'void' ? 'Coupon voided. It can no longer be used.' : action === 'pause' ? 'Coupon paused. Resume it any time.' : 'Coupon is live again.' })
       setConfirmVoid(null)
       await load()
     } catch {
-      setNote('That did not work. Please try again.')
+      setNote({ text: 'That did not work. Please try again.', bad: true })
     } finally {
       setBusy(null)
     }
@@ -166,10 +302,17 @@ export default function CouponDesk() {
       minTotal: c.min_total == null ? '' : String(Number(c.min_total)), expiresAt: c.expires_at ? c.expires_at.slice(0, 10) : '',
       email: c.email ?? '', note: c.note ?? '',
     })
+    focusNext.current = `edit-${c.id}-h`
+  }
+  function stopEdit(id: string) {
+    leave.close(`edit-${id}`, () => {
+      focusNext.current = `edit-btn-${id}`
+      setEditing(null); setDraft(null); setEditError(null)
+    })
   }
 
   async function saveEdit(id: string) {
-    if (!draft) return
+    if (!draft || saving) return
     setSaving(true); setEditError(null)
     try {
       const res = await fetch('/api/admin/coupons', {
@@ -178,7 +321,7 @@ export default function CouponDesk() {
       })
       const data = await res.json()
       if (!res.ok) { setEditError(data.error ?? 'That did not work.'); return }
-      setNote(`Saved ${data.coupon.code}: ${describeCoupon(data.coupon)}.`)
+      setNote({ text: `Saved ${data.coupon.code}: ${describeCoupon(data.coupon)}.` })
       setEditing(null); setDraft(null)
       await load()
     } catch {
@@ -188,244 +331,173 @@ export default function CouponDesk() {
     }
   }
 
-  async function copy(text: string) {
-    try { await navigator.clipboard.writeText(text); setNote(`${text} copied.`) } catch { setNote('Could not copy. Select the code and copy it by hand.') }
+  function askVoid(id: string) {
+    focusNext.current = `void-${id}-h`
+    setConfirmVoid(id)
+  }
+  function backFromVoid(id: string) {
+    leave.close(`void-${id}`, () => {
+      focusNext.current = `void-btn-${id}`
+      setConfirmVoid(null)
+    })
   }
 
-  const preview = describeCoupon({ kind, value: Number(value) || 0, applies_to: appliesTo, max_uses: maxUses.trim() ? Number(maxUses) : null, uses_per_email: usesPerEmail.trim() ? Number(usesPerEmail) : null, email: email.trim() || null, min_total: minTotal.trim() ? Number(minTotal) : null, expires_at: expiresAt ? `${expiresAt}T23:59:59Z` : null })
+  async function copy(text: string) {
+    try {
+      await navigator.clipboard.writeText(text)
+      setCopied(text)
+      setNote({ text: `${text} copied.`, quiet: true })
+    } catch {
+      setNote({ text: 'Could not copy. Select the code and copy it by hand.', bad: true })
+    }
+  }
+
+  // A control reached by Tab while the note covers it is scrolled clear
+  // (scroll-padding keeps it above the note): nothing focused is ever hidden.
+  function keepClear(e: React.FocusEvent<HTMLElement>) {
+    const t = toastRef.current
+    if (!t || !t.classList.contains('adm-toast')) return
+    const a = e.target.getBoundingClientRect(), b = t.getBoundingClientRect()
+    if (a.bottom > b.top && a.top < b.bottom) e.target.scrollIntoView({ block: 'nearest' })
+  }
 
   return (
-    <div>
-      <div style={{ display: 'flex', alignItems: 'baseline', gap: 16, flexWrap: 'wrap' }}>
-        <h1 style={{ fontFamily: dm, fontWeight: 800, fontSize: 26, letterSpacing: '-0.025em', margin: 0 }}>Coupons</h1>
+    <div className="adm" onFocus={keepClear}>
+      <div className="adm-cp-top">
+        <h1 className="adm-h1">Coupons</h1>
+        {!making && <button id="cp-new-btn" type="button" className="adm-btn adm-btn--primary" onClick={openForm}>New coupon</button>}
       </div>
-      <p style={{ marginTop: 8, color: soft, fontSize: 14, maxWidth: 680, lineHeight: 1.6 }}>
-        A coupon takes a percent or a fixed amount off a tour or an airport ride at checkout. It is not money: nothing is refunded on it,
-        and the booking&rsquo;s total is already net of it. <strong style={{ color: ink }}>Every discount comes out of MAPL Tours Jamaica&rsquo;s margin.</strong> The
-        driver or the tour operator is paid their full rate, and a code can never take more than the margin on that booking.
-        JAMAICA5 is the public code the bio page hands out; make anything else here.
+      <p className="adm-lead">
+        A coupon takes a percent or a fixed amount off a tour or an airport ride at checkout; it is not money, so nothing is
+        refunded on it. <strong className="adm-strong">Every discount comes out of MAPL Tours Jamaica&rsquo;s margin:</strong> the
+        driver or tour operator is paid their full rate, and a code never takes more than the margin on that booking. JAMAICA5 is
+        the public code the bio page hands out.
       </p>
 
-      {/* Stat tiles */}
-      <div style={{ marginTop: 22, display: 'grid', gap: 12, gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))' }}>
-        {(['active', 'used', 'paused', 'expired', 'void'] as const).map((s) => (
-          <button key={s} type="button" onClick={() => setFilter(filter === s ? 'all' : s)} aria-pressed={filter === s}
-            style={{ textAlign: 'left', background: filter === s ? '#F3EFE6' : '#fff', border: filter === s ? `1px solid ${ink}` : border, borderRadius: 14, padding: '14px 16px', cursor: 'pointer', fontFamily: dm, minHeight: 44 }}>
-            <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: faint }}>{BADGE[s].label}</div>
-            <div style={{ marginTop: 4, fontSize: 28, fontWeight: 800, letterSpacing: '-0.02em', ...tnum }}>{counts[s] ?? 0}</div>
-          </button>
-        ))}
-      </div>
-
-      {/* Create */}
-      <form onSubmit={create} style={{ marginTop: 26, background: '#fff', border, borderRadius: 14, padding: '18px 20px' }}>
-        <h2 style={{ margin: 0, fontFamily: dm, fontWeight: 700, fontSize: 18 }}>New coupon</h2>
-        <div style={{ marginTop: 14, display: 'grid', gap: 14, gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))' }}>
-          <div>
-            <span style={label}>Discount</span>
-            <div role="group" aria-label="Discount kind" style={{ display: 'flex', gap: 0, border: '1px solid rgba(0,0,0,0.16)', borderRadius: 10, overflow: 'hidden', height: 44 }}>
-              {(['percent', 'fixed'] as const).map((k) => (
-                <button key={k} type="button" aria-pressed={kind === k} onClick={() => setKind(k)}
-                  style={{ flex: 1, border: 'none', background: kind === k ? ink : '#fff', color: kind === k ? '#fff' : ink, fontFamily: dm, fontWeight: 600, fontSize: 14, cursor: 'pointer' }}>
-                  {k === 'percent' ? 'Percent' : 'Dollars'}
-                </button>
-              ))}
+      {making && (
+        <form onSubmit={create} className={`adm-card adm-cp-new ${motion('new')}`} aria-labelledby="cp-new-h" onAnimationEnd={leave.onEnd} onKeyDown={(e) => { if (e.key === 'Escape') { e.preventDefault(); closeForm() } }}>
+          <div className="adm-card-in">
+            <h2 id="cp-new-h" tabIndex={-1} className="adm-h3">New coupon</h2>
+            <CouponFields id="cp" d={form} set={(p) => setForm((f) => ({ ...f, ...p }))} withCode />
+            <p className="adm-cp-preview">This coupon will be: <strong>{previewOf(form)}</strong>. Taken from MAPL Tours Jamaica&rsquo;s margin, never from the driver or operator.</p>
+            {formError && <p role="alert" className="adm-error">{formError}</p>}
+            <div className="adm-actions">
+              <button type="submit" className="adm-btn adm-btn--primary" aria-disabled={creating || undefined} aria-busy={creating || undefined}>{creating ? 'Creating…' : 'Create coupon'}</button>
+              <button type="button" className="adm-btn" onClick={closeForm}>Cancel</button>
             </div>
           </div>
-          <div>
-            <label style={label} htmlFor="cp-value">{kind === 'percent' ? 'Percent off' : 'Dollars off'}</label>
-            <input id="cp-value" style={input} inputMode="decimal" value={value} onChange={(e) => setValue(e.target.value)} required />
-          </div>
-          <div>
-            <span style={label}>Applies to</span>
-            <div role="group" aria-label="Applies to" style={{ display: 'flex', gap: 0, border: '1px solid rgba(0,0,0,0.16)', borderRadius: 10, overflow: 'hidden', height: 44 }}>
-              {([['both', 'Both'], ['tour', 'Tours'], ['transfer', 'Rides']] as const).map(([k, l]) => (
-                <button key={k} type="button" aria-pressed={appliesTo === k} onClick={() => setAppliesTo(k)}
-                  style={{ flex: 1, border: 'none', background: appliesTo === k ? ink : '#fff', color: appliesTo === k ? '#fff' : ink, fontFamily: dm, fontWeight: 600, fontSize: 14, cursor: 'pointer' }}>
-                  {l}
-                </button>
-              ))}
-            </div>
-          </div>
-          <div>
-            <label style={label} htmlFor="cp-uses">Uses in total <span style={{ fontWeight: 500 }}>(blank = unlimited)</span></label>
-            <input id="cp-uses" style={input} inputMode="numeric" value={maxUses} onChange={(e) => setMaxUses(e.target.value)} placeholder="Unlimited" />
-          </div>
-          <div>
-            <label style={label} htmlFor="cp-per-guest">Uses per guest <span style={{ fontWeight: 500 }}>(blank = no limit)</span></label>
-            <input id="cp-per-guest" style={input} inputMode="numeric" value={usesPerEmail} onChange={(e) => setUsesPerEmail(e.target.value)} placeholder="No limit" />
-          </div>
-          <div>
-            <label style={label} htmlFor="cp-expires">Expires</label>
-            <input id="cp-expires" style={input} type="date" value={expiresAt} onChange={(e) => setExpiresAt(e.target.value)} />
-          </div>
-          <div>
-            <label style={label} htmlFor="cp-code">Code <span style={{ fontWeight: 500 }}>(blank = random MAPL-XXXX-XXXX)</span></label>
-            <input id="cp-code" style={{ ...input, textTransform: 'uppercase' }} value={code} onChange={(e) => setCode(e.target.value)} placeholder="JAMAICA5" autoCapitalize="characters" />
-          </div>
-          <div>
-            <label style={label} htmlFor="cp-email">Only for this email <span style={{ fontWeight: 500 }}>(optional)</span></label>
-            <input id="cp-email" style={input} type="email" inputMode="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="guest@email.com" />
-          </div>
-          <div>
-            <label style={label} htmlFor="cp-min">Minimum booking <span style={{ fontWeight: 500 }}>(optional, $)</span></label>
-            <input id="cp-min" style={input} inputMode="decimal" value={minTotal} onChange={(e) => setMinTotal(e.target.value)} placeholder="200" />
-          </div>
-          <div>
-            <label style={label} htmlFor="cp-note">Note <span style={{ fontWeight: 500 }}>(optional)</span></label>
-            <input id="cp-note" style={input} value={formNote} onChange={(e) => setFormNote(e.target.value)} placeholder="Instagram giveaway, March" />
-          </div>
-        </div>
-        <p style={{ marginTop: 14, fontSize: 14, color: soft }}>This coupon will be: <strong style={{ color: ink }}>{preview}</strong>. Taken from MAPL Tours Jamaica&rsquo;s margin, never from the driver or operator.</p>
-        {formError && <p role="alert" style={{ marginTop: 8, fontSize: 14, fontWeight: 600, color: '#B3261E' }}>{formError}</p>}
-        <button type="submit" disabled={creating}
-          style={{ marginTop: 12, height: 44, padding: '0 22px', borderRadius: 10, border: 'none', background: ink, color: '#fff', fontFamily: dm, fontWeight: 600, fontSize: 14, cursor: creating ? 'wait' : 'pointer', opacity: creating ? 0.6 : 1 }}>
-          {creating ? 'Working…' : 'Create coupon'}
-        </button>
-      </form>
-
-      {/* Search */}
-      <form onSubmit={(e) => { e.preventDefault(); void load() }} style={{ display: 'flex', gap: 8, marginTop: 26, maxWidth: 560 }}>
-        <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Code, email or note" aria-label="Search coupons" style={{ ...input, flex: 1 }} />
-        <button type="submit" disabled={loading} style={{ height: 44, padding: '0 22px', borderRadius: 10, border: 'none', background: ink, color: '#fff', fontFamily: dm, fontWeight: 600, fontSize: 14, cursor: loading ? 'wait' : 'pointer', opacity: loading ? 0.6 : 1 }}>
-          {loading ? 'Loading…' : 'Search'}
-        </button>
-      </form>
-
-      {note && <p role="status" style={{ marginTop: 14, fontSize: 14, color: ink, fontWeight: 600 }}>{note}</p>}
-
-      {coupons && shown.length === 0 && (
-        <p style={{ marginTop: 24, color: soft, fontSize: 14 }}>{coupons.length === 0 ? 'No coupons yet. The first one is thirty seconds away, above.' : 'Nothing matches that filter.'}</p>
+        </form>
       )}
 
-      <div style={{ marginTop: 20, display: 'flex', flexDirection: 'column', gap: 12 }}>
-        {shown.map((c) => {
-          const s = state(c)
-          const uses = redemptions.filter((r) => r.coupon_id === c.id)
-          const isOpen = open === c.id
-          return (
-            <div key={c.id} id={`coupon-${c.id}`} style={{ background: justMade === c.id ? '#FFF7DF' : '#fff', borderRadius: 14, padding: '16px 18px', border: justMade === c.id ? '1px solid #C9A94E' : border, transition: 'background 0.6s ease, border-color 0.6s ease' }}>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px 14px', alignItems: 'center' }}>
-                <button type="button" onClick={() => copy(c.code)} title="Copy the code" aria-label={`Copy ${c.code}`}
-                  style={{ fontFamily: dm, fontWeight: 800, fontSize: 18, letterSpacing: '0.06em', background: 'none', border: 'none', padding: '8px 0', cursor: 'pointer', color: ink, minHeight: 44 }}>
-                  {c.code}
-                </button>
-                <span style={{ fontSize: 11.5, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', padding: '4px 10px', borderRadius: 9999, background: BADGE[s].bg, color: BADGE[s].fg }}>{BADGE[s].label}</span>
-                <span style={{ marginLeft: 'auto', fontSize: 14, fontWeight: 700, ...tnum }}>{c.max_uses == null ? `${c.uses} used` : `${c.uses} / ${c.max_uses} used`}</span>
-              </div>
-              <p style={{ margin: '8px 0 0', fontSize: 14, color: ink }}>{describeCoupon(c)}</p>
-              <div style={{ marginTop: 8, display: 'grid', gap: '4px 24px', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', fontSize: 13, color: soft, lineHeight: 1.5 }}>
-                <div>Created {when(c.created_at)}{c.source ? ` by ${c.source}` : ''}</div>
-                {c.note && <div>{c.note}</div>}
-              </div>
+      <div className="adm-toolbar">
+        <form className="adm-cp-search" onSubmit={(e) => { e.preventDefault(); void load() }} role="search">
+          <div className="adm-search">
+            <label htmlFor={searchId} className="visually-hidden">Search coupons</label>
+            <Search className="adm-search-icon" size={18} strokeWidth={2.25} aria-hidden />
+            <input id={searchId} type="search" className="adm-input adm-search-input" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Code, email or note" enterKeyHint="search" />
+          </div>
+          <button type="submit" className="adm-btn" aria-disabled={loading || undefined} aria-busy={loading || undefined}>{loading ? 'Searching…' : 'Search'}</button>
+        </form>
+        <Segmented label="Show coupons" value={filter} onChange={setFilter} options={filters} unit="coupon" grid />
+      </div>
 
-              <div style={{ marginTop: 14, display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
-                {uses.length > 0 && <Action label={isOpen ? 'Hide uses' : `Show ${uses.length} use${uses.length === 1 ? '' : 's'}`} onClick={() => setOpen(isOpen ? null : c.id)} busy={false} />}
-                {c.status !== 'void' && editing !== c.id && <Action label="Edit" onClick={() => startEdit(c)} busy={false} />}
-                {c.status === 'active' && <Action label="Pause" onClick={() => act(c.id, 'pause')} busy={busy === c.id + 'pause'} />}
-                {c.status === 'paused' && <Action label="Resume" onClick={() => act(c.id, 'resume')} busy={busy === c.id + 'resume'} />}
-                {c.status !== 'void' && confirmVoid !== c.id && <Action label="Void" danger onClick={() => setConfirmVoid(c.id)} busy={false} />}
+      {coupons === null && loading && <p className="adm-empty">Loading coupons…</p>}
+      {coupons && shown.length === 0 && (
+        <p className="adm-empty">{all.length === 0 ? 'No coupons yet. Make the first one with New coupon. 🇯🇲' : 'Nothing matches that filter.'}</p>
+      )}
+
+      <ol className="adm-list adm-cp-list">
+        {shown.map((c) => {
+          const s = couponState(c)
+          const uses = redemptions.filter((r) => r.coupon_id === c.id)
+          const given = givenOf(uses)
+          const isOpen = open === c.id
+          // Each action names its code for screen readers ("Edit JAMAICA5"); the eye reads "Edit".
+          const code = <span className="visually-hidden"> {c.code}</span>
+          return (
+            <li key={c.id} id={`coupon-${c.id}`} className={justMade === c.id ? 'adm-card adm-cp is-new' : 'adm-card adm-cp'}>
+              <div className="adm-card-in">
+                <div className="adm-cp-head">
+                  <h2 className="adm-cp-h">{c.code}</h2>
+                  <button type="button" className={copied === c.code ? 'adm-cp-copy is-done' : 'adm-cp-copy'} onClick={() => copy(c.code)} aria-label={`Copy ${c.code}`}>
+                    {copied === c.code ? <Check size={18} strokeWidth={2.5} aria-hidden /> : <Copy size={18} strokeWidth={2.25} aria-hidden />}
+                  </button>
+                  <span className={`adm-badge ${STATE[s].cls}`}>{STATE[s].label}</span>
+                  <span className="adm-cp-uses">
+                    {c.max_uses == null ? `${c.uses} used` : `${c.uses} of ${c.max_uses} used`}
+                    {given > 0 && <span className="adm-cp-given">, {money(given)} off</span>}
+                  </span>
+                </div>
+                <p className="adm-cp-rule">{describeCoupon(c)}</p>
+                <p className="adm-meta">
+                  <span className="adm-nowrap">Created {stamp(c.created_at)}</span>{c.source ? ` by ${c.source}` : ''}{c.note ? <> · {c.note}</> : null}
+                </p>
+
+                {confirmVoid !== c.id && editing !== c.id && (
+                  <div className="adm-actions adm-cp-actions">
+                    {uses.length > 0 && (
+                      <button type="button" className="adm-btn adm-btn--sm" aria-expanded={isOpen} aria-controls={`uses-${c.id}`} onClick={() => setOpen(isOpen ? null : c.id)}>
+                        {isOpen ? 'Hide uses' : `Show ${uses.length} use${uses.length === 1 ? '' : 's'}`}<span className="visually-hidden"> of {c.code}</span>
+                      </button>
+                    )}
+                    {c.status !== 'void' && <button id={`edit-btn-${c.id}`} type="button" className="adm-btn adm-btn--sm" onClick={() => startEdit(c)}>Edit{code}</button>}
+                    {/* Pausing only means something while the code can be used. */}
+                    {s === 'active' && <button type="button" className="adm-btn adm-btn--sm" aria-busy={busy === c.id + 'pause' || undefined} onClick={() => void act(c.id, 'pause')}>{busy === c.id + 'pause' ? 'Pausing…' : 'Pause'}{code}</button>}
+                    {c.status === 'paused' && <button type="button" className="adm-btn adm-btn--sm" aria-busy={busy === c.id + 'resume' || undefined} onClick={() => void act(c.id, 'resume')}>{busy === c.id + 'resume' ? 'Resuming…' : 'Resume'}{code}</button>}
+                    {c.status !== 'void' && <button id={`void-btn-${c.id}`} type="button" className="adm-btn adm-btn--sm adm-btn--danger" onClick={() => askVoid(c.id)}>Void{code}</button>}
+                  </div>
+                )}
+
                 {confirmVoid === c.id && (
-                  <>
-                    <span style={{ fontSize: 13, color: '#B3261E', fontWeight: 600 }}>Void {c.code}? Nobody can use it after this.</span>
-                    <Action label="Yes, void it" danger onClick={() => act(c.id, 'void')} busy={busy === c.id + 'void'} />
-                    <Action label="Back" onClick={() => setConfirmVoid(null)} busy={false} />
-                  </>
+                  <section aria-labelledby={`void-${c.id}-h`} className={`adm-ask ${motion(`void-${c.id}`)}`} onAnimationEnd={leave.onEnd} onKeyDown={(e) => { if (e.key === 'Escape') { e.preventDefault(); backFromVoid(c.id) } }}>
+                    <h3 id={`void-${c.id}-h`} tabIndex={-1} className="adm-h4 adm-h4--ask">Void {c.code}?</h3>
+                    <p className="adm-block">Nobody can use it after this. It cannot be undone.</p>
+                    <div className="adm-actions">
+                      <button type="button" className="adm-btn adm-btn--bad" aria-disabled={busy === c.id + 'void' || undefined} aria-busy={busy === c.id + 'void' || undefined} onClick={() => void act(c.id, 'void')}>
+                        {busy === c.id + 'void' ? 'Voiding…' : 'Yes, void it'}
+                      </button>
+                      <button type="button" className="adm-btn" onClick={() => backFromVoid(c.id)}>Back</button>
+                    </div>
+                  </section>
+                )}
+
+                {editing === c.id && draft && (
+                  <form onSubmit={(e) => { e.preventDefault(); void saveEdit(c.id) }} className={`adm-cp-edit ${motion(`edit-${c.id}`)}`} aria-labelledby={`edit-${c.id}-h`} onAnimationEnd={leave.onEnd}
+                    onKeyDown={(e) => { if (e.key === 'Escape') { e.preventDefault(); stopEdit(c.id) } }}>
+                    <h3 id={`edit-${c.id}-h`} tabIndex={-1} className="adm-h4">Editing {c.code}</h3>
+                    <p className="adm-help adm-help--soft">The code and its uses so far stay as they are.</p>
+                    <CouponFields id={`ed-${c.id}`} d={draft} set={(p) => setDraft((d) => (d ? { ...d, ...p } : d))} />
+                    <p className="adm-cp-preview">This coupon will be: <strong>{previewOf(draft)}</strong>.</p>
+                    {editError && <p role="alert" className="adm-error">{editError}</p>}
+                    <div className="adm-actions">
+                      <button type="submit" className="adm-btn adm-btn--primary" aria-disabled={saving || undefined} aria-busy={saving || undefined}>{saving ? 'Saving…' : 'Save changes'}</button>
+                      <button type="button" className="adm-btn" onClick={() => stopEdit(c.id)}>Cancel</button>
+                    </div>
+                  </form>
+                )}
+
+                {isOpen && (
+                  <ul id={`uses-${c.id}`} className="adm-cp-usage adm-enter">
+                    {uses.map((r, i) => (
+                      <li key={i}>
+                        <span className="adm-nowrap">{stamp(r.created_at)}</span>
+                        <span className="adm-cp-usage-v">{money(-Number(r.amount))}</span>
+                        <span>{r.email ?? 'No email'}</span>
+                        {r.booking_id && <Link className="adm-inline-link" href={`/admin/bookings?booking=${r.booking_id}`}>Booking<Arrow /></Link>}
+                      </li>
+                    ))}
+                  </ul>
                 )}
               </div>
-
-              {editing === c.id && draft && (
-                <form onSubmit={(e) => { e.preventDefault(); void saveEdit(c.id) }} style={{ marginTop: 14, padding: '14px 16px', borderRadius: 12, background: '#FAF9F7', border }}>
-                  <p style={{ margin: '0 0 10px', fontSize: 13, fontWeight: 700, color: ink }}>Editing {c.code}. The code and its uses so far stay as they are.</p>
-                  <div style={{ display: 'grid', gap: 12, gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))' }}>
-                    <div>
-                      <span style={label}>Discount</span>
-                      <div role="group" aria-label="Discount kind" style={{ display: 'flex', border: '1px solid rgba(0,0,0,0.16)', borderRadius: 10, overflow: 'hidden', height: 44 }}>
-                        {(['percent', 'fixed'] as const).map((k) => (
-                          <button key={k} type="button" aria-pressed={draft.kind === k} onClick={() => setDraft({ ...draft, kind: k })}
-                            style={{ flex: 1, border: 'none', background: draft.kind === k ? ink : '#fff', color: draft.kind === k ? '#fff' : ink, fontFamily: dm, fontWeight: 600, fontSize: 14, cursor: 'pointer' }}>
-                            {k === 'percent' ? 'Percent' : 'Dollars'}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                    <div>
-                      <label style={label} htmlFor={`ed-value-${c.id}`}>{draft.kind === 'percent' ? 'Percent off' : 'Dollars off'}</label>
-                      <input id={`ed-value-${c.id}`} style={input} inputMode="decimal" value={draft.value} onChange={(e) => setDraft({ ...draft, value: e.target.value })} required />
-                    </div>
-                    <div>
-                      <span style={label}>Applies to</span>
-                      <div role="group" aria-label="Applies to" style={{ display: 'flex', border: '1px solid rgba(0,0,0,0.16)', borderRadius: 10, overflow: 'hidden', height: 44 }}>
-                        {([['both', 'Both'], ['tour', 'Tours'], ['transfer', 'Rides']] as const).map(([k, l]) => (
-                          <button key={k} type="button" aria-pressed={draft.appliesTo === k} onClick={() => setDraft({ ...draft, appliesTo: k })}
-                            style={{ flex: 1, border: 'none', background: draft.appliesTo === k ? ink : '#fff', color: draft.appliesTo === k ? '#fff' : ink, fontFamily: dm, fontWeight: 600, fontSize: 14, cursor: 'pointer' }}>
-                            {l}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                    <div>
-                      <label style={label} htmlFor={`ed-uses-${c.id}`}>Uses in total <span style={{ fontWeight: 500 }}>(blank = unlimited)</span></label>
-                      <input id={`ed-uses-${c.id}`} style={input} inputMode="numeric" value={draft.maxUses} onChange={(e) => setDraft({ ...draft, maxUses: e.target.value })} placeholder="Unlimited" />
-                    </div>
-                    <div>
-                      <label style={label} htmlFor={`ed-per-${c.id}`}>Uses per guest <span style={{ fontWeight: 500 }}>(blank = no limit)</span></label>
-                      <input id={`ed-per-${c.id}`} style={input} inputMode="numeric" value={draft.usesPerEmail} onChange={(e) => setDraft({ ...draft, usesPerEmail: e.target.value })} placeholder="No limit" />
-                    </div>
-                    <div>
-                      <label style={label} htmlFor={`ed-exp-${c.id}`}>Expires <span style={{ fontWeight: 500 }}>(blank = never)</span></label>
-                      <input id={`ed-exp-${c.id}`} style={input} type="date" value={draft.expiresAt} onChange={(e) => setDraft({ ...draft, expiresAt: e.target.value })} />
-                    </div>
-                    <div>
-                      <label style={label} htmlFor={`ed-min-${c.id}`}>Minimum booking <span style={{ fontWeight: 500 }}>(optional, $)</span></label>
-                      <input id={`ed-min-${c.id}`} style={input} inputMode="decimal" value={draft.minTotal} onChange={(e) => setDraft({ ...draft, minTotal: e.target.value })} placeholder="None" />
-                    </div>
-                    <div>
-                      <label style={label} htmlFor={`ed-email-${c.id}`}>Only for this email <span style={{ fontWeight: 500 }}>(optional)</span></label>
-                      <input id={`ed-email-${c.id}`} style={input} type="email" inputMode="email" value={draft.email} onChange={(e) => setDraft({ ...draft, email: e.target.value })} placeholder="Anyone" />
-                    </div>
-                    <div>
-                      <label style={label} htmlFor={`ed-note-${c.id}`}>Note</label>
-                      <input id={`ed-note-${c.id}`} style={input} value={draft.note} onChange={(e) => setDraft({ ...draft, note: e.target.value })} />
-                    </div>
-                  </div>
-                  <p style={{ marginTop: 12, fontSize: 14, color: soft }}>This coupon will be: <strong style={{ color: ink }}>{describeCoupon({ kind: draft.kind, value: Number(draft.value) || 0, applies_to: draft.appliesTo, max_uses: draft.maxUses.trim() ? Number(draft.maxUses) : null, uses_per_email: draft.usesPerEmail.trim() ? Number(draft.usesPerEmail) : null, email: draft.email.trim() || null, min_total: draft.minTotal.trim() ? Number(draft.minTotal) : null, expires_at: draft.expiresAt ? `${draft.expiresAt}T23:59:59-05:00` : null })}</strong>.</p>
-                  {editError && <p role="alert" style={{ marginTop: 8, fontSize: 14, fontWeight: 600, color: '#B3261E' }}>{editError}</p>}
-                  <div style={{ marginTop: 12, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                    <button type="submit" disabled={saving}
-                      style={{ height: 44, padding: '0 22px', borderRadius: 10, border: 'none', background: ink, color: '#fff', fontFamily: dm, fontWeight: 600, fontSize: 14, cursor: saving ? 'wait' : 'pointer', opacity: saving ? 0.7 : 1 }}>
-                      {saving ? 'Saving…' : 'Save changes'}
-                    </button>
-                    <Action label="Cancel" onClick={() => { setEditing(null); setDraft(null); setEditError(null) }} busy={false} />
-                  </div>
-                </form>
-              )}
-
-              {isOpen && (
-                <ul style={{ margin: '12px 0 0', padding: 0, listStyle: 'none', display: 'grid', gap: 6, fontSize: 13, color: soft }}>
-                  {uses.map((r, i) => (
-                    <li key={i} style={{ display: 'flex', gap: 12, flexWrap: 'wrap', ...tnum }}>
-                      <span>{when(r.created_at)}</span>
-                      <span style={{ color: ink, fontWeight: 600 }}>−{money(r.amount)}</span>
-                      <span>{r.email ?? '—'}</span>
-                      {r.booking_id && <Link href={`/admin/bookings?booking=${r.booking_id}`} style={{ color: ink, fontWeight: 600 }}>Booking<Arrow /></Link>}
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
+            </li>
           )
         })}
-      </div>
-    </div>
-  )
-}
+      </ol>
 
-function Action({ label, onClick, busy, danger }: { label: string; onClick: () => void; busy: boolean; danger?: boolean }) {
-  return (
-    <button type="button" onClick={onClick} disabled={busy}
-      style={{ height: 44, padding: '0 16px', borderRadius: 9, border: `1px solid ${danger ? 'rgba(179,38,30,0.35)' : 'rgba(0,0,0,0.14)'}`, background: '#fff', color: danger ? '#B3261E' : ink, fontFamily: dm, fontWeight: 600, fontSize: 13, cursor: busy ? 'wait' : 'pointer', opacity: busy ? 0.6 : 1 }}>
-      {busy ? 'Working…' : label}
-    </button>
+      <p role="status" ref={toastRef} onAnimationEnd={noteEnd}
+        className={!note || note.quiet ? 'visually-hidden' : `adm-note adm-toast ${note.bad ? 'adm-note--bad' : 'adm-note--ok'} ${noteClosing === 'note' ? 'adm-leave' : 'adm-enter'}`}>
+        {note?.text ?? ''}
+      </p>
+    </div>
   )
 }

@@ -15,16 +15,11 @@ import CouponDesk from '@/components/admin/CouponDesk'
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
 
-const dm = 'var(--font-dm-sans)'
-const ink = 'var(--text-primary, #171614)'
-const soft = 'var(--text-secondary, #57534C)'
-
+/** The coupons page: the .adm classes in app/globals.css, like every admin screen. */
 function Shell({ children }: { children: React.ReactNode }) {
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--bg-warm, #F4F1EB)' }}>
-      <div style={{ width: '100%', padding: '40px clamp(20px, 3vw, 44px) 90px', fontFamily: dm, color: ink }}>
-        {children}
-      </div>
+    <div className="adm-page">
+      <div className="adm adm-wrap">{children}</div>
     </div>
   )
 }
@@ -35,9 +30,9 @@ export default async function AdminCouponsPage() {
   if (!user) {
     return (
       <Shell>
-        <h1 style={{ fontFamily: dm, fontWeight: 700, fontSize: 24, letterSpacing: '-0.02em' }}>Coupons</h1>
-        <p style={{ marginTop: 10, color: soft }}>
-          Please <Link href="/login?redirect=/admin/coupons" style={{ color: ink, fontWeight: 600 }}>sign in</Link> to view this page.
+        <h1 className="adm-h1">Coupons</h1>
+        <p className="adm-lead">
+          Please <Link href="/login?redirect=/admin/coupons" className="adm-inline-link">sign in</Link> to view this page.
         </p>
       </Shell>
     )
@@ -48,8 +43,8 @@ export default async function AdminCouponsPage() {
   if (!adminRow) {
     return (
       <Shell>
-        <h1 style={{ fontFamily: dm, fontWeight: 700, fontSize: 24, letterSpacing: '-0.02em' }}>Not authorised</h1>
-        <p style={{ marginTop: 10, color: soft }}>This dashboard is limited to MAPL Tours Jamaica admins.</p>
+        <h1 className="adm-h1">Not authorised</h1>
+        <p className="adm-lead">This dashboard is limited to MAPL Tours Jamaica admins.</p>
       </Shell>
     )
   }

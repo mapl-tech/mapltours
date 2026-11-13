@@ -244,7 +244,7 @@ export default function CashflowView({ rows }: { rows: CashRow[] }) {
       <p className="adm-lead">What paid bookings brought in, what they cost, and what MAPL Tours Jamaica kept. Read-only.</p>
 
       <div className="adm-cf-filter">
-        <Segmented label="Period" value={period} onChange={(p) => { setPeriod(p); setLimit(PAGE) }} options={PERIODS} />
+        <Segmented label="Period" value={period} onChange={(p) => { setPeriod(p); setLimit(PAGE) }} options={PERIODS} grid />
       </div>
 
       <div key={period} className="adm-rows">

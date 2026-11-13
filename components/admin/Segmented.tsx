@@ -10,8 +10,12 @@ import { plural } from '@/lib/admin-format'
  * in words ("Paid, 2 bookings"); the pill it draws is hidden from screen
  * readers. Styles: .adm-seg in app/globals.css.
  */
-export default function Segmented<T extends string>({ label, value, options, onChange, unit = 'booking' }: {
+export default function Segmented<T extends string>({ label, value, options, onChange, unit = 'booking', showLabel = false, grid = false }: {
   label: string
+  /** On a phone, lay the choices out two to a row instead of wrapping (for rows of four or more). */
+  grid?: boolean
+  /** Show the legend as the field's label (in a form), instead of only to screen readers. */
+  showLabel?: boolean
   value: T
   options: { key: T; label: string; count?: number }[]
   onChange: (v: T) => void
@@ -21,8 +25,8 @@ export default function Segmented<T extends string>({ label, value, options, onC
   const name = useId()
   return (
     <fieldset className="adm-fieldset">
-      <legend className="visually-hidden">{label}</legend>
-      <div className="adm-seg">
+      <legend className={showLabel ? 'adm-label' : 'visually-hidden'}>{label}</legend>
+      <div className={grid ? 'adm-seg adm-seg--grid' : 'adm-seg'}>
         {options.map((o) => (
           <label key={o.key} className={value === o.key ? 'adm-seg-btn is-on' : 'adm-seg-btn'}>
             <input

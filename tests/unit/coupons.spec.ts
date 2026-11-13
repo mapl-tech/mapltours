@@ -134,4 +134,11 @@ describe('copy', () => {
     expect(describeCoupon(base({ code: 'JAMAICA5', applies_to: 'both', max_uses: null, uses_per_email: 1, expires_at: null }))).toBe('5% off tours and rides, unlimited uses, one per guest')
     expect(describeCoupon(base({ applies_to: 'transfer', max_uses: 200, uses_per_email: 2, expires_at: null }))).toBe('5% off airport rides, 200 uses, 2 per guest')
   })
+  it('states a dollar amount to the cent, never rounded to a whole dollar', () => {
+    // Stored as numeric(10,2): a $12.50 coupon read "$13 off" until Nov 13 2026.
+    expect(describeCoupon(base({ kind: 'fixed', value: 12.5, expires_at: null }))).toBe('$12.50 off tours, one use')
+    expect(describeCoupon(base({ kind: 'fixed', value: 1000, min_total: 150.5, expires_at: null }))).toBe('$1,000 off tours, one use, on $150.50 or more')
+    expect(couponBlockedMessage('min_total', { min_total: 150.5, email: null })).toBe('That code needs a booking of at least $150.50.')
+    expect(couponBlockedMessage('min_total', { min_total: 200, email: null })).toBe('That code needs a booking of at least $200.')
+  })
 })
