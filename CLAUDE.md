@@ -634,3 +634,18 @@ Rules, enforced in code:
 - **Day buttons on touch screens** are 44px wide from 360px up and the weeks sit 8px apart. Two trip-days on consecutive dates are 2 to 4px apart side to side; seven 44px columns, 8px gaps and 16px gutters do not fit in a phone's width, so that one is accepted.
 - **The driver portal's own design is the pre-Nov-13 one** (owner, Nov 13: "I like how the driver portal was before"; the redesign in 278078a was undone). The calendar was added to it on request; do not restyle the rest of it in a design pass.
 - Preview either screen with made-up rows at a temporary `app/zz-*/page.tsx`; delete it and `.next/types/app/zz-*` before committing.
+
+## Rules from the Nov 13 2026 audit
+
+- **One `<main>` per page, and it is `LayoutShell`'s** (`<main id="main-content">`, where the skip link lands). A page's own wrapper is a `<div>`; seven screens used to nest a second one (`tests/unit/one-main-landmark.spec.ts`).
+- **Lock page scroll only through `lib/scroll-lock`** (`lockScroll()`), never by writing `body.style.overflow`. Two separate locks released in React's parent-first order left `/checkout` unscrollable after leaving the reel with a sheet open.
+- **A persisted store may not exist.** Where the browser refuses localStorage zustand attaches no `persist`; `LayoutShell` and `useHydrated` allow for it, and the cart's `merge`/`migrate` accept any stored shape. Do not call `.persist.*` without checking.
+- **A checkout answer is about the order that was SENT.** Both one-page checkouts apply a server answer to the page only when `pricingKeyOf(payload)` still equals the order on the page.
+- **`/api/gifts/validate` releases stale claims before judging a card** (`releaseStaleGiftClaims`), or a card smaller than the cart stays at $0 after an unfinished payment. Its one refusal message is the same for every unusable code.
+- **Paid-booking emails are bounded and repeat-safe:** both senders (the webhook's copies and `lib/email/booking.ts`) pass `CONFIRMATION_SEND` (`lib/email/confirmation-send.ts`, a 3.5 s limit) and a `dedupe` name; `sendEmail` turns that into a Resend idempotency key with a fingerprint of the message. Keep the two copies of the senders identical.
+- **The tour confirmation prints a per-person price only for a tour priced per person** (`perPersonPrice` in `emails/BookingConfirmed.tsx`).
+- **The abandoned-cart job skips a cart whose guest has since paid for the same kind of booking**, and its claim requires the row to still be `pending`.
+- **Review requests go out the day after the last service DAY in Jamaica** (`lastServiceDay`), which the daily 9:00 job sends the next morning.
+- **Server redirects name the public site** (`lib/site-origin.ts`): `/auth/callback` used to send a signed-in guest to Netlify's per-deploy host. Password resets return through the callback to `/login/reset`.
+- **A hotel's reopening label is read through `reopensAhead`**, so a date that has passed stops being said everywhere.
+- **First-visit language never shows a currency the visitor's country does not use** (`COUNTRY_LANGUAGE` in `lib/i18n.ts`); Spanish for the Americas is `es-419`, in US dollars.

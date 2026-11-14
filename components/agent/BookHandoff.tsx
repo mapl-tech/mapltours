@@ -84,7 +84,7 @@ export default function BookHandoff() {
   }, [toursLoaded, ridesLoaded, router])
 
   return (
-    <main style={{ minHeight: '70vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '80px 24px', background: 'var(--bg, #FFFEFB)' }}>
+    <div style={{ minHeight: '70vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '80px 24px', background: 'var(--bg, #FFFEFB)' }}>
       <div style={{ maxWidth: 520, width: '100%', textAlign: 'center' }}>
         {state.phase === 'working' ? (
           <div role="status" aria-live="polite">
@@ -114,6 +114,6 @@ export default function BookHandoff() {
           </div>
         )}
       </div>
-    </main>
+    </div>
   )
 }

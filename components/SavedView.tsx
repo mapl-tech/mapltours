@@ -143,7 +143,7 @@ function Shell({ children, count, announcement, writeError }: {
   writeError?: string | null
 }) {
   return (
-    <main className="saved-shell">
+    <div className="saved-shell">
       <div className="visually-hidden" role="status" aria-live="polite">{announcement ?? ''}</div>
       <header style={{ marginBottom: 28 }}>
         <h1 style={{
@@ -168,7 +168,7 @@ function Shell({ children, count, announcement, writeError }: {
         </p>
       )}
       {children}
-    </main>
+    </div>
   )
 }
 

@@ -50,9 +50,9 @@ export default function DriverShell({ signedInAs, children }: { signedInAs: stri
           </span>
         </div>
       </header>
-      <main style={{ width: '100%', padding: '24px clamp(16px, 2.5vw, 32px) 72px' }}>
+      <div style={{ width: '100%', padding: '24px clamp(16px, 2.5vw, 32px) 72px' }}>
         {children}
-      </main>
+      </div>
       <style jsx>{`
         @media (max-width: 480px) {
           :global(.driver-shell-email) { display: none; }

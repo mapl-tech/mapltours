@@ -10,7 +10,7 @@ export const metadata: Metadata = {
 
 export default function NotFound() {
   return (
-    <main
+    <div
       style={{
         minHeight: '80vh',
         display: 'flex',
@@ -68,6 +68,6 @@ export default function NotFound() {
           </Link>
         </div>
       </div>
-    </main>
+    </div>
   )
 }

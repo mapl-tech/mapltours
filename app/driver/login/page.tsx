@@ -54,7 +54,7 @@ function DriverLoginContent() {
       </header>
 
       {/* Centered card */}
-      <main style={{ position: 'relative', zIndex: 2, flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '32px 20px 48px' }}>
+      <div style={{ position: 'relative', zIndex: 2, flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '32px 20px 48px' }}>
         <div style={{ width: '100%', maxWidth: 430 }}>
           <div className="animate-fade-up" style={{
             background: '#fff', borderRadius: 20, padding: 'clamp(26px, 5vw, 34px)',
@@ -105,7 +105,7 @@ function DriverLoginContent() {
             MAPL Tours Jamaica · contact@mapltours.com
           </p>
         </div>
-      </main>
+      </div>
 
       <style jsx>{`
         .drv-login {

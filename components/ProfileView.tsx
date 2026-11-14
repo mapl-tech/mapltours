@@ -932,7 +932,7 @@ export default function ProfileView() {
   const bookingsFailed = !!error
 
   return (
-    <main className="pf-shell">
+    <div className="pf-shell">
       <div className="visually-hidden" role="status" aria-live="polite">{announcement}</div>
 
       <div className="pf-body">
@@ -1166,7 +1166,7 @@ export default function ProfileView() {
           </div>
         </aside>
       </div>
-    </main>
+    </div>
   )
 }
 
@@ -1219,7 +1219,7 @@ function SavedRail({ count, ids }: { count: number; ids: number[] }) {
  */
 function Skeleton() {
   return (
-    <main className="pf-shell" aria-busy="true">
+    <div className="pf-shell" aria-busy="true">
       <p className="visually-hidden" role="status">Loading your trips.</p>
       <div className="pf-body">
         <div className="pf-main">
@@ -1233,6 +1233,6 @@ function Skeleton() {
           <div className="pf-skel" style={{ height: 150, borderRadius: 'var(--r-xl)' }} />
         </aside>
       </div>
-    </main>
+    </div>
   )
 }

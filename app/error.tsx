@@ -26,7 +26,7 @@ export default function ErrorBoundary({
   }, [error])
 
   return (
-    <main
+    <div
       style={{
         minHeight: '80vh',
         display: 'flex',
@@ -96,6 +96,6 @@ export default function ErrorBoundary({
           </Link>
         </div>
       </div>
-    </main>
+    </div>
   )
 }
