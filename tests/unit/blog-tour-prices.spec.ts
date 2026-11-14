@@ -2,8 +2,13 @@ import { describe, test, expect } from 'vitest'
 import { BLOG_POSTS, type BlogBlock } from '@/lib/blog'
 import { experiences, slugify, tourPrice, zonesSold, isZonePriced, type Experience } from '@/lib/experiences'
 import type { TourZone } from '@/lib/tour-zones'
-import { blogFrom, blogIsGroupPrice, blogNotPerHead, blogPrice, blogShare, blogUnit } from '@/lib/blog-prices'
+import { areaClause, BLOG_AREA_FALLBACKS, blogFrom, blogInArea, blogIsGroupPrice, blogNotPerHead, blogPrice, blogShare, blogUnit } from '@/lib/blog-prices'
 import { HELP_CATEGORIES, GROUP_PARTY_LIMITS, TOUR_PRICING_SENTENCE } from '@/lib/help-faqs'
+import { readFileSync, readdirSync } from 'node:fs'
+import { resolve } from 'node:path'
+
+// Taken as soon as the posts have loaded, before any test below calls a helper itself.
+const fallbacksWhenThePostsLoaded = [...BLOG_AREA_FALLBACKS]
 
 /**
  * A post or a help answer that quotes one of our tours has to quote what the
@@ -30,6 +35,12 @@ import { HELP_CATEGORIES, GROUP_PARTY_LIMITS, TOUR_PRICING_SENTENCE } from '@/li
  * In a sentence that links no tour it reads one thing only, a share ("$90 a
  * head"), which has to be a guest's share of some tour the post links. And
  * it fails on a helper that was never rendered ("${" on the page).
+ *
+ * A clause that quotes one pickup area's price is written through blogInArea
+ * (lib/blog-prices), which also holds what to print once that area is no
+ * longer sold: an area can be switched off at the prices desk, and neither a
+ * false sentence nor a failed build is acceptable then. This file fails when
+ * a post is on that other wording, so the passage gets rewritten.
  *
  * What it cannot see, so nobody relies on it for these: any other price in a
  * sentence that links no tour (matching tours by name was tried and caught
@@ -227,20 +238,51 @@ describe('the helpers the posts quote with', () => {
   test('a share is the total over the party, rounded up, never less than the share', () => {
     for (const [id, party, zone] of [[1, 3, 'montego_bay'], [15, 3, undefined], [15, 4, undefined], [1, 4, 'negril'], [14, 3, undefined]] as const) {
       const total = tourPrice(byId(id).pricing, party, zone)
-      const share = Number(blogShare(id, party, zone).slice(1))
-      expect(blogShare(id, party, zone)).toMatch(/^\$[0-9]+$/)
+      // One named area's share comes through the area clause; without an area, blogShare.
+      const printed = zone ? areaClause(byId(id).pricing, party, zone, (_price, share) => share, 'not sold from there') : blogShare(id, party)
+      const share = Number(printed.slice(1))
+      expect(printed).toMatch(/^\$[0-9]+$/)
       expect(share * party).toBeGreaterThanOrEqual(total)
       expect((share - 1) * party).toBeLessThan(total)
     }
     expect(blogPrice(15, 3)).toBe(`$${tourPrice(byId(15).pricing, 3)}`)
+    // Without an area, a tour priced by area answers with its cheapest area: a "from".
+    expect(blogPrice(1, 1)).toBe(`$${tourPrice(byId(1).pricing, 1)}`)
+    expect(blogPrice(1, 1)).toBe(`$${Math.min(...zonesSold(byId(1).pricing).map((z) => tourPrice(byId(1).pricing, 1, z)))}`)
   })
 
-  test('a pickup area the card does not sell is refused, not answered with the cheapest area\'s price', () => {
-    // tourPrice falls back to the cheapest area, which is right for a "from" and wrong beside "picked up in ...".
-    expect(() => blogPrice(14, 2, 'negril')).toThrow(/has no price from there/) // Rick's Cafe is one price everywhere
-    expect(() => blogShare(15, 4, 'montego_bay')).toThrow(/has no price from there/)
-    expect(blogPrice(1, 1, 'montego_bay')).toBe(`$${tourPrice(byId(1).pricing, 1, 'montego_bay')}`)
-    expect(blogPrice(1, 1)).toBe(`$${tourPrice(byId(1).pricing, 1)}`)
+  test('a clause about one pickup area prints that area\'s price while it is sold, and its other wording once it is not', () => {
+    const falls = byId(1)
+    // Sold from there: that area's own price and share reach the sentence.
+    expect(blogInArea(1, 1, 'montego_bay', (price) => `${price} picked up in Montego Bay`, 'the other wording')).toBe(`$${tourPrice(falls.pricing, 1, 'montego_bay')} picked up in Montego Bay`)
+    expect(blogInArea(1, 4, 'montego_bay', (_price, share) => `about ${share}`, 'the other wording')).toBe(`about $${Math.ceil(tourPrice(falls.pricing, 4, 'montego_bay') / 4)}`)
+    // The prices desk can leave an area out of a card. The clause then prints its other wording: never the
+    // cheapest area's price beside this area's name, which is what tourPrice alone would give ...
+    const withoutMontegoBay = { ...falls.pricing, zoneRates: Object.fromEntries(Object.entries(falls.pricing.zoneRates ?? {}).filter(([z]) => z !== 'montego_bay')) }
+    expect(Object.keys(withoutMontegoBay.zoneRates).length).toBe(zonesSold(falls.pricing).length - 1)
+    expect(tourPrice(withoutMontegoBay, 1, 'montego_bay')).toBe(tourPrice(withoutMontegoBay, 1)) // the trap: the cheapest area's price
+    expect(areaClause(withoutMontegoBay, 1, 'montego_bay', (price) => `${price} picked up in Montego Bay`, 'the other wording')).toBe('the other wording')
+    // ... and never an error. An error while the posts load fails the build, the build is what publishes a save
+    // at the prices desk, and a price change saved with the dropped area would then never go live.
+    expect(() => areaClause(withoutMontegoBay, 4, 'montego_bay', () => 'unused', 'the other wording')).not.toThrow()
+    // A tour that is one price from everywhere has no area price to quote.
+    expect(areaClause(byId(14).pricing, 2, 'negril', (price) => `${price} picked up in Negril`, 'one price everywhere')).toBe('one price everywhere')
+  })
+
+  test('no post is on its other wording today: every pickup area a post quotes is still sold', () => {
+    // If this fails, the site is fine (it published, and the sentence it printed is true), but the post was
+    // written around an area that is no longer sold. Read the passage and rewrite it.
+    expect(fallbacksWhenThePostsLoaded).toEqual([])
+    // The clauses exist and were counted: five today (the falls twice and the raft in the all-inclusive post,
+    // the day with both falls twice in the Dunn's River posts).
+    const src = ['lib/blog-auto-3.ts', 'lib/blog-auto-5.ts'].map((f) => readFileSync(resolve(process.cwd(), f), 'utf8')).join('\n')
+    expect((src.match(/= blogInArea\(/g) ?? []).length).toBe(5)
+    // And no post passes an area to the plain helpers, where the area's name would be typed beside a price
+    // that is not tied to it (TypeScript refuses a third argument; this reads the source as well).
+    for (const f of readdirSync(resolve(process.cwd(), 'lib')).filter((n) => /^blog.*\.ts$/.test(n) && n !== 'blog-prices.ts')) {
+      const text = readFileSync(resolve(process.cwd(), 'lib', f), 'utf8')
+      expect(text, f).not.toMatch(/blog(Price|Share)\([^)]*'(negril|lucea|montego_bay|trelawny|runaway_bay|ocho_rios)'/)
+    }
   })
 })
 

@@ -1,11 +1,20 @@
 import type { BlogPost, BlogAuthor } from './blog'
 import { BLOG_IMAGES } from './blog-images'
-import { blogPrice, blogUnit, blogFrom, blogShare } from './blog-prices'
+import { blogPrice, blogUnit, blogFrom, blogShare, blogInArea } from './blog-prices'
 
 // One real byline; the named writers these used to be were invented.
 const mapl: BlogAuthor = { name: 'MAPL Tours Jamaica', role: 'Editorial', initials: 'MT' }
 const andre: BlogAuthor = mapl
 const simone: BlogAuthor = mapl
+
+// A clause that quotes a price from one pickup area goes through blogInArea,
+// which also carries what the post says if that area is ever switched off at
+// the prices desk: the sentence stays true and the site still publishes.
+const FALLS_FROM_MONTEGO_BAY = blogInArea(1, 1, 'montego_bay',
+  (price) => `${price} ${blogUnit(1)} picked up in Montego Bay (it is priced by where we pick you up, from ${blogPrice(1, 1)} in Ocho Rios)`,
+  `${blogFrom(1)}, priced by where we pick you up`)
+const RAFT_FROM_MONTEGO_BAY = blogInArea(3, 1, 'montego_bay', (price) => `${price} ${blogUnit(3)} picked up in Montego Bay`, blogFrom(3))
+const FALLS_SHARE_OF_FOUR = blogInArea(1, 4, 'montego_bay', (_price, share) => `about ${share}`, `at least ${blogShare(1, 4)}`)
 
 export const POSTS_3: BlogPost[] = [
   {
@@ -96,12 +105,12 @@ export const POSTS_3: BlogPost[] = [
       {
         type: 'list',
         items: [
-          `[Dunn's River Falls Climb](/experience/dunns-river-falls-climb): ${blogPrice(1, 1, 'montego_bay')} ${blogUnit(1)} picked up in Montego Bay (it is priced by where we pick you up, from ${blogPrice(1, 1)} in Ocho Rios), two hours at the falls and five to seven door to door from Montego Bay, park entry and guide included.`,
+          `[Dunn's River Falls Climb](/experience/dunns-river-falls-climb): ${FALLS_FROM_MONTEGO_BAY}, two hours at the falls and five to seven door to door from Montego Bay, park entry and guide included.`,
           // Every price and unit below is read from the rate card (lib/blog-prices):
           // this list typed "$128 for up to three" for the raft for a day after
           // it became $115 per person, and "$459 for up to three" after Nine
           // Mile covered four.
-          `[Bamboo Rafting on the Martha Brae](/experience/bamboo-rafting-on-the-martha-brae): ${blogPrice(3, 1, 'montego_bay')} ${blogUnit(3)} picked up in Montego Bay, ninety minutes at the river (an hour and a quarter on the raft) and about three hours door to door, the easiest morning off a Montego Bay resort.`,
+          `[Bamboo Rafting on the Martha Brae](/experience/bamboo-rafting-on-the-martha-brae): ${RAFT_FROM_MONTEGO_BAY}, ninety minutes at the river (an hour and a quarter on the raft) and about three hours door to door, the easiest morning off a Montego Bay resort.`,
           `[Rick's Cafe Cliff Diving and Sunset](/experience/ricks-cafe-cliff-diving-and-sunset): ${blogFrom(14)}, three hours at Rick's and six to seven door to door from Montego Bay, entry included.`,
           `[Rainforest Zipline Adventure](/experience/rainforest-zipline-adventure): ${blogFrom(7)}, about an hour at the park and four to five hours door to door from Montego Bay.`,
           `[Bob Marley Nine Mile Pilgrimage](/experience/bob-marley-nine-mile-pilgrimage): ${blogFrom(15)}, a full day in the St. Ann hills, entry included.`,
@@ -110,7 +119,7 @@ export const POSTS_3: BlogPost[] = [
       {
         type: 'p',
         // The party's size is the one typed number here; both shares are worked out for it.
-        text: `Split four ways, the falls come to about ${blogShare(1, 4, 'montego_bay')} a head and Nine Mile to about ${blogShare(15, 4)}. It is the part of the trip people talk about at home.`,
+        text: `Split four ways, the falls come to ${FALLS_SHARE_OF_FOUR} a head and Nine Mile to about ${blogShare(15, 4)}. It is the part of the trip people talk about at home.`,
       },
       { type: 'h2', text: 'Which resorts are open after Hurricane Melissa' },
       {
