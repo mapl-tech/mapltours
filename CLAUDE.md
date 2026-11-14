@@ -528,6 +528,25 @@ Conventions that keep these safe and useful:
 
 ---
 
+## ChatGPT Wallet and agents that pay in a browser (Nov 14 2026)
+
+OpenAI launched ChatGPT Wallet on Nov 13 2026: US ChatGPT Pro subscribers, eligible US-issued credit cards, inside "dots". The agent's cloud browser fills a merchant's ordinary checkout; once the traveller approves the total with a biometric check, the card network issues a token (a card number, security code and expiry) for that one purchase, and it goes into the payment form. OpenAI's words: "ChatGPT Wallet works out of the box with existing checkout pages and payment forms. No Wallet-specific integration is required." (developers.openai.com/commerce, the Commerce Partner Playbook). Owner, Nov 14: "Make sure we are ready." Four of the eight paid bookings between Oct 15 and Nov 14 2026 came from ChatGPT.
+
+What was checked that day, and has to stay true:
+- **Nothing of ours blocks the cloud browser.** No firewall or bot rule on Netlify, nothing in `middleware.ts` looks at who is asking, neither checkout has a CAPTCHA of its own, and the rate limit is 10 a minute per IP on each checkout route. `getIp` (`lib/rate-limit.ts`) reads Netlify's connection IP and never the `Forwarded` or `Signature-Agent` headers ChatGPT adds, so they cannot be used to dodge a limit. If a firewall or bot product is ever put in front of the site, it has to let through requests signed by ChatGPT (Web Bot Auth: `Signature-Agent: "https://chatgpt.com"`, keys at chatgpt.com/.well-known/http-message-signatures-directory). OpenAI lists Akamai, Cloudflare, HUMAN and Vercel as verifying those by themselves; Netlify is not on the list.
+- **Both checkouts read cleanly to an agent.** Every control has a real accessible name, the name, email and phone fields carry autocomplete hints, no account is needed, and the button reads "Pay $X". Keep it so: no field named only by its placeholder, no sign-in wall, no CAPTCHA.
+- **No card is kept.** No PaymentIntent sets `setup_future_usage`. OpenAI: "Don't reuse or save that payment credential for a separate purchase."
+- **llms.txt says how.** Its "For AI agents" section has a paragraph for an agent that can pay in a browser with the traveller's approval: the two checkout addresses, what each form asks for, that the total on the button is the charge, and that the tour waiver is the traveller's own to accept. `tests/unit/llms-agent-checkout.spec.ts` holds each sentence to the forms.
+- **WebMCP.** ChatGPT's "site tools" are its implementation of WebMCP and use `document.modelContext.registerTool`, the call `components/WebMcpTools.tsx` already makes. They run only in the ChatGPT desktop app's built-in browser, not in the cloud browser that Wallet uses. Chrome's WebMCP is still an origin trial (extended to milestone 162, March 30 2027), so Chrome still needs the token header described below. Stripe's Payment Element registers its own WebMCP tools for filling the card form; ours never pay (rule below).
+- **Stripe.** OpenAI names Stripe among the providers it is working with. Radar has a bot score, a bot risk control (Radar Pro) and an `:is_agent_initiated:` attribute. A bot rule set to block could stop an agent's purchase; that is a Dashboard setting and the owner's to look at.
+
+Not built, and each needs the owner's word:
+- **Counting these purchases.** They arrive as ordinary card payments. OpenAI says the cloud browser signs its requests (`Signature-Agent`); the two checkout routes could note that in `bookings.attribution`. It touches both routes.
+- **The tour waiver.** An agent ticking the Activity Waiver for a traveller is a question for a lawyer, not for code.
+- **The owner's own steps:** claim the business in ChatGPT's Business Hub (a DNS TXT record on mapltours.com, then identity verification with Persona); look at Radar's bot settings; register mapltours.com for Chrome's WebMCP origin trial; submit the `/mcp` connector as a ChatGPT plugin (developers.openai.com/plugins). Product feeds are for physical goods and do not apply to rides and tours.
+
+---
+
 ## WebMCP: tools the site offers to visitors' browser agents
 
 `lib/webmcp-tools.ts` + `components/WebMcpTools.tsx` (mounted in `LayoutShell`) register seven tools with `document.modelContext` on every page, for browsers that have WebMCP (Chrome 149+ via origin trial or `chrome://flags/#enable-webmcp-testing`). Spec: https://developer.chrome.com/docs/ai/webmcp.
