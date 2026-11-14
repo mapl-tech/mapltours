@@ -3605,8 +3605,13 @@ a.pf-stat:hover { background: var(--surface); }
   .adm { --adm-fs-body: 1rem; --adm-fs-ui: 1rem; --adm-fs-meta: 0.9375rem; }
 }
 .adm-page { min-height: 100vh; background: var(--bg-warm); }
-/* The page's top and bottom space compress on a phone (24 and 48px) and open to 40 and 96px on a wide screen. */
-.adm-wrap { width: 100%; max-width: 65rem; margin: 0 auto; padding: clamp(24px, 4vw, 40px) clamp(16px, 3vw, 48px) clamp(48px, 8vw, 96px); box-sizing: border-box; }
+/* The page's top and bottom space compress on a phone (24 and 48px) and open to 40 and 96px on a wide screen.
+   The body runs the full width of the admin bar above it, on the bar's own
+   side gutters, so its edges sit under the logo and under "Back to website"
+   at any window size (owner, Nov 13 2026: "I prefer the body being the same
+   width as the header navigation"). It used to stop at 65rem or 80rem and
+   float in the middle of a wide screen. */
+.adm-wrap { width: 100%; padding: clamp(24px, 4vw, 40px) clamp(16px, 3vw, 48px) clamp(48px, 8vw, 96px); box-sizing: border-box; }
 /* Zero specificity, so every class below sets its own margin. */
 :where(.adm) :where(p, h1, h2, h3, h4, h5, dl, dd, ul, ol) { margin: 0; }
 .adm-inline-link { color: var(--adm-ink); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; }
@@ -3796,7 +3801,7 @@ html:has(.adm-toast) { scroll-padding-bottom: 96px; }
 .adm-history-title { font-size: var(--adm-fs-body); font-weight: 700; }
 
 /* ── Admin: shared pieces the screens reuse ── */
-.adm-wrap--wide { max-width: 80rem; }
+/* .adm-wrap--wide is still on some screens' markup; every screen is full width now, so it sets nothing. */
 .adm-kicker { font-size: 0.75rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--adm-faint); }
 .adm-tnum { font-variant-numeric: tabular-nums; }
 .adm-good { color: var(--adm-ok); font-weight: 600; }
@@ -4162,20 +4167,176 @@ html:has(.adm-toast) { scroll-padding-bottom: 96px; }
 .adm-dsp-tick[aria-pressed="true"] .adm-dsp-box { border-color: var(--adm-ok); background: var(--adm-ok); }
 .adm-dsp-ask { margin-top: var(--adm-gap); }
 
-/* ── Driver portal (components/driver/DriverDashboard.tsx), also the admin preview ──
-   Focus, press and hover for its pills, tabs and card headers. A card
-   header sits flush in a card that clips its corners, so its ring is drawn
-   inside. */
-/* The admin preview shows the portal at the width the driver's phone gives it. */
-.adm-drv-preview { max-width: 45rem; }
-.adm-drv-allow { margin-bottom: var(--adm-gap); overflow-wrap: anywhere; }
-.drv-act:focus-visible { outline: 3px solid #171614; outline-offset: 2px; }
-.drv-head:focus-visible { outline-offset: -4px; }
-.drv-act:active { transform: scale(0.98); }
-.drv-head:active { transform: none; }
-a.drv-act:hover, button.drv-act:hover { filter: brightness(0.97); }
-@media (prefers-reduced-motion: reduce) {
-  .drv-act { transition: none !important; }
+/* ── Trip calendar and the "next up" card (components/schedule/TripCalendar.tsx) ──
+   On the admin's Bookings screen and in the driver's portal. Its own tokens,
+   so it reads the same inside .adm and inside the portal's inline styles.
+   Contrast, computed from what renders: ink 18.1:1 and soft 8.6:1 on white,
+   faint 5.4:1 on white and 5.1:1 on the warm fill, a trip-day's edge 3.6:1.
+   The dark card is a gradient, so its text is judged at the lightest corner,
+   the worst case: white 14.0:1, the 72% white of the meta line 8.0:1, the
+   gold kicker 7.4:1, the chip's gold on its own tint 5.3:1 (each is higher
+   at the dark corner, where the kicker reads 9.9:1).
+   A ride is a filled dot and a tour a ring: told apart by shape, and every
+   day's button says its date and what it holds in words. Day buttons are 44px
+   tall and, from 360px up, 44px wide. Under a finger the weeks sit 8px apart;
+   side to side the seven columns leave 2 to 4px between two trip-days on
+   consecutive dates, which their size allows (WCAG 2.5.8 asks 24px). */
+.cal {
+  --cal-ink: #171614; --cal-soft: #4E4C47; --cal-faint: #6E6A62; --cal-line: rgba(23, 22, 20, 0.10); --cal-edge: #8A867D; --cal-fill: #FAF9F7;
+  background: #fff; border: 1px solid var(--cal-line); border-radius: 16px; padding: 16px 12px;
+  font-family: var(--font-dm-sans); color: var(--cal-ink);
+  container-type: inline-size;
+}
+.cal :where(h2, h3, p, ul, table) { margin: 0; }
+.cal-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 0 4px; }
+.cal-title { font-size: 1.125rem; font-weight: 800; letter-spacing: -0.015em; line-height: 1.25; }
+.cal-nav { display: flex; align-items: center; gap: 8px; }
+.cal-btn {
+  display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; flex-shrink: 0;
+  border: 1px solid var(--cal-edge); border-radius: 9999px; background: #fff; color: var(--cal-ink); cursor: pointer;
+  font-family: inherit; font-size: 0.875rem; font-weight: 700;
+  transition: background-color var(--dur-fast) var(--ease-out);
+}
+.cal-btn--text { width: auto; padding: 0 16px; white-space: nowrap; }
+.cal-btn:hover { background: var(--cal-fill); }
+/* Focus: the site's own ring (2px dark gold, 8.7:1 on white), drawn outside each control. */
+.cal-grid { width: 100%; margin-top: 8px; table-layout: fixed; border-collapse: separate; border-spacing: 4px; }
+.cal-wd { padding: 4px 0; font-size: 0.75rem; font-weight: 700; letter-spacing: 0.06em; color: var(--cal-faint); text-align: center; }
+.cal-cell { padding: 0; text-align: center; vertical-align: top; }
+.cal-day {
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+  width: 100%; min-height: 44px; padding: 2px 0 4px; box-sizing: border-box;
+  border: 1px solid transparent; border-radius: 12px; background: transparent;
+  font-family: inherit; color: var(--cal-soft); font-variant-numeric: tabular-nums;
+}
+.cal-num { display: inline-flex; align-items: center; justify-content: center; min-width: 26px; height: 26px; border-radius: 9999px; font-size: 0.9375rem; font-weight: 500; line-height: 1; }
+.cal-day.is-out { color: var(--cal-faint); }
+/* A day with trips: a filled, edged tile with a heavy number, so the days that matter stand out of the month. */
+button.cal-day { cursor: pointer; background: var(--cal-fill); border-color: var(--cal-edge); color: var(--cal-ink); transition: background-color var(--dur-fast) var(--ease-out), border-color var(--dur-fast) var(--ease-out); }
+button.cal-day .cal-num { font-weight: 800; }
+button.cal-day:hover { background: #fff; border-color: var(--cal-ink); }
+/* A day that is over: still a way to its trips, but quiet, so the eye lands on what is ahead. */
+button.cal-day.is-past { background: transparent; color: var(--cal-soft); border-color: var(--cal-line); }
+button.cal-day.is-past .cal-num { font-weight: 600; }
+button.cal-day.is-on { background: var(--cal-ink); border-color: var(--cal-ink); color: #fff; }
+/* Today: a ring round the number, whatever else the day is. */
+.cal-day.is-today .cal-num { box-shadow: 0 0 0 2px currentColor; font-weight: 800; }
+.cal-marks { display: inline-flex; align-items: center; gap: 3px; height: 8px; }
+.cal-dot, .cal-ring { display: inline-block; width: 7px; height: 7px; border-radius: 9999px; flex-shrink: 0; box-sizing: border-box; }
+.cal-dot { background: currentColor; }
+.cal-ring { border: 1.5px solid currentColor; }
+.cal-count { font-size: 0.6875rem; font-weight: 800; line-height: 8px; }
+.cal-legend { display: flex; align-items: center; gap: 6px; margin-top: 8px; padding: 0 4px; font-size: 0.8125rem; color: var(--cal-faint); }
+.cal-legend-gap { margin-left: 10px; }
+.cal-legend-today { display: inline-block; width: 12px; height: 12px; margin-left: 10px; border-radius: 9999px; box-shadow: inset 0 0 0 2px currentColor; }
+.cal-note { margin-top: 8px; padding: 0 4px; font-size: 0.875rem; line-height: 1.5; color: var(--cal-soft); }
+.cal-link { display: inline-flex; align-items: center; min-height: 44px; padding: 0; border: none; background: none; cursor: pointer; font: inherit; font-weight: 700; color: var(--cal-ink); text-decoration: underline; text-underline-offset: 3px; }
+.cal-day-list { margin-top: 16px; padding: 16px 4px 0; border-top: 1px solid var(--cal-line); }
+.cal-day-title { font-size: 0.9375rem; font-weight: 800; line-height: 1.35; }
+.cal-day-count { font-weight: 600; color: var(--cal-soft); }
+.cal-events { list-style: none; padding: 0; display: grid; gap: 8px; margin-top: 12px; }
+.cal-ev {
+  display: flex; align-items: flex-start; gap: 12px; width: 100%; min-height: 56px; padding: 12px; box-sizing: border-box; text-align: left;
+  border: 1px solid var(--cal-line); border-radius: 12px; background: var(--cal-fill); color: inherit; font-family: inherit;
+}
+button.cal-ev { cursor: pointer; transition: background-color var(--dur-fast) var(--ease-out), border-color var(--dur-fast) var(--ease-out); }
+button.cal-ev:hover { background: #fff; border-color: var(--cal-edge); }
+.cal-ev-time { flex: 0 0 4.5rem; font-size: 0.9375rem; font-weight: 800; line-height: 1.4; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.cal-ev-main { flex: 1 1 0; min-width: 0; display: grid; gap: 2px; }
+/* The mark rides in the text line, so a long name wraps under the words, not under the mark. */
+.cal-ev-who { font-size: 0.9375rem; font-weight: 700; line-height: 1.4; }
+.cal-ev-who > :is(.cal-dot, .cal-ring) { margin-right: 6px; vertical-align: 0.08em; }
+.cal-ev-what { font-size: 0.875rem; line-height: 1.45; color: var(--cal-soft); overflow-wrap: anywhere; }
+.cal-ev-meta { font-size: 0.8125rem; line-height: 1.45; color: var(--cal-faint); font-variant-numeric: tabular-nums; }
+.cal-ev-go { flex-shrink: 0; align-self: center; color: var(--cal-faint); }
+.cal-foot { margin-top: 12px; font-size: 0.8125rem; color: var(--cal-faint); }
+.cal-nowrap { white-space: nowrap; }
+/* In a wide card (the driver's portal on a computer) the month keeps a
+   sensible width and the chosen day's trips sit beside it. */
+@container (min-width: 40rem) {
+  .cal-body { display: grid; grid-template-columns: minmax(20rem, 26rem) minmax(0, 1fr); gap: 32px; align-items: start; }
+  .cal-day-list { margin-top: 8px; padding-top: 0; border-top: none; }
+}
+/* On a phone the card gives its width to the seven columns, so each day is
+   44px wide: 8px of side padding from 376px up, and none at all on the
+   narrowest phones (360px), where the grid runs to the card's edges and its
+   own 2px spacing is the inset. The other rows keep a 12px inset. */
+@media (max-width: 37.5rem) { .cal { padding: 16px 8px; } }
+/* Under a finger the weeks sit 8px apart, so the same weekday in two weeks
+   running (a Sunday arrival and the Sunday drive home) is never a near miss.
+   The month has height to give; across, seven columns leave only 2 to 4px. */
+@media (max-width: 37.5rem), (pointer: coarse) { .cal-grid { border-spacing: 4px 8px; } }
+@media (max-width: 23.4375rem) {
+  .cal { padding: 16px 0; }
+  .cal-grid { border-spacing: 2px 8px; }
+  .cal-head, .cal-legend, .cal-note, .cal-day-list { padding-left: 12px; padding-right: 12px; }
+}
+/* The chosen day's trips arrive with a short fade, so a tap on another day visibly re-scopes the list. */
+@media (prefers-reduced-motion: no-preference) {
+  .cal-events, .cal-day-list > .cal-note { animation: cal-in 0.18s ease-out both; }
+}
+@keyframes cal-in { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+/* A phone or any touch screen is read at arm's length: 16px for what the row is about. */
+@media (max-width: 37.5rem), (pointer: coarse) {
+  .cal-num { font-size: 1rem; }
+  .cal-day-title, .cal-ev-time, .cal-ev-who { font-size: 1rem; }
+  .cal-ev-what { font-size: 0.9375rem; }
+  .cal-ev-meta, .cal-foot, .cal-legend, .cal-note { font-size: 0.875rem; }
+}
+@media (prefers-reduced-motion: reduce) { .cal-btn, button.cal-day, button.cal-ev { transition: none; } }
+
+/* The next ride or tour, said first and unmissably: the one dark card on a light page. */
+.cal-next {
+  position: relative; overflow: hidden; padding: 20px 24px 24px; border-radius: 16px;
+  background: linear-gradient(135deg, #171614 0%, #26231E 78%, #322B1D 100%); color: #fff;
+  font-family: var(--font-dm-sans); box-shadow: 0 10px 32px rgba(23, 22, 20, 0.22);
+}
+.cal-next :where(p) { margin: 0; }
+.cal-next-top { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 12px; }
+.cal-next-kicker { font-size: 0.75rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #D6BB63; }
+.cal-next-chip { padding: 4px 12px; border-radius: 9999px; border: 1px solid rgba(214, 187, 99, 0.45); background: rgba(214, 187, 99, 0.16); color: #D6BB63; font-size: 0.8125rem; font-weight: 700; white-space: nowrap; }
+.cal-next .cal-next-when { margin-top: 12px; font-size: clamp(1.5rem, 1.2rem + 1.4vw, 2rem); font-weight: 800; letter-spacing: -0.02em; line-height: 1.2; font-variant-numeric: tabular-nums; }
+.cal-next .cal-next-who { margin-top: 8px; font-size: 1rem; line-height: 1.5; color: rgba(255, 255, 255, 0.94); overflow-wrap: anywhere; }
+.cal-next .cal-next-meta { margin-top: 4px; font-size: 0.875rem; line-height: 1.5; color: rgba(255, 255, 255, 0.72); font-variant-numeric: tabular-nums; }
+.cal-next .cal-next-also { margin-top: 12px; font-size: 0.875rem; line-height: 1.5; color: rgba(255, 255, 255, 0.86); }
+.cal-next-act { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+.cal-next-btn {
+  display: inline-flex; align-items: center; justify-content: center; min-height: 44px; padding: 0 20px; border-radius: 9999px;
+  border: 1px solid #fff; background: #fff; color: #171614; font-family: inherit; font-size: 0.9375rem; font-weight: 700; text-decoration: none; cursor: pointer; white-space: nowrap;
+}
+.cal-next-btn--ghost { background: transparent; color: #fff; border-color: rgba(255, 255, 255, 0.55); }
+.cal-next-btn:hover { background: #F3F2EF; }
+.cal-next-btn--ghost:hover { background: rgba(255, 255, 255, 0.10); }
+/* The site's ring is the dark gold, 1.9:1 on this card; here it is the bright gold (7.4:1 at the card's lightest corner, 9.9:1 at its darkest). */
+.cal-next :focus-visible { outline-color: var(--gold-warm) !important; }
+.cal-next.cal-next--none { padding: 16px; background: #fff; color: #4E4C47; border: 1px solid rgba(23, 22, 20, 0.10); box-shadow: none; font-size: 0.9375rem; line-height: 1.5; }
+@media (max-width: 37.5rem) { .cal-next { padding: 16px 16px 20px; } .cal-next-btn { flex: 1 1 auto; } }
+
+/* Bookings: the list on the left, the calendar in a rail on the right that
+   stays in view while the list scrolls; one column under 64rem, where the
+   calendar sits between the next-up card and the tiles. */
+.adm-sched { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--adm-group); margin-top: var(--adm-group); }
+.adm-sched-main, .adm-sched-next, .adm-sched-rail { min-width: 0; }
+/* Four tiles sit four across or two by two, never three and one: beside the
+   rail the column is often 480 to 643px wide, where auto-fit left the fourth
+   tile alone on a second row. Under 40.25rem (four 9.5rem tiles and their
+   gaps) the huge product makes half the row the minimum; above it the product
+   is negative and the 9.5rem minimum stands. */
+.adm-sched-main > .adm-tiles { margin-top: 0; grid-template-columns: repeat(auto-fit, minmax(min(100%, max(9.5rem, min(50% - 6px, (40.25rem - 100%) * 999))), 1fr)); }
+/* Where the calendar brings the list to: just clear of the window's top edge. */
+.adm-bk-anchor { scroll-margin-top: 16px; }
+@media (min-width: 64rem) {
+  /* The rail is 23rem at its narrowest, so a day is still 44px wide on a touch laptop or a tablet on its side. */
+  .adm-sched { grid-template-columns: minmax(0, 1fr) minmax(23rem, 26rem); grid-template-areas: "next rail" "main rail"; align-items: start; gap: var(--adm-group) 32px; }
+  .adm-sched-next { grid-area: next; }
+  .adm-sched-main { grid-area: main; }
+  .adm-sched-rail { grid-area: rail; position: sticky; top: 16px; }
+  /* A busy day makes the calendar taller than a laptop window. Pinned in
+     place, its last trips then stayed below the window for good (measured at
+     1280x640 with four trips: wheel, scroll and keyboard focus all failed to
+     show them). So the card is never taller than the window, and scrolls
+     inside itself when a day needs more room. */
+  .adm-sched-rail > .cal { max-height: calc(100vh - 32px); max-height: calc(100dvh - 32px); overflow-y: auto; }
 }
 
 /* ── Admin: guest clips (components/admin/VideoQueue.tsx) ──

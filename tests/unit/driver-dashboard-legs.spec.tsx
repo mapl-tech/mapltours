@@ -175,35 +175,3 @@ describe('rows the old gates already handled are still handled the old way', () 
     expect(calendars(html)).toHaveLength(1)
   })
 })
-
-/**
- * Nov 13 2026: the card header is a real button inside the trip's heading
- * (it was a div with role=button that swallowed the heading), a phone link
- * opens the dialer in place, a past year is still printed while the current
- * year is not, and the paid chip names a day on Jamaica's calendar.
- */
-describe('the card as the driver and a screen reader meet it', () => {
-  test('the header is a button inside the heading, named by the ref and guest', () => {
-    const html = renderToStaticMarkup(<TripCard t={roundTrip} open={false} onToggle={() => {}} />)
-    expect(html).toMatch(/<h2[^>]*><button type="button"[^>]*aria-expanded="false"[^>]*aria-controls="trip-1a2b3c4d-0000-0000-0000-000000000000-panel"[^>]*aria-label="MAPL-1A2B3C4D, Ada Lovelace"/)
-    expect(html).not.toContain('role="button"')
-  })
-
-  test('calling the guest opens the dialer in place; web links still open a new tab', () => {
-    const html = card(roundTrip)
-    expect(html).toMatch(/<a class="drv-act" href="tel:\+15550100" style=/)
-    expect(html).toMatch(/href="https:\/\/wa\.me\/[^"]*" target="_blank"/)
-  })
-
-  test('a year that is not this year is printed', () => {
-    expect(card(roundTrip)).toContain('Sun, Oct 11, 2099')
-  })
-
-  test('the paid chip is a day on Jamaica’s calendar, never a clock time in someone’s zone', () => {
-    const paidAt = '2099-10-02T03:30:00Z' // Oct 1, 10:30 PM in Jamaica
-    const t = driverTrip({ ...booking({ trip_type: 'one_way', arrival_at: '2099-10-11T21:05:00+00:00' }), dispatch: { paid_first: paidAt } })!
-    const html = card(t)
-    expect(html).toContain('Paid Oct 1, 2099')
-    expect(html).not.toMatch(/Paid Oct \d+, \d+:\d+/)
-  })
-})

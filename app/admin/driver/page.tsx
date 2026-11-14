@@ -14,11 +14,17 @@ import DriverDashboard from '@/components/driver/DriverDashboard'
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
 
-/** The preview page: the .adm classes in app/globals.css, like every admin screen. */
+const dm = 'var(--font-dm-sans)'
+const ink = '#171614'
+const soft = '#57534C'
+
 function Shell({ children }: { children: React.ReactNode }) {
   return (
-    <div className="adm-page">
-      <div className="adm adm-wrap">{children}</div>
+    <div style={{ minHeight: '100vh', background: '#F4F1EB' }}>
+      {/* Side gutters match the admin bar above (.adm-bar-in), so the preview lines up under it. */}
+      <div style={{ width: '100%', padding: '32px clamp(16px, 3vw, 48px) 80px', fontFamily: dm, color: ink }}>
+        {children}
+      </div>
     </div>
   )
 }
@@ -27,7 +33,7 @@ export default async function AdminDriverPreviewPage() {
   const session = createClient()
   const { data: { user } } = await session.auth.getUser()
   if (!user) {
-    return <Shell><h1 className="adm-h1">Driver portal</h1><p className="adm-lead">Please <Link href="/login?redirect=/admin/driver" className="adm-inline-link">sign in</Link> to view this page.</p></Shell>
+    return <Shell><h1 style={{ fontWeight: 700, fontSize: 22 }}>Driver portal preview</h1><p style={{ marginTop: 8, color: soft }}>Please <Link href="/login?redirect=/admin/driver" style={{ color: ink, fontWeight: 600 }}>sign in</Link>.</p></Shell>
   }
   const svc = createServiceClient()
   const { data: adminRow } = await svc.from('admins').select('user_id').eq('user_id', user.id).maybeSingle()
@@ -38,9 +44,9 @@ export default async function AdminDriverPreviewPage() {
     if (isAllowedDriver(user.email)) redirect('/driver')
     return (
       <Shell>
-        <h1 className="adm-h1">Not authorised</h1>
-        <p className="adm-lead">This page is limited to MAPL Tours Jamaica admins.</p>
-        <p className="adm-lead">Driving for MAPL Tours Jamaica? Your portal is at <Link href="/driver" className="adm-inline-link">mapltours.com/driver</Link>.</p>
+        <h1 style={{ fontWeight: 700, fontSize: 22 }}>Not authorised</h1>
+        <p style={{ marginTop: 8, color: soft }}>This page is limited to MAPL Tours Jamaica admins.</p>
+        <p style={{ marginTop: 6, color: soft }}>Driving for MAPL Tours Jamaica? Your portal is at <Link href="/driver" style={{ color: ink, fontWeight: 600 }}>mapltours.com/driver</Link>.</p>
       </Shell>
     )
   }
@@ -88,13 +94,19 @@ export default async function AdminDriverPreviewPage() {
   const allow = driverAllowlist()
   return (
     <Shell>
-      {/* The portal at the width the driver sees it, with its own h1 ("Your trips") and the preview banner. */}
-      <div className="adm-drv-preview">
-        <p className="adm-meta adm-drv-allow">
-          {allow.length ? `Can sign in to the driver portal: ${allow.join(', ')}` : 'No driver can sign in yet (set DRIVER_ALLOWED_EMAILS).'}
-        </p>
-        <DriverDashboard trips={trips} tours={tours} driverLabel="your driver" adminPreview />
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', marginBottom: 18 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/mapl-logo.svg" alt="MAPL Tours Jamaica" style={{ height: 52, width: 'auto', display: 'block', margin: '-10px 0' }} />
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, flexWrap: 'wrap' }}>
+            <h1 style={{ fontWeight: 800, fontSize: 22, letterSpacing: '-0.02em', margin: 0 }}>Driver portal preview</h1>
+            <span style={{ fontSize: 13, color: soft }}>
+              {allow.length ? `Approved: ${allow.join(', ')}` : 'No driver emails approved yet (set DRIVER_ALLOWED_EMAILS)'}
+            </span>
+          </div>
+        </div>
       </div>
+      <DriverDashboard trips={trips} tours={tours} driverLabel="your driver" adminPreview />
     </Shell>
   )
 }

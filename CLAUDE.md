@@ -619,3 +619,18 @@ The job also uses `CRON_SECRET`, `RESEND_API_KEY` (it must read contacts and seg
 **The promise ships with the sender.** `TIPS_ON_LINE` (lib/trip-tips.ts, "The first one comes in a couple of days"), the privacy page's trip tips lines, and the bio's `TIPS_ON`, /tips "done" line, code-email tips card and `COVERS` all describe THIS job. Deploy them in the same release that sets `TRIP_TIPS_ENABLED=1` (main site first, then the bio), never before: until the job sends, "a couple of days" is a promise nobody keeps. If the copy has to ship first, hold the old strings until the first real p1 has gone out.
 
 Tests: `tests/unit/trip-tips-{plan,run,unsubscribe,route,emails,postal}.spec.ts` (fakes only; the plan's timing tests run under UTC, Los Angeles and Tokyo). `npx tsx scripts/trip-tips-preview.mts <dir>` renders every tip for reading, photos included.
+
+## Trip calendar and "next up" (Nov 13 2026)
+
+Owner: "it needs to be very clear when there is an upcoming ride, maybe have a calendar available for admins and the driver." `components/schedule/TripCalendar.tsx` (the month grid, a day's trips, and the dark `NextUp` card) is on `/admin/bookings` and in the driver portal. Both read `lib/trip-schedule.ts` (pure, `tests/unit/trip-schedule.spec.ts`). Styles: the `.cal` block in `globals.css`.
+
+Rules, enforced in code:
+- **A leg is an event, a booking is not.** `scheduleFromBookings` / `scheduleFromDriver` return one event per ride LEG and per tour day, on its own Jamaica day. Only `paid` bookings are anybody's drive.
+- **The Bookings list follows the same rule.** `viewOf` and `BookingCard` use `nextService(b, today)`: a round trip stays under Upcoming, leading with its drive back to the airport, until that drive has run. It used to drop into Past the day after the guest landed.
+- **Jamaica time, whatever the machine's zone.** A leg's day is the first ten characters of its stored wall-clock stamp; "today" and "next" use the fixed five-hour offset. Tested under four time zones.
+- **The grid is a real table** (weekday column headers), each day with trips is a button named by its whole date and what it holds, a ride is a dot and a tour a ring (shape, not colour), and it opens on the next day that has a trip.
+- **The admin body is the width of the admin bar** (`.adm-wrap` has no max-width; owner, Nov 13: "I prefer the body being the same width as the header navigation"). The calendar is a sticky right rail from 1024px and sits between the next-up card and the tiles below that.
+- **The pinned calendar is never taller than the window.** In the rail the card has `max-height: calc(100dvh - 32px)` and scrolls inside itself. Without that, a four-trip day on a 1280x640 laptop left its last trips below the window for good: the page scrolled, the pinned card did not, and keyboard focus landed on rows nobody could see. Check any change to the rail at a short window with the busiest day chosen.
+- **Day buttons on touch screens** are 44px wide from 360px up and the weeks sit 8px apart. Two trip-days on consecutive dates are 2 to 4px apart side to side; seven 44px columns, 8px gaps and 16px gutters do not fit in a phone's width, so that one is accepted.
+- **The driver portal's own design is the pre-Nov-13 one** (owner, Nov 13: "I like how the driver portal was before"; the redesign in 278078a was undone). The calendar was added to it on request; do not restyle the rest of it in a design pass.
+- Preview either screen with made-up rows at a temporary `app/zz-*/page.tsx`; delete it and `.next/types/app/zz-*` before committing.

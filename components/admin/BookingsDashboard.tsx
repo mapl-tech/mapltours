@@ -8,6 +8,8 @@ import { AI_ASSISTANT_GROUP, aiAssistantLabel, attributionLabel, browserLabel, f
 import Arrow, { RouteText } from '@/components/ui/Arrow'
 import Segmented from '@/components/admin/Segmented'
 import { ageLabel, bookingRef, clockTime, count, jamaicaToday, legTime, money, plural, stamp, tripDay } from '@/lib/admin-format'
+import TripCalendar, { NextUp } from '@/components/schedule/TripCalendar'
+import { nextService, scheduleFromBookings, serviceMoments, type ScheduleEvent } from '@/lib/trip-schedule'
 
 /**
  * Client dashboard for the admin bookings page. The parent server component
@@ -116,13 +118,15 @@ function TourItem({ i }: { i: Row }) {
 }
 
 // Exported for tests/unit/attribution-first-touch-dashboard.spec.tsx.
-export function BookingCard({ b, variant, open, onToggle, showType = true }: {
+export function BookingCard({ b, variant, open, onToggle, showType = true, today = jamaicaToday() }: {
   b: Row
   variant: 'abandoned' | 'paid'
   open: boolean
   onToggle: () => void
   /** The Ride or Tour badge; off once the list is filtered to one kind. */
   showType?: boolean
+  /** Today in Jamaica (YYYY-MM-DD): the card leads with the booking's next service from this day on. */
+  today?: string
 }) {
   const cardRef = useRef<HTMLLIElement>(null)
   const panelRef = useRef<HTMLDivElement>(null)
@@ -154,11 +158,16 @@ export function BookingCard({ b, variant, open, onToggle, showType = true }: {
   const refunded = b.status === 'refunded'
   const item0 = items[0]
   const customerName = [b.first_name, b.last_name].filter(Boolean).join(' ') || '(no name)'
-  const routeSummary = isTransfer
-    ? rideEnds(item0).join(' → ')
-    : items.length === 1 ? (item0?.title ?? 'Tour') : `${items.length} experiences`
   const paxSummary = isTransfer ? count(item0?.passengers ?? item0?.travelers ?? 1, 'passenger') : count(item0?.travelers ?? 1, 'traveler')
-  const first = firstService(b)
+  // The service this booking is waiting on: its next one from today, so a
+  // round trip whose guest has landed leads with the drive back to the
+  // airport (day, time and direction), not with a landing that is over.
+  // A booking with nothing ahead, and an unpaid cart, lead with their first.
+  const first = (variant === 'paid' ? nextService(b, today) : null) ?? firstService(b)
+  const returnLeg = isTransfer && first?.kind === 'pickup' && !!item0?.arrival_at
+  const routeSummary = isTransfer
+    ? (returnLeg ? [...rideEnds(item0)].reverse() : rideEnds(item0)).join(' → ')
+    : items.length === 1 ? (item0?.title ?? 'Tour') : `${items.length} experiences`
   const firstDate = first ? new Date(`${first.day}T12:00:00Z`) : null
   const when = first?.at
     ? `${first.kind === 'lands' ? 'Lands' : 'Hotel pickup'} ${clockTime(first.at)}`
@@ -327,8 +336,9 @@ const PAGE = 30
 
 /**
  * The bookings a view shows, in its order. Paid views hold paid and refunded
- * bookings: upcoming is every trip from today (Jamaica) on, soonest first;
- * past is the rest, latest first; recent is newest payment first. Abandoned
+ * bookings: upcoming is every booking with a ride leg or tour day from today
+ * (Jamaica) on, soonest first; past is the rest, latest first; recent is
+ * newest payment first. Abandoned
  * carts are newest first. The search matches anything haystack() lists.
  * Pure, so tests/unit/bookings-dashboard.spec.ts pins it.
  */
@@ -338,9 +348,13 @@ export function viewOf(bookings: Row[], o: { status: Status; when: When; kind: K
   if (o.kind !== 'all') rows = rows.filter((b) => (b.booking_type ?? 'tour') === o.kind)
   if (q) rows = rows.filter((b) => haystack(b).includes(q))
   if (o.status === 'abandoned') return [...rows].sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)))
-  const key = (b: Row) => { const f = firstService(b); return f ? (f.at ?? f.day) : '' }
-  if (o.when === 'upcoming') return rows.filter((b) => (firstService(b)?.day ?? '') >= o.today).sort((a, b) => key(a).localeCompare(key(b)))
-  if (o.when === 'past') return rows.filter((b) => { const d = firstService(b)?.day; return !!d && d < o.today }).sort((a, b) => key(b).localeCompare(key(a)))
+  // Sorted by the service each booking is waiting on. A round trip stays
+  // upcoming until its drive back to the airport has run: it used to drop
+  // into "past" the day after the guest landed, with that drive still ahead.
+  const ahead = (b: Row) => { const m = nextService(b, o.today); return m ? (m.at ?? m.day) : '' }
+  const last = (b: Row) => { const m = serviceMoments(b).at(-1); return m ? (m.at ?? m.day) : '' }
+  if (o.when === 'upcoming') return rows.filter((b) => !!ahead(b)).sort((a, b) => ahead(a).localeCompare(ahead(b)))
+  if (o.when === 'past') return rows.filter((b) => !!last(b) && !ahead(b)).sort((a, b) => last(b).localeCompare(last(a)))
   return [...rows].sort((a, b) => String(b.paid_at ?? b.created_at).localeCompare(String(a.paid_at ?? a.created_at)))
 }
 
@@ -372,8 +386,10 @@ export default function BookingsDashboard({ bookings, focusId = null }: {
   const recovered = abandoned.filter((b) => b.recovery_email_sent_at)
   const paidRevenue = genuinelyPaid.reduce((s, b) => s + Number(b.total_paid ?? 0), 0)
   const abandonedValue = abandoned.reduce((s, b) => s + Number(b.total_paid ?? 0), 0)
-  const upcoming = genuinelyPaid.filter((b) => (firstService(b)?.day ?? '') >= today)
-  const inTwoWeeks = upcoming.filter((b) => (firstService(b)?.day ?? '') <= soonEnd)
+  const upcoming = genuinelyPaid.filter((b) => !!nextService(b, today))
+  const inTwoWeeks = upcoming.filter((b) => (nextService(b, today)?.day ?? '') <= soonEnd)
+  // Every ride leg and tour day as its own dated event, for the next-up card and the calendar.
+  const schedule = useMemo(() => scheduleFromBookings(bookings), [bookings])
 
   const stats = [
     { label: 'Upcoming trips', value: String(upcoming.length), sub: `${inTwoWeeks.length} in the next 14 days` },
@@ -386,7 +402,25 @@ export default function BookingsDashboard({ bookings, focusId = null }: {
 
   // A new view starts at the top of its list.
   useEffect(() => { setLimit(PAGE) }, [status, when, kind, query])
-  const shown = list.slice(0, limit)
+  // The open card is always on the page, however far down the list it is
+  // (the calendar can open any booking).
+  const openIndex = openId ? list.findIndex((b) => b.id === openId) : -1
+  const shown = list.slice(0, Math.max(limit, openIndex + 1))
+
+  // From the calendar or the next-up card: show the list that holds the
+  // booking (upcoming or past, every kind, no search) and open its card,
+  // which scrolls itself into view.
+  const listRef = useRef<HTMLDivElement>(null)
+  const openBooking = (e: ScheduleEvent) => {
+    setStatus('paid')
+    setWhen(e.day >= today ? 'upcoming' : 'past')
+    setKind('all')
+    setQuery('')
+    setOpenId(e.bookingId)
+    // On a phone the list is below the calendar: bring it up, the card's own
+    // scroll then settles on the booking.
+    window.requestAnimationFrame(() => listRef.current?.scrollIntoView({ block: 'start', behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' }))
+  }
   const listKey = `${status}-${when}-${kind}`
   const listName = LIST_NAME[status === 'abandoned' ? 'abandoned' : when]
   const shownText = `Showing ${Math.min(shown.length, list.length)} of ${plural(list.length, 'booking')}.`
@@ -404,8 +438,8 @@ export default function BookingsDashboard({ bookings, focusId = null }: {
   // every other view is one list, named for screen readers only.
   const groups = status === 'paid' && when === 'upcoming'
     ? [
-        { key: 'soon', title: 'Next 14 days', visible: true, rows: shown.filter((b) => (firstService(b)?.day ?? '') <= soonEnd), none: 'None in the next 14 days.' },
-        { key: 'later', title: 'Later', visible: true, rows: shown.filter((b) => (firstService(b)?.day ?? '') > soonEnd), none: null },
+        { key: 'soon', title: 'Next 14 days', visible: true, rows: shown.filter((b) => (nextService(b, today)?.day ?? '') <= soonEnd), none: 'None in the next 14 days.' },
+        { key: 'later', title: 'Later', visible: true, rows: shown.filter((b) => (nextService(b, today)?.day ?? '') > soonEnd), none: null },
       ]
     : [{ key: 'all', title: listName, visible: false, rows: shown, none: null }]
 
@@ -421,6 +455,28 @@ export default function BookingsDashboard({ bookings, focusId = null }: {
       <h1 className="adm-h1">Bookings</h1>
       <p className="adm-lead">Trip times are Jamaica time. Search finds a booking by guest, reference, hotel or flight.</p>
 
+      {/* In reading order: what is next, the month, then the list. On a wide
+          screen the month is a rail beside the other two and stays in view. */}
+      <div className="adm-sched">
+      <div className="adm-sched-next">
+      {/* The next ride or tour, said first. Its filled button is the next job (dispatch). */}
+      <NextUp
+        events={schedule}
+        action={(e) => (
+          <>
+            {e.kind !== 'tour' && <Link href={`/admin/dispatch/${e.bookingId}`} className="cal-next-btn">Manage dispatch<Arrow /></Link>}
+            <button type="button" className={e.kind === 'tour' ? 'cal-next-btn' : 'cal-next-btn cal-next-btn--ghost'} onClick={() => openBooking(e)}>Open booking</button>
+          </>
+        )}
+      />
+      </div>
+
+      {/* Every day that has a ride or a tour; a day's trips open their booking in the list. */}
+      <aside className="adm-sched-rail" aria-label="Trip calendar">
+        <TripCalendar events={schedule} onOpen={openBooking} />
+      </aside>
+
+      <div className="adm-sched-main">
       <dl className="adm-tiles">
         {stats.map((s) => (
           <div key={s.label} className="adm-tile">
@@ -460,6 +516,7 @@ export default function BookingsDashboard({ bookings, focusId = null }: {
         </div>
       </div>
 
+      <div ref={listRef} className="adm-bk-anchor" />
       <p className="adm-meta adm-bk-count">{describe} {shownText}</p>
       <p className="visually-hidden" aria-live="polite" aria-atomic="true">{spoken}</p>
       {list.length === 0 ? (
@@ -473,7 +530,7 @@ export default function BookingsDashboard({ bookings, focusId = null }: {
                 <ol className="adm-bk-list">
                   {g.rows.map((b) => (
                     <BookingCard
-                      key={b.id} b={b} variant={status} showType={kind === 'all'}
+                      key={b.id} b={b} variant={status} showType={kind === 'all'} today={today}
                       open={openId === b.id} onToggle={() => setOpenId((o) => (o === b.id ? null : b.id))}
                     />
                   ))}
@@ -486,10 +543,12 @@ export default function BookingsDashboard({ bookings, focusId = null }: {
         </div>
       )}
       {list.length > shown.length && (
-        <button type="button" className="adm-btn adm-more" onClick={() => setLimit((n) => n + PAGE)}>
+        <button type="button" className="adm-btn adm-more" onClick={() => setLimit(shown.length + PAGE)}>
           Show {Math.min(PAGE, list.length - shown.length)} more
         </button>
       )}
+      </div>
+      </div>
     </div>
   )
 }

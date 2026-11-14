@@ -58,6 +58,21 @@ describe('viewOf: the list each view shows', () => {
     expect(ids(viewOf(rows, { ...opts, when: 'recent' }))).toEqual(['late', 'refunded', 'sameday', 'soon', 'old'])
   })
 
+  test('a round trip stays upcoming until its drive back to the airport has run', () => {
+    // Landed Nov 10, flies home Nov 17: on the 13th the drive back is still to come.
+    const midStay = { ...ride('midstay', '2026-11-10T14:00:00+00:00'), booking_items: [{ item_type: 'transfer', airport: 'MBJ', hotel: 'Riu Ocho Rios', arrival_at: '2026-11-10T14:00:00+00:00', departure_at: '2026-11-17T09:00:00+00:00' }] }
+    const done = { ...ride('done', '2026-11-01T14:00:00+00:00'), booking_items: [{ item_type: 'transfer', airport: 'MBJ', hotel: 'Riu Ocho Rios', arrival_at: '2026-11-01T14:00:00+00:00', departure_at: '2026-11-08T09:00:00+00:00' }] }
+    const all = [...rows, midStay, done]
+    // Soonest drive first: the Nov 17 pickup leads the 2099 trips.
+    expect(ids(viewOf(all, opts))).toEqual(['midstay', 'soon', 'sameday', 'refunded', 'late'])
+    // Past holds only bookings with nothing ahead, most recently finished first.
+    expect(ids(viewOf(all, { ...opts, when: 'past' }))).toEqual(['done', 'old'])
+    // On the day of the drive back it is still upcoming; the day after, past.
+    expect(ids(viewOf([midStay], { ...opts, today: '2026-11-17' }))).toEqual(['midstay'])
+    expect(ids(viewOf([midStay], { ...opts, today: '2026-11-18' }))).toEqual([])
+    expect(ids(viewOf([midStay], { ...opts, when: 'past', today: '2026-11-18' }))).toEqual(['midstay'])
+  })
+
   test('abandoned: unpaid carts only, newest first, whatever the trip date', () => {
     expect(ids(viewOf(rows, { ...opts, status: 'abandoned' }))).toEqual(['cart2', 'cart'])
   })
