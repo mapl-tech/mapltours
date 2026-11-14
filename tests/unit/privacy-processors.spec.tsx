@@ -1,6 +1,8 @@
 import { describe, test, expect, vi } from 'vitest'
 import type { ReactNode } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 
 // The editorial chrome (banner image, footer) is irrelevant to what the policy
 // says; render its sections as plain markup.
@@ -47,7 +49,33 @@ describe('privacy policy processor list', () => {
   })
 
   test('keeps the last-updated line on or after the change', () => {
-    expect(text(html)).toContain('This Privacy Policy was last updated on November 11, 2026.')
+    expect(text(html)).toContain('This Privacy Policy was last updated on November 14, 2026.')
+  })
+
+  test('names Google Ads, whose tag the site loads beside the analytics tools (owner, Nov 14 2026)', () => {
+    // components/Trackers.tsx has configured the Google Ads tag on the same gtag as GA4 since launch; the
+    // policy covered Meta's advertising in detail and said nothing of Google's. Change the two together.
+    const trackers = readFileSync(resolve(process.cwd(), 'components/Trackers.tsx'), 'utf8')
+    expect(trackers).toMatch(/gtag\('config', 'AW-\d+'\)/)
+    const raw = text(html.match(/<li><strong>Google Ads<\/strong>[\s\S]*?<\/li>/)?.[0] ?? '')
+    expect(raw, 'a <li> for Google Ads in the processor list').not.toBe('')
+    expect(sharing).toContain(raw)
+    const item = raw.replace(/\u2019/g, "'")
+    expect(item).toContain('We advertise on Google Search')
+    expect(item).toContain("Google's advertising tag on our site lets Google record visits to our pages and set its own cookies")
+    // True only while nothing hands the tag a guest's details: no enhanced conversions, no user_data.
+    expect(item).toContain('We do not send Google your name, email address or phone number for advertising')
+    for (const f of ['components/Trackers.tsx', 'lib/analytics.ts']) expect(readFileSync(resolve(process.cwd(), f), 'utf8'), f).not.toMatch(/user_data|enhanced_conversion|allow_enhanced_conversions/)
+    // One gate for every tag: a visitor who sends Do Not Track or Global Privacy Control gets none of them.
+    expect(item).toContain('with Do Not Track or Global Privacy Control enabled, it does not load')
+    expect(trackers).toContain('if (!allowed) return null')
+  })
+
+  test('the Cookies section says our analytics and advertising partners set cookies of their own', () => {
+    const cookies = text(html.match(/<section data-title="Cookies">([\s\S]*?)<\/section>/)?.[1] ?? '').replace(/\s+/g, ' ')
+    expect(cookies).toContain('Our analytics and advertising partners (Google, Meta and Hotjar) set cookies of their own to measure visits and the results of our ads; none of them load when your browser sends Do Not Track or Global Privacy Control.')
+    // What it already said stays.
+    expect(cookies).toContain('show your booking confirmation only on the device you booked on')
   })
 
   test('names the business responsible for the data, and no address (owner, Nov 11 2026)', () => {

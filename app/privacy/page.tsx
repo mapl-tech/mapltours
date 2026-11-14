@@ -14,7 +14,7 @@ export default function PrivacyPage() {
   return (
     <EditorialPage slug="privacy" label="Legal" title="Privacy Policy">
       <Section title="Last updated">
-        <p>This Privacy Policy was last updated on November 11, 2026.</p>
+        <p>This Privacy Policy was last updated on November 14, 2026.</p>
       </Section>
 
       <Section title="Our commitment">
@@ -68,6 +68,7 @@ export default function PrivacyPage() {
           <li><strong>Supabase</strong>, secure database hosting (Frankfurt region).</li>
           <li><strong>Google</strong>, a private Google Calendar our operations team uses to schedule your trip. When a booking is paid, we add it there with your name, phone number, hotel or pickup place, party size, trip date and times, and, for airport transfers, your flight numbers.</li>
           <li><strong>Google Analytics &amp; Hotjar</strong>, anonymised usage analytics. We honour your browser&rsquo;s Do Not Track and Global Privacy Control signals: with either enabled, none of these analytics tools load at all.</li>
+          <li><strong>Google Ads</strong>, advertising measurement. We advertise on Google Search, and Google&rsquo;s advertising tag on our site lets Google record visits to our pages and set its own cookies, so we can see which ads bring people to us. We do not send Google your name, email address or phone number for advertising. The tag follows the same rule as the analytics tools: with Do Not Track or Global Privacy Control enabled, it does not load.</li>
         </ul>
         <p style={{ marginTop: 12 }}>We do not sell your personal information to anyone.</p>
       </Section>
@@ -95,7 +96,7 @@ export default function PrivacyPage() {
       <Section title="Cookies">
         <p>
           We use cookies and similar technologies to keep you logged in, remember your itinerary cart, show your
-          booking confirmation only on the device you booked on, and measure how the site is performing. You can disable cookies in your browser settings, but some parts of the site
+          booking confirmation only on the device you booked on, and measure how the site is performing. Our analytics and advertising partners (Google, Meta and Hotjar) set cookies of their own to measure visits and the results of our ads; none of them load when your browser sends Do Not Track or Global Privacy Control. You can disable cookies in your browser settings, but some parts of the site
           (checkout, saved trips) may not work properly without them.
         </p>
       </Section>

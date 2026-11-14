@@ -14,7 +14,7 @@ export default function TermsPage() {
   return (
     <EditorialPage slug="terms" label="Legal" title="Terms of Service">
       <Section title="Last updated">
-        <p>These Terms were last updated on November 12, 2026.</p>
+        <p>These Terms were last updated on November 14, 2026.</p>
       </Section>
 
       <Section title="Agreement to terms">
