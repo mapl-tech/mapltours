@@ -64,6 +64,7 @@ import {
   priceUnitLabel,
   tourPrice,
   isZonePriced,
+  isPerPersonByArea,
   zonePrices,
   zoneSells,
   type Experience,
@@ -343,7 +344,7 @@ function priceForParty(exp: Experience, guests: number, zone: TourZone | null = 
   const p = exp.pricing
   if (isZonePriced(p)) {
     if (zone && zoneSells(p, zone)) {
-      return { guests, pickupArea: TOUR_ZONE_LABEL[zone], priceUsd: tourPrice(p, guests, zone), covers: `total for ${guests} guests picked up in ${TOUR_ZONE_LABEL[zone]}; this tour is priced by pickup area` }
+      return { guests, pickupArea: TOUR_ZONE_LABEL[zone], priceUsd: tourPrice(p, guests, zone), covers: `total for ${guests} guests picked up in ${TOUR_ZONE_LABEL[zone]}; this tour is priced ${isPerPersonByArea(p) ? 'per person, ' : ''}by pickup area` }
     }
     return {
       guests,

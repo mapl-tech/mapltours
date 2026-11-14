@@ -48,7 +48,7 @@ export default function TermsPage() {
           <li>Your booking confirmation email serves as your receipt and contains your booking reference and all trip details.</li>
           <li>By completing checkout you confirm that the traveler details and dates you have provided are accurate.</li>
           <li>Bookings close 12 hours before an experience or pickup begins. Anything inside that window must be arranged with us directly and is subject to availability.</li>
-          <li>Private door-to-door transport is included in the price of every tour. A few tours are priced by where we pick you up, and checkout shows the price for your pickup before you pay; a pickup outside the areas a tour lists is quoted on request. You provide the pickup and drop-off locations at checkout, and it is your responsibility to be ready at the agreed place and time.</li>
+          <li>Private door-to-door transport is included in the price of every tour. Some tours are priced by where we pick you up, and checkout shows the price for your pickup before you pay; a pickup outside the areas a tour lists is quoted on request. You provide the pickup and drop-off locations at checkout, and it is your responsibility to be ready at the agreed place and time.</li>
         </ul>
       </Section>
 

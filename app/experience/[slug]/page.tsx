@@ -3,7 +3,7 @@ import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { preload } from 'react-dom'
 import ExperienceDetail from '@/components/ExperienceDetail'
-import { getExperienceBySlug, reelPoster, isZonePriced, zonePrices, type Experience } from '@/lib/experiences'
+import { getExperienceBySlug, reelPoster, isZonePriced, isPerPersonByArea, zonePrices, type Experience } from '@/lib/experiences'
 import { TOUR_ZONE_LABEL } from '@/lib/tour-zones'
 import { createServiceClient } from '@/lib/supabase/service'
 import { isMaplAccount } from '@/lib/creator'
@@ -18,7 +18,9 @@ const SITE_URL = 'https://mapltours.com'
  */
 function zoneOffer(exp: Experience, url: string) {
   const p = exp.pricing
-  const flatGroup = !p.perPersonAddon
+  // Per person by area (bamboo rafting): each area's price is for one guest.
+  const perHead = isPerPersonByArea(p)
+  const flatGroup = !perHead && !p.perPersonAddon
   const party = flatGroup ? p.tierMax : 1
   const areas = zonePrices(p, party)
   const prices = areas.map((a) => a.price)
@@ -30,7 +32,7 @@ function zoneOffer(exp: Experience, url: string) {
     lowPrice: Math.min(...prices),
     highPrice: Math.max(...prices),
     offerCount: areas.length,
-    description: `${flatGroup ? `Private tour, one price for up to ${p.tierMax} people` : 'Price for 1 person; each guest adds to it'}, set by the pickup area: ${areas.map((a) => `${TOUR_ZONE_LABEL[a.zone]} $${a.price}`).join(', ')}.`,
+    description: `${perHead ? 'Private tour, price per person' : flatGroup ? `Private tour, one price for up to ${p.tierMax} people` : 'Price for 1 person; each guest adds to it'}, set by the pickup area: ${areas.map((a) => `${TOUR_ZONE_LABEL[a.zone]} $${a.price}`).join(', ')}.`,
     eligibleQuantity: {
       '@type': 'QuantitativeValue',
       minValue: 1,

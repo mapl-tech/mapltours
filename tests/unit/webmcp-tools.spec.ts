@@ -249,10 +249,31 @@ describe('WebMCP tool set', () => {
     const within = (await get.execute({ tour: rick.title, guests: rick.pricing.tierMax })) as R
     expect(within.priceForParty.covers).toMatch(new RegExp(`flat rate that covers up to ${rick.pricing.tierMax}`))
     // a per-person tour never claims a flat rate, and gives the per-guest figure when it divides evenly
-    const pp = experiences.find((e) => e.pricing.mode === 'per_person')!
+    const pp = experiences.find((e) => e.pricing.mode === 'per_person' && !e.pricing.zoneRates)!
     const p = (await get.execute({ tour: getSlug(pp), guests: 2 })) as R
     expect(p.priceForParty.covers).toBe('total for 2 guests')
     expect(p.priceForParty.perGuestUsd).toBe(perTravelerPrice(pp.pricing, 2) ?? undefined)
+  })
+
+  test('get_tour prices a per-person tour by the pickup area (Collin, Nov 13 2026: the raft)', async () => {
+    const { t: get } = tool('get_tour')
+    const raft = experiences.find((e) => e.id === 3)!
+    // No pickup: the lowest area's price, said to be a "from", with every area's price for this party.
+    const from = (await get.execute({ tour: getSlug(raft), guests: 2 })) as R
+    expect(from.priceUnit).toBe('per person, priced by pickup area')
+    expect(from.priceForParty.priceIsFrom).toBe(true)
+    expect(from.priceForParty.priceUsd).toBe(tourPrice(raft.pricing, 2, 'montego_bay'))
+    expect(from.priceForParty.pricesByArea).toEqual([
+      { area: 'Negril', priceUsd: 382 }, { area: 'Lucea & Hanover', priceUsd: 255 }, { area: 'Montego Bay & Rose Hall', priceUsd: 230 },
+      { area: 'Falmouth & Trelawny', priceUsd: 255 }, { area: 'Runaway Bay & Discovery Bay', priceUsd: 255 }, { area: 'Ocho Rios', priceUsd: 255 },
+    ])
+    // A Negril hotel: that area's price for the party, and the words say it is per person.
+    const negril = (await get.execute({ tour: getSlug(raft), guests: 2, pickup_hotel: 'Azul Beach Resort Negril' })) as R
+    expect(negril.priceForParty.priceUsd).toBe(382)
+    expect(negril.priceForParty.covers).toBe('total for 2 guests picked up in Negril; this tour is priced per person, by pickup area')
+    // A group tour priced by area keeps its own words.
+    const dunns = (await get.execute({ tour: 'dunns-river-falls-climb', guests: 2, pickup_hotel: 'Azul Beach Resort Negril' })) as R
+    expect(dunns.priceForParty.covers).toBe('total for 2 guests picked up in Negril; this tour is priced by pickup area')
   })
 
   test('tour names resolve the way people type them', async () => {

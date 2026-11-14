@@ -1,4 +1,4 @@
-import { experiences, slugify, priceUnitLabel, placeLabel, isZonePriced, zonePrices, type Experience } from '@/lib/experiences'
+import { experiences, slugify, priceUnitLabel, placeLabel, isZonePriced, isPerPersonByArea, zonePrices, type Experience } from '@/lib/experiences'
 import { TOUR_ZONE_LABEL } from '@/lib/tour-zones'
 import {
   DESTINATIONS,
@@ -75,9 +75,10 @@ export function GET() {
   // the exact figure checkout charges from there, never one area's as all.
   const zonePriceLine = (exp: Experience) => {
     const p = exp.pricing
-    const flatGroup = !p.perPersonAddon
+    const perHead = isPerPersonByArea(p)
+    const flatGroup = !perHead && !p.perPersonAddon
     const areas = zonePrices(p, flatGroup ? p.tierMax : 1)
-    return `Priced by pickup area, ${flatGroup ? `one price for up to ${p.tierMax} people` : 'for 1 person, each guest adding to it'}: ${areas.map((a) => `${TOUR_ZONE_LABEL[a.zone]} $${a.price}`).join(', ')}; elsewhere in Jamaica, ask for a price`
+    return `Priced by pickup area, ${perHead ? 'per person' : flatGroup ? `one price for up to ${p.tierMax} people` : 'for 1 person, each guest adding to it'}: ${areas.map((a) => `${TOUR_ZONE_LABEL[a.zone]} $${a.price}`).join(', ')}; elsewhere in Jamaica, ask for a price`
   }
   const experienceLines = experiences
     .map((exp) => {
@@ -100,9 +101,14 @@ export function GET() {
   // Counted, not written by hand: "most are group tours, a few per person"
   // went wrong when the clear kayak turned out to be per person (Nov 2026).
   const singles = experiences.filter((e) => e.kind === 'single')
-  const groupSingles = singles.filter((e) => e.pricing.mode === 'group').length
-  const zonedSingles = singles.filter((e) => isZonePriced(e.pricing)).length
-  const pricingModes = `${groupSingles} of the ${singles.length} tours are private group tours priced per vehicle for a party of up to 3 or 4${zonedSingles ? ` (${zonedSingles} of them priced by the pickup area)` : ''}; the other ${singles.length - groupSingles} are priced per person, and each tour page says which.`
+  const groups = singles.filter((e) => e.pricing.mode === 'group')
+  const groupSingles = groups.length
+  // How many people a group price covers, from the cards: "4", or "3 or 4" while they differ.
+  const partyLimits = Array.from(new Set(groups.map((e) => e.pricing.tierMax))).sort((a, b) => a - b).join(' or ')
+  const zonedGroups = groups.filter((e) => isZonePriced(e.pricing)).length
+  const zonedPerPerson = singles.filter((e) => isPerPersonByArea(e.pricing)).length
+  const byArea = (n: number) => (n ? ` (${n} of them priced by the pickup area)` : '')
+  const pricingModes = `${groupSingles} of the ${singles.length} tours are private group tours priced per vehicle for a party of up to ${partyLimits}${byArea(zonedGroups)}; the other ${singles.length - groupSingles} are priced per person${byArea(zonedPerPerson)}, and each tour page says which.`
 
   const blogLines = BLOG_POSTS
     .slice()

@@ -431,8 +431,12 @@ export function p2Tours(): Experience[] {
 /** "$128 for up to 3 people" or "$166 per person": tourPrice for the smallest party, and the site's own unit label. */
 /** "$255 for up to 4 people", "$153 per person", "from $281 for 1 person, by pickup area". */
 export const tourFrom = (e: Experience) => `${isZonePriced(e.pricing) ? 'from ' : ''}${usd(tourPrice(e.pricing, 1))} ${unitPhrase(e)}`
-/** The unit after a price, read as a phrase: "for up to 4 people", "for 1 person", "per person", plus the area note for a tour priced by pickup area. */
-const unitPhrase = (e: Experience) => `${e.pricing.mode === 'group' && !e.pricing.perPersonAddon ? 'for ' : ''}${priceUnitLabel(e.pricing)}${isZonePriced(e.pricing) ? ', by pickup area' : ''}`
+/** The unit after a price, read as a phrase: "for up to 4 people", "for 1 person", "per person". */
+const unitWords = (e: Experience) => `${e.pricing.mode === 'group' && !e.pricing.perPersonAddon ? 'for ' : ''}${priceUnitLabel(e.pricing)}`
+/** The same, plus the area note for a tour priced by pickup area. */
+const unitPhrase = (e: Experience) => `${unitWords(e)}${isZonePriced(e.pricing) ? ', by pickup area' : ''}`
+/** "from $115 per person": the price and its unit for a line with no room for the area note (a preview line that lists three tours). */
+const tourFromShort = (e: Experience) => `${isZonePriced(e.pricing) ? 'from ' : ''}${usd(tourPrice(e.pricing, 1))} ${unitWords(e)}`
 
 /* ── Inline text: plain strings, bold runs and links, never markup parsed from data ── */
 
@@ -1021,7 +1025,7 @@ function p2(): Draft {
     // The lead price always with its party limit (tourFrom: "$128 for up to
     // 3 people"), the only price in the line; "sunset" is from the Rick's
     // title; hotel pickup is every tour's meeting point (OnePageCheckout.tsx:442).
-    preheader: `Martha Brae rafting, ${tourFrom(raft)}, sunset at Rick’s Cafe, and Dunn’s River, all with hotel pickup.`,
+    preheader: `Martha Brae rafting, ${tourFromShort(raft)}, sunset at Rick’s Cafe, and Dunn’s River, all with hotel pickup.`,
     body: [
       { t: 'h1', text: 'A day off the resort' },
       // app/safety/page.tsx:16 "Every tour and transfer we sell is private:

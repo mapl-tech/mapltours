@@ -3,7 +3,7 @@
 import { useEffect, useId, useMemo, useRef, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { tourOperatorCost, tourPrice, type TourPricing } from '@/lib/experiences'
-import { describeRateCard, parseRateCard, rateCardChanges, sameCard, type RateCard, type RateField } from '@/lib/tour-rates'
+import { describeRateCard, kindOf, parseRateCard, rateCardChanges, sameCard, type RateCard, type RateField, type RateKind } from '@/lib/tour-rates'
 import { describeParties, guestPriceAt, partiesMoved, placesCompared } from '@/lib/tour-rate-impact'
 import { TOUR_ZONES, TOUR_ZONE_LABEL, type TourZone } from '@/lib/tour-zones'
 
@@ -43,8 +43,9 @@ export interface RateChangeView {
   at: string
 }
 
-type Kind = 'group' | 'per_person' | 'area'
-interface Draft {
+type Kind = RateKind
+const isArea = (k: Kind) => k === 'area' || k === 'area_person'
+export interface Draft {
   kind: Kind
   baseRate: string
   tierMax: string
@@ -60,10 +61,13 @@ const BADGE = {
   publishing: { cls: 'adm-badge--publishing', label: 'Publishing' },
 } as const
 
+// Two by two on the desk: one rate above, by pickup area below; for the
+// group on the left, per person on the right.
 const KINDS: { value: Kind; title: string; detail: string }[] = [
   { value: 'group', title: 'One price for the group', detail: 'A flat rate for up to a set number of people, then a rate per person for the whole group.' },
   { value: 'per_person', title: 'Per person', detail: 'A rate for each person, and a lower one from a set group size if Collin gives one.' },
-  { value: 'area', title: 'By pickup area', detail: 'A flat rate for up to a set number of people that depends on where we pick the guests up.' },
+  { value: 'area', title: 'By pickup area, for the group', detail: 'A flat rate for up to a set number of people that depends on where we pick the guests up.' },
+  { value: 'area_person', title: 'By pickup area, per person', detail: 'A rate for each person that depends on where we pick the guests up, whatever the size of the group.' },
 ]
 
 const PARTIES = [1, 2, 3, 4, 5, 6, 8]
@@ -122,11 +126,15 @@ function statusOf(t: TourRateView): keyof typeof BADGE {
   return t.saved ? 'live' : 'default'
 }
 
-function draftOf(card: RateCard): Draft {
+/**
+ * A card as the editor's fields. Exported with rawCard for
+ * tests/unit/tour-rates-desk.spec.ts: opening any card and saving it
+ * untouched must give back the same card, whichever of the four ways it prices.
+ */
+export function draftOf(card: RateCard): Draft {
   const p = card.pricing
-  const zoned = !!p.zoneRates && Object.keys(p.zoneRates).length > 0
   return {
-    kind: zoned ? 'area' : p.mode,
+    kind: kindOf(card),
     baseRate: amount(p.baseRate),
     tierMax: String(p.tierMax),
     extraPerPerson: amount(p.extraPerPerson),
@@ -137,13 +145,14 @@ function draftOf(card: RateCard): Draft {
 }
 
 /** The draft as a card for parseRateCard, the same check the server and every deploy run. */
-function rawCard(d: Draft): unknown {
-  const pricing: Record<string, unknown> = {
-    mode: d.kind === 'per_person' ? 'per_person' : 'group',
-    tierMax: d.tierMax.trim(),
-    extraPerPerson: d.extraPerPerson.trim(),
+export function rawCard(d: Draft): unknown {
+  const pricing: Record<string, unknown> = { mode: d.kind === 'per_person' || d.kind === 'area_person' ? 'per_person' : 'group' }
+  // Per person by area has no tier and no bigger-group rate: every guest pays the area's rate.
+  if (d.kind !== 'area_person') {
+    pricing.tierMax = d.tierMax.trim()
+    pricing.extraPerPerson = d.extraPerPerson.trim()
   }
-  if (d.kind === 'area') pricing.zoneRates = Object.fromEntries(TOUR_ZONES.map((z) => [z, d.zones[z].trim()]))
+  if (isArea(d.kind)) pricing.zoneRates = Object.fromEntries(TOUR_ZONES.map((z) => [z, d.zones[z].trim()]))
   else pricing.baseRate = d.baseRate.trim()
   if (d.perPersonAddon.trim()) pricing.perPersonAddon = d.perPersonAddon.trim()
   return { pricing, minGuests: d.minGuests.trim() }
@@ -158,14 +167,15 @@ function RateSummary({ card }: { card: RateCard }) {
   const p = card.pricing
   const zones = TOUR_ZONES.filter((z) => typeof p.zoneRates?.[z] === 'number')
   if (!zones.length) return <p>{describeRateCard(card)}</p>
+  const perHead = p.mode === 'per_person'
   const rest = [
-    `Each extra person ${usd(p.extraPerPerson)}`,
+    perHead ? null : `Each extra person ${usd(p.extraPerPerson)}`,
     p.perPersonAddon ? `Added for every person ${usd(p.perPersonAddon)}` : null,
     card.minGuests > 1 ? `Smallest party ${people(card.minGuests)}` : null,
   ].filter(Boolean).join(' · ')
   return (
     <div>
-      <p>By pickup area, for {p.tierMax === 1 ? '1 person' : `1 to ${p.tierMax} people`}:</p>
+      <p>{perHead ? 'By pickup area, per person:' : `By pickup area, for ${p.tierMax === 1 ? '1 person' : `1 to ${p.tierMax} people`}:`}</p>
       <dl className="adm-rates">
         {zones.map((z) => (
           <div key={z} className="adm-rate">
@@ -174,7 +184,7 @@ function RateSummary({ card }: { card: RateCard }) {
           </div>
         ))}
       </dl>
-      <p>{rest}.</p>
+      {rest && <p>{rest}.</p>}
     </div>
   )
 }
@@ -578,12 +588,12 @@ function RateEditor({ tour, start, initial, onClose, onSaved, canPublish }: {
     setServerError(null)
     setDraft((d) => {
       const next = { ...d, kind: k }
-      // Switching to areas starts every area at the current group rate, so
-      // nothing is lost and nothing is sold from an area by accident at $0.
-      if (k === 'area' && TOUR_ZONES.every((z) => !d.zones[z].trim()) && d.baseRate.trim()) {
+      // Switching to areas starts every area at the current rate, so nothing
+      // is lost and nothing is sold from an area by accident at $0.
+      if (isArea(k) && TOUR_ZONES.every((z) => !d.zones[z].trim()) && d.baseRate.trim()) {
         next.zones = Object.fromEntries(TOUR_ZONES.map((z) => [z, d.baseRate])) as Record<TourZone, string>
       }
-      if (k !== 'area' && !d.baseRate.trim()) {
+      if (!isArea(k) && !d.baseRate.trim()) {
         const rates = TOUR_ZONES.map((z) => Number(d.zones[z])).filter((n) => Number.isFinite(n) && n > 0)
         if (rates.length) next.baseRate = String(Math.min(...rates))
       }
@@ -649,7 +659,7 @@ function RateEditor({ tour, start, initial, onClose, onSaved, canPublish }: {
         <div className={returned ? 'adm-fields adm-enter' : 'adm-fields'}>
           <fieldset className="adm-fieldset">
             <legend className="adm-legend">How Collin charges for it</legend>
-            <div className="adm-grid3">
+            <div className="adm-grid2">
               {KINDS.map((k) => {
                 const on = draft.kind === k.value
                 return (
@@ -665,34 +675,42 @@ function RateEditor({ tour, start, initial, onClose, onSaved, canPublish }: {
             </div>
           </fieldset>
 
-          <div className="adm-grid3">
-            {draft.kind !== 'area' && (
+          {/* Per person by area has only its area rates: every guest pays the
+              area's rate, so there is no tier and no bigger-group rate to ask for. */}
+          {draft.kind !== 'area_person' && (
+            <div className="adm-grid3">
+              {draft.kind !== 'area' && (
+                <div>
+                  <label htmlFor={`${uid}-base`} className="adm-label">{draft.kind === 'group' ? 'Rate for the group ($)' : 'Rate per person ($)'}</label>
+                  <input id={`${uid}-base`} ref={firstField} {...field('baseRate')} />
+                </div>
+              )}
               <div>
-                <label htmlFor={`${uid}-base`} className="adm-label">{draft.kind === 'group' ? 'Rate for the group ($)' : 'Rate per person ($)'}</label>
-                <input id={`${uid}-base`} ref={firstField} {...field('baseRate')} />
+                <label htmlFor={`${uid}-tier`} className="adm-label">{draft.kind === 'per_person' ? 'That rate is for up to (people)' : 'Covers up to (people)'}</label>
+                <input id={`${uid}-tier`} ref={draft.kind === 'area' ? firstField : undefined} {...field('tierMax', { inputMode: 'numeric' })} />
               </div>
-            )}
-            <div>
-              <label htmlFor={`${uid}-tier`} className="adm-label">{draft.kind === 'per_person' ? 'That rate is for up to (people)' : 'Covers up to (people)'}</label>
-              <input id={`${uid}-tier`} ref={draft.kind === 'area' ? firstField : undefined} {...field('tierMax', { inputMode: 'numeric' })} />
+              <div>
+                <label htmlFor={`${uid}-extra`} className="adm-label">{draft.kind === 'area' ? 'Each extra person ($)' : 'Bigger groups, per person ($)'}</label>
+                <input id={`${uid}-extra`} {...field('extraPerPerson')} />
+                <p className="adm-help">{draft.kind === 'area' ? 'Added for each guest past the number above.' : 'Once the group is bigger than that, every guest pays this.'}</p>
+              </div>
             </div>
-            <div>
-              <label htmlFor={`${uid}-extra`} className="adm-label">{draft.kind === 'area' ? 'Each extra person ($)' : 'Bigger groups, per person ($)'}</label>
-              <input id={`${uid}-extra`} {...field('extraPerPerson')} />
-              <p className="adm-help">{draft.kind === 'area' ? 'Added for each guest past the number above.' : 'Once the group is bigger than that, every guest pays this.'}</p>
-            </div>
-          </div>
+          )}
 
-          {draft.kind === 'area' && (
+          {isArea(draft.kind) && (
             <fieldset className="adm-fieldset">
-              <legend className="adm-legend">Rate by pickup area ($)</legend>
-              <p className="adm-help">Leave an area empty to stop selling the tour online from there; guests there are asked to write for a price.</p>
+              <legend className="adm-legend">{draft.kind === 'area_person' ? 'Rate per person, by pickup area ($)' : 'Rate by pickup area ($)'}</legend>
+              <p className="adm-help">
+                {draft.kind === 'area_person' ? 'Every guest pays the rate of the area we pick the group up from. ' : ''}
+                Leave an area empty to stop selling the tour online from there; guests there are asked to write for a price.
+              </p>
               <div className="adm-grid3 adm-grid3--areas">
-                {TOUR_ZONES.map((z) => (
+                {TOUR_ZONES.map((z, i) => (
                   <div key={z}>
                     <label htmlFor={`${uid}-zone-${z}`} className="adm-label adm-label--area">{TOUR_ZONE_LABEL[z]}</label>
                     <input
-                      id={`${uid}-zone-${z}`} value={draft.zones[z]} onChange={setZone(z)} inputMode="decimal" autoComplete="off"
+                      id={`${uid}-zone-${z}`} ref={draft.kind === 'area_person' && i === 0 ? firstField : undefined}
+                      value={draft.zones[z]} onChange={setZone(z)} inputMode="decimal" autoComplete="off"
                       placeholder="Not sold online" className="adm-input" {...flag(errField === z || errField === 'zoneRates')}
                     />
                   </div>

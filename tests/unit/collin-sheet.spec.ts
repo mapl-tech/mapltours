@@ -11,32 +11,38 @@ import { getCoords } from '@/lib/transportation'
  *
  * Tours: "$X 1-3" (or "1-4") is a group rate for the party, "$X per person"
  * a per-head rate, and "4-more will pay $Y per person" the per-head rate for
- * larger parties (lib/experiences tourOperatorCost). The raft (id 3) is left
- * out until the owner confirms the river: the sheet's active raft is the
- * Great River at $80, the site sells the Martha Brae at the $100 of the row
- * the sheet marks DISABLE.
+ * larger parties (lib/experiences tourOperatorCost).
+ *
+ * Collin, Nov 13 2026, by WhatsApp: "Yes all the prices i give you is from
+ * 1-4 persons not 1-3". So the first rate covers 1 to 4 and the bigger-party
+ * rate starts at 5, on every card whose reading is settled. Three are not:
+ * the Rasta ATV Safari (5), the jet ski (10) and parasailing (11) are still
+ * held as "$X for 1 to 3", because he has not said whether that rate is for
+ * the group or per person, and a group card covering four would undercharge
+ * a party of four by the most if it is per person. He was asked again on
+ * Nov 14 2026; change them here and in the catalogue when he answers.
  */
 const TOURS: Record<number, { mode: 'group' | 'per_person'; baseRate: number; tierMax: number; extraPerPerson: number; place?: string }> = {
   // Dunn's River (1), Blue Hole (2) and the day with both (18) are priced by
   // pickup area since Nov 12 2026: see BY_AREA below.
   5: { mode: 'group', baseRate: 150, tierMax: 3, extraPerPerson: 140, place: 'Negril' },
-  6: { mode: 'per_person', baseRate: 130, tierMax: 3, extraPerPerson: 125, place: 'Hanover' },
-  7: { mode: 'per_person', baseRate: 120, tierMax: 3, extraPerPerson: 110, place: 'Hanover' },
-  8: { mode: 'per_person', baseRate: 100, tierMax: 3, extraPerPerson: 95, place: 'Ocho Rios' },
-  9: { mode: 'per_person', baseRate: 100, tierMax: 3, extraPerPerson: 95, place: 'Ocho Rios' },
+  6: { mode: 'per_person', baseRate: 130, tierMax: 4, extraPerPerson: 125, place: 'Hanover' },
+  7: { mode: 'per_person', baseRate: 120, tierMax: 4, extraPerPerson: 110, place: 'Hanover' },
+  // The raft (3) and both horseback rides (8, 9) are per person by pickup
+  // area since Nov 13 2026: see PER_PERSON_BY_AREA below.
   10: { mode: 'group', baseRate: 130, tierMax: 3, extraPerPerson: 100, place: 'Montego Bay' },
   11: { mode: 'group', baseRate: 120, tierMax: 3, extraPerPerson: 90, place: 'Montego Bay' },
   // Collin, Nov 12 2026: the kayak is $180 per person, not per party of 3.
-  12: { mode: 'per_person', baseRate: 180, tierMax: 3, extraPerPerson: 160, place: 'Montego Bay' },
-  13: { mode: 'per_person', baseRate: 100, tierMax: 3, extraPerPerson: 80, place: 'Ocho Rios' },
+  12: { mode: 'per_person', baseRate: 180, tierMax: 4, extraPerPerson: 160, place: 'Montego Bay' },
+  13: { mode: 'per_person', baseRate: 100, tierMax: 4, extraPerPerson: 80, place: 'Ocho Rios' },
   14: { mode: 'group', baseRate: 200, tierMax: 4, extraPerPerson: 40, place: 'Negril' },
-  15: { mode: 'group', baseRate: 360, tierMax: 3, extraPerPerson: 100 },
+  15: { mode: 'group', baseRate: 360, tierMax: 4, extraPerPerson: 100 },
   // Ready-made days ("Adventure Packs"): per person unless the sheet gives a 1-3 rate.
-  16: { mode: 'per_person', baseRate: 280, tierMax: 3, extraPerPerson: 280 },
-  17: { mode: 'per_person', baseRate: 260, tierMax: 3, extraPerPerson: 260, place: 'Montego Bay' },
-  19: { mode: 'per_person', baseRate: 235, tierMax: 3, extraPerPerson: 235 },
-  21: { mode: 'per_person', baseRate: 210, tierMax: 3, extraPerPerson: 210 },
-  22: { mode: 'per_person', baseRate: 250, tierMax: 3, extraPerPerson: 250 },
+  16: { mode: 'per_person', baseRate: 280, tierMax: 4, extraPerPerson: 280 },
+  17: { mode: 'per_person', baseRate: 260, tierMax: 4, extraPerPerson: 260, place: 'Montego Bay' },
+  19: { mode: 'per_person', baseRate: 235, tierMax: 4, extraPerPerson: 235 },
+  21: { mode: 'per_person', baseRate: 210, tierMax: 4, extraPerPerson: 210 },
+  22: { mode: 'per_person', baseRate: 250, tierMax: 4, extraPerPerson: 250 },
 }
 
 /** Airport transfers on the sheet: the 1-4 rate and the per-head rate from 5. */
@@ -92,7 +98,44 @@ const BY_AREA: Record<number, { addon: number; place: string }> = {
   18: { addon: 30, place: 'Ocho Rios' },
 }
 
+/**
+ * Collin, Nov 13 2026, by WhatsApp, two tours priced per person by the area
+ * he picks the guests up from:
+ *   "Bamboo Rafting: Ocho $100 per person, Runaway/Discovrybay $100 per
+ *    person, Falmouth $100 per person, Montego bay $90 per person, Lucea
+ *    $100, Negril $150 per person"
+ *   "Horseback Riding": the same list, with Montego Bay at $100.
+ * He gave no rate for bigger parties, so every guest pays the area's rate.
+ * The raft had been read as $100 for a party of up to 3 (from the row his
+ * sheet marks DISABLE); the river stays the Martha Brae (owner, Nov 13 2026).
+ * "Horseback Riding" is taken to be both rides (8 and 9): his sheet gave
+ * them one rate, and he was asked to confirm on Nov 14 2026.
+ */
+const RAFT_RATES = { negril: 150, lucea: 100, montego_bay: 90, trelawny: 100, runaway_bay: 100, ocho_rios: 100 } as const
+const HORSE_RATES = { negril: 150, lucea: 100, montego_bay: 100, trelawny: 100, runaway_bay: 100, ocho_rios: 100 } as const
+const PER_PERSON_BY_AREA: Record<number, { rates: Record<keyof typeof RAFT_RATES, number>; place: string }> = {
+  3: { rates: RAFT_RATES, place: 'Falmouth' },
+  8: { rates: HORSE_RATES, place: 'Ocho Rios' },
+  9: { rates: HORSE_RATES, place: 'Ocho Rios' },
+}
+
 describe("the catalogue agrees with Collin's sheet", () => {
+  it.each(Object.entries(PER_PERSON_BY_AREA))('tour %s: per person by pickup area, party by party, area by area', (id, sheet) => {
+    const e = exp(Number(id))
+    const cheapest = Math.min(...Object.values(sheet.rates))
+    expect(e.pricing).toEqual({ mode: 'per_person', baseRate: cheapest, tierMax: 12, extraPerPerson: cheapest, zoneRates: sheet.rates })
+    for (const [zone, rate] of Object.entries(sheet.rates) as [keyof typeof RAFT_RATES, number][]) {
+      for (let n = 1; n <= 12; n++) expect(tourOperatorCost(e.pricing, n, zone), `${zone}, ${n} guests`).toBe(rate * n)
+    }
+    expect(e.destination).toBe(sheet.place)
+  })
+
+  it('no tour priced for the group undercharges a couple against a per-person reading it is known to have', () => {
+    // The raft was the case: $128 for two against $180 owed. A card that is
+    // per person must say so in the catalogue.
+    for (const id of Object.keys(PER_PERSON_BY_AREA)) expect(exp(Number(id)).pricing.mode).toBe('per_person')
+  })
+
   it.each(Object.entries(BY_AREA))('tour %s: priced by pickup area, party by party, area by area', (id, sheet) => {
     const e = exp(Number(id))
     expect(e.pricing).toEqual({ mode: 'group', baseRate: 190, tierMax: 4, extraPerPerson: 50, zoneRates: AREA_RATES, ...(sheet.addon ? { perPersonAddon: sheet.addon } : {}) })

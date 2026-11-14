@@ -34,7 +34,7 @@ export const HELP_CATEGORIES: HelpCategory[] = [
       },
       {
         q: 'Can I book for a group?',
-        a: 'Yes. Every tour is private. Some are priced for your whole party, usually up to 3 or 4 guests, with a per-person rate above that; the rest are priced per person. A few are also priced by where we pick you up. Each tour\'s page says which. Set your guest count at checkout and the price updates. For larger groups, email us and we\'ll arrange a second vehicle.',
+        a: 'Yes. Every tour is private. Some are priced for your whole party, usually up to 3 or 4 guests, with a per-person rate above that; the rest are priced per person. Some are also priced by where we pick you up. Each tour\'s page says which. Set your guest count at checkout and the price updates. For larger groups, email us and we\'ll arrange a second vehicle.',
       },
       {
         q: 'How far in advance should I book?',

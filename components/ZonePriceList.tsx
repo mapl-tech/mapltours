@@ -1,4 +1,4 @@
-import { isZonePriced, zonePrices, type Experience } from '@/lib/experiences'
+import { isPerPersonByArea, isZonePriced, zonePrices, type Experience } from '@/lib/experiences'
 import { TOUR_ZONE_LABEL } from '@/lib/tour-zones'
 
 /**
@@ -9,7 +9,8 @@ import { TOUR_ZONE_LABEL } from '@/lib/tour-zones'
  * with one price everywhere.
  *
  * The party shown is the one the headline speaks for: up to the tier for a
- * group price, two people where every guest adds to it (the both-falls day).
+ * group price, two people where every guest adds to it (the both-falls day),
+ * one person where every guest pays the area's rate (bamboo rafting).
  */
 export default function ZonePriceList({ exp, formatPrice, tone = 'light' }: {
   exp: Pick<Experience, 'pricing'>
@@ -18,7 +19,8 @@ export default function ZonePriceList({ exp, formatPrice, tone = 'light' }: {
 }) {
   const p = exp.pricing
   if (!isZonePriced(p)) return null
-  const party = p.perPersonAddon ? 2 : p.tierMax
+  const perHead = isPerPersonByArea(p)
+  const party = perHead ? 1 : p.perPersonAddon ? 2 : p.tierMax
   const rows = zonePrices(p, party)
   const muted = tone === 'dark' ? '#cccccc' : 'var(--text-tertiary)'
   const strong = tone === 'dark' ? '#ffffff' : 'var(--text-primary)'
@@ -26,7 +28,7 @@ export default function ZonePriceList({ exp, formatPrice, tone = 'light' }: {
   return (
     <div style={{ fontFamily: 'var(--font-dm-sans)' }}>
       <p style={{ fontSize: 13, lineHeight: 1.5, color: muted }}>
-        {p.perPersonAddon ? 'For 2 people, by where we pick you up' : `For up to ${p.tierMax} people, by where we pick you up`}
+        {perHead ? 'Per person, by where we pick you up' : p.perPersonAddon ? 'For 2 people, by where we pick you up' : `For up to ${p.tierMax} people, by where we pick you up`}
       </p>
       <dl style={{ margin: '6px 0 0' }}>
         {rows.map((r) => (
@@ -37,7 +39,7 @@ export default function ZonePriceList({ exp, formatPrice, tone = 'light' }: {
         ))}
       </dl>
       <p style={{ fontSize: 13, lineHeight: 1.5, color: muted, marginTop: 8 }}>
-        {p.perPersonAddon ? 'Each guest adds to the price.' : `Each guest over ${p.tierMax} adds to the price.`} Staying somewhere else? Write to us for a price. Checkout shows your exact total.
+        {perHead ? '' : p.perPersonAddon ? 'Each guest adds to the price. ' : `Each guest over ${p.tierMax} adds to the price. `}Staying somewhere else? Write to us for a price. Checkout shows your exact total.
       </p>
     </div>
   )

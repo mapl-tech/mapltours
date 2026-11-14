@@ -175,11 +175,15 @@ describe('who is travelling', () => {
 
 describe('prices the rate card has not settled are never offered', () => {
   test('the 3-to-4 step that triples a tour is caught, real tiers are not', () => {
-    expect(priceJumps(tour('Bamboo Rafting on the Martha Brae').pricing, 3)).toBe(false)
-    expect(priceJumps(tour('Bamboo Rafting on the Martha Brae').pricing, 4)).toBe(true)
-    expect(priceJumps(tour('Bamboo Rafting on the Martha Brae').pricing, 6)).toBe(true)
+    // Still read as "$150 for 1 to 3, then $140 each": Collin has not said
+    // whether that is for the group or per person (asked again Nov 14 2026).
+    expect(priceJumps(tour('Rasta Cultural ATV Safari').pricing, 3)).toBe(false)
+    expect(priceJumps(tour('Rasta Cultural ATV Safari').pricing, 4)).toBe(true)
+    expect(priceJumps(tour('Rasta Cultural ATV Safari').pricing, 6)).toBe(true)
     // Per person: one more person costs one more head, never a jump.
     expect(priceJumps(tour('ATV Off-Road Adventure').pricing, 6)).toBe(false)
+    // Per person by pickup area (the raft since Nov 13 2026): the same.
+    expect(priceJumps(tour('Bamboo Rafting on the Martha Brae').pricing, 6)).toBe(false)
     // A group tour whose head price falls as the party grows.
     expect(priceJumps(tour("Dunn's River Falls Climb").pricing, 6)).toBe(false)
     expect(priceJumps(tour("Rick's Cafe Cliff Diving & Sunset").pricing, 6)).toBe(false)
@@ -197,7 +201,11 @@ describe('prices the rate card has not settled are never offered', () => {
   test('a tour whose rate card jumps at any size is offered to nobody, a couple included', () => {
     // The clear kayak, Nov 12 2026: its jump at 4 meant the "up to 3" rate was
     // really per person, so the couple's price was wrong too.
-    expect(rateCardUnsettled(tour('Bamboo Rafting on the Martha Brae').pricing)).toBe(true)
+    for (const title of ['Rasta Cultural ATV Safari', 'Jet Ski the Caribbean', 'Parasailing Over the Bay']) {
+      expect(rateCardUnsettled(tour(title).pricing), title).toBe(true)
+    }
+    // The raft passed by itself the day Collin said "$100 per person" (Nov 13 2026).
+    expect(rateCardUnsettled(tour('Bamboo Rafting on the Martha Brae').pricing)).toBe(false)
     expect(rateCardUnsettled(tour('ATV Off-Road Adventure').pricing)).toBe(false)
     expect(rateCardUnsettled(tour("Rick's Cafe Cliff Diving & Sunset").pricing)).toBe(false)
     // Once the catalog says per person, the kayak passes by itself.

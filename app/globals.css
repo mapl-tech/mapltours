@@ -3707,6 +3707,10 @@ html:has(.adm-toast) { scroll-padding-bottom: 96px; }
      columns on a wide screen and stack on a phone. */
   grid-template-columns: repeat(auto-fill, minmax(max(12.5rem, calc((100% - 2 * var(--adm-gap)) / 3)), 1fr));
 }
+/* The four ways a tour can be priced: two by two (one rate above, by pickup
+   area below; for the group on the left, per person on the right), and one
+   column on a phone. Never three and one. */
+.adm-grid2 { display: grid; gap: var(--adm-gap); grid-template-columns: repeat(auto-fill, minmax(max(15rem, calc((100% - var(--adm-gap)) / 2)), 1fr)); }
 /* The six area rates: two to a row even on a phone (a three-digit amount
    needs no more), cells aligned at the bottom so the inputs line up when a
    long area name wraps. */

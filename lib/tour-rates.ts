@@ -80,10 +80,20 @@ export function parseRateCard(input: unknown): Parsed {
   // Each refusal names the field the way the desk labels it, so the admin
   // can find it; the desk also marks the field itself.
   const byArea = p.zoneRates !== undefined && p.zoneRates !== null
-  const tierMax = wholeNumber(p.tierMax, p.mode === 'per_person' ? 'That rate is for up to' : 'Covers up to', 1, PARTY_MAX)
-  if (isErr(tierMax)) return fail(tierMax.error, 'tierMax')
-  const extra = money(p.extraPerPerson, byArea ? 'Each extra person' : 'Bigger groups, per person', false)
-  if (isErr(extra)) return fail(extra.error, 'extraPerPerson')
+  // Per person by area: every guest pays the area's rate, so there is no
+  // tier and no bigger-group rate to give. Whatever a caller sends for them
+  // is not read; the canonical card fills them in below.
+  const perHeadByArea = byArea && p.mode === 'per_person'
+  let tierMax = PARTY_MAX
+  let extra = 0
+  if (!perHeadByArea) {
+    const t = wholeNumber(p.tierMax, p.mode === 'per_person' ? 'That rate is for up to' : 'Covers up to', 1, PARTY_MAX)
+    if (isErr(t)) return fail(t.error, 'tierMax')
+    tierMax = t
+    const x = money(p.extraPerPerson, byArea ? 'Each extra person' : 'Bigger groups, per person', false)
+    if (isErr(x)) return fail(x.error, 'extraPerPerson')
+    extra = x
+  }
 
   let addon = 0
   if (p.perPersonAddon !== undefined && p.perPersonAddon !== null && p.perPersonAddon !== '') {
@@ -107,13 +117,15 @@ export function parseRateCard(input: unknown): Parsed {
       out[z] = r
     }
     if (Object.keys(out).length === 0) return fail('Give a rate for at least one pickup area.', 'zoneRates')
-    if (p.mode !== 'group') return fail('A tour priced by pickup area takes one price for the group.', 'mode')
     zoneRates = out
   }
 
   let baseRate: number
   if (zoneRates) {
     baseRate = Math.min(...Object.values(zoneRates))
+    // A reader that knows nothing of areas still prices every guest at the
+    // cheapest area's rate: a true "from" at any party size.
+    if (perHeadByArea) extra = baseRate
   } else {
     const b = money(p.baseRate, p.mode === 'group' ? 'Rate for the group' : 'Rate per person', true)
     if (isErr(b)) return fail(b.error, 'baseRate')
@@ -166,7 +178,9 @@ export function describeRateCard(card: RateCard): string {
   const p = card.pricing
   const parts: string[] = []
   const zones = TOUR_ZONES.filter((z) => typeof p.zoneRates?.[z] === 'number')
-  if (zones.length) {
+  if (zones.length && p.mode === 'per_person') {
+    parts.push(`By pickup area, per person: ${zones.map((z) => `${TOUR_ZONE_LABEL[z]} ${usd(p.zoneRates![z]!)}`).join(', ')}`)
+  } else if (zones.length) {
     parts.push(`By pickup area, for ${p.tierMax === 1 ? '1 person' : `1 to ${p.tierMax} people`}: ${zones.map((z) => `${TOUR_ZONE_LABEL[z]} ${usd(p.zoneRates![z]!)}`).join(', ')}`)
     parts.push(`each extra person ${usd(p.extraPerPerson)}`)
   } else if (p.mode === 'group') {
@@ -190,15 +204,20 @@ export interface RateCardChange {
 }
 
 const people = (n: number) => `${n} ${n === 1 ? 'person' : 'people'}`
-const kindOf = (c: RateCard): 'area' | TourPricing['mode'] =>
-  TOUR_ZONES.some((z) => typeof c.pricing.zoneRates?.[z] === 'number') ? 'area' : c.pricing.mode
+/** The four ways a card can price: for the group or per person, with one rate or a rate per pickup area. */
+export type RateKind = 'group' | 'per_person' | 'area' | 'area_person'
+export const kindOf = (c: RateCard): RateKind => {
+  const byArea = TOUR_ZONES.some((z) => typeof c.pricing.zoneRates?.[z] === 'number')
+  if (!byArea) return c.pricing.mode
+  return c.pricing.mode === 'per_person' ? 'area_person' : 'area'
+}
 
 /**
  * What moves between two canonical cards, line by line, in the desk's own
  * words, so the owner reads "Negril $420, was $400" instead of comparing two
- * lists. Null when the new card is priced another way (by area, per person or
- * for the group): there a line-by-line list would mislead, and the desk shows
- * the whole new card instead. An empty list means nothing moved.
+ * lists. Null when the new card is priced another way (for the group or per
+ * person, with one rate or by area): there a line-by-line list would mislead,
+ * and the desk shows the whole new card instead. An empty list means nothing moved.
  */
 export function rateCardChanges(before: RateCard, after: RateCard): RateCardChange[] | null {
   const kind = kindOf(after)
@@ -207,14 +226,17 @@ export function rateCardChanges(before: RateCard, after: RateCard): RateCardChan
   const b = after.pricing
   const out: RateCardChange[] = []
   const line = (label: string, was: string, now: string) => { if (was !== now) out.push({ label, was, now }) }
-  if (kind === 'area') {
+  if (kind === 'area' || kind === 'area_person') {
     for (const z of TOUR_ZONES) {
       const w = a.zoneRates?.[z]
       const n = b.zoneRates?.[z]
       line(TOUR_ZONE_LABEL[z], typeof w === 'number' ? usd(w) : 'Not sold online', typeof n === 'number' ? usd(n) : 'Not sold online')
     }
-    line('Covers up to', people(a.tierMax), people(b.tierMax))
-    line('Each extra person', usd(a.extraPerPerson), usd(b.extraPerPerson))
+    // Per person by area has no tier and no extra-guest rate to move.
+    if (kind === 'area') {
+      line('Covers up to', people(a.tierMax), people(b.tierMax))
+      line('Each extra person', usd(a.extraPerPerson), usd(b.extraPerPerson))
+    }
   } else {
     line(kind === 'group' ? 'Rate for the group' : 'Rate per person', usd(a.baseRate), usd(b.baseRate))
     line(kind === 'group' ? 'Covers up to' : 'That rate is for up to', people(a.tierMax), people(b.tierMax))

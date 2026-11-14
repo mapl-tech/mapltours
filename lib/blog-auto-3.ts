@@ -1,6 +1,6 @@
 import type { BlogPost, BlogAuthor } from './blog'
 import { BLOG_IMAGES } from './blog-images'
-import { blogPrice, blogPartyWord } from './blog-prices'
+import { blogPrice, blogUnit, blogFrom } from './blog-prices'
 
 // One real byline; the named writers these used to be were invented.
 const mapl: BlogAuthor = { name: 'MAPL Tours Jamaica', role: 'Editorial', initials: 'MT' }
@@ -96,7 +96,7 @@ export const POSTS_3: BlogPost[] = [
       {
         type: 'list',
         items: [
-          `[Dunn's River Falls Climb](/experience/dunns-river-falls-climb): ${blogPrice(1, 1, 'montego_bay')} for up to ${blogPartyWord(1)} people picked up in Montego Bay (it is priced by where we pick you up, from ${blogPrice(1, 1)} in Ocho Rios), two hours at the falls and five to seven door to door from Montego Bay, park entry and guide included.`,
+          `[Dunn's River Falls Climb](/experience/dunns-river-falls-climb): ${blogPrice(1, 1, 'montego_bay')} ${blogUnit(1)} picked up in Montego Bay (it is priced by where we pick you up, from ${blogPrice(1, 1)} in Ocho Rios), two hours at the falls and five to seven door to door from Montego Bay, park entry and guide included.`,
           "[Bamboo Rafting on the Martha Brae](/experience/bamboo-rafting-on-the-martha-brae): $128 for up to three, ninety minutes at the river (an hour and a quarter on the raft) and about three hours door to door, the easiest morning off a Montego Bay resort.",
           "[Rick's Cafe Cliff Diving and Sunset](/experience/ricks-cafe-cliff-diving-and-sunset): $255 for up to four, three hours at Rick's and six to seven door to door from Montego Bay, entry included.",
           "[Rainforest Zipline Adventure](/experience/rainforest-zipline-adventure): $153 per person, about an hour at the park and four to five hours door to door from Montego Bay.",
@@ -160,7 +160,7 @@ export const POSTS_3: BlogPost[] = [
           },
           {
             q: 'Is it worth leaving an all-inclusive resort in Jamaica?',
-            a: `Yes, and it is the whole point of a cheaper tier. A private [Dunn's River Falls climb](/experience/dunns-river-falls-climb) is from ${blogPrice(1, 1)} for up to ${blogPartyWord(1)} people with hotel pickup and entry, priced by where we pick you up; [a Martha Brae raft](/experience/bamboo-rafting-on-the-martha-brae) is ${blogPrice(3, 1)} for up to ${blogPartyWord(3)}.`,
+            a: `Yes, and it is the whole point of a cheaper tier. A private [Dunn's River Falls climb](/experience/dunns-river-falls-climb) is from ${blogPrice(1, 1)} ${blogUnit(1)} with hotel pickup and entry, priced by where we pick you up; [a Martha Brae raft](/experience/bamboo-rafting-on-the-martha-brae) is ${blogFrom(3)}.`,
           },
           {
             q: 'How far are the all-inclusive resorts from Montego Bay airport?',

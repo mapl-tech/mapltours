@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { renderToStaticMarkup } from 'react-dom/server'
 import {
-  experiences, tourPrice, tourOperatorCost, perTravelerPrice, priceUnitLabel, isZonePriced, zonesSold, zoneSells, zonePrices,
+  experiences, tourPrice, tourOperatorCost, perTravelerPrice, priceUnitLabel, isZonePriced, isPerPersonByArea, zonesSold, zoneSells, zonePrices,
   defaultRateCard, RATES_PUBLISHED, type TourPricing,
 } from '@/lib/experiences'
 import { applyRateCards, cardOf, describeRateCard, parseRateCard, rateCardChanges, sameCard, RATE_MAX, type RateCard } from '@/lib/tour-rates'
@@ -23,6 +23,8 @@ const tour = (id: number) => experiences.find((e) => e.id === id)!
 const DUNNS = 1
 const BOTH = 18
 const RICKS = 14
+/** Bamboo rafting: per person, by pickup area (Collin, Nov 13 2026). */
+const RAFT = 3
 
 describe('parseRateCard: one canonical shape, or a sentence an admin can act on', () => {
   test('a group card comes back in fixed order, empty extras left out', () => {
@@ -35,6 +37,21 @@ describe('parseRateCard: one canonical shape, or a sentence an admin can act on'
     const r = parseRateCard({ pricing: { mode: 'group', tierMax: '4', extraPerPerson: 50, zoneRates: { ocho_rios: '190', negril: 400, lucea: '' } }, minGuests: 1 })
     expect(r.ok && r.card.pricing).toEqual({ mode: 'group', baseRate: 190, tierMax: 4, extraPerPerson: 50, zoneRates: { negril: 400, ocho_rios: 190 } })
     expect(r.ok && Object.keys(r.card.pricing.zoneRates!)).toEqual(['negril', 'ocho_rios'])
+  })
+
+  test('per person by area: one rate per area for every guest, no tier and no bigger-group rate to give', () => {
+    // Collin, Nov 13 2026, bamboo rafting: "$100 per person", "$90 per person"
+    // from Montego Bay, "$150 per person" from Negril.
+    const want = { mode: 'per_person', baseRate: 90, tierMax: 12, extraPerPerson: 90, zoneRates: { negril: 150, montego_bay: 90, ocho_rios: 100 } }
+    const bare = parseRateCard({ pricing: { mode: 'per_person', zoneRates: { ocho_rios: '100', montego_bay: 90, negril: '150', lucea: '' } } })
+    expect(bare).toEqual({ ok: true, card: { pricing: want, minGuests: 1 } })
+    // Whatever a caller sends for the tier or the bigger-group rate is not
+    // read, so two cards that charge the same are the same card.
+    const noisy = parseRateCard({ pricing: { mode: 'per_person', tierMax: 'abc', extraPerPerson: -4, zoneRates: { ocho_rios: 100, montego_bay: 90, negril: 150 } } })
+    expect(noisy).toEqual(bare)
+    expect(sameCard({ pricing: want, minGuests: 1 }, { pricing: { mode: 'per_person', tierMax: 3, extraPerPerson: 0, zoneRates: want.zoneRates } })).toBe(true)
+    // And it is not the group card with the same numbers.
+    expect(sameCard({ pricing: want, minGuests: 1 }, { pricing: { mode: 'group', tierMax: 12, extraPerPerson: 90, zoneRates: want.zoneRates } })).toBe(false)
   })
 
   test.each([
@@ -54,7 +71,9 @@ describe('parseRateCard: one canonical shape, or a sentence an admin can act on'
     [{ pricing: { mode: 'group', tierMax: 4, extraPerPerson: 50, zoneRates: { kingston: 100 } } }, /Unknown pickup area "kingston"/],
     [{ pricing: { mode: 'group', tierMax: 4, extraPerPerson: 50, zoneRates: { negril: '' } } }, /at least one pickup area/],
     [{ pricing: { mode: 'group', tierMax: 4, extraPerPerson: 50, zoneRates: { negril: 0 } } }, /Negril: must be more than \$0/],
-    [{ pricing: { mode: 'per_person', tierMax: 4, extraPerPerson: 50, zoneRates: { negril: 400 } } }, /one price for the group/],
+    [{ pricing: { mode: 'per_person', zoneRates: { negril: '' } } }, /at least one pickup area/],
+    [{ pricing: { mode: 'per_person', zoneRates: { negril: 0 } } }, /Negril: must be more than \$0/],
+    [{ pricing: { mode: 'per_person', zoneRates: { kingston: 100 } } }, /Unknown pickup area "kingston"/],
     [{ pricing: { mode: 'group', baseRate: 10, tierMax: 3, extraPerPerson: 1 }, minGuests: 13 }, /Smallest party/],
   ])('refuses %j', (input, why) => {
     const r = parseRateCard(input)
@@ -127,7 +146,10 @@ describe('applyRateCards: published cards reach the catalog, or the deploy fails
 describe('describeRateCard: the card in Collin’s words', () => {
   test('each shape', () => {
     expect(describeRateCard(cardOf(tour(RICKS)))).toBe('$200 for 1 to 4 people; from 5, $40 a person for the whole group.')
-    expect(describeRateCard(cardOf(tour(7)))).toBe('$120 a person for 1 to 3; from 4, $110 a person; 2 people or more.')
+    // "All the prices I give you is from 1-4 persons not 1-3" (Collin, Nov 13 2026).
+    expect(describeRateCard(cardOf(tour(7)))).toBe('$120 a person for 1 to 4; from 5, $110 a person; 2 people or more.')
+    // Per person by area: the areas and nothing else, since every guest pays the area's rate.
+    expect(describeRateCard(cardOf(tour(RAFT)))).toBe('By pickup area, per person: Negril $150, Lucea & Hanover $100, Montego Bay & Rose Hall $90, Falmouth & Trelawny $100, Runaway Bay & Discovery Bay $100, Ocho Rios $100.')
     expect(describeRateCard(cardOf(tour(DUNNS)))).toBe('By pickup area, for 1 to 4 people: Negril $400, Lucea & Hanover $300, Montego Bay & Rose Hall $280, Falmouth & Trelawny $230, Runaway Bay & Discovery Bay $220, Ocho Rios $190; each extra person $50.')
     expect(describeRateCard(cardOf(tour(BOTH)))).toMatch(/; plus \$30 for every person\.$/)
     expect(describeRateCard({ pricing: { mode: 'group', baseRate: 90, tierMax: 1, extraPerPerson: 90, zoneRates: { negril: 90 } }, minGuests: 1 })).toBe('By pickup area, for 1 person: Negril $90; each extra person $90.')
@@ -187,6 +209,23 @@ describe('rateCardChanges: only what moved, in the desk’s words', () => {
     expect(rateCardChanges(ricks(), { ...ricks(), pricing: { ...ricks().pricing, mode: 'per_person' } })).toBeNull()
     expect(rateCardChanges(dunns(), dunns())).toEqual([])
   })
+
+  test('per person by area: an area’s rate moves as one line, and it is never mistaken for the group card', () => {
+    const raft = (): RateCard => structuredClone(cardOf(tour(RAFT)))
+    const after = raft()
+    after.pricing.zoneRates!.negril = 160
+    delete after.pricing.zoneRates!.lucea
+    after.minGuests = 2
+    expect(rateCardChanges(raft(), after)).toEqual([
+      { label: 'Negril', was: '$150', now: '$160' },
+      { label: 'Lucea & Hanover', was: '$100', now: 'Not sold online' },
+      { label: 'Smallest party', was: 'Anyone', now: '2 people' },
+    ])
+    // The same six numbers for the group instead of per person is another way to price.
+    expect(rateCardChanges(raft(), { ...raft(), pricing: { ...raft().pricing, mode: 'group', tierMax: 4, extraPerPerson: 50 } })).toBeNull()
+    expect(rateCardChanges(dunns(), raft())).toBeNull()
+    expect(rateCardChanges(raft(), raft())).toEqual([])
+  })
 })
 
 describe('pricing by pickup area', () => {
@@ -194,7 +233,9 @@ describe('pricing by pickup area', () => {
   const both = tour(BOTH).pricing
 
   test('which tours, and the zones they are sold from', () => {
-    expect(experiences.filter((e) => isZonePriced(e.pricing)).map((e) => e.id).sort((a, b) => a - b)).toEqual([1, 2, 18])
+    // The falls (1, 2, 18) for the group; the raft (3) and both horseback rides (8, 9) per person.
+    expect(experiences.filter((e) => isZonePriced(e.pricing)).map((e) => e.id).sort((a, b) => a - b)).toEqual([1, 2, 3, 8, 9, 18])
+    expect(experiences.filter((e) => isPerPersonByArea(e.pricing)).map((e) => e.id).sort((a, b) => a - b)).toEqual([3, 8, 9])
     expect(zonesSold(dunns)).toEqual(['negril', 'lucea', 'montego_bay', 'trelawny', 'runaway_bay', 'ocho_rios'])
     expect(zoneSells(dunns, 'negril')).toBe(true)
     expect(zoneSells(dunns, null)).toBe(false)
@@ -226,6 +267,71 @@ describe('pricing by pickup area', () => {
     expect(priceUnitLabel(both)).toBe('for 1 person')
     expect(perTravelerPrice(dunns, 6, 'negril')).toBeNull()
     expect(perTravelerPrice(both, 2, 'negril')).toBeNull()
+  })
+})
+
+/**
+ * Collin, Nov 13 2026, by WhatsApp: "Bamboo Rafting: Ocho $100 per person,
+ * Runaway/Discovery Bay $100 per person, Falmouth $100 per person, Montego
+ * Bay $90 per person, Lucea $100, Negril $150 per person", and the same list
+ * for "Horseback Riding" with Montego Bay at $100.
+ */
+describe('pricing per person by pickup area', () => {
+  const raft = tour(RAFT).pricing
+  const ride = tour(8).pricing
+
+  test('every guest pays the area’s rate, at any party size', () => {
+    for (const [zone, rate] of Object.entries({ negril: 150, lucea: 100, montego_bay: 90, trelawny: 100, runaway_bay: 100, ocho_rios: 100 } as const)) {
+      for (let n = 1; n <= 12; n++) expect(tourOperatorCost(raft, n, zone as keyof typeof raft.zoneRates), `${zone}, ${n} guests`).toBe(rate * n)
+    }
+    for (let n = 1; n <= 12; n++) {
+      expect(tourOperatorCost(ride, n, 'negril')).toBe(150 * n)
+      expect(tourOperatorCost(ride, n, 'montego_bay')).toBe(100 * n)
+    }
+    expect(isPerPersonByArea(raft)).toBe(true)
+    expect(isPerPersonByArea(tour(DUNNS).pricing)).toBe(false)
+    expect(isPerPersonByArea(tour(7).pricing)).toBe(false)
+  })
+
+  test('the guest price from each zone, worked by hand: (rate x guests x 1.20 + $0.22) / 0.943, rounded up', () => {
+    expect(zonePrices(raft, 1)).toEqual([
+      { zone: 'negril', price: 192 }, { zone: 'lucea', price: 128 }, { zone: 'montego_bay', price: 115 },
+      { zone: 'trelawny', price: 128 }, { zone: 'runaway_bay', price: 128 }, { zone: 'ocho_rios', price: 128 },
+    ])
+    // A couple: $180 to Collin from Montego Bay, $200 from Ocho Rios, $300 from Negril.
+    expect(tourPrice(raft, 2, 'montego_bay')).toBe(230)
+    expect(tourPrice(raft, 2, 'ocho_rios')).toBe(255)
+    expect(tourPrice(raft, 2, 'negril')).toBe(382)
+    // It was $128 for a party of up to 3, whoever they were: $270 to Collin for three from Montego Bay.
+    expect(tourPrice(raft, 3, 'montego_bay')).toBe(344)
+    expect(tourPrice(raft, 5, 'montego_bay')).toBe(573)
+    // No price ever falls short of what Collin is owed plus the margin.
+    for (const z of zonesSold(raft)) for (let n = 1; n <= 12; n++) expect(tourPrice(raft, n, z)).toBeGreaterThan(tourOperatorCost(raft, n, z) * 1.2)
+  })
+
+  test('without a zone, the price is the cheapest zone’s per person: a "from"', () => {
+    expect(tour(RAFT).price).toBe(115)
+    expect(tourPrice(raft, 2)).toBe(230)
+    expect(tour(8).price).toBe(128)
+    expect(zoneSells(raft, null)).toBe(false)
+  })
+
+  test('labels: per person, and a per-head figure only when it multiplies back', () => {
+    expect(priceUnitLabel(raft)).toBe('per person')
+    expect(perTravelerPrice(raft, 2, 'montego_bay')).toBe(115)
+    // $255 for two from Ocho Rios is not a whole number each.
+    expect(perTravelerPrice(raft, 2, 'ocho_rios')).toBeNull()
+  })
+
+  test('checkout charges the guest’s own area, and refuses without one', () => {
+    const line = [{ id: RAFT, travelers: 2, date: '2027-06-15' }]
+    const p = priceTourCart(line, {}, { zone: 'negril' })
+    expect(p.total).toBe(382)
+    expect(p.subtotal).toBe(300)
+    expect(p.lines[0].zone).toBe('negril')
+    expect(priceTourCart(line, {}, { zone: 'montego_bay' }).total).toBe(230)
+    expect(() => priceTourCart(line, {}, {})).toThrow(PricingError)
+    try { priceTourCart(line, {}, {}) } catch (e) { expect((e as PricingError).code).toBe('pickup_area') }
   })
 })
 
@@ -281,6 +387,13 @@ describe('ZonePriceList: every area’s exact price on the tour page', () => {
     const text = renderToStaticMarkup(ZonePriceList({ exp: tour(BOTH), formatPrice: usd })).replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ')
     expect(text).toContain('For 2 people, by where we pick you up')
     expect(text).toContain('Ocho Rios $319')
+  })
+  test('a tour priced per person shows one guest’s price from each area, and no line about extra guests', () => {
+    const text = renderToStaticMarkup(ZonePriceList({ exp: tour(RAFT), formatPrice: usd })).replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').replace(/&amp;/g, '&')
+    expect(text).toContain('Per person, by where we pick you up')
+    expect(text).toContain('Negril $192 Lucea & Hanover $128 Montego Bay & Rose Hall $115 Falmouth & Trelawny $128 Runaway Bay & Discovery Bay $128 Ocho Rios $128')
+    expect(text).not.toContain('adds to the price')
+    expect(text).toContain('Staying somewhere else? Write to us for a price. Checkout shows your exact total.')
   })
   test('nothing at all for a tour with one price everywhere', () => {
     expect(ZonePriceList({ exp: tour(RICKS), formatPrice: usd })).toBeNull()

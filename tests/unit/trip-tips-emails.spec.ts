@@ -497,7 +497,10 @@ describe('the numbers and names come from the site', () => {
   test('p2: every price in the preheader carries its party limit', () => {
     const pre = pick('p2_tours').preheader
     const raft = exp(3)
-    expect(pre).toContain(`Martha Brae rafting, $${tourPrice(raft.pricing, 1)} ${raft.pricing.mode === 'group' ? 'for ' : ''}${priceUnitLabel(raft.pricing)}`)
+    // Priced by pickup area since Nov 13 2026 (Collin: per person, by area), so
+    // it is a "from" price. The area note stays in the table, out of this list.
+    expect(pre).toContain(`Martha Brae rafting, ${raft.pricing.zoneRates ? 'from ' : ''}$${tourPrice(raft.pricing, 1)} ${raft.pricing.mode === 'group' ? 'for ' : ''}${priceUnitLabel(raft.pricing)},`)
+    expect(pre).not.toContain('by pickup area')
     for (const m of Array.from(pre.matchAll(/\$\d[\d,]*( for up to \d people| per person)?/g))) expect(m[1], m[0]).toBeTruthy()
   })
 

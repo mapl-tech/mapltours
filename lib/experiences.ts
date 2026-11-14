@@ -15,10 +15,10 @@ export interface Comment {
 }
 
 /**
- * How the operator charges for a tour. Three shapes cover the whole rate sheet:
+ * How the operator charges for a tour. Four shapes cover the whole rate sheet:
  *
  *  group      a flat rate covering a party of 1..tierMax (a private tour: one
- *             person or three pay the same), then `extraPerPerson` x party
+ *             person or four pay the same), then `extraPerPerson` x party
  *             size once the party is larger.
  *  per_person `baseRate` per head up to tierMax, then the discounted
  *             `extraPerPerson` per head for larger parties.
@@ -26,6 +26,13 @@ export interface Comment {
  *             depends on the zone the guest is picked up from (lib/tour-zones),
  *             and each guest past tierMax ADDS `extraPerPerson` on top of it
  *             (Collin, Nov 12 2026: "Any additional person is $50 per person").
+ *  by area, per person
+ *             a per_person tour with `zoneRates`: every guest pays the rate of
+ *             the zone the party is picked up from, whatever the party's size
+ *             (Collin, Nov 13 2026, bamboo rafting: "$100 per person", "$90
+ *             per person" from Montego Bay, "$150 per person" from Negril).
+ *             He gave one rate per area and none for bigger parties, so
+ *             `tierMax` and `extraPerPerson` do not apply to this shape.
  *
  * `perPersonAddon` is added for every guest in any shape: the second site's
  * entry when two sights share one day ($30 a head for Dunn's River + Blue Hole).
@@ -48,10 +55,14 @@ export interface TourPricing {
   /**
    * Operator cost PER PERSON once the party exceeds tierMax: the whole party
    * per head for group and per_person, each extra guest on top of the zone
-   * rate for a tour priced by area.
+   * rate for a group tour priced by area. Unused by a per-person tour priced
+   * by area, whose every guest pays the zone's rate.
    */
   extraPerPerson: number
-  /** Operator rate for 1..tierMax by pickup zone. A zone left out is not sold online. */
+  /**
+   * Operator rate by pickup zone: for the party of 1..tierMax on a group
+   * tour, for each guest on a per_person one. A zone left out is not sold online.
+   */
   zoneRates?: Partial<Record<TourZone, number>>
   /** Added for every guest on top of everything else. */
   perPersonAddon?: number
@@ -73,8 +84,14 @@ export function zoneSells(p: TourPricing, zone: TourZone | null | undefined): bo
   return !!zone && typeof p.zoneRates?.[zone] === 'number'
 }
 
+/** True when every guest pays their own pickup zone's rate: a per-person tour priced by area. */
+export function isPerPersonByArea(p: TourPricing): boolean {
+  return p.mode === 'per_person' && isZonePriced(p)
+}
+
 /**
- * The flat rate for 1..tierMax: the zone's when it is sold there, otherwise
+ * The zone's rate (the flat rate for 1..tierMax on a group tour, the rate per
+ * guest on a per-person one): the zone's own when it is sold there, otherwise
  * the cheapest zone's, which is what every "from" price shows. Checkout never
  * relies on the fallback: priceTourCart refuses a tour priced by area unless
  * zoneSells() is true for the guest's zone.
@@ -104,6 +121,8 @@ export function tourOperatorCost(p: TourPricing, travelers: number, zone?: TourZ
   const n = Math.max(1, Math.round(travelers))
   const addon = (p.perPersonAddon ?? 0) * n
   if (isZonePriced(p)) {
+    // Per person by area: the zone's rate for every guest, at any party size.
+    if (p.mode === 'per_person') return partyRate(p, zone) * n + addon
     return partyRate(p, zone) + p.extraPerPerson * Math.max(0, n - p.tierMax) + addon
   }
   if (n <= p.tierMax) {
@@ -564,7 +583,10 @@ const CATALOG: CatalogEntry[] = [
     destination: "Falmouth",
     parish: "Trelawny",
     title: "Bamboo Rafting on the Martha Brae",
-    pricing: { mode: 'group', baseRate: 100, tierMax: 3, extraPerPerson: 90 },
+    // Collin, Nov 13 2026: "$100 per person" from Ocho Rios, Runaway/Discovery
+    // Bay, Falmouth and Lucea, "$90 per person" from Montego Bay, "$150 per
+    // person" from Negril. It was read as $100 for a party of up to 3.
+    pricing: { mode: 'per_person', baseRate: 90, tierMax: 12, extraPerPerson: 90, zoneRates: { negril: 150, lucea: 100, montego_bay: 90, trelawny: 100, runaway_bay: 100, ocho_rios: 100 } },
     duration: "1.5 hrs at the river",
     rating: 0,
     reviews: 0,
@@ -665,7 +687,7 @@ const CATALOG: CatalogEntry[] = [
     destination: "Hanover",
     parish: "Hanover",
     title: "ATV Off-Road Adventure",
-    pricing: { mode: 'per_person', baseRate: 130, tierMax: 3, extraPerPerson: 125 },
+    pricing: { mode: 'per_person', baseRate: 130, tierMax: 4, extraPerPerson: 125 },
     duration: "2 hrs at the park",
     rating: 0,
     reviews: 0,
@@ -714,7 +736,7 @@ const CATALOG: CatalogEntry[] = [
     destination: "Hanover",
     parish: "Hanover",
     title: "Rainforest Zipline Adventure",
-    pricing: { mode: 'per_person', baseRate: 120, tierMax: 3, extraPerPerson: 110 },
+    pricing: { mode: 'per_person', baseRate: 120, tierMax: 4, extraPerPerson: 110 },
     // Collin, Nov 12 2026: "$120 per person however it have to be 2 or more persons".
     minGuests: 2,
     duration: "1 hr at the park",
@@ -765,7 +787,9 @@ const CATALOG: CatalogEntry[] = [
     destination: "Ocho Rios",
     parish: "St. Ann",
     title: "Horseback Riding Trail",
-    pricing: { mode: 'per_person', baseRate: 100, tierMax: 3, extraPerPerson: 95 },
+    // Collin, Nov 13 2026, "Horseback Riding": $100 per person from every
+    // area but Negril, which is $150 per person.
+    pricing: { mode: 'per_person', baseRate: 100, tierMax: 12, extraPerPerson: 100, zoneRates: { negril: 150, lucea: 100, montego_bay: 100, trelawny: 100, runaway_bay: 100, ocho_rios: 100 } },
     duration: "2 hrs at the stable",
     rating: 0,
     reviews: 0,
@@ -814,7 +838,9 @@ const CATALOG: CatalogEntry[] = [
     destination: "Ocho Rios",
     parish: "St. Ann",
     title: "Horseback Ride 'n' Swim",
-    pricing: { mode: 'per_person', baseRate: 100, tierMax: 3, extraPerPerson: 95 },
+    // Collin, Nov 13 2026, "Horseback Riding": $100 per person from every
+    // area but Negril, which is $150 per person.
+    pricing: { mode: 'per_person', baseRate: 100, tierMax: 12, extraPerPerson: 100, zoneRates: { negril: 150, lucea: 100, montego_bay: 100, trelawny: 100, runaway_bay: 100, ocho_rios: 100 } },
     duration: "2 hrs at the stable",
     rating: 0,
     reviews: 0,
@@ -966,7 +992,7 @@ const CATALOG: CatalogEntry[] = [
     title: "Clear Kayak Drone Photoshoot",
     // Collin, Nov 12 2026: "This price is per person". The sheet's "$180 1-3"
     // for the kayak is per head ($160 each from 4), not a party rate.
-    pricing: { mode: 'per_person', baseRate: 180, tierMax: 3, extraPerPerson: 160 },
+    pricing: { mode: 'per_person', baseRate: 180, tierMax: 4, extraPerPerson: 160 },
     duration: "1 hr at the river",
     rating: 0,
     reviews: 0,
@@ -1013,7 +1039,7 @@ const CATALOG: CatalogEntry[] = [
     destination: "Ocho Rios",
     parish: "St. Ann",
     title: "River Tubing",
-    pricing: { mode: 'per_person', baseRate: 100, tierMax: 3, extraPerPerson: 80 },
+    pricing: { mode: 'per_person', baseRate: 100, tierMax: 4, extraPerPerson: 80 },
     duration: "1.5 hrs at the river",
     rating: 0,
     reviews: 0,
@@ -1114,7 +1140,7 @@ const CATALOG: CatalogEntry[] = [
     destination: "Nine Mile",
     parish: "St. Ann",
     title: "Bob Marley Nine Mile Pilgrimage",
-    pricing: { mode: 'group', baseRate: 360, tierMax: 3, extraPerPerson: 100 },
+    pricing: { mode: 'group', baseRate: 360, tierMax: 4, extraPerPerson: 100 },
     duration: "Full day",
     rating: 0,
     reviews: 0,
@@ -1165,7 +1191,7 @@ const CATALOG: CatalogEntry[] = [
     destination: "Ocho Rios",
     parish: "St. Ann",
     title: "Tubing + Clear Kayak Combo",
-    pricing: { mode: 'per_person', baseRate: 280, tierMax: 3, extraPerPerson: 280 },
+    pricing: { mode: 'per_person', baseRate: 280, tierMax: 4, extraPerPerson: 280 },
     duration: "Full day",
     rating: 0,
     reviews: 0,
@@ -1216,7 +1242,7 @@ const CATALOG: CatalogEntry[] = [
     destination: "Montego Bay",
     parish: "St. James",
     title: "Bamboo Raft + Clear Kayak + Drone Photos",
-    pricing: { mode: 'per_person', baseRate: 260, tierMax: 3, extraPerPerson: 260 },
+    pricing: { mode: 'per_person', baseRate: 260, tierMax: 4, extraPerPerson: 260 },
     duration: "Half day",
     rating: 0,
     reviews: 0,
@@ -1321,7 +1347,7 @@ const CATALOG: CatalogEntry[] = [
     destination: "Hanover",
     parish: "Hanover",
     title: "Zipline + ATV",
-    pricing: { mode: 'per_person', baseRate: 235, tierMax: 3, extraPerPerson: 235 },
+    pricing: { mode: 'per_person', baseRate: 235, tierMax: 4, extraPerPerson: 235 },
     duration: "Full day",
     rating: 0,
     reviews: 0,
@@ -1372,7 +1398,7 @@ const CATALOG: CatalogEntry[] = [
     destination: "Hanover",
     parish: "Hanover",
     title: "Bamboo Rafting + Zipline",
-    pricing: { mode: 'per_person', baseRate: 210, tierMax: 3, extraPerPerson: 210 },
+    pricing: { mode: 'per_person', baseRate: 210, tierMax: 4, extraPerPerson: 210 },
     duration: "Full day",
     rating: 0,
     reviews: 0,
@@ -1422,7 +1448,7 @@ const CATALOG: CatalogEntry[] = [
     destination: "Hanover",
     parish: "Hanover",
     title: "Triple Pack: ATV + Zipline + Rick's Cafe",
-    pricing: { mode: 'per_person', baseRate: 250, tierMax: 3, extraPerPerson: 250 },
+    pricing: { mode: 'per_person', baseRate: 250, tierMax: 4, extraPerPerson: 250 },
     duration: "Full day",
     rating: 0,
     reviews: 0,
