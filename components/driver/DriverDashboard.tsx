@@ -28,6 +28,16 @@ const border = '1px solid #E7E1D6'
 const borderSoft = '1px solid #F1ECE3'
 const tnum = { fontVariantNumeric: 'tabular-nums' as const }
 const eyebrow: React.CSSProperties = { fontSize: 12, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: faint, margin: 0 }
+/**
+ * The heading that holds a card's header. The site gives every h2 tighter
+ * tracking and balanced line breaks (globals.css), and both are inherited, so
+ * a plain h2 here re-set every word in the header and re-broke its lines.
+ * This one passes the card's own type, tracking and wrapping straight
+ * through, so the words sit exactly where they did.
+ */
+const headHeading: React.CSSProperties = { margin: 0, font: 'inherit', letterSpacing: 'inherit', textWrap: 'inherit' }
+/** The header's own box, as it has always been. */
+const headBox: React.CSSProperties = { display: 'block', cursor: 'pointer', padding: '15px 20px', background: '#FCFBF8' }
 
 /** Smooth-scroll a just-opened card under the sticky header (honors reduced motion). */
 function useScrollOnOpen(open: boolean) {
@@ -49,11 +59,18 @@ function jaShort(iso: string | null): string {
     return new Date(iso).toLocaleDateString('en-US', { timeZone: 'UTC', weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })
   } catch { return String(iso) }
 }
-function paidStamp(iso: string | null): string {
+/**
+ * When a payout was sent, on Jamaica's clock: "Nov 12, 3:58 AM". A payout time
+ * is a real instant (unlike the leg times, which are stored as Jamaica wall
+ * clock), so it has to be told in Jamaica's zone by name. Without one it came
+ * out in whichever zone the phone or the admin's laptop was in, on a page
+ * whose footer says "Times are Jamaica time".
+ */
+export function paidStamp(iso: string | null): string {
   if (!iso) return ''
-  try {
-    return new Date(iso).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })
-  } catch { return '' }
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return ''
+  return d.toLocaleString('en-US', { timeZone: 'America/Jamaica', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })
 }
 /** "in 3 days" / "in 5 hrs" / "today" for the hero countdown. */
 function countdown(iso: string): string {
@@ -84,13 +101,17 @@ function Act({ href, onClick, children, tone = 'outline', grow }: {
     background: tone === 'wa' ? '#0B6459' : tone === 'solid' ? ink : '#fff',
     color: tone === 'wa' || tone === 'solid' ? '#fff' : ink,
   }
-  if (href) return <a className="drv-act" href={href} target="_blank" rel="noreferrer" style={style}>{children}</a>
+  // A phone number opens the dialer in place: sent to a new tab, a tel: link
+  // can leave a blank tab behind on a phone. Only web pages open a new tab.
+  if (href) return /^https?:/i.test(href)
+    ? <a className="drv-act" href={href} target="_blank" rel="noreferrer" style={style}>{children}</a>
+    : <a className="drv-act" href={href} style={style}>{children}</a>
   return <button className="drv-act" type="button" onClick={onClick} style={style}>{children}</button>
 }
 
-function PayChip({ paid, label }: { paid: boolean; label: string }) {
+function PayChip({ paid, label, id }: { paid: boolean; label: string; id?: string }) {
   return (
-    <span style={{
+    <span id={id} style={{
       display: 'inline-flex', alignItems: 'center', gap: 6, padding: '5px 12px', borderRadius: 9999,
       fontSize: 12, fontWeight: 700,
       background: paid ? 'rgba(29,122,80,0.12)' : 'rgba(122,90,8,0.12)',
@@ -260,30 +281,41 @@ export function TripCard({ t, open, onToggle }: { t: DriverTrip; open: boolean; 
 
   return (
     <article ref={ref} aria-label={`Trip ${t.ref}`} style={{ background: '#fff', border, borderLeft: `4px solid ${t.fullyPaid ? green : goldWarm}`, borderRadius: 16, overflow: 'hidden', boxShadow: '0 1px 2px rgba(23,22,20,0.04), 0 6px 22px rgba(23,22,20,0.05)', scrollMarginTop: 74 }}>
-      {/* Clickable summary header (collapsed view), admin-bookings style */}
-      <div
+      {/* Clickable summary header (collapsed view), admin-bookings style.
+          It is the same box it always was, with two repairs for screen
+          readers. The heading used to sit INSIDE the role=button element,
+          and a button's children are presentational, so no trip had a
+          heading; now the heading holds the button. And the button's name
+          was every word in the header; now it is the ref and the guest, with
+          the rest as its description. It stays an element with role=button
+          rather than a native button on purpose: in Safari the words inside
+          a native button cannot be selected, and a driver could always
+          select the booking reference here. */}
+      <h2 style={headHeading}>
+      <span
         role="button"
         tabIndex={0}
+        id={`trip-${t.id}-btn`}
         aria-expanded={open}
+        aria-controls={open ? `trip-${t.id}-panel` : undefined}
+        aria-label={`${t.ref}, ${t.guestName}`}
+        aria-describedby={`trip-${t.id}-kind trip-${t.id}-pay trip-${t.id}-sum`}
         className="drv-act"
         onClick={onToggle}
         onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onToggle() } }}
-        style={{
-          cursor: 'pointer', padding: '15px 20px', background: '#FCFBF8',
-          borderBottom: open ? borderSoft : undefined,
-        }}
+        style={{ ...headBox, borderBottom: open ? borderSoft : undefined }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap' }}>
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, flexWrap: 'wrap' }}>
-            <h2 style={{ fontWeight: 800, fontSize: 16, letterSpacing: '0.01em', margin: 0, ...tnum }}>{t.ref}</h2>
-            <span style={{ fontSize: 13, color: soft, fontWeight: 500 }}>{isRT ? 'Round trip' : 'One-way'} · {t.passengers} passenger{t.passengers === 1 ? '' : 's'}</span>
-          </div>
+        <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap' }}>
+          <span style={{ display: 'flex', alignItems: 'baseline', gap: 10, flexWrap: 'wrap' }}>
+            <span style={{ display: 'block', fontWeight: 800, fontSize: 16, letterSpacing: '0.01em', margin: 0, ...tnum }}>{t.ref}</span>
+            <span id={`trip-${t.id}-kind`} style={{ fontSize: 13, color: soft, fontWeight: 500 }}>{isRT ? 'Round trip' : 'One-way'} · {t.passengers} passenger{t.passengers === 1 ? '' : 's'}</span>
+          </span>
           <span style={{ display: 'inline-flex', alignItems: 'center', gap: 12 }}>
-            <PayChip paid={t.fullyPaid} label={t.fullyPaid ? 'Paid in full' : 'Pay pending'} />
+            <PayChip id={`trip-${t.id}-pay`} paid={t.fullyPaid} label={t.fullyPaid ? 'Paid in full' : 'Pay pending'} />
             <ChevronRight size={20} strokeWidth={2.25} aria-hidden style={{ flexShrink: 0, transform: open ? 'rotate(90deg)' : 'none', transition: 'transform 0.15s ease', color: faint }} />
           </span>
-        </div>
-        <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 12, marginTop: 9, flexWrap: 'wrap' }}>
+        </span>
+        <span id={`trip-${t.id}-sum`} style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 12, marginTop: 9, flexWrap: 'wrap' }}>
           <span style={{ display: 'flex', flexDirection: 'column', gap: 4, minWidth: 0 }}>
             <span style={{ display: 'flex', alignItems: 'baseline', gap: 8, flexWrap: 'wrap' }}>
               <span style={{ fontSize: 14, fontWeight: 700, color: ink }}>{t.guestName}</span>
@@ -311,11 +343,12 @@ export function TripCard({ t, open, onToggle }: { t: DriverTrip; open: boolean; 
             <span style={{ fontSize: 12, fontWeight: 600, color: faint }}>You get </span>
             <span style={{ fontSize: 15, fontWeight: 800, color: green, ...tnum }}>{money(t.payoutTotal)} <span style={{ fontSize: 12, fontWeight: 700 }}>USD</span></span>
           </span>
-        </div>
-      </div>
+        </span>
+      </span>
+      </h2>
 
       {open && (
-      <div style={{ padding: '18px 20px 20px', display: 'flex', flexDirection: 'column', gap: 18 }}>
+      <div id={`trip-${t.id}-panel`} style={{ padding: '18px 20px 20px', display: 'flex', flexDirection: 'column', gap: 18 }}>
         {/* Guest */}
         <div>
           <h3 style={eyebrow}>Guest</h3>
@@ -377,7 +410,7 @@ export function TripCard({ t, open, onToggle }: { t: DriverTrip; open: boolean; 
                 </span>
                 <span style={{ display: 'inline-flex', alignItems: 'center', gap: 10 }}>
                   <span style={{ fontSize: 16, fontWeight: 800, ...tnum }}>{money(p.amount)} <span style={{ fontSize: 12, fontWeight: 700, color: faint }}>USD</span></span>
-                  <PayChip paid={p.paid} label={p.paid ? `Paid ${paidStamp(p.paidAt)}` : 'Pending'} />
+                  <PayChip paid={p.paid} label={p.paid ? `Paid ${paidStamp(p.paidAt)}`.trim() : 'Pending'} />
                 </span>
               </div>
             ))}
@@ -402,36 +435,43 @@ function tourDate(d: string | null): string {
   } catch { return d }
 }
 
-function TourCard({ t, open, onToggle }: { t: DriverTour; open: boolean; onToggle: () => void }) {
+export function TourCard({ t, open, onToggle }: { t: DriverTour; open: boolean; onToggle: () => void }) {
   const ref = useScrollOnOpen(open)
   return (
     <article ref={ref} aria-label={`Tour booking ${t.ref}`} style={{ background: '#fff', border, borderLeft: `4px solid ${goldWarm}`, borderRadius: 16, overflow: 'hidden', boxShadow: '0 1px 2px rgba(23,22,20,0.04), 0 6px 22px rgba(23,22,20,0.05)', scrollMarginTop: 74 }}>
-      <div
+      {/* The heading holds the button, named by the ref and the guest, as on the trip card. */}
+      <h2 style={headHeading}>
+      <span
         role="button"
         tabIndex={0}
+        id={`tour-${t.id}-btn`}
         aria-expanded={open}
+        aria-controls={open ? `tour-${t.id}-panel` : undefined}
+        aria-label={`${t.ref}, ${t.guestName}`}
+        aria-describedby={`tour-${t.id}-kind tour-${t.id}-sum`}
         className="drv-act"
         onClick={onToggle}
         onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onToggle() } }}
-        style={{ cursor: 'pointer', padding: '15px 20px', background: '#FCFBF8', borderBottom: open ? borderSoft : undefined }}
+        style={{ ...headBox, borderBottom: open ? borderSoft : undefined }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap' }}>
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, flexWrap: 'wrap' }}>
-            <h2 style={{ fontWeight: 800, fontSize: 16, letterSpacing: '0.01em', margin: 0, ...tnum }}>{t.ref}</h2>
-            <span style={{ fontSize: 13, color: soft, fontWeight: 500 }}>Tour · {t.items.length} experience{t.items.length === 1 ? '' : 's'}</span>
-          </div>
+        <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap' }}>
+          <span style={{ display: 'flex', alignItems: 'baseline', gap: 10, flexWrap: 'wrap' }}>
+            <span style={{ display: 'block', fontWeight: 800, fontSize: 16, letterSpacing: '0.01em', margin: 0, ...tnum }}>{t.ref}</span>
+            <span id={`tour-${t.id}-kind`} style={{ fontSize: 13, color: soft, fontWeight: 500 }}>Tour · {t.items.length} experience{t.items.length === 1 ? '' : 's'}</span>
+          </span>
           <ChevronRight size={20} strokeWidth={2.25} aria-hidden style={{ flexShrink: 0, transform: open ? 'rotate(90deg)' : 'none', transition: 'transform 0.15s ease', color: faint }} />
-        </div>
-        <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginTop: 9, flexWrap: 'wrap' }}>
+        </span>
+        <span id={`tour-${t.id}-sum`} style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginTop: 9, flexWrap: 'wrap' }}>
           <span style={{ fontSize: 14, fontWeight: 700, color: ink }}>{t.guestName}</span>
           <span aria-hidden="true" style={{ color: faint }}>·</span>
           <span style={{ fontSize: 13, color: soft }}>{t.items[0].title}{t.items.length > 1 ? ` +${t.items.length - 1} more` : ''}</span>
           <span aria-hidden="true" style={{ color: faint }}>·</span>
           <span style={{ fontSize: 13, color: soft, ...tnum }}>{tourDate(t.firstDate)}</span>
-        </div>
-      </div>
+        </span>
+      </span>
+      </h2>
       {open && (
-        <div style={{ padding: '18px 20px 20px', display: 'flex', flexDirection: 'column', gap: 16 }}>
+        <div id={`tour-${t.id}-panel`} style={{ padding: '18px 20px 20px', display: 'flex', flexDirection: 'column', gap: 16 }}>
           <div>
             <h3 style={eyebrow}>Guest</h3>
             <p style={{ fontSize: 19, fontWeight: 800, margin: '6px 0 0', letterSpacing: '-0.01em' }}>{t.guestName}</p>
