@@ -198,3 +198,54 @@ describe('sent for a gift-covered booking refunded as credit', () => {
     expect(t).not.toContain('available straight away')
   })
 })
+
+/**
+ * A refund made by hand in the Stripe Dashboard on a booking a gift card
+ * part-funded (found Nov 13 2026). Stripe only returns the cash; the webhook
+ * credits the gift card's share separately and stores refund_amount as the
+ * cash alone, with no quote. The receipt used to print "Amount paid $100.00,
+ * Administration charge (20%) −$0.00, Refunded to your card $60.00": the $40
+ * that had gone back onto the gift card was never mentioned.
+ */
+describe('a Dashboard refund of a booking a gift card part-funded', () => {
+  beforeEach(() => { state.emails = [] })
+  const row = (over: Record<string, unknown>) => ({
+    id: 'dadb0a4d-1111-4222-8333-444444444444', email: 'andre@example.com', first_name: 'Andre',
+    last_name: 'Brown', phone: null, currency: 'usd', booking_type: 'tour',
+    total_paid: 100, gift_card_amount: 40, refund_quoted_cash: null, refund_quoted_gift: null,
+    cancellation_email_sent_at: null, ops_cancellation_email_sent_at: null, booking_items: [],
+    ...over,
+  })
+
+  test('cash refunded in full: both halves are named and add up to what was paid, with no charge line', async () => {
+    state.row = row({ refund_amount: 60, admin_charge: 0 })
+    await sendCancellationEmails(state.row.id as string, { source: 'dashboard' })
+    const t = await text(state.emails.find((e) => e.to === 'andre@example.com')!.react as ReactElement)
+    expect(t).toContain('Back to your card')
+    expect(t).toContain('$60.00')
+    expect(t).toContain('Back to your gift card')
+    expect(t).toContain('$40.00')
+    expect(t).toMatch(/Total refunded\s+\$100\.00/)
+    expect(t).not.toContain('Administration charge')
+  })
+
+  test('half the cash refunded: half the gift share goes back too, and the rest reads as the charge, without "(20%)"', async () => {
+    state.row = row({ refund_amount: 30, admin_charge: 30 })
+    await sendCancellationEmails(state.row.id as string, { source: 'dashboard' })
+    const t = await text(state.emails.find((e) => e.to === 'andre@example.com')!.react as ReactElement)
+    expect(t).toMatch(/Back to your card\s+\$30\.00/)
+    expect(t).toMatch(/Back to your gift card\s+\$20\.00/)
+    expect(t).toMatch(/Total refunded\s+\$50\.00/)
+    expect(t).toMatch(/Administration charge\s+.{0,3}\$50\.00/)
+    expect(t).not.toContain('(20%)')
+  })
+
+  test('no gift card on the booking: a Dashboard refund reads exactly as before', async () => {
+    state.row = row({ gift_card_amount: null, refund_amount: 80, admin_charge: 20 })
+    await sendCancellationEmails(state.row.id as string, { source: 'dashboard' })
+    const t = await text(state.emails.find((e) => e.to === 'andre@example.com')!.react as ReactElement)
+    expect(t).toContain('Administration charge (20%)')
+    expect(t).toMatch(/Refunded to your card\s+\$80\.00/)
+    expect(t).not.toContain('gift card')
+  })
+})

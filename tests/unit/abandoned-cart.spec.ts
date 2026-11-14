@@ -445,3 +445,107 @@ describe('the nudge cannot be aimed at a stranger', () => {
     expect(await greeting('Call 8765550100')).not.toMatch(/8765550100/)
   })
 })
+
+/**
+ * Nov 13 2026. A guest who reloads checkout and changes the order gets a NEW
+ * booking row; nothing supersedes the first (the page that knew it is gone),
+ * so it stays pending with a live intent of its own. The sweep only ever
+ * asked Stripe about that intent, and wrote "Still thinking it over?" to a
+ * guest who had paid an hour earlier under the second row.
+ */
+describe('a guest who has since paid is not nudged', () => {
+  const PAID = 'cccccccc-1111-2222-3333-444444444444'
+  const paid = (over: Record<string, unknown> = {}) =>
+    row({ id: PAID, status: 'paid', stripe_payment_id: 'pi_paid', paid_at: new Date(Date.now() - 10 * 60 * 1000).toISOString(), ...over })
+
+  test('paid for a tour after this tour cart was started: no email, and no claim', async () => {
+    state.rows = [row(), paid()]
+    state.piStatuses = { pi_1: 'requires_payment_method' }
+    const body = await sweep()
+    expect(body.emailed).toBe(0)
+    expect(body.skipped).toContain('MAPL-AAAAAAAA:booked_since')
+    expect(state.emails).toHaveLength(0)
+    expect(state.updates).toHaveLength(0)
+  })
+
+  test('the same inbox written differently still counts', async () => {
+    state.rows = [row({ email: 'Guest@Example.com ' }), paid({ email: 'guest@example.com' })]
+    state.piStatuses = { pi_1: 'requires_payment_method' }
+    expect((await sweep()).skipped).toContain('MAPL-AAAAAAAA:booked_since')
+  })
+
+  test('paid BEFORE the cart was started (an earlier trip): the cart is still theirs to finish', async () => {
+    state.rows = [row(), paid({ paid_at: new Date(Date.now() - 5 * HOUR).toISOString() })]
+    state.piStatuses = { pi_1: 'requires_payment_method' }
+    const body = await sweep()
+    expect(body.emailed).toBe(1)
+  })
+
+  test('paid for a RIDE since, and the cart is a tour: still nudged about the tour', async () => {
+    state.rows = [row(), paid({ booking_type: 'transfer' })]
+    state.piStatuses = { pi_1: 'requires_payment_method' }
+    expect((await sweep()).emailed).toBe(1)
+  })
+
+  test('somebody else paying changes nothing', async () => {
+    state.rows = [row(), paid({ email: 'other@example.com' })]
+    state.piStatuses = { pi_1: 'requires_payment_method' }
+    expect((await sweep()).emailed).toBe(1)
+  })
+
+  test('the claim only wins on a row that is still pending', async () => {
+    state.rows = [row()]
+    state.piStatuses = { pi_1: 'requires_payment_method' }
+    await sweep()
+    const claim = touched('aaaaaaaa-1111-2222-3333-444444444444')[0]
+    expect(claim.filters).toContainEqual(['eq', 'status', 'pending'])
+    expect(claim.filters).toContainEqual(['is', 'recovery_email_sent_at', null])
+  })
+})
+
+describe('what the recovery email says', () => {
+  const send = async (over: Record<string, unknown>) => {
+    state.rows = [row(over)]
+    state.piStatuses = { pi_1: 'requires_payment_method' }
+    await sweep()
+    return {
+      text: (await render(state.reacts[0] as ReactElement, { plainText: true })).replace(/\s+/g, ' '),
+      html: await render(state.reacts[0] as ReactElement),
+    }
+  }
+
+  test('a tour line is the amount checkout recorded, not a rounded per-head price multiplied back', async () => {
+    const { text } = await send({ total_paid: 382, booking_items: [{ item_type: 'experience', title: "Dunn's River Falls Climb", destination: 'Ocho Rios', date: '2026-12-05', travelers: 3, price_per_person: 127.33, line_total: 382 }] })
+    expect(text).toContain('$382.00')
+    expect(text).not.toContain('$381.99')
+  })
+
+  test('a ride home says which way it goes, and the reasons are about a ride', async () => {
+    const { text } = await send({ booking_type: 'transfer', total_paid: 111, booking_items: [{ item_type: 'transfer', hotel: 'Riu Negril', zone: 'D', trip_type: 'one_way', passengers: 2, price_per_person: 111, line_total: 111, arrival_at: null, departure_at: '2026-12-10T09:00:00+00:00' }] })
+    expect(text).toContain('Riu Negril to MBJ')
+    expect(text).not.toContain('Airport transfer to Riu Negril')
+    expect(text).toMatch(/tracks your flight/)
+    expect(text).not.toMatch(/Local guides|full itinerary/)
+  })
+
+  test('a tour cart keeps the tour reasons', async () => {
+    const { text } = await send({})
+    expect(text).toMatch(/Private transport from your hotel and back is in the price/)
+    expect(text).not.toMatch(/tracks your flight/)
+  })
+
+  test('it promises nothing that is not so: no "spot is held", and the button opens the checkout over https', async () => {
+    const tour = await send({})
+    expect(tour.text).not.toMatch(/spot is still held|locked in/i)
+    expect(tour.html).toContain('https://mapltours.com/checkout')
+    expect(tour.html).not.toMatch(/href="http:\/\/mapltours/)
+    state.emails = []; state.reacts = []; state.updates = []
+    const ride = await send({ booking_type: 'transfer', booking_items: [{ item_type: 'transfer', hotel: 'Riu Negril', trip_type: 'round_trip', passengers: 2, price_per_person: 199, arrival_at: '2026-12-03T16:06:00+00:00', departure_at: '2026-12-10T09:00:00+00:00' }] })
+    expect(ride.html).toContain('https://mapltours.com/transfers/checkout')
+  })
+
+  test('no em dash anywhere in it', async () => {
+    const { text } = await send({})
+    expect(text).not.toMatch(/—/)
+  })
+})

@@ -42,6 +42,14 @@ describe('asks about the right thing', () => {
     expect(html).not.toMatch(/what you ate/i)
   })
 
+  test('a tour guest reads nothing about airports, landing or getting home', async () => {
+    // They used to get the ride's lines word for word (found Nov 13 2026).
+    const html = decode(await tour())
+    expect(html).not.toMatch(/airport|when they land|got home|sand in it|arrivals/i)
+    expect(html).toContain('the ride back to your hotel')
+    expect(html).toContain('whether a day out with us is worth the money')
+  })
+
   test('a tour guest is asked about the tour, by name', async () => {
     const html = decode(await tour())
     expect(html).toContain("Dunn's River Falls Climb")

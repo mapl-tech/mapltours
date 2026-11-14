@@ -1104,7 +1104,7 @@ function p4(): Draft {
     // The three worries a planner has, in the card's own words ("cancelling"
     // as the site spells it).
     subject: 'Paying, cancelling and weather: how it works',
-    preheader: 'Pay up front in US dollars, book a Friday tour by Wednesday, and get 48 hours to cancel, less a 20% charge.',
+    preheader: 'Pay up front in US dollars, book a Friday tour by noon on Thursday, and get 48 hours to cancel, less a 20% charge.',
     body: [
       { t: 'h1', text: 'How booking with us works' },
       // The four rows below, in order, as a guest would ask them.

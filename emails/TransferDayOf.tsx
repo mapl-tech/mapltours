@@ -74,7 +74,7 @@ export default function TransferDayOf(props: TransferDayOfProps) {
     : null
 
   return (
-    <MaplLayout preheader={`${dayLabel}: your MAPL driver, ${whenLabel} · ${bookingRef}`}>
+    <MaplLayout preheader={`${dayLabel}: your driver, ${whenLabel} · ${bookingRef}`}>
       <Text style={s.eyebrow}>{dayLabel} · {isArrival ? 'Airport pickup' : 'Departure pickup'}</Text>
       <Heading as="h1" style={s.hero} className="mapl-h1">
         {isArrival

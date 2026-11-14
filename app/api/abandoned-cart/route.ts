@@ -4,6 +4,8 @@ import { createServiceClient } from '@/lib/supabase/service'
 import { sendEmail, operatorAlertRecipients } from '@/lib/email/send'
 import { resolveOpsRecipients } from '@/lib/email/booking'
 import AbandonedCart from '@/emails/AbandonedCart'
+import { siteUrl } from '@/emails/_Layout'
+import { transferTitle } from '@/lib/transfer-legs'
 import OpsAlert from '@/emails/OpsAlert'
 import { mailboxKey } from '@/lib/contact-spam'
 import { guestNames } from '@/lib/guest-name'
@@ -207,6 +209,32 @@ async function handle(request: NextRequest) {
     for (const r of (recent ?? []) as Row[]) if (r.email) nudged.add(mailboxKey(String(r.email)))
   }
 
+  // Inboxes that have PAID for a tour or a ride lately, and when. A guest who
+  // reloads checkout and changes the order (party, date, a code) gets a new
+  // booking row; the page that knew the first row is gone, so nothing
+  // supersedes it. It stays pending with a live intent of its own, and this
+  // sweep, which only ever asked Stripe about THAT intent, then wrote "Still
+  // thinking it over?" to somebody who had paid an hour earlier. A cart is
+  // not abandoned if its guest has since paid for the same kind of booking.
+  // A failed read leaves the map empty: the sweep as it was, not one that stops.
+  const paidSince = new Map<string, number>()
+  {
+    const since = new Date(now - (MAX_AGE_DAYS + 1) * 24 * 60 * 60 * 1000).toISOString()
+    const { data: paidRows, error: paidErr } = await supabase
+      .from('bookings')
+      .select('email, booking_type, paid_at')
+      .eq('status', 'paid')
+      .gte('paid_at', since)
+      .limit(2000)
+    if (paidErr) console.error('[abandoned-cart] recent paid query failed', paidErr.message)
+    for (const r of (paidRows ?? []) as Row[]) {
+      const at = Date.parse(String(r.paid_at ?? ''))
+      if (!r.email || Number.isNaN(at)) continue
+      const key = `${r.booking_type ?? 'tour'}:${mailboxKey(String(r.email))}`
+      if (at > (paidSince.get(key) ?? 0)) paidSince.set(key, at)
+    }
+  }
+
   for (const b of (rows ?? []) as Row[]) {
     // Stop before the platform stops us, so the run ends with a summary
     // instead of a truncated log and a silent backlog.
@@ -277,6 +305,10 @@ async function handle(request: NextRequest) {
     // After the Stripe check, so a paid-but-pending row is still caught.
     const inbox = mailboxKey(email)
     if (!bookingId && nudged.has(inbox)) { summary.skipped.push(`${ref}:inbox_nudged_this_week`); continue }
+    // They came back and booked (see paidSince above). In a targeted run too:
+    // nobody means to nudge a guest who has paid.
+    const bookedAt = paidSince.get(`${b.booking_type ?? 'tour'}:${inbox}`)
+    if (bookedAt && bookedAt >= new Date(b.created_at).getTime()) { summary.skipped.push(`${ref}:booked_since`); continue }
 
     // Atomic claim: only one worker wins the NULL → now() transition.
     const nowIso = new Date().toISOString()
@@ -284,6 +316,9 @@ async function handle(request: NextRequest) {
       .from('bookings')
       .update({ recovery_email_sent_at: nowIso, recovery_email_count: 1 })
       .eq('id', b.id)
+      // Still an unpaid cart at the moment of the claim: the row was read at
+      // the top of the run, and a payment or a supersede can land in between.
+      .eq('status', 'pending')
       .is('recovery_email_sent_at', null)
       .select('id')
       .maybeSingle()
@@ -295,9 +330,10 @@ async function handle(request: NextRequest) {
       if (isTransfer) {
         const trip = i.trip_type === 'round_trip' ? 'Round-trip' : 'One-way'
         return {
-          title: `Airport transfer to ${i.hotel ?? i.destination}`,
+          // Says which way the ride goes: a one-way home is not a "transfer to" the hotel.
+          title: transferTitle(i),
           sub: `Zone ${i.zone ?? ''} · ${trip} · ${plural(i.passengers ?? i.travelers ?? 1, 'passenger')}`.replace(' ·  · ', ' · '),
-          price: Number(i.price_per_person),
+          price: i.line_total != null ? Number(i.line_total) : Number(i.price_per_person),
         }
       }
       return {
@@ -305,12 +341,18 @@ async function handle(request: NextRequest) {
         sub: [i.destination, fmtDate(i.date), `${i.travelers} traveler${i.travelers !== 1 ? 's' : ''}`]
           .filter(Boolean)
           .join(' · '),
-        price: Number(i.price_per_person) * (i.travelers ?? 1),
+        // The line as checkout recorded it. The per-head figure is a rounded
+        // derivation, and multiplying it back put "$381.99" beside a $382.00 total.
+        price: i.line_total != null ? Number(i.line_total) : Number(i.price_per_person) * (i.travelers ?? 1),
       }
     })
 
-    const siteBase = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://mapltours.com'
-    const ctaUrl = isTransfer ? `${siteBase}/transfers` : `${siteBase}/explore`
+    // siteUrl() is always https for the live site (the raw env var is http://).
+    // The button opens the checkout itself: on the browser the cart was built
+    // in, the trip is still there; anywhere else that page says so and offers
+    // the tours and the ride finder.
+    const siteBase = siteUrl()
+    const ctaUrl = isTransfer ? `${siteBase}/transfers/checkout` : `${siteBase}/checkout`
     const ctaLabel = isTransfer ? 'Finish booking your transfer' : 'Finish planning your trip'
 
     const res = await sendEmail({
@@ -323,6 +365,7 @@ async function handle(request: NextRequest) {
         total: Number(b.total_paid),
         ctaUrl,
         ctaLabel,
+        kind: isTransfer ? 'transfer' : 'tour',
         items: emailItems,
       }),
       tags: [

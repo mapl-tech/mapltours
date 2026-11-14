@@ -1,6 +1,7 @@
 import { Heading, Text, Link, Section, Row, Column } from '@react-email/components'
 import { MaplLayout, maplStyles as s, siteUrl } from './_Layout'
 import { FACEBOOK_GROUP } from '../lib/facebook-group'
+import { experiences } from '../lib/experiences'
 
 export interface BookingConfirmedProps {
   bookingRef: string
@@ -32,6 +33,8 @@ export interface BookingConfirmedProps {
   currency: string
   paidAt?: string | null
   items: Array<{
+    /** The tour's catalogue id, which says whether it is priced per person. */
+    experienceId?: number | null
     title: string
     destination: string
     date: string
@@ -39,6 +42,23 @@ export interface BookingConfirmedProps {
     pricePerPerson?: number
     linePrice: number
   }>
+}
+
+/**
+ * The per-person price to print beside "N travelers", or null.
+ *
+ * Only a tour that IS priced per person has one. Most tours are one price for
+ * the party (Dunn's River from Ocho Rios is $243 whether two or four go), and
+ * the stored `pricePerPerson` for those is just the total divided by the
+ * heads: printing it told a party of three "$42.67 each" beside a $128.00
+ * total, a price nobody was charged and that does not multiply back. Even a
+ * per-person tour prints it only when it multiplies back to the line exactly.
+ */
+function perPersonPrice(item: BookingConfirmedProps['items'][number]): number | null {
+  if (item.pricePerPerson == null || item.experienceId == null) return null
+  const tour = experiences.find((e) => e.id === item.experienceId)
+  if (!tour || tour.pricing.mode !== 'per_person') return null
+  return Math.round(item.pricePerPerson * item.travelers * 100) === Math.round(item.linePrice * 100) ? item.pricePerPerson : null
 }
 
 function fmtMoney(n: number | null | undefined, currency: string): string {
@@ -173,8 +193,8 @@ export default function BookingConfirmed(props: BookingConfirmedProps) {
                 </Text>
                 <Text className="mapl-note" style={{ ...s.bodyMuted, marginTop: 2 }}>
                   {item.travelers} traveler{item.travelers !== 1 ? 's' : ''}
-                  {item.pricePerPerson != null
-                    ? ` · ${fmtMoney(item.pricePerPerson, currency)} each`
+                  {perPersonPrice(item) != null
+                    ? ` · ${fmtMoney(perPersonPrice(item), currency)} each`
                     : ''}
                 </Text>
               </Column>

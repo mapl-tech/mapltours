@@ -6,7 +6,7 @@ import {
   describeForReview,
   REVIEW_STAMP_KEY,
   REVIEW_STAMP_FILTER,
-  REVIEW_DELAY_HOURS,
+  lastServiceDay,
   REVIEW_WINDOW_DAYS,
   REVIEW_SEND_BATCH,
   REVIEW_DEADLINE_MS,
@@ -68,11 +68,29 @@ describe('the trip is over when the LAST leg is over', () => {
     expect(reviewRequestBlockedReason(b, at('2026-08-27T00:00:00Z'))).toBeNull()
   })
 
-  test('the delay is honoured to the hour', () => {
+  test('the ask goes out the day after the last service day, on Jamaica\'s calendar', () => {
     const b = roundTrip('2026-08-15T21:05:00Z', '2026-08-25T18:00:00Z')
-    const end = at('2026-08-25T23:00:00Z')
-    expect(reviewRequestBlockedReason(b, end + REVIEW_DELAY_HOURS * HOUR - 1)).toBe('trip_not_finished')
-    expect(reviewRequestBlockedReason(b, end + REVIEW_DELAY_HOURS * HOUR)).toBeNull()
+    expect(lastServiceDay(b)).toBe('2026-08-25')
+    // 11:59 pm on the 25th in Jamaica (04:59 UTC on the 26th): still the day of the ride.
+    expect(reviewRequestBlockedReason(b, at('2026-08-26T04:59:59Z'))).toBe('trip_not_finished')
+    // Midnight in Jamaica: the day after has begun.
+    expect(reviewRequestBlockedReason(b, at('2026-08-26T05:00:00Z'))).toBeNull()
+  })
+
+  test('the daily job (9:00 in Jamaica, 14:00 UTC) asks the NEXT morning, not the one after', () => {
+    // A guest who landed on the 18th was asked on the 20th by an email that
+    // says "the day after your ride": 24 hours after a 3 pm landing had not
+    // passed by the next morning's run.
+    const oneWay = booking({ booking_items: [{ item_type: 'transfer', hotel: 'Riu Negril', trip_type: 'one_way', arrival_at: '2026-10-18T15:00:00Z', date: '2026-10-18' }] })
+    expect(reviewRequestBlockedReason(oneWay, at('2026-10-18T14:00:00Z'))).toBe('trip_not_finished')
+    expect(reviewRequestBlockedReason(oneWay, at('2026-10-19T14:00:00Z'))).toBeNull()
+    // A tour: the day itself is never "after", the next morning is.
+    const tour = booking({ booking_type: 'tour', booking_items: [{ item_type: 'experience', title: "Dunn's River Falls Climb", date: '2026-09-20' }] })
+    expect(reviewRequestBlockedReason(tour, at('2026-09-20T14:00:00Z'))).toBe('trip_not_finished')
+    expect(reviewRequestBlockedReason(tour, at('2026-09-21T14:00:00Z'))).toBeNull()
+    // A ride that lands just before midnight is still asked the next morning.
+    const late = booking({ booking_items: [{ item_type: 'transfer', hotel: 'Riu Negril', trip_type: 'one_way', arrival_at: '2026-10-18T23:55:00Z' }] })
+    expect(reviewRequestBlockedReason(late, at('2026-10-19T14:00:00Z'))).toBeNull()
   })
 
   test('a month-old trip is not chased', () => {

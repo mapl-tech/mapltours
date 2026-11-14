@@ -11,6 +11,8 @@ export interface AbandonedCartProps {
   /** Where "Finish booking" points (explore for tours, transfers for rides). */
   ctaUrl: string
   ctaLabel: string
+  /** What the cart holds, so the reasons to book are about that: a tour day or an airport ride. */
+  kind?: 'tour' | 'transfer'
   /** What they left behind. `sub` is a short second line (destination, date). */
   items: Array<{ title: string; sub: string; price: number }>
 }
@@ -27,8 +29,13 @@ function fmtMoney(n: number | null | undefined, currency: string): string {
  * but never paid. Warm, low pressure, one clear button back to finish.
  */
 export default function AbandonedCart(props: AbandonedCartProps) {
-  const { firstName, bookingRef, currency, total, ctaUrl, ctaLabel, items } = props
+  const { firstName, bookingRef, currency, total, ctaUrl, ctaLabel, items, kind = 'tour' } = props
   const name = firstName?.trim() || 'there'
+  // Two true things about what is in the cart. The tour lines used to go out
+  // with ride carts too ("Local guides", "a full itinerary").
+  const reasons = kind === 'transfer'
+    ? ['A private car for your party, at one price per vehicle for 1 to 4 people.', 'Your driver tracks your flight and meets you at arrivals with a name sign.']
+    : ['Jamaican drivers and hosts who know the island.', 'Private transport from your hotel and back is in the price.']
 
   return (
     <MaplLayout preheader={`Your Jamaica trip is still saved, ${name}. Pick up where you left off.`}>
@@ -36,10 +43,13 @@ export default function AbandonedCart(props: AbandonedCartProps) {
       <Heading as="h1" style={s.hero} className="mapl-h1">
         Still thinking it over, {name}?
       </Heading>
+      {/* Only what is true wherever this is opened: nothing is "held" (there
+          is no stock to hold on a private trip), and the cart itself lives in
+          the browser it was built in. */}
       <Text style={s.heroLead}>
-        Your spot is still held. Everything you picked is right where you left
-        it, so you can finish whenever you are ready. Prices are locked in USD,
-        and you will not be charged until you check out.
+        Your trip is below, ready to finish whenever you are. On the phone or
+        computer you started on, checkout still has it as you left it. Prices
+        are in USD, and nothing is charged until you check out.
       </Text>
 
       <Section style={s.ctaWrap}>
@@ -92,9 +102,9 @@ export default function AbandonedCart(props: AbandonedCartProps) {
           <Text style={s.cardHeaderText}>Why book with MAPL Tours Jamaica</Text>
         </Section>
         <Section style={s.cardBody}>
-          <Text style={s.body}>· Local guides who actually know the island.</Text>
+          <Text style={s.body}>· {reasons[0]}</Text>
           <Text style={{ ...s.body, marginTop: 6 }}>
-            · Private transport and a full itinerary, arranged for you.
+            · {reasons[1]}
           </Text>
           <Text style={{ ...s.body, marginTop: 6 }}>
             · Flexible cancellation within 48 hours of booking, less a 20%

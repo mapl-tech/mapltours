@@ -15,8 +15,17 @@ const MS_PER_HOUR = 3_600_000
 /** Jamaica is UTC-5 year round and does not observe daylight saving. */
 const JAMAICA_UTC_OFFSET_HOURS = -5
 
-/** Wait this long after the trip ends before asking. */
-export const REVIEW_DELAY_HOURS = 24
+/**
+ * A guest is asked the day AFTER the last day anything on their booking
+ * happened, on Jamaica's calendar (owner, Oct 22 2026: "a day after").
+ *
+ * This used to be "24 hours after the trip ended", checked by a job that runs
+ * once a day at 9:00 in Jamaica. A tour's day ends at midnight and a ride
+ * rarely ends before 9:00, so 24 hours later had always passed the next
+ * morning's run by a few hours, and the ask went out on the SECOND morning:
+ * a guest who landed on the 18th was asked on the 20th by an email that says
+ * "the day after your ride". Counting days, the next morning's run sends it.
+ */
 
 /** Stop asking after this. A month-old trip is not worth chasing. */
 export const REVIEW_WINDOW_DAYS = 30
@@ -86,6 +95,28 @@ function endOfDayJamaicaMs(date: string): number | null {
  * Returns null when nothing on the booking carries a usable time, which
  * callers must treat as "unknown", never as "finished".
  */
+/** Today on Jamaica's calendar, YYYY-MM-DD. */
+function jamaicaDay(nowMs: number): string {
+  return new Date(nowMs + JAMAICA_UTC_OFFSET_HOURS * MS_PER_HOUR).toISOString().slice(0, 10)
+}
+
+/**
+ * The last Jamaica calendar day anything on this booking happens on: a leg's
+ * own day (its stored wall-clock date), a tour's date. Null when nothing on
+ * it names a readable day.
+ */
+export function lastServiceDay(booking: ReviewableBooking): string | null {
+  const days: string[] = []
+  for (const i of booking.booking_items ?? []) {
+    for (const stamp of [i.arrival_at, i.departure_at, i.date]) {
+      if (typeof stamp !== 'string') continue
+      const day = stamp.slice(0, 10)
+      if (/^\d{4}-\d{2}-\d{2}$/.test(day) && !Number.isNaN(Date.parse(`${day}T00:00:00Z`))) days.push(day)
+    }
+  }
+  return days.length ? days.sort().at(-1)! : null
+}
+
 export function lastServiceEndMs(booking: ReviewableBooking): number | null {
   const items = booking.booking_items ?? []
   const stamps: number[] = []
@@ -134,7 +165,9 @@ export function reviewRequestBlockedReason(
   const endMs = lastServiceEndMs(booking)
   if (endMs == null) return 'no_service_time'
 
-  if (nowMs < endMs + REVIEW_DELAY_HOURS * MS_PER_HOUR) return 'trip_not_finished'
+  // The day after the last service day, in Jamaica (see the note at the top).
+  const lastDay = lastServiceDay(booking)
+  if (lastDay == null || jamaicaDay(nowMs) <= lastDay) return 'trip_not_finished'
   if (nowMs > endMs + REVIEW_WINDOW_DAYS * 24 * MS_PER_HOUR) return 'too_long_ago'
 
   return null

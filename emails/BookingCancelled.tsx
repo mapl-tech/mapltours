@@ -142,10 +142,14 @@ export default function BookingCancelled({
             <Column><Text style={s.rowLabel}>Amount paid</Text></Column>
             <Column align="right"><Text style={s.rowValue}>{fmtMoney(totalPaid, currency)}</Text></Column>
           </Row>
-          <Row style={s.rowFlex}>
-            <Column><Text style={s.rowLabel}>Administration charge (20%)</Text></Column>
-            <Column align="right"><Text style={s.rowValue}>&minus;{fmtMoney(adminCharge, currency)}</Text></Column>
-          </Row>
+          {/* No line for a refund in full, and "(20%)" only when the charge
+              is 20%: a refund made by hand can be any amount. */}
+          {adminCharge > 0.004 ? (
+            <Row style={s.rowFlex}>
+              <Column><Text style={s.rowLabel}>{Math.abs(adminCharge - totalPaid * 0.2) < 0.015 ? 'Administration charge (20%)' : 'Administration charge'}</Text></Column>
+              <Column align="right"><Text style={s.rowValue}>&minus;{fmtMoney(adminCharge, currency)}</Text></Column>
+            </Row>
+          ) : null}
           {hasSplit ? (
             <>
               <Row style={s.rowFlex}>

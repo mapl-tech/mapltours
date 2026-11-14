@@ -40,6 +40,13 @@ const ARRIVAL_WORRY =
   'The person booking next is standing in a different airport, on a phone, working out whether someone will really be there when they land.'
 const DEPARTURE_WORRY =
   'The person booking next is sitting at home, on a phone, working out whether a driver will really be at the hotel in time for their flight.'
+// A tour guest took no flight with us and is usually still on holiday the
+// next morning. They used to get the ride's lines: "got home easily", and a
+// next guest "standing in a different airport... when they land".
+const TOUR_WISH =
+  'We hope it was a good day and that the ride back to your hotel was an easy one.'
+const TOUR_WORRY =
+  'The person booking next is at their hotel, on a phone, working out whether a day out with us is worth the money.'
 const ARRIVAL_PROMPTS =
   'Whether the driver was standing there when you walked out of arrivals. Whether the van was cold. Whether you got to the resort without drama.'
 const DEPARTURE_PROMPTS =
@@ -142,8 +149,8 @@ export default function ReviewRequest({
     ? transferWords(tripLabel, tripDates, legs ?? 'both')
     : {
         sentence: `We took you out to ${tripLabel}, ${tripDates}.`,
-        wish: HOME_WISH,
-        worry: ARRIVAL_WORRY,
+        wish: TOUR_WISH,
+        worry: TOUR_WORRY,
         prompts: 'Where we actually took you. What you ate. Whether the day was worth what you paid.',
       }
 

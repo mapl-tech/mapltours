@@ -9,6 +9,7 @@ import { activateGiftCard } from '@/lib/gift-activation'
 import { settleGiftClaim, releaseGiftClaim, refundToGiftCard } from '@/lib/gift-redemption'
 import { consumeCoupon } from '@/lib/coupon-redemption'
 import { sendEmail, operatorAlertRecipients, confirmationBcc } from '@/lib/email/send'
+import { CONFIRMATION_SEND } from '@/lib/email/confirmation-send'
 import { sendCancellationEmails } from '@/lib/email/cancellation'
 import {
   claimEmailChannel as sharedClaimEmailChannel,
@@ -729,12 +730,16 @@ async function maybeSendTravelerConfirmation(
           { name: 'category', value: 'transfer_confirmed' },
           { name: 'booking_id', value: booking.id },
         ],
+        ...CONFIRMATION_SEND,
+        dedupe: `booking-confirmed/${booking.id}`,
       })
     : await sendEmail({
         to: booking.email,
         // Operations and the driver hold exactly what the guest holds.
         bcc: confirmationBcc(booking.email),
-        subject: `Booking confirmed, your Jamaica trip with MAPL (${bookingRef})`,
+        // Same subject as lib/email/booking.ts (the gift-covered path): the
+        // company is named in full, as it is everywhere a guest reads it.
+        subject: `Booking confirmed, your Jamaica trip with MAPL Tours Jamaica (${bookingRef})`,
         react: BookingConfirmed({
           bookingRef,
           firstName: booking.first_name,
@@ -758,6 +763,8 @@ async function maybeSendTravelerConfirmation(
           currency: booking.currency.toUpperCase(),
           paidAt: (booking as { paid_at?: string | null }).paid_at ?? null,
           items: items.map((i) => ({
+            // The tour's id tells the template whether a per-person price is real.
+            experienceId: i.experience_id,
             title: i.title,
             destination: i.destination,
             date: i.date,
@@ -775,6 +782,8 @@ async function maybeSendTravelerConfirmation(
           { name: 'category', value: 'booking_confirmed' },
           { name: 'booking_id', value: booking.id },
         ],
+        ...CONFIRMATION_SEND,
+        dedupe: `booking-confirmed/${booking.id}`,
       })
 
   if (res.ok) {
@@ -926,6 +935,8 @@ async function maybeSendOperatorAlert(
           { name: 'category', value: 'transfer_operator_alert' },
           { name: 'booking_id', value: booking.id },
         ],
+        ...CONFIRMATION_SEND,
+        dedupe: `operator-alert/${booking.id}`,
       })
     : await sendEmail({
         to: opsRecipients,
@@ -964,6 +975,8 @@ async function maybeSendOperatorAlert(
           { name: 'category', value: 'operator_alert' },
           { name: 'booking_id', value: booking.id },
         ],
+        ...CONFIRMATION_SEND,
+        dedupe: `operator-alert/${booking.id}`,
       })
 
   if (res.ok) {

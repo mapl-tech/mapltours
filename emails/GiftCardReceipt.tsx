@@ -16,7 +16,10 @@ function fmtMoney(n: number, currency: string): string {
 
 function fmtDate(iso: string): string {
   try {
-    return new Date(iso).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
+    // In Jamaica's time, not the server's (UTC): a card bought at 9:30 pm
+    // expires at 9:30 pm on the same date two years on, and UTC printed the
+    // day after, a day on which the card is already refused.
+    return new Date(iso).toLocaleDateString('en-US', { timeZone: 'America/Jamaica', month: 'long', day: 'numeric', year: 'numeric' })
   } catch { return iso }
 }
 

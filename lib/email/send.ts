@@ -1,3 +1,4 @@
+import { createHash } from 'crypto'
 import { Resend } from 'resend'
 import { render } from '@react-email/render'
 
@@ -97,6 +98,28 @@ export interface SendEmailInput {
   headers?: Record<string, string>
   /** Resend idempotency key, so a retried send can never deliver twice. */
   idempotencyKey?: string
+  /**
+   * Names WHAT this email is ("booking-confirmed/<booking id>"), for a send
+   * the caller may repeat after an unclear failure: the Stripe webhook is
+   * redelivered when a confirmation did not come back as sent, and "did not
+   * come back" includes "Resend took it and the answer was lost".
+   *
+   * It becomes a Resend idempotency key together with a fingerprint of the
+   * message itself, so a repeat of the SAME message inside Resend's 24-hour
+   * window is delivered once, while a message that changed in between is a
+   * new send. (A bare key reused with different content is refused by Resend,
+   * which would hold a changed confirmation back for a day.)
+   * Ignored when `idempotencyKey` is given.
+   */
+  dedupe?: string
+  /**
+   * Stop waiting for Resend after this long and report a failure. Without
+   * it a stalled send holds the caller until the platform kills the function,
+   * AFTER the caller has claimed the email as sent, so nothing ever retries
+   * and the guest never gets it. Use it with `dedupe`, so the retry that
+   * follows cannot deliver a second copy of a send that was only slow.
+   */
+  timeoutMs?: number
 }
 
 export interface SendEmailResult {
@@ -105,8 +128,15 @@ export interface SendEmailResult {
   error?: string
 }
 
+const TIMED_OUT = Symbol('timed out')
+
+/** A short, stable fingerprint of exactly what is being sent. */
+function messageFingerprint(to: string | string[], subject: string, html: string): string {
+  return createHash('sha256').update(JSON.stringify([to, subject, html])).digest('hex').slice(0, 32)
+}
+
 export async function sendEmail({
-  to, subject, react, from, replyTo, tags, bcc, headers, idempotencyKey,
+  to, subject, react, from, replyTo, tags, bcc, headers, idempotencyKey, dedupe, timeoutMs,
 }: SendEmailInput): Promise<SendEmailResult> {
   if (!resend) {
     // Dev convenience, no Resend key means we only log.
@@ -131,7 +161,8 @@ export async function sendEmail({
     const html = await render(react)
     const text = await render(react, { plainText: true })
 
-    const { data, error } = await resend.emails.send({
+    const key = idempotencyKey ?? (dedupe ? `${dedupe}/${messageFingerprint(to, subject, html)}` : undefined)
+    const sending = resend.emails.send({
       from: finalFrom,
       to,
       subject,
@@ -142,7 +173,23 @@ export async function sendEmail({
       ...(bcc && (Array.isArray(bcc) ? bcc.length : bcc) ? { bcc } : {}),
       ...(headers && Object.keys(headers).length ? { headers } : {}),
       tags,
-    }, ...(idempotencyKey ? [{ idempotencyKey }] : []))
+    }, ...(key ? [{ idempotencyKey: key }] : []))
+
+    let timer: ReturnType<typeof setTimeout> | undefined
+    const outcome = timeoutMs && timeoutMs > 0
+      ? await Promise.race([
+          sending,
+          new Promise<typeof TIMED_OUT>((resolve) => { timer = setTimeout(() => resolve(TIMED_OUT), timeoutMs) }),
+        ]).finally(() => clearTimeout(timer))
+      : await sending
+    if (outcome === TIMED_OUT) {
+      // The request may still land. Whoever retries carries the same key, so
+      // it cannot become a second delivery. A late rejection is swallowed.
+      sending.catch(() => {})
+      console.error('[email] send timed out', { subject, to, timeoutMs })
+      return { ok: false, error: 'timeout' }
+    }
+    const { data, error } = outcome
 
     if (error) {
       console.error('[email] send failed', { subject, to, error })

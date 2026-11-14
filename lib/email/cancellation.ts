@@ -173,7 +173,21 @@ export async function sendCancellationEmails(
     const giftFunded = Number(booking.gift_card_amount ?? 0)
     const cashCaptured = Math.max(0, totalPaid - giftFunded)
     const cashRefund = quotedCash ?? Math.min(refundAmount, cashCaptured)
-    const giftRefund = quotedGift ?? Math.max(0, refundAmount - cashRefund)
+    // With no stored quote this is a refund made by hand in the Stripe
+    // Dashboard, and `refund_amount` is then the CASH Stripe sent back, nothing
+    // more. The gift card's share is credited separately by the webhook, by
+    // one rule (app/api/webhooks/stripe handleChargeRefunded): all of it when
+    // the cash was refunded in full, the same proportion when it was not.
+    // The receipt used to leave it out: "Amount paid $100.00 ... Refunded to
+    // your card $60.00" for a guest whose other $40 had gone back onto their
+    // gift card, with nothing saying so. Same rule here, so the two agree.
+    const dashboardGift = quotedGift == null && giftFunded > 0
+    const giftRefund = quotedGift ?? (dashboardGift
+      ? (cashCaptured > 0 && refundAmount < cashCaptured ? Math.round(giftFunded * (refundAmount / cashCaptured) * 100) / 100 : giftFunded)
+      : Math.max(0, refundAmount - cashRefund))
+    // What the receipt totals and reconciles against: card and gift together.
+    const refundTotal = dashboardGift ? Math.round((cashRefund + giftRefund) * 100) / 100 : refundAmount
+    const keptCharge = dashboardGift ? Math.max(0, Math.round((totalPaid - refundTotal) * 100) / 100) : adminCharge
 
     const firstName = booking.first_name ?? null
     const customerName = [booking.first_name, booking.last_name].filter(Boolean).join(' ') || 'Traveler'
@@ -192,7 +206,7 @@ export async function sendCancellationEmails(
         to: booking.email,
         subject: cancellationSubject({ bookingRef, currency, cashRefund, giftRefund, isTransfer, giftCreditPending: opts.giftCreditPending }),
         react: BookingCancelled({
-          bookingRef, firstName, totalPaid, refundAmount, adminCharge, currency, isTransfer, items,
+          bookingRef, firstName, totalPaid, refundAmount: refundTotal, adminCharge: keptCharge, currency, isTransfer, items,
           cashRefund, giftRefund, giftCreditPending: opts.giftCreditPending,
         }),
         tags: [{ name: 'type', value: 'booking-cancelled' }],
