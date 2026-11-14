@@ -1,6 +1,6 @@
 import { describe, test, expect, beforeAll } from 'vitest'
 import { GET } from '../../app/llms.txt/route'
-import { DESTINATIONS, getTransferPrice } from '../../lib/airport-transfers'
+import { DESTINATIONS, getTransferPrice, reopensAhead } from '../../lib/airport-transfers'
 
 /**
  * llms.txt is read verbatim by answer engines, which lift fare sentences
@@ -30,9 +30,14 @@ describe('llms.txt transfer rates', () => {
     }
   })
 
-  test('closed properties carry their reopening note', () => {
+  test('closed properties carry their reopening note, until that date has passed', () => {
     for (const dest of DESTINATIONS) {
       if (!dest.reopens) continue
+      if (!reopensAhead(dest.reopens)) {
+        // A date that is behind us is no longer said at all.
+        expect(body).not.toContain(`(reopening ${dest.reopens})`)
+        continue
+      }
       const ow = getTransferPrice(dest.id, 'one_way')
       const rt = getTransferPrice(dest.id, 'round_trip')
       if (ow === null || rt === null) continue

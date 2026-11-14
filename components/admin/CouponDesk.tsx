@@ -53,6 +53,17 @@ export function couponState(c: Pick<Coupon, 'status' | 'expires_at' | 'max_uses'
 }
 
 function plusDays(d: number) { return new Date(Date.now() + d * 86_400_000).toISOString().slice(0, 10) }
+/**
+ * The Jamaica calendar day a stored expiry falls on, for the edit form's date
+ * box. A code is saved as "the end of that day in Jamaica" (23:59:59 -05:00),
+ * which is the NEXT day in UTC; filling the box from the UTC date showed that
+ * next day, and saving wrote the end of it, so every edit of any field moved
+ * the expiry one day later.
+ */
+export function expiryDay(iso: string | null | undefined): string {
+  const ms = iso ? Date.parse(iso) : NaN
+  return Number.isNaN(ms) ? '' : new Date(ms - 5 * 3_600_000).toISOString().slice(0, 10)
+}
 
 const KINDS = [{ key: 'percent' as const, label: 'Percent' }, { key: 'fixed' as const, label: 'Dollars' }]
 const APPLIES = [{ key: 'both' as const, label: 'Both' }, { key: 'tour' as const, label: 'Tours' }, { key: 'transfer' as const, label: 'Rides' }]
@@ -271,7 +282,7 @@ export default function CouponDesk() {
     setDraft({
       kind: c.kind, value: String(Number(c.value)), appliesTo: c.applies_to,
       maxUses: c.max_uses == null ? '' : String(c.max_uses), usesPerEmail: c.uses_per_email == null ? '' : String(c.uses_per_email),
-      minTotal: c.min_total == null ? '' : String(Number(c.min_total)), expiresAt: c.expires_at ? c.expires_at.slice(0, 10) : '',
+      minTotal: c.min_total == null ? '' : String(Number(c.min_total)), expiresAt: expiryDay(c.expires_at),
       email: c.email ?? '', note: c.note ?? '',
     })
     focusNext.current = [`edit-${c.id}-h`]

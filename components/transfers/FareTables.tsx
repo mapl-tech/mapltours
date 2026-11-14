@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Search } from 'lucide-react'
 import {
   getTransferPrice,
+  reopensAhead,
   groupDestinationsByZone,
   searchDestinations,
   type TransferDestination,
@@ -37,7 +38,7 @@ export default function FareTables({ onPick }: { onPick: (destinationId: string,
   const groups = useMemo(() => groupDestinationsByZone().map((g) => ({
     ...g,
     items: [...g.items].sort((a, b) => {
-      const ca = a.reopens ? 1 : 0, cb = b.reopens ? 1 : 0
+      const ca = reopensAhead(a.reopens) ? 1 : 0, cb = reopensAhead(b.reopens) ? 1 : 0
       if (ca !== cb) return ca - cb
       const pa = getTransferPrice(a.id, 'one_way') ?? Infinity, pb = getTransferPrice(b.id, 'one_way') ?? Infinity
       if (pa !== pb) return pa - pb
@@ -190,7 +191,7 @@ function FareRows({ items, onPick, limit }: {
         const base = paren ? d.name.slice(0, paren.index) : d.name
         const short = base.replace(/,\s*[^,]+$/, '')
         const town = base === short ? '' : base.slice(short.length + 1).trim()
-        const sub = [d.reopens ? `reopening ${d.reopens}` : '', paren?.[1], town || d.parish].filter(Boolean).join(' · ')
+        const sub = [reopensAhead(d.reopens) ? `reopening ${reopensAhead(d.reopens)}` : '', paren?.[1], town || d.parish].filter(Boolean).join(' · ')
         return (
           <li key={d.id} className="fare-row" hidden={i >= limit}>
             <button type="button" className="fare-pick fare-pick-name" onClick={() => onPick(d.id, 'round_trip')} aria-label={`Book a transfer to ${d.name}`}>

@@ -43,6 +43,7 @@ import {
   type TransferDestination,
   type TransferQuote,
   type TransferTripType,
+  reopensAhead,
 } from './airport-transfers'
 import {
   MIN_LEAD_TIME_HOURS,
@@ -250,12 +251,10 @@ const outOfAreaHint = 'Kingston, Port Antonio and Mandeville are quoted by email
 const otherAreaFallbacks = () =>
   DESTINATIONS.filter((d) => d.id.endsWith('-other')).map((d) => ({ id: d.id, name: d.name, area: ZONES[d.zone].label }))
 
-/** "listed as closed until Q1 2027"; dropped once that year is behind us. */
+/** "listed as closed until Q1 2027"; dropped once that date is behind us (reopensAhead). */
 function closedUntil(dest: TransferDestination | undefined, now: Date): { closedUntil?: string } {
-  const s = dest?.reopens
+  const s = reopensAhead(dest?.reopens, now)
   if (!s) return {}
-  const year = Number((s.match(/\d{4}/) ?? [])[0])
-  if (year && year < now.getUTCFullYear()) return {}
   return { closedUntil: `listed as closed until ${s}; confirm with the hotel before booking` }
 }
 

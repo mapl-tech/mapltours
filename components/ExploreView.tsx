@@ -2,7 +2,9 @@
 
 import { useState, useMemo, useEffect, useRef, useId } from 'react'
 import { Search } from 'lucide-react'
-import { singleExperiences } from '@/lib/experiences'
+import Link from 'next/link'
+import { singleExperiences, packageExperiences, getSlug, isZonePriced, priceUnitLabel } from '@/lib/experiences'
+import Arrow from '@/components/ui/Arrow'
 import { filterExperiences } from '@/lib/explore-search'
 import { useI18n } from '@/lib/i18n'
 import type { ExperienceCategory } from '@/lib/experiences'
@@ -62,7 +64,7 @@ export default function ExploreView({ initialQuery = '' }: { initialQuery?: stri
       document.removeEventListener('pointerdown', onPointer, true)
     }
   }, [])
-  const { t } = useI18n()
+  const { t, formatPrice } = useI18n()
   const parishId = useId()
   // null until hydration = render both grids exactly like the server did.
   const [isMobileVp, setIsMobileVp] = useState<boolean | null>(null)
@@ -128,6 +130,17 @@ export default function ExploreView({ initialQuery = '' }: { initialQuery?: stri
     () => filterExperiences(singleExperiences, { search, cat: activeCat, parish: activeParish }),
     [search, activeCat, activeParish],
   )
+
+  // The ready-made days are sold from the home page and are not in this
+  // list, so a guest who typed one's name here ("Dunn's River + Blue Hole",
+  // or just "package") was told nothing matched, or shown a different tour.
+  // A search now also names the packages it matches, as links to their pages.
+  const packageHits = useMemo(() => {
+    const q = search.trim()
+    if (!q) return []
+    if (/\b(packages?|combos?|ready[- ]?made)\b/i.test(q)) return packageExperiences
+    return filterExperiences(packageExperiences, { search: q })
+  }, [search])
 
   // A filter changed deep in the list: the results start again just below
   // the header and the bar. Tapping "Culture" at the foot of the page left
@@ -289,7 +302,7 @@ export default function ExploreView({ initialQuery = '' }: { initialQuery?: stri
             color: 'var(--text-tertiary)', margin: 0,
           }}>
             {filtering
-              ? `${filtered.length} of ${singleExperiences.length} experiences`
+              ? `${filtered.length} of ${singleExperiences.length} experiences${packageHits.length ? `, and ${packageHits.length} ready-made day${packageHits.length === 1 ? '' : 's'}` : ''}`
               : `${singleExperiences.length} experiences`}
           </p>
           {filtering && (
@@ -308,7 +321,35 @@ export default function ExploreView({ initialQuery = '' }: { initialQuery?: stri
           )}
         </div>
 
-        {filtered.length === 0 ? (
+        {packageHits.length > 0 && (
+          <section aria-label="Ready-made days that match your search" style={{ marginBottom: 24 }}>
+            <h3 style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 15, fontWeight: 700, color: 'var(--text-primary)', margin: '0 0 8px' }}>
+              Ready-made days
+            </h3>
+            <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'grid', gap: 8 }}>
+              {packageHits.map((p) => (
+                <li key={p.id}>
+                  <Link
+                    href={`/experience/${getSlug(p)}`}
+                    style={{
+                      display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap',
+                      minHeight: 48, padding: '10px 16px', borderRadius: 'var(--r-md)',
+                      border: '1px solid var(--border-strong)', background: 'var(--card-bg)',
+                      fontFamily: 'var(--font-dm-sans)', textDecoration: 'none', color: 'var(--text-primary)',
+                    }}
+                  >
+                    <span style={{ fontSize: 15, fontWeight: 600 }}>{p.title}</span>
+                    <span style={{ fontSize: 14, color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>
+                      {isZonePriced(p.pricing) ? `${t('From')} ` : ''}{formatPrice(p.price)} {priceUnitLabel(p.pricing)}<Arrow />
+                    </span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
+
+        {filtered.length === 0 && packageHits.length > 0 ? null : filtered.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '72px 0' }}>
             <p style={{ fontSize: 22, fontFamily: 'var(--font-dm-sans)', fontWeight: 500, letterSpacing: '-0.02em', marginBottom: 8 }}>
               Nothing matches that yet

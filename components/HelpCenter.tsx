@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useId, useState, useMemo } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { CalendarDays, RotateCcw, Sparkles, CreditCard, UserRound, Mail, Search, Plane, ChevronRight } from 'lucide-react'
@@ -27,12 +27,16 @@ const categories = HELP_CATEGORIES.map((c) => ({ ...c, icon: ICONS[c.id] }))
 function AccordionItem({ q, a, open, onToggle }: {
   q: string; a: string; open: boolean; onToggle: () => void
 }) {
+  const panelId = useId()
   return (
     <div style={{
       borderBottom: '1px solid var(--border)',
     }}>
       <button
+        type="button"
         onClick={onToggle}
+        aria-expanded={open}
+        aria-controls={panelId}
         style={{
           width: '100%', padding: '22px 0',
           display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between',
@@ -47,7 +51,7 @@ function AccordionItem({ q, a, open, onToggle }: {
         }}>
           {q}
         </span>
-        <span style={{
+        <span aria-hidden style={{
           fontSize: 20, color: 'var(--text-tertiary)',
           flexShrink: 0, lineHeight: 1,
           transition: 'transform 0.25s ease',
@@ -56,7 +60,7 @@ function AccordionItem({ q, a, open, onToggle }: {
           +
         </span>
       </button>
-      <div style={{
+      <div id={panelId} aria-hidden={!open} style={{
         // Generous enough for the longest policy answer wrapped on a phone;
         // a fixed number rather than 'none' so the open/close still animates.
         maxHeight: open ? 640 : 0,
@@ -201,7 +205,7 @@ export default function HelpCenter() {
                   fontSize: 14, color: 'var(--text-tertiary)',
                   fontFamily: 'var(--font-dm-sans)',
                 }}>
-                  Try different keywords or browse the categories below
+                  Try different words, or ask us below. A person replies within 24 hours.
                 </p>
               </div>
             ) : (
@@ -256,6 +260,8 @@ export default function HelpCenter() {
                 return (
                   <button
                     key={cat.id}
+                    type="button"
+                    aria-pressed={active}
                     onClick={() => { setActiveCategory(cat.id); setOpenIndex(0) }}
                     style={{
                       display: 'flex', alignItems: 'center', gap: 8,
@@ -294,8 +300,12 @@ export default function HelpCenter() {
                 ))}
               </div>
             </div>
+          </>
+        )}
 
-            {/* ── Contact Section ── */}
+            {/* ── Contact Section ──
+                Outside the search switch on purpose: a search that finds
+                nothing used to leave the guest with no way to reach us. */}
             <div style={{ marginTop: 64 }}>
               <div style={{ textAlign: 'center', marginBottom: 32 }}>
                 <h2 style={{
@@ -419,8 +429,6 @@ export default function HelpCenter() {
                 ))}
               </div>
             </div>
-          </>
-        )}
       </div>
 
       <Footer />

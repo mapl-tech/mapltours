@@ -27,6 +27,9 @@ export const metadata: Metadata = {
     title: 'Win a bamboo raft for two on the Martha Brae',
     description: 'Ask for your 5% code by November 30, 2026 and you are in the draw. One winner, drawn December 1. No purchase needed.',
     url: 'https://mapltours.com/giveaway',
+    // A page that sets its own openGraph loses the site's share image unless
+    // it names one.
+    images: [{ url: 'https://mapltours.com/opengraph-image', width: 1200, height: 630 }],
   },
   twitter: {
     title: 'Win a bamboo raft for two on the Martha Brae',

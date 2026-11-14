@@ -16,6 +16,10 @@ export const languages: Language[] = [
   { code: 'en-gb', name: 'English (UK)', flag: '🇬🇧', currency: 'GBP', currencySymbol: '£', rate: 0.79 },
   { code: 'en-jm', name: 'English (JA)', flag: '🇯🇲', currency: 'JMD', currencySymbol: 'J$', rate: 155.50 },
   { code: 'es', name: 'Español', flag: '🇪🇸', currency: 'EUR', currencySymbol: '€', rate: 0.92 },
+  // Spanish for the Americas, in US dollars: the same translations (looked
+  // up by the 'es' half of the code) without euros, which nobody from Mexico
+  // to Argentina pays in. Prices here are exactly what the card is charged.
+  { code: 'es-419', name: 'Español (América)', flag: '🌎', currency: 'USD', currencySymbol: '$', rate: 1 },
   { code: 'fr', name: 'Français', flag: '🇫🇷', currency: 'EUR', currencySymbol: '€', rate: 0.92 },
   { code: 'de', name: 'Deutsch', flag: '🇩🇪', currency: 'EUR', currencySymbol: '€', rate: 0.92 },
   { code: 'pt', name: 'Português', flag: '🇧🇷', currency: 'BRL', currencySymbol: 'R$', rate: 5.05 },
@@ -643,7 +647,34 @@ export function useI18n() {
 export function detectLanguage(): Language {
   if (typeof navigator === 'undefined') return languages[0]
   const bl = navigator.language.toLowerCase()
-  return languages.find((l) => l.code === bl) || languages.find((l) => l.code.split('-')[0] === bl.split('-')[0]) || languages[0]
+  const [base, region] = bl.split('-')
+  // Spanish from anywhere but Spain is Spanish in dollars, not in euros.
+  if (base === 'es' && region && region !== 'es') return languages.find((l) => l.code === 'es-419') ?? languages[0]
+  return languages.find((l) => l.code === bl) || languages.find((l) => l.code.split('-')[0] === base) || languages[0]
+}
+
+/**
+ * The language a first visit opens in, by country. One rule: nobody is shown
+ * a currency their country does not use. The table used to put Australia and
+ * New Zealand in British pounds, Mexico, Colombia and the rest of Spanish
+ * America (and Puerto Rico, which pays in US dollars) in euros, Portugal in
+ * Brazilian reais, and Taiwan and Hong Kong in Chinese yuan. A country with
+ * no entry here gets English and US dollars, which is what every card is
+ * charged in. Anyone can still pick any language from the switcher.
+ */
+export const COUNTRY_LANGUAGE: Record<string, string> = {
+  US: 'en', CA: 'en', AU: 'en', NZ: 'en', TT: 'en', BB: 'en', BS: 'en', PR: 'es-419',
+  GB: 'en-gb',
+  JM: 'en-jm',
+  ES: 'es',
+  MX: 'es-419', CO: 'es-419', AR: 'es-419', PE: 'es-419', CL: 'es-419', VE: 'es-419', CU: 'es-419', DO: 'es-419',
+  EC: 'es-419', GT: 'es-419', CR: 'es-419', PA: 'es-419', UY: 'es-419', PY: 'es-419', BO: 'es-419', SV: 'es-419', HN: 'es-419', NI: 'es-419',
+  FR: 'fr', BE: 'fr',
+  DE: 'de', AT: 'de',
+  BR: 'pt',
+  JP: 'ja',
+  CN: 'zh',
+  KR: 'ko',
 }
 
 // Detect from IP using a same-origin proxy. The browser cannot call
@@ -653,18 +684,7 @@ export async function detectLanguageByIP(): Promise<Language> {
     const res = await fetch('/api/geo', { signal: AbortSignal.timeout(3000) })
     if (!res.ok) return detectLanguage()
     const data = await res.json()
-    const countryToLang: Record<string, string> = {
-      US: 'en', CA: 'en', GB: 'en-gb', AU: 'en-gb', NZ: 'en-gb',
-      JM: 'en-jm', TT: 'en', BB: 'en', BS: 'en',
-      ES: 'es', MX: 'es', CO: 'es', AR: 'es', PE: 'es', CL: 'es', VE: 'es', CU: 'es', DO: 'es', PR: 'es',
-      FR: 'fr', BE: 'fr', CH: 'fr',
-      DE: 'de', AT: 'de',
-      BR: 'pt', PT: 'pt',
-      JP: 'ja',
-      CN: 'zh', TW: 'zh', HK: 'zh',
-      KR: 'ko',
-    }
-    const langCode = countryToLang[data.country_code] || 'en'
+    const langCode = COUNTRY_LANGUAGE[String(data.country_code ?? '').toUpperCase()] || 'en'
     return languages.find((l) => l.code === langCode) || languages[0]
   } catch {
     return detectLanguage()

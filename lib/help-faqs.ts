@@ -30,7 +30,7 @@ export const HELP_CATEGORIES: HelpCategory[] = [
     faqs: [
       {
         q: 'How do I book an experience?',
-        a: 'Browse experiences on the homepage or Explore page. Tap "Add to Trip" on any experience, then head to checkout. You\'ll select your preferred date, number of guests, and complete payment securely through Stripe.',
+        a: 'Browse experiences on the homepage or Explore page. Tap "Add to Trip" on any experience, then head to checkout. You\'ll choose your date, your number of guests and where we pick you up, then pay securely through Stripe. You do not need an account.',
       },
       {
         q: 'Can I book for a group?',
@@ -38,7 +38,7 @@ export const HELP_CATEGORIES: HelpCategory[] = [
       },
       {
         q: 'How far in advance should I book?',
-        a: 'Bookings close 12 hours before an experience or pickup begins, and experience days are counted from midnight in Jamaica, so a tour can be booked until noon the day before. Book earlier where you can: in peak season our drivers\' days fill up, and the sunset run to Rick\'s Cafe goes first, especially (December-March).',
+        a: 'Bookings close 12 hours before an experience or pickup begins, and experience days are counted from midnight in Jamaica, so a tour can be booked until noon the day before. Book earlier where you can: in peak season our drivers\' days fill up, and the sunset run to Rick\'s Cafe goes first, especially from December to March.',
       },
       {
         q: 'Can I modify my booking after checkout?',
@@ -77,11 +77,11 @@ export const HELP_CATEGORIES: HelpCategory[] = [
     faqs: [
       {
         q: 'What should I bring?',
-        a: 'Each experience has specific recommendations in its description. Generally: comfortable shoes, sunscreen, a water bottle, and a sense of adventure. We\'ll send detailed prep instructions 24 hours before your experience, and anything you\'re unsure about goes to contact@mapltours.com.',
+        a: 'Each experience has specific recommendations in its description. Generally: comfortable shoes, sunscreen, a water bottle, and a sense of adventure. We confirm your pickup time with you before the day, and anything you\'re unsure about goes to contact@mapltours.com.',
       },
       {
         q: 'Is transportation included?',
-        a: 'Always. Every trip comes with private door-to-door transport: we collect you from your hotel, villa, or the airport, drive you between every stop on your itinerary, and bring you back. You give us the pickup and drop-off at checkout, and the transport is priced into your total and itemized there, so there is no rental car, no taxis between stops, and nothing to arrange on the day.',
+        a: 'Always. Every trip comes with private door-to-door transport: we pick you up from your hotel, villa, or the airport, drive you between every stop on your itinerary, and bring you back to the same place. You tell us where at checkout, and the transport is already in the price you see, so there is no rental car, no taxis between stops, and nothing to arrange on the day.',
       },
       {
         q: 'What happens if it rains?',
@@ -99,7 +99,7 @@ export const HELP_CATEGORIES: HelpCategory[] = [
     faqs: [
       {
         q: 'What currencies and payment methods do you accept?',
-        a: 'We accept all major credit and debit cards, Apple Pay, and Google Pay. Prices are listed in USD, but you can view converted amounts in your local currency using the language switcher in the header.',
+        a: 'We accept all major credit and debit cards, Apple Pay, and Google Pay. Prices are in USD and your card is charged in USD. To see approximate amounts in your own currency while you browse, use the currency switcher: in the header on a computer, in the menu on a phone.',
       },
       {
         q: 'Is my payment information secure?',
@@ -113,7 +113,7 @@ export const HELP_CATEGORIES: HelpCategory[] = [
     faqs: [
       {
         q: 'How do I create an account?',
-        a: 'Sign up with Google, Apple, or your email address. It takes under 30 seconds. You\'ll need an account to complete bookings and access your trip history.',
+        a: 'You do not need an account to book: checkout only asks for your name, email and phone. An account keeps your trips in one place. Sign up with Google or your email address in under 30 seconds, and bookings made with that email appear in your profile once the address is verified.',
       },
       {
         q: 'Can I update my personal information?',

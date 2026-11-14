@@ -244,3 +244,41 @@ describe('the type-ahead forgives what phones produce', () => {
     expect(first('ocho rios')).toMatch(/Moon Palace/)
   })
 })
+
+/**
+ * Nov 13 2026: in November the hotel pages, the fare tables, llms.txt and
+ * the agents' tools were still saying "reopens 25 Aug 2026". A reopening
+ * label is said only while its date is ahead.
+ */
+describe('a reopening date that has passed is no longer said', () => {
+  const at = (iso: string) => new Date(iso)
+  test('a day: said through that day in Jamaica, not after', async () => {
+    const { reopensAhead } = await import('../../lib/airport-transfers')
+    expect(reopensAhead('25 Aug 2026', at('2026-08-25T12:00:00Z'))).toBe('25 Aug 2026')
+    // 11:59 pm on the 25th in Jamaica is 04:59 UTC on the 26th.
+    expect(reopensAhead('25 Aug 2026', at('2026-08-26T04:59:00Z'))).toBe('25 Aug 2026')
+    expect(reopensAhead('25 Aug 2026', at('2026-08-26T05:00:00Z'))).toBeNull()
+    expect(reopensAhead('25 Aug 2026', at('2026-11-13T12:00:00Z'))).toBeNull()
+    expect(reopensAhead('1 Dec 2026', at('2026-11-13T12:00:00Z'))).toBe('1 Dec 2026')
+  })
+  test('a quarter and a year: said to the end of each', async () => {
+    const { reopensAhead } = await import('../../lib/airport-transfers')
+    expect(reopensAhead('Q1 2027', at('2027-03-31T23:00:00Z'))).toBe('Q1 2027')
+    expect(reopensAhead('Q1 2027', at('2027-04-01T05:00:00Z'))).toBeNull()
+    expect(reopensAhead('2027', at('2027-12-31T23:00:00Z'))).toBe('2027')
+    expect(reopensAhead('2027', at('2028-01-01T05:00:00Z'))).toBeNull()
+  })
+  test('nothing recorded says nothing, and a label in another shape is said as written', async () => {
+    const { reopensAhead } = await import('../../lib/airport-transfers')
+    expect(reopensAhead(undefined)).toBeNull()
+    expect(reopensAhead('')).toBeNull()
+    expect(reopensAhead('early 2027', at('2030-01-01T00:00:00Z'))).toBe('early 2027')
+  })
+  test('every label on the rate card is in a shape this reads', async () => {
+    const { reopensAhead, DESTINATIONS } = await import('../../lib/airport-transfers')
+    for (const d of DESTINATIONS.filter((x) => x.reopens)) {
+      // Far enough ahead that every dated label has passed: only an unreadable one would survive.
+      expect(reopensAhead(d.reopens, at('2040-01-01T00:00:00Z')), `${d.name}: "${d.reopens}"`).toBeNull()
+    }
+  })
+})

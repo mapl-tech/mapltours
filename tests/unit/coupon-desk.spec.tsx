@@ -64,3 +64,30 @@ describe('bookings: a link to one booking opens it', () => {
     expect(renderToStaticMarkup(<BookingsDashboard bookings={rows} focusId="cccccccc-1111-2222-3333-444444444444" />)).toBe(plain)
   })
 })
+
+/**
+ * Nov 13 2026: the edit form filled its date box from the stored expiry's UTC
+ * date. A code is saved as the end of a day in Jamaica, which is the next day
+ * in UTC, so opening and saving a card (to change its note, say) moved its
+ * expiry one day later every time.
+ */
+describe('editing a code never moves its expiry', () => {
+  test('the form shows the Jamaica day the code was saved for, and saving it again stores the same instant', async () => {
+    const { expiryDay } = await import('@/components/admin/CouponDesk')
+    const saved = (day: string) => new Date(`${day}T23:59:59-05:00`).toISOString()
+    for (const day of ['2027-05-12', '2026-12-31', '2028-02-29', '2027-01-01']) {
+      const stored = saved(day)
+      // What the database returns is that instant in UTC: the next calendar day.
+      expect(stored.slice(0, 10)).not.toBe(day)
+      expect(expiryDay(stored)).toBe(day)
+      expect(saved(expiryDay(stored))).toBe(stored)
+    }
+  })
+
+  test('no expiry, or one that cannot be read, is an empty date box', async () => {
+    const { expiryDay } = await import('@/components/admin/CouponDesk')
+    expect(expiryDay(null)).toBe('')
+    expect(expiryDay(undefined)).toBe('')
+    expect(expiryDay('soon')).toBe('')
+  })
+})

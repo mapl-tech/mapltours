@@ -179,7 +179,7 @@ export const POSTS_3: BlogPost[] = [
     slug: 'sandals-jamaica-property-guide',
     title: "Sandals Jamaica: Which Property Is Right for You",
     excerpt:
-      "Sandals jamaica has five properties across the island. A clear-headed guide to which suits couples, divers, foodies, or first-time visitors, with current rates.",
+      "Sandals Jamaica has five properties across the island. A clear-headed guide to which suits couples, divers, foodies, or first-time visitors, with current rates.",
     category: 'Guides',
     image: BLOG_IMAGES['sandals-jamaica-property-guide'],
     readTime: 5,
@@ -188,13 +188,13 @@ export const POSTS_3: BlogPost[] = [
     body: [
       {
         type: 'p',
-        text: "Sandals jamaica is not one hotel. It is five, Montego Bay, Royal Caribbean, Negril, Ochi, and Dunn's River, and the differences between them are larger than the marketing suggests. A property that is perfect for a honeymooning couple is wrong for an anniversary trip where one partner wants to dive and the other wants a gym.",
+        text: "Sandals Jamaica is not one hotel. It is five, Montego Bay, Royal Caribbean, Negril, Ochi, and Dunn's River, and the differences between them are larger than the marketing suggests. A property that is perfect for a honeymooning couple is wrong for an anniversary trip where one partner wants to dive and the other wants a gym.",
       },
       {
         type: 'p',
         text: "All five are adults-only, all-inclusive, and couples-only in the strict sense, no solo travelers, no friend pairs. Nightly rates across the portfolio currently run $500 to $900 per couple in low season and $650 to $1,400 in peak winter weeks. What shifts inside that range is what each property actually does well.",
       },
-      { type: 'h2', text: 'The five sandals jamaica properties, ranked by fit' },
+      { type: 'h2', text: 'The five Sandals Jamaica properties, ranked by fit' },
       {
         type: 'p',
         text: "Sandals Montego Bay is the original, opened in 1981 and renovated most recently in 2019. It has the shortest airport transfer on the island, about ten minutes, and a long private beach. It suits first-time Sandals guests and couples who want planes-to-toes-in-the-sand under an hour.",
@@ -229,11 +229,11 @@ export const POSTS_3: BlogPost[] = [
       },
       {
         type: 'p',
-        text: "Strengths across sandals jamaica are consistent: service tone, food quality compared to the broader all-inclusive market, and the inclusions structure (premium liquor, specialty dining, watersports, airport transfer are all in the rate). Weaknesses are also consistent: rooms at the older properties show their age in bathrooms, nightlife is family-friendly rather than lively, and the couples-only policy is strict.",
+        text: "Strengths across Sandals Jamaica are consistent: service tone, food quality compared to the broader all-inclusive market, and the inclusions structure (premium liquor, specialty dining, watersports, airport transfer are all in the rate). Weaknesses are also consistent: rooms at the older properties show their age in bathrooms, nightlife is family-friendly rather than lively, and the couples-only policy is strict.",
       },
       {
         type: 'p',
-        text: "Most MAPL Tours Jamaica guests staying at any sandals jamaica property pair the stay with one or two locally-led tours, a jerk cooking class, a Blue Mountain sunrise hike, a sound-system night in Kingston, booked separately in [the catalogue](/explore). That pairing tends to produce the strongest post-trip reviews in our own data.",
+        text: "A stay at any Sandals Jamaica property pairs well with one or two private tours: [Dunn's River Falls](/experience/dunns-river-falls-climb), [bamboo rafting on the Martha Brae](/experience/bamboo-rafting-on-the-martha-brae) or [sunset at Rick's Cafe](/experience/ricks-cafe-cliff-diving-and-sunset), booked separately in [the catalogue](/explore). A day off the property is usually the one people talk about afterwards.",
       },
     ],
     relatedSlugs: ['sandals-montego-bay-review', 'jamaica-all-inclusive-tier-list'],
@@ -242,7 +242,7 @@ export const POSTS_3: BlogPost[] = [
     slug: 'sandals-montego-bay-review',
     title: "Sandals Montego Bay: Review and Verdict",
     excerpt:
-      "Sandals montego bay is the original property. Here is what it offers in 2026, what travelers report, current prices, and who it actually suits.",
+      "Sandals Montego Bay is the original property. Here is what it offers in 2026, what travelers report, current prices, and who it actually suits.",
     category: 'Guides',
     image: BLOG_IMAGES['sandals-montego-bay-review'],
     readTime: 5,
@@ -251,13 +251,13 @@ export const POSTS_3: BlogPost[] = [
     body: [
       {
         type: 'p',
-        text: "Sandals montego bay is the original in a chain that now spans the Caribbean. The property opened in 1981, sits on a private half-mile beach ten minutes from Sangster International, and was last meaningfully renovated in 2019. Room count is around 246, with a long private pier and the shortest airport transfer in the Sandals portfolio.",
+        text: "Sandals Montego Bay is the original in a chain that now spans the Caribbean. The property opened in 1981, sits on a private half-mile beach ten minutes from Sangster International, and was last meaningfully renovated in 2019. Room count is around 246, with a long private pier and the shortest airport transfer in the Sandals portfolio.",
       },
       {
         type: 'p',
         text: "On paper, the pitch is simple: land, check in, be in the water inside an hour. What travelers report is that the pitch actually holds up, the arrivals experience is the single strongest thing this property does, and it sets the tone for the rest of the stay.",
       },
-      { type: 'h2', text: 'What sandals montego bay offers on property' },
+      { type: 'h2', text: 'What Sandals Montego Bay offers on property' },
       {
         type: 'p',
         text: "The grounds are compact for a Sandals, which works for guests who do not want to walk ten minutes between pool and room. There are five pools, including an adults-only option near the beach, and roughly a dozen dining outlets, including the Japanese restaurant Soy, the Italian Casanova, and the French Le Jardinier. Room categories range from Caribbean Deluxe to swim-up suites and the signature Rondovals on the west end.",
@@ -284,7 +284,7 @@ export const POSTS_3: BlogPost[] = [
       { type: 'h2', text: 'What it costs and who it suits' },
       {
         type: 'p',
-        text: "Published rates for sandals montego bay currently run $500 to $700 per couple per night in low season and $700 to $1,100 in peak winter weeks, all-in. Butler-level suites add roughly $300 per night. Four-night minimums apply over major holidays.",
+        text: "Published rates for Sandals Montego Bay currently run $500 to $700 per couple per night in low season and $700 to $1,100 in peak winter weeks, all-in. Butler-level suites add roughly $300 per night. Four-night minimums apply over major holidays.",
       },
       {
         type: 'p',
@@ -292,7 +292,7 @@ export const POSTS_3: BlogPost[] = [
       },
       {
         type: 'p',
-        text: "As with any all-inclusive in Jamaica, the stay gets stronger when paired with a local tour or two. MAPL Tours Jamaica guests staying at sandals montego bay frequently add a jerk masterclass in Boston Bay or a Blue Mountain sunrise hike, booked separately in [the catalogue](/explore), and report those as the most memorable hours of their trip.",
+        text: "As with any all-inclusive in Jamaica, the stay gets stronger when paired with a local tour or two. From Sandals Montego Bay the easy ones to add are [parasailing over the bay](/experience/parasailing-over-the-bay) and [bamboo rafting on the Martha Brae](/experience/bamboo-rafting-on-the-martha-brae), booked separately in [the catalogue](/explore).",
       },
     ],
     relatedSlugs: ['sandals-jamaica-property-guide', 'montego-bay-beyond-the-strip'],
@@ -301,7 +301,7 @@ export const POSTS_3: BlogPost[] = [
     slug: 'sandals-negril-review',
     title: "Sandals Negril: The Beachfront Flagship, Reviewed",
     excerpt:
-      "Sandals negril sits on the quiet end of Seven Mile Beach. Full 2026 review of offerings, strengths, weaknesses, price range, and who it actually suits.",
+      "Sandals Negril sits on the quiet end of Seven Mile Beach. Full 2026 review of offerings, strengths, weaknesses, price range, and who it actually suits.",
     category: 'Guides',
     image: BLOG_IMAGES['sandals-negril-review'],
     readTime: 5,
@@ -310,13 +310,13 @@ export const POSTS_3: BlogPost[] = [
     body: [
       {
         type: 'p',
-        text: "Sandals negril sits on a quieter stretch of Seven Mile Beach, about a ninety-minute transfer from Sangster International. The property dates to 1988, with a major refresh in 2022 that rebuilt most of the swim-up suite category and updated the main buffet. Room count is around 222, and the flat footprint means almost every category has direct beach or garden access within a short walk.",
+        text: "Sandals Negril sits on a quieter stretch of Seven Mile Beach, about a ninety-minute transfer from Sangster International. The property dates to 1988, with a major refresh in 2022 that rebuilt most of the swim-up suite category and updated the main buffet. Room count is around 222, and the flat footprint means almost every category has direct beach or garden access within a short walk.",
       },
       {
         type: 'p',
         text: "The appeal is simple: this is the Sandals that most strongly leans on the beach. Seven Mile Beach is among the better sand strips in the Caribbean, and this section is calmer than the central strip where the day-party boats cluster. Travelers who prioritize beach quality above everything else consistently rate this property highest in the portfolio.",
       },
-      { type: 'h2', text: 'What sandals negril actually offers' },
+      { type: 'h2', text: 'What Sandals Negril actually offers' },
       {
         type: 'p',
         text: "Dining runs ten-plus outlets, with Kimonos (Japanese hibachi), Barefoot by the Sea (beach seafood), and the Bayside buffet doing most of the volume. The adults-only pool is smaller than at the Montego Bay properties but faces the water directly. Watersports are arguably the strongest in the chain, calm flat water, full non-motorized gear, daily scuba for certified divers.",
@@ -343,7 +343,7 @@ export const POSTS_3: BlogPost[] = [
       { type: 'h2', text: 'What it costs and who it suits' },
       {
         type: 'p',
-        text: "Sandals negril currently runs $520 to $780 per couple per night in low season and $780 to $1,300 in peak winter. Swim-up suites and Rondoval-style categories push the top end past $1,400 during Valentine's and New Year's weeks. All rates are fully inclusive of meals, premium drinks, watersports, tips, and round-trip airport transfer.",
+        text: "Sandals Negril currently runs $520 to $780 per couple per night in low season and $780 to $1,300 in peak winter. Swim-up suites and Rondoval-style categories push the top end past $1,400 during Valentine's and New Year's weeks. All rates are fully inclusive of meals, premium drinks, watersports, tips, and round-trip airport transfer.",
       },
       {
         type: 'p',
@@ -351,7 +351,7 @@ export const POSTS_3: BlogPost[] = [
       },
       {
         type: 'p',
-        text: "MAPL Tours Jamaica guests staying at sandals negril often add a Rick's Cafe cliff-jumping evening or a Seven Mile Beach snorkel with rum punch, both bookable separately in [the catalogue](/explore). Those local experiences tend to be the hours people remember most from a Negril trip.",
+        text: "From Sandals Negril the two closest to add are [Rick's Cafe cliff diving at sunset](/experience/ricks-cafe-cliff-diving-and-sunset) and the [Rasta Cultural ATV Safari](/experience/rasta-cultural-atv-safari), both bookable separately in [the catalogue](/explore). Those local experiences tend to be the hours people remember most from a Negril trip.",
       },
     ],
     relatedSlugs: ['sandals-jamaica-property-guide', 'negril-guide'],
@@ -360,7 +360,7 @@ export const POSTS_3: BlogPost[] = [
     slug: 'sandals-ochi-review',
     title: "Sandals Ochi: The Jungle-Side All-Inclusive",
     excerpt:
-      "Sandals ochi is the largest property in the chain, 529 rooms split between a beach side and a jungle side. Full review, prices, and who it suits in 2026.",
+      "Sandals Ochi is the largest property in the chain, 529 rooms split between a beach side and a jungle side. Full review, prices, and who it suits in 2026.",
     category: 'Guides',
     image: BLOG_IMAGES['sandals-ochi-review'],
     readTime: 5,
@@ -369,13 +369,13 @@ export const POSTS_3: BlogPost[] = [
     body: [
       {
         type: 'p',
-        text: "Sandals ochi is the largest property in the Sandals portfolio, and the only one with a clear split between two distinct environments. The beach side sits directly on a protected cove; the jungle side climbs up the hill behind it, connected by a shuttle that runs every few minutes until late. Room count is around 529, and the property dates to 1982 with significant expansion in 2015.",
+        text: "Sandals Ochi is the largest property in the Sandals portfolio, and the only one with a clear split between two distinct environments. The beach side sits directly on a protected cove; the jungle side climbs up the hill behind it, connected by a shuttle that runs every few minutes until late. Room count is around 529, and the property dates to 1982 with significant expansion in 2015.",
       },
       {
         type: 'p',
         text: "That split defines everything about the stay. Guests who understand it pick a side intentionally and rate the property among the highest in the chain. Guests who arrive expecting a single compact beach resort sometimes end up mismatched with the layout, which is reflected in a more polarized review profile than other Sandals properties.",
       },
-      { type: 'h2', text: 'What sandals ochi offers that no other property does' },
+      { type: 'h2', text: 'What Sandals Ochi offers that no other property does' },
       {
         type: 'p',
         text: "Sixteen dining outlets is more than any other Sandals anywhere, including Butch's Chophouse (steakhouse), Kelly's Dockside, and the island-party pier. The jungle side has its own large pool, a village of swim-up suites, and a quieter adult vibe. The beach side has the watersports dock, the main activity pool, and the nightly entertainment.",
@@ -402,7 +402,7 @@ export const POSTS_3: BlogPost[] = [
       { type: 'h2', text: 'What it costs and who it suits' },
       {
         type: 'p',
-        text: "Sandals ochi currently runs $480 to $720 per couple per night in low season and $720 to $1,250 in peak winter. The jungle-side swim-up suites tend to be the best value in the property, priced around $650 to $900 per night most of the year. Transfer from Montego Bay airport runs about 90 minutes; Ian Fleming International in Ocho Rios is closer but serves fewer routes.",
+        text: "Sandals Ochi currently runs $480 to $720 per couple per night in low season and $720 to $1,250 in peak winter. The jungle-side swim-up suites tend to be the best value in the property, priced around $650 to $900 per night most of the year. Transfer from Montego Bay airport runs about 90 minutes; Ian Fleming International in Ocho Rios is closer but serves fewer routes.",
       },
       {
         type: 'p',
@@ -419,7 +419,7 @@ export const POSTS_3: BlogPost[] = [
     slug: 'moon-palace-jamaica-review',
     title: "Moon Palace Jamaica: Family-Sized All-Inclusive, Reviewed",
     excerpt:
-      "Moon palace jamaica is a large family-premium resort in Ocho Rios. Honest 2026 review of rooms, food, beach, prices, and who actually suits this property.",
+      "Moon Palace Jamaica is a large family-premium resort in Ocho Rios. Honest 2026 review of rooms, food, beach, prices, and who actually suits this property.",
     category: 'Guides',
     image: BLOG_IMAGES['moon-palace-jamaica-review'],
     readTime: 5,
@@ -428,13 +428,13 @@ export const POSTS_3: BlogPost[] = [
     body: [
       {
         type: 'p',
-        text: "Moon palace jamaica sits on the north coast between Ocho Rios and Oracabessa, on the former Grand Palladium footprint that Palace Resorts rebranded and refurbished in 2019. Room count is around 705, and the property is billed as family-premium, a step below Grand Velas or the Four Seasons, a step above most of the volume all-inclusives.",
+        text: "Moon Palace Jamaica sits on the north coast between Ocho Rios and Oracabessa, on the former Grand Palladium footprint that Palace Resorts rebranded and refurbished in 2019. Room count is around 705, and the property is billed as family-premium, a step below Grand Velas or the Four Seasons, a step above most of the volume all-inclusives.",
       },
       {
         type: 'p',
         text: "The pitch is that it does family without feeling like Beaches, adult zones are clearly separated, kid zones are genuinely extensive, and the overall design leans tropical-modern rather than plastic-slide bright. Guest review data backs that up: families traveling with kids aged six to fourteen are the happiest demographic here.",
       },
-      { type: 'h2', text: 'What moon palace jamaica offers' },
+      { type: 'h2', text: 'What Moon Palace Jamaica offers' },
       {
         type: 'p',
         text: "Nine restaurants, a Flowrider wave machine, a bowling alley, a full kids club, and one of the largest pool complexes in Jamaica. The beach is a decent cove, smaller than Sandals Negril, larger than Sandals Ochi, with catamarans, kayaks, and non-motorized gear included. Rooms range from Superior Deluxe to two-bedroom family suites, with Presidential-tier options on the adults-only wing.",
@@ -461,7 +461,7 @@ export const POSTS_3: BlogPost[] = [
       { type: 'h2', text: 'What it costs and who it suits' },
       {
         type: 'p',
-        text: "Moon palace jamaica currently runs $400 to $600 per room per night in low season for a Superior Deluxe, and $550 to $900 in peak winter weeks. Family suites and the adults-only Sunrise Residences wing run higher, $700 to $1,200 per night in season. Kids under 12 stay free in most room categories, which is where the family math starts to work.",
+        text: "Moon Palace Jamaica currently runs $400 to $600 per room per night in low season for a Superior Deluxe, and $550 to $900 in peak winter weeks. Family suites and the adults-only Sunrise Residences wing run higher, $700 to $1,200 per night in season. Kids under 12 stay free in most room categories, which is where the family math starts to work.",
       },
       {
         type: 'p',
@@ -478,7 +478,7 @@ export const POSTS_3: BlogPost[] = [
     slug: 'bahia-principe-grand-jamaica-review',
     title: "Bahia Principe Grand Jamaica: What You're Really Paying For",
     excerpt:
-      "Bahia principe grand jamaica is a 700-plus room resort near Runaway Bay. Honest 2026 review of what the rate includes, what it does not, and who it suits.",
+      "Bahia Principe Grand Jamaica is a 700-plus room resort near Runaway Bay. Honest 2026 review of what the rate includes, what it does not, and who it suits.",
     category: 'Guides',
     image: BLOG_IMAGES['bahia-principe-grand-jamaica-review'],
     readTime: 5,
@@ -487,13 +487,13 @@ export const POSTS_3: BlogPost[] = [
     body: [
       {
         type: 'p',
-        text: "Bahia principe grand jamaica sits on a large cove near Runaway Bay, about 75 minutes from Montego Bay airport. The property opened in 2007 and last received a partial refresh in 2021. Room count is around 748, which places it firmly in the volume all-inclusive tier, closer to RIU on scale, but positioned a half-step up on price.",
+        text: "Bahia Principe Grand Jamaica sits on a large cove near Runaway Bay, about 75 minutes from Montego Bay airport. The property opened in 2007 and last received a partial refresh in 2021. Room count is around 748, which places it firmly in the volume all-inclusive tier, closer to RIU on scale, but positioned a half-step up on price.",
       },
       {
         type: 'p',
         text: "The honest question with this property is whether the step up in price versus RIU buys a meaningful step up in experience. Guest review data suggests it sometimes does and sometimes does not, which is why it sits in the B-to-C band of most honest rankings rather than higher.",
       },
-      { type: 'h2', text: 'What bahia principe grand jamaica actually offers' },
+      { type: 'h2', text: 'What Bahia Principe Grand Jamaica actually offers' },
       {
         type: 'p',
         text: "Seven a la carte restaurants (Japanese, Italian, steak, Mexican, Mediterranean, Caribbean, plus a buffet), multiple pools, a kids club, and a wide cove beach that is better than most reviews suggest. The adults-only wing, Bahia Principe Luxury Runaway Bay, operates alongside with access to shared facilities but a quieter pool and a dedicated restaurant.",
@@ -521,7 +521,7 @@ export const POSTS_3: BlogPost[] = [
       { type: 'h2', text: 'What it costs and who it suits' },
       {
         type: 'p',
-        text: "Bahia principe grand jamaica currently runs $250 to $380 per room per night in low season and $360 to $560 in peak winter. The Luxury wing adds roughly $80 to $150 per night over the Grand wing for meaningfully better rooms and a quieter pool. Transfer from Montego Bay is around 75 minutes.",
+        text: "Bahia Principe Grand Jamaica currently runs $250 to $380 per room per night in low season and $360 to $560 in peak winter. The Luxury wing adds roughly $80 to $150 per night over the Grand wing for meaningfully better rooms and a quieter pool. Transfer from Montego Bay is around 75 minutes.",
       },
       {
         type: 'p',
@@ -538,7 +538,7 @@ export const POSTS_3: BlogPost[] = [
     slug: 'riu-montego-bay-review',
     title: "RIU Montego Bay: The Budget All-Inclusive, Tested",
     excerpt:
-      "Riu montego bay is the highest-volume budget all-inclusive in MoBay. Honest 2026 review of food, rooms, beach, price range, and who this property actually suits.",
+      "Riu Montego Bay is the highest-volume budget all-inclusive in MoBay. Honest 2026 review of food, rooms, beach, price range, and who this property actually suits.",
     category: 'Guides',
     image: BLOG_IMAGES['riu-montego-bay-review'],
     readTime: 5,
@@ -547,13 +547,13 @@ export const POSTS_3: BlogPost[] = [
     body: [
       {
         type: 'p',
-        text: "Riu montego bay is the largest and busiest of RIU's three Jamaica properties, a 680-room volume all-inclusive on Mahoe Bay, twenty minutes from Sangster International. The property opened in 2002, had a partial refresh in 2018, and is positioned as an adults-only RIU Palace under the chain's multi-tier naming convention.",
+        text: "Riu Montego Bay is the largest and busiest of RIU's three Jamaica properties, a 680-room volume all-inclusive on Mahoe Bay, twenty minutes from Sangster International. The property opened in 2002, had a partial refresh in 2018, and is positioned as an adults-only RIU Palace under the chain's multi-tier naming convention.",
       },
       {
         type: 'p',
-        text: "The honest frame for riu montego bay is that it does exactly what it sets out to do and no more. Published nightly rates start around $180 per person double-occupancy in low season, and the experience tracks that price almost exactly. Travelers who approach it expecting Sandals-level service will leave frustrated. Travelers who approach it as a beach chair, a wristband, and a rum punch tend to leave satisfied.",
+        text: "The honest frame for Riu Montego Bay is that it does exactly what it sets out to do and no more. Published nightly rates start around $180 per person double-occupancy in low season, and the experience tracks that price almost exactly. Travelers who approach it expecting Sandals-level service will leave frustrated. Travelers who approach it as a beach chair, a wristband, and a rum punch tend to leave satisfied.",
       },
-      { type: 'h2', text: 'What riu montego bay offers' },
+      { type: 'h2', text: 'What Riu Montego Bay offers' },
       {
         type: 'p',
         text: "Five restaurants (buffet, steakhouse, Italian, Asian, Jamaican), multiple pools, a private beach with non-motorized watersports, and the 24-hour snack bar that has kept the chain's college-age demographic loyal for a decade. Rooms are adequate, dated bathrooms, strong air-conditioning, good blackout curtains.",
@@ -581,7 +581,7 @@ export const POSTS_3: BlogPost[] = [
       { type: 'h2', text: 'What it costs and who it suits' },
       {
         type: 'p',
-        text: "Riu montego bay currently runs $180 to $260 per person per night in low season and $260 to $380 in peak winter weeks. A week for two in February typically lands around $3,500 all-in, which is roughly half what a comparable Sandals week costs. Airport transfer is short, about 20 minutes, and that efficiency matters for travelers on four-night trips.",
+        text: "Riu Montego Bay currently runs $180 to $260 per person per night in low season and $260 to $380 in peak winter weeks. A week for two in February typically lands around $3,500 all-in, which is roughly half what a comparable Sandals week costs. Airport transfer is short, about 20 minutes, and that efficiency matters for travelers on four-night trips.",
       },
       {
         type: 'p',
@@ -598,7 +598,7 @@ export const POSTS_3: BlogPost[] = [
     slug: 'riu-ocho-rios-review',
     title: "RIU Ocho Rios: Reviewed for 2026",
     excerpt:
-      "Riu ochorios is the family-friendly RIU on the north coast. Honest 2026 review of rooms, beach, food, crowd, prices, and who this resort actually suits.",
+      "Riu Ocho Rios is the family-friendly RIU on the north coast. Honest 2026 review of rooms, beach, food, crowd, prices, and who this resort actually suits.",
     category: 'Guides',
     image: BLOG_IMAGES['riu-ocho-rios-review'],
     readTime: 5,
@@ -607,13 +607,13 @@ export const POSTS_3: BlogPost[] = [
     body: [
       {
         type: 'p',
-        text: "Riu ochorios, RIU's branding keeps it as one word internally, though most search traffic spells it Ocho Rios, is the chain's family-tier Jamaica property, sitting on Mammee Bay about fifteen minutes west of Ocho Rios town. Room count is around 856, making it the largest RIU in the country and one of the largest single properties on the island. The build dates to 2002 with a 2019 soft refresh.",
+        text: "Riu Ocho Rios, RIU's branding keeps it as one word internally, though most search traffic spells it Ocho Rios, is the chain's family-tier Jamaica property, sitting on Mammee Bay about fifteen minutes west of Ocho Rios town. Room count is around 856, making it the largest RIU in the country and one of the largest single properties on the island. The build dates to 2002 with a 2019 soft refresh.",
       },
       {
         type: 'p',
-        text: "The honest frame here is the same as the chain's other properties: volume pricing, strong beach, dated rooms, and a service culture that is functional rather than warm. What differentiates riu ochorios is that it takes families where the Montego Bay RIU Palace does not, which changes the demographic and the noise profile.",
+        text: "The honest frame here is the same as the chain's other properties: volume pricing, strong beach, dated rooms, and a service culture that is functional rather than warm. What differentiates Riu Ocho Rios is that it takes families where the Montego Bay RIU Palace does not, which changes the demographic and the noise profile.",
       },
-      { type: 'h2', text: 'What riu ochorios offers' },
+      { type: 'h2', text: 'What Riu Ocho Rios offers' },
       {
         type: 'p',
         text: "Seven restaurants (buffet, steakhouse, Italian, Jamaican, Asian, Mexican, fusion), large pool complex, a kids pool, a mini-water-park area, and a wide private beach with non-motorized watersports. The RIULAND kids club runs for ages 4 to 12 with daily activities included. A la carte restaurants require reservations during peak weeks but are walk-in during low season.",
@@ -641,7 +641,7 @@ export const POSTS_3: BlogPost[] = [
       { type: 'h2', text: 'What it costs and who it suits' },
       {
         type: 'p',
-        text: "Riu ochorios currently runs $170 to $240 per person per night in low season and $240 to $360 in peak winter weeks. Family rooms sleep up to four and price around $360 to $520 per night for two adults plus two kids all-in. Airport transfer from Montego Bay is about 90 minutes; Ian Fleming International is closer at 30 minutes but serves fewer routes.",
+        text: "Riu Ocho Rios currently runs $170 to $240 per person per night in low season and $240 to $360 in peak winter weeks. Family rooms sleep up to four and price around $360 to $520 per night for two adults plus two kids all-in. Airport transfer from Montego Bay is about 90 minutes; Ian Fleming International is closer at 30 minutes but serves fewer routes.",
       },
       {
         type: 'p',
@@ -658,7 +658,7 @@ export const POSTS_3: BlogPost[] = [
     slug: 'riu-negril-review',
     title: "RIU Negril: On the Cliffs, Reviewed",
     excerpt:
-      "Riu negril is the chain's family property on Bloody Bay at the north end of Seven Mile Beach. Honest 2026 review, strengths, weaknesses, prices, and who it suits.",
+      "Riu Negril is the chain's family property on Bloody Bay at the north end of Seven Mile Beach. Honest 2026 review, strengths, weaknesses, prices, and who it suits.",
     category: 'Guides',
     image: BLOG_IMAGES['riu-negril-review'],
     readTime: 5,
@@ -667,13 +667,13 @@ export const POSTS_3: BlogPost[] = [
     body: [
       {
         type: 'p',
-        text: "Riu negril sits at the north end of Seven Mile Beach on Bloody Bay, technically the quieter cousin of the main strip, connected by a short walk down the sand. Note that despite the name, the property is not on the cliffs; the West End cliffs are a 20-minute drive south. The resort opened in 2003, had a partial refresh in 2020, and holds around 420 rooms.",
+        text: "Riu Negril sits at the north end of Seven Mile Beach on Bloody Bay, technically the quieter cousin of the main strip, connected by a short walk down the sand. Note that despite the name, the property is not on the cliffs; the West End cliffs are a 20-minute drive south. The resort opened in 2003, had a partial refresh in 2020, and holds around 420 rooms.",
       },
       {
         type: 'p',
-        text: "In the RIU portfolio, riu negril is the middle child, not the biggest (Ocho Rios), not the party Palace (Montego Bay), but a family property with one of the better beach placements in the chain globally. Published guest reviews consistently rate the beach higher than the property itself, which says something about both.",
+        text: "In the RIU portfolio, Riu Negril is the middle child, not the biggest (Ocho Rios), not the party Palace (Montego Bay), but a family property with one of the better beach placements in the chain globally. Published guest reviews consistently rate the beach higher than the property itself, which says something about both.",
       },
-      { type: 'h2', text: 'What riu negril offers' },
+      { type: 'h2', text: 'What Riu Negril offers' },
       {
         type: 'p',
         text: "Five restaurants, three pools, a RIULAND kids club, and non-motorized watersports included. The Bloody Bay beach is flat, wide, and calmer than the center-strip of Seven Mile, which is a genuine advantage for families with small children. Sunsets from the beach are unobstructed and consistently among the best in the country.",
@@ -701,7 +701,7 @@ export const POSTS_3: BlogPost[] = [
       { type: 'h2', text: 'What it costs and who it suits' },
       {
         type: 'p',
-        text: "Riu negril currently runs $180 to $260 per person per night in low season and $260 to $380 in peak winter. Family rooms run $360 to $540 per night for two adults plus two kids, all-in. Airport transfer from Sangster International is the longest of the three RIU Jamaica properties, about 90 minutes, which matters on short trips.",
+        text: "Riu Negril currently runs $180 to $260 per person per night in low season and $260 to $380 in peak winter. Family rooms run $360 to $540 per night for two adults plus two kids, all-in. Airport transfer from Sangster International is the longest of the three RIU Jamaica properties, about 90 minutes, which matters on short trips.",
       },
       {
         type: 'p',

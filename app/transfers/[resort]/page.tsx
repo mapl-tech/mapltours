@@ -2,12 +2,14 @@ import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import TransfersView from '@/components/transfers/TransfersView'
+import { HERO } from '@/lib/images'
 import {
   DESTINATIONS,
   ZONES,
   getTransferPrice,
   resortSlug,
   destinationFromSlug,
+  reopensAhead,
 } from '@/lib/airport-transfers'
 
 const SITE_URL = 'https://mapltours.com'
@@ -64,6 +66,10 @@ export async function generateMetadata({ params }: { params: { resort: string } 
       description,
       url: `${SITE_URL}/transfers/${dest.id}`,
       type: 'website',
+      // A page that sets its own openGraph loses the site's share image
+      // unless it names one, so a hotel page sent on WhatsApp had no picture.
+      // The same coast-road photo /transfers shares.
+      images: [{ url: HERO.startsWith('http') ? HERO : `${SITE_URL}${HERO}`, width: 1920, height: 1080, alt: 'The north-coast road from Montego Bay, Jamaica.' }],
     },
   }
 }
@@ -129,7 +135,7 @@ export default function ResortTransferPage({ params }: { params: { resort: strin
           vehicle, not per person, and it is locked at checkout. We track your flight, so a late
           landing is still met at arrivals with a name sign.
           {dest.estimated ? ' This route is priced on our standard zone rate; we confirm it before you pay.' : ''}
-          {dest.reopens ? ` Note: this resort reopens ${dest.reopens}.` : ''}
+          {reopensAhead(dest.reopens) ? ` Note: this resort reopens ${reopensAhead(dest.reopens)}.` : ''}
         </p>
 
         <p className="mt-2 text-sm opacity-60">

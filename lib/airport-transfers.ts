@@ -100,6 +100,37 @@ export interface TransferDestination {
   reopens?: string
 }
 
+const REOPEN_MONTHS = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec']
+
+/**
+ * A hotel's reopening label while that date is still ahead, and null once it
+ * has passed (or when there is none).
+ *
+ * The labels are typed by hand from a tracker and nobody comes back on the
+ * day to delete them: in November the hotel pages, the fare tables, llms.txt
+ * and the agents' tools were all still saying "reopens 25 Aug 2026". Whether
+ * the hotel did reopen that day is not something this file knows, but "it is
+ * closed until a date three months ago" is wrong either way, so every reader
+ * goes through here and a passed date simply stops being said.
+ *
+ * Reads the three shapes the labels come in ("25 Aug 2026", "Q1 2027",
+ * "2027"), each to the END of what it names, in Jamaica time. A label in any
+ * other shape is returned as written.
+ */
+export function reopensAhead(reopens: string | null | undefined, now: Date = new Date()): string | null {
+  if (!reopens) return null
+  const label = reopens.trim()
+  let end: number | null = null
+  const day = /^(\d{1,2}) ([A-Za-z]{3}) (\d{4})$/.exec(label)
+  const quarter = /^Q([1-4]) (\d{4})$/.exec(label)
+  const year = /^(\d{4})$/.exec(label)
+  // 05:00 UTC is midnight in Jamaica, so each of these is the first instant AFTER the period.
+  if (day && REOPEN_MONTHS.includes(day[2].toLowerCase())) end = Date.UTC(Number(day[3]), REOPEN_MONTHS.indexOf(day[2].toLowerCase()), Number(day[1]) + 1, 5)
+  else if (quarter) end = Date.UTC(Number(quarter[2]), Number(quarter[1]) * 3, 1, 5)
+  else if (year) end = Date.UTC(Number(year[1]) + 1, 0, 1, 5)
+  return end == null || now.getTime() < end ? label : null
+}
+
 /**
  * Hotel and landmark destinations served by flat-rate MBJ transfers.
  * The list is deliberately conservative, anything requiring a custom

@@ -4,6 +4,7 @@ import {
   DESTINATIONS,
   ZONES,
   getTransferPrice,
+  reopensAhead,
   ROUND_TRIP_DISCOUNT,
   type TransferZone,
 } from '@/lib/airport-transfers'
@@ -49,7 +50,7 @@ export function GET() {
   // The showcase sentence must never feature a closed property, so prefer an
   // open Negril hotel, then any Negril hotel, then anything.
   const exampleTransfer =
-    pricedTransfers.find((p) => p.dest.name.toLowerCase().includes('negril') && !p.dest.reopens) ??
+    pricedTransfers.find((p) => p.dest.name.toLowerCase().includes('negril') && !reopensAhead(p.dest.reopens)) ??
     pricedTransfers.find((p) => p.dest.name.toLowerCase().includes('negril')) ??
     pricedTransfers[0]
   const roundTripPct = Math.round(ROUND_TRIP_DISCOUNT * 100)
@@ -62,7 +63,7 @@ export function GET() {
         .map(
           (p) =>
             `- ${p.dest.name}: $${p.ow} one-way / $${p.rt} round-trip${
-              p.dest.reopens ? ` (reopening ${p.dest.reopens})` : ''
+              reopensAhead(p.dest.reopens) ? ` (reopening ${reopensAhead(p.dest.reopens)})` : ''
             }`,
         )
         .join('\n')
@@ -120,7 +121,7 @@ Tagline: "Discover Jamaica Beyond the Resort."
 ## Core pages
 
 - [Home](${baseUrl}/): Every tour with a video preview, its price and a booking button.
-- [Explore](${baseUrl}/explore): The full catalogue of ${experiences.length} tours and packages, filterable by category (${list(categories)}) and parish (${list(parishes)}).
+- [Explore](${baseUrl}/explore): The ${experiences.filter((e) => e.kind === 'single').length} tours, filterable by category (${list(categories)}) and parish (${list(parishes)}). Its search also finds the ${experiences.filter((e) => e.kind === 'package').length} ready-made day packages, which are listed on the home page.
 - [Airport transfers](${baseUrl}/transfers): Flat-rate private transfers from Sangster International Airport (MBJ) to ${transferCount} properties across ${zoneLabels}. One all-in price per vehicle for 1-4 passengers (the vehicle seats 7; 5-7 are priced per person), from $${cheapestTransfer.ow} one-way; round trips are ${roundTripPct}% cheaper than two one-ways. Every property's exact fare is listed under "Airport transfer rates" below. Includes meet and greet with a name sign just outside arrivals, live flight tracking, and a day-of email with the driver's name, vehicle, plate, and WhatsApp. Book online with card or Apple Pay, no account needed.
 - [The MAPL Journal](${baseUrl}/blog): Guides to Jamaica's resorts, beaches, towns and money, written by MAPL Tours Jamaica.
 - [About](${baseUrl}/about): Company background.

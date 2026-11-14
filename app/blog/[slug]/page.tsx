@@ -883,7 +883,10 @@ export default function BlogPostPage({
         {/* CTA */}
         <div style={{ textAlign: 'center', marginTop: 48 }}>
           <p style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 15, color: 'var(--text-secondary)', margin: '0 0 14px' }}>
-            Landing at MBJ? We drive to every resort in this guide.
+            {/* True on every post. "We drive to every resort in this guide"
+                was not: the guides to Portland, Kingston and the Blue
+                Mountains cover places with no fare on the rate card. */}
+            Landing at MBJ? See the fare to your hotel before you fly.
           </p>
           <Link
             href="/transfers"

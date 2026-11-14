@@ -1,6 +1,6 @@
 import { describe, test, expect, vi, beforeEach, afterAll } from 'vitest'
 import { addTourToCart, buildWebMcpTools, registerWebMcpTools, type WebMcpActions } from '../../lib/webmcp-tools'
-import { buildQuote, DESTINATIONS } from '../../lib/airport-transfers'
+import { buildQuote, DESTINATIONS, reopensAhead } from '../../lib/airport-transfers'
 import { experiences, getSlug, tourPrice, perTravelerPrice } from '../../lib/experiences'
 import { MIN_PICKUP_LEAD_MIN } from '../../lib/booking-window'
 import { useCartStore } from '../../lib/cart'
@@ -88,7 +88,7 @@ describe('WebMCP tool set', () => {
   })
 
   test('a closed hotel is flagged once, under closedUntil', async () => {
-    const closed = DESTINATIONS.find((d) => d.reopens)!
+    const closed = DESTINATIONS.find((d) => reopensAhead(d.reopens))!
     const { t } = tool('get_transfer_quote')
     const r = (await t.execute({ destination: closed.id })) as R
     expect(r.closedUntil).toMatch(new RegExp(`closed until ${closed.reopens}`))

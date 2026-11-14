@@ -7,6 +7,21 @@ import { DESTINATION_IMAGES } from '@/lib/experiences'
 import Footer from './Footer'
 
 /**
+ * A count as the page writes its numbers, in words ("Twenty", "Forty-four").
+ * The counts come from the catalogue and the places list, so the sentence
+ * cannot drift from what is on the site: it said twenty-two experiences while
+ * the catalogue held twenty.
+ */
+const ONES = ['Zero', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine', 'Ten', 'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen', 'Seventeen', 'Eighteen', 'Nineteen']
+const TENS = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety']
+function spell(n: number): string {
+  if (!Number.isInteger(n) || n < 0 || n > 99) return String(n)
+  if (n < 20) return ONES[n]
+  const ones = n % 10
+  return ones ? `${TENS[Math.floor(n / 10)]}-${ONES[ones].toLowerCase()}` : TENS[Math.floor(n / 10)]
+}
+
+/**
  * Partner with us.
  *
  * Written for two audiences at once — an individual creator with one great
@@ -101,7 +116,7 @@ const STANDARDS = [
   },
 ]
 
-export default function PartnerView() {
+export default function PartnerView({ experienceCount, placeCount }: { experienceCount: number; placeCount: number }) {
   const [sent, setSent] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -204,7 +219,7 @@ export default function PartnerView() {
           }}>
             MAPL Tours Jamaica runs its own guided experiences and its own private
             airport transfers. Seven parishes of road. We also work with Jamaican guides,
-            tour companies, drivers, restaurants and attractions &mdash; under their own
+            tour companies, drivers, restaurants and attractions, under their own
             names, in front of travellers who came here for exactly that.
           </p>
         </div>
@@ -232,8 +247,8 @@ export default function PartnerView() {
           }}>
             MAPL Tours Jamaica is an operator. On the experiences we run, our name is on
             the itinerary, our driver is at the airport, and the guest&rsquo;s whole day is
-            ours from pickup to drop-off. Twenty-two experiences and forty-four restaurants
-            and sites sit on the site today &mdash; ours and other people&rsquo;s &mdash;
+            ours from pickup to drop-off. {spell(experienceCount)} experiences and {spell(placeCount).toLowerCase()} restaurants
+            and sites sit on the site today, ours and other people&rsquo;s,
             across seven parishes of road.
           </p>
           <p style={{
@@ -244,7 +259,7 @@ export default function PartnerView() {
             for four and turns up with six. The rain that moves everything an hour to the
             left. We would rather put your day on the site than invent our own version of
             it, and there is far more worth doing on this island than we run ourselves.
-            We know that because we drive it &mdash; you cannot spend that much time on the
+            We know that because we drive it: you cannot spend that much time on the
             road without passing somebody doing something better than what the lobby desk
             is selling.
           </p>
@@ -404,7 +419,7 @@ export default function PartnerView() {
             lineHeight: 1.75, color: 'rgba(255,255,255,0.72)',
             maxWidth: 680, marginTop: -22, marginBottom: 40,
           }}>
-            You run your experience. We run the road &mdash; same as we do for our own.
+            You run your experience. We run the road, same as we do for our own.
             Where MAPL Tours Jamaica is the operator, the page says so. Where you are,
             your name is on it.
           </p>
@@ -471,7 +486,7 @@ export default function PartnerView() {
           }}>
             Commission and payout terms depend on what you run and how often, so we
             agree them with you directly rather than printing a number that would not
-            fit your operation. Nothing is exclusive &mdash; keep selling your
+            fit your operation. Nothing is exclusive: keep selling your
             experience anywhere else you already do.
           </p>
         </div>

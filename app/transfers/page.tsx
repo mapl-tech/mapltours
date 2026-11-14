@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import TransfersView from '@/components/transfers/TransfersView'
-import { ZONES, DESTINATIONS, getTransferPrice, zoneFromPrice } from '@/lib/airport-transfers'
+import { ZONES, DESTINATIONS, getTransferPrice, zoneFromPrice, reopensAhead } from '@/lib/airport-transfers'
 import { TRANSFER_FAQS } from '@/lib/airport-transfers-content'
 import { HERO } from '@/lib/images'
 
@@ -197,7 +197,7 @@ function buildStructuredData() {
             : {}),
           // A resort shut for renovation is not in stock, and saying so beats
           // quoting a fare for a closed hotel.
-          availability: d.reopens
+          availability: reopensAhead(d.reopens)
             ? 'https://schema.org/PreOrder'
             : 'https://schema.org/InStock',
           itemOffered: {
