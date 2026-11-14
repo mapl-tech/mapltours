@@ -5,7 +5,7 @@
  * by pickup area; a rate published from /admin/tour-rates now reaches every
  * post with the deploy that publishes it.
  */
-import { experiences, isZonePriced, tourPrice } from './experiences'
+import { experiences, isZonePriced, tourPrice, zoneSells } from './experiences'
 import type { TourZone } from './tour-zones'
 
 const tour = (id: number) => {
@@ -14,9 +14,24 @@ const tour = (id: number) => {
   return e
 }
 
+/**
+ * A post that names a pickup area has to get that area's price. tourPrice
+ * answers with the cheapest area's when the card does not sell the one asked
+ * for, which is right for a "from" and wrong beside the words "picked up in
+ * Montego Bay". So a zone the card no longer sells is an error here, and the
+ * build that would have published the sentence fails instead.
+ */
+function priced(id: number, party: number, zone?: TourZone): number {
+  const e = tour(id)
+  if (zone && !(isZonePriced(e.pricing) && zoneSells(e.pricing, zone))) {
+    throw new Error(`A blog post quotes "${e.title}" picked up in ${zone}, and its rate card has no price from there`)
+  }
+  return tourPrice(e.pricing, party, zone)
+}
+
 /** "$357": the all-in price for this party, from this pickup zone for a tour priced by area. */
 export function blogPrice(id: number, party: number, zone?: TourZone): string {
-  return `$${tourPrice(tour(id).pricing, party, zone)}`
+  return `$${priced(id, party, zone)}`
 }
 
 const WORDS = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'eleven', 'twelve']
@@ -42,7 +57,23 @@ export function blogUnit(id: number): string {
  * the price before the falls were priced by pickup area.
  */
 export function blogShare(id: number, party: number, zone?: TourZone): string {
-  return `$${Math.ceil(tourPrice(tour(id).pricing, party, zone) / party)}`
+  return `$${Math.ceil(priced(id, party, zone) / party)}`
+}
+
+/** True for a tour sold at one price for the party (a flat group rate, with no per-guest add-on). */
+export function blogIsGroupPrice(id: number): boolean {
+  const p = tour(id).pricing
+  return p.mode === 'group' && !p.perPersonAddon
+}
+
+/**
+ * " rather than per head" after a group price, and nothing after any other:
+ * the contrast is only true of a tour priced for the party, and typed beside
+ * a unit read from the card it would one day read "$255 per person rather
+ * than per head".
+ */
+export function blogNotPerHead(id: number): string {
+  return blogIsGroupPrice(id) ? ' rather than per head' : ''
 }
 
 /** "from $115 per person", "$255 for up to four people": the headline price and its unit, a "from" when it depends on the pickup area. */

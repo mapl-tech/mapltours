@@ -915,7 +915,10 @@ const CATALOG: CatalogEntry[] = [
     emoji: '🌊',
     image: '/tours/collins/jet-ski-beach.jpg',
     video: VIDEOS.jetSki,
-    about: "A briefing on the sand, then thirty minutes of open Caribbean off Montego Bay. You ride your own machine inside a marked area with a guide on the water, out past the swim zone where there is finally room to open it up.",
+    // Whether each paying guest gets a ski, or two share one, is not confirmed by Collin (asked Nov 14 2026).
+    // The listing promised both ("your own machine", and "one ski carries two, book two if you both want to
+    // drive") when the price was for the party; with every guest paying it says neither until he answers.
+    about: "A briefing on the sand, then thirty minutes of open Caribbean off Montego Bay. You ride inside a marked area with a guide on the water, out past the swim zone where there is finally room to open it up.",
     ages: "18+ to drive, 12+ to ride",
     fitness: "Drivers need photo ID, and passengers from 12 ride behind an adult. Light to moderate. You need to be able to climb back on from deep water if you come off. Not suitable in pregnancy or with back or neck injuries.",
     meetingPoint: "Hotel pickup",
@@ -939,7 +942,7 @@ const CATALOG: CatalogEntry[] = [
       "Photo ID for the driver",
     ],
     additionalInfo: [
-      "One ski carries two people. Book two if you both want to drive.",
+      "A ski carries up to two people: one drives and one rides behind.",
       "Rides are called off in rough water or under a small-craft warning, with a free reschedule or a full refund.",
       "No alcohol before riding.",
     ],
@@ -1010,8 +1013,10 @@ const CATALOG: CatalogEntry[] = [
     // reef-tour URL redirects here (next.config.mjs). It was listed as a river
     // shoot until he said where and what on Nov 14 2026: "Photoshoot is done
     // in the sea 25 or more edit pictures 3 videos with song of choice". He
-    // has not said near which town, how long it takes or when the files
-    // arrive, so the listing does not either.
+    // did not say near which town, how long it takes or when the files
+    // arrive. The listing keeps what it already had from his sheet (Montego
+    // Bay, one hour) and adds nothing about delivery; the Raft + Kayak
+    // package's "a few days later" is older copy he has not confirmed.
     title: "Clear Kayak Drone Photoshoot",
     // Collin, Nov 12 2026: "This price is per person". The sheet's "$180 1-3"
     // for the kayak is per head ($160 each from 4), not a party rate.

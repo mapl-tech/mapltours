@@ -1,6 +1,6 @@
 import type { BlogPost, BlogAuthor } from './blog'
 import { BLOG_IMAGES } from './blog-images'
-import { blogFrom } from './blog-prices'
+import { blogFrom, blogNotPerHead } from './blog-prices'
 
 // One real byline; the named writers these used to be were invented.
 const mapl: BlogAuthor = { name: 'MAPL Tours Jamaica', role: 'Editorial', initials: 'MT' }
@@ -413,7 +413,7 @@ export const POSTS_1: BlogPost[] = [
       },
       {
         type: 'p',
-        text: `A cottage stay pairs well with a day out, and the one we run on this end of the island is [Rick's Cafe cliff diving at sunset](/experience/ricks-cafe-cliff-diving-and-sunset), ${blogFrom(14)} rather than per head. The rest of what we run is east, in [the catalogue](/explore).`,
+        text: `A cottage stay pairs well with a day out, and the one we run on this end of the island is [Rick's Cafe cliff diving at sunset](/experience/ricks-cafe-cliff-diving-and-sunset), ${blogFrom(14)}${blogNotPerHead(14)}. The rest of what we run is east, in [the catalogue](/explore).`,
       },
     ],
     relatedSlugs: ['negril-guide', 'negril-seven-mile-truth'],

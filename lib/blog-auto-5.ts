@@ -1,6 +1,6 @@
 import type { BlogPost, BlogAuthor } from './blog'
 import { BLOG_IMAGES } from './blog-images'
-import { blogPrice, blogFrom } from './blog-prices'
+import { blogPrice, blogFrom, blogNotPerHead } from './blog-prices'
 
 // One real byline; the named writers these used to be were invented.
 const mapl: BlogAuthor = { name: 'MAPL Tours Jamaica', role: 'Editorial', initials: 'MT' }
@@ -537,7 +537,7 @@ export const POSTS_5: BlogPost[] = [
       },
       {
         type: 'p',
-        text: `MAPL Tours Jamaica runs this one ourselves. [The Bob Marley Nine Mile Pilgrimage](/experience/bob-marley-nine-mile-pilgrimage) is a full day, ${blogFrom(15)} rather than per head, and it includes round-trip private transport from your hotel, Nine Mile entry, a village guide and bottled water for the drive. Your driver picks you up at the hotel, so the mountain road is somebody else's problem. Flying into Montego Bay? [Book your airport transfer](/transfers) with us too, and the same team looks after both ends of the trip. No problem.`,
+        text: `MAPL Tours Jamaica runs this one ourselves. [The Bob Marley Nine Mile Pilgrimage](/experience/bob-marley-nine-mile-pilgrimage) is a full day, ${blogFrom(15)}${blogNotPerHead(15)}, and it includes round-trip private transport from your hotel, Nine Mile entry, a village guide and bottled water for the drive. Your driver picks you up at the hotel, so the mountain road is somebody else's problem. Flying into Montego Bay? [Book your airport transfer](/transfers) with us too, and the same team looks after both ends of the trip. No problem.`,
       },
       {
         type: 'faq',

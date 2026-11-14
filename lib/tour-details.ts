@@ -135,16 +135,17 @@ export const TOUR_DETAILS: Record<number, TourDetail> = {
     confirmWithOperator: ["Minimum age, and whether a child must fly tandem with an adult rather than solo.", "Minimum and maximum flyer weight for solo and tandem flights. Boat operators set these themselves and the numbers are safety-critical, so we should print theirs or none.", "Flight length per person, and whether all three people in a private party get airborne inside the booked hour.", "Whether the crew shoots photos or video and what they charge for them."],
   },
   12: {
-    // Collin, Oct 5 2026: a drone photoshoot in a clear kayak on a river
-    // stream, not the reef paddle this entry first described.
-    about: "Your driver takes you from the hotel to the river, where you get your life vest and settle into a see-through kayak on calm, clear water. You float and paddle while the drone shoots from above, and the photos and video of your shoot come to you afterwards.",
+    // Collin, Oct 5 2026: a drone photoshoot in a clear kayak, not the reef
+    // paddle this entry first described. Nov 14 2026: it is in the sea, and
+    // the guest gets 25 or more edited photos and 3 videos with a song.
+    about: "Your driver takes you from the hotel to the sea, where you get your life vest and settle into a see-through kayak. You float while the drone shoots from above, and 25 or more edited photos and three videos of your shoot come to you afterwards.",
     included: ["Private door-to-door transport from your hotel and back", "Clear kayak and life vest", "Drone photos and video of your shoot"],
     bring: ["Swimwear, or an outfit you would like to be photographed in", "A towel and a dry change of clothes", "Sunscreen, a hat and sunglasses", "A waterproof case for your phone", "Small cash for tips"],
     minAge: "Ages 6 and up. Under-12s share the kayak with an adult",
-    maxGroup: "One flat rate covers a private party of up to 3. Larger parties are priced per head.",
+    maxGroup: "Priced per person (Collin, Nov 12 2026), with a private vehicle for your party. Parties of five or more pay a lower rate per person.",
     fitness: "Light. You sit or lie back in the kayak on calm water, and no kayaking experience is needed.",
     goodToKnow: ["Drones cannot fly in strong wind or heavy rain, so the weather can move a shoot to another slot.", "Anyone who would rather not be filmed can say so to the guide before the drone goes up."],
-    confirmWithOperator: ["Which river, and where guests meet the guide.", "How long the shoot runs on the water, and how long the whole stop takes.", "What is delivered (how many photos, how much video, edited or not), how, and how soon.", "Life vests in every size, the minimum age, and any weight or swimming requirement.", "Whether the $180 is per person or covers the party, and how many people one clear kayak takes.", "Whether the Tubing + Clear Kayak combo includes this drone shoot or a plain paddle.", "The original files of the two photos Collin sent, and the guest's consent before either goes on the site."],
+    confirmWithOperator: ["Near which town the shoot runs (he said only that it is in the sea, Nov 14 2026), and where guests meet the guide.", "How long the shoot runs on the water, and how long the whole stop takes.", "How the photos and videos reach the guest, and how soon (he said what: 25 or more edited photos and 3 videos with a song).", "Life vests in every size, the minimum age, and any weight or swimming requirement.", "How many people one clear kayak takes (the $180 is per person, Nov 12 2026).", "Whether the Tubing + Clear Kayak combo includes this drone shoot or a plain paddle.", "The original files of the kayak photos Collin sent (he agreed we may use them, Nov 14 2026), and the woman in them agreeing herself before any goes on the site."],
   },
   13: {
     about: "Your driver collects you at the hotel and runs you up to the river. You get a tube and a life vest, walk down to the water with the guides, and they set you off into the current. You float down through the quiet stretches and the little rapids with guides in the water beside you, and the van meets you at the take out.",

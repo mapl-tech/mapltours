@@ -109,7 +109,8 @@ export const POSTS_3: BlogPost[] = [
       },
       {
         type: 'p',
-        text: `Split three ways, the falls come to ${blogShare(1, 3, 'montego_bay')} a head and Nine Mile to ${blogShare(15, 3)}; the fourth person at Rick's costs nothing extra. It is the part of the trip people talk about at home.`,
+        // The party's size is the one typed number here; both shares are worked out for it.
+        text: `Split four ways, the falls come to about ${blogShare(1, 4, 'montego_bay')} a head and Nine Mile to about ${blogShare(15, 4)}. It is the part of the trip people talk about at home.`,
       },
       { type: 'h2', text: 'Which resorts are open after Hurricane Melissa' },
       {

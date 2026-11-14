@@ -1,8 +1,9 @@
 import { describe, test, expect } from 'vitest'
 import { BLOG_POSTS, type BlogBlock } from '@/lib/blog'
 import { experiences, slugify, tourPrice, zonesSold, isZonePriced, type Experience } from '@/lib/experiences'
-import { blogFrom, blogPrice, blogShare, blogUnit } from '@/lib/blog-prices'
-import { HELP_CATEGORIES, GROUP_PARTY_LIMITS } from '@/lib/help-faqs'
+import type { TourZone } from '@/lib/tour-zones'
+import { blogFrom, blogIsGroupPrice, blogNotPerHead, blogPrice, blogShare, blogUnit } from '@/lib/blog-prices'
+import { HELP_CATEGORIES, GROUP_PARTY_LIMITS, TOUR_PRICING_SENTENCE } from '@/lib/help-faqs'
 
 /**
  * A post or a help answer that quotes one of our tours has to quote what the
@@ -13,19 +14,43 @@ import { HELP_CATEGORIES, GROUP_PARTY_LIMITS } from '@/lib/help-faqs'
  * to three" after its price covered four, one split the falls "three ways"
  * into "$117 a head" from a price two changes old, and the help page said
  * group prices cover "usually up to 3 or 4 guests" when none covered three.
- * Each was typed. They are read from the cards now (lib/blog-prices), and
- * this file fails the day anyone types another.
+ * Each was typed. They are read from the cards now (lib/blog-prices).
  *
- * What it checks, in every sentence of every post that links one of our
- * tours: a dollar amount written "$123" is a price that tour's card produces
- * (any party of 1 to 12, from any pickup area, or one guest's share of one),
- * and the words after it agree with the card ("for up to four people" only on
- * a tour priced for the group, and only with that card's number). Prices of
- * other people's things are written "US$25" in the posts and are left alone.
+ * What this file reads, in every post: each "$123" (never "US$25", which is
+ * how the posts write someone else's price) in a sentence that links one of
+ * our tours. Each amount is held to the tour linked before it in the
+ * sentence (or the first one after it, when none comes before):
+ *  - it must be a price that tour's card charges a party of 1 to 6 from some
+ *    pickup area, or one guest's share of such a price;
+ *  - "for up to N" after it: the tour must be one price for the party, N its
+ *    card's number, and the amount that flat price;
+ *  - "per person" or "a head" after it: a price for one guest of a per-person
+ *    tour, or a share of a group price;
+ *  - "picked up in <area>" or "in <area>" after it: that area's price.
+ * In a sentence that links no tour it reads one thing only, a share ("$90 a
+ * head"), which has to be a guest's share of some tour the post links. And
+ * it fails on a helper that was never rendered ("${" on the page).
+ *
+ * What it cannot see, so nobody relies on it for these: any other price in a
+ * sentence that links no tour (matching tours by name was tried and caught
+ * other people's prices: "Sandals Dunn's River ... clears $1,500", the Rio
+ * Grande raft); a unit put in other words ("covers a party of three", "for
+ * the two of you"); our own price written "US$128" or "128 USD"; a helper
+ * called with the right tour and the wrong party size. The rule for writers
+ * is in AUTOMATED-BLOGS.md: use the helpers.
  */
 
 const WORDS = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'eleven', 'twelve']
 const bySlug = new Map(experiences.map((e) => [slugify(e.title), e]))
+const byId = (id: number) => experiences.find((e) => e.id === id)!
+
+/** A pickup area as the posts name it. */
+const PLACES: Array<[RegExp, TourZone]> = [
+  [/^(Montego Bay|Rose Hall)/, 'montego_bay'], [/^Negril/, 'negril'], [/^Ocho Rios/, 'ocho_rios'],
+  [/^(Falmouth|Trelawny)/, 'trelawny'], [/^(Lucea|Hanover)/, 'lucea'], [/^(Runaway Bay|Discovery Bay)/, 'runaway_bay'],
+]
+const PLACE = '(Montego Bay|Rose Hall|Negril|Ocho Rios|Falmouth|Trelawny|Lucea|Hanover|Runaway Bay|Discovery Bay)'
+const zoneOfPlace = (name: string) => PLACES.find(([re]) => re.test(name))?.[1]
 
 const strings = (b: BlogBlock): string[] =>
   b.type === 'list' ? b.items
@@ -33,15 +58,25 @@ const strings = (b: BlogBlock): string[] =>
       : b.type === 'image' ? (b.caption ? [b.caption] : [])
         : [b.text]
 
-/** Sentences, split after a full stop that is followed by a capital or a link; "St. Ann" may split, which only narrows a sentence. */
-const sentences = (s: string): string[] => s.split(/(?<=[.!?])\s+(?=[A-Z[])/)
+/** Sentences. A full stop after "St", "Mt" or an initial does not end one ("the St. Ann hills"). */
+function sentences(s: string): string[] {
+  const out: string[] = []
+  for (const part of s.split(/(?<=[.!?])\s+(?=[A-Z[])/)) {
+    const last = out[out.length - 1]
+    if (last !== undefined && /\b(St|Mt|Dr|Mr|Mrs|Ms|No|vs|[A-Z])\.$/.test(last)) out[out.length - 1] = `${last} ${part}`
+    else out.push(part)
+  }
+  return out
+}
 
-/** Every total this card can produce, and every guest's share of one rounded up. */
-function pricesOf(e: Experience): Set<number> {
+const zonesOf = (e: Experience): Array<TourZone | undefined> => (isZonePriced(e.pricing) ? [undefined, ...zonesSold(e.pricing)] : [undefined])
+const flatGroup = (e: Experience) => e.pricing.mode === 'group' && !e.pricing.perPersonAddon
+
+/** Every total a party of 1 to 6 pays, from the given area or from any, and each guest's share of one. */
+function prices(e: Experience, zone?: TourZone): Set<number> {
   const out = new Set<number>()
-  const zones = isZonePriced(e.pricing) ? [undefined, ...zonesSold(e.pricing)] : [undefined]
-  for (const z of zones) {
-    for (let n = 1; n <= 12; n++) {
+  for (const z of zone ? [zone] : zonesOf(e)) {
+    for (let n = 1; n <= 6; n++) {
       const total = tourPrice(e.pricing, n, z)
       out.add(total)
       out.add(Math.ceil(total / n))
@@ -49,112 +84,176 @@ function pricesOf(e: Experience): Set<number> {
   }
   return out
 }
+/** The one price a group tour charges a party it covers, from each area. */
+const flatPrices = (e: Experience) => new Set(zonesOf(e).map((z) => tourPrice(e.pricing, e.pricing.tierMax, z)))
+/** What one guest pays: alone, or as their share of any party up to 12 (bigger parties can pay less each). */
+function guestPrices(e: Experience): Set<number> {
+  const out = new Set<number>()
+  for (const z of zonesOf(e)) for (let n = 1; n <= 12; n++) out.add(Math.ceil(tourPrice(e.pricing, n, z) / n))
+  return out
+}
+/** A share of a group price: the flat price over 2 to tierMax guests, or a bigger party's total over its size. */
+function shares(e: Experience): Set<number> {
+  const out = new Set<number>()
+  for (const z of zonesOf(e)) for (let n = 2; n <= 12; n++) out.add(Math.ceil(tourPrice(e.pricing, n, z) / n))
+  return out
+}
 
-interface Quote { post: string; sentence: string; tours: Experience[]; amounts: number[] }
+interface Quote { post: string; sentence: string; amount: number; after: string; tour: Experience }
+interface Share { post: string; sentence: string; amount: number; tours: Experience[] }
 
 const quotes: Quote[] = []
+const loneShares: Share[] = []
 const deadLinks: string[] = []
+const unrendered: string[] = []
+let sentencesWithATour = 0
+// "$357", never "US$25" (someone else's price), never part of a longer token.
+const AMOUNT = /(?<![A-Za-z$])\$([0-9][0-9,]*)(?![0-9])/g
+const LINK = /\]\(\/experience\/([a-z0-9-]+)\)/g
+
 for (const post of BLOG_POSTS) {
-  for (const block of post.body) {
-    for (const s of strings(block)) {
-      for (const sentence of sentences(s)) {
-        const slugs = Array.from(sentence.matchAll(/\]\(\/experience\/([a-z0-9-]+)\)/g)).map((m) => m[1])
-        if (!slugs.length) continue
-        for (const slug of slugs) if (!bySlug.has(slug)) deadLinks.push(`${post.slug}: /experience/${slug}`)
-        const tours = slugs.map((x) => bySlug.get(x)).filter((e): e is Experience => !!e)
-        // "$357", never "US$25" (someone else's price) and never part of a longer token.
-        const amounts = Array.from(sentence.matchAll(/(?<![A-Za-z$])\$([0-9][0-9,]*)(?![0-9])/g)).map((m) => Number(m[1].replace(/,/g, '')))
-        quotes.push({ post: post.slug, sentence, tours, amounts })
+  const all = [post.title, post.excerpt, ...post.body.flatMap(strings)]
+  const linkedInPost = Array.from(new Set(all.flatMap((s) => Array.from(s.matchAll(LINK)).map((m) => bySlug.get(m[1])).filter((e): e is Experience => !!e))))
+  for (const s of all) {
+    if (/\$\{|\bblog(From|Price|Unit|Share|NotPerHead)\(|\bundefined\b|\bNaN\b/.test(s)) unrendered.push(`${post.slug}: ${s.slice(0, 120)}`)
+    for (const sentence of sentences(s)) {
+      const links = Array.from(sentence.matchAll(LINK)).map((m) => ({ slug: m[1], at: m.index ?? 0 }))
+      for (const l of links) if (!bySlug.has(l.slug)) deadLinks.push(`${post.slug}: /experience/${l.slug}`)
+      const named = links.filter((l) => bySlug.has(l.slug)).map((l) => ({ tour: bySlug.get(l.slug)!, at: l.at }))
+      const amounts = Array.from(sentence.matchAll(AMOUNT)).map((m) => ({ value: Number(m[1].replace(/,/g, '')), at: m.index ?? 0, end: (m.index ?? 0) + m[0].length }))
+      if (!named.length) {
+        // No tour linked: only a share is read, against the tours the post links anywhere.
+        for (const a of amounts) if (linkedInPost.length && /^\s*(a head|each\b)/.test(sentence.slice(a.end, a.end + 12))) loneShares.push({ post: post.slug, sentence, amount: a.value, tours: linkedInPost })
+        continue
+      }
+      sentencesWithATour++
+      for (const a of amounts) {
+        // The tour linked before the amount, the nearest one; with none before it, the first one after.
+        const before = named.filter((n) => n.at <= a.at)
+        const tour = (before.length ? before[before.length - 1] : named[0]).tour
+        quotes.push({ post: post.slug, sentence, amount: a.value, after: sentence.slice(a.end, a.end + 80), tour })
       }
     }
   }
 }
 
+const say = (q: Quote, why: string) => `${q.post}: $${q.amount} ${why} (${q.tour.title}) :: ${q.sentence.slice(0, 170)}`
+
 describe('blog posts quote the prices the rate cards charge', () => {
-  test('the posts link real tours, and several sentences do quote a price', () => {
+  test('the posts link real tours, render their helpers, and there is something to check', () => {
     expect(deadLinks).toEqual([])
-    // If this ever reads zero the test has stopped looking at anything.
-    expect(quotes.filter((q) => q.amounts.length > 0).length).toBeGreaterThanOrEqual(7)
+    expect(unrendered).toEqual([])
+    // If these ever read zero the test has stopped looking at anything.
+    expect(sentencesWithATour).toBeGreaterThanOrEqual(25)
+    expect(quotes.length).toBeGreaterThanOrEqual(8)
+    expect(loneShares.length).toBeGreaterThanOrEqual(1)
   })
 
-  test('every dollar amount beside a tour link is a price that tour charges', () => {
-    const wrong: string[] = []
-    for (const q of quotes) {
-      const valid = new Set<number>()
-      for (const e of q.tours) pricesOf(e).forEach((p) => valid.add(p))
-      for (const a of q.amounts) if (!valid.has(a)) wrong.push(`${q.post}: $${a} is not a price of ${q.tours.map((e) => e.title).join(' or ')} :: ${q.sentence.slice(0, 160)}`)
-    }
-    expect(wrong).toEqual([])
+  test('a share quoted in a sentence with no link ("$90 a head") is a guest\'s share of a tour the post links', () => {
+    const wrong = loneShares.filter((x) => !x.tours.some((t) => shares(t).has(x.amount) || guestPrices(t).has(x.amount)))
+    expect(wrong.map((x) => `${x.post}: $${x.amount} a head is no guest's share of ${x.tours.map((t) => t.title).join(', ')} :: ${x.sentence.slice(0, 160)}`)).toEqual([])
   })
 
-  test('"for up to N" is said only of a tour priced for the group, with that card\'s number', () => {
+  test('every dollar amount beside a tour is a price that tour charges, or a guest\'s share of one', () => {
+    expect(quotes.filter((q) => !prices(q.tour).has(q.amount)).map((q) => say(q, 'is not a price of the tour named nearest it'))).toEqual([])
+  })
+
+  test('"for up to N" follows only a group tour\'s own flat price, with that card\'s number', () => {
     const wrong: string[] = []
     for (const q of quotes) {
-      if (!q.amounts.length || q.tours.length !== 1) continue
-      const e = q.tours[0]
-      // Only the words that follow a price: "$255 for up to four people". A transfer's "up to four passengers" elsewhere in a sentence is not this.
-      const m = /\$[0-9][0-9,]*\s+for up to (\w+)/.exec(q.sentence)
+      const m = /^\s*for up to (\w+)/.exec(q.after)
       if (!m) continue
       const said = WORDS.indexOf(m[1].toLowerCase()) >= 0 ? WORDS.indexOf(m[1].toLowerCase()) : Number(m[1])
-      const flatGroup = e.pricing.mode === 'group' && !e.pricing.perPersonAddon
-      if (!flatGroup) wrong.push(`${q.post}: "${m[0]}" but ${e.title} is not one price for the group :: ${q.sentence.slice(0, 140)}`)
-      else if (said !== e.pricing.tierMax) wrong.push(`${q.post}: "${m[0]}" but ${e.title} covers up to ${e.pricing.tierMax} :: ${q.sentence.slice(0, 140)}`)
+      if (!flatGroup(q.tour)) wrong.push(say(q, `is called a price "for up to ${m[1]}", and the tour is not one price for the party`))
+      else if (said !== q.tour.pricing.tierMax) wrong.push(say(q, `is said to cover up to ${m[1]}; the card covers ${q.tour.pricing.tierMax}`))
+      else if (!flatPrices(q.tour).has(q.amount)) wrong.push(say(q, 'is not the flat price the card charges a party it covers'))
     }
     expect(wrong).toEqual([])
   })
 
-  test('a tour priced per person is never quoted as a price for a party', () => {
+  test('"per person" and "a head" follow one guest\'s price, never a party\'s total', () => {
     const wrong: string[] = []
     for (const q of quotes) {
-      if (!q.amounts.length || q.tours.length !== 1) continue
-      const e = q.tours[0]
-      if (e.pricing.mode === 'group') continue
-      if (/\$[0-9][0-9,]*\s+(for up to|for the (group|party)|per (party|group|vehicle|car))/.test(q.sentence)) wrong.push(`${q.post}: ${e.title} is per person :: ${q.sentence.slice(0, 160)}`)
+      if (!/^\s*(per person|per guest|a person|a head|each\b)/.test(q.after)) continue
+      if (flatGroup(q.tour)) { if (!shares(q.tour).has(q.amount)) wrong.push(say(q, 'is called per person, and the tour is one price for the party')) }
+      else if (!guestPrices(q.tour).has(q.amount)) wrong.push(say(q, 'is called per person and is not what one guest pays'))
     }
     expect(wrong).toEqual([])
+  })
+
+  test('"for one person" is said only of a tour where every guest adds to the price', () => {
+    expect(quotes.filter((q) => /^\s*for one person/.test(q.after) && !q.tour.pricing.perPersonAddon).map((q) => say(q, 'is called a price for one person'))).toEqual([])
+  })
+
+  test('a price said to be from a pickup area is that area\'s price', () => {
+    const wrong: string[] = []
+    let checked = 0
+    for (const q of quotes) {
+      const m = new RegExp(`^[^.$;(]{0,45}?picked up in ${PLACE}`).exec(q.after) ?? new RegExp(`^\\s*in ${PLACE}`).exec(q.after)
+      if (!m || !isZonePriced(q.tour.pricing)) continue
+      const zone = zoneOfPlace(m[1])
+      checked++
+      if (!zone || !zonesSold(q.tour.pricing).includes(zone)) wrong.push(say(q, `is said to be from ${m[1]}, where the card has no price`))
+      else if (!prices(q.tour, zone).has(q.amount)) wrong.push(say(q, `is not the price from ${m[1]}`))
+    }
+    expect(wrong).toEqual([])
+    expect(checked).toBeGreaterThanOrEqual(3)
   })
 })
 
 describe('the helpers the posts quote with', () => {
-  const exp = (id: number) => experiences.find((e) => e.id === id)!
-
   test('the unit is read from the card', () => {
     // Per person (Collin, Nov 14 2026): they read "for up to three people" the day before.
     for (const id of [5, 10, 11]) {
       expect(blogUnit(id), `tour ${id}`).toBe('per person')
-      expect(blogFrom(id), `tour ${id}`).toBe(`$${exp(id).price} per person`)
+      expect(blogFrom(id), `tour ${id}`).toBe(`$${byId(id).price} per person`)
+      expect(blogIsGroupPrice(id)).toBe(false)
+      expect(blogNotPerHead(id)).toBe('')
     }
     // Per person by pickup area: a "from", because the price depends on where we pick the guest up.
-    expect(blogFrom(3)).toBe(`from $${tourPrice(exp(3).pricing, 1)} per person`)
-    // One price for the group, with the card's own number in words.
+    expect(blogFrom(3)).toBe(`from $${tourPrice(byId(3).pricing, 1)} per person`)
+    // One price for the group, with the card's own number in words, and only there "rather than per head".
     for (const id of [14, 15]) {
-      expect(exp(id).pricing.mode).toBe('group')
-      expect(blogFrom(id)).toBe(`$${exp(id).price} for up to ${WORDS[exp(id).pricing.tierMax]} people`)
+      expect(byId(id).pricing.mode).toBe('group')
+      expect(blogFrom(id)).toBe(`$${byId(id).price} for up to ${WORDS[byId(id).pricing.tierMax]} people`)
+      expect(blogIsGroupPrice(id)).toBe(true)
+      expect(blogNotPerHead(id)).toBe(' rather than per head')
     }
-    // Every guest adds to it (the day with both falls): the headline is one guest's price.
+    // Every guest adds to it (the day with both falls): the headline is one guest's price, not a group price.
     expect(blogUnit(18)).toBe('for one person')
+    expect(blogIsGroupPrice(18)).toBe(false)
   })
 
   test('a share is the total over the party, rounded up, never less than the share', () => {
     for (const [id, party, zone] of [[1, 3, 'montego_bay'], [15, 3, undefined], [15, 4, undefined], [1, 4, 'negril'], [14, 3, undefined]] as const) {
-      const total = tourPrice(exp(id).pricing, party, zone)
+      const total = tourPrice(byId(id).pricing, party, zone)
       const share = Number(blogShare(id, party, zone).slice(1))
       expect(blogShare(id, party, zone)).toMatch(/^\$[0-9]+$/)
       expect(share * party).toBeGreaterThanOrEqual(total)
       expect((share - 1) * party).toBeLessThan(total)
     }
-    expect(blogPrice(15, 3)).toBe(`$${tourPrice(exp(15).pricing, 3)}`)
+    expect(blogPrice(15, 3)).toBe(`$${tourPrice(byId(15).pricing, 3)}`)
+  })
+
+  test('a pickup area the card does not sell is refused, not answered with the cheapest area\'s price', () => {
+    // tourPrice falls back to the cheapest area, which is right for a "from" and wrong beside "picked up in ...".
+    expect(() => blogPrice(14, 2, 'negril')).toThrow(/has no price from there/) // Rick's Cafe is one price everywhere
+    expect(() => blogShare(15, 4, 'montego_bay')).toThrow(/has no price from there/)
+    expect(blogPrice(1, 1, 'montego_bay')).toBe(`$${tourPrice(byId(1).pricing, 1, 'montego_bay')}`)
+    expect(blogPrice(1, 1)).toBe(`$${tourPrice(byId(1).pricing, 1)}`)
   })
 })
 
 describe('the help page says who a group price covers from the cards', () => {
   test('the party sizes named are the ones the group cards cover', () => {
     const limits = Array.from(new Set(experiences.filter((e) => e.pricing.mode === 'group').map((e) => e.pricing.tierMax))).sort((a, b) => a - b)
+    expect(limits.length).toBeGreaterThan(0)
     expect(GROUP_PARTY_LIMITS).toBe(limits.length > 1 ? `${limits.slice(0, -1).join(', ')} or ${limits[limits.length - 1]}` : String(limits[0]))
     // Today every group price covers four.
     expect(GROUP_PARTY_LIMITS).toBe('4')
+    expect(TOUR_PRICING_SENTENCE).toBe('Some are priced for your whole party, up to 4 guests, with a per-person rate above that; the rest are priced per person.')
     const answer = HELP_CATEGORIES.flatMap((c) => c.faqs).find((f) => f.q === 'Can I book for a group?')?.a ?? ''
-    expect(answer).toContain(`Some are priced for your whole party, up to ${GROUP_PARTY_LIMITS} guests, with a per-person rate above that; the rest are priced per person.`)
-    expect(answer).not.toMatch(/\$\{|undefined|NaN/)
+    expect(answer).toContain(`Yes. Every tour is private. ${TOUR_PRICING_SENTENCE} Some are also priced by where we pick you up.`)
+    for (const f of HELP_CATEGORIES.flatMap((c) => c.faqs)) expect(`${f.q} ${f.a}`, f.q).not.toMatch(/\$\{|\bundefined\b|\bNaN\b/)
   })
 })

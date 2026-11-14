@@ -1647,9 +1647,9 @@ export default function FeedView() {
                     }}>
                       {exp.reviews > 0 ? <><Star size={10} fill="currentColor" strokeWidth={0} /> {exp.rating}</> : 'New'}
                     </span>
-                    {/* The unit is not decoration: every tour in this section
-                        is priced `mode: 'group'`, so a bare $459 reads as a
-                        per-head figure that would quadruple at checkout. */}
+                    {/* The unit is not decoration: some tours in this section
+                        are one price for the party and some are per person, so
+                        a bare $459 could be read either way. */}
                     <span style={{ flexBasis: '100%', fontSize: 13, lineHeight: 1.35, color: '#cccccc', fontFamily: 'var(--font-dm-sans)' }}>
                       {priceUnitLabel(exp.pricing)} · {exp.duration}
                     </span>
