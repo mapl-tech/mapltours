@@ -32,7 +32,11 @@ function LoginContent() {
   const [showPassword, setShowPassword] = useState(false)
   const [name, setName] = useState('')
   const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
+  // /auth/callback sends a failed link here as ?error=auth. It used to be
+  // ignored, so a guest whose link had expired just saw the form again.
+  const [error, setError] = useState(searchParams.get('error') === 'auth'
+    ? 'That sign-in link did not work: it has expired, was already used, or was opened in a different browser. Please sign in again.'
+    : '')
   const [message, setMessage] = useState('')
 
   async function handleEmailAuth(e: React.FormEvent) {
@@ -102,13 +106,16 @@ function LoginContent() {
     if (!email) return
     setError('')
     setMessage('')
+    // Back through /auth/callback, which signs the guest in for this one
+    // purpose and sends them to /login/reset to type the new password. The
+    // link used to return to this page, which has nowhere to type one.
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/login`,
+      redirectTo: `${window.location.origin}/auth/callback?type=recovery`,
     })
     if (error) {
       setError(error.message)
     } else {
-      setMessage('Check your email for a reset link.')
+      setMessage('Check your email for a reset link. Open it in this browser to choose a new password.')
     }
   }
 

@@ -11,7 +11,9 @@
 // shortlist and was landed somewhere else, with no way back but the nav.
 // /transfers is the same omission one level up, since the '/transfers/'
 // PREFIX below was already allowed while the page itself was not.
-const ALLOWED_EXACT = ['/', '/profile', '/saved', '/explore', '/checkout', '/transfers']
+// /driver is the driver portal: its own login sends `redirect=/driver`, and
+// without it the driver signed in and landed on a guest's /profile.
+const ALLOWED_EXACT = ['/', '/profile', '/saved', '/explore', '/checkout', '/transfers', '/driver']
 // Namespaces a redirect may land in. Covers the engagement loop
 // (/experience/<slug> after liking/commenting), the post-payment confirm
 // pages, and the admin moderation queue, none of which are static and so
