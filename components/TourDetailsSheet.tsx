@@ -9,6 +9,7 @@ import { priceUnitLabel, placeLabel, isZonePriced } from '@/lib/experiences'
 import ZonePriceList from './ZonePriceList'
 import { useI18n } from '@/lib/i18n'
 import { CANCELLATION_SUMMARY } from '@/lib/refund-pricing'
+import { lockScroll } from '@/lib/scroll-lock'
 
 /**
  * Everything a guest needs before committing to a tour: what happens, what the
@@ -118,11 +119,8 @@ export default function TourDetailsSheet({ exp, onClose, cta }: { exp: Experienc
   // the dialog.
   const scrimPress = useRef(false)
 
-  useEffect(() => {
-    const prev = document.body.style.overflow
-    document.body.style.overflow = 'hidden'
-    return () => { document.body.style.overflow = prev }
-  }, [])
+  // A counted lock (lib/scroll-lock): safe whatever else holds the page still.
+  useEffect(() => lockScroll(), [])
 
   // "One price for up to N" is only true of a flat group rate: not where
   // every guest adds to it (the both-falls day).

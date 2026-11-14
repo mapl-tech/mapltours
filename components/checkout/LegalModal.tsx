@@ -5,6 +5,7 @@ import { X, ShieldCheck } from 'lucide-react'
 import { useFocusTrap } from '@/lib/use-focus-trap'
 import { CANCELLATION_SUMMARY } from '@/lib/refund-pricing'
 import { MIN_LEAD_TIME_HOURS } from '@/lib/booking-window'
+import { lockScroll } from '@/lib/scroll-lock'
 
 /**
  * The waiver and the cancellation policy, answered in place.
@@ -77,11 +78,8 @@ export default function LegalModal({
   }, [answer, isSheet])
 
   // The checkout behind must not scroll under the sheet.
-  useEffect(() => {
-    const prev = document.body.style.overflow
-    document.body.style.overflow = 'hidden'
-    return () => { document.body.style.overflow = prev }
-  }, [])
+  // A counted lock (lib/scroll-lock): safe whatever else holds the page still.
+  useEffect(() => lockScroll(), [])
 
   const title = kind === 'waiver' ? 'Activity Waiver & Release of Liability' : 'Cancellation & Terms'
   const a = answer ? ANSWER[answer] : null

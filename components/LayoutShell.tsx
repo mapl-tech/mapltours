@@ -57,10 +57,14 @@ export default function LayoutShell({ children }: { children: React.ReactNode })
   // until that component mounts, so a lazily-hydrating Suspense boundary
   // still renders the server's English on its first pass.
   useEffect(() => {
-    useCartStore.persist.rehydrate()
-    useI18nStore.persist.rehydrate()
-    usePlacesCart.persist.rehydrate()
-    useSeenReels.persist.rehydrate()
+    // Where the browser refuses localStorage (all site data blocked, some
+    // in-app browsers), zustand attaches no `persist` at all, and calling
+    // `.persist.rehydrate()` threw inside this root effect: every page was
+    // replaced by the error screen. Those visitors simply get stores that
+    // start empty and are not saved.
+    for (const store of [useCartStore, useI18nStore, usePlacesCart, useSeenReels]) {
+      try { void (store as { persist?: { rehydrate: () => unknown } }).persist?.rehydrate() } catch { /* stays at its defaults */ }
+    }
     // Record where this visit came from (referrer/UTM); never throws.
     captureAttribution()
   }, [])

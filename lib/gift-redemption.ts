@@ -15,7 +15,7 @@ import { normalizeGiftCode, applyGiftCard, giftBlockedMessage, type GiftApplicat
 type DB = ReturnType<typeof createServiceClient>
 
 /** How long a reservation may sit against an unpaid booking before it is swept. */
-const STALE_RESERVATION_MINUTES = 30
+export const STALE_RESERVATION_MINUTES = 30
 
 export interface GiftClaim {
   giftCardId: string

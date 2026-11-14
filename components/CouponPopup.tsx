@@ -21,6 +21,7 @@ import {
   useCouponPopupStore,
 } from '@/lib/coupon-popup'
 import { TIPS_LABEL, TIPS_ON_LINE, type TipsDefault } from '@/lib/trip-tips'
+import { lockScroll } from '@/lib/scroll-lock'
 
 /**
  * The 5% code popup on the home and explore pages.
@@ -181,11 +182,8 @@ function Sheet({ place, closing, onClose }: { place: Place; closing: boolean; on
   const tipsDefault: TipsDefault = 'unchecked'
   const [tipsOn, setTipsOn] = useState(false)
 
-  useEffect(() => {
-    const prev = document.body.style.overflow
-    document.body.style.overflow = 'hidden'
-    return () => { document.body.style.overflow = prev }
-  }, [])
+  // A counted lock (lib/scroll-lock): safe whatever else holds the page still.
+  useEffect(() => lockScroll(), [])
 
   // On a desktop pointer the field takes focus at once, one click saved. On
   // phones it must not: the keyboard would rise over the sheet before the

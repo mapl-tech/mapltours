@@ -46,6 +46,7 @@ import type { TourDetailsCta } from '@/components/TourDetailsSheet'
 import Avatar from '@/components/Avatar'
 import MaplAvatar from '@/components/MaplAvatar'
 import { clipCredit, clipsInReelOrder } from '@/lib/creator'
+import { lockScroll } from '@/lib/scroll-lock'
 
 interface Props {
   exp: Experience
@@ -82,11 +83,8 @@ export default function UserTourVideos({ exp, startUpload, cta, onPlay, onClose 
   const sheetRef = useRef<HTMLDivElement>(null)
   useFocusTrap(sheetRef, requestClose)
 
-  useEffect(() => {
-    const prev = document.body.style.overflow
-    document.body.style.overflow = 'hidden'
-    return () => { document.body.style.overflow = prev }
-  }, [])
+  // A counted lock (lib/scroll-lock): safe whatever else holds the page still.
+  useEffect(() => lockScroll(), [])
 
   // Back from signing in to post: the upload sheet, once auth has settled.
   const uploadDone = useRef(false)

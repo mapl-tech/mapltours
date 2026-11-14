@@ -15,6 +15,7 @@ import { useHydrated } from '@/lib/use-hydrated'
 import { useTourFit } from '@/lib/use-tour-fit'
 import { useCtaSwap } from '@/lib/use-cta-swap'
 import Link from 'next/link'
+import Arrow from '@/components/ui/Arrow'
 import dynamic from 'next/dynamic'
 import { Heart, MessageCircle, Play, Pause, ChevronLeft, ChevronRight, ChevronUp, ChevronDown, X, ThumbsUp, Send, MapPin, Star, Clock, ShoppingBag, Film, Check, Volume2, VolumeX } from 'lucide-react'
 import { useExperienceLike, useComments, DisplayComment } from '@/lib/supabase/hooks'
@@ -27,6 +28,7 @@ import { CANCELLATION_SUMMARY } from '@/lib/refund-pricing'
 import { useApprovedClips, clipDateLabel, type TourVideo } from '@/lib/tour-videos'
 import { useAfterFirstPaint } from '@/lib/use-media-gate'
 import { isKeyOrReaderClick } from '@/lib/press'
+import { lockScroll } from '@/lib/scroll-lock'
 
 declare global {
   interface Window {
@@ -261,8 +263,10 @@ function Reel({ exp, clip, isActive, near, ahead, advancesAtEnd, clipCount, mute
       // Consumed inside the callback, so StrictMode's dev double-mount (which
       // clears the timer of the first mount) still replays once.
       delete window.__maplEarlyTap
-      if (useCartStore.persist.hasHydrated()) replay()
-      else unsubscribe = useCartStore.persist.onFinishHydration(replay)
+      // No `persist` where the browser refuses localStorage: nothing to wait for.
+      const persist = (useCartStore as { persist?: typeof useCartStore.persist }).persist
+      if (!persist || persist.hasHydrated()) replay()
+      else unsubscribe = persist.onFinishHydration(replay)
     }, 0)
     return () => {
       clearTimeout(timer)
@@ -1721,14 +1725,16 @@ export default function ExperienceDetail({ slug }: { slug: string }) {
   // the body on aggressive swipes; locking it keeps the chrome and the
   // comment bar glued where they belong.
   useEffect(() => {
-    const body = document.body.style
+    // A counted lock (lib/scroll-lock), because the sheets opened on the reel
+    // lock the page too and outlive this effect's cleanup when the route
+    // changes under them.
+    const unlock = lockScroll()
     const root = document.documentElement.style
-    const prev = { overflow: body.overflow, overscroll: root.overscrollBehaviorY }
-    body.overflow = 'hidden'
+    const prevOverscroll = root.overscrollBehaviorY
     root.overscrollBehaviorY = 'none'
     return () => {
-      body.overflow = prev.overflow
-      root.overscrollBehaviorY = prev.overscroll
+      unlock()
+      root.overscrollBehaviorY = prevOverscroll
     }
   }, [])
 
@@ -2578,6 +2584,26 @@ export default function ExperienceDetail({ slug }: { slug: string }) {
         {items.length === 0 && (() => {
           const next = entries[activeIndex + 1]
           const last = !next
+          // A package opens alone (it is not part of the browsable reel), so
+          // "the end" there is the first screen: the button read "That's all
+          // 1. Back to the first" and went nowhere. It leads on to the tours.
+          if (last && feedExperiences.length === 1) {
+            return (
+              <Link
+                href="/explore"
+                className="reel-next"
+                style={{
+                  flex: 1, minWidth: 0, minHeight: 48, padding: '0 16px', borderRadius: 9999,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                  background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.18)',
+                  color: 'white', fontSize: 15, fontWeight: 600, fontFamily: 'var(--font-dm-sans)',
+                  textDecoration: 'none',
+                }}
+              >
+                Browse all tours<Arrow />
+              </Link>
+            )
+          }
           return (
             <button
               type="button"

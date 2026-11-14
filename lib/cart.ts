@@ -476,7 +476,9 @@ export const useCartStore = create<CartStore>()(
       migrate: (persisted, version) => {
         const state = persisted as { items?: CartItem[]; stops?: FoodStop[] } | undefined
         if (!state) return persisted as CartStore
-        const items = (state.items ?? []).flatMap((i) => {
+        // Same care as merge below: an old cart can hold anything.
+        const items = (Array.isArray(state.items) ? state.items : []).flatMap((i) => {
+          if (!i || typeof i !== 'object') return []
           const current = experiences.find((e: Experience) => e.id === i.id)
           if (!current) return []
           return [{ ...current, travelers: i.travelers ?? 1, date: i.date ?? '' }]
@@ -496,7 +498,13 @@ export const useCartStore = create<CartStore>()(
       // many travelers, which date. Tours pulled from the catalog drop out.
       merge: (persisted, current) => {
         const state = (persisted ?? {}) as Partial<CartStore>
-        const items = (state.items ?? []).flatMap((i) => {
+        // A stored cart is whatever an older build, or a cut-short write,
+        // left there: anything that is not a list of lines is no cart, and a
+        // line that is not an object is skipped. Throwing here abandons the
+        // load, and checkout then waits on it for good.
+        const stored = Array.isArray(state.items) ? state.items : []
+        const items = stored.flatMap((i) => {
+          if (!i || typeof i !== 'object') return []
           const live = experiences.find((e: Experience) => e.id === i.id)
           if (!live) return []
           return [{ ...live, travelers: i.travelers ?? 1, date: i.date ?? '' }]

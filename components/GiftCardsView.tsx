@@ -41,7 +41,9 @@ export default function GiftCardsView() {
 
   // 'form' → 'pay' → 'done'. Nothing is created or sent until the card
   // clears; 'done' is only reached after Stripe confirms the payment.
-  const [stage, setStage] = useState<'form' | 'pay' | 'done'>('form')
+  // 'returning' is the buyer coming back from Stripe (after 3DS or a bank
+  // page), before we know how the payment ended.
+  const [stage, setStage] = useState<'form' | 'pay' | 'returning' | 'done'>('form')
   const [clientSecret, setClientSecret] = useState<string | null>(null)
   const [creating, setCreating] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -98,12 +100,17 @@ export default function GiftCardsView() {
           expiresAt: data.expiresAt ?? null, delivered: !!data.delivered,
         })
         setStage('done')
+      } else if (data.status === 'processing') {
+        // A bank payment that has not settled yet is not a failed one.
+        setError('Your payment is still being confirmed. We will email the gift card as soon as it clears.')
       } else if (data.status && data.status !== 'succeeded') {
-        setError('That payment did not complete. Nothing has been charged.')
+        setError('That payment did not go through, and nothing was charged.')
       } else if (typeof data.error === 'string') {
         // A refusal (another browser, or past the reveal window) says why and
         // where the code is, instead of leaving a blank page.
         setError(data.error)
+      } else {
+        setError('We could not load your gift card here. If you paid, the code is in the email we sent you.')
       }
     } catch {
       setError('We could not load your gift card. Check your email, or contact us with your payment reference.')
@@ -126,8 +133,15 @@ export default function GiftCardsView() {
       // reference into third-party reports, browser history and any shared
       // link. The id we already read stays in memory for the reveal call.
       window.history.replaceState(null, '', '/gifts')
-      setStage('pay')
+      // Its own screen, not the payment step: the page has just reloaded, so
+      // the amount and recipient are gone, and "Pay $100" with an empty
+      // recipient is what a buyer who had already paid was left looking at
+      // whenever the code could not be shown (and while it was loading).
+      setStage('returning')
       void reveal(pi)
+      // The page has just reloaded at its top, a screen and a half above
+      // this card on a phone: bring the buyer to what happened to their money.
+      window.requestAnimationFrame(() => document.getElementById('gift-stage')?.scrollIntoView({ block: 'start' }))
     }
   }, [reveal])
 
@@ -341,7 +355,7 @@ export default function GiftCardsView() {
           </div>
 
           {/* Right: Amount + Form */}
-          <div style={{ flex: '1 1 340px' }}>
+          <div id="gift-stage" style={{ flex: '1 1 340px', scrollMarginTop: 'calc(var(--nav-h, 56px) + 16px)' }}>
 
             {stage === 'form' ? (
               <>
@@ -558,6 +572,46 @@ export default function GiftCardsView() {
                   </p>
                 </div>
               </>
+            ) : stage === 'returning' ? (
+              /* ── Back from the payment page: checking, or saying what happened ── */
+              <div style={{
+                padding: '32px',
+                background: 'var(--card-bg)',
+                borderRadius: 'var(--r-xl)',
+                border: '1px solid var(--border)',
+                boxShadow: 'var(--shadow-lg)',
+              }}>
+                {revealing || !error ? (
+                  <p role="status" style={{ fontSize: 15, color: 'var(--text-secondary)', fontFamily: 'var(--font-dm-sans)', lineHeight: 1.6 }}>
+                    Checking your payment&hellip;
+                  </p>
+                ) : (
+                  <>
+                    <h2 style={{
+                      fontFamily: 'var(--font-dm-sans)', fontWeight: 800,
+                      fontSize: 20, color: 'var(--text-primary)',
+                      letterSpacing: '-0.02em', marginBottom: 8,
+                    }}>
+                      About your gift card
+                    </h2>
+                    <p role="alert" style={{ fontSize: 15, color: 'var(--text-primary)', fontFamily: 'var(--font-dm-sans)', lineHeight: 1.6 }}>
+                      {error}
+                    </p>
+                    <p style={{ fontSize: 14, color: 'var(--text-secondary)', fontFamily: 'var(--font-dm-sans)', lineHeight: 1.6, marginTop: 8 }}>
+                      Not sure what happened? Write to{' '}
+                      <a href="mailto:contact@mapltours.com" style={{ color: 'var(--text-primary)', fontWeight: 600, textDecoration: 'underline' }}>contact@mapltours.com</a>{' '}
+                      and a person replies within 24 hours.
+                    </p>
+                    <button
+                      onClick={() => { setStage('form'); setError(null) }}
+                      className="btn-outline"
+                      style={{ marginTop: 20, height: 44, padding: '0 24px', fontSize: 14, fontWeight: 600, borderRadius: 'var(--r-sm)' }}
+                    >
+                      Back to gift cards
+                    </button>
+                  </>
+                )}
+              </div>
             ) : stage === 'pay' ? (
               /* ── Payment ── */
               <div style={{
@@ -639,7 +693,7 @@ export default function GiftCardsView() {
                       {purchased.delivered
                         ? <>We&rsquo;ve emailed the ${purchased.amount} card to <strong style={{ color: 'var(--text-primary)' }}>{purchased.recipientEmail}</strong>.</>
                         : <>We&rsquo;re emailing the ${purchased.amount} card to <strong style={{ color: 'var(--text-primary)' }}>{purchased.recipientEmail}</strong> now.</>}
-                      {' '}Here is the code as well &mdash; write it down.
+                      {' '}Here is the code as well. Write it down.
                     </p>
 
                     {/* The code, shown on screen. If the recipient address was
@@ -684,7 +738,7 @@ export default function GiftCardsView() {
                     }}>
                       A copy is on its way to {purchaserEmail.trim() || 'your email'} too. If the
                       recipient&rsquo;s address above is wrong, reply to that email with this code
-                      and we&rsquo;ll send it on &mdash; nothing is lost.
+                      and we&rsquo;ll send it on. Nothing is lost.
                     </p>
                   </>
                 ) : revealing ? (

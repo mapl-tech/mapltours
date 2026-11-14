@@ -9,6 +9,7 @@ import { leadTimeCutoff, MIN_PICKUP_LEAD_MIN } from '@/lib/booking-window'
 import { getStoredAttribution } from '@/lib/attribution'
 import { trackBeginCheckout, trackCheckoutStep, trackCheckoutMissing, type CheckoutStep } from '@/lib/analytics'
 import { couponDiscountCents } from '@/lib/coupons'
+import { normalizeGiftCode } from '@/lib/gift-cards'
 import CodeField from '@/components/checkout/one-page/CodeField'
 import { useI18n } from '@/lib/i18n'
 import {
@@ -45,6 +46,11 @@ const FIELD_LABELS: Record<string, string> = {
   firstName: 'First name', lastName: 'Last name', email: 'Email', phone: 'Phone',
 }
 const AUTO_SAVE_DELAY_MS = 2500
+
+/** What makes two requests the same priced order: the ride, the claimed total and the codes. */
+function pricingKeyOf(p: Record<string, unknown>): string {
+  return orderKey({ items: p.items, amount: p.amount, gift: p.giftCode ?? '', coupon: p.couponCode ?? '' })
+}
 
 type Form = { firstName: string; lastName: string; email: string; phone: string; specialRequests: string }
 const EMPTY_FORM: Form = { firstName: '', lastName: '', email: '', phone: '', specialRequests: '' }
@@ -199,8 +205,11 @@ export default function OnePageTransfersCheckout() {
   // on the wire, and the booking a POST for a changed ride must supersede
   // (see components/checkout/one-page/intent-session.ts).
   const [session] = useState(() => createIntentSession<IntentResult>())
-  const pricingKey = orderKey({ items: body.items, amount: body.amount, gift: body.giftCode ?? '', coupon: body.couponCode ?? '' })
+  const pricingKey = pricingKeyOf(body)
   useEffect(() => { setServerGift(null); setServerCoupon(null); setServerDue(null); setServerError(null) }, [pricingKey])
+  // The order on the page right now, readable from a request still on the wire.
+  const livePricingKey = useRef(pricingKey)
+  useEffect(() => { livePricingKey.current = pricingKey }, [pricingKey])
 
   const runIntent = useCallback(async (payload: Record<string, unknown>): Promise<PostOutcome<IntentResult>> => {
     let data: unknown
@@ -217,6 +226,10 @@ export default function OnePageTransfersCheckout() {
     // Same tested reading of the answer as the tour page (readCheckoutAnswer).
     // Rides carry no reward, so there is no reward box to untick.
     const answer = readCheckoutAnswer(data, { confirmPath: '/transfers/confirm', shownCents: amountCents, shownTotal: finalTotal, rewardOnPage: false })
+    // Only an answer for the order still on the page changes the page (see
+    // the tour page): a quiet save still on the wire when a code is applied
+    // used to write the old order's figures over the new one.
+    if (pricingKeyOf(payload) === livePricingKey.current) {
     if (answer.dropGift) setGiftCard(null)
     if (answer.dropCoupon) setCoupon(null)
     if (answer.codeError) setCodeError(answer.codeError)
@@ -224,6 +237,7 @@ export default function OnePageTransfersCheckout() {
     if (answer.couponDiscount != null) setServerCoupon(answer.couponDiscount)
     if (answer.giftShortfall) setServerError('Your gift card no longer covers the whole amount. The card form below is ready for the rest.')
     if (answer.amountDue != null) setServerDue(answer.amountDue)
+    }
     const result = answer.result
     if ('clientSecret' in result && item) {
       trackBeginCheckout({
@@ -294,7 +308,9 @@ export default function OnePageTransfersCheckout() {
       if (res.status === 429 || (data.reason && data.reason !== 'not_found')) { setCodeError(data.message ?? 'That code could not be used.'); return }
       const g = await fetch('/api/gifts/validate', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code }) })
       const gd = await g.json()
-      if (!gd.valid) { setCodeError(data.message ?? gd.message ?? 'That code could not be used.'); return }
+      // A code shaped like a gift card gets the gift card's own answer (it
+      // says when a held card frees up); anything else, the coupon's.
+      if (!gd.valid) { setCodeError((normalizeGiftCode(code) ? gd.message : data.message) ?? gd.message ?? data.message ?? 'That code could not be used.'); return }
       setGiftCard({ code: gd.code, balanceCents: gd.balanceCents })
       setCodeInput(''); setMoreOpen(false)
     } catch {

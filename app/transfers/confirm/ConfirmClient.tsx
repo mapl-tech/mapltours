@@ -3,6 +3,7 @@
 import { useEffect } from 'react'
 import { useTransfersCart } from '@/lib/transfers-cart'
 import { trackPurchase, type AnalyticsItem } from '@/lib/analytics'
+import { firstTime } from '@/lib/once'
 
 /**
  * Clears the transfers cart after a successful confirmation redirect, and
@@ -22,9 +23,13 @@ export default function ConfirmClient({
 }) {
   const clearCart = useTransfersCart((s) => s.clearCart)
 
+  // Once per booking, not once per visit: a guest who pays, builds a second
+  // trip and comes back to this page (Back, or a phone reloading the tab)
+  // used to have the new cart emptied by the old confirmation.
   useEffect(() => {
+    if (bookingRef && !firstTime(`cart-cleared:${bookingRef}`)) return
     clearCart()
-  }, [clearCart])
+  }, [clearCart, bookingRef])
 
   useEffect(() => {
     if (!bookingRef || totalPaid == null) return

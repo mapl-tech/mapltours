@@ -823,6 +823,14 @@ h5, h6 { letter-spacing: -0.01em; }
   textarea.field-input {
     min-height: 250px !important;
   }
+  /* The 250px floor is for message forms (contact, partner), where the
+     message IS the form. On the one-page checkouts the box is an optional
+     note between the contact fields and payment, and the floor made it 250px
+     of scrolling on a phone in front of the pay button. They keep the 88px
+     their own markup asks for. */
+  .opc-wrap textarea.field-input {
+    min-height: 88px !important;
+  }
   .checkout-summary {
     max-width: 100% !important;
     position: relative !important;

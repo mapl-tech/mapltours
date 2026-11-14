@@ -14,6 +14,7 @@ import { useI18n } from '@/lib/i18n'
 import { useSaved } from '@/lib/supabase/saved'
 import { useAuth } from '@/lib/supabase/auth-context'
 import { createClient } from '@/lib/supabase/client'
+import { lockScroll } from '@/lib/scroll-lock'
 
 // One module-level client, don't recreate on every render.
 const supabase = createClient()
@@ -123,11 +124,11 @@ export default function TopNav({ onCartClick }: { onCartClick?: () => void }) {
       else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus() }
     }
     document.addEventListener('keydown', onKey)
-    const prev = document.body.style.overflow
-    document.body.style.overflow = 'hidden'
+    // A counted lock (lib/scroll-lock): safe whatever else holds the page still.
+    const unlock = lockScroll()
     return () => {
       document.removeEventListener('keydown', onKey)
-      document.body.style.overflow = prev
+      unlock()
     }
   }, [showMenu, showSearch])
 

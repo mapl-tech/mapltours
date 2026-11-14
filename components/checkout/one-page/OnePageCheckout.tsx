@@ -6,6 +6,7 @@ import Image from 'next/image'
 import { ArrowLeft, Award, CalendarDays, Leaf, MapPin, Users } from 'lucide-react'
 import { useCartStore, DAILY_HOUR_LIMIT, parseDurationHours } from '@/lib/cart'
 import { couponDiscountCents } from '@/lib/coupons'
+import { normalizeGiftCode } from '@/lib/gift-cards'
 import { priceTourCart } from '@/lib/checkout-pricing'
 import CodeField from './CodeField'
 import { tourPrice, perTravelerPrice, placeLabel, isZonePriced, zoneSells, type Experience } from '@/lib/experiences'
@@ -84,6 +85,11 @@ function guestsNote(e: Pick<Experience, 'pricing'>, guests: number): string {
 }
 const AUTO_SAVE_DELAY_MS = 2500
 
+/** What makes two requests the same priced order: the lines, the claimed total, the codes and the reward. */
+function pricingKeyOf(p: Record<string, unknown>): string {
+  return orderKey({ items: p.items, amount: p.amount, gift: p.giftCode ?? '', coupon: p.couponCode ?? '', reward: p.applyReward })
+}
+
 type Form = { firstName: string; lastName: string; email: string; phone: string; specialRequests: string }
 const EMPTY_FORM: Form = { firstName: '', lastName: '', email: '', phone: '', specialRequests: '' }
 
@@ -140,6 +146,11 @@ export default function OnePageCheckout() {
   )
   // Until the zone is known a tour priced by area shows its "from" price.
   const priceIsFrom = !!unsold
+  // The guest HAS said where they are staying, and the tour is not sold from
+  // there. Different from "not chosen yet": the payment card used to tell
+  // both "Your total is set once you choose where we pick you up", to a
+  // guest who had just chosen.
+  const notSoldHere = !!unsold && !!pickup && pickup !== OTHER_PLACE && (!needsArea || !!pickupArea)
   // The cart drawer prices from the zone the store holds; keep it in step.
   useEffect(() => { if (hydrated && pickupZone !== zone) setPickupZone(zone) }, [hydrated, zone, pickupZone, setPickupZone])
 
@@ -338,8 +349,12 @@ export default function OnePageCheckout() {
   // on the wire, and the booking a POST for a changed order must supersede
   // (see intent-session.ts).
   const [session] = useState(() => createIntentSession<IntentResult>())
-  const pricingKey = orderKey({ items: body.items, amount: body.amount, gift: body.giftCode ?? '', coupon: body.couponCode ?? '', reward: body.applyReward })
+  const pricingKey = pricingKeyOf(body)
   useEffect(() => { setServerGift(null); setServerCoupon(null); setServerDue(null); setServerError(null) }, [pricingKey])
+  // The order on the page right now, readable from a request that is still
+  // on the wire when the guest changes it.
+  const livePricingKey = useRef(pricingKey)
+  useEffect(() => { livePricingKey.current = pricingKey }, [pricingKey])
 
   const runIntent = useCallback(async (payload: Record<string, unknown>): Promise<PostOutcome<IntentResult>> => {
     let data: unknown
@@ -356,6 +371,15 @@ export default function OnePageCheckout() {
     // What the answer means is decided in one pure, tested place
     // (readCheckoutAnswer); this only applies it to the page.
     const answer = readCheckoutAnswer(data, { confirmPath: '/checkout/confirm', shownCents: amountCents, shownTotal: finalTotal, rewardOnPage: true })
+    // An answer is about the order that was SENT. The quiet save can still be
+    // on the wire when the guest applies a code or changes the party; its
+    // answer then carried the old order's figures onto the new one (a coupon
+    // chip reading "applied, −$0.00" and the full price on the Pay button
+    // until Pay was tapped), and a refusal of the old order's code would have
+    // dropped the new one. Only an answer for the order still on the page
+    // changes the page.
+    const current = pricingKeyOf(payload) === livePricingKey.current
+    if (current) {
     if (answer.dropGift) setGiftCard(null)
     if (answer.dropCoupon) setCoupon(null)
     if (answer.codeError) setCodeError(answer.codeError)
@@ -373,22 +397,23 @@ export default function OnePageCheckout() {
     // does. Say so before the card form appears under them.
     if (answer.giftShortfall) setServerError('Your gift card no longer covers the whole amount. The card form below is ready for the rest.')
     if (answer.amountDue != null) setServerDue(answer.amountDue)
+    }
     const result = answer.result
     if ('clientSecret' in result) {
       // Priced and ready without the reward the server refused: the notice
       // has done its job.
-      setRewardConflict(false)
+      if (current) setRewardConflict(false)
       // Counted once the server has priced the cart and an intent exists,
       // keyed on the booking id so a retry cannot count twice.
       trackBeginCheckout({
         key: result.bookingId,
         value: result.amountDue,
         currency: 'USD',
-        items: items.map((i) => ({ id: String(i.id), name: i.title, category: 'tour', price: tourPrice(i.pricing, i.travelers), quantity: 1 })),
+        items: items.map((i) => ({ id: String(i.id), name: i.title, category: 'tour', price: tourPrice(i.pricing, i.travelers, zone), quantity: 1 })),
       })
     }
     return answer
-  }, [items, finalTotal, amountCents])
+  }, [items, finalTotal, amountCents, zone])
 
   /**
    * One request per distinct order, shared by whoever asks first, one POST
@@ -465,7 +490,9 @@ export default function OnePageCheckout() {
       if (res.status === 429 || (data.reason && data.reason !== 'not_found')) { setCodeError(data.message ?? 'That code could not be used.'); return }
       const g = await fetch('/api/gifts/validate', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code }) })
       const gd = await g.json()
-      if (!gd.valid) { setCodeError(data.message ?? gd.message ?? 'That code could not be used.'); return }
+      // A code shaped like a gift card gets the gift card's own answer (it
+      // says when a held card frees up); anything else, the coupon's.
+      if (!gd.valid) { setCodeError((normalizeGiftCode(code) ? gd.message : data.message) ?? gd.message ?? data.message ?? 'That code could not be used.'); return }
       setGiftCard({ code: gd.code, balanceCents: gd.balanceCents })
       setCodeInput('')
     } catch {
@@ -685,7 +712,7 @@ export default function OnePageCheckout() {
             {/* ── 3. Payment ── */}
             <div ref={payCardRef}>
               <Card className="opc-pad opc-card-pay">
-                <SectionTitle step={3} title={t('Payment')} sub={priceIsFrom ? 'Your total is set once you choose where we pick you up. Nothing is charged until you press the button below.' : amountCents >= 50 ? `${formatUsd(finalTotal)} today. Nothing is charged until you press the button below.` : 'Nothing to charge today.'} />
+                <SectionTitle step={3} title={t('Payment')} sub={notSoldHere ? `${unsoldTitle} is not sold online from that pickup. Choose another pickup above, or write to contact@mapltours.com for a price.` : priceIsFrom ? 'Your total is set once you choose where we pick you up. Nothing is charged until you press the button below.' : amountCents >= 50 ? `${formatUsd(finalTotal)} today. Nothing is charged until you press the button below.` : 'Nothing to charge today.'} />
                 <DeferredPaymentPanel
                   amountCents={amountCents}
                   returnUrl="/checkout/confirm"
@@ -741,7 +768,13 @@ export default function OnePageCheckout() {
           </div>
           <button type="button" className="btn-primary" tabIndex={payInView ? -1 : 0}
             onClick={() => {
-              if (!validate()) return
+              // This bar shows only while the payment card is off screen, and
+              // the waiver box lives in that card. Running the whole Pay check
+              // here met a guest with a complete form with a red waiver error
+              // on a box they had not seen yet (and counted it as a blocked
+              // Pay). Check everything BUT the waiver; the Pay button checks it.
+              const missing = tourRules({ contact: form, pickup, tripDate, waiverAccepted: true }, zoneRule)
+              if (isDayOverLimit() || Object.keys(missing).length) { validate(); return }
               payCardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
             }}>
             Continue to payment

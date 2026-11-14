@@ -89,6 +89,9 @@ const APPEARANCE: StripeElementsOptions['appearance'] = {
   },
 }
 
+/** How long the card form may take to appear before the page says so and offers a reload. */
+const CARD_FORM_PATIENCE_MS = 12_000
+
 const usd = (cents: number) => (cents / 100).toLocaleString('en-US', { style: 'currency', currency: 'USD' })
 
 const FONTS: StripeElementsOptions['fonts'] = [
@@ -227,6 +230,15 @@ function PayForm({ amountCents, returnUrl, payLabel, validate, createIntent, onP
   const [error, setError] = useState<string | null>(null)
   const [walletReady, setWalletReady] = useState(false)
   const [cardReady, setCardReady] = useState(false)
+  // Stripe's script failed to load, or is taking far too long (a dropped
+  // connection, a blocker). Nothing retries it, and the page used to sit on
+  // "Loading secure card form…" with Pay disabled for good, saying nothing.
+  const [cardSlow, setCardSlow] = useState(false)
+  useEffect(() => {
+    if (cardReady) { setCardSlow(false); return }
+    const t = setTimeout(() => setCardSlow(true), CARD_FORM_PATIENCE_MS)
+    return () => clearTimeout(t)
+  }, [cardReady])
   const busyRef = useRef(false)
   // The total each wallet's sheet showed when it was opened (see
   // onWalletClick), by wallet: Link's window can stay open while the guest
@@ -388,10 +400,23 @@ function PayForm({ amountCents, returnUrl, payLabel, validate, createIntent, onP
       </div>
 
       <div style={{ minHeight: cardReady ? undefined : 180, position: 'relative' }}>
-        {!cardReady && (
+        {!cardReady && !cardSlow && (
           <p aria-live="polite" style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--font-dm-sans)', fontSize: 13, color: 'var(--text-tertiary)' }}>
             Loading secure card form…
           </p>
+        )}
+        {!cardReady && cardSlow && (
+          <div role="alert" style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12, padding: '0 8px', textAlign: 'center', fontFamily: 'var(--font-dm-sans)' }}>
+            <p style={{ fontSize: 15, lineHeight: 1.5, color: 'var(--text-primary)' }}>
+              The card form has not loaded. Check your connection, then reload the page.
+            </p>
+            <p style={{ fontSize: 13, lineHeight: 1.5, color: 'var(--text-secondary)' }}>
+              Your trip stays as it is. You will type your details again.
+            </p>
+            <button type="button" className="btn-outline" onClick={() => window.location.reload()} style={{ minHeight: 44, padding: '0 24px', fontSize: 15, fontWeight: 600 }}>
+              Reload the page
+            </button>
+          </div>
         )}
         <PaymentElement
           onReady={() => setCardReady(true)}
