@@ -1,6 +1,6 @@
 import type { BlogPost, BlogAuthor } from './blog'
 import { BLOG_IMAGES } from './blog-images'
-import { blogPrice, blogUnit, blogFrom } from './blog-prices'
+import { blogPrice, blogUnit, blogFrom, blogShare } from './blog-prices'
 
 // One real byline; the named writers these used to be were invented.
 const mapl: BlogAuthor = { name: 'MAPL Tours Jamaica', role: 'Editorial', initials: 'MT' }
@@ -91,21 +91,25 @@ export const POSTS_3: BlogPost[] = [
       { type: 'h2', text: 'What it costs to leave the resort for a day' },
       {
         type: 'p',
-        text: "This is the number the brochures leave out, and it decides whether a C-tier room is a bargain or a mistake. The excursion desk sells coach seats per person; most private tours are priced per party, pick you up at your lobby and include entry. Current prices, all with round-trip transport:",
+        text: "This is the number the brochures leave out, and it decides whether a C-tier room is a bargain or a mistake. The excursion desk sells coach seats per person; most private tours pick you up at your lobby and include entry, and several are one price for the whole party. Current prices, all with round-trip transport:",
       },
       {
         type: 'list',
         items: [
           `[Dunn's River Falls Climb](/experience/dunns-river-falls-climb): ${blogPrice(1, 1, 'montego_bay')} ${blogUnit(1)} picked up in Montego Bay (it is priced by where we pick you up, from ${blogPrice(1, 1)} in Ocho Rios), two hours at the falls and five to seven door to door from Montego Bay, park entry and guide included.`,
-          "[Bamboo Rafting on the Martha Brae](/experience/bamboo-rafting-on-the-martha-brae): $128 for up to three, ninety minutes at the river (an hour and a quarter on the raft) and about three hours door to door, the easiest morning off a Montego Bay resort.",
-          "[Rick's Cafe Cliff Diving and Sunset](/experience/ricks-cafe-cliff-diving-and-sunset): $255 for up to four, three hours at Rick's and six to seven door to door from Montego Bay, entry included.",
-          "[Rainforest Zipline Adventure](/experience/rainforest-zipline-adventure): $153 per person, about an hour at the park and four to five hours door to door from Montego Bay.",
-          "[Bob Marley Nine Mile Pilgrimage](/experience/bob-marley-nine-mile-pilgrimage): $459 for up to three, a full day in the St. Ann hills, entry included.",
+          // Every price and unit below is read from the rate card (lib/blog-prices):
+          // this list typed "$128 for up to three" for the raft for a day after
+          // it became $115 per person, and "$459 for up to three" after Nine
+          // Mile covered four.
+          `[Bamboo Rafting on the Martha Brae](/experience/bamboo-rafting-on-the-martha-brae): ${blogPrice(3, 1, 'montego_bay')} ${blogUnit(3)} picked up in Montego Bay, ninety minutes at the river (an hour and a quarter on the raft) and about three hours door to door, the easiest morning off a Montego Bay resort.`,
+          `[Rick's Cafe Cliff Diving and Sunset](/experience/ricks-cafe-cliff-diving-and-sunset): ${blogFrom(14)}, three hours at Rick's and six to seven door to door from Montego Bay, entry included.`,
+          `[Rainforest Zipline Adventure](/experience/rainforest-zipline-adventure): ${blogFrom(7)}, about an hour at the park and four to five hours door to door from Montego Bay.`,
+          `[Bob Marley Nine Mile Pilgrimage](/experience/bob-marley-nine-mile-pilgrimage): ${blogFrom(15)}, a full day in the St. Ann hills, entry included.`,
         ],
       },
       {
         type: 'p',
-        text: "Split three ways, the falls come to $117 a head and Nine Mile to $153; the fourth person at Rick's costs nothing extra. It is the part of the trip people talk about at home.",
+        text: `Split three ways, the falls come to ${blogShare(1, 3, 'montego_bay')} a head and Nine Mile to ${blogShare(15, 3)}; the fourth person at Rick's costs nothing extra. It is the part of the trip people talk about at home.`,
       },
       { type: 'h2', text: 'Which resorts are open after Hurricane Melissa' },
       {

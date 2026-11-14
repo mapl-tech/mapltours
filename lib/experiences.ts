@@ -199,8 +199,11 @@ export interface Experience {
   /**
    * The smallest party the operator takes, when it is more than one. Read by
    * the tour email so a party below it is never offered the tour. Checkout
-   * does not enforce it yet: how a solo guest is handled (pays for the
-   * minimum, or cannot book) waits on the operator.
+   * does not enforce it yet. Collin, Nov 14 2026: "for all excursions it has
+   * to be 2 or more person to book any excursions", so every tour will need
+   * 2, not only the ones marked here; whether a solo guest is refused or pays
+   * for two is the owner's decision (asked the same day), and nothing in
+   * checkout, the cart or the agent tools changes until he makes it.
    */
   minGuests?: number
   /**
@@ -635,7 +638,14 @@ const CATALOG: CatalogEntry[] = [
     destination: "Negril",
     parish: "Westmoreland",
     title: "Rasta Cultural ATV Safari",
-    pricing: { mode: 'group', baseRate: 150, tierMax: 3, extraPerPerson: 140 },
+    // Per person. Collin, Nov 14 2026, asked whether three people pay $150
+    // together or $150 each: "Yes each individual pays $150 per person", and
+    // the same from every pickup area ("No all areas or the same that I
+    // give"). His sheet: "$150, 1-3 per person, 4-more will pay $140 per
+    // person"; his first rate covers 1 to 4 (Nov 13 2026), so $140 each
+    // starts at 5. It had been sold as $150 for a party of up to 3: a couple
+    // paid $192 against the $300 he is owed.
+    pricing: { mode: 'per_person', baseRate: 150, tierMax: 4, extraPerPerson: 140 },
     duration: "3 hrs at the village",
     rating: 0,
     reviews: 0,
@@ -889,7 +899,12 @@ const CATALOG: CatalogEntry[] = [
     destination: "Montego Bay",
     parish: "St. James",
     title: "Jet Ski the Caribbean",
-    pricing: { mode: 'group', baseRate: 130, tierMax: 3, extraPerPerson: 100 },
+    // Per person, the same from every area (Collin, Nov 14 2026, with the
+    // Rasta ATV Safari above): "$130, 1-3 per person, 4-more will pay $100
+    // per person" on his sheet. The first rate covers 1 to 4, so five or more
+    // pay $100 each, which comes to less in total than four ($500 against
+    // $520). That is his two rates, not a slip.
+    pricing: { mode: 'per_person', baseRate: 130, tierMax: 4, extraPerPerson: 100 },
     duration: "1 hr at the beach",
     rating: 0,
     reviews: 0,
@@ -938,7 +953,11 @@ const CATALOG: CatalogEntry[] = [
     destination: "Montego Bay",
     parish: "St. James",
     title: "Parasailing Over the Bay",
-    pricing: { mode: 'group', baseRate: 120, tierMax: 3, extraPerPerson: 90 },
+    // Per person, the same from every area (Collin, Nov 14 2026, with the
+    // Rasta ATV Safari above): "$120, 1-3 per person, 4-more will pay $90 per
+    // person" on his sheet. The first rate covers 1 to 4, so five or more pay
+    // $90 each, less in total than four ($450 against $480), as on the jet ski.
+    pricing: { mode: 'per_person', baseRate: 120, tierMax: 4, extraPerPerson: 90 },
     duration: "1 hr on the boat",
     rating: 0,
     reviews: 0,
@@ -986,14 +1005,18 @@ const CATALOG: CatalogEntry[] = [
     id: 12,
     destination: "Montego Bay",
     parish: "St. James",
-    // Collin, Oct 5 2026: his clear kayak is a drone photoshoot on a river
-    // stream, not a reef paddle (his own page sells "Clear Kayak Drone
-    // Photoshoot"). The old reef-tour URL redirects here (next.config.mjs).
+    // Collin, Oct 5 2026: his clear kayak is a drone photoshoot, not a reef
+    // paddle (his own page sells "Clear Kayak Drone Photoshoot"). The old
+    // reef-tour URL redirects here (next.config.mjs). It was listed as a river
+    // shoot until he said where and what on Nov 14 2026: "Photoshoot is done
+    // in the sea 25 or more edit pictures 3 videos with song of choice". He
+    // has not said near which town, how long it takes or when the files
+    // arrive, so the listing does not either.
     title: "Clear Kayak Drone Photoshoot",
     // Collin, Nov 12 2026: "This price is per person". The sheet's "$180 1-3"
     // for the kayak is per head ($160 each from 4), not a party rate.
     pricing: { mode: 'per_person', baseRate: 180, tierMax: 4, extraPerPerson: 160 },
-    duration: "1 hr at the river",
+    duration: "1 hr on the water",
     rating: 0,
     reviews: 0,
     category: 'Water',
@@ -1004,7 +1027,7 @@ const CATALOG: CatalogEntry[] = [
     // A frame of its clip, turned on its side so the whole kayak fits 4:3.
     image: '/media/img/clear-kayak-lounge.jpg',
     video: VIDEOS.clearKayak,
-    about: "A photoshoot in a see-through kayak on a calm, clear river. You float while the drone shoots from above, so the pictures show you, the kayak and the water under it, and you go home with drone photos and video of your own.",
+    about: "A photoshoot in a see-through kayak on the sea. You float while the drone shoots from above, so the pictures show you, the kayak and the water under it, and you go home with 25 or more edited photos and three videos set to a song you choose.",
     ages: "6 and up",
     fitness: "Under-12s share the kayak with an adult. Light. You sit or lie back in the kayak on calm water, so no kayaking experience is needed, and life vests are provided.",
     meetingPoint: "Hotel pickup",
@@ -1012,7 +1035,7 @@ const CATALOG: CatalogEntry[] = [
     included: [
       "Round-trip private transport from your hotel",
       "Clear kayak and life vest",
-      "Drone photos and video of your shoot",
+      "25 or more edited photos and 3 videos, set to a song you choose",
     ],
     notIncluded: [
       "Food and drinks",
@@ -1029,7 +1052,7 @@ const CATALOG: CatalogEntry[] = [
       "Drones cannot fly in strong wind or heavy rain, so a shoot called off for weather is rescheduled free or refunded in full.",
       "Tell your guide if anyone in your party would rather not be filmed.",
     ],
-    description: "Float a crystal-clear kayak on a calm river while a drone shoots from above, and go home with photos and video of your own.",
+    description: "Float a crystal-clear kayak on the sea while a drone shoots from above, and go home with edited photos and videos of your own.",
     tags: ["Clear Kayak", "Photoshoot", "Drone"],
     kind: 'single',
     comments: [],

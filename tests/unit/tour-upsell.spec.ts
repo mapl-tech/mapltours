@@ -31,7 +31,7 @@ import {
   UPSELL_STAMP_FILTER,
   type UpsellBooking,
 } from '../../lib/tour-upsell'
-import { experiences, tourPrice } from '../../lib/experiences'
+import { experiences, tourPrice, type TourPricing } from '../../lib/experiences'
 
 const sent = vi.hoisted(() => ({ calls: [] as Array<Record<string, unknown>>, ok: true }))
 vi.mock('@/lib/email/send', () => ({
@@ -174,12 +174,19 @@ describe('who is travelling', () => {
 })
 
 describe('prices the rate card has not settled are never offered', () => {
+  // How three cards read until Nov 14 2026: "$150 for 1 to 3, then $140
+  // each". Kept as a literal so the rule stays tested now that the catalogue
+  // has no such card: that day Collin said the Rasta ATV Safari, the jet ski
+  // and parasailing are per person ("each individual pays $150 per person").
+  const READ_AS_GROUP: TourPricing = { mode: 'group', baseRate: 150, tierMax: 3, extraPerPerson: 140 }
+  const SETTLED_NOV_14 = ['Rasta Cultural ATV Safari', 'Jet Ski the Caribbean', 'Parasailing Over the Bay']
+
   test('the 3-to-4 step that triples a tour is caught, real tiers are not', () => {
-    // Still read as "$150 for 1 to 3, then $140 each": Collin has not said
-    // whether that is for the group or per person (asked again Nov 14 2026).
-    expect(priceJumps(tour('Rasta Cultural ATV Safari').pricing, 3)).toBe(false)
-    expect(priceJumps(tour('Rasta Cultural ATV Safari').pricing, 4)).toBe(true)
-    expect(priceJumps(tour('Rasta Cultural ATV Safari').pricing, 6)).toBe(true)
+    expect(priceJumps(READ_AS_GROUP, 3)).toBe(false)
+    expect(priceJumps(READ_AS_GROUP, 4)).toBe(true)
+    expect(priceJumps(READ_AS_GROUP, 6)).toBe(true)
+    // The same three tours per person: no size at which a head costs a quarter more than the last.
+    for (const title of SETTLED_NOV_14) expect(priceJumps(tour(title).pricing, 12), title).toBe(false)
     // Per person: one more person costs one more head, never a jump.
     expect(priceJumps(tour('ATV Off-Road Adventure').pricing, 6)).toBe(false)
     // Per person by pickup area (the raft since Nov 13 2026): the same.
@@ -201,9 +208,11 @@ describe('prices the rate card has not settled are never offered', () => {
   test('a tour whose rate card jumps at any size is offered to nobody, a couple included', () => {
     // The clear kayak, Nov 12 2026: its jump at 4 meant the "up to 3" rate was
     // really per person, so the couple's price was wrong too.
-    for (const title of ['Rasta Cultural ATV Safari', 'Jet Ski the Caribbean', 'Parasailing Over the Bay']) {
-      expect(rateCardUnsettled(tour(title).pricing), title).toBe(true)
-    }
+    expect(rateCardUnsettled(READ_AS_GROUP)).toBe(true)
+    // The three that read that way passed by themselves the day the catalogue
+    // said per person, and no card in the catalogue is unsettled now.
+    for (const title of SETTLED_NOV_14) expect(rateCardUnsettled(tour(title).pricing), title).toBe(false)
+    for (const e of experiences) expect(rateCardUnsettled(e.pricing), e.title).toBe(false)
     // The raft passed by itself the day Collin said "$100 per person" (Nov 13 2026).
     expect(rateCardUnsettled(tour('Bamboo Rafting on the Martha Brae').pricing)).toBe(false)
     expect(rateCardUnsettled(tour('ATV Off-Road Adventure').pricing)).toBe(false)

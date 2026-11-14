@@ -319,7 +319,9 @@ export function minAgeOf(ages: string | null | undefined): number | null {
  * confirmed those figures, so no tour is offered at a price that rests on one.
  * Real per-person and per-group pricing never trips it: a head never costs
  * more because the party grew. When the rate card is settled the guard passes
- * by itself.
+ * by itself, and since Nov 14 2026 no card in the catalogue trips it (the
+ * last three, the Rasta ATV Safari, the jet ski and parasailing, became per
+ * person that day).
  */
 export function priceJumps(pricing: TourPricing, party: number): boolean {
   for (let n = 2; n <= party; n++) {

@@ -775,3 +775,56 @@ describe('POST /api/checkout: a tour priced per person by where the guest is sta
     expect(db.intents.size).toBe(0)
   })
 })
+
+describe('POST /api/checkout: the Rasta ATV Safari, the jet ski and parasailing, per person (Nov 14 2026)', () => {
+  // Tours 5, 10 and 11. Until now each was sold at its "1 to 3" rate for the
+  // party: a couple paid $192, $166 and $153 against the $300, $260 and $240
+  // Collin is owed. Collin, Nov 14 2026: "Yes each individual pays $150 per
+  // person", the same from every pickup area.
+  const one = (id: number, travelers: number) => [{ id, title: 'x', destination: 'x', travelers, date: DATE, price: 0 }]
+  const at = (pickup: string, extra: Record<string, unknown> = {}) => ({ ...customer, pickup, ...extra })
+
+  it.each([
+    [5, 1, 192, 150],
+    [5, 2, 382, 300],
+    [5, 4, 764, 600],
+    [5, 5, 892, 700],
+    [10, 2, 332, 260],
+    [10, 4, 662, 520],
+    [10, 5, 637, 500],
+    [11, 2, 306, 240],
+    [11, 4, 612, 480],
+    [11, 5, 573, 450],
+  ])('tour %i for %i guests is charged $%i, of which Collin is owed $%i', async (id, travelers, total, owed) => {
+    expect(priceTourCart([{ id, travelers, date: DATE }], {}, {}).total).toBe(total)
+    const res = await post({ amount: total, items: one(id, travelers), customer: at('Sandals Royal Caribbean, Montego Bay'), waiverAccepted: true })
+    const data = await res.json()
+    expect(res.status).toBe(200)
+    expect(intentOf(data.bookingId).amount).toBe(total * 100)
+    const row = bookingRow(data.bookingId)
+    expect(Number(row.subtotal)).toBe(owed)
+    expect(Number(row.total_paid)).toBe(total)
+    expect(Number(row.subtotal) + Number(row.booking_fee)).toBe(total)
+  })
+
+  it.each([
+    [5, 192],
+    [10, 166],
+    [11, 153],
+  ])('tour %i: the old price for a couple, $%i for the party, is a mismatch and nothing is created', async (id, old) => {
+    const res = await post({ amount: old, items: one(id, 2), customer: at('Sandals Royal Caribbean, Montego Bay'), waiverAccepted: true })
+    expect(res.status).toBe(400)
+    expect((await res.json()).error).toMatch(/mismatch/i)
+    expect(db.tables.bookings ?? []).toHaveLength(0)
+    expect(db.intents.size).toBe(0)
+  })
+
+  it('is one price per guest wherever the pickup is: none of the three is priced by area', async () => {
+    const negril = await post({ amount: 382, items: one(5, 2), customer: at('Sandals Negril Beach Resort'), waiverAccepted: true })
+    expect(negril.status).toBe(200)
+    expect(intentOf((await negril.json()).bookingId).amount).toBe(38200)
+    const kingston = await post({ amount: 306, items: one(11, 2), customer: at('Spanish Court Hotel, Kingston', { email: 'second@example.com' }), waiverAccepted: true })
+    expect(kingston.status).toBe(200)
+    expect(intentOf((await kingston.json()).bookingId).amount).toBe(30600)
+  })
+})

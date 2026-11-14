@@ -35,6 +35,16 @@ export function blogUnit(id: number): string {
   return `for up to ${WORDS[p.tierMax] ?? String(p.tierMax)} people`
 }
 
+/**
+ * "$119": what each guest pays when a party of this size splits the tour's
+ * price, rounded up to the dollar so a post never says less than the share.
+ * A post typed "$117 a head" for the falls split three ways; that was $351,
+ * the price before the falls were priced by pickup area.
+ */
+export function blogShare(id: number, party: number, zone?: TourZone): string {
+  return `$${Math.ceil(tourPrice(tour(id).pricing, party, zone) / party)}`
+}
+
 /** "from $115 per person", "$255 for up to four people": the headline price and its unit, a "from" when it depends on the pickup area. */
 export function blogFrom(id: number): string {
   const e = tour(id)

@@ -1,6 +1,6 @@
 import type { BlogPost, BlogAuthor } from './blog'
 import { BLOG_IMAGES } from './blog-images'
-import { blogPrice } from './blog-prices'
+import { blogPrice, blogFrom } from './blog-prices'
 
 // One real byline; the named writers these used to be were invented.
 const mapl: BlogAuthor = { name: 'MAPL Tours Jamaica', role: 'Editorial', initials: 'MT' }
@@ -444,7 +444,7 @@ export const POSTS_5: BlogPost[] = [
       },
       {
         type: 'p',
-        text: "The museum is the Kingston half of the story. The other half is [Nine Mile](/blog/nine-mile-marley-pilgrimage), the village in the St. Ann hills where Bob was born and is buried, and where the feeling is completely different: no platinum records, just the cabin, the stone pillow and the family. Kingston is where he became Bob. Nine Mile is where he was Nesta. We run the Nine Mile day out of the north coast, [a full day for $459 for up to three](/experience/bob-marley-nine-mile-pilgrimage), and if you are doing both, do them on separate days. No problem.",
+        text: `The museum is the Kingston half of the story. The other half is [Nine Mile](/blog/nine-mile-marley-pilgrimage), the village in the St. Ann hills where Bob was born and is buried, and where the feeling is completely different: no platinum records, just the cabin, the stone pillow and the family. Kingston is where he became Bob. Nine Mile is where he was Nesta. We run the Nine Mile day out of the north coast, [a full day for ${blogFrom(15)}](/experience/bob-marley-nine-mile-pilgrimage), and if you are doing both, do them on separate days. No problem.`,
       },
     ],
     relatedSlugs: ['nine-mile-marley-pilgrimage', 'kingston-culture-guide'],
@@ -537,7 +537,7 @@ export const POSTS_5: BlogPost[] = [
       },
       {
         type: 'p',
-        text: "MAPL Tours Jamaica runs this one ourselves. [The Bob Marley Nine Mile Pilgrimage](/experience/bob-marley-nine-mile-pilgrimage) is a full day, $459 for up to three people rather than per head, and it includes round-trip private transport from your hotel, Nine Mile entry, a village guide and bottled water for the drive. Your driver picks you up at the hotel, so the mountain road is somebody else's problem. Flying into Montego Bay? [Book your airport transfer](/transfers) with us too, and the same team looks after both ends of the trip. No problem.",
+        text: `MAPL Tours Jamaica runs this one ourselves. [The Bob Marley Nine Mile Pilgrimage](/experience/bob-marley-nine-mile-pilgrimage) is a full day, ${blogFrom(15)} rather than per head, and it includes round-trip private transport from your hotel, Nine Mile entry, a village guide and bottled water for the drive. Your driver picks you up at the hotel, so the mountain road is somebody else's problem. Flying into Montego Bay? [Book your airport transfer](/transfers) with us too, and the same team looks after both ends of the trip. No problem.`,
       },
       {
         type: 'faq',
@@ -663,7 +663,7 @@ export const POSTS_5: BlogPost[] = [
       },
       {
         type: 'p',
-        text: "MAPL Tours Jamaica does not run dive boats; we leave that to the shops above. What we do is the rest of the trip. For non-divers in Montego Bay, [a clear-kayak photoshoot](/experience/clear-kayak-drone-photoshoot) on a calm river fills the hours while you dive, and in Negril [the Rick's Cafe sunset](/experience/ricks-cafe-cliff-diving-and-sunset) is the right end to a two-tank morning. And when you land at Montego Bay with a bag full of gear, [book a private airport transfer](/transfers): one flat price per vehicle, and your driver picks you up at arrivals. No problem.",
+        text: "MAPL Tours Jamaica does not run dive boats; we leave that to the shops above. What we do is the rest of the trip. For non-divers in Montego Bay, [a clear-kayak photoshoot](/experience/clear-kayak-drone-photoshoot) on the sea fills the hours while you dive, and in Negril [the Rick's Cafe sunset](/experience/ricks-cafe-cliff-diving-and-sunset) is the right end to a two-tank morning. And when you land at Montego Bay with a bag full of gear, [book a private airport transfer](/transfers): one flat price per vehicle, and your driver picks you up at arrivals. No problem.",
       },
       {
         type: 'faq',
@@ -694,7 +694,7 @@ export const POSTS_5: BlogPost[] = [
           },
           {
             q: 'What can non-divers do while I dive?',
-            a: "Every region has snorkel boats, and in Montego Bay [a clear-kayak photoshoot](/experience/clear-kayak-drone-photoshoot) on a calm river is an easy hour on the water. See [the full catalogue](/explore) for the rest.",
+            a: "Every region has snorkel boats, and in Montego Bay [a clear-kayak photoshoot](/experience/clear-kayak-drone-photoshoot) is an easy hour on the water. See [the full catalogue](/explore) for the rest.",
           },
         ],
       },

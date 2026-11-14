@@ -5,6 +5,17 @@
  */
 
 import { TRANSFER_FAQS } from './airport-transfers-content'
+import { experiences } from './experiences'
+
+/**
+ * "4", or "3 or 4": the party sizes one price covers on the tours priced for
+ * the group, read from the rate cards. The answer typed "usually up to 3 or 4
+ * guests" and no card covered three any longer.
+ */
+const groupLimits = Array.from(new Set(experiences.filter((e) => e.pricing.mode === 'group').map((e) => e.pricing.tierMax))).sort((a, b) => a - b)
+export const GROUP_PARTY_LIMITS = groupLimits.length > 1
+  ? `${groupLimits.slice(0, -1).join(', ')} or ${groupLimits[groupLimits.length - 1]}`
+  : String(groupLimits[0])
 
 export interface HelpFaq {
   q: string
@@ -34,7 +45,7 @@ export const HELP_CATEGORIES: HelpCategory[] = [
       },
       {
         q: 'Can I book for a group?',
-        a: 'Yes. Every tour is private. Some are priced for your whole party, usually up to 3 or 4 guests, with a per-person rate above that; the rest are priced per person. Some are also priced by where we pick you up. Each tour\'s page says which. Set your guest count at checkout and the price updates. For larger groups, email us and we\'ll arrange a second vehicle.',
+        a: `Yes. Every tour is private. Some are priced for your whole party, up to ${GROUP_PARTY_LIMITS} guests, with a per-person rate above that; the rest are priced per person. Some are also priced by where we pick you up. Each tour's page says which. Set your guest count at checkout and the price updates. For larger groups, email us and we'll arrange a second vehicle.`,
       },
       {
         q: 'How far in advance should I book?',
