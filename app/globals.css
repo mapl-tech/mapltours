@@ -4409,6 +4409,152 @@ button.cal-ev:hover { background: #fff; border-color: var(--cal-edge); }
   .adm-btn:active:not(:disabled):not([aria-disabled="true"]) { transform: none; }
 }
 
+/* ═══════════════════════════════════════════════════════════════════════════
+   @mentions (Nov 15 2026): tags in comments, the people list while typing,
+   the comment a link lands on, the nav badge, the profile's Mentions list.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+:root {
+  --mention-pop-bg: #1D1C1A;      /* the people list over the dark comments panel and sheet */
+  --mention-wash: rgba(214, 187, 99, 0.16);  /* the active option, the viewer's own tag, the landed comment */
+  --mention-new-bg: #FFFBF0;      /* an unread row on the profile (warm white) */
+  --switch-off: #76726A;          /* switch track off: 4.79:1 against a white card */
+  --error-on-dark: #FF9B85;       /* an error line on the dark panels: 9.1:1 */
+}
+
+/* A tag in a comment. The only gold text in a comment, so it reads as a tag.
+   --gold-warm on the reel panel's #141312 is 10:1; --gold-text on white 8.7:1. */
+.mention { color: var(--gold-warm); font-weight: 600; }
+.mention-light { color: var(--gold-text); font-weight: 700; }
+/* A tag of the person reading: the same colour on a soft wash. */
+.mention-me { background: var(--mention-wash); border-radius: 4px; padding: 0 3px; }
+.mention-light.mention-me { background: rgba(201, 169, 78, 0.18); }
+
+/* The people list. It opens upward from the comment box, inside the box's
+   own row, so it never runs past the panel or the phone sheet. */
+.mention-pop {
+  position: absolute; left: 12px; right: 12px; bottom: calc(100% + 8px); z-index: 5;
+  background: var(--mention-pop-bg);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 14px;
+  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.5);
+  padding: 6px;
+  max-height: min(296px, 42dvh);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  animation: mentionPopIn 0.14s ease-out;
+}
+@keyframes mentionPopIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+/* On the wide desktop panel, a menu under the text box rather than a 900px bar. */
+@media (min-width: 768px) {
+  .mention-pop { left: 40px; right: auto; width: min(380px, calc(100% - 40px)); }
+}
+.mention-list { list-style: none; margin: 0; padding: 0; }
+.mention-opt {
+  display: flex; align-items: center; gap: 10px;
+  min-height: 48px; padding: 8px 10px; border-radius: 10px;
+  cursor: pointer; color: #fff; font-family: var(--font-dm-sans);
+  -webkit-tap-highlight-color: transparent;
+}
+.mention-opt[aria-selected="true"] {
+  background: var(--mention-wash);
+  box-shadow: inset 0 0 0 1px rgba(214, 187, 99, 0.5);
+}
+.mention-opt-text { display: flex; flex-direction: column; min-width: 0; }
+.mention-opt-label { font-size: 15px; font-weight: 600; line-height: 1.3; color: #fff; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mention-opt-detail { font-size: 12.5px; line-height: 1.3; color: rgba(255, 255, 255, 0.74); }
+.mention-pop-note { margin: 0; padding: 10px 12px; font: 400 13.5px/1.45 var(--font-dm-sans); color: rgba(255, 255, 255, 0.8); }
+
+/* The comment a mention link lands on: focused (ring) and washed gold for a
+   moment. The wash is a layer behind the content that only fades its
+   opacity (compositor work, nothing repainted), and reaches 6px past the
+   text without moving anything. */
+.comment-item { border-radius: 10px; position: relative; isolation: isolate; }
+.comment-item:focus { outline: none; }
+.comment-item:focus-visible { outline: 2px solid var(--gold-warm) !important; outline-offset: 6px; border-radius: 10px; }
+.comment-flash::before {
+  content: ''; position: absolute; inset: -6px; z-index: -1; border-radius: 16px;
+  background: var(--mention-wash); pointer-events: none;
+  animation: commentFlash 2.6s ease-out forwards;
+}
+@keyframes commentFlash { 0%, 60% { opacity: 1; } 100% { opacity: 0; } }
+/* Like and Reply under a comment: a 44x44 hit area drawn by a layer, so the
+   row keeps its height. It reaches 10px up (into the text's own margin) and
+   18px down (into the 22px gap before the next comment); the two sit 26px
+   apart so their areas keep at least 8px between them. */
+.comment-action { position: relative; }
+.comment-action::after { content: ''; position: absolute; top: -10px; bottom: -18px; left: 50%; width: max(100%, 44px); transform: translateX(-50%); }
+.comment-notice { margin: 0 0 14px; padding: 10px 12px; border-radius: 10px; background: rgba(255, 255, 255, 0.06); color: rgba(255, 255, 255, 0.86); font: 400 13.5px/1.45 var(--font-dm-sans); }
+.comment-error { margin: 0; color: var(--error-on-dark); font: 500 13px/1.45 var(--font-dm-sans); }
+
+/* The nav: the count of new mentions on the account avatar and the phone's
+   Menu button, and beside Profile in both menus. Gold ink on gold is 8:1. */
+.nav-badge {
+  position: absolute; top: -5px; right: -7px;
+  min-width: 18px; height: 18px; padding: 0 5px;
+  border-radius: 9999px; background: var(--gold); color: var(--gold-ink);
+  font: 700 11px/18px var(--font-dm-sans); text-align: center;
+  font-variant-numeric: tabular-nums;
+  box-shadow: 0 0 0 2px #fff; pointer-events: none;
+}
+.nav-badge.on-dark { box-shadow: 0 0 0 2px #141312; }
+.nav-badge-menu { top: 3px; right: 1px; }
+.nav-count {
+  min-width: 24px; height: 22px; padding: 0 7px; flex-shrink: 0;
+  border-radius: 9999px; background: var(--gold); color: var(--gold-ink);
+  font: 700 12px/22px var(--font-dm-sans); text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+/* The profile's Mentions list. */
+.pf-mentions { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.pf-mention {
+  display: flex; align-items: flex-start; gap: 12px;
+  padding: 14px 16px; min-height: 44px;
+  background: var(--card-bg); border: 1px solid var(--border); border-radius: var(--r-lg);
+  box-shadow: var(--shadow-xs);
+  text-decoration: none; color: var(--text-primary);
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+/* The unread border is 3.5:1 against the page, so "new" reads from it and the dot even without the wash. */
+.pf-mention.is-new { background: var(--mention-new-bg); border-color: rgba(90, 74, 22, 0.65); }
+/* With three or more new, the wash would mark every row; the dot and border do it. */
+.pf-mentions.many-new .pf-mention.is-new { background: var(--card-bg); }
+@media (hover: hover) { .pf-mention:hover, .pf-mentions.many-new .pf-mention.is-new:hover { background: var(--surface); } }
+.pf-mention-body { display: flex; flex-direction: column; gap: 4px; min-width: 0; flex: 1; }
+.pf-mention-line { font: 400 14.5px/1.45 var(--font-dm-sans); color: var(--text-secondary); overflow-wrap: anywhere; }
+.pf-mention-line strong { font-weight: 700; color: var(--text-primary); }
+.pf-mention-quote {
+  font: 400 14.5px/1.5 var(--font-dm-sans); color: var(--text-primary);
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+  overflow-wrap: anywhere;
+}
+.pf-mention-meta { font: 500 12.5px/1.4 var(--font-dm-sans); color: var(--text-tertiary); }
+.pf-mention-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--gold-text); flex-shrink: 0; margin-top: 6px; }
+.pf-mention-empty { display: flex; align-items: flex-start; gap: 12px; }
+
+/* The email switch: a 44px target around a 52x32 track. */
+.pf-switch-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.pf-switch { position: relative; width: 56px; height: 44px; flex-shrink: 0; border: none; padding: 0; background: none; cursor: pointer; border-radius: 9999px; }
+.pf-switch::before {
+  content: ''; position: absolute; left: 2px; right: 2px; top: 6px; bottom: 6px;
+  border-radius: 9999px; background: var(--switch-off); transition: background-color 0.15s ease;
+}
+.pf-switch[aria-checked="true"]::before { background: var(--gold-text); }
+.pf-switch-knob {
+  position: absolute; top: 10px; left: 6px; width: 24px; height: 24px; border-radius: 50%;
+  background: #fff; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3); transition: transform 0.15s ease;
+}
+.pf-switch[aria-checked="true"] .pf-switch-knob { transform: translateX(20px); }
+.pf-switch:disabled { cursor: progress; }
+
+@media (prefers-reduced-motion: reduce) {
+  .mention-pop { animation: none; }
+  .comment-flash::before { animation: none; }
+  .pf-switch::before, .pf-switch-knob, .pf-mention { transition: none; }
+}
+
+
 /* ── The cookie question (components/ConsentPrompt) ─────────────────────────
    Asked first of visitors in the UK, the EU and the EEA; opened by anyone
    from "Cookie Preferences". A card at the TOP of the page, under the
@@ -4491,3 +4637,4 @@ button.cal-ev:hover { background: #fff; border-color: var(--cal-edge); }
 .footer-cookie-choices { background: none; border: 0; padding: 0; margin: 0; font: inherit; color: var(--text-on-dark-3); cursor: pointer; transition: color 0.15s ease; }
 @media (hover: hover) { .footer-cookie-choices:hover { color: var(--text-on-dark-2); } }
 @media (pointer: coarse) { .footer-cookie-choices { display: inline-flex; align-items: center; min-height: 44px; } }
+

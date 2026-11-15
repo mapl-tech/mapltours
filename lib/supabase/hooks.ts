@@ -6,6 +6,7 @@ import { useAuth } from './auth-context'
 import { useSwrCache } from '@/lib/swr-cache'
 import { useSaved } from './saved'
 import { guestLabel, normalizeSocialHandle } from '@/lib/social-handle'
+import { extractMentionIds, type MentionPerson } from '@/lib/mentions'
 import type { Comment } from '@/lib/experiences'
 
 const supabase = createClient()
@@ -142,6 +143,9 @@ export interface SupabaseComment {
   /** Normalized social handle (migration 026); null when unset or before the
    *  migration has run in this environment. */
   user_handle: string | null
+  /** How each person tagged in `text` is shown (migration 039). Kept with
+   *  the comment so cached threads render their tags on first paint. */
+  mention_people?: Record<string, MentionPerson>
 }
 
 export interface DisplayComment extends Comment {
@@ -157,22 +161,29 @@ export interface DisplayComment extends Comment {
   isHandle?: boolean
 }
 
-const COMMENTS_LIMIT = 20
+/** The newest comments a thread shows. A linked comment older than these is fetched on its own. */
+const COMMENTS_LIMIT = 50
 
-export function useComments(experienceId: number) {
+type CommentRow = { id: string; experience_id: number; user_id: string; text: string; created_at: string; parent_id: string | null }
+
+export function useComments(experienceId: number, focusCommentId?: string | null) {
   const { user } = useAuth()
   const [replyingTo, setReplyingTo] = useState<{ id: string; user: string } | null>(null)
+  const [postError, setPostError] = useState<string | null>(null)
+  const focusId = focusCommentId && isUuid(focusCommentId) ? focusCommentId.toLowerCase() : null
 
   // Cached per-experience so revisiting a reel paints comments from last load
   // while a fresh fetch resolves in the background.
   const { data, loading, mutate, refresh } = useSwrCache<SupabaseComment[]>(
-    `comments:${experienceId}`,
+    `comments:${experienceId}${focusId ? `:${focusId}` : ''}`,
     async () => {
+      // The NEWEST comments, shown oldest first. (Ascending with a limit
+      // showed the first 20 forever and hid every comment after them.)
       let { data: rows, error: commentsErr } = await supabase
         .from('comments')
         .select('id, experience_id, user_id, text, created_at, parent_id')
         .eq('experience_id', experienceId)
-        .order('created_at', { ascending: true })
+        .order('created_at', { ascending: false })
         .limit(COMMENTS_LIMIT)
 
       // Graceful degradation: if the reply-support migration (002, which
@@ -184,7 +195,7 @@ export function useComments(experienceId: number) {
           .from('comments')
           .select('id, experience_id, user_id, text, created_at')
           .eq('experience_id', experienceId)
-          .order('created_at', { ascending: true })
+          .order('created_at', { ascending: false })
           .limit(COMMENTS_LIMIT)
         rows = retry.data ? retry.data.map((r) => ({ ...r, parent_id: null })) : null
         commentsErr = retry.error
@@ -194,12 +205,40 @@ export function useComments(experienceId: number) {
         console.error('[comments] select failed', commentsErr)
         throw commentsErr
       }
+      rows = (rows ?? []).slice().reverse()
+
+      // A comment linked from a mention (email or profile) must be on the
+      // page even when it is older than the newest 50: fetch it, and its
+      // parent when it is a reply, and fold them in.
+      if (focusId && !rows.some((r) => r.id === focusId)) {
+        const { data: focused } = await supabase
+          .from('comments')
+          .select('id, experience_id, user_id, text, created_at, parent_id')
+          .eq('id', focusId)
+          .eq('experience_id', experienceId)
+          .maybeSingle()
+        if (focused) {
+          const extra: CommentRow[] = [focused as CommentRow]
+          const parentId = (focused as CommentRow).parent_id
+          if (parentId && !rows.some((r) => r.id === parentId)) {
+            const { data: parent } = await supabase
+              .from('comments')
+              .select('id, experience_id, user_id, text, created_at, parent_id')
+              .eq('id', parentId)
+              .maybeSingle()
+            if (parent) extra.push(parent as CommentRow)
+          }
+          rows = [...rows, ...extra].sort((a, b) => a.created_at.localeCompare(b.created_at))
+        }
+      }
       if (!rows || rows.length === 0) return []
 
-      // Look up display info. The users table currently has RLS that only
-      // allows reading your own row, so for other users this returns nothing
-      //, we degrade gracefully to 'Anonymous' rather than crashing.
-      const userIds = Array.from(new Set(rows.map((c) => c.user_id)))
+      // Look up display info for authors AND everyone tagged in these
+      // comments. The users table is publicly readable (display columns
+      // only); if the lookup fails, names fall back to 'Anonymous' and tags
+      // to '@someone' rather than failing the thread.
+      const taggedIds = rows.flatMap((c) => extractMentionIds(c.text))
+      const userIds = Array.from(new Set([...rows.map((c) => c.user_id), ...taggedIds]))
       // social_handle arrived in migration 026; environments where it has not
       // run yet must keep rendering names, so retry with the legacy columns
       // rather than letting the whole lookup fail to Anonymous.
@@ -217,7 +256,18 @@ export function useComments(experienceId: number) {
 
       type ProfileRow = { id: string; name: string | null; avatar_url: string | null; social_handle?: string | null }
       const userMap = new Map((usersRes.data as ProfileRow[] | null)?.map((u) => [u.id, u]) || [])
+      const labels = new Map<string, MentionPerson>()
+      userMap.forEach((u) => {
+        const l = guestLabel(u.social_handle ?? null, u.name, '')
+        if (l.text) labels.set(u.id, { label: l.text, isHandle: l.isHandle })
+      })
       return rows.map((c) => ({
+        mention_people: Object.fromEntries(
+          extractMentionIds(c.text).flatMap((id) => {
+            const p = labels.get(id)
+            return p ? [[id, p] as const] : []
+          }),
+        ),
         ...c,
         user_name: userMap.get(c.user_id)?.name || 'Anonymous',
         user_avatar: userMap.get(c.user_id)?.avatar_url || null,
@@ -229,9 +279,15 @@ export function useComments(experienceId: number) {
   // instead of a fresh [] every render while data is null.
   const comments = useMemo(() => data ?? [], [data])
 
-  const addComment = useCallback(async (text: string, parentId?: string) => {
+  /**
+   * Post a comment. `text` is the STORED form: tags already encoded as
+   * `<@id>` (see encodeMentions). `known` labels the people tagged, so the
+   * optimistic comment shows "@Ana" at once instead of "@someone".
+   */
+  const addComment = useCallback(async (text: string, parentId?: string, known?: Record<string, MentionPerson>) => {
     if (!user) return null
     if (!text.trim()) return null
+    setPostError(null)
 
     // Ensure the user has a row in public.users (required by the comments.
     // user_id foreign key). Idempotent upsert, safe to call every time.
@@ -266,6 +322,7 @@ export function useComments(experienceId: number) {
       user_name: user.user_metadata?.full_name || user.user_metadata?.name || 'You',
       user_avatar: user.user_metadata?.avatar_url || null,
       user_handle: metaHandle,
+      mention_people: known ?? {},
     }
     mutate((prev) => [...(prev ?? []), optimistic])
     setReplyingTo(null)
@@ -307,18 +364,36 @@ export function useComments(experienceId: number) {
       // explanation). The caller keeps the user's text so they can retry.
       console.error('[comments.hook] insert failed, rolling back optimistic row', error)
       mutate((prev) => (prev ?? []).filter((c) => c.id !== tempId))
+      // 22023: migration 039 found nothing left once tags naming nobody were removed.
+      setPostError(error?.code === '22023'
+        ? 'Add a few words with your tag, then post.'
+        : 'Your comment did not post. Check your connection and try again.')
       return null
     }
 
     // ── Reconcile ─────────────────────────────────────────────────────
     // Replace the optimistic row with the real one (same content, real id).
+    // The stored text is authoritative: migration 039 removes any tag that
+    // is not a real one, so render what was stored, not what was typed.
     const newComment: SupabaseComment = {
       ...data,
       user_name: optimistic.user_name,
       user_avatar: optimistic.user_avatar,
       user_handle: optimistic.user_handle,
+      mention_people: optimistic.mention_people,
     }
     mutate((prev) => (prev ?? []).map((c) => (c.id === tempId ? newComment : c)))
+    // Email the people tagged. keepalive lets the request finish if the
+    // guest leaves at once; anything it misses, the ten-minute sweep sends.
+    if (extractMentionIds(data.text).length) {
+      fetch('/api/mentions/notify', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ commentId: data.id }),
+        keepalive: true,
+        credentials: 'same-origin',
+      }).catch(() => {})
+    }
     // Also re-fetch so anything server-derived (e.g. user name via join) lands.
     refresh().catch(() => {})
     return newComment
@@ -387,10 +462,19 @@ export function useComments(experienceId: number) {
     return [...displayComments, ...hardcoded]
   }
 
+  // Labels for every tag in the loaded comments (from each comment's own
+  // mention_people, so a cached thread renders its tags on first paint).
+  const people = useMemo(() => {
+    const map = new Map<string, MentionPerson>()
+    for (const c of comments) for (const [id, p] of Object.entries(c.mention_people ?? {})) map.set(id, p)
+    return map
+  }, [comments])
+
   return {
     comments, loading, addComment, deleteComment,
     toDisplayComments, isLoggedIn: !!user, user,
     replyingTo, setReplyingTo,
+    people, postError, clearPostError: () => setPostError(null),
   }
 }
 

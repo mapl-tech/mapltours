@@ -13,6 +13,7 @@ import LanguageSwitcher from './LanguageSwitcher'
 import { useI18n } from '@/lib/i18n'
 import { useSaved } from '@/lib/supabase/saved'
 import { useAuth } from '@/lib/supabase/auth-context'
+import { useUnreadMentionCount } from '@/lib/supabase/mentions'
 import { createClient } from '@/lib/supabase/client'
 import { lockScroll } from '@/lib/scroll-lock'
 
@@ -51,6 +52,11 @@ export default function TopNav({ onCartClick }: { onCartClick?: () => void }) {
   const { t } = useI18n()
   const { user } = useAuth()
   const { savedIds } = useSaved()
+  // Comments where someone @tagged this guest and they have not looked yet.
+  const unreadMentions = useUnreadMentionCount()
+  const mentionsWord = `${unreadMentions} new mention${unreadMentions === 1 ? '' : 's'}`
+  const badgeText = unreadMentions > 9 ? '9+' : String(unreadMentions)
+  const profileHref = unreadMentions > 0 ? '/profile#mentions' : '/profile'
   const [showProfileMenu, setShowProfileMenu] = useState(false)
   const [showMenu, setShowMenu] = useState(false)
   const isHome = pathname === '/'
@@ -706,7 +712,7 @@ export default function TopNav({ onCartClick }: { onCartClick?: () => void }) {
             {user ? (
               <button
                 onClick={() => setShowProfileMenu(!showProfileMenu)}
-                aria-label="Account menu"
+                aria-label={unreadMentions > 0 ? `Account menu, ${mentionsWord}` : 'Account menu'}
                 aria-haspopup="menu"
                 aria-expanded={showProfileMenu}
                 className="nav-avatar"
@@ -752,6 +758,10 @@ export default function TopNav({ onCartClick }: { onCartClick?: () => void }) {
               </Link>
             )}
 
+            {user && unreadMentions > 0 && (
+              <span className={`nav-badge${dark ? ' on-dark' : ''}`} aria-hidden="true">{badgeText}</span>
+            )}
+
             {/* Profile dropdown menu */}
             {showProfileMenu && user && (
               <div style={{
@@ -782,16 +792,17 @@ export default function TopNav({ onCartClick }: { onCartClick?: () => void }) {
 
                 {/* Menu items */}
                 {[
-                  { label: 'Profile', href: '/profile' },
-                  { label: 'Saved tours', href: '/saved' },
-                  { label: 'Help Center', href: '/help' },
+                  { label: 'Profile', href: profileHref, count: unreadMentions },
+                  { label: 'Saved tours', href: '/saved', count: 0 },
+                  { label: 'Help Center', href: '/help', count: 0 },
                 ].map((item) => (
                   <Link
                     key={item.label}
                     href={item.href}
                     onClick={() => setShowProfileMenu(false)}
                     style={{
-                      display: 'block', padding: '10px 16px',
+                      display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
+                      padding: '10px 16px',
                       fontSize: 14, color: 'var(--text-primary)',
                       fontFamily: 'var(--font-dm-sans)',
                       transition: 'background 0.1s ease',
@@ -800,6 +811,12 @@ export default function TopNav({ onCartClick }: { onCartClick?: () => void }) {
                     onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent' }}
                   >
                     {item.label}
+                    {item.count > 0 && (
+                      <>
+                        <span className="nav-count" aria-hidden="true">{badgeText}</span>
+                        <span className="visually-hidden">, {mentionsWord}</span>
+                      </>
+                    )}
                   </Link>
                 ))}
 
@@ -836,16 +853,19 @@ export default function TopNav({ onCartClick }: { onCartClick?: () => void }) {
           <button
             className="hide-desktop"
             onClick={() => setShowMenu(!showMenu)}
-            aria-label={showMenu ? 'Close menu' : 'Menu'}
+            aria-label={showMenu ? 'Close menu' : unreadMentions > 0 ? `Menu, ${mentionsWord}` : 'Menu'}
             aria-expanded={showMenu}
             style={{
               width: 44, height: 44, margin: '0 -8px 0 -4px', flexShrink: 0,
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               background: 'none', border: 'none', cursor: 'pointer', padding: 0,
-              color: dark ? '#fff' : 'var(--text-primary)',
+              color: dark ? '#fff' : 'var(--text-primary)', position: 'relative',
             }}
           >
             {showMenu ? <X size={22} strokeWidth={2} /> : <Menu size={22} strokeWidth={2} />}
+            {!showMenu && user && unreadMentions > 0 && (
+              <span className={`nav-badge nav-badge-menu${dark ? ' on-dark' : ''}`} aria-hidden="true">{badgeText}</span>
+            )}
           </button>
         </div>
       </div>
@@ -1128,12 +1148,19 @@ export default function TopNav({ onCartClick }: { onCartClick?: () => void }) {
           <div style={{ borderTop: '1px solid var(--border)', marginTop: 8, paddingTop: 8 }}>
             {user ? (
               <>
-                <Link href="/profile" style={{
-                  display: 'flex', alignItems: 'center', minHeight: 48, padding: '0 20px',
+                <Link href={profileHref} onClick={() => setShowMenu(false)} style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
+                  minHeight: 48, padding: '0 20px',
                   fontSize: 16, fontWeight: 500, color: 'var(--text-primary)',
                   fontFamily: 'var(--font-dm-sans)',
                 }}>
                   {t('Profile')}
+                  {unreadMentions > 0 && (
+                    <>
+                      <span className="nav-count" aria-hidden="true">{badgeText}</span>
+                      <span className="visually-hidden">, {mentionsWord}</span>
+                    </>
+                  )}
                 </Link>
                 <button
                   onClick={async () => {

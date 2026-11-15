@@ -19,6 +19,9 @@ import { useSaved } from '@/lib/supabase/saved'
 import { useSwrCache } from '@/lib/swr-cache'
 import { useMyVideoProgress, VIDEO_REWARD_MILESTONE } from '@/lib/tour-videos'
 import { normalizeSocialHandle } from '@/lib/social-handle'
+import { useMentionEmailPref, useMyMentions, type MyMentionsState } from '@/lib/supabase/mentions'
+import { mentionAge } from '@/lib/mentions'
+import MentionText from './comments/MentionText'
 import { quoteRefund, formatCents } from '@/lib/refund-pricing'
 import {
   bookingRef, countdownLabel, formatLongDate, formatTripDate, guestLabel,
@@ -649,6 +652,152 @@ function EditableField({ label, value, placeholder, type, onSave, verified, hint
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
+   Mentions: where someone @tagged this guest in a tour's comments
+   ───────────────────────────────────────────────────────────────────────── */
+
+const MENTIONS_SHOWN = 5
+
+function MentionsSection({ mentions }: { mentions: MyMentionsState }) {
+  const { items, people, unread, loading, failed, markRead, markAllRead, reload } = mentions
+  const { user } = useAuth()
+  const pref = useMentionEmailPref()
+  const [showAll, setShowAll] = useState(false)
+  const sectionRef = useRef<HTMLElement>(null)
+  const listRef = useRef<HTMLUListElement>(null)
+  const headingId = useId()
+  const switchLabelId = useId()
+  const switchHintId = useId()
+
+  // /profile#mentions, from the nav badge: this section arrives once sign-in
+  // and the list have loaded, too late for the browser's own jump to it.
+  const jumped = useRef(false)
+  useEffect(() => {
+    if (loading || jumped.current) return
+    jumped.current = true
+    if (window.location.hash === '#mentions') sectionRef.current?.scrollIntoView({ block: 'start' })
+  }, [loading])
+
+  const shown = showAll ? items : items.slice(0, MENTIONS_SHOWN)
+  const hidden = items.length - shown.length
+  const title = !loading && unread > 0 ? `${unread} new ${unread === 1 ? 'tag' : 'tags'}` : 'Where you were tagged'
+
+  return (
+    <section ref={sectionRef} id="mentions" aria-labelledby={headingId} style={{ scrollMarginTop: 'calc(var(--nav-h, 56px) + 16px)' }}>
+      <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 12, marginBottom: 14 }}>
+        <div style={{ minWidth: 0 }}>
+          <p className="pf-eyebrow" style={{ marginBottom: 4 }}>Mentions</p>
+          <h2 id={headingId} className="pf-h2">{title}</h2>
+        </div>
+        {unread > 0 && (
+          <button type="button" onClick={() => void markAllRead()} className="pf-tap pf-link" style={{ fontSize: 13.5, color: 'var(--text-secondary)', flexShrink: 0 }}>
+            Mark all as read
+          </button>
+        )}
+      </div>
+
+      {loading ? (
+        <div aria-hidden style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <div className="pf-skel" style={{ height: 84 }} />
+          <div className="pf-skel" style={{ height: 84 }} />
+        </div>
+      ) : failed ? (
+        <div role="alert" className="pf-card pf-pad">
+          <p style={{ fontFamily: FONT, fontSize: 14.5, color: 'var(--text-primary)', lineHeight: 1.6, marginBottom: 10 }}>
+            We could not load your mentions just now.
+          </p>
+          <button type="button" onClick={reload} className="pf-tap pf-link" style={{ fontSize: 13.5 }}>Try again</button>
+        </div>
+      ) : items.length === 0 ? (
+        <div className="pf-card pf-pad pf-mention-empty">
+          <span aria-hidden style={{ fontSize: 26, lineHeight: 1 }}>🌴</span>
+          <p style={{ fontFamily: FONT, fontSize: 14.5, color: 'var(--text-secondary)', lineHeight: 1.6 }}>
+            No tags yet. When someone tags you with @ in a tour&apos;s comments, it lands here with a link straight to it.
+          </p>
+        </div>
+      ) : (
+        <>
+          <ul ref={listRef} className={`pf-mentions${unread >= 3 ? ' many-new' : ''}`}>
+            {shown.map((m) => {
+              const who = m.author.isHandle ? `@${m.author.label}` : m.author.label
+              return (
+                <li key={m.id}>
+                  <Link
+                    href={m.href}
+                    className={`pf-mention${m.read ? '' : ' is-new'}`}
+                    onClick={() => { if (!m.read) void markRead([m.id]) }}
+                  >
+                    <span aria-hidden style={{ display: 'flex', flexShrink: 0 }}>
+                      <Avatar src={m.author.avatarUrl} name={m.author.label} size={40} />
+                    </span>
+                    <span className="pf-mention-body">
+                      <span className="pf-mention-line">
+                        {!m.read && <span className="visually-hidden">New. </span>}
+                        <strong>{who}</strong> tagged you on <strong>{m.tourTitle}</strong>
+                      </span>
+                      <span className="pf-mention-quote">
+                        <MentionText text={m.text} people={people} meId={user?.id} tone="light" />
+                      </span>
+                      <span className="pf-mention-meta">{mentionAge(m.createdAt)}</span>
+                    </span>
+                    {!m.read && <span className="pf-mention-dot" aria-hidden />}
+                  </Link>
+                </li>
+              )
+            })}
+          </ul>
+          {hidden > 0 && (
+            <button
+              type="button"
+              className="pf-tap pf-link"
+              style={{ fontSize: 13.5, marginTop: 6 }}
+              onClick={() => {
+                setShowAll(true)
+                // Focus lands on the first newly shown row, not back at the top.
+                window.requestAnimationFrame(() => {
+                  listRef.current?.querySelectorAll<HTMLAnchorElement>('a')[MENTIONS_SHOWN]?.focus()
+                })
+              }}
+            >
+              Show {hidden} more
+            </button>
+          )}
+        </>
+      )}
+
+      {pref.ready && (
+        <div className="pf-card pf-pad pf-switch-row" style={{ marginTop: 12 }}>
+          <div style={{ minWidth: 0 }}>
+            <p id={switchLabelId} style={{ fontFamily: FONT, fontSize: 14.5, fontWeight: 600, color: 'var(--text-primary)', lineHeight: 1.4 }}>
+              Email me when someone tags me
+            </p>
+            <p id={switchHintId} style={{ fontFamily: FONT, fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.5, marginTop: 3 }}>
+              One email per tag with a link to the comment, at most 6 a day.
+            </p>
+          </div>
+          <button
+            type="button"
+            role="switch"
+            aria-checked={pref.on}
+            aria-labelledby={switchLabelId}
+            aria-describedby={switchHintId}
+            disabled={pref.saving}
+            onClick={() => void pref.set(!pref.on)}
+            className="pf-switch"
+          >
+            <span className="pf-switch-knob" aria-hidden />
+          </button>
+        </div>
+      )}
+      {pref.failed && (
+        <p role="alert" style={{ fontFamily: FONT, fontSize: 13.5, color: DANGER, marginTop: 8 }}>
+          That did not save. Check your connection and try again.
+        </p>
+      )}
+    </section>
+  )
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
    Rewards
    ───────────────────────────────────────────────────────────────────────── */
 
@@ -790,6 +939,14 @@ export default function ProfileView() {
 
   const profile = bundle?.profile ?? EMPTY_PROFILE
   const bookings = useMemo(() => bundle?.bookings ?? [], [bundle])
+  // Mentions go to the top while any are new, and stay where they first
+  // appeared for the visit, so "Mark all as read" never moves the section
+  // out from under the tap.
+  const mentions = useMyMentions()
+  const [mentionsFirst, setMentionsFirst] = useState<boolean | null>(null)
+  useEffect(() => {
+    if (mentionsFirst === null && !mentions.loading) setMentionsFirst(mentions.unread > 0)
+  }, [mentions.loading, mentions.unread, mentionsFirst])
   const { savedIds, loading: savedLoading } = useSaved()
   // Keyed on the loading flag, not on falsiness: unsaving your last tour
   // must show 0, not fall back to a stale cached count.
@@ -1002,6 +1159,8 @@ export default function ProfileView() {
             </div>
           )}
 
+          {mentionsFirst === true && <MentionsSection mentions={mentions} />}
+
           {/* ── Next up ── */}
           {next && (
             <Section kicker="Next up" title={countdownLabel(next.daysAway)}>
@@ -1056,6 +1215,8 @@ export default function ProfileView() {
               </div>
             )}
           </Section>
+
+          {mentionsFirst === false && <MentionsSection mentions={mentions} />}
 
           {/* ── Account, last, because it is admin and not travel ── */}
           <section>

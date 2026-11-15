@@ -21,6 +21,11 @@ import { Heart, MessageCircle, Play, Pause, ChevronLeft, ChevronRight, ChevronUp
 import { useExperienceLike, useComments, DisplayComment } from '@/lib/supabase/hooks'
 import { useAuth } from '@/lib/supabase/auth-context'
 import Avatar from '@/components/Avatar'
+import MentionText from '@/components/comments/MentionText'
+import MentionSuggestions from '@/components/comments/MentionSuggestions'
+import { useMentionComposer, type MentionComposer } from '@/components/comments/useMentionComposer'
+import { commentStillThere, markCommentMentionRead } from '@/lib/supabase/mentions'
+import { isUuid, type MentionPerson } from '@/lib/mentions'
 import MaplAvatar from '@/components/MaplAvatar'
 import { isMaplCreator, displayHandle, clipCredit, clipsInReelOrder, isMaplAccount } from '@/lib/creator'
 import TourDetailsSheet from './TourDetailsSheet'
@@ -1395,7 +1400,7 @@ function DesktopTourPanel({ exp }: { exp: Experience }) {
    MAIN COMPONENT
    ═══════════════════════════════════ */
 /* ── Draggable Mobile Comments Sheet ── */
-function MobileCommentsSheet({ comments, commentText, setCommentText, addComment, onClose, replyingTo, setReplyingTo, isLoggedIn, slug }: {
+function MobileCommentsSheet({ comments, commentText, setCommentText, addComment, onClose, replyingTo, setReplyingTo, isLoggedIn, slug, composer, people, postError, notice }: {
   comments: DisplayComment[]
   commentText: string
   setCommentText: (v: string) => void
@@ -1405,6 +1410,10 @@ function MobileCommentsSheet({ comments, commentText, setCommentText, addComment
   setReplyingTo: (v: { id: string; user: string } | null) => void
   isLoggedIn: boolean
   slug: string
+  composer: MentionComposer
+  people: ReadonlyMap<string, MentionPerson>
+  postError: string | null
+  notice: string | null
 }) {
   const { t } = useI18n()
   const { user: currentUser } = useAuth()
@@ -1546,21 +1555,22 @@ function MobileCommentsSheet({ comments, commentText, setCommentText, addComment
 
         {/* Comments list */}
         <div className="no-scrollbar" style={{ flex: 1, overflowY: 'auto', padding: '14px 20px' }}>
+          {notice && <p role="status" className="comment-notice">{notice}</p>}
           {comments.length === 0 ? (
             <p style={{ textAlign: 'center', padding: '40px 0', color: '#cccccc', fontSize: 14, fontFamily: 'var(--font-dm-sans)' }}>No comments yet. Be the first!</p>
           ) : (
             comments.map((comment) => (
               <div key={comment.id} style={{ marginBottom: 20 }}>
-                <div style={{ display: 'flex', gap: 10 }}>
+                <div className="comment-item" data-comment-id={comment.supabaseId} tabIndex={comment.supabaseId ? -1 : undefined} style={{ display: 'flex', gap: 10 }}>
                   <Avatar src={comment.avatarUrl} name={comment.user} size={34} />
                   <div style={{ flex: 1 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 3 }}>
                       <span style={{ fontSize: 13, fontWeight: 600, fontFamily: 'var(--font-dm-sans)', color: 'white' }}>{comment.isHandle ? '@' : ''}{comment.user}</span>
                       <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.66)', fontFamily: 'var(--font-dm-sans)' }}>{comment.time}</span>
                     </div>
-                    <p style={{ fontSize: 14, color: '#cccccc', fontFamily: 'var(--font-dm-sans)', lineHeight: 1.5, marginBottom: 8 }}>{comment.text}</p>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-                      <button style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, color: 'rgba(255,255,255,0.66)', fontFamily: 'var(--font-dm-sans)' }}><ThumbsUp size={13} /> {comment.likes}</button>
+                    <p style={{ fontSize: 14, color: '#cccccc', fontFamily: 'var(--font-dm-sans)', lineHeight: 1.5, marginBottom: 8, overflowWrap: 'anywhere' }}><MentionText text={comment.text} people={people} meId={currentUser?.id} /></p>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 26 }}>
+                      <button type="button" className="comment-action" style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, color: 'rgba(255,255,255,0.66)', fontFamily: 'var(--font-dm-sans)' }}><ThumbsUp size={13} /> {comment.likes}</button>
                       <button
                         onClick={() => {
                           if (!isLoggedIn) {
@@ -1569,13 +1579,15 @@ function MobileCommentsSheet({ comments, commentText, setCommentText, addComment
                           }
                           // Seed comments have no supabaseId, fall back to a
                           // top-level @-mention so the Reply button always works.
-                          if (comment.supabaseId) {
-                            setReplyingTo({ id: comment.supabaseId, user: (comment.isHandle ? '@' : '') + comment.user })
-                          } else {
-                            setReplyingTo(null)
-                          }
-                          setCommentText(`${(comment.isHandle ? '@' : '') + comment.user} `)
+                          // A reply notifies no one by itself (owner, Nov 15:
+                          // only @tags do), so the box is not pre-filled with
+                          // a name that would look like a tag but is not one.
+                          // "Replying to" above the box carries the context.
+                          setReplyingTo(comment.supabaseId ? { id: comment.supabaseId, user: (comment.isHandle ? '@' : '') + comment.user } : null)
+                          inputRef.current?.focus()
                         }}
+                        type="button"
+                        className="comment-action"
                         style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 12, color: 'rgba(255,255,255,0.66)', fontFamily: 'var(--font-dm-sans)' }}
                       >{t('Reply')}</button>
                     </div>
@@ -1586,14 +1598,14 @@ function MobileCommentsSheet({ comments, commentText, setCommentText, addComment
                 {comment.replies && comment.replies.length > 0 && (
                   <div style={{ marginLeft: 44, marginTop: 10, borderLeft: '2px solid rgba(255,255,255,0.06)', paddingLeft: 12 }}>
                     {comment.replies.map((reply) => (
-                      <div key={reply.id} style={{ marginBottom: 12, display: 'flex', gap: 8 }}>
+                      <div key={reply.id} className="comment-item" data-comment-id={reply.supabaseId} tabIndex={reply.supabaseId ? -1 : undefined} style={{ marginBottom: 12, display: 'flex', gap: 8 }}>
                         <Avatar src={reply.avatarUrl} name={reply.user} size={26} />
                         <div style={{ flex: 1 }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 }}>
                             <span style={{ fontSize: 12, fontWeight: 600, fontFamily: 'var(--font-dm-sans)', color: 'white' }}>{reply.isHandle ? '@' : ''}{reply.user}</span>
                             <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.66)', fontFamily: 'var(--font-dm-sans)' }}>{reply.time}</span>
                           </div>
-                          <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.6)', fontFamily: 'var(--font-dm-sans)', lineHeight: 1.5 }}>{reply.text}</p>
+                          <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.6)', fontFamily: 'var(--font-dm-sans)', lineHeight: 1.5, overflowWrap: 'anywhere' }}><MentionText text={reply.text} people={people} meId={currentUser?.id} /></p>
                         </div>
                       </div>
                     ))}
@@ -1612,10 +1624,12 @@ function MobileCommentsSheet({ comments, commentText, setCommentText, addComment
               fontSize: 12, color: 'rgba(255,255,255,0.72)', fontFamily: 'var(--font-dm-sans)',
             }}>
               <span>Replying to <span style={{ color: 'white', fontWeight: 600 }}>{replyingTo.user}</span></span>
-              <button onClick={() => { setReplyingTo(null); setCommentText('') }} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 12, color: 'rgba(255,255,255,0.6)', fontFamily: 'var(--font-dm-sans)' }}>Cancel</button>
+              <button type="button" onClick={() => setReplyingTo(null)} aria-label="Cancel reply" style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 12, color: 'rgba(255,255,255,0.72)', fontFamily: 'var(--font-dm-sans)', minHeight: 44, margin: '-12px 0', padding: '0 4px' }}>Cancel</button>
             </div>
           )}
-          <div style={{ padding: '10px 20px', paddingBottom: 'max(12px, env(safe-area-inset-bottom))', display: 'flex', alignItems: 'center', gap: 10 }}>
+          {postError && <p role="alert" className="comment-error" style={{ padding: '8px 20px 0' }}>{postError}</p>}
+          <div style={{ padding: '10px 20px', paddingBottom: 'max(12px, env(safe-area-inset-bottom))', display: 'flex', alignItems: 'center', gap: 10, position: 'relative' }}>
+            {isLoggedIn && <MentionSuggestions composer={composer} />}
             <Avatar
               src={currentUser?.user_metadata?.avatar_url ?? null}
               name={currentUser?.user_metadata?.full_name ?? currentUser?.user_metadata?.name ?? currentUser?.email ?? 'You'}
@@ -1623,17 +1637,29 @@ function MobileCommentsSheet({ comments, commentText, setCommentText, addComment
             />
             <input type="text"
               ref={inputRef}
-              aria-label={isLoggedIn ? 'Write a comment' : 'Sign in to comment'}
-              placeholder={isLoggedIn ? (replyingTo ? `Reply to ${replyingTo.user}...` : 'Add a comment...') : 'Sign in to comment...'}
-              value={commentText} onChange={(e) => setCommentText(e.target.value)}
-              onKeyDown={(e) => { if (e.key === 'Enter') submitAndBlur() }}
+              aria-label={isLoggedIn ? 'Write a comment. Type @ to tag someone.' : 'Sign in to comment'}
+              placeholder={isLoggedIn ? (replyingTo ? `Reply to ${replyingTo.user}...` : 'Add a comment, @ to tag...') : 'Sign in to comment...'}
+              {...(isLoggedIn ? composer.inputProps : {})}
+              autoComplete="off"
+              value={commentText}
+              onChange={isLoggedIn ? composer.onChange : (e) => setCommentText(e.target.value)}
+              onKeyDown={(e) => {
+                if (isLoggedIn && composer.onKeyDown(e)) return
+                if (e.key === 'Enter') submitAndBlur()
+              }}
+              onSelect={isLoggedIn ? composer.onCaretMove : undefined}
+              onBlur={isLoggedIn ? composer.onBlur : undefined}
               readOnly={!isLoggedIn}
-              onClick={() => {
+              onClick={(e) => {
                 // Deliberate activation only, never on focus (WCAG 3.2.1).
-                if (!isLoggedIn) window.location.href = `/login?redirect=/experience/${slug}`
+                if (!isLoggedIn) { window.location.href = `/login?redirect=/experience/${slug}`; return }
+                composer.onCaretMove(e)
               }}
               style={{
-                flex: 1, background: 'rgba(255,255,255,0.06)',
+                // minWidth 0: an input will not shrink below its built-in width
+                // otherwise, which pushed the send button out of the 288px
+                // panel at 768px.
+                flex: 1, minWidth: 0, background: 'rgba(255,255,255,0.06)',
                 border: replyingTo ? '1px solid rgba(255,179,0,0.3)' : '1px solid rgba(255,255,255,0.06)',
                 borderRadius: 9999, padding: '10px 16px', fontSize: 16,
                 fontFamily: 'var(--font-dm-sans)', color: 'white', outline: 'none',
@@ -1651,6 +1677,14 @@ function MobileCommentsSheet({ comments, commentText, setCommentText, addComment
   )
 }
 
+/** Removes ?comment= from the address without a navigation. */
+function dropCommentParam() {
+  const url = new URL(window.location.href)
+  if (!url.searchParams.has('comment')) return
+  url.searchParams.delete('comment')
+  window.history.replaceState(window.history.state, '', url.toString())
+}
+
 export default function ExperienceDetail({ slug }: { slug: string }) {
   const router = useRouter()
   const items = useCartStore((s) => s.items)
@@ -1659,6 +1693,11 @@ export default function ExperienceDetail({ slug }: { slug: string }) {
   const scrollRef = useRef<HTMLDivElement>(null)
   const [commentText, setCommentText] = useState('')
   const [mobileComments, setMobileComments] = useState(false)
+  // ?comment=<id> (a mention email or the profile's Mentions list) lands on
+  // that comment: the thread opens, scrolls to it and highlights it once.
+  const [focusComment, setFocusComment] = useState<string | null>(null)
+  const focusDone = useRef(false)
+  const [commentNotice, setCommentNotice] = useState<string | null>(null)
   const hydrated = useHydrated()
   useStatusBarFloor()
   // Guest clips have sound; one choice covers every clip in the feed.
@@ -1782,8 +1821,18 @@ export default function ExperienceDetail({ slug }: { slug: string }) {
     const t = window.setTimeout(() => trackClipsEvent('clip_play', slugify(activeExp.title)), 1200)
     return () => window.clearTimeout(t)
   }, [activeClipKey, activeExp])
-  const { addComment: addSupabaseComment, toDisplayComments, isLoggedIn, user: currentUser, replyingTo, setReplyingTo } = useComments(activeExp?.id || 0)
+  const onLandingTour = !!activeExp && slugify(activeExp.title) === slug
+  const {
+    addComment: addSupabaseComment, toDisplayComments, isLoggedIn, user: currentUser, replyingTo, setReplyingTo,
+    people: mentionPeople, postError, clearPostError,
+  } = useComments(activeExp?.id || 0, onLandingTour ? focusComment : null)
   const activeComments = activeExp ? toDisplayComments(activeExp.comments) : []
+  const composer = useMentionComposer({
+    value: commentText,
+    setValue: (v: string) => { setCommentText(v); if (postError) clearPostError() },
+    experienceId: activeExp?.id ?? null,
+    enabled: isLoggedIn,
+  })
 
   // Checkout requires an account. Rather than a silent 307 → /login after the
   // user commits, surface it on the CTA and route logged-out users straight to
@@ -2021,6 +2070,70 @@ export default function ExperienceDetail({ slug }: { slug: string }) {
     return () => document.removeEventListener('keydown', onKey)
   }, [activeIndex, entries.length, scrollToEntry])
 
+  // ?comment=<id>: read once, then dropped from the address once handled so
+  // a reload or a shared link does not replay the highlight.
+  useEffect(() => {
+    const id = new URL(window.location.href).searchParams.get('comment')
+    if (id && isUuid(id)) setFocusComment(id.toLowerCase())
+    else if (id) dropCommentParam()
+  }, [])
+  const landingExpId = onLandingTour ? activeExp?.id ?? null : null
+  const viewerId = currentUser?.id ?? null
+  // Read inside the landing effect without restarting it.
+  const landingThread = useRef({ comments: activeComments, signedIn: isLoggedIn })
+  landingThread.current = { comments: activeComments, signedIn: isLoggedIn }
+  // Marked read once both are known: the comment shown and who is looking
+  // (sign-in can settle after the comment is on screen).
+  const [shownComment, setShownComment] = useState<string | null>(null)
+  useEffect(() => {
+    if (shownComment && viewerId) void markCommentMentionRead(viewerId, shownComment)
+  }, [shownComment, viewerId])
+  useEffect(() => {
+    if (!focusComment || !landingExpId || !hydrated || focusDone.current) return
+    focusDone.current = true
+    let stopped = false
+    let timer = 0
+    const mobile = window.matchMedia('(max-width: 767px)').matches
+    void commentStillThere(landingExpId, focusComment).then((there) => {
+      if (stopped) return
+      if (mobile) setMobileComments(true)
+      if (there === false) {
+        setCommentNotice('That comment is no longer here.')
+        dropCommentParam()
+        return
+      }
+      // The comment arrives with the thread (useComments folds it in even
+      // when it is older than the newest 50); wait for it to be on screen.
+      const started = Date.now()
+      const look = () => {
+        if (stopped) return
+        const el = Array.from(document.querySelectorAll<HTMLElement>(`[data-comment-id="${focusComment}"]`))
+          .find((n) => n.getClientRects().length > 0)
+        if (!el) {
+          if (Date.now() - started < 10_000) timer = window.setTimeout(look, 120)
+          else dropCommentParam()
+          return
+        }
+        const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+        el.scrollIntoView({ block: 'center', behavior: reduce ? 'auto' : 'smooth' })
+        el.focus({ preventScroll: true })
+        el.classList.add('comment-flash')
+        window.setTimeout(() => el.classList.remove('comment-flash'), 2600)
+        setShownComment(focusComment)
+        // A top-level comment they were tagged in: the box is set to answer
+        // it ("Replying to Tamsin", with Cancel). Focus stays on the comment,
+        // so a phone keyboard does not cover what they came to read.
+        const { comments, signedIn } = landingThread.current
+        const top = comments.find((c) => c.supabaseId === focusComment)
+        if (top && signedIn) setReplyingTo({ id: focusComment, user: (top.isHandle ? '@' : '') + top.user })
+        dropCommentParam()
+      }
+      // The phone sheet slides up first.
+      timer = window.setTimeout(look, mobile ? 320 : 60)
+    })
+    return () => { stopped = true; window.clearTimeout(timer) }
+  }, [focusComment, landingExpId, hydrated, setReplyingTo])
+
   // ?clip=<id> share links open on that clip's reel once the clips are in;
   // an id that is not (or no longer) approved leaves the tour on screen.
   useEffect(() => {
@@ -2086,12 +2199,15 @@ export default function ExperienceDetail({ slug }: { slug: string }) {
       window.location.href = `/login?redirect=/experience/${slugify(activeExp.title)}`
       return
     }
-    const posted = await addSupabaseComment(commentText, replyingTo?.id || undefined)
+    // Picked names become their tags (lib/mentions); typed ones stay text.
+    const { text: stored, ids } = composer.encode()
+    const posted = await addSupabaseComment(stored, replyingTo?.id || undefined, composer.known(ids))
     // Only clear the box on a confirmed post. On failure the optimistic row
     // is rolled back in the hook, so keeping the text lets the user retry.
     if (posted) {
       setCommentText('')
       setReplyingTo(null)
+      composer.reset()
     }
   }
 
@@ -2414,12 +2530,13 @@ export default function ExperienceDetail({ slug }: { slug: string }) {
 
         {/* Comments list */}
         <div className="no-scrollbar" style={{ flex: 1, overflowY: 'auto', padding: '16px 24px' }}>
+          {commentNotice && <p role="status" className="comment-notice">{commentNotice}</p>}
           {activeComments.length === 0 ? (
             <DesktopTourPanel key={activeExp.id} exp={activeExp} />
           ) : (
             activeComments.map((comment) => (
               <div key={comment.id} style={{ marginBottom: 22 }}>
-                <div style={{ display: 'flex', gap: 10 }}>
+                <div className="comment-item" data-comment-id={comment.supabaseId} tabIndex={comment.supabaseId ? -1 : undefined} style={{ display: 'flex', gap: 10 }}>
                   <Avatar src={comment.avatarUrl} name={comment.user} size={34} />
                   <div style={{ flex: 1 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 3 }}>
@@ -2432,10 +2549,10 @@ export default function ExperienceDetail({ slug }: { slug: string }) {
                     </div>
                     <p style={{
                       fontSize: 13, color: '#cccccc',
-                      fontFamily: 'var(--font-dm-sans)', lineHeight: 1.5, marginBottom: 8,
-                    }}>{comment.text}</p>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-                      <button style={{
+                      fontFamily: 'var(--font-dm-sans)', lineHeight: 1.5, marginBottom: 8, overflowWrap: 'anywhere',
+                    }}><MentionText text={comment.text} people={mentionPeople} meId={currentUser?.id} /></p>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 26 }}>
+                      <button type="button" className="comment-action" style={{
                         background: 'none', border: 'none', cursor: 'pointer',
                         display: 'flex', alignItems: 'center', gap: 4,
                         fontSize: 12, color: 'rgba(255,255,255,0.66)', fontFamily: 'var(--font-dm-sans)',
@@ -2446,16 +2563,14 @@ export default function ExperienceDetail({ slug }: { slug: string }) {
                             window.location.href = `/login?redirect=/experience/${slugify(activeExp.title)}`
                             return
                           }
-                          // Seed comments (from the experience JSON) have no
-                          // supabaseId, fall back to a plain @-mention so the
-                          // Reply button still works.
-                          if (comment.supabaseId) {
-                            setReplyingTo({ id: comment.supabaseId, user: (comment.isHandle ? '@' : '') + comment.user })
-                          } else {
-                            setReplyingTo(null)
-                          }
-                          setCommentText(`${(comment.isHandle ? '@' : '') + comment.user} `)
+                          // A reply notifies no one by itself (owner, Nov 15:
+                          // only @tags do), so the box is not pre-filled with
+                          // a name that would look like a tag but is not one.
+                          setReplyingTo(comment.supabaseId ? { id: comment.supabaseId, user: (comment.isHandle ? '@' : '') + comment.user } : null)
+                          document.querySelector<HTMLInputElement>('[data-desktop-comment-input]')?.focus()
                         }}
+                        type="button"
+                        className="comment-action"
                         style={{
                           background: 'none', border: 'none', cursor: 'pointer',
                           fontSize: 12, color: 'rgba(255,255,255,0.66)', fontFamily: 'var(--font-dm-sans)',
@@ -2469,7 +2584,7 @@ export default function ExperienceDetail({ slug }: { slug: string }) {
                 {comment.replies && comment.replies.length > 0 && (
                   <div style={{ marginLeft: 44, marginTop: 12, borderLeft: '2px solid rgba(255,255,255,0.06)', paddingLeft: 14 }}>
                     {comment.replies.map((reply) => (
-                      <div key={reply.id} style={{ marginBottom: 14, display: 'flex', gap: 8 }}>
+                      <div key={reply.id} className="comment-item" data-comment-id={reply.supabaseId} tabIndex={reply.supabaseId ? -1 : undefined} style={{ marginBottom: 14, display: 'flex', gap: 8 }}>
                         <Avatar src={reply.avatarUrl} name={reply.user} size={26} />
                         <div style={{ flex: 1 }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 }}>
@@ -2482,8 +2597,8 @@ export default function ExperienceDetail({ slug }: { slug: string }) {
                           </div>
                           <p style={{
                             fontSize: 12, color: 'rgba(255,255,255,0.6)',
-                            fontFamily: 'var(--font-dm-sans)', lineHeight: 1.5,
-                          }}>{reply.text}</p>
+                            fontFamily: 'var(--font-dm-sans)', lineHeight: 1.5, overflowWrap: 'anywhere',
+                          }}><MentionText text={reply.text} people={mentionPeople} meId={currentUser?.id} /></p>
                         </div>
                       </div>
                     ))}
@@ -2507,17 +2622,22 @@ export default function ExperienceDetail({ slug }: { slug: string }) {
             }}>
               <span>Replying to <span style={{ color: 'white', fontWeight: 600 }}>{replyingTo.user}</span></span>
               <button
-                onClick={() => { setReplyingTo(null); setCommentText('') }}
+                type="button"
+                onClick={() => setReplyingTo(null)}
+                aria-label="Cancel reply"
                 style={{
                   background: 'none', border: 'none', cursor: 'pointer',
-                  fontSize: 12, color: 'rgba(255,255,255,0.6)', fontFamily: 'var(--font-dm-sans)',
+                  fontSize: 12, color: 'rgba(255,255,255,0.72)', fontFamily: 'var(--font-dm-sans)',
+                  minHeight: 44, margin: '-12px 0', padding: '0 4px',
                 }}
               >
                 Cancel
               </button>
             </div>
           )}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          {postError && <p role="alert" className="comment-error" style={{ padding: '0 0 8px' }}>{postError}</p>}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, position: 'relative' }}>
+            {isLoggedIn && <MentionSuggestions composer={composer} />}
             <Avatar
               src={currentUser?.user_metadata?.avatar_url ?? null}
               name={currentUser?.user_metadata?.full_name ?? currentUser?.user_metadata?.name ?? currentUser?.email ?? 'You'}
@@ -2525,23 +2645,35 @@ export default function ExperienceDetail({ slug }: { slug: string }) {
             />
             <input
               type="text"
-              aria-label={isLoggedIn ? 'Write a comment' : 'Sign in to comment'}
+              aria-label={isLoggedIn ? 'Write a comment. Type @ to tag someone.' : 'Sign in to comment'}
               data-desktop-comment-input
-              placeholder={isLoggedIn ? (replyingTo ? `Reply to ${replyingTo.user}...` : 'Add a comment...') : 'Sign in to comment...'}
+              placeholder={isLoggedIn ? (replyingTo ? `Reply to ${replyingTo.user}...` : 'Add a comment, @ to tag...') : 'Sign in to comment...'}
+              {...(isLoggedIn ? composer.inputProps : {})}
+              autoComplete="off"
               value={commentText}
-              onChange={(e) => setCommentText(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && addComment()}
+              onChange={isLoggedIn ? composer.onChange : (e) => setCommentText(e.target.value)}
+              onKeyDown={(e) => {
+                if (isLoggedIn && composer.onKeyDown(e)) return
+                if (e.key === 'Enter') void addComment()
+              }}
+              onSelect={isLoggedIn ? composer.onCaretMove : undefined}
+              onBlur={isLoggedIn ? composer.onBlur : undefined}
               readOnly={!isLoggedIn}
-              onClick={() => {
+              onClick={(e) => {
                 // Deliberate activation only: focusing must never change
                 // context (WCAG 3.2.1). A click on the read-only field is an
                 // explicit choice to go sign in.
                 if (!isLoggedIn && activeExp) {
                   window.location.href = `/login?redirect=/experience/${slugify(activeExp.title)}`
+                  return
                 }
+                composer.onCaretMove(e)
               }}
               style={{
-                flex: 1, background: 'rgba(255,255,255,0.06)',
+                // minWidth 0: an input will not shrink below its built-in width
+                // otherwise, which pushed the send button out of the 288px
+                // panel at 768px.
+                flex: 1, minWidth: 0, background: 'rgba(255,255,255,0.06)',
                 border: replyingTo ? '1px solid rgba(255,179,0,0.3)' : '1px solid rgba(255,255,255,0.06)',
                 borderRadius: 9999,
                 minHeight: 44, padding: '0 16px', fontSize: 16,
@@ -2663,6 +2795,10 @@ export default function ExperienceDetail({ slug }: { slug: string }) {
           setReplyingTo={setReplyingTo}
           isLoggedIn={isLoggedIn}
           slug={activeExp ? slugify(activeExp.title) : ''}
+          composer={composer}
+          people={mentionPeople}
+          postError={postError}
+          notice={commentNotice}
         />
       )}
     </div>
