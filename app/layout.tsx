@@ -262,11 +262,14 @@ export default function RootLayout({
         <link rel="dns-prefetch" href="https://script.hotjar.com" />
       </head>
       <body className={dmSans.variable}>
+        {/* The cookie question (components/ConsentPrompt) is rendered into this, so it comes first for a keyboard or a screen reader. Empty for everyone who is not asked. */}
+        <div id="consent-root" />
         <StyledJsxRegistry>
           <LayoutShell>{children}</LayoutShell>
         </StyledJsxRegistry>
-        {/* GA4 + Ads tag + Hotjar, gated on DNT / Global Privacy Control —
-            the opt-out the privacy policy promises. */}
+        {/* GA4 + Ads tag + Meta pixel + Hotjar, gated on DNT / Global Privacy
+            Control and, in the UK, the EU and the EEA, on a yes to the cookie
+            question: the opt-out and the opt-in the privacy policy promises. */}
         <Trackers />
       </body>
     </html>

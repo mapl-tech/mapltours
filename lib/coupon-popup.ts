@@ -109,6 +109,29 @@ const within = (now: number, at: number | null | undefined, ms: number) =>
   at != null && Math.abs(now - at) < ms
 
 /**
+ * How long the cookie question (components/ConsentPrompt) holds the popup
+ * back after it appears: one question at a time, and the visitor gets a fair
+ * chance to answer the first. It is not forever, because the card stays on
+ * screen until it is answered and plenty of people never answer one: without
+ * a limit a visitor in the UK, the EU or the EEA who ignored the card would
+ * never be offered the discount at all. After this the popup may open over
+ * it (its scrim covers the card), and the card is still there when it closes.
+ */
+export const CONSENT_HOLD_MS = 20_000
+
+/**
+ * Is the cookie question still fresh enough to hold the popup? `since` is the
+ * card's `data-since` (epoch ms, as text), or null when no card is on the
+ * page. A card with no readable time does not hold: it could not be told
+ * when to let go. The same clock rule as `within`: a time from the future
+ * counts only inside the window either way.
+ */
+export function consentHoldsPopup(since: string | null | undefined, now: number): boolean {
+  if (since == null || !/^\d{1,16}$/.test(since)) return false
+  return within(now, Number(since), CONSENT_HOLD_MS)
+}
+
+/**
  * True while the popup must not open: the tab is hidden, another dialog is
  * open, focus is in a field or an open list of options, the guest used a
  * booking form within POPUP_FORM_QUIET_MS, or tapped anything within

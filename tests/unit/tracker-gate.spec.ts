@@ -99,8 +99,16 @@ describe("Stripe's client secret never reaches a tag", () => {
 describe('Trackers asks the gate', () => {
   test('the host check runs before any tag is allowed', () => {
     const src = readFileSync('components/Trackers.tsx', 'utf8')
-    const gate = src.indexOf('if (!isTrackedHost(window.location.hostname)) return')
-    expect(gate).toBeGreaterThan(-1)
-    expect(gate).toBeLessThan(src.indexOf('setAllowed(true)'))
+    // Since the cookie question (Nov 14 2026) the component also works out consent, on any host, so the
+    // question can be seen on a dev server. The tags are still behind the host: `allowed` needs `tracked`,
+    // `tracked` is set from the gate and nothing else, and every tag is inside the `allowed` block.
+    expect(src).toContain('setTracked(isTrackedHost(window.location.hostname))')
+    expect((src.match(/setTracked\(/g) ?? []).length).toBe(1)
+    expect(src).toContain("const allowed = tracked && decision === 'allow'")
+    const guard = src.indexOf('{allowed && <>')
+    expect(guard).toBeGreaterThan(-1)
+    expect(src.indexOf('googletagmanager.com/gtag/js')).toBeGreaterThan(guard)
+    expect(src.indexOf('connect.facebook.net')).toBeGreaterThan(guard)
+    expect(src.indexOf('static.hotjar.com')).toBeGreaterThan(guard)
   })
 })

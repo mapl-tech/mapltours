@@ -62,6 +62,11 @@ function whenGtagReady(run: (gtag: GtagFn) => void, attempts = 40): void {
   if (typeof window === 'undefined') return
   const w = window as unknown as { gtag?: GtagFn }
   if (typeof w.gtag === 'function') {
+    // The tag being on the page is not leave to use it: a visitor can say no
+    // after it loaded (here, in another tab, on the bio page), and the tag
+    // stays until the page is loaded again. Asked here, when it is ready,
+    // and not before: a visitor not yet placed is still waited for.
+    if (trackingOptedOut()) return
     run(w.gtag)
     return
   }
@@ -83,6 +88,7 @@ function whenFbqReady(run: (fbq: FbqFn) => void, attempts = 40): void {
   if (typeof window === 'undefined') return
   const w = window as unknown as { fbq?: FbqFn }
   if (typeof w.fbq === 'function') {
+    if (trackingOptedOut()) return // as in whenGtagReady
     run(w.fbq)
     return
   }
@@ -553,6 +559,7 @@ function whenHjReady(run: (hj: HjFn) => void, attempts = 80): void {
   if (typeof window === 'undefined') return
   const w = window as unknown as { hj?: HjFn }
   if (typeof w.hj === 'function') {
+    if (trackingOptedOut()) return // as in whenGtagReady
     run(w.hj)
     return
   }

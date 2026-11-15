@@ -1,11 +1,14 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { languages, useI18n, detectLanguageByIP } from '@/lib/i18n'
+import { requestConsentPrompt } from '@/lib/consent'
 
 export default function LanguageSwitcher({ variant = 'header', dark = false }: { variant?: 'header' | 'footer'; dark?: boolean }) {
-  const { lang, setLang } = useI18n()
+  const { lang, setLang, t } = useI18n()
   const [open, setOpen] = useState(false)
+  // The button that opens this menu: where the keyboard goes back to when the cookie question, opened from here, is put away.
+  const toggle = useRef<HTMLButtonElement>(null)
 
   // Auto-detect by IP on first load
   useEffect(() => {
@@ -23,6 +26,7 @@ export default function LanguageSwitcher({ variant = 'header', dark = false }: {
       style={{ position: 'relative' }}
     >
       <button
+        ref={toggle}
         onClick={() => setOpen(!open)}
         className={isFooter ? 'tap-target' : 'tap-target-down'}
         style={{
@@ -55,8 +59,6 @@ export default function LanguageSwitcher({ variant = 'header', dark = false }: {
           padding: '6px 0',
           minWidth: 200,
           zIndex: 200,
-          maxHeight: 320,
-          overflowY: 'auto',
         }}>
           <p style={{
             padding: '8px 16px 6px',
@@ -67,6 +69,8 @@ export default function LanguageSwitcher({ variant = 'header', dark = false }: {
           }}>
             Language & Currency
           </p>
+          {/* The list scrolls by itself, so the row under it is always in view. */}
+          <div style={{ maxHeight: 264, overflowY: 'auto' }}>
           {languages.map((l) => (
             <button
               key={l.code}
@@ -105,6 +109,29 @@ export default function LanguageSwitcher({ variant = 'header', dark = false }: {
               )}
             </button>
           ))}
+          </div>
+          {/* The way back to the cookie question from every page that has the
+              navigation: several pages (transfers, contact, the account) have
+              no footer, where the other "Cookie Preferences" is. This menu is
+              the site's settings on those pages. */}
+          <div style={{
+            borderTop: isFooter ? '1px solid rgba(255,255,255,0.1)' : '1px solid var(--border)',
+            marginTop: 6, paddingTop: 6,
+          }}>
+            <button
+              type="button"
+              data-cookie-preferences=""
+              onClick={() => { setOpen(false); requestConsentPrompt(toggle.current) }}
+              style={{
+                display: 'flex', alignItems: 'center', width: '100%', minHeight: 44, padding: '0 16px',
+                background: 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left',
+                fontFamily: 'var(--font-dm-sans)', fontSize: 13, fontWeight: 500,
+                color: isFooter ? '#fff' : 'var(--text-primary)',
+              }}
+            >
+              {t('Cookie Preferences')}
+            </button>
+          </div>
         </div>
       )}
     </div>

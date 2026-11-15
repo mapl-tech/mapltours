@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import EditorialPage, { Section } from '@/components/EditorialPage'
+import CookiePreferencesButton from '@/components/CookiePreferencesButton'
 
 export const metadata: Metadata = {
   title: 'Privacy Policy',
@@ -96,9 +97,10 @@ export default function PrivacyPage() {
       <Section title="Cookies">
         <p>
           We use cookies and similar technologies to keep you logged in, remember your itinerary cart, show your
-          booking confirmation only on the device you booked on, and measure how the site is performing. Our analytics and advertising partners (Google, Meta and Hotjar) set cookies of their own to measure visits and the results of our ads; none of them load when your browser sends Do Not Track or Global Privacy Control. You can disable cookies in your browser settings, but some parts of the site
+          booking confirmation only on the device you booked on, and measure how the site is performing. Our analytics and advertising partners (Google, Meta and Hotjar) set cookies of their own to measure visits and the results of our ads; none of them load when your browser sends Do Not Track or Global Privacy Control. If you are in the United Kingdom, the European Union, the wider European Economic Area or Switzerland, none of them load until you say yes when we ask, and booking works the same whichever you choose. Wherever you are, you can turn them off, or back on, at any time: use the Cookie Preferences button below, or the link of the same name in the footer of this page. To remember your answer, or that we did not need to ask, we keep one cookie of our own, and it holds nothing else. You can disable cookies in your browser settings, but some parts of the site
           (checkout, saved trips) may not work properly without them.
         </p>
+        <CookiePreferencesButton />
       </Section>
 
       <Section title="Data retention">

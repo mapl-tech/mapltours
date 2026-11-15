@@ -14,6 +14,7 @@ vi.mock('@/components/EditorialPage', () => ({
 }))
 
 import PrivacyPage from '../../app/privacy/page'
+import { CONSENT_COUNTRIES } from '../../lib/consent'
 
 /**
  * Every paid booking is copied to the ops Google Calendar by the Stripe
@@ -64,11 +65,16 @@ describe('privacy policy processor list', () => {
     expect(item).toContain('We advertise on Google Search')
     expect(item).toContain("Google's advertising tag on our site lets Google record visits to our pages and set its own cookies")
     // True only while nothing hands the tag a guest's details: no enhanced conversions, no user_data.
+    // (`ad_user_data` is not that: it is the consent key in Trackers' one gtag('consent') line, which says the
+    // visitor agreed to their visit being used for ads. It carries no details, and the pattern steps over it.)
     expect(item).toContain('We do not send Google your name, email address or phone number for advertising')
-    for (const f of ['components/Trackers.tsx', 'lib/analytics.ts']) expect(readFileSync(resolve(process.cwd(), f), 'utf8'), f).not.toMatch(/user_data|enhanced_conversion|allow_enhanced_conversions/)
+    for (const f of ['components/Trackers.tsx', 'lib/analytics.ts']) expect(readFileSync(resolve(process.cwd(), f), 'utf8'), f).not.toMatch(/(?<!ad_)user_data|enhanced_conversion|allow_enhanced_conversions/)
+    expect('gtag("set", "user_data", {})').toMatch(/(?<!ad_)user_data/)
+    expect("{ ad_user_data: 'granted' }").not.toMatch(/(?<!ad_)user_data/)
     // One gate for every tag: a visitor who sends Do Not Track or Global Privacy Control gets none of them.
     expect(item).toContain('with Do Not Track or Global Privacy Control enabled, it does not load')
-    expect(trackers).toContain('if (!allowed) return null')
+    expect(trackers).toContain("const allowed = tracked && decision === 'allow'")
+    expect(trackers).toContain('{allowed && <>')
   })
 
   test('the Cookies section says our analytics and advertising partners set cookies of their own', () => {
@@ -76,6 +82,17 @@ describe('privacy policy processor list', () => {
     expect(cookies).toContain('Our analytics and advertising partners (Google, Meta and Hotjar) set cookies of their own to measure visits and the results of our ads; none of them load when your browser sends Do Not Track or Global Privacy Control.')
     // What it already said stays.
     expect(cookies).toContain('show your booking confirmation only on the device you booked on')
+    // The cookie question (lib/consent, components/ConsentPrompt), since Nov 14 2026. Change the two together.
+    expect(cookies).toContain('If you are in the United Kingdom, the European Union, the wider European Economic Area or Switzerland, none of them load until you say yes when we ask, and booking works the same whichever you choose.')
+    // The four places named are the ones lib/consent asks in: the EU and EEA lists, the UK, and Switzerland.
+    for (const c of ['GB', 'FR', 'NO', 'CH']) expect(CONSENT_COUNTRIES, c).toContain(c)
+    expect(cookies).toContain('Wherever you are, you can turn them off, or back on, at any time: use the Cookie Preferences button below, or the link of the same name in the footer of this page.')
+    // Both are there: the button in this section, and the footer this page is given (EditorialPage renders Footer).
+    expect(html.match(/<section data-title="Cookies">([\s\S]*?)<\/section>/)?.[1] ?? '').toContain('<button type="button" class="cookie-prefs-btn">Cookie Preferences</button>')
+    expect(readFileSync(resolve(process.cwd(), 'components/EditorialPage.tsx'), 'utf8')).toContain('<Footer />')
+    // One cookie: an answer, or "na" for a visitor outside those places, and when it was written. Nothing else (lib/consent consentCookie).
+    expect(cookies).toContain('To remember your answer, or that we did not need to ask, we keep one cookie of our own, and it holds nothing else.')
+    expect(readFileSync(resolve(process.cwd(), 'components/Footer.tsx'), 'utf8')).toContain("onClick={(e) => requestConsentPrompt(e.currentTarget)}>{t('Cookie Preferences')}</button>")
   })
 
   test('names the business responsible for the data, and no address (owner, Nov 11 2026)', () => {

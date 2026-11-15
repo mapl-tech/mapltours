@@ -18,7 +18,26 @@
  * Attribution is best-effort garnish and must never be able to fail a
  * checkout; the API routes additionally gate the write on the live schema
  * having the column (see lib/checkout-schema.ts).
+ *
+ * Consent (Nov 14 2026). For a visitor who may not be measured (lib/consent:
+ * in the UK, the EU or the EEA without a yes, or anyone who has said no)
+ * nothing here is written to the browser or read back from it. The landing
+ * is held in memory for the page instead (`held`): it still rides with a
+ * booking made on that visit, beside the opt-out flag, and it is stored the
+ * moment the visitor says yes or turns out to be outside the region. For
+ * everyone else every line below does what it did before.
+ *
+ * One moment needs saying. Until the visitor's country is known (a fraction
+ * of a second on a first page), lib/consent goes by the browser's clock. A
+ * visitor whose clock says "outside the region" has the landing written at
+ * once, as it always was, so that nothing changes for the guests who are
+ * most of our bookings. A copy is kept (`pending`): if the lookup then
+ * places them in the region after all (a traveller whose laptop keeps home
+ * time), what was written is taken back out and the copy is held instead.
  */
+
+// The only import: the consent rule, which is itself free of browser-only code at load.
+import { consentBlocksTracking, consentUndecided, onConsentChange, storedConsent } from './consent'
 
 const KEY = 'mapl-attribution'
 const MAX_AGE_DAYS = 90
@@ -92,11 +111,14 @@ export function readGaIds(cookie: string, measurementId: string = GA4_MEASUREMEN
 }
 
 /**
- * Does this visitor's browser ask not to be tracked?
+ * May this visitor not be tracked? True when the browser asks not to be (Do
+ * Not Track or Global Privacy Control), and true for a visitor in the UK, the
+ * EU or the EEA who has not said yes to the cookie prompt, or anyone who has
+ * said no (lib/consent).
  *
- * Deliberately duplicated from components/Trackers rather than imported: that
- * is a client component, and this module is also pulled into server code.
- * Both must agree, so change them together.
+ * The browser-signal half is deliberately duplicated from components/Trackers
+ * rather than imported: that is a client component, and this module is also
+ * pulled into server code. Both must agree, so change them together.
  */
 export function trackingOptedOut(): boolean {
   try {
@@ -108,7 +130,7 @@ export function trackingOptedOut(): boolean {
     const gpc =
       (window as unknown as { globalPrivacyControl?: boolean }).globalPrivacyControl === true ||
       (navigator as unknown as { globalPrivacyControl?: boolean }).globalPrivacyControl === true
-    return dnt || gpc
+    return dnt || gpc || consentBlocksTracking()
   } catch {
     return false
   }
@@ -347,10 +369,90 @@ function seedFirstTouch(existing: unknown): void {
   } catch { /* never break the page over analytics */ }
 }
 
+/**
+ * A landing read while this visitor may not be measured (see the header). It
+ * never reaches the browser's storage from here: storeHeldAttribution writes
+ * it once the visitor may be, and getStoredAttribution sends it with a
+ * booking made meanwhile. `returnLanding` is judged when the landing is
+ * read, because the address it is judged from changes as the visitor moves.
+ */
+let held: { touch: Attribution; hasSignal: boolean; returnLanding: boolean } | null = null
+/** A landing written before the visitor was placed, kept in case it has to be taken back (see the header). */
+let pending: { touch: Attribution; hasSignal: boolean; returnLanding: boolean } | null = null
+let followingConsent = false
+
+/**
+ * From the first capture on a page, follow the visitor's answer to the
+ * cookie question: a yes, or being placed outside the region, stores what
+ * was held; a no removes what an earlier visit stored.
+ */
+function followConsent(): void {
+  if (followingConsent) return
+  followingConsent = true
+  try {
+    onConsentChange(() => {
+      if (storedConsent() === 'no') {
+        pending = null
+        forgetAttribution()
+        return
+      }
+      if (consentBlocksTracking()) {
+        // Placed in the region with no yes on record: what the clock let
+        // through a moment ago comes back out of the browser, and is held
+        // like any other landing of a visitor who may not be measured.
+        if (pending) {
+          forgetAttribution()
+          holdLanding(pending.touch, pending.hasSignal, pending.returnLanding)
+          pending = null
+        }
+        return
+      }
+      pending = null
+      storeHeldAttribution()
+    })
+  } catch {
+    // No events in this environment: the next capture, or the checkout's
+    // read, stores what is held (both call storeHeldAttribution).
+  }
+}
+
+/** Hold a landing for the page. Last-non-direct here too: one without signal never replaces one already held. */
+function holdLanding(touch: Attribution, hasSignal: boolean, returnLanding: boolean): void {
+  if (!hasSignal && held) return
+  held = { touch, hasSignal, returnLanding }
+}
+
+/**
+ * Store what was held, now that the visitor may be measured. A no-op while
+ * they still may not be, or when nothing is held. Never throws.
+ */
+export function storeHeldAttribution(): void {
+  try {
+    if (typeof window === 'undefined' || !held || consentBlocksTracking()) return
+    const { touch, hasSignal, returnLanding } = held
+    held = null
+    storeLanding(touch, hasSignal, returnLanding)
+  } catch { /* never break the page over analytics */ }
+}
+
+/** Remove everything this module keeps in the browser: a visitor said no. Never throws. */
+export function forgetAttribution(): void {
+  try {
+    if (typeof window === 'undefined') return
+    for (const key of [KEY, FIRST_TOUCH_KEY, FIRST_TOUCH_SINCE_KEY]) {
+      try { localStorage.removeItem(key) } catch { /* storage refused: there was nothing kept */ }
+    }
+  } catch { /* never break the page over analytics */ }
+}
+
 /** Record the visit's origin. Safe to call on every page load; never throws. */
 export function captureAttribution(): void {
   try {
     if (typeof window === 'undefined') return
+    followConsent()
+    // A no given on the bio page could not reach what this site keeps: on
+    // arriving with one, take it out. A no given here did so when it was given.
+    if (storedConsent() === 'no') forgetAttribution()
     if (isCapturePausedPath(window.location.pathname)) return
     const p = new URLSearchParams(window.location.search)
     let referrer = ''
@@ -374,6 +476,29 @@ export function captureAttribution(): void {
     }
     const hasSignal = Object.keys(fresh).length > 0
 
+    if (consentBlocksTracking()) {
+      // Nothing is written to this visitor's browser, and nothing read from
+      // it: the landing is held for the page. Pathname only, as below.
+      holdLanding(
+        { ...fresh, landing: scrub(window.location.pathname).slice(0, 200), ts: new Date().toISOString() },
+        hasSignal,
+        hasSignal && isReturnLanding(),
+      )
+      return
+    }
+    // A landing held earlier on this page (the visitor has since said yes, or
+    // been placed outside the region) goes in first, so it is never lost.
+    storeHeldAttribution()
+    // Not placed yet, and going by the clock: written below as it always was,
+    // with a copy kept in case the lookup says "in the region" after all.
+    if (consentUndecided() && (hasSignal || !pending)) {
+      pending = {
+        touch: { ...fresh, landing: scrub(window.location.pathname).slice(0, 200), ts: new Date().toISOString() },
+        hasSignal,
+        returnLanding: hasSignal && isReturnLanding(),
+      }
+    }
+
     let existing: Attribution | null = null
     try { existing = JSON.parse(localStorage.getItem(KEY) ?? 'null') } catch { existing = null }
     seedFirstTouch(existing)
@@ -396,6 +521,22 @@ export function captureAttribution(): void {
   } catch { /* never break the page over analytics */ }
 }
 
+/**
+ * Store a landing that was held (storeHeldAttribution): the same steps, in
+ * the same order, as the end of captureAttribution, with the landing, its
+ * time and its return-landing verdict as they were when it was read.
+ */
+function storeLanding(touch: Attribution, hasSignal: boolean, returnLanding: boolean): void {
+  let existing: Attribution | null = null
+  try { existing = JSON.parse(localStorage.getItem(KEY) ?? 'null') } catch { existing = null }
+  seedFirstTouch(existing)
+  const ageMs = Date.now() - Date.parse(existing?.ts ?? '')
+  const expired = !Number.isFinite(ageMs) || ageMs > MAX_AGE_DAYS * 86400_000
+  if (!hasSignal && existing && !expired) return
+  if (hasSignal && !returnLanding) keepFirstTouch(touch)
+  localStorage.setItem(KEY, JSON.stringify(touch))
+}
+
 /** A visitor's browser agent (WebMCP) started a booking: record it as the
  *  source so agent-driven bookings are countable in the admin and in
  *  `bookings.attribution`. Overrides UTM/referrer source but keeps the
@@ -403,6 +544,25 @@ export function captureAttribution(): void {
 export function markAgentAttribution(tool: string): void {
   try {
     if (typeof window === 'undefined') return
+    followConsent()
+    if (consentBlocksTracking()) {
+      // Held for the page, like any landing of a visitor who may not be
+      // measured: the booking the agent started still says an agent started it.
+      held = {
+        touch: {
+          ...(held?.touch.referrer ? { referrer: held.touch.referrer } : {}),
+          source: 'webmcp',
+          medium: 'browser-agent',
+          content: scrub(tool).slice(0, 60),
+          landing: scrub(window.location.pathname).slice(0, 200),
+          ts: new Date().toISOString(),
+        },
+        hasSignal: true,
+        returnLanding: false,
+      }
+      return
+    }
+    storeHeldAttribution()
     let existing: Attribution | null = null
     try { existing = JSON.parse(localStorage.getItem(KEY) ?? 'null') } catch { existing = null }
     seedFirstTouch(existing)
@@ -418,6 +578,8 @@ export function markAgentAttribution(tool: string): void {
     // an existing first touch is left alone.
     keepFirstTouch(fresh)
     localStorage.setItem(KEY, JSON.stringify(fresh))
+    // Written before the visitor was placed: a copy, in case it has to be taken back (see the header).
+    if (consentUndecided()) pending = { touch: fresh, hasSignal: true, returnLanding: false }
   } catch { /* never break the page over analytics */ }
 }
 
@@ -436,6 +598,15 @@ export function markAgentAttribution(tool: string): void {
 export function getStoredAttribution(): Attribution | null {
   try {
     if (typeof window === 'undefined') return null
+    if (consentBlocksTracking()) {
+      // A visitor who may not be measured: nothing is read from their
+      // browser (no stored touch, no first touch, no tag cookies). The
+      // landing held for this page goes with the booking, beside the flag
+      // that keeps it from Google and Meta, and the browser's family.
+      return { ...(held?.touch ?? {}), dnt: '1', ...liveBrowserFamily() }
+    }
+    // Held, and the visitor may now be measured: store it, then read as always.
+    storeHeldAttribution()
     const raw = localStorage.getItem(KEY)
     const stored = raw ? (JSON.parse(raw) as Attribution) : null
     const cookie = typeof document !== 'undefined' ? document.cookie : ''

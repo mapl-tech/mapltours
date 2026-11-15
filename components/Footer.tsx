@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import LanguageSwitcher from './LanguageSwitcher'
 import { useI18n } from '@/lib/i18n'
+import { requestConsentPrompt } from '@/lib/consent'
 import { SOCIALS } from './Socials'
 
 /**
@@ -190,6 +191,8 @@ export default function Footer() {
                 onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--text-on-dark-3)' }}
               >{t(label)}</Link>
             ))}
+            {/* Opens the cookie question again, for anyone: the way to change an answer, or to give one unasked. */}
+            <button type="button" className="footer-cookie-choices" onClick={(e) => requestConsentPrompt(e.currentTarget)}>{t('Cookie Preferences')}</button>
           </div>
         </div>
       </div>

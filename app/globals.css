@@ -4408,3 +4408,86 @@ button.cal-ev:hover { background: #fff; border-color: var(--cal-edge); }
   .adm-choice, .adm-input, .adm-chip, .adm-btn, .adm-seg-btn, .adm-bk-head, .adm-bk-chev, .adm-bk-panel, .adm-bk-clip { transition: none; }
   .adm-btn:active:not(:disabled):not([aria-disabled="true"]) { transform: none; }
 }
+
+/* ── The cookie question (components/ConsentPrompt) ─────────────────────────
+   Asked first of visitors in the UK, the EU and the EEA; opened by anyone
+   from "Cookie Preferences". A card at the TOP of the page, under the
+   navigation, never a bar at the bottom: the buttons that book are at the
+   bottom (Add to Trip on a reel, the total and Pay on a phone) and it must
+   not cover them. It belongs to the page, not the screen (absolute, not
+   fixed): it scrolls away with the page, so a guest who reads on without
+   answering never has it over the form they are filling in. The two answers
+   are the same size, weight and colour: neither is the one the page wants.
+   Above the page (its sticky bars stop at 90), and below everything that
+   opens over the page: the phone menu (99), the navigation (100), the search
+   sheet (120), the cart (200), the reel's sheets (310, 320) and every dialog
+   (1000 and up). */
+.consent {
+  --consent-top: 64px;
+  position: absolute; z-index: 95;
+  top: calc(var(--consent-top) + env(safe-area-inset-top, 0px)); left: 12px; right: 12px;
+  max-width: 420px; margin: 0 auto;
+  padding: 16px; border-radius: 16px;
+  background: #141414; color: #fff; border: 1px solid rgba(255, 255, 255, 0.16);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
+  font-family: var(--font-dm-sans);
+}
+/* A page without the navigation (the reel): under that page's own top controls. */
+.consent[data-bare="true"] { --consent-top: 76px; }
+/* Opened by the guest, from a button that is usually at the foot of the page:
+   pinned to the screen where they are. Pinned, it could not be scrolled to,
+   so it is never taller than the screen and scrolls inside itself instead
+   (very large text), and both answers can always be reached. */
+.consent[data-requested="true"] {
+  /* Above the menus it can be opened from (the phone menu, the language and
+     currency menu, the cart), below every dialog. */
+  position: fixed; z-index: 400;
+  max-height: calc(100vh - var(--consent-top) - env(safe-area-inset-top, 0px) - 12px);
+  max-height: calc(100dvh - var(--consent-top) - env(safe-area-inset-top, 0px) - 12px);
+  overflow-y: auto;
+}
+.consent-text { margin: 0; font-size: 16px; line-height: 1.45; color: #fff; text-wrap: pretty; }
+.consent-text a { color: #fff; font-weight: 600; text-decoration: underline; text-underline-offset: 3px; }
+/* Side by side when both labels fit in half the card; one above the other when
+   either does not (a 320px phone, a longer language). Each basis is exactly
+   half, so two that fit share the row equally, and a label wider than half
+   sends the second to its own row, where both grow to the full width. They
+   are the same size either way. */
+.consent-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.consent-btn {
+  flex: 1 1 calc(50% - 4px); min-width: max-content; min-height: 48px; padding: 6px 12px;
+  border-radius: 999px; border: 1.5px solid #fff; background: transparent; color: #fff;
+  font: 600 16px/1.2 var(--font-dm-sans); text-align: center; white-space: nowrap; cursor: pointer;
+}
+@media (hover: hover) { .consent-btn:hover { background: #fff; color: #141414; } }
+/* Close, on a card the guest opened: looking at the choice is not making it. In the corner, beside the first lines. */
+.consent-close {
+  position: absolute; top: 2px; right: 2px; width: 44px; height: 44px;
+  display: grid; place-items: center; padding: 0;
+  background: none; border: 0; border-radius: 999px; color: #fff; cursor: pointer;
+}
+.consent[data-requested="true"] .consent-text { padding-right: 32px; }
+.consent a:focus-visible, .consent button:focus-visible { outline: 2px solid #fff !important; outline-offset: 2px; border-radius: 999px; }
+.consent .consent-close:focus-visible { outline-offset: -4px; }
+/* The card itself holds the focus for a moment when a guest opens it. Its ring
+   is drawn inside its own edge, on its own dark ground: outside, it would be
+   white on whatever the page is, and most pages are white. */
+.consent:focus { outline: none; }
+.consent:focus-visible { outline: 2px solid #fff !important; outline-offset: -5px; }
+/* A narrow phone: closer to the screen's edges and tighter inside, so the two
+   answers still sit side by side in English at 320px and the card stays
+   short. A longer language still puts one above the other. */
+@media (max-width: 359px) {
+  .consent { left: 8px; right: 8px; padding: 12px; }
+  .consent-btn { padding: 6px 8px; font-size: 15px; }
+}
+@media (min-width: 768px) {
+  .consent, .consent[data-bare="true"] { --consent-top: 80px; left: auto; right: 24px; margin: 0; width: 400px; }
+}
+/* The way back to it from the Privacy Policy's Cookies section (components/CookiePreferencesButton). */
+.cookie-prefs-btn { display: inline-flex; align-items: center; min-height: 44px; margin-top: 12px; padding: 0 18px; border-radius: 999px; border: 1.5px solid currentColor; background: transparent; color: inherit; font: 600 15px/1.2 var(--font-dm-sans); cursor: pointer; }
+@media (hover: hover) { .cookie-prefs-btn:hover { background: var(--text-primary, #111); color: var(--bg, #fff); border-color: var(--text-primary, #111); } }
+/* The footer's way back to it: a text button dressed as the links beside it. */
+.footer-cookie-choices { background: none; border: 0; padding: 0; margin: 0; font: inherit; color: var(--text-on-dark-3); cursor: pointer; transition: color 0.15s ease; }
+@media (hover: hover) { .footer-cookie-choices:hover { color: var(--text-on-dark-2); } }
+@media (pointer: coarse) { .footer-cookie-choices { display: inline-flex; align-items: center; min-height: 44px; } }

@@ -197,6 +197,8 @@ const T: Record<string, Record<string, string>> = {
     'Company': 'Empresa', 'Resources': 'Recursos', 'Destinations': 'Destinos', 'Connect': 'Conectar',
     'About': 'Acerca de', 'Careers': 'Carreras', 'Press': 'Prensa', 'Blog': 'Blog',
     'Help Center': 'Centro de Ayuda', 'Safety': 'Seguridad', 'Accessibility': 'Accesibilidad', 'Gift Cards': 'Tarjetas de Regalo',
+    // The cookie question (components/ConsentPrompt), asked first of visitors in the UK, the EU and the EEA.
+    "Can we use cookies from Google, Meta and Hotjar to see how people use the site, measure our ads, and show our ads to people who have visited? Booking works the same either way.": "¿Podemos usar cookies de Google, Meta y Hotjar para ver cómo se usa el sitio, medir nuestros anuncios y mostrarlos a quienes han visitado el sitio? La reserva funciona igual en ambos casos.", "They are on now.": "Ahora están activadas.", "They are off now.": "Ahora están desactivadas.", "No thanks": "No, gracias", "Yes, that’s fine": "Sí, de acuerdo", "Close": "Cerrar", "Cookie choice": "Elección de cookies", "Measurement and advertising cookies are off, because your browser asks sites not to track you. There is nothing to choose here.": "Las cookies de medición y publicidad están desactivadas porque tu navegador pide a los sitios que no te rastreen. No hay nada que elegir aquí.",
     'Privacy Policy': 'Politica de Privacidad', 'Terms of Service': 'Terminos de Servicio', 'Cookie Preferences': 'Preferencias de Cookies',
     'All rights reserved.': 'Todos los derechos reservados.',
     'Full day': 'Dia completo',
@@ -288,6 +290,8 @@ const T: Record<string, Record<string, string>> = {
     'Company': 'Entreprise', 'Resources': 'Ressources', 'Destinations': 'Destinations', 'Connect': 'Connexion',
     'About': 'A propos', 'Careers': 'Carrieres', 'Press': 'Presse', 'Blog': 'Blog',
     'Help Center': 'Centre d\'aide', 'Safety': 'Securite', 'Accessibility': 'Accessibilite', 'Gift Cards': 'Cartes Cadeaux',
+    // The cookie question (components/ConsentPrompt), asked first of visitors in the UK, the EU and the EEA.
+    "Can we use cookies from Google, Meta and Hotjar to see how people use the site, measure our ads, and show our ads to people who have visited? Booking works the same either way.": "Pouvons-nous utiliser des cookies de Google, Meta et Hotjar pour voir comment le site est utilisé, mesurer nos publicités et les montrer aux personnes qui ont visité le site ? La réservation fonctionne de la même façon dans les deux cas.", "They are on now.": "Ils sont actuellement activés.", "They are off now.": "Ils sont actuellement désactivés.", "No thanks": "Non merci", "Yes, that’s fine": "Oui, d’accord", "Close": "Fermer", "Cookie choice": "Choix des cookies", "Measurement and advertising cookies are off, because your browser asks sites not to track you. There is nothing to choose here.": "Les cookies de mesure et de publicité sont désactivés, car votre navigateur demande aux sites de ne pas vous suivre. Il n’y a rien à choisir ici.",
     'Privacy Policy': 'Politique de confidentialite', 'Terms of Service': 'Conditions d\'utilisation', 'Cookie Preferences': 'Preferences de cookies',
     'All rights reserved.': 'Tous droits reserves.',
     'Full day': 'Journee complete',
@@ -366,6 +370,8 @@ const T: Record<string, Record<string, string>> = {
     'Company': 'Unternehmen', 'Resources': 'Ressourcen', 'Destinations': 'Reiseziele', 'Connect': 'Verbinden',
     'About': 'Uber uns', 'Careers': 'Karriere', 'Press': 'Presse', 'Blog': 'Blog',
     'Help Center': 'Hilfezentrum', 'Safety': 'Sicherheit', 'Accessibility': 'Barrierefreiheit', 'Gift Cards': 'Geschenkkarten',
+    // The cookie question (components/ConsentPrompt), asked first of visitors in the UK, the EU and the EEA.
+    "Can we use cookies from Google, Meta and Hotjar to see how people use the site, measure our ads, and show our ads to people who have visited? Booking works the same either way.": "Dürfen wir Cookies von Google, Meta und Hotjar verwenden, um zu sehen, wie die Website genutzt wird, unsere Anzeigen zu messen und sie Personen zu zeigen, die die Website besucht haben? Die Buchung funktioniert in beiden Fällen gleich.", "They are on now.": "Die Cookies sind derzeit eingeschaltet.", "They are off now.": "Die Cookies sind derzeit ausgeschaltet.", "No thanks": "Nein danke", "Yes, that’s fine": "Ja, einverstanden", "Close": "Schließen", "Cookie choice": "Cookie-Auswahl", "Measurement and advertising cookies are off, because your browser asks sites not to track you. There is nothing to choose here.": "Mess- und Werbe-Cookies sind ausgeschaltet, weil Ihr Browser Websites bittet, Sie nicht zu verfolgen. Hier gibt es nichts zu wählen.",
     'Privacy Policy': 'Datenschutz', 'Terms of Service': 'Nutzungsbedingungen', 'Cookie Preferences': 'Cookie-Einstellungen',
     'All rights reserved.': 'Alle Rechte vorbehalten.',
     'Full day': 'Ganzer Tag',
@@ -408,6 +414,8 @@ const T: Record<string, Record<string, string>> = {
     'Company': 'Empresa', 'Resources': 'Recursos', 'Destinations': 'Destinos', 'Connect': 'Conectar',
     'About': 'Sobre', 'Careers': 'Carreiras', 'Press': 'Imprensa', 'Blog': 'Blog',
     'Help Center': 'Central de Ajuda', 'Safety': 'Seguranca', 'Accessibility': 'Acessibilidade', 'Gift Cards': 'Cartoes Presente',
+    // The cookie question (components/ConsentPrompt), asked first of visitors in the UK, the EU and the EEA.
+    "Can we use cookies from Google, Meta and Hotjar to see how people use the site, measure our ads, and show our ads to people who have visited? Booking works the same either way.": "Podemos usar cookies do Google, da Meta e do Hotjar para ver como o site é usado, medir nossos anúncios e mostrá-los a quem já visitou o site? A reserva funciona da mesma forma nos dois casos.", "They are on now.": "Agora estão ativados.", "They are off now.": "Agora estão desativados.", "No thanks": "Não, obrigado", "Yes, that’s fine": "Sim, tudo bem", "Close": "Fechar", "Cookie choice": "Escolha de cookies", "Measurement and advertising cookies are off, because your browser asks sites not to track you. There is nothing to choose here.": "Os cookies de medição e publicidade estão desativados porque o seu navegador pede aos sites que não rastreiem você. Não há nada para escolher aqui.",
     'Privacy Policy': 'Politica de Privacidade', 'Terms of Service': 'Termos de Servico', 'Cookie Preferences': 'Preferencias de Cookies',
     'All rights reserved.': 'Todos os direitos reservados.',
     'Full day': 'Dia inteiro',

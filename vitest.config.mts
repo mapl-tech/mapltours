@@ -27,6 +27,8 @@ export default defineConfig({
   },
   test: {
     include: ['tests/unit/**/*.spec.ts', 'tests/unit/**/*.spec.tsx'],
+    // Places every test's visitor outside the consent region before it runs (see the file).
+    setupFiles: ['tests/setup/consent.ts'],
     environment: 'node',
   },
 })

@@ -11,6 +11,7 @@ import { trackLead } from '@/lib/analytics'
 import {
   POPUP_CODE,
   POPUP_DELAY_MS,
+  consentHoldsPopup,
   POPUP_PERCENT,
   nextPopupStep,
   popupBusy,
@@ -101,7 +102,11 @@ export default function CouponPopup() {
         || document.querySelector('[role="combobox"][aria-expanded="true"]') !== null
       const busy = popupBusy({
         hidden: document.hidden,
-        otherDialog: document.querySelector('[role="dialog"][aria-modal="true"]') !== null,
+        // The cookie question counts as another dialog while it is fresh: one
+        // question at a time, but a card nobody answers must not hold the
+        // discount back for good (lib/coupon-popup CONSENT_HOLD_MS).
+        otherDialog: document.querySelector('[role="dialog"][aria-modal="true"]') !== null
+          || consentHoldsPopup(document.querySelector('[data-consent-prompt]')?.getAttribute('data-since'), Date.now()),
         focusInField,
         lastFormActivityAt: lastFormActivity.current,
         lastTapAt: lastTap.current,
