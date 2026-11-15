@@ -80,8 +80,11 @@ export interface TourHandoff {
 
 export type Handoff = RideHandoff | TourHandoff
 
+/** Campaign tags for a link that is not an assistant's (the cart reminder email). */
+export interface LinkUtm { source: string; medium: string; campaign: string; content: string }
+
 /** The link a booking tool returns. Short parameter names keep it readable in a chat. */
-export function bookingLink(origin: string, h: Handoff, via: Via, tool: string): string {
+export function bookingLink(origin: string, h: Handoff, via: Via, tool: string, utm?: LinkUtm): string {
   const u = new URL(BOOK_PATH, origin)
   const p = u.searchParams
   if (h.kind === 'ride') {
@@ -100,10 +103,10 @@ export function bookingLink(origin: string, h: Handoff, via: Via, tool: string):
     const hotel = pickupText(h.pickupHotel)
     if (hotel) p.set('hotel', hotel)
   }
-  p.set('utm_source', via)
-  p.set('utm_medium', 'ai_agent')
-  p.set('utm_campaign', 'connector')
-  p.set('utm_content', tool)
+  p.set('utm_source', utm?.source ?? via)
+  p.set('utm_medium', utm?.medium ?? 'ai_agent')
+  p.set('utm_campaign', utm?.campaign ?? 'connector')
+  p.set('utm_content', utm?.content ?? tool)
   return u.toString()
 }
 

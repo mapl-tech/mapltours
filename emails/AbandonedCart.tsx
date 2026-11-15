@@ -15,6 +15,8 @@ export interface AbandonedCartProps {
   kind?: 'tour' | 'transfer'
   /** What they left behind. `sub` is a short second line (destination, date). */
   items: Array<{ title: string; sub: string; price: number }>
+  /** The signed stop link (also sent as List-Unsubscribe); omitted only when no key is set. */
+  stopUrl?: string | null
 }
 
 function fmtMoney(n: number | null | undefined, currency: string): string {
@@ -29,7 +31,7 @@ function fmtMoney(n: number | null | undefined, currency: string): string {
  * but never paid. Warm, low pressure, one clear button back to finish.
  */
 export default function AbandonedCart(props: AbandonedCartProps) {
-  const { firstName, bookingRef, currency, total, ctaUrl, ctaLabel, items, kind = 'tour' } = props
+  const { firstName, bookingRef, currency, total, ctaUrl, ctaLabel, items, kind = 'tour', stopUrl } = props
   const name = firstName?.trim() || 'there'
   // Two true things about what is in the cart. The tour lines used to go out
   // with ride carts too ("Local guides", "a full itinerary").
@@ -122,6 +124,16 @@ export default function AbandonedCart(props: AbandonedCartProps) {
           Browse more experiences
         </Link>
       </Section>
+
+      {stopUrl ? (
+        <Text style={s.footnote}>
+          Not planning this trip any more?{' '}
+          <Link href={stopUrl} style={{ color: 'inherit', textDecoration: 'underline' }}>
+            Stop these reminders
+          </Link>
+          .
+        </Text>
+      ) : null}
     </MaplLayout>
   )
 }

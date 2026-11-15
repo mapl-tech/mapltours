@@ -36,6 +36,17 @@ const state = vi.hoisted(() => ({
   flagged: [] as Record<string, unknown>[],
   /** Every RPC the route issued. */
   rpcs: [] as Array<{ fn: string; args: Record<string, unknown> }>,
+  /** Inboxes in cart_reminder_stops, and whether reading it fails. */
+  stops: [] as string[],
+  stopsError: false,
+  /** The coupons row the code lookup finds (null: no such code). */
+  coupon: null as Record<string, unknown> | null,
+  /** Paid redemptions of the code per lowercased email. */
+  redemptions: {} as Record<string, number>,
+  /** Every sendEmail call with all its arguments. */
+  sends: [] as Array<Record<string, unknown>>,
+  /** What sendEmail answers. */
+  sendOk: true,
 }))
 
 vi.mock('stripe', () => ({
@@ -57,6 +68,31 @@ vi.mock('@/lib/supabase/service', () => ({
       return { data: [{ id: args.p_booking_id }], error: null }
     },
     from: (table: string) => {
+      if (table === 'cart_reminder_stops') {
+        return {
+          select: () => ({
+            in: (_col: string, keys: string[]) =>
+              Promise.resolve(state.stopsError
+                ? { data: null, error: { message: 'relation does not exist' } }
+                : { data: state.stops.filter((k) => keys.includes(k)).map((inbox) => ({ inbox })), error: null }),
+          }),
+        }
+      }
+      if (table === 'coupons') {
+        const c: Record<string, unknown> = {}
+        Object.assign(c, { select: () => c, eq: () => c, maybeSingle: () => Promise.resolve({ data: state.coupon, error: null }) })
+        return c
+      }
+      if (table === 'coupon_redemptions') {
+        let email = ''
+        const c: Record<string, unknown> = {}
+        Object.assign(c, {
+          select: () => c,
+          eq: (col: string, val: unknown) => { if (col === 'email') email = String(val); return c },
+          then: (resolve: (v: unknown) => unknown) => Promise.resolve({ count: state.redemptions[email] ?? 0, error: null }).then(resolve),
+        })
+        return c
+      }
       if (table !== 'bookings') throw new Error(`unexpected table ${table}`)
       let record: { patch: Record<string, unknown>; filters: Array<[string, string, unknown]> } | null = null
       // A read's filters, applied to the synthetic rows like PostgREST would.
@@ -75,6 +111,7 @@ vi.mock('@/lib/supabase/service', () => ({
         eq: filter('eq'),
         is: filter('is'),
         gte: filter('gte'),
+        lte: filter('lte'),
         not: (col: string, op: string, val: unknown) => {
           if (col.startsWith('dispatch->') && op === 'is' && val === null) flaggedQuery = true
           return chain
@@ -97,7 +134,8 @@ vi.mock('@/lib/supabase/service', () => ({
             where.every(([op, col, val]) =>
               op === 'is' ? r[col] == null
                 : op === 'gte' ? r[col] != null && String(r[col]) >= String(val)
-                  : r[col] === val))
+                  : op === 'lte' ? r[col] != null && String(r[col]) <= String(val)
+                    : r[col] === val))
           return Promise.resolve({ data: hits, error: null }).then(resolve)
         },
       })
@@ -110,7 +148,8 @@ vi.mock('@/lib/email/send', () => ({
   sendEmail: async (args: { to: string; subject: string; react?: unknown }) => {
     state.emails.push({ to: args.to, subject: args.subject })
     state.reacts.push(args.react)
-    return { ok: true }
+    state.sends.push(args as Record<string, unknown>)
+    return state.sendOk ? { ok: true } : { ok: false, error: 'refused' }
   },
   // Pass-through: the route feeds it resolveOpsRecipients(), and the spec
   // only cares that a non-empty list reaches sendEmail.
@@ -138,6 +177,12 @@ beforeEach(() => {
   state.flagged = []
   state.rpcs = []
   state.reacts = []
+  state.stops = []
+  state.stopsError = false
+  state.coupon = null
+  state.redemptions = {}
+  state.sends = []
+  state.sendOk = true
 })
 
 const request = () =>
@@ -547,5 +592,290 @@ describe('what the recovery email says', () => {
   test('no em dash anywhere in it', async () => {
     const { text } = await send({})
     expect(text).not.toMatch(/—/)
+  })
+})
+
+/* ── The follow-ups (owner, Nov 15 2026) ─────────────────────────────────
+ * Step 2 three days after the first reminder, without a code; step 3 seven
+ * days after it, with JAMAICA5 (and not at all without a usable code). Each
+ * moves recovery_email_count by one and leaves the first reminder's time in
+ * place. A guest who has paid for anything since starting the cart gets no
+ * further step; an inbox that stopped gets nothing; never a fourth.
+ */
+describe('the follow-ups: day 3 without the code, day 7 with it', () => {
+  const DAY = 24 * HOUR
+  const STOP_KEY = 'test-cart-stop-key-0123456789'
+  const ID = 'bbbbbbbb-1111-2222-3333-444444444444'
+  const future = new Date(Date.now() + 60 * DAY).toISOString().slice(0, 10)
+  const JAMAICA5 = {
+    id: 'c-jamaica5', code: 'JAMAICA5', kind: 'percent', value: 5, applies_to: 'both', email: null,
+    max_uses: null, uses: 1, uses_per_email: 1, min_total: null, starts_at: null, expires_at: null, status: 'active',
+  }
+  const tourItem = { item_type: 'experience', experience_id: 3, title: 'Bamboo Rafting on the Martha Brae', destination: 'Falmouth', date: future, travelers: 2, line_total: 230, price_per_person: 115 }
+  const ago = (h: number) => new Date(Date.now() - h * HOUR).toISOString()
+  /** A cart whose first reminder went `h` hours ago, at `count` reminders so far. */
+  const dueRow = (h: number, count: number, over: Record<string, unknown> = {}) => row({
+    id: ID,
+    email: 'vanessa@example.com',
+    first_name: 'Vanessa Grant',
+    total_paid: 230,
+    booking_fee: 30,
+    reward_discount: 0,
+    created_at: ago(h + 1),
+    recovery_email_sent_at: ago(h),
+    recovery_email_count: count,
+    stripe_payment_id: 'pi_due',
+    booking_items: [tourItem],
+    ...over,
+  })
+  const day3 = (over: Record<string, unknown> = {}) => dueRow(73, 1, over)
+  const day7 = (over: Record<string, unknown> = {}) => dueRow(169, 2, over)
+  const followSends = () => state.sends.filter((e) => (e.tags as Array<{ value: string }>)?.some((t) => t.value === 'abandoned_cart_follow_up'))
+  const stepOf = (e: Record<string, unknown>) => (e.tags as Array<{ name: string; value: string }>).find((t) => t.name === 'step')?.value
+  const html = async (i = 0) => render(followSends()[i].react as ReactElement)
+  const text = async (i = 0) => render(followSends()[i].react as ReactElement, { plainText: true })
+  const bookHref = (page: string) => page.match(/href="(https:\/\/mapltours\.com\/book\?[^"]+)"/)?.[1]?.replace(/&amp;/g, '&')
+
+  beforeEach(() => {
+    process.env.CART_REMINDER_SECRET = STOP_KEY
+    state.coupon = { ...JAMAICA5 }
+    state.piStatuses = { pi_due: 'requires_payment_method' }
+  })
+
+  test('day 3: sent once, no code anywhere, 1 → 2 atomically, the first reminder\'s time left alone', async () => {
+    state.rows = [day3()]
+    const body = await sweep() as unknown as { followUpEmailed: number }
+    expect(body.followUpEmailed).toBe(1)
+    const [e] = followSends()
+    expect(stepOf(e)).toBe('2')
+    expect(e.to).toBe('vanessa@example.com')
+    expect(e.subject).toBe('Bamboo Rafting on the Martha Brae is still saved')
+    expect(e.dedupe).toBe(`cart-reminder-2/${ID}`)
+    const page = await html()
+    expect(page).not.toMatch(/JAMAICA5|code box|with the code/i)
+    // One item, no code: the amount is said once, as the total.
+    expect(page.match(/\$230\.00/g)).toHaveLength(1)
+    expect((await text()).toLowerCase()).toContain('ready when you are, vanessa.')
+    const [claim] = touched(ID)
+    expect(claim.patch).toEqual({ recovery_email_count: 2 })
+    expect(claim.filters).toContainEqual(['eq', 'recovery_email_count', 1])
+    expect(claim.filters).toContainEqual(['eq', 'status', 'pending'])
+  })
+
+  test('day 7: sent once with the code, 2 → 3, the saving and the new total checkout would charge', async () => {
+    state.rows = [day7()]
+    await sweep()
+    const [e] = followSends()
+    expect(stepOf(e)).toBe('3')
+    expect(e.subject).toBe('$11.50 off Bamboo Rafting on the Martha Brae')
+    expect(e.dedupe).toBe(`cart-reminder-3/${ID}`)
+    const page = await html()
+    expect(page).toContain('JAMAICA5')
+    expect(page).toContain('−$11.50')
+    expect(page).toContain('$218.50')
+    // The figure the saving is taken from stays on the page.
+    expect(page).toContain('$230.00')
+    expect((await text()).toLowerCase()).toContain("here's $11.50 off your tour, vanessa.")
+    expect(await text()).toContain('This is our last note about this trip.')
+    const [claim] = touched(ID)
+    expect(claim.patch).toEqual({ recovery_email_count: 3 })
+    expect(claim.filters).toContainEqual(['eq', 'recovery_email_count', 2])
+  })
+
+  test('each step only in its own window, and never a fourth', async () => {
+    state.rows = [
+      dueRow(71, 1, { id: 'cccccccc-1111-2222-3333-444444444441' }), // too soon for day 3
+      dueRow(121, 1, { id: 'cccccccc-1111-2222-3333-444444444442' }), // day 3 missed
+      dueRow(100, 2, { id: 'cccccccc-1111-2222-3333-444444444443' }), // too soon for day 7
+      dueRow(217, 2, { id: 'cccccccc-1111-2222-3333-444444444444' }), // day 7 missed
+      dueRow(169, 1, { id: 'cccccccc-1111-2222-3333-444444444445' }), // day 3 never went: no day 7
+      dueRow(200, 3, { id: 'cccccccc-1111-2222-3333-444444444446' }), // all three sent
+    ]
+    await sweep()
+    expect(followSends()).toHaveLength(0)
+    expect(state.updates).toHaveLength(0)
+  })
+
+  test('day 7 without a usable code does not go: used before, a code or gift card on the cart, the code paused, no margin', async () => {
+    for (const setup of [
+      () => { state.redemptions = { 'vanessa@example.com': 1 } },
+      () => { state.rows = [day7({ coupon_code: 'MAPL-ABCD-EFGH' })] },
+      () => { state.rows = [day7({ gift_card_amount: 50 })] },
+      () => { state.coupon = { ...JAMAICA5, status: 'paused' } },
+      () => { state.rows = [day7({ booking_fee: 0 })] },
+    ]) {
+      state.rows = [day7()]
+      state.sends = []; state.updates = []; state.redemptions = {}; state.coupon = { ...JAMAICA5 }
+      setup()
+      const body = await sweep()
+      expect(followSends()).toHaveLength(0)
+      expect(body.skipped).toContain('MAPL-BBBBBBBB:follow_up_3_no_code')
+      expect(state.updates).toHaveLength(0)
+    }
+  })
+
+  test('the saving is what checkout would take: 5%, never past the margin', async () => {
+    state.rows = [day7({ booking_fee: 4 })]
+    await sweep()
+    expect(followSends()[0].subject).toBe('$4.00 off Bamboo Rafting on the Martha Brae')
+    expect(await html()).toContain('$226.00')
+  })
+
+  test('the flow stops when they book anything: this trip, another tour, or a ride', async () => {
+    for (const kind of ['tour', 'transfer']) {
+      for (const due of [day3, day7]) {
+        state.rows = [due(), { ...row(), id: 'dddddddd-1111-2222-3333-444444444444', email: 'Vanessa@Example.com', booking_type: kind, status: 'paid', paid_at: ago(10), stripe_payment_id: 'pi_paid' }]
+        state.sends = []; state.updates = []
+        const body = await sweep()
+        expect(followSends()).toHaveLength(0)
+        expect(body.skipped.some((x) => /^MAPL-BBBBBBBB:follow_up_[23]_booked_since$/.test(x))).toBe(true)
+        expect(touched(ID)).toHaveLength(0)
+      }
+    }
+    // The cart itself paid: it is no longer pending, so it is never selected.
+    state.rows = [day7({ status: 'paid', paid_at: ago(5) })]
+    state.sends = []; state.updates = []
+    await sweep()
+    expect(followSends()).toHaveLength(0)
+  })
+
+  test('a booking made BEFORE this cart was started does not stop it', async () => {
+    state.rows = [day3(), { ...row(), id: 'dddddddd-1111-2222-3333-444444444444', email: 'vanessa@example.com', status: 'paid', paid_at: ago(30 * 24), created_at: ago(31 * 24) }]
+    await sweep()
+    expect(followSends()).toHaveLength(1)
+  })
+
+  test('not when they started a newer cart, and not when the trip can no longer be booked', async () => {
+    state.rows = [day3(), row({ id: 'eeeeeeee-1111-2222-3333-444444444444', email: 'vanessa@example.com', created_at: ago(2), stripe_payment_id: 'pi_new' })]
+    state.piStatuses.pi_new = 'requires_payment_method'
+    let body = await sweep()
+    expect(body.skipped).toContain('MAPL-BBBBBBBB:follow_up_2_newer_cart')
+    expect(followSends()).toHaveLength(0)
+
+    const soon = new Date(Date.now() + 6 * HOUR).toISOString().slice(0, 10)
+    state.rows = [day7({ booking_items: [{ ...tourItem, date: soon }] })]
+    state.sends = []; state.updates = []
+    body = await sweep()
+    expect(body.skipped).toContain('MAPL-BBBBBBBB:follow_up_3_not_bookable')
+    expect(state.sends).toHaveLength(0)
+    expect(state.updates).toHaveLength(0)
+  })
+
+  test('an inbox that stopped gets nothing; an unreadable stop list sends nothing at all', async () => {
+    state.rows = [day3({ email: 'Vanessa+trip@Example.com' }), row({ email: 'van.essa@gmail.com' })]
+    state.piStatuses.pi_1 = 'requires_payment_method'
+    state.stops = ['vanessa@example.com', 'vanessa@gmail.com']
+    let body = await sweep()
+    expect(state.sends).toHaveLength(0)
+    expect(body.skipped).toEqual(expect.arrayContaining(['MAPL-BBBBBBBB:follow_up_2_stopped', 'MAPL-AAAAAAAA:stopped']))
+    state.stops = []
+    state.stopsError = true
+    body = await sweep()
+    expect(state.sends).toHaveLength(0)
+    expect(body.skipped).toEqual(expect.arrayContaining(['MAPL-BBBBBBBB:follow_up_2_stops_unreadable', 'MAPL-AAAAAAAA:stops_unreadable']))
+    expect(state.updates).toHaveLength(0)
+  })
+
+  test('a cart Stripe shows as paid is flagged for ops, never emailed', async () => {
+    state.rows = [day7()]
+    state.piStatuses = { pi_due: 'succeeded' }
+    const body = await sweep()
+    expect(body.paidButPending).toContain('MAPL-BBBBBBBB')
+    expect(followSends()).toHaveLength(0)
+    expect(state.rpcs.some((r) => r.fn === 'merge_dispatch')).toBe(true)
+  })
+
+  test('a refused send puts the count back, so a later run retries', async () => {
+    state.rows = [day7()]
+    state.sendOk = false
+    const body = await sweep()
+    expect(body.skipped).toContain('MAPL-BBBBBBBB:follow_up_3_send_failed')
+    const [claim, release] = touched(ID)
+    expect(claim.patch).toEqual({ recovery_email_count: 3 })
+    expect(release.patch).toEqual({ recovery_email_count: 2 })
+    expect(release.filters).toContainEqual(['eq', 'recovery_email_count', 3])
+  })
+
+  test('the button rebuilds the trip on any device, tagged by step, with nothing personal in it', async () => {
+    state.rows = [day3()]
+    await sweep()
+    const link = new URL(bookHref(await html())!)
+    expect([link.searchParams.get('tour'), link.searchParams.get('guests'), link.searchParams.get('date')]).toEqual(['bamboo-rafting-on-the-martha-brae', '2', future])
+    expect([link.searchParams.get('utm_source'), link.searchParams.get('utm_campaign'), link.searchParams.get('utm_content')]).toEqual(['email', 'cart_reminder', 'reminder_2'])
+    expect(link.toString()).not.toMatch(/vanessa|grant|example\.com/i)
+  })
+
+  test('a ride: the link carries the hotel, legs and flights; a ride home reads as one', async () => {
+    const land = new Date(Date.now() + 30 * DAY).toISOString().slice(0, 10) + 'T14:30'
+    const out = new Date(Date.now() + 37 * DAY).toISOString().slice(0, 10) + 'T09:00'
+    const ride = {
+      item_type: 'transfer', hotel: 'Samsara Cliff Resort, Negril', destination: 'Samsara Cliff Resort, Negril', zone: 'D',
+      trip_type: 'round_trip', passengers: 1, arrival_at: `${land}:00+00:00`, arrival_flight: 'AA 1234',
+      departure_at: `${out}:00+00:00`, departure_flight: 'AA 4321', line_total: 199, price_per_person: 199,
+    }
+    state.rows = [day7({ booking_type: 'transfer', total_paid: 199, booking_fee: 29, booking_items: [ride] })]
+    await sweep()
+    expect(followSends()[0].subject).toBe('$9.95 off your airport ride')
+    const page = await html()
+    expect((await text()).toLowerCase()).toContain("here's $9.95 off your ride, vanessa.")
+    // The name once: the headline carries it, so the first line does not repeat it.
+    expect((await text()).toLowerCase().match(/vanessa/g)).toHaveLength(1)
+    expect(await text()).toContain('Your private airport ride is saved.')
+    const p = new URL(bookHref(page)!).searchParams
+    expect([p.get('ride'), p.get('trip'), p.get('pax'), p.get('land'), p.get('in'), p.get('pickup'), p.get('out')])
+      .toEqual(['samsara-cliff-negril', 'round_trip', '1', land, 'AA 1234', out, 'AA 4321'])
+
+    state.rows = [day3({ booking_type: 'transfer', total_paid: 99, booking_fee: 15, booking_items: [{ ...ride, trip_type: 'one_way', arrival_at: null, arrival_flight: null, line_total: 99 }] })]
+    state.sends = []; state.updates = []
+    await sweep()
+    const home = await text()
+    expect(followSends()[0].subject).toBe('Your airport ride is still saved')
+    expect(home.toLowerCase()).toContain('your ride to the airport is still saved.')
+    expect(home).toContain('Pickup timed to your flight.')
+    expect(home).not.toContain('spot your name')
+  })
+
+  test('several tours: the button opens checkout on the device they used, and says so', async () => {
+    state.rows = [day7({ booking_items: [tourItem, { ...tourItem, experience_id: 1, title: "Dunn's River Falls Climb" }] })]
+    await sweep()
+    const page = await html()
+    expect(page).toContain('href="https://mapltours.com/checkout"')
+    expect(await text()).toContain('On the phone or computer you started on')
+    expect(followSends()[0].subject).toBe('$11.50 off your Jamaica trip')
+  })
+
+  test('both are honest and on brand: no em dash, no urgency, nothing charged until they pay, a stop link', async () => {
+    for (const due of [day3, day7]) {
+      state.rows = [due()]
+      state.sends = []; state.updates = []
+      await sweep()
+      const [page, plain] = [await html(), await text()]
+      for (const t of [page, plain]) {
+        expect(t).not.toContain('—')
+        expect(t).not.toMatch(/hurry|only \d+ left|expires|last chance|held for you|spots? (?:is|are) held/i)
+      }
+      expect(plain).toContain('Nothing is charged until you pay.')
+      expect(plain).toContain('Bamboo Rafting on the Martha Brae is saved with your date and party.')
+      expect(plain).toMatch(/Stop these reminders/)
+      expect(plain).toContain('MAPL Tours Jamaica')
+      const headers = followSends()[0].headers as Record<string, string>
+      expect(headers['List-Unsubscribe']).toMatch(new RegExp(`^<https://mapltours\\.com/api/cart-reminders/stop\\?b=${ID}&t=[\\w-]+>$`))
+      expect(headers['List-Unsubscribe-Post']).toBe('List-Unsubscribe=One-Click')
+    }
+  })
+
+  test('one email per inbox per run, even with two carts due', async () => {
+    state.rows = [day3(), day7({ id: 'ffffffff-1111-2222-3333-444444444444', created_at: ago(171), booking_type: 'transfer', booking_items: [{ item_type: 'transfer', hotel: 'Samsara Cliff Resort, Negril', trip_type: 'one_way', passengers: 1, departure_at: `${future}T09:00:00+00:00`, departure_flight: 'AA 1', line_total: 99 }], total_paid: 99, booking_fee: 15 })]
+    await sweep()
+    expect(followSends()).toHaveLength(1)
+  })
+
+  test('the first reminder now carries the stop link and List-Unsubscribe too', async () => {
+    state.rows = [row()]
+    state.piStatuses = { pi_1: 'requires_payment_method' }
+    await sweep()
+    const [e] = state.sends
+    expect((e.headers as Record<string, string>)['List-Unsubscribe']).toContain('/api/cart-reminders/stop?b=aaaaaaaa-1111-2222-3333-444444444444&t=')
+    expect(await render(e.react as ReactElement, { plainText: true })).toMatch(/Stop these reminders/)
   })
 })
