@@ -12,7 +12,8 @@ import { TOUR_ZONES } from '@/lib/tour-zones'
 
 const card = (id: number): RateCard => structuredClone(cardOf(experiences.find((e) => e.id === id)!))
 const DUNNS = 1
-const RICKS = 14
+/** One price for the group from everywhere: Nine Mile. Rick's Cafe (14) was the example until it went by area on Nov 16 2026. */
+const ONE_PRICE = 15
 const ALL = Array.from({ length: 12 }, (_, i) => i + 1)
 
 describe('guestPriceAt', () => {
@@ -26,7 +27,7 @@ describe('guestPriceAt', () => {
   })
 
   test('a tour with one price: the same anywhere, and the price checkout charges', () => {
-    const r = card(RICKS)
+    const r = card(ONE_PRICE)
     expect(guestPriceAt(r, 3, null)).toBe(tourPrice(r.pricing, 3))
     expect(guestPriceAt(r, 3, 'negril')).toBe(tourPrice(r.pricing, 3))
   })
@@ -35,8 +36,8 @@ describe('guestPriceAt', () => {
 describe('placesCompared', () => {
   test('every area either card sells from, west to east; "anywhere else" only when one card is priced by area', () => {
     expect(placesCompared(card(DUNNS), card(DUNNS))).toEqual([...TOUR_ZONES])
-    expect(placesCompared(card(RICKS), card(RICKS))).toEqual([null])
-    expect(placesCompared(card(RICKS), card(DUNNS))).toEqual([...TOUR_ZONES, null])
+    expect(placesCompared(card(ONE_PRICE), card(ONE_PRICE))).toEqual([null])
+    expect(placesCompared(card(ONE_PRICE), card(DUNNS))).toEqual([...TOUR_ZONES, null])
     const westOnly = card(DUNNS)
     westOnly.pricing.zoneRates = { negril: 400 }
     const eastOnly = card(DUNNS)
@@ -56,15 +57,15 @@ describe('partiesMoved: every group size whose guest price moves', () => {
     const after = card(DUNNS)
     after.pricing.extraPerPerson = 60
     expect(partiesMoved(card(DUNNS), after)).toEqual([5, 6, 7, 8, 9, 10, 11, 12])
-    const r = card(RICKS)
+    const r = card(ONE_PRICE)
     r.pricing.extraPerPerson = 45
-    expect(partiesMoved(card(RICKS), r)).toEqual([5, 6, 7, 8, 9, 10, 11, 12])
+    expect(partiesMoved(card(ONE_PRICE), r)).toEqual([5, 6, 7, 8, 9, 10, 11, 12])
   })
 
   test('the group rate moves only the groups it covers', () => {
-    const r = card(RICKS)
+    const r = card(ONE_PRICE)
     r.pricing.baseRate = 210
-    expect(partiesMoved(card(RICKS), r)).toEqual([1, 2, 3, 4])
+    expect(partiesMoved(card(ONE_PRICE), r)).toEqual([1, 2, 3, 4])
   })
 
   test('an add-on moves everyone; the smallest party moves no price', () => {

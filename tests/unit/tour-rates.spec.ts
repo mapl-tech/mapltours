@@ -22,7 +22,10 @@ import ZonePriceList from '@/components/ZonePriceList'
 const tour = (id: number) => experiences.find((e) => e.id === id)!
 const DUNNS = 1
 const BOTH = 18
+/** Rick's Cafe: one group rate, sold from the west only (owner, Nov 16 2026). */
 const RICKS = 14
+/** One price for the group from everywhere: Nine Mile. */
+const NINE_MILE = 15
 /** Bamboo rafting: per person, by pickup area (Collin, Nov 13 2026). */
 const RAFT = 3
 
@@ -102,7 +105,7 @@ describe('parseRateCard: one canonical shape, or a sentence an admin can act on'
 
   test('sameCard compares canonical forms', () => {
     expect(sameCard({ pricing: { mode: 'group', baseRate: '275', tierMax: '3', extraPerPerson: 75 } }, { pricing: { mode: 'group', baseRate: 275, tierMax: 3, extraPerPerson: 75 }, minGuests: 1 })).toBe(true)
-    expect(sameCard(cardOf(tour(DUNNS)), cardOf(tour(RICKS)))).toBe(false)
+    expect(sameCard(cardOf(tour(DUNNS)), cardOf(tour(NINE_MILE)))).toBe(false)
     expect(sameCard({ pricing: {} }, { pricing: {} })).toBe(false)
   })
 })
@@ -145,7 +148,8 @@ describe('applyRateCards: published cards reach the catalog, or the deploy fails
 
 describe('describeRateCard: the card in Collin’s words', () => {
   test('each shape', () => {
-    expect(describeRateCard(cardOf(tour(RICKS)))).toBe('$200 for 1 to 4 people; from 5, $40 a person for the whole group.')
+    expect(describeRateCard(cardOf(tour(NINE_MILE)))).toBe('$360 for 1 to 4 people; from 5, $100 a person for the whole group.')
+    expect(describeRateCard(cardOf(tour(RICKS)))).toBe('By pickup area, for 1 to 5 people: Negril $200, Lucea & Hanover $200, Montego Bay & Rose Hall $200; each extra person $40.')
     // "All the prices I give you is from 1-4 persons not 1-3" (Collin, Nov 13 2026).
     expect(describeRateCard(cardOf(tour(7)))).toBe('$120 a person for 1 to 4; from 5, $110 a person; 2 people or more.')
     // Per person by area: the areas and nothing else, since every guest pays the area's rate.
@@ -158,7 +162,7 @@ describe('describeRateCard: the card in Collin’s words', () => {
 
 describe('rateCardChanges: only what moved, in the desk’s words', () => {
   const dunns = (): RateCard => structuredClone(cardOf(tour(DUNNS)))
-  const ricks = (): RateCard => structuredClone(cardOf(tour(RICKS)))
+  const ninemile = (): RateCard => structuredClone(cardOf(tour(NINE_MILE)))
 
   test('one area’s rate', () => {
     const after = dunns()
@@ -190,12 +194,12 @@ describe('rateCardChanges: only what moved, in the desk’s words', () => {
   })
 
   test('a group card and a per-person card use their own labels', () => {
-    const after = ricks()
-    after.pricing.baseRate = 210
-    after.pricing.extraPerPerson = 42
-    expect(rateCardChanges(ricks(), after)).toEqual([
-      { label: 'Rate for the group', was: '$200', now: '$210' },
-      { label: 'Bigger groups, per person', was: '$40', now: '$42' },
+    const after = ninemile()
+    after.pricing.baseRate = 370
+    after.pricing.extraPerPerson = 105
+    expect(rateCardChanges(ninemile(), after)).toEqual([
+      { label: 'Rate for the group', was: '$360', now: '$370' },
+      { label: 'Bigger groups, per person', was: '$100', now: '$105' },
     ])
     const pp: RateCard = { pricing: { mode: 'per_person', baseRate: 120, tierMax: 3, extraPerPerson: 110 }, minGuests: 2 }
     expect(rateCardChanges(pp, { ...pp, pricing: { ...pp.pricing, baseRate: 125, tierMax: 4 } })).toEqual([
@@ -205,8 +209,8 @@ describe('rateCardChanges: only what moved, in the desk’s words', () => {
   })
 
   test('priced another way is null, so the desk shows the whole new card; the same card is no lines', () => {
-    expect(rateCardChanges(ricks(), dunns())).toBeNull()
-    expect(rateCardChanges(ricks(), { ...ricks(), pricing: { ...ricks().pricing, mode: 'per_person' } })).toBeNull()
+    expect(rateCardChanges(ninemile(), dunns())).toBeNull()
+    expect(rateCardChanges(ninemile(), { ...ninemile(), pricing: { ...ninemile().pricing, mode: 'per_person' } })).toBeNull()
     expect(rateCardChanges(dunns(), dunns())).toEqual([])
   })
 
@@ -233,13 +237,17 @@ describe('pricing by pickup area', () => {
   const both = tour(BOTH).pricing
 
   test('which tours, and the zones they are sold from', () => {
-    // The falls (1, 2, 18) for the group; the raft (3) and both horseback rides (8, 9) per person.
-    expect(experiences.filter((e) => isZonePriced(e.pricing)).map((e) => e.id).sort((a, b) => a - b)).toEqual([1, 2, 3, 8, 9, 18])
+    // The falls (1, 2, 18) and Rick's Cafe (14) for the group; the raft (3) and both horseback rides (8, 9) per person.
+    expect(experiences.filter((e) => isZonePriced(e.pricing)).map((e) => e.id).sort((a, b) => a - b)).toEqual([1, 2, 3, 8, 9, 14, 18])
     expect(experiences.filter((e) => isPerPersonByArea(e.pricing)).map((e) => e.id).sort((a, b) => a - b)).toEqual([3, 8, 9])
     expect(zonesSold(dunns)).toEqual(['negril', 'lucea', 'montego_bay', 'trelawny', 'runaway_bay', 'ocho_rios'])
     expect(zoneSells(dunns, 'negril')).toBe(true)
     expect(zoneSells(dunns, null)).toBe(false)
-    expect(zoneSells(tour(RICKS).pricing, null)).toBe(true)
+    expect(zoneSells(tour(NINE_MILE).pricing, null)).toBe(true)
+    // Rick's Cafe from the west only (owner, Nov 16 2026): from the Ocho Rios side Collin quotes a different
+    // day (Seven Mile Beach + Rick's, per person, 4 or more), so those areas stay off until he confirms it.
+    expect(zonesSold(tour(RICKS).pricing)).toEqual(['negril', 'lucea', 'montego_bay'])
+    for (const z of ['trelawny', 'runaway_bay', 'ocho_rios'] as const) expect(zoneSells(tour(RICKS).pricing, z), z).toBe(false)
   })
 
   test('the guest price from each zone, worked by hand: (rate x 1.20 + $0.22) / 0.943, rounded up', () => {
@@ -343,7 +351,11 @@ describe('priceTourCart: a tour priced by area is never quietly priced', () => {
     expect(p.total).toBe(510)
     expect(p.lines[0].zone).toBe('negril')
     expect(p.subtotal).toBe(400)
-    expect(priceTourCart(line(RICKS), {}, {}).lines[0].zone).toBeNull()
+    expect(priceTourCart(line(NINE_MILE), {}, {}).lines[0].zone).toBeNull()
+    // Rick's Cafe: the same $200 card from the west as before, and refused from the Ocho Rios side.
+    expect(priceTourCart(line(RICKS), {}, { zone: 'montego_bay' }).subtotal).toBe(200)
+    expect(() => priceTourCart(line(RICKS), {}, { zone: 'ocho_rios' })).toThrow(PricingError)
+    expect(() => priceTourCart(line(RICKS), {}, {})).toThrow(PricingError)
   })
 
   test('refused without a zone, in words that say what to do', () => {
@@ -396,7 +408,7 @@ describe('ZonePriceList: every area’s exact price on the tour page', () => {
     expect(text).toContain('Staying somewhere else? Write to us for a price. Checkout shows your exact total.')
   })
   test('nothing at all for a tour with one price everywhere', () => {
-    expect(ZonePriceList({ exp: tour(RICKS), formatPrice: usd })).toBeNull()
+    expect(ZonePriceList({ exp: tour(NINE_MILE), formatPrice: usd })).toBeNull()
   })
 })
 

@@ -1126,7 +1126,15 @@ const CATALOG: CatalogEntry[] = [
     destination: "Negril",
     parish: "Westmoreland",
     title: "Rick's Cafe Cliff Diving & Sunset",
-    pricing: { mode: 'group', baseRate: 200, tierMax: 4, extraPerPerson: 40 },
+    // Sold from the west only (owner, Nov 16 2026). Collin, Nov 16: from the
+    // Ocho Rios side this is a Seven Mile Beach + Rick's Cafe day trip at $90
+    // (Ocho Rios), $80 (Runaway Bay) and $65 (Falmouth) per person, 4 or more,
+    // which the old $200 for up to 4 from every area sold below. Those areas
+    // stay off until he confirms the trip and the western price. tierMax 5 keeps
+    // every party at the old card's price ($200 for 1 to 4 and $40 a person for
+    // the whole group from 5, so five also paid $200): by area, the extra $40 is
+    // for each guest past tierMax, and past 4 it would have charged 5+ $40 more.
+    pricing: { mode: 'group', baseRate: 200, tierMax: 5, extraPerPerson: 40, zoneRates: { negril: 200, lucea: 200, montego_bay: 200 } },
     duration: "3 hrs at Rick's",
     rating: 0,
     reviews: 0,
@@ -1144,7 +1152,7 @@ const CATALOG: CatalogEntry[] = [
     ages: "All ages, jumping 16+",
     fitness: "Cliff jumping is for ages 16 and up and is done under the venue's own rules. Light unless you jump, with steps down to the water and back up. Jumping is for strong swimmers only.",
     meetingPoint: "Hotel pickup",
-    fromHotel: "Allow 3.5 to 4 hours from Negril, 6 to 7 from Montego Bay and Rose Hall (back about 9pm in winter and 10pm in summer), and 9 to 11 from Ocho Rios or Runaway Bay.",
+    fromHotel: "Allow 3.5 to 4 hours from Negril, and 6 to 7 from Montego Bay and Rose Hall (back about 9pm in winter and 10pm in summer).",
     included: [
       "Round-trip private transport from your hotel",
       "Rick's Cafe entry",

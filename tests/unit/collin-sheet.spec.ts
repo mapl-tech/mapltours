@@ -52,7 +52,6 @@ const TOURS: Record<number, { mode: 'group' | 'per_person'; baseRate: number; ti
   // Collin, Nov 12 2026: the kayak is $180 per person, not per party of 3.
   12: { mode: 'per_person', baseRate: 180, tierMax: 4, extraPerPerson: 160, place: 'Montego Bay' },
   13: { mode: 'per_person', baseRate: 100, tierMax: 4, extraPerPerson: 80, place: 'Ocho Rios' },
-  14: { mode: 'group', baseRate: 200, tierMax: 4, extraPerPerson: 40, place: 'Negril' },
   15: { mode: 'group', baseRate: 360, tierMax: 4, extraPerPerson: 100 },
   // Ready-made days ("Adventure Packs"): per person unless the sheet gives a 1-3 rate.
   16: { mode: 'per_person', baseRate: 280, tierMax: 4, extraPerPerson: 280 },
@@ -231,6 +230,19 @@ describe("the catalogue agrees with Collin's sheet", () => {
       expect(tourOperatorCost(e.pricing, n)).toBe(want)
     }
     if (sheet.place) expect(e.destination).toBe(sheet.place)
+  })
+
+  it("tour 14: Rick's Cafe, $200 for 1 to 4 and $40 a person for the whole group from 5, from Negril, Lucea and Montego Bay only", () => {
+    // Owner, Nov 16 2026: off from Falmouth, Runaway Bay and Ocho Rios until Collin confirms what he quoted
+    // for them that day (a Seven Mile Beach + Rick's day trip at $65 / $80 / $90 per person, 4 or more).
+    const e = exp(14)
+    // By area the extra $40 is for each guest past tierMax, so the card covers 5 (who paid $200 as 4 do) and
+    // every party still costs what his sheet says.
+    expect(e.pricing).toEqual({ mode: 'group', baseRate: 200, tierMax: 5, extraPerPerson: 40, zoneRates: { negril: 200, lucea: 200, montego_bay: 200 } })
+    for (const zone of ['negril', 'lucea', 'montego_bay'] as const) {
+      for (let n = 1; n <= 7; n++) expect(tourOperatorCost(e.pricing, n, zone), `${zone}, ${n} guests`).toBe(n <= 4 ? 200 : 40 * n)
+    }
+    expect(e.destination).toBe('Negril')
   })
 
   it.each(Object.entries(TRANSFERS))('transfer %s: the 1-4 rate and the rate from 5', (id, sheet) => {

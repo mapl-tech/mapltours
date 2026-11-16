@@ -238,12 +238,13 @@ describe('WebMCP tool set', () => {
 
   test('get_tour quotes one total per party and says what it covers', async () => {
     const { t: get } = tool('get_tour')
-    const rick = experiences.find((e) => e.title.startsWith("Rick's"))!
-    const r = (await get.execute({ tour: "Rick's Cafe Cliff Diving & Sunset", guests: 4 })) as R
+    // One price for the group from everywhere (Rick's Cafe was the example until it went by area, Nov 16 2026).
+    const rick = experiences.find((e) => e.id === 15)!
+    const r = (await get.execute({ tour: rick.title, guests: 4 })) as R
     expect(r.priceForParty.priceUsd).toBe(tourPrice(rick.pricing, 4))
     expect(r.priceUsd).toBeUndefined()
     expect(r.fromPriceUsd).toBe(rick.price)
-    expect(r.url).toMatch(/\/experience\/ricks-cafe/)
+    expect(r.url).toContain(`/experience/${getSlug(rick)}`)
     expect(r.earliestDate).toBe('2026-09-06')
     expect(r.bookingNotice).toMatch(/2026-09-06/)
     // over the flat-rate tier the text says so
@@ -408,9 +409,10 @@ describe('tours priced by where the traveller is staying (Nov 12 2026)', () => {
 
   test('a tour with one price everywhere is quoted as before, whatever the pickup', async () => {
     const { t } = tool('get_tour')
-    const r = (await t.execute({ tour: 'ricks-cafe-cliff-diving-and-sunset', guests: 2, pickup_hotel: 'Kingston' })) as R
+    const nine = experiences.find((e) => e.id === 15)!
+    const r = (await t.execute({ tour: getSlug(nine), guests: 2, pickup_hotel: 'Kingston' })) as R
     expect(r.priceForParty.priceIsFrom).toBeUndefined()
-    expect(r.priceForParty.priceUsd).toBe(tourPrice(experiences.find((e) => e.id === 14)!.pricing, 2))
+    expect(r.priceForParty.priceUsd).toBe(tourPrice(nine.pricing, 2))
   })
 
   test('booking from a known hotel: the cart holds its zone, and checkout will price the quote', async () => {

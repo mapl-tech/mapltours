@@ -224,12 +224,15 @@ describe('the helpers the posts quote with', () => {
     // Per person by pickup area: a "from", because the price depends on where we pick the guest up.
     expect(blogFrom(3)).toBe(`from $${tourPrice(byId(3).pricing, 1)} per person`)
     // One price for the group, with the card's own number in words, and only there "rather than per head".
-    for (const id of [14, 15]) {
+    for (const id of [15]) {
       expect(byId(id).pricing.mode).toBe('group')
       expect(blogFrom(id)).toBe(`$${byId(id).price} for up to ${WORDS[byId(id).pricing.tierMax]} people`)
       expect(blogIsGroupPrice(id)).toBe(true)
       expect(blogNotPerHead(id)).toBe(' rather than per head')
     }
+    // Rick's Cafe is one group rate from the areas it is sold from (the west, since Nov 16 2026), so a "from".
+    expect(blogFrom(14)).toBe(`from $${byId(14).price} for up to five people`)
+    expect(blogIsGroupPrice(14)).toBe(true)
     // Every guest adds to it (the day with both falls): the headline is one guest's price, not a group price.
     expect(blogUnit(18)).toBe('for one person')
     expect(blogIsGroupPrice(18)).toBe(false)
@@ -266,7 +269,7 @@ describe('the helpers the posts quote with', () => {
     // at the prices desk, and a price change saved with the dropped area would then never go live.
     expect(() => areaClause(withoutMontegoBay, 4, 'montego_bay', () => 'unused', 'the other wording')).not.toThrow()
     // A tour that is one price from everywhere has no area price to quote.
-    expect(areaClause(byId(14).pricing, 2, 'negril', (price) => `${price} picked up in Negril`, 'one price everywhere')).toBe('one price everywhere')
+    expect(areaClause(byId(15).pricing, 2, 'negril', (price) => `${price} picked up in Negril`, 'one price everywhere')).toBe('one price everywhere')
   })
 
   test('no post is on its other wording today: every pickup area a post quotes is still sold', () => {
@@ -291,9 +294,10 @@ describe('the help page says who a group price covers from the cards', () => {
     const limits = Array.from(new Set(experiences.filter((e) => e.pricing.mode === 'group').map((e) => e.pricing.tierMax))).sort((a, b) => a - b)
     expect(limits.length).toBeGreaterThan(0)
     expect(GROUP_PARTY_LIMITS).toBe(limits.length > 1 ? `${limits.slice(0, -1).join(', ')} or ${limits[limits.length - 1]}` : String(limits[0]))
-    // Today every group price covers four.
-    expect(GROUP_PARTY_LIMITS).toBe('4')
-    expect(TOUR_PRICING_SENTENCE).toBe('Some are priced for your whole party, up to 4 guests, with a per-person rate above that; the rest are priced per person.')
+    // Today the group prices cover four, and Rick's Cafe five (since Nov 16 2026 it is priced by area, where
+    // the extra rate is per guest past the cover, and its old card charged five the same as four).
+    expect(GROUP_PARTY_LIMITS).toBe('4 or 5')
+    expect(TOUR_PRICING_SENTENCE).toBe('Some are priced for your whole party, up to 4 or 5 guests, with a per-person rate above that; the rest are priced per person.')
     const answer = HELP_CATEGORIES.flatMap((c) => c.faqs).find((f) => f.q === 'Can I book for a group?')?.a ?? ''
     expect(answer).toContain(`Yes. Every tour is private. ${TOUR_PRICING_SENTENCE} Some are also priced by where we pick you up.`)
     for (const f of HELP_CATEGORIES.flatMap((c) => c.faqs)) expect(`${f.q} ${f.a}`, f.q).not.toMatch(/\$\{|\bundefined\b|\bNaN\b/)

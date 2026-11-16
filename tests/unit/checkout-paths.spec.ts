@@ -718,12 +718,26 @@ describe('POST /api/checkout: tours priced by where the guest is staying (Nov 12
     expect(db.tables.bookings ?? []).toHaveLength(0)
   })
 
-  it('leaves a tour with one price everywhere alone: Rick’s Cafe from Kingston is sold as before', async () => {
-    const items = [{ id: 14, title: 'x', destination: 'x', travelers: 2, date: DATE, price: 0 }]
-    const amount = priceTourCart([{ id: 14, travelers: 2, date: DATE }], {}, {}).total
+  it('leaves a tour with one price everywhere alone: Nine Mile from Kingston is sold as before', async () => {
+    const items = [{ id: 15, title: 'x', destination: 'x', travelers: 2, date: DATE, price: 0 }]
+    const amount = priceTourCart([{ id: 15, travelers: 2, date: DATE }], {}, {}).total
     const res = await post({ amount, items, customer: at('Spanish Court Hotel, Kingston'), waiverAccepted: true })
     expect(res.status).toBe(200)
     expect(bookingRow((await res.json()).bookingId).pickup).toBe('Spanish Court Hotel, Kingston')
+  })
+
+  it('sells Rick’s Cafe from the west only (owner, Nov 16 2026): refused from Ocho Rios before any row, sold from Negril at the old price', async () => {
+    const items = [{ id: 14, title: 'x', destination: 'x', travelers: 4, date: DATE, price: 0 }]
+    const amount = priceTourCart([{ id: 14, travelers: 4, date: DATE }], {}, { zone: 'negril' }).total
+    expect(amount).toBe(255)
+    const east = await post({ amount, items, customer: at('Sandals Ochi Beach Resort'), waiverAccepted: true })
+    expect(east.status).toBe(400)
+    expect((await east.json()).error).toMatch(/not sold online from that pickup/)
+    expect(db.tables.bookings ?? []).toHaveLength(0)
+    expect(db.intents.size).toBe(0)
+    const west = await post({ amount, items, customer: at('Sandals Negril Beach Resort'), waiverAccepted: true })
+    expect(west.status).toBe(200)
+    expect(intentOf((await west.json()).bookingId).amount).toBe(cents(255))
   })
 })
 
