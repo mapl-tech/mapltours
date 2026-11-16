@@ -25,6 +25,7 @@
 
 import { experiences, type Experience , tourPrice, tourOperatorCost, isZonePriced, zoneSells } from './experiences'
 import type { TourZone } from './tour-zones'
+import { isTourPaused, pausedServerLine } from './tour-pause'
 
 
 /** Reward discount can never exceed this % of (subtotal + fee + transport),
@@ -89,7 +90,7 @@ export interface ServerPricing {
 }
 
 export class PricingError extends Error {
-  readonly code: 'unknown_experience' | 'invalid_travelers' | 'amount_mismatch' | 'pickup_area'
+  readonly code: 'unknown_experience' | 'invalid_travelers' | 'amount_mismatch' | 'pickup_area' | 'paused'
   readonly detail: string
   constructor(code: PricingError['code'], detail: string) {
     super(`${code}: ${detail}`)
@@ -116,6 +117,12 @@ export function priceTourCart(
     const experience = experiences.find((e) => e.id === raw.id)
     if (!experience) {
       throw new PricingError('unknown_experience', `experience id ${raw.id} not in catalog`)
+    }
+    // Not taking bookings (lib/tour-pause). Refused before anything is
+    // priced, so the route makes no pending row and no PaymentIntent for a
+    // cart that holds it, whatever the browser sends.
+    if (isTourPaused(experience.id)) {
+      throw new PricingError('paused', pausedServerLine(experience.title))
     }
     const travelers = Math.round(raw.travelers)
     // Same ceiling the cart UI enforces (lib/cart.ts clamps to 12). The

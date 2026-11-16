@@ -392,6 +392,8 @@ What else he said that day, and where it stands:
 - **The clear kayak shoot is in the sea**, and the guest gets "25 or more edit pictures 3 videos with song of choice". On Nov 15 2026 he added: "Beach in Montego Bay no special beach", "Shoot take 30-35 minutes", "1-2 days time for pictures". The listing (12) and the Raft + Kayak package (17) say so; the duration stays "1 hr at the beach" because the 8-hour daily cap reads that number (`parseDurationHours`), and the shoot's 30 to 35 minutes is in the text. He agreed we may use his kayak photos; whether the woman in them has agreed herself is not known, and the site still shows stock until the owner supplies the files.
 - **"Horseback Riding" is both rides**, Rose Hall is in the Montego Bay area (it already was), and to "zipline, ATV Off-Road, tubing and the clear kayak: same price from every area, or more from Negril?" he answered only "Yes"; they stay one price everywhere.
 - Still unanswered: the zipline's rate for bigger groups, lunch on the full-day packages, and the hotel areas put to him (Round Hill, Green Island, Couples Tower Isle, Tryall, Meliá Braco).
+- **The Rasta ATV Safari (5) is paused** (Collin, Nov 15 2026: "Can you pause on the Rasta safari tour i am going to reach out to them tomorrow and confirm the pricing"), see "Tours paused" below. Its per-person card stays as it is until he confirms.
+- **The Ride 'n' Swim (9) is a beach ride, then into the water** (Collin, Nov 15 2026): "Horseback riding is done in your bathing suits water shoes thats all you need towel and a change of clothes ... It's basically just riding one the beach then in the water and they will always have a tour Guide along with them on the tour", and phones may be carried "at your own risk has long at they can manage doing so". The listing says so (no trail leg, no trousers, no phones left with a ground crew). Still open: whether the Horseback Riding Trail (8, country lanes and long trousers) is a ride he runs at all, helmets, and whether the horse swims or wades.
 
 Rules, enforced in code:
 - **Four ways to price, one name each.** `kindOf` (`lib/tour-rates.ts`): `group`, `per_person`, `area`, `area_person`. The desk asks only for what a kind needs (per person by area: the six area rates and nothing about tiers), and `tests/unit/tour-rates-desk.spec.ts` opens every catalogue card and saves it untouched, expecting the same card back. A new shape must reach every reader in the same change: `tourOperatorCost`, `parseRateCard`, `describeRateCard`, `rateCardChanges`, the desk, `ZonePriceList`, the tour page's structured data, `llms.txt`, the agent tools.
@@ -703,6 +705,20 @@ Rules, enforced in code:
 - **What the emails may say.** The trip first, "Nothing is charged until you pay", the three worries answered from claims the site already makes (cancellation from `CANCELLATION_SUMMARY`), the guest's name once, no urgency or scarcity, step 3 ends "This is our last note about this trip." A one-way home never says "Land, spot your name".
 
 Tests: `abandoned-cart.spec.ts` (the real job over fake Stripe, Supabase and Resend: windows, claims, the booking stop, codes, stops, links, wording; each rule was broken on purpose on Nov 15 2026 and a test failed), `cart-reminders.spec.ts` (the steps, links, bookability, coupon basis, the stop route). Migration 040 was checked in PGlite.
+
+## Tours paused (Nov 16 2026)
+
+Collin, Nov 15 2026: "Can you pause on the Rasta safari tour i am going to reach out to them tomorrow and confirm the pricing"; owner, Nov 16: "Collin asked to pause it." `lib/tour-pause.ts` lists paused tours by id (today only 5, the Rasta Cultural ATV Safari). Lifting a pause is deleting its line and deploying; if the price moved, change the card at `/admin/tour-rates` first.
+
+Rules, enforced in code:
+- **A paused tour keeps its page, its rate card and its catalogue entry,** so the prices desk, blog links and old links still resolve. It leaves every list a guest browses: `singleExperiences` / `packageExperiences`, `TOUR_DESTINATIONS`, the saved list and the profile's saved rail.
+- **Its own link opens on it,** first in the reel, with "Not taking bookings right now." where the price was and "See other tours" (to /explore) where Add to Trip was; the same in the desktop panel, the details sheet and the clips sheet. No price is shown for it where a guest looks (its price is what is being confirmed); the structured data says OutOfStock.
+- **The cart will not take it** (`addItem`, `swapDayFor`, `addTourToTrip`, `addPackageToTrip`). A cart saved before the pause keeps the line: checkout says so on it in red, never quiet-saves, and Pay moves focus to its Remove.
+- **The server refuses it.** `priceTourCart` throws `PricingError('paused')` before anything is priced, so `/api/checkout` makes no pending row and no PaymentIntent for a cart holding it, alone or beside a tour on sale. `checkout-paths.spec.ts` sets the pause list per test (a mock), so the tour-5 price pins keep running through the real route while it is paused.
+- **Agents are told, never handed it:** `list_tours` leaves it out, a fuzzy search never resolves to it, `get_tour` and `start_tour_booking` naming it answer `{ error }` with a next step, `addTourToCart` refuses, a `/book` link to it is refused with a way to the others, and llms.txt neither lists nor counts it.
+- **No email offers it:** `stillBookable` is false for a cart holding it, so no cart reminder goes, and `curateForStay` never picks it.
+
+Tests: `tests/unit/tour-pause.spec.ts` (every gate above; each was broken on purpose on Nov 16 2026 and a test failed) and the paused-route block in `checkout-paths.spec.ts`.
 
 ## Rules from the Nov 13 2026 audit
 

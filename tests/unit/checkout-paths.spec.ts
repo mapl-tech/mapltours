@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { NextRequest } from 'next/server'
 import { priceTourCart } from '@/lib/checkout-pricing'
 // vi.mock calls are hoisted above this import by vitest, so the handler loads over the fakes.
@@ -103,6 +103,15 @@ vi.mock('stripe', () => {
 })
 
 vi.mock('@/lib/rate-limit', () => ({ rateLimit: () => false, getIp: () => '203.0.113.9' }))
+// Which tours are paused (lib/tour-pause) is set per test here: the price pins
+// below run every tour through the real route, a paused one included, so
+// they keep holding while it is paused and the day it comes back. The pause
+// itself is tested against the route in its own block at the end.
+const pause = vi.hoisted(() => ({ ids: new Set<number>() }))
+vi.mock('@/lib/tour-pause', async (orig) => ({
+  ...(await orig<typeof import('@/lib/tour-pause')>()),
+  isTourPaused: (id: number | null | undefined) => typeof id === 'number' && pause.ids.has(id),
+}))
 vi.mock('@/lib/checkout-schema', () => ({
   assertCheckoutSchema: async () => ({ hasAttribution: false, hasPickupTime: false, hasCoupon: true, hasWaiver: db.hasWaiver }),
   SchemaNotReadyError: class extends Error {},
@@ -826,5 +835,42 @@ describe('POST /api/checkout: the Rasta ATV Safari, the jet ski and parasailing,
     const kingston = await post({ amount: 306, items: one(11, 2), customer: at('Spanish Court Hotel, Kingston', { email: 'second@example.com' }), waiverAccepted: true })
     expect(kingston.status).toBe(200)
     expect(intentOf((await kingston.json()).bookingId).amount).toBe(30600)
+  })
+})
+
+describe('POST /api/checkout: a paused tour (lib/tour-pause) is refused before anything is made', () => {
+  // Collin, Nov 15 2026, asked for the Rasta ATV Safari (5) to be paused
+  // while he confirms its price. A cart still holding it (saved in a browser
+  // before the pause, or a hand-made request) gets a sentence and nothing
+  // else: no pending row, no PaymentIntent.
+  const one = (id: number, travelers: number) => [{ id, title: 'x', destination: 'x', travelers, date: DATE, price: 0 }]
+  beforeEach(() => { pause.ids = new Set([5]) })
+  afterEach(() => { pause.ids = new Set() })
+
+  it('alone, at its own price: 400, the reason, nothing created', async () => {
+    const res = await post({ amount: 382, items: one(5, 2), customer: { ...customer, pickup: 'Sandals Royal Caribbean, Montego Bay' }, waiverAccepted: true })
+    expect(res.status).toBe(400)
+    expect((await res.json()).error).toBe('Rasta Cultural ATV Safari is not taking bookings right now. Remove it from your trip to book the rest, or write to contact@mapltours.com.')
+    expect(db.tables.bookings ?? []).toHaveLength(0)
+    expect(db.intents.size).toBe(0)
+  })
+
+  it('beside a tour on sale: the whole cart is refused until it is removed, then the rest books', async () => {
+    const mixed = [...one(10, 2), ...one(5, 2)]
+    const refused = await post({ amount: 332 + 382, items: mixed, customer: { ...customer, pickup: 'Sandals Royal Caribbean, Montego Bay' }, waiverAccepted: true })
+    expect(refused.status).toBe(400)
+    expect((await refused.json()).error).toMatch(/^Rasta Cultural ATV Safari is not taking bookings right now\./)
+    expect(db.tables.bookings ?? []).toHaveLength(0)
+    expect(db.intents.size).toBe(0)
+    const rest = await post({ amount: 332, items: one(10, 2), customer: { ...customer, pickup: 'Sandals Royal Caribbean, Montego Bay' }, waiverAccepted: true })
+    expect(rest.status).toBe(200)
+    expect(intentOf((await rest.json()).bookingId).amount).toBe(33200)
+  })
+
+  it('the quiet save (no waiver field) is refused the same way', async () => {
+    const res = await post({ amount: 382, items: one(5, 2), customer: { ...customer, pickup: 'Sandals Royal Caribbean, Montego Bay' } })
+    expect(res.status).toBe(400)
+    expect(db.tables.bookings ?? []).toHaveLength(0)
+    expect(db.intents.size).toBe(0)
   })
 })

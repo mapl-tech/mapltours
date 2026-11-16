@@ -2,6 +2,7 @@ import { HERO, DESTINATIONS } from './images'
 import { TOUR_ZONES, type TourZone } from './tour-zones'
 import { applyRateCards, type RateCard } from './tour-rates'
 import rateSnapshot from './tour-rates.snapshot.json'
+import { isTourPaused } from './tour-pause'
 
 export type ExperienceCategory = 'Adventure' | 'Nature' | 'Music' | 'Food' | 'Culture' | 'Water'
 
@@ -861,7 +862,14 @@ const CATALOG: CatalogEntry[] = [
     emoji: '🏊',
     image: '/media/img/2612565.jpg',
     video: VIDEOS.beachSwim,
-    about: "The trail ride first, down through the countryside to the water, then the part everyone comes for: saddles off, swimwear on, and your horse walks and swims out into the Caribbean with you bareback on its back. Grooms are in the water alongside for the whole swim.",
+    // Collin, WhatsApp, Nov 15 2026: "Horseback riding is done in your
+    // bathing suits water shoes thats all you need towel and a change of
+    // clothes ... It's basically just riding one the beach then in the water
+    // and they will always have a tour Guide along with them on the tour".
+    // And on phones: "They are allowed to carry their phones at your own risk
+    // has long at they can manage doing so". The listing had a trail leg
+    // through the countryside and phones left with the ground crew.
+    about: "A ride along the beach first, in your swimwear, then the part everyone comes for: your horse walks out into the Caribbean with you on its back. A tour guide is with you the whole way.",
     ages: "8 and up",
     fitness: "Swimmers only. Moderate. Around an hour in the saddle, then the swim bareback holding a strap. You must be comfortable in open water. Riders must be under 250 lbs. Not suitable in pregnancy or with back or hip injuries.",
     meetingPoint: "Hotel pickup",
@@ -869,8 +877,8 @@ const CATALOG: CatalogEntry[] = [
     included: [
       "Round-trip private transport from your hotel",
       "A horse matched to your ability",
-      "Helmet for the trail leg and riding briefing",
-      "Groom-guides on the trail and in the water",
+      "A riding briefing before you set off",
+      "A tour guide with you on the beach and in the water",
     ],
     notIncluded: [
       "Photos from the beach photographer",
@@ -878,15 +886,14 @@ const CATALOG: CatalogEntry[] = [
       "Gratuities for the grooms",
     ],
     bring: [
-      "Swimwear worn under your riding clothes",
-      "Long trousers or leggings for the trail leg",
+      "Your swimwear: you ride in it",
+      "Water shoes",
       "A towel and a dry change of clothes",
-      "Reef-safe sunscreen",
       "Small US cash for the grooms",
     ],
     additionalInfo: [
-      "Phones and cameras stay with the ground crew before the swim, as the horses go right under.",
-      "The swim is called off when the sea is rough. You ride the trail leg and can come back for the swim at no cost.",
+      "You can carry your phone on the ride and into the water at your own risk, as long as you can manage it.",
+      "The swim is called off when the sea is rough. You ride the beach and can come back for the swim at no cost.",
       "There are basic changing rooms at the stable.",
     ],
     description: "Ride down to the water, then swim your horse bareback through the Caribbean. The photo everyone comes home with.",
@@ -1563,6 +1570,7 @@ export const RATES_PUBLISHED: { snapshotAt: string | null; latestChange: string 
 export const TOUR_DESTINATIONS: { name: string; parish: string; count: number }[] = (() => {
   const seen = new Map<string, { name: string; parish: string; count: number }>()
   for (const e of experiences) {
+    if (isTourPaused(e.id)) continue
     const cur = seen.get(e.destination)
     if (cur) cur.count += 1
     else seen.set(e.destination, { name: e.destination, parish: e.parish, count: 1 })
@@ -1570,11 +1578,15 @@ export const TOUR_DESTINATIONS: { name: string; parish: string; count: number }[
   return Array.from(seen.values()).sort((a, b) => b.count - a.count)
 })()
 
-/** Everything a guest can assemble themselves: reels, explore, day builder. */
-export const singleExperiences = experiences.filter((e) => e.kind === 'single')
+/**
+ * Everything a guest can assemble themselves: reels, explore, day builder.
+ * A paused tour (lib/tour-pause) is not among them: it keeps its page, but
+ * no list a guest browses offers it.
+ */
+export const singleExperiences = experiences.filter((e) => e.kind === 'single' && !isTourPaused(e.id))
 
-/** Ready-made combo days, sold whole from their own home-page section. */
-export const packageExperiences = experiences.filter((e) => e.kind === 'package')
+/** Ready-made combo days, sold whole from their own home-page section. Paused ones left out, as above. */
+export const packageExperiences = experiences.filter((e) => e.kind === 'package' && !isTourPaused(e.id))
 
 /**
  * Ids that would double-book if these two products shared a cart: a package

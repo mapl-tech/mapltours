@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { experiences } from '@/lib/experiences'
+import { isTourPaused } from '@/lib/tour-pause'
 import { useSaved } from '@/lib/supabase/saved'
 import { useAuth } from '@/lib/supabase/auth-context'
 import EmptyState from './ui/EmptyState'
@@ -26,9 +27,10 @@ export default function SavedView() {
   const { savedIds, loading, failed, writeError } = useSaved()
 
   // Saved order, newest first, silently skipping ids the catalog no longer
-  // sells so a retired tour cannot blank the page.
+  // sells so a retired tour cannot blank the page, and any tour paused for
+  // now (lib/tour-pause), which comes back here when it is back on sale.
   const saved = useMemo(
-    () => savedIds.map((id) => experiences.find((e) => e.id === id)).filter(Boolean),
+    () => savedIds.map((id) => experiences.find((e) => e.id === id && !isTourPaused(e.id))).filter(Boolean),
     [savedIds],
   )
 

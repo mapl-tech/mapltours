@@ -28,6 +28,7 @@ import { createIntentSession, type PostOutcome, type SendOptions } from './inten
 import AskFirst from '@/components/AskFirst'
 import { Card, SectionTitle, TextField, SelectField, Stepper, Disclosure, Reassurance, LinkButton, focusFirstError } from './fields'
 import { useHydrated } from './useHydrated'
+import { isTourPaused, pausedCheckoutLine } from '@/lib/tour-pause'
 import { PICKUP_PLACES, OTHER_PLACE, OTHER_PLACE_LABEL, isListedPlace, placeShown } from './pickup-places'
 import Arrow from '@/components/ui/Arrow'
 
@@ -144,6 +145,10 @@ export default function OnePageCheckout() {
     () => (hasZoned ? { needsArea, area: pickupArea, unsoldTitle } : undefined),
     [hasZoned, needsArea, pickupArea, unsoldTitle],
   )
+  // A tour paused since it went into this cart (lib/tour-pause): the server
+  // refuses the whole cart while it is there, so the page says so on its
+  // line, never saves the booking quietly, and Pay goes to its Remove.
+  const pausedItem = items.find((i) => isTourPaused(i.id)) ?? null
   // Until the zone is known a tour priced by area shows its "from" price.
   const priceIsFrom = !!unsold
   // The guest HAS said where they are staying, and the tour is not sold from
@@ -438,7 +443,7 @@ export default function OnePageCheckout() {
   //      the button, never a pause after typing a phone number.
   //    · NEVER navigates. This request is unattended; moving the guest off a
   //      page they are still reading is not ours to do. ──
-  const detailsComplete = hydrated && items.length > 0 && !!pickup && !unsold && !!tripDate && (!minDate || tripDate >= minDate) && Object.keys(validateContact(form)).length === 0
+  const detailsComplete = hydrated && items.length > 0 && !pausedItem && !!pickup && !unsold && !!tripDate && (!minDate || tripDate >= minDate) && Object.keys(validateContact(form)).length === 0
   const autoSaved = useRef(false)
   useEffect(() => {
     if (!detailsComplete || autoSaved.current || giftCard) return
@@ -456,6 +461,12 @@ export default function OnePageCheckout() {
 
   // ── The gate before any payment attempt ──
   const validate = useCallback((): boolean => {
+    if (pausedItem) {
+      blocked(['paused'])
+      setAnnouncement(pausedCheckoutLine(pausedItem.title))
+      document.getElementById(`opc-remove-${pausedItem.id}`)?.focus()
+      return false
+    }
     if (isDayOverLimit()) { setLimitOpen(true); blocked(['dayLimit']); return false }
     const errs = tourRules({ contact: form, pickup, tripDate, waiverAccepted: waiver }, zoneRule)
     // A half-filled date reads as empty, so the rule above calls it missing;
@@ -471,7 +482,7 @@ export default function OnePageCheckout() {
     step('pay_tap')
     setAnnouncement('')
     return true
-  }, [form, pickup, tripDate, waiver, zoneRule, isDayOverLimit, blocked, step])
+  }, [form, pickup, tripDate, waiver, zoneRule, isDayOverLimit, blocked, step, pausedItem])
 
   /**
    * One field, two kinds of code. A coupon is tried first (it is what the
@@ -562,7 +573,11 @@ export default function OnePageCheckout() {
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <p style={{ fontFamily: FONT, fontWeight: 700, fontSize: 15, lineHeight: 1.25, color: 'var(--text-primary)' }}>{t(item.title)}</p>
                       <p style={{ fontFamily: FONT, fontSize: 13, color: 'var(--text-tertiary)', marginTop: 3 }}>{placeLabel(item)}<br />{item.duration.replace(/ /g, '\u00a0')}</p>
-                      {isZonePriced(item.pricing) ? (
+                      {isTourPaused(item.id) ? (
+                        <p id={`opc-paused-${item.id}`} style={{ fontFamily: FONT, fontSize: 14, fontWeight: 600, lineHeight: 1.4, color: '#b00020', marginTop: 6 }}>
+                          {pausedCheckoutLine(item.title)}
+                        </p>
+                      ) : isZonePriced(item.pricing) ? (
                         <p style={{ fontFamily: FONT, fontSize: 13, color: 'var(--text-secondary)', marginTop: 3 }}>
                           {zone && zoneSells(item.pricing, zone) ? `Priced for pickup in ${TOUR_ZONE_LABEL[zone]}` : 'Priced by where we pick you up'}
                         </p>
@@ -573,7 +588,7 @@ export default function OnePageCheckout() {
                         {zoneSells(item.pricing, zone) ? null : <span style={{ fontWeight: 500, fontSize: 13, color: 'var(--text-tertiary)' }}>{t('From')} </span>}
                         {formatUsd(tourPrice(item.pricing, item.travelers, zone))}
                       </p>
-                      <button type="button" onClick={() => removeItem(item.id)} aria-label={`Remove ${item.title}`} style={{ background: 'none', border: 'none', padding: '12px 0 4px', fontFamily: FONT, fontSize: 13, color: 'var(--text-tertiary)', textDecoration: 'underline', cursor: 'pointer', minHeight: 44, minWidth: 44 }}>Remove</button>
+                      <button type="button" id={`opc-remove-${item.id}`} onClick={() => removeItem(item.id)} aria-label={`Remove ${item.title}`} aria-describedby={isTourPaused(item.id) ? `opc-paused-${item.id}` : undefined} style={{ background: 'none', border: 'none', padding: '12px 0 4px', fontFamily: FONT, fontSize: 13, color: 'var(--text-tertiary)', textDecoration: 'underline', cursor: 'pointer', minHeight: 44, minWidth: 44 }}>Remove</button>
                     </div>
                   </div>
                 ))}
@@ -712,7 +727,7 @@ export default function OnePageCheckout() {
             {/* ── 3. Payment ── */}
             <div ref={payCardRef}>
               <Card className="opc-pad opc-card-pay">
-                <SectionTitle step={3} title={t('Payment')} sub={notSoldHere ? `${unsoldTitle} is not sold online from that pickup. Choose another pickup above, or write to contact@mapltours.com for a price.` : priceIsFrom ? 'Your total is set once you choose where we pick you up. Nothing is charged until you press the button below.' : amountCents >= 50 ? `${formatUsd(finalTotal)} today. Nothing is charged until you press the button below.` : 'Nothing to charge today.'} />
+                <SectionTitle step={3} title={t('Payment')} sub={pausedItem ? pausedCheckoutLine(pausedItem.title) : notSoldHere ? `${unsoldTitle} is not sold online from that pickup. Choose another pickup above, or write to contact@mapltours.com for a price.` : priceIsFrom ? 'Your total is set once you choose where we pick you up. Nothing is charged until you press the button below.' : amountCents >= 50 ? `${formatUsd(finalTotal)} today. Nothing is charged until you press the button below.` : 'Nothing to charge today.'} />
                 <DeferredPaymentPanel
                   amountCents={amountCents}
                   returnUrl="/checkout/confirm"

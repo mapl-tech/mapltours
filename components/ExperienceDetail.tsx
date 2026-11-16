@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, useLayoutEffect, useCallback, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
-import { singleExperiences, packageExperiences, Experience, slugify , priceUnitLabel, placeLabel, mobileVideo, mobileHevcVideo, reelPoster, HEVC_SOURCE_TYPE, isZonePriced } from '@/lib/experiences'
+import { singleExperiences, packageExperiences, getExperienceBySlug, Experience, slugify , priceUnitLabel, placeLabel, mobileVideo, mobileHevcVideo, reelPoster, HEVC_SOURCE_TYPE, isZonePriced } from '@/lib/experiences'
 import ZonePriceList from './ZonePriceList'
 import { trackViewItem, trackReelDetailsOpen, trackReelCtaTap, trackClipsEvent, trackReelVideo } from '@/lib/analytics'
 import { CLIPS_POST_QUERY } from '@/lib/safe-redirect'
@@ -14,6 +14,7 @@ import { useSeenReels } from '@/lib/seen-reels'
 import { useHydrated } from '@/lib/use-hydrated'
 import { useTourFit } from '@/lib/use-tour-fit'
 import { useCtaSwap } from '@/lib/use-cta-swap'
+import { isTourPaused } from '@/lib/tour-pause'
 import Link from 'next/link'
 import Arrow from '@/components/ui/Arrow'
 import dynamic from 'next/dynamic'
@@ -188,7 +189,9 @@ function Reel({ exp, clip, isActive, near, ahead, advancesAtEnd, clipCount, mute
   const hydrated = useHydrated()
   const inCart = hydrated && isInCart(exp.id)
   const tourFit = useTourFit(exp)
-  const blocked = !inCart && !tourFit.allowed
+  // Not taking bookings (lib/tour-pause): no Add, and nothing to swap in.
+  const offSale = !inCart && isTourPaused(exp.id)
+  const blocked = !inCart && !offSale && !tourFit.allowed
   const slug = slugify(exp.title)
   const cta = useCtaSwap(inCart)
   // A guest's footage may be landscape: shown whole rather than cropped to a
@@ -935,7 +938,7 @@ function Reel({ exp, clip, isActive, near, ahead, advancesAtEnd, clipCount, mute
         <UserTourVideos
           exp={exp}
           startUpload={clipsUpload}
-          cta={{ inCart, blocked, swapLine: shortReason, onAdd: () => addToTrip() }}
+          cta={{ inCart, blocked, offSale, swapLine: shortReason, onAdd: () => addToTrip() }}
           onPlay={(id) => { closeClips(); onPlayClip(id) }}
           onClose={closeClips}
         />
@@ -1194,11 +1197,18 @@ function Reel({ exp, clip, isActive, near, ahead, advancesAtEnd, clipCount, mute
           {/* flexWrap + nowrap unit: when the row is too narrow beside the
               CTA, "up to 3 people" drops to its own line as a whole phrase
               instead of breaking mid-phrase into a ragged "up to 3 / people". */}
+          {offSale ? (
+            // Paused: no price, since the price is what is being confirmed.
+            <p className="reel-price" style={{ margin: 0, minWidth: 0, paddingRight: 8, fontSize: 15, fontWeight: 600, lineHeight: 1.35, color: '#fff', fontFamily: 'var(--font-dm-sans)' }}>
+              {t('Not taking bookings right now.')}
+            </p>
+          ) : (
           <div className="reel-price" style={{ display: 'flex', alignItems: 'baseline', gap: 4, flexWrap: 'wrap', minWidth: 0, paddingRight: 8 }}>
             <span style={{ fontSize: 13, fontWeight: 500, color: '#fff', fontFamily: 'var(--font-dm-sans)' }}>{t('From')}</span>
             <span style={{ fontFamily: 'var(--font-dm-sans)', fontWeight: 800, fontSize: 22, color: 'white', letterSpacing: '-0.02em' }}>{formatPrice(exp.price)}</span>
             <span style={{ fontSize: 14, fontWeight: 600, color: '#fff', fontFamily: 'var(--font-dm-sans)', whiteSpace: 'nowrap' }}>{priceUnitLabel(exp.pricing)}</span>
           </div>
+          )}
           {/* Every state has a next step. In the trip it is checkout (a
               second tap used to remove the tour, and the bar arriving under
               the thumb made that easy); a tour that cannot join the day books
@@ -1208,7 +1218,22 @@ function Reel({ exp, clip, isActive, near, ahead, advancesAtEnd, clipCount, mute
               label) and never narrower than the button just pressed, so the
               price beside them never reflows on an add or a swap. Names start
               with the visible words, for speech control (WCAG 2.5.3). */}
-          {inCart ? (
+          {offSale ? (
+            // The next step from a paused tour: the ones on sale.
+            <Link
+              href="/explore"
+              onClick={(e) => e.stopPropagation()}
+              style={{
+                minHeight: 48, minWidth: 140, padding: '0 22px', borderRadius: 9999,
+                background: 'white', color: '#000',
+                fontSize: 15, fontWeight: 700, fontFamily: 'var(--font-dm-sans)',
+                textDecoration: 'none', whiteSpace: 'nowrap', flexShrink: 0,
+                display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+              }}
+            >
+              {t('See other tours')}
+            </Link>
+          ) : inCart ? (
             <Link
               ref={cta.ref}
               href="/checkout"
@@ -1255,7 +1280,7 @@ function Reel({ exp, clip, isActive, near, ahead, advancesAtEnd, clipCount, mute
         <TourDetailsSheet
           exp={detailsFor}
           onClose={() => setDetailsFor(null)}
-          cta={{ inCart, blocked, swapLine: shortReason, onAdd: () => addToTrip() }}
+          cta={{ inCart, blocked, offSale, swapLine: shortReason, onAdd: () => addToTrip() }}
         />
       )}
     </div>
@@ -1276,7 +1301,8 @@ function DesktopTourPanel({ exp }: { exp: Experience }) {
   useCartStore((s) => s.items)
   const inCart = hydrated && isInCart(exp.id)
   const tourFit = useTourFit(exp)
-  const blocked = !inCart && !tourFit.allowed
+  const offSale = !inCart && isTourPaused(exp.id)
+  const blocked = !inCart && !offSale && !tourFit.allowed
   const slug = slugify(exp.title)
   const swapLine = blocked ? swapReason(tourFit) : null
   const [details, setDetails] = useState(false)
@@ -1308,12 +1334,28 @@ function DesktopTourPanel({ exp }: { exp: Experience }) {
       {/* Under 420px of panel (a 768px tablet gives it about 300) the
           price and the button stack, see .reel-panel in globals.css. */}
       <div className="reel-panel-price-row" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, margin: '20px 0 0' }}>
+        {offSale ? (
+          <p style={{ margin: 0, fontSize: 16, fontWeight: 600, lineHeight: 1.35 }}>{t('Not taking bookings right now.')}</p>
+        ) : (
         <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, flexWrap: 'wrap' }}>
           <span style={{ fontSize: 14, color: '#cccccc' }}>{t('From')}</span>
           <span style={{ fontSize: 26, fontWeight: 800, letterSpacing: '-0.02em' }}>{formatPrice(exp.price)}</span>
           <span style={{ fontSize: 14, fontWeight: 600, whiteSpace: 'nowrap' }}>{priceUnitLabel(exp.pricing)}</span>
         </div>
-        {inCart ? (
+        )}
+        {offSale ? (
+          <Link
+            href="/explore"
+            style={{
+              minHeight: 48, minWidth: 140, padding: '0 22px', borderRadius: 9999, flexShrink: 0,
+              background: 'white', color: '#000', textDecoration: 'none',
+              fontSize: 15, fontWeight: 700, fontFamily: 'var(--font-dm-sans)',
+              display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+            }}
+          >
+            {t('See other tours')}
+          </Link>
+        ) : inCart ? (
           <Link
             ref={cta.ref}
             href="/checkout"
@@ -1389,7 +1431,7 @@ function DesktopTourPanel({ exp }: { exp: Experience }) {
         <TourDetailsSheet
           exp={exp}
           onClose={() => setDetails(false)}
-          cta={{ inCart, blocked, swapLine, onAdd: add }}
+          cta={{ inCart, blocked, offSale, swapLine, onAdd: add }}
         />
       )}
     </div>
@@ -1724,10 +1766,14 @@ export default function ExperienceDetail({ slug }: { slug: string }) {
     // first (lib/reel-feed), so the next swipe is usually a tour that can
     // join the same day.
     const requestedFirst = (list: Experience[]) => orderFeed(list, slug)
-    if (!dayIsFull || items.length === 0) return requestedFirst(singleExperiences)
+    // A paused tour (lib/tour-pause) is in no list, but its own link still
+    // opens on it, saying it is not taking bookings, with the rest after it.
+    const opened = getExperienceBySlug(slug)
+    const pool = opened && isTourPaused(opened.id) ? [opened, ...singleExperiences] : singleExperiences
+    if (!dayIsFull || items.length === 0) return requestedFirst(pool)
     const cartIdSet = new Set(items.map((i) => i.id))
-    const cartExps = singleExperiences.filter((e) => cartIdSet.has(e.id))
-    const otherExps = singleExperiences.filter((e) => !cartIdSet.has(e.id))
+    const cartExps = pool.filter((e) => cartIdSet.has(e.id))
+    const otherExps = pool.filter((e) => !cartIdSet.has(e.id))
     return requestedFirst([...shuffle(cartExps, cartIdsKey), ...shuffle(otherExps, cartIdsKey)])
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dayIsFull, cartIdsKey, slug])
@@ -2519,6 +2565,8 @@ export default function ExperienceDetail({ slug }: { slug: string }) {
               @{displayHandle(activeExp.creator)}
             </span>
           </div>
+          {/* No price for a paused tour (lib/tour-pause): its price is what is being confirmed. */}
+          {!isTourPaused(activeExp.id) && (
           <div style={{
             padding: '6px 14px', borderRadius: 9999,
             background: 'rgba(255,255,255,0.08)',
@@ -2526,6 +2574,7 @@ export default function ExperienceDetail({ slug }: { slug: string }) {
           }}>
             {isZonePriced(activeExp.pricing) ? `${t('From')} ` : ''}${activeExp.price}
           </div>
+          )}
         </div>
 
         {/* Comments list */}

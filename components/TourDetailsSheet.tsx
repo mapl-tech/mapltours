@@ -82,6 +82,8 @@ export interface TourDetailsCta {
   blocked: boolean
   /** One line saying why, shown under the button while blocked. */
   swapLine?: string | null
+  /** Not taking bookings (lib/tour-pause): no price and no add, only the way to the others. */
+  offSale?: boolean
   onAdd: () => void
 }
 
@@ -302,6 +304,11 @@ export default function TourDetailsSheet({ exp, onClose, cta }: { exp: Experienc
             padding: '12px 22px calc(12px + env(safe-area-inset-bottom))',
           }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+              {cta.offSale ? (
+                <p style={{ margin: 0, minWidth: 0, fontSize: 15, fontWeight: 600, lineHeight: 1.35, color: 'var(--text-primary)', fontFamily: 'var(--font-dm-sans)' }}>
+                  {t('Not taking bookings right now.')}
+                </p>
+              ) : (
               <div style={{ display: 'flex', alignItems: 'baseline', columnGap: 4, flexWrap: 'wrap', minWidth: 0, fontFamily: 'var(--font-dm-sans)' }}>
                 <span style={{ fontWeight: 800, fontSize: 19, letterSpacing: '-0.02em', color: 'var(--text-primary)' }}>
                   {fromWord}{formatPrice(exp.price)}
@@ -309,10 +316,24 @@ export default function TourDetailsSheet({ exp, onClose, cta }: { exp: Experienc
                 {/* Drops to its own line as a whole phrase beside a wide button. */}
                 <span style={{ fontSize: 14, color: 'var(--text-tertiary)', whiteSpace: 'nowrap' }}>{priceUnitLabel(exp.pricing)}</span>
               </div>
+              )}
               {/* Every state has a next step: in the trip it is checkout, and a
                   tour that cannot join the day books in that day's place (with
                   an undo on the reel) instead of a grey button that did nothing. */}
-              {cta.inCart ? (
+              {cta.offSale ? (
+                <a
+                  href="/explore"
+                  style={{
+                    minHeight: 48, padding: '0 22px', borderRadius: 9999,
+                    background: 'var(--accent)', color: '#fff',
+                    fontSize: 15, fontWeight: 700, fontFamily: 'var(--font-dm-sans)',
+                    textDecoration: 'none', whiteSpace: 'nowrap', flexShrink: 0,
+                    display: 'inline-flex', alignItems: 'center',
+                  }}
+                >
+                  {t('See other tours')}
+                </a>
+              ) : cta.inCart ? (
                 <a
                   href="/checkout"
                   aria-label={`${t('In your trip')}: ${exp.title}. Go to checkout`}

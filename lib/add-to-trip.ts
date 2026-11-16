@@ -3,6 +3,7 @@ import { useTripNotice } from './trip-notice'
 import { tripDayLabel } from './reel-feed'
 import type { Experience } from './experiences'
 import type { TourFit } from './day-route'
+import { isTourPaused } from './tour-pause'
 
 export type AddResult = 'added' | 'swapped' | 'blocked' | 'already'
 
@@ -28,6 +29,8 @@ export function addTourToTrip(
 ): AddResult {
   const store = useCartStore.getState()
   if (store.isInCart(exp.id)) return 'already'
+  // Not taking bookings (lib/tour-pause): never added, never swapped in.
+  if (isTourPaused(exp.id)) return 'blocked'
   const notify = useTripNotice.getState().show
 
   if (fit.allowed) {
@@ -76,6 +79,7 @@ export function addPackageToTrip(
 ): AddResult {
   const store = useCartStore.getState()
   if (store.isInCart(pkg.id)) return 'already'
+  if (isTourPaused(pkg.id)) return 'blocked'
   const snapshot: DaySnapshot = { items: store.items, stops: store.stops }
   store.addItem(pkg)
   const after = useCartStore.getState().items

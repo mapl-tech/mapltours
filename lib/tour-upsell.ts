@@ -1,5 +1,6 @@
 import { driveMinutes } from './day-route'
 import { experiences, tourPrice, slugify, zoneSells, type Experience, type TourPricing } from './experiences'
+import { isTourPaused } from './tour-pause'
 import { zoneOfPickup } from './tour-zone-of'
 import { EATS, type Eat } from './eats'
 import { DESTINATIONS } from './airport-transfers'
@@ -501,7 +502,7 @@ export function curateForStay(
   const zone = zoneOfPickup(hotel)
   const youngest = opts.youngest ?? null
   return catalog
-    .filter((e) => e.kind === 'single')
+    .filter((e) => e.kind === 'single' && !isTourPaused(e.id))
     .map((e) => ({ e, d2d: doorToDoorHours(e.fromHotel, area), mins: driveMinutes(hotel, e.destination) }))
     .filter(({ d2d, mins }) => (d2d ? d2d.hi <= UPSELL_MAX_DAY_HOURS : mins !== null && mins <= UPSELL_MAX_DRIVE_MIN))
     .filter(({ e }) => {

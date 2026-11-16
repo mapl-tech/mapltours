@@ -7,8 +7,12 @@ import { getExperienceBySlug, reelPoster, isZonePriced, isPerPersonByArea, zoneP
 import { TOUR_ZONE_LABEL } from '@/lib/tour-zones'
 import { createServiceClient } from '@/lib/supabase/service'
 import { isMaplAccount } from '@/lib/creator'
+import { isTourPaused } from '@/lib/tour-pause'
 
 const SITE_URL = 'https://mapltours.com'
+
+/** A paused tour (lib/tour-pause) is out of stock to search engines and shopping surfaces. */
+const availabilityOf = (exp: Experience) => (isTourPaused(exp.id) ? 'https://schema.org/OutOfStock' : 'https://schema.org/InStock')
 
 /**
  * A tour priced by where the guest is picked up, as structured data: the
@@ -28,7 +32,7 @@ function zoneOffer(exp: Experience, url: string) {
     '@type': 'AggregateOffer',
     url,
     priceCurrency: 'USD',
-    availability: 'https://schema.org/InStock',
+    availability: availabilityOf(exp),
     lowPrice: Math.min(...prices),
     highPrice: Math.max(...prices),
     offerCount: areas.length,
@@ -168,7 +172,7 @@ export default function ExperienceRoute({ params }: { params: { slug: string } }
       url: `${SITE_URL}/experience/${params.slug}`,
       price: exp.price,
       priceCurrency: 'USD',
-      availability: 'https://schema.org/InStock',
+      availability: availabilityOf(exp),
       // The UNIT, which a bare `price` cannot carry.
       //
       // Much of the catalogue is priced for a party, not a head: Rick's Cafe

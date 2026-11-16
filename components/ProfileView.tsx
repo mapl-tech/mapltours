@@ -12,6 +12,7 @@ import type { User } from '@supabase/supabase-js'
 import Avatar from './Avatar'
 import EmptyState from './ui/EmptyState'
 import { experiences, slugify } from '@/lib/experiences'
+import { isTourPaused } from '@/lib/tour-pause'
 import { DESTINATIONS } from '@/lib/images'
 import { createClient } from '@/lib/supabase/client'
 import { useAuth } from '@/lib/supabase/auth-context'
@@ -1334,7 +1335,7 @@ export default function ProfileView() {
 /** The shortlist, shown rather than counted. */
 function SavedRail({ count, ids }: { count: number; ids: number[] }) {
   const shown = useMemo(
-    () => ids.map((id) => experiences.find((e) => e.id === id)).filter(Boolean).slice(0, 3),
+    () => ids.map((id) => experiences.find((e) => e.id === id && !isTourPaused(e.id))).filter(Boolean).slice(0, 3),
     [ids],
   )
   return (

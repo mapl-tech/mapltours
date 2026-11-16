@@ -69,6 +69,7 @@ import {
   zoneSells,
   type Experience,
 } from './experiences'
+import { isTourPaused, pausedAgentLine, pausedLine } from './tour-pause'
 import { CANCELLATION_SUMMARY } from './refund-pricing'
 import { TOUR_ZONE_LABEL, type TourZone } from './tour-zones'
 import { pickupNeedsArea, zoneFromPlaceText, zoneOfPickup } from './tour-zone-of'
@@ -144,6 +145,8 @@ export function addTourToCart(
   pickupHotel?: string,
 ): AddTourResult {
   const s = getState()
+  // Not taking bookings (lib/tour-pause): said, never added.
+  if (isTourPaused(exp.id)) return { added: false, reason: pausedLine(exp.title) }
   const already = s.isInCart(exp.id)
   const evicted = already ? [] : s.conflictsInCart(exp)
   if (!already) {
@@ -365,26 +368,31 @@ function priceForParty(exp: Experience, guests: number, zone: TourZone | null = 
   return { guests, priceUsd: total, covers, ...(per !== null ? { perGuestUsd: per } : {}) }
 }
 
+/** The tours an agent may offer: the catalogue less any paused one (lib/tour-pause). */
+const onSale = experiences.filter((e) => !isTourPaused(e.id))
+
 function resolveTour(raw: unknown): { exp: Experience } | { error: string; matches?: { slug: string; title: string }[] } {
   const q = str(raw)
   if (!q) return { error: 'tour is required: a tour title or slug from list_tours.' }
+  // Named exactly, a paused tour is said to be paused; a search never finds one.
+  const named = (e: Experience) => (isTourPaused(e.id) ? { error: pausedAgentLine(e.title) } : { exp: e })
   const bySlug = getExperienceBySlug(q.toLowerCase())
-  if (bySlug) return { exp: bySlug }
+  if (bySlug) return named(bySlug)
   const lc = q.toLowerCase()
   const exact = experiences.find((e) => e.title.toLowerCase() === lc)
-  if (exact) return { exp: exact }
+  if (exact) return named(exact)
   const ws = words(q)
-  if (ws.length === 0) return { error: `"${clip(q)}" is too general. Use list_tours to see the ${experiences.length} on offer.` }
+  if (ws.length === 0) return { error: `"${clip(q)}" is too general. Use list_tours to see the ${onSale.length} on offer.` }
   // "Ricks Cafe" has to find "Rick's Cafe": match the spaced and the squashed title.
   const has = (e: Experience, w: string) => e.title.toLowerCase().includes(w) || squash(e.title).includes(squash(w))
-  const hits = experiences.filter((e) => ws.every((w) => has(e, w)))
+  const hits = onSale.filter((e) => ws.every((w) => has(e, w)))
   if (hits.length === 1) return { exp: hits[0] }
   // "Rick" matches both the tour and the package that contains it; the tour whose title STARTS with the query wins.
   const phrase = ws.join(' ')
   const starts = hits.filter((e) => e.title.toLowerCase().startsWith(phrase) || squash(e.title).startsWith(squash(phrase)))
   if (starts.length === 1) return { exp: starts[0] }
-  const loose = hits.length ? hits : experiences.filter((e) => ws.some((w) => has(e, w)))
-  if (loose.length === 0) return { error: `No tour matches "${clip(q)}". Use list_tours to see the ${experiences.length} on offer.` }
+  const loose = hits.length ? hits : onSale.filter((e) => ws.some((w) => has(e, w)))
+  if (loose.length === 0) return { error: `No tour matches "${clip(q)}". Use list_tours to see the ${onSale.length} on offer.` }
   if (loose.length === 1) return { exp: loose[0] }
   return { error: `"${clip(q)}" matches ${loose.length} tours; call again with one slug.`, matches: loose.slice(0, 8).map((e) => ({ slug: getSlug(e), title: e.title })) }
 }
@@ -579,7 +587,7 @@ export function buildWebMcpTools(actions: WebMcpActions): WebMcpTool[] {
 
   const list_tours: WebMcpTool = {
     name: 'list_tours',
-    description: `List the ${experiences.length} private tours and day packages MAPL Tours Jamaica runs in Jamaica (Dunn's River, Blue Hole, bamboo rafting, Rick's Cafe, zipline, ATV, horseback and more). fromPriceUsd is the price for the smallest party; priceUnit says whether it covers a party of up to N people or one person. Use get_tour with guests for the exact total. Hotel pickup included. Optional keyword or area filter; returns up to ${LIST_MAX} rows. Read-only. duration is time at the activity; get_tour adds hotel-and-back times.`,
+    description: `List the ${onSale.length} private tours and day packages MAPL Tours Jamaica runs in Jamaica (Dunn's River, Blue Hole, bamboo rafting, Rick's Cafe, zipline, ATV, horseback and more). fromPriceUsd is the price for the smallest party; priceUnit says whether it covers a party of up to N people or one person. Use get_tour with guests for the exact total. Hotel pickup included. Optional keyword or area filter; returns up to ${LIST_MAX} rows. Read-only. duration is time at the activity; get_tour adds hotel-and-back times.`,
     inputSchema: {
       type: 'object',
       properties: {
@@ -594,8 +602,8 @@ export function buildWebMcpTools(actions: WebMcpActions): WebMcpTool[] {
       const hay = (e: Experience) => `${e.title} ${e.description} ${e.tags.join(' ')} ${e.category}`.toLowerCase()
       const inArea = (e: Experience) => !area || `${e.destination} ${e.parish}`.toLowerCase().includes(area)
       // Every content word first; any word only when that finds nothing.
-      let hits = experiences.filter((e) => inArea(e) && ws.every((w) => hay(e).includes(w)))
-      if (hits.length === 0 && ws.length) hits = experiences.filter((e) => inArea(e) && ws.some((w) => hay(e).includes(w)))
+      let hits = onSale.filter((e) => inArea(e) && ws.every((w) => hay(e).includes(w)))
+      if (hits.length === 0 && ws.length) hits = onSale.filter((e) => inArea(e) && ws.some((w) => hay(e).includes(w)))
       return {
         count: hits.length,
         urlPrefix: `${origin}/experience/`,

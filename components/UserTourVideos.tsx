@@ -211,12 +211,21 @@ function BuyRow({ exp, cta, onAdd }: { exp: Experience; cta: TourDetailsCta; onA
   return (
     <div className="clips-buy">
       <div style={{ minWidth: 0 }}>
-        <div className="clips-price">
-          <b>{isZonePriced(exp.pricing) ? `${t('From')} ` : ''}{formatPrice(exp.price)}</b>
-          <span>{priceUnitLabel(exp.pricing)}</span>
-        </div>
+        {cta.offSale ? (
+          // Paused (lib/tour-pause): no price, since that is what is being confirmed.
+          <p className="clips-price" style={{ margin: 0 }}><span>{t('Not taking bookings right now.')}</span></p>
+        ) : (
+          <div className="clips-price">
+            <b>{isZonePriced(exp.pricing) ? `${t('From')} ` : ''}{formatPrice(exp.price)}</b>
+            <span>{priceUnitLabel(exp.pricing)}</span>
+          </div>
+        )}
       </div>
-      {cta.inCart ? (
+      {cta.offSale ? (
+        <Link href="/explore" className="clips-add">
+          {t('See other tours')}
+        </Link>
+      ) : cta.inCart ? (
         <Link
           href="/checkout"
           className="clips-add clips-add--in"

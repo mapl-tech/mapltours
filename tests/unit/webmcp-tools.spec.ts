@@ -4,6 +4,7 @@ import { buildQuote, DESTINATIONS, reopensAhead } from '../../lib/airport-transf
 import { experiences, getSlug, tourPrice, perTravelerPrice } from '../../lib/experiences'
 import { MIN_PICKUP_LEAD_MIN } from '../../lib/booking-window'
 import { useCartStore } from '../../lib/cart'
+import { isTourPaused } from '../../lib/tour-pause'
 
 // A fixed "now": 10:00 Jamaica on Sep 5, so the 12-hour cutoff is 22:00 on Sep 5
 // and the earliest tour day is Sep 6 (it starts at midnight, 14 hours out).
@@ -20,6 +21,8 @@ function fakeActions(overrides: Partial<WebMcpActions> = {}): WebMcpActions & { 
     ...overrides,
   }
 }
+// What the tools offer: the catalogue less any paused tour (lib/tour-pause, tested in tour-pause.spec).
+const onSale = experiences.filter((e) => !isTourPaused(e.id))
 const tool = (name: string, a = fakeActions()) => ({ t: buildWebMcpTools(a).find((x) => x.name === name)!, a })
 type R = Record<string, any> // eslint-disable-line @typescript-eslint/no-explicit-any
 
@@ -216,21 +219,21 @@ describe('WebMCP tool set', () => {
   test('list_tours is compact, filters honestly, and clips with a hint', async () => {
     const { t: list } = tool('list_tours')
     const all = (await list.execute({})) as R
-    expect(all.count).toBe(experiences.length)
-    expect(all.tours.length).toBe(Math.min(12, experiences.length))
-    expect(all.more).toBe(experiences.length > 12 ? true : undefined)
+    expect(all.count).toBe(onSale.length)
+    expect(all.tours.length).toBe(Math.min(12, onSale.length))
+    expect(all.more).toBe(onSale.length > 12 ? true : undefined)
     expect(all.urlPrefix).toBe('https://mapltours.com/experience/')
     expect(Object.keys(all.tours[0])).toEqual(['slug', 'title', 'kind', 'area', 'duration', 'fromPriceUsd', 'priceUnit'])
     expect(JSON.stringify(all).length).toBeLessThan(2600)
     const negril = (await list.execute({ area: 'Negril' })) as R
-    expect(negril.tours.map((x: R) => x.slug)).toEqual(experiences.filter((e) => /negril/i.test(`${e.destination} ${e.parish}`)).map(getSlug))
+    expect(negril.tours.map((x: R) => x.slug)).toEqual(onSale.filter((e) => /negril/i.test(`${e.destination} ${e.parish}`)).map(getSlug))
     const kingston = (await list.execute({ area: 'Kingston' })) as R
-    expect(kingston.count).toBe(experiences.filter((e) => /kingston/i.test(`${e.destination} ${e.parish}`)).length)
+    expect(kingston.count).toBe(onSale.filter((e) => /kingston/i.test(`${e.destination} ${e.parish}`)).length)
     // stop words do not widen the search; "blue hole tour" is about the Blue Hole
     const bh = (await list.execute({ query: 'blue hole tour' })) as R
     expect(bh.tours.every((x: R) => /blue hole/i.test(x.title))).toBe(true)
     expect(bh.count).toBeGreaterThan(0)
-    expect(((await list.execute({ query: 'tours' })) as R).count).toBe(experiences.length)
+    expect(((await list.execute({ query: 'tours' })) as R).count).toBe(onSale.length)
   })
 
   test('get_tour quotes one total per party and says what it covers', async () => {
@@ -249,7 +252,7 @@ describe('WebMCP tool set', () => {
     const within = (await get.execute({ tour: rick.title, guests: rick.pricing.tierMax })) as R
     expect(within.priceForParty.covers).toMatch(new RegExp(`flat rate that covers up to ${rick.pricing.tierMax}`))
     // a per-person tour never claims a flat rate, and gives the per-guest figure when it divides evenly
-    const pp = experiences.find((e) => e.pricing.mode === 'per_person' && !e.pricing.zoneRates)!
+    const pp = onSale.find((e) => e.pricing.mode === 'per_person' && !e.pricing.zoneRates)!
     const p = (await get.execute({ tour: getSlug(pp), guests: 2 })) as R
     expect(p.priceForParty.covers).toBe('total for 2 guests')
     expect(p.priceForParty.perGuestUsd).toBe(perTravelerPrice(pp.pricing, 2) ?? undefined)

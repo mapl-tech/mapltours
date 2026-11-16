@@ -5,6 +5,7 @@ import { bestInsertIndex, bestSlotForStop, canMoveItem, fitStopAfter, fitTourToD
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { Experience } from './experiences'
+import { isTourPaused } from './tour-pause'
 
 export interface CartItem extends Experience {
   travelers: number
@@ -260,6 +261,9 @@ export const useCartStore = create<CartStore>()(
       addItem: (exp: Experience) => {
         const { items } = get()
         if (items.some((i) => i.id === exp.id)) return
+        // Not taking bookings (lib/tour-pause). No surface offers it; this is
+        // the floor under them, as the drive rule below is.
+        if (isTourPaused(exp.id)) return
         // A ready-made package day and a self-built day are two different
         // ways to buy, and an itinerary is one or the other. Mixing them
         // double-books attractions (every package bundles activities also
@@ -315,6 +319,7 @@ export const useCartStore = create<CartStore>()(
       swapDayFor: (exp: Experience) => {
         const { items, stops } = get()
         if (items.some((i) => i.id === exp.id)) return null
+        if (isTourPaused(exp.id)) return null
         const snapshot: DaySnapshot = { items, stops }
         // The day keeps the date and party the guest already set; only what
         // happens on it changes. Stops ride along a tour of the old day, so

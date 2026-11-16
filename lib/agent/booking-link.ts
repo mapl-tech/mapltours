@@ -24,6 +24,7 @@
 import { MAX_TRANSFER_PASSENGERS, getDestination, type TransferTripType } from '../airport-transfers'
 import { earliestBookableExperienceDate, isExperienceDateBookable, MIN_LEAD_TIME_HOURS } from '../booking-window'
 import { getExperienceBySlug, getSlug } from '../experiences'
+import { isTourPaused, pausedLine } from '../tour-pause'
 import { flightNo, legBookable, legTime, legsFor, tripTypeOf } from '../webmcp-tools'
 
 export const BOOK_PATH = '/book'
@@ -195,6 +196,8 @@ function parseRide(params: URLSearchParams, id: string, now: Date): ParsedHandof
 function parseTour(params: URLSearchParams, slug: string, now: Date): ParsedHandoff {
   const exp = getExperienceBySlug(slug.toLowerCase())
   if (!exp) return refuse('That tour is not on our list any more.', '/explore', 'See our tours')
+  // A link made before the pause (an assistant's, a reminder email's) opens nothing.
+  if (isTourPaused(exp.id)) return refuse(pausedLine(exp.title), '/explore', 'See our other tours')
   const page = `/experience/${getSlug(exp)}`
   const guests = int(params.get('guests'))
   if (!Number.isInteger(guests) || guests < 1 || guests > MAX_TOUR_GUESTS) return refuse(`Tours can be booked online for 1 to ${MAX_TOUR_GUESTS} guests.`, page, 'Book this tour')

@@ -4,6 +4,7 @@ import { bookingLink, parseHandoff, type Handoff } from './agent/booking-link'
 import { isExperienceDateBookable } from './booking-window'
 import { experiences, getSlug } from './experiences'
 import { legBookable } from './webmcp-tools'
+import { isTourPaused } from './tour-pause'
 
 /**
  * The cart reminder follow-ups (owner, Nov 15 2026): three emails per cart.
@@ -132,8 +133,8 @@ export function followUpLink(origin: string, h: Handoff, step: 2 | 3): string {
 
 /**
  * Whether the trip can still be booked a day from now: the same check the
- * /book page runs when the link is opened (12-hour rule included), or for a
- * cart a link cannot carry, every tour date on it.
+ * /book page runs when the link is opened (12-hour rule included, and no
+ * paused tour), or for a cart a link cannot carry, every tour on it.
  */
 export function stillBookable(b: Row, link: string | null, now: number): boolean {
   const later = new Date(now + FOLLOW_UP_BOOKABLE_AHEAD_HOURS * HOUR)
@@ -146,7 +147,7 @@ export function stillBookable(b: Row, link: string | null, now: number): boolean
       return legs.length > 0 && legs.every((v) => legBookable(v, later))
     })
   }
-  return items.every((i) => typeof i.date === 'string' && isExperienceDateBookable(i.date.slice(0, 10), later))
+  return items.every((i) => typeof i.date === 'string' && isExperienceDateBookable(i.date.slice(0, 10), later) && !isTourPaused(Number(i.experience_id)))
 }
 
 /**

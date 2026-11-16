@@ -1,4 +1,5 @@
-import { experiences, slugify, priceUnitLabel, placeLabel, isZonePriced, isPerPersonByArea, zonePrices, type Experience } from '@/lib/experiences'
+import { experiences as catalog, slugify, priceUnitLabel, placeLabel, isZonePriced, isPerPersonByArea, zonePrices, type Experience } from '@/lib/experiences'
+import { isTourPaused } from '@/lib/tour-pause'
 import { TOUR_ZONE_LABEL } from '@/lib/tour-zones'
 import {
   DESTINATIONS,
@@ -14,6 +15,10 @@ import { agentPaymentsEnabled } from '@/lib/agent/payments-flag'
 const baseUrl = 'https://mapltours.com'
 
 export const dynamic = 'force-static'
+
+// What an assistant may offer: a paused tour (lib/tour-pause) is not listed,
+// counted or priced here until it is back on sale.
+const experiences = catalog.filter((e) => !isTourPaused(e.id))
 
 export function GET() {
   // Built static, so this is the deploy's own switch: the same one /mcp lists the payment tool by.
