@@ -67,6 +67,7 @@ import {
   isPerPersonByArea,
   zonePrices,
   zoneSells,
+  soldFromPhrase,
   type Experience,
 } from './experiences'
 import { isTourPaused, pausedAgentLine, pausedLine } from './tour-pause'
@@ -343,9 +344,19 @@ function tourSummary(exp: Experience, origin: string) {
  * the pickup names one; otherwise every area's price is listed and priceUsd is
  * only the lowest, said so in so many words.
  */
+/** The agent's sentence when a tour priced by area is not booked online from the traveller's area. */
+function notSoldForAgent(exp: Experience, zone: TourZone): string {
+  return `${exp.title} is not booked online for a pickup in ${TOUR_ZONE_LABEL[zone]}; online it is booked only for pickups ${soldFromPhrase(exp.pricing)}. The traveller can write to contact@mapltours.com for a price, or offer another tour from list_tours.`
+}
+
 function priceForParty(exp: Experience, guests: number, zone: TourZone | null = null) {
   const p = exp.pricing
   if (isZonePriced(p)) {
+    // The traveller's area is known and the tour is not booked from it: no
+    // price to quote them (Rick's Cafe from the Ocho Rios side, Nov 16 2026).
+    if (zone && !zoneSells(p, zone)) {
+      return { guests, pickupArea: TOUR_ZONE_LABEL[zone], bookableOnline: false, covers: notSoldForAgent(exp, zone) }
+    }
     if (zone && zoneSells(p, zone)) {
       return { guests, pickupArea: TOUR_ZONE_LABEL[zone], priceUsd: tourPrice(p, guests, zone), covers: `total for ${guests} guests picked up in ${TOUR_ZONE_LABEL[zone]}; this tour is priced ${isPerPersonByArea(p) ? 'per person, ' : ''}by pickup area` }
     }
@@ -679,6 +690,9 @@ export function buildWebMcpTools(actions: WebMcpActions): WebMcpTool[] {
       if (date && !isExperienceDateBookable(date, t)) {
         return { error: `Tours need ${MIN_LEAD_TIME_HOURS} hours' notice counted from midnight Jamaica time; the earliest date is ${earliest}.` }
       }
+      // A tour not booked online from the traveller's area is refused here, not at checkout.
+      const area = zoneFromPlaceText(str(input.pickup_hotel).slice(0, 120))
+      if (area && !zoneSells(r.exp.pricing, area)) return { error: notSoldForAgent(r.exp, area) }
       const res = actions.addTour(r.exp, guests, date, clip(str(input.pickup_hotel), 120) || undefined)
       if (!res.added) {
         return { error: `${res.reason ?? `${r.exp.title} could not be added to the day already in the cart.`} Remove the other tour on the checkout page first, or book it separately.` }

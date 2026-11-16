@@ -23,7 +23,7 @@
  * client could name its own discount.
  */
 
-import { experiences, type Experience , tourPrice, tourOperatorCost, isZonePriced, zoneSells } from './experiences'
+import { experiences, type Experience , tourPrice, tourOperatorCost, isZonePriced, zoneSells, notSoldOnlineLine } from './experiences'
 import type { TourZone } from './tour-zones'
 import { isTourPaused, pausedServerLine } from './tour-pause'
 
@@ -142,7 +142,7 @@ export function priceTourCart(
       throw new PricingError(
         'pickup_area',
         zone || options.pickupKnown
-          ? `${experience.title} is not sold online from that pickup. Write to contact@mapltours.com and we will send you a price.`
+          ? notSoldOnlineLine(experience.title, experience.pricing, zone)
           : `${experience.title} is priced by where you are staying. Choose your hotel or its area, or write to contact@mapltours.com for a price.`,
       )
     }

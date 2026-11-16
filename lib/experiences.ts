@@ -85,6 +85,59 @@ export function zoneSells(p: TourPricing, zone: TourZone | null | undefined): bo
   return !!zone && typeof p.zoneRates?.[zone] === 'number'
 }
 
+/** The zones a tour priced by area is NOT sold from online, west to east. Empty for any other tour. */
+export function zonesNotSold(p: TourPricing): TourZone[] {
+  return isZonePriced(p) ? TOUR_ZONES.filter((z) => typeof p.zoneRates?.[z] !== 'number') : []
+}
+
+/** The town a guest knows each zone by, for sentences (the full labels carry "&"). */
+const ZONE_TOWN: Record<TourZone, string> = {
+  negril: 'Negril',
+  lucea: 'Lucea',
+  montego_bay: 'Montego Bay',
+  trelawny: 'Falmouth',
+  runaway_bay: 'Runaway Bay',
+  ocho_rios: 'Ocho Rios',
+}
+
+const listWords = (words: string[], last: 'and' | 'or') =>
+  words.length < 2 ? words.join('') : `${words.slice(0, -1).join(', ')} ${last} ${words[words.length - 1]}`
+
+/**
+ * Where a tour priced by area is booked online, in a guest's words: "from
+ * Negril to Montego Bay" for a run of three or more neighbouring areas, else
+ * the towns ("in Negril and Lucea").
+ */
+export function soldFromPhrase(p: TourPricing): string {
+  const sold = zonesSold(p)
+  const idx = sold.map((z) => TOUR_ZONES.indexOf(z))
+  const neighbours = idx.every((v, i) => i === 0 || v === idx[i - 1] + 1)
+  if (sold.length >= 3 && neighbours) return `from ${ZONE_TOWN[sold[0]]} to ${ZONE_TOWN[sold[sold.length - 1]]}`
+  return `in ${listWords(sold.map((z) => ZONE_TOWN[z]), 'and')}`
+}
+
+/**
+ * The tour page's line under the area prices: names the areas the tour is not
+ * booked from online, so a guest staying there knows before checkout
+ * (Rick's Cafe from the Ocho Rios side, Nov 16 2026), then the usual offer.
+ */
+export function notSoldAreasNote(p: TourPricing): string {
+  const off = zonesNotSold(p)
+  return off.length
+    ? `Not booked online from ${listWords(off.map((z) => ZONE_TOWN[z]), 'or')}. Staying there or anywhere else? Write to us for a price.`
+    : 'Staying somewhere else? Write to us for a price.'
+}
+
+/**
+ * Checkout's sentence when the guest's pickup is outside the areas a tour is
+ * booked from: where it IS booked, and the two things they can do (write for
+ * a price, or remove it). Never "choose another pickup": a guest cannot move
+ * hotels to buy a tour.
+ */
+export function notSoldOnlineLine(title: string, p: TourPricing, zone: TourZone | null | undefined): string {
+  return `${title} is booked online only for pickups ${soldFromPhrase(p)}. For a pickup ${zone ? `in ${ZONE_TOWN[zone]}` : 'there'}, write to contact@mapltours.com and we will send you a price, or remove it from your trip.`
+}
+
 /** True when every guest pays their own pickup zone's rate: a per-person tour priced by area. */
 export function isPerPersonByArea(p: TourPricing): boolean {
   return p.mode === 'per_person' && isZonePriced(p)

@@ -9,7 +9,7 @@ import { couponDiscountCents } from '@/lib/coupons'
 import { normalizeGiftCode } from '@/lib/gift-cards'
 import { priceTourCart } from '@/lib/checkout-pricing'
 import CodeField from './CodeField'
-import { tourPrice, perTravelerPrice, placeLabel, isZonePriced, zoneSells, type Experience } from '@/lib/experiences'
+import { tourPrice, perTravelerPrice, placeLabel, isZonePriced, zoneSells, notSoldOnlineLine, type Experience } from '@/lib/experiences'
 import { zoneOfPickup, pickupNeedsArea } from '@/lib/tour-zone-of'
 import { TOUR_ZONES, TOUR_ZONE_LABEL, isTourZone, type TourZone } from '@/lib/tour-zones'
 import { earliestBookableExperienceDate } from '@/lib/booking-window'
@@ -140,10 +140,13 @@ export default function OnePageCheckout() {
   const zone: TourZone | null = zoneOfPickup(pickup, needsArea ? pickupArea : null)
   const unsold = zonedItems.find((i) => !zoneSells(i.pricing, zone)) ?? null
   const unsoldTitle = unsold ? unsold.title : null
+  // Where it IS booked and what to do: write for a price or remove it (never
+  // "choose another pickup": a guest cannot move hotels to buy a tour).
+  const unsoldLine = unsold ? notSoldOnlineLine(unsold.title, unsold.pricing, zone) : null
   const hasZoned = zonedItems.length > 0
   const zoneRule = useMemo<ZoneRule | undefined>(
-    () => (hasZoned ? { needsArea, area: pickupArea, unsoldTitle } : undefined),
-    [hasZoned, needsArea, pickupArea, unsoldTitle],
+    () => (hasZoned ? { needsArea, area: pickupArea, unsoldTitle, unsoldLine } : undefined),
+    [hasZoned, needsArea, pickupArea, unsoldTitle, unsoldLine],
   )
   // A tour paused since it went into this cart (lib/tour-pause): the server
   // refuses the whole cart while it is there, so the page says so on its
@@ -577,6 +580,12 @@ export default function OnePageCheckout() {
                         <p id={`opc-paused-${item.id}`} style={{ fontFamily: FONT, fontSize: 14, fontWeight: 600, lineHeight: 1.4, color: '#b00020', marginTop: 6 }}>
                           {pausedCheckoutLine(item.title)}
                         </p>
+                      ) : notSoldHere && isZonePriced(item.pricing) && !zoneSells(item.pricing, zone) ? (
+                        // The guest has said where they are staying and this tour is not booked from
+                        // there: say so on the line itself, beside its Remove.
+                        <p id={`opc-unsold-${item.id}`} style={{ fontFamily: FONT, fontSize: 14, fontWeight: 600, lineHeight: 1.4, color: '#b00020', marginTop: 6 }}>
+                          {zone ? `Not booked online from ${TOUR_ZONE_LABEL[zone]}.` : 'Not booked online from that pickup.'}
+                        </p>
                       ) : isZonePriced(item.pricing) ? (
                         <p style={{ fontFamily: FONT, fontSize: 13, color: 'var(--text-secondary)', marginTop: 3 }}>
                           {zone && zoneSells(item.pricing, zone) ? `Priced for pickup in ${TOUR_ZONE_LABEL[zone]}` : 'Priced by where we pick you up'}
@@ -588,7 +597,7 @@ export default function OnePageCheckout() {
                         {zoneSells(item.pricing, zone) ? null : <span style={{ fontWeight: 500, fontSize: 13, color: 'var(--text-tertiary)' }}>{t('From')} </span>}
                         {formatUsd(tourPrice(item.pricing, item.travelers, zone))}
                       </p>
-                      <button type="button" id={`opc-remove-${item.id}`} onClick={() => removeItem(item.id)} aria-label={`Remove ${item.title}`} aria-describedby={isTourPaused(item.id) ? `opc-paused-${item.id}` : undefined} style={{ background: 'none', border: 'none', padding: '12px 0 4px', fontFamily: FONT, fontSize: 13, color: 'var(--text-tertiary)', textDecoration: 'underline', cursor: 'pointer', minHeight: 44, minWidth: 44 }}>Remove</button>
+                      <button type="button" id={`opc-remove-${item.id}`} onClick={() => removeItem(item.id)} aria-label={`Remove ${item.title}`} aria-describedby={isTourPaused(item.id) ? `opc-paused-${item.id}` : notSoldHere && isZonePriced(item.pricing) && !zoneSells(item.pricing, zone) ? `opc-unsold-${item.id}` : undefined} style={{ background: 'none', border: 'none', padding: '12px 0 4px', fontFamily: FONT, fontSize: 13, color: 'var(--text-tertiary)', textDecoration: 'underline', cursor: 'pointer', minHeight: 44, minWidth: 44 }}>Remove</button>
                     </div>
                   </div>
                 ))}
@@ -727,7 +736,7 @@ export default function OnePageCheckout() {
             {/* ── 3. Payment ── */}
             <div ref={payCardRef}>
               <Card className="opc-pad opc-card-pay">
-                <SectionTitle step={3} title={t('Payment')} sub={pausedItem ? pausedCheckoutLine(pausedItem.title) : notSoldHere ? `${unsoldTitle} is not sold online from that pickup. Choose another pickup above, or write to contact@mapltours.com for a price.` : priceIsFrom ? 'Your total is set once you choose where we pick you up. Nothing is charged until you press the button below.' : amountCents >= 50 ? `${formatUsd(finalTotal)} today. Nothing is charged until you press the button below.` : 'Nothing to charge today.'} />
+                <SectionTitle step={3} title={t('Payment')} sub={pausedItem ? pausedCheckoutLine(pausedItem.title) : notSoldHere ? unsoldLine ?? '' : priceIsFrom ? 'Your total is set once you choose where we pick you up. Nothing is charged until you press the button below.' : amountCents >= 50 ? `${formatUsd(finalTotal)} today. Nothing is charged until you press the button below.` : 'Nothing to charge today.'} />
                 <DeferredPaymentPanel
                   amountCents={amountCents}
                   returnUrl="/checkout/confirm"

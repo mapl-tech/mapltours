@@ -407,6 +407,19 @@ describe('tours priced by where the traveller is staying (Nov 12 2026)', () => {
     expect(kingston.priceForParty.priceIsFrom).toBe(true)
   })
 
+  test('a tour not booked from the traveller\'s area is never quoted or put in the cart (Rick\'s Cafe from Ocho Rios, Nov 16 2026)', async () => {
+    const SAY = "Rick's Cafe Cliff Diving & Sunset is not booked online for a pickup in Ocho Rios; online it is booked only for pickups from Negril to Montego Bay. The traveller can write to contact@mapltours.com for a price, or offer another tour from list_tours."
+    const { t } = tool('get_tour')
+    const r = (await t.execute({ tour: 'ricks-cafe-cliff-diving-and-sunset', guests: 4, pickup_hotel: 'a villa in Ocho Rios' })) as R
+    expect(r.priceForParty).toEqual({ guests: 4, pickupArea: 'Ocho Rios', bookableOnline: false, covers: SAY })
+    // From an area it is sold from, the price as before.
+    const west = (await t.execute({ tour: 'ricks-cafe-cliff-diving-and-sunset', guests: 4, pickup_hotel: 'a villa in Negril' })) as R
+    expect(west.priceForParty).toMatchObject({ pickupArea: 'Negril', priceUsd: 255 })
+    const { t: start, a } = tool('start_tour_booking')
+    expect(await start.execute({ tour: 'ricks-cafe-cliff-diving-and-sunset', guests: 4, date: '2026-12-10', pickup_hotel: 'a villa in Ocho Rios' })).toEqual({ error: SAY })
+    expect(a.calls).toEqual([])
+  })
+
   test('a tour with one price everywhere is quoted as before, whatever the pickup', async () => {
     const { t } = tool('get_tour')
     const nine = experiences.find((e) => e.id === 15)!

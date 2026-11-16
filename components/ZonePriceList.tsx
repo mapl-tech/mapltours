@@ -1,4 +1,4 @@
-import { isPerPersonByArea, isZonePriced, zonePrices, type Experience } from '@/lib/experiences'
+import { isPerPersonByArea, isZonePriced, notSoldAreasNote, zonePrices, type Experience } from '@/lib/experiences'
 import { TOUR_ZONE_LABEL } from '@/lib/tour-zones'
 
 /**
@@ -39,7 +39,7 @@ export default function ZonePriceList({ exp, formatPrice, tone = 'light' }: {
         ))}
       </dl>
       <p style={{ fontSize: 13, lineHeight: 1.5, color: muted, marginTop: 8 }}>
-        {perHead ? '' : p.perPersonAddon ? 'Each guest adds to the price. ' : `Each guest over ${p.tierMax} adds to the price. `}Staying somewhere else? Write to us for a price. Checkout shows your exact total.
+        {perHead ? '' : p.perPersonAddon ? 'Each guest adds to the price. ' : `Each guest over ${p.tierMax} adds to the price. `}{notSoldAreasNote(p)} Checkout shows your exact total.
       </p>
     </div>
   )

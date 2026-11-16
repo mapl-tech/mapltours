@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url'
 import { renderToStaticMarkup } from 'react-dom/server'
 import {
   experiences, tourPrice, tourOperatorCost, perTravelerPrice, priceUnitLabel, isZonePriced, isPerPersonByArea, zonesSold, zoneSells, zonePrices,
+  zonesNotSold, soldFromPhrase, notSoldAreasNote, notSoldOnlineLine,
   defaultRateCard, RATES_PUBLISHED, type TourPricing,
 } from '@/lib/experiences'
 import { applyRateCards, cardOf, describeRateCard, parseRateCard, rateCardChanges, sameCard, RATE_MAX, type RateCard } from '@/lib/tour-rates'
@@ -365,8 +366,34 @@ describe('priceTourCart: a tour priced by area is never quietly priced', () => {
       expect((e as PricingError).detail).toMatch(/priced by where you are staying\. Choose your hotel or its area/)
     }
     try { priceTourCart(line(DUNNS), {}, { pickupKnown: true }) } catch (e) {
-      expect((e as PricingError).detail).toMatch(/not sold online from that pickup/)
+      expect((e as PricingError).detail).toBe(notSoldOnlineLine(tour(DUNNS).title, tour(DUNNS).pricing, null))
     }
+  })
+})
+
+describe('telling a guest where a tour is booked from (owner, Nov 16 2026: "clear communication", "intuitive")', () => {
+  test('the areas sold, in towns a guest knows: a run of neighbours as "from A to B", anything else by name', () => {
+    expect(soldFromPhrase(tour(DUNNS).pricing)).toBe('from Negril to Ocho Rios')
+    expect(soldFromPhrase(tour(RICKS).pricing)).toBe('from Negril to Montego Bay')
+    const only = (zoneRates: TourPricing['zoneRates']): TourPricing => ({ ...tour(DUNNS).pricing, zoneRates })
+    expect(soldFromPhrase(only({ negril: 1 }))).toBe('in Negril')
+    expect(soldFromPhrase(only({ negril: 1, lucea: 1 }))).toBe('in Negril and Lucea')
+    expect(soldFromPhrase(only({ negril: 1, montego_bay: 1, ocho_rios: 1 }))).toBe('in Negril, Montego Bay and Ocho Rios')
+    expect(zonesNotSold(tour(RICKS).pricing)).toEqual(['trelawny', 'runaway_bay', 'ocho_rios'])
+    expect(zonesNotSold(tour(DUNNS).pricing)).toEqual([])
+    expect(zonesNotSold(tour(NINE_MILE).pricing)).toEqual([])
+  })
+  test('checkout names where it IS booked and the two things to do, never "choose another pickup"', () => {
+    expect(notSoldOnlineLine(tour(RICKS).title, tour(RICKS).pricing, 'ocho_rios')).toBe("Rick's Cafe Cliff Diving & Sunset is booked online only for pickups from Negril to Montego Bay. For a pickup in Ocho Rios, write to contact@mapltours.com and we will send you a price, or remove it from your trip.")
+    expect(notSoldOnlineLine(tour(DUNNS).title, tour(DUNNS).pricing, null)).toBe("Dunn's River Falls Climb is booked online only for pickups from Negril to Ocho Rios. For a pickup there, write to contact@mapltours.com and we will send you a price, or remove it from your trip.")
+    for (const id of [DUNNS, RICKS, RAFT, BOTH]) {
+      const s = notSoldOnlineLine(tour(id).title, tour(id).pricing, 'ocho_rios')
+      expect(s).not.toMatch(/[\u2013\u2014]|choose another pickup|MAPL Tours(?! Jamaica)/i)
+    }
+  })
+  test('the tour page names the areas it is not booked from, and keeps the old line for a tour sold everywhere', () => {
+    expect(notSoldAreasNote(tour(RICKS).pricing)).toBe('Not booked online from Falmouth, Runaway Bay or Ocho Rios. Staying there or anywhere else? Write to us for a price.')
+    expect(notSoldAreasNote(tour(DUNNS).pricing)).toBe('Staying somewhere else? Write to us for a price.')
   })
 })
 
@@ -377,6 +404,9 @@ describe('the checkout’s pickup rules for a tour priced by area (lib/checkout-
   test('says where to get a price when the pickup is outside the tour’s areas', () => {
     expect(zonePickupErrors('Spanish Court Hotel, Kingston', { needsArea: false, area: '', unsoldTitle: "Dunn's River Falls Climb" }).pickup).toMatch(/not sold online from there\. Choose a pickup in one of our areas, or write to contact@mapltours\.com/)
     expect(zonePickupErrors('Seaview Villa', { needsArea: true, area: 'elsewhere', unsoldTitle: "Dunn's River Falls Climb" }).pickupArea).toMatch(/not sold online from there/)
+    // The checkout passes the sentence that names where the tour IS booked; it is shown as given.
+    const line = notSoldOnlineLine(tour(RICKS).title, tour(RICKS).pricing, 'ocho_rios')
+    expect(zonePickupErrors('Sandals Ochi Beach Resort, Ocho Rios', { needsArea: false, area: '', unsoldTitle: tour(RICKS).title, unsoldLine: line }).pickup).toBe(line)
   })
   test('nothing for a sold pickup, an empty pickup or a cart with no such tour', () => {
     expect(zonePickupErrors('Sandals Negril Beach Resort', { needsArea: false, area: '', unsoldTitle: null })).toEqual({})
@@ -406,6 +436,11 @@ describe('ZonePriceList: every area’s exact price on the tour page', () => {
     expect(text).toContain('Negril $192 Lucea & Hanover $128 Montego Bay & Rose Hall $115 Falmouth & Trelawny $128 Runaway Bay & Discovery Bay $128 Ocho Rios $128')
     expect(text).not.toContain('adds to the price')
     expect(text).toContain('Staying somewhere else? Write to us for a price. Checkout shows your exact total.')
+  })
+  test('a tour not booked from every area says which areas, before the guest reaches checkout', () => {
+    const text = renderToStaticMarkup(ZonePriceList({ exp: tour(RICKS), formatPrice: usd })).replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').replace(/&amp;/g, '&')
+    expect(text).toContain('Negril $255 Lucea & Hanover $255 Montego Bay & Rose Hall $255')
+    expect(text).toContain('Not booked online from Falmouth, Runaway Bay or Ocho Rios. Staying there or anywhere else? Write to us for a price. Checkout shows your exact total.')
   })
   test('nothing at all for a tour with one price everywhere', () => {
     expect(ZonePriceList({ exp: tour(NINE_MILE), formatPrice: usd })).toBeNull()

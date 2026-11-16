@@ -60,7 +60,7 @@ export function validateTourForm(input: TourFormInput): FieldErrors {
  * no list knows (so its area must be chosen), the area chosen, and the first
  * tour that cannot be sold from the pickup's zone.
  */
-export type ZoneRule = { needsArea: boolean; area: string; unsoldTitle: string | null }
+export type ZoneRule = { needsArea: boolean; area: string; unsoldTitle: string | null; /** The sentence to show, naming where it is booked (lib/experiences notSoldOnlineLine). */ unsoldLine?: string | null }
 
 /**
  * The pickup errors such a cart adds: choose the area of a hotel or villa we
@@ -72,7 +72,7 @@ export function zonePickupErrors(pickup: string | undefined, zone: ZoneRule | un
   const e: FieldErrors = {}
   if (!zone || !pickup?.trim()) return e
   if (zone.needsArea && !zone.area) e.pickupArea = 'Choose the area your hotel or villa is in'
-  else if (zone.unsoldTitle) e[zone.needsArea ? 'pickupArea' : 'pickup'] = `${zone.unsoldTitle} is not sold online from there. Choose a pickup in one of our areas, or write to contact@mapltours.com for a price.`
+  else if (zone.unsoldTitle) e[zone.needsArea ? 'pickupArea' : 'pickup'] = zone.unsoldLine ?? `${zone.unsoldTitle} is not sold online from there. Choose a pickup in one of our areas, or write to contact@mapltours.com for a price.`
   return e
 }
 

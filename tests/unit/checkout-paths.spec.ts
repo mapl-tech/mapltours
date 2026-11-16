@@ -714,7 +714,7 @@ describe('POST /api/checkout: tours priced by where the guest is staying (Nov 12
   it('refuses a pickup outside every zone and says how to get a price', async () => {
     const res = await post({ amount: priced('ocho_rios'), items: cart(2), customer: at('Spanish Court Hotel, Kingston'), waiverAccepted: true })
     expect(res.status).toBe(400)
-    expect((await res.json()).error).toMatch(/not sold online from that pickup\. Write to contact@mapltours\.com/)
+    expect((await res.json()).error).toBe("Dunn's River Falls Climb is booked online only for pickups from Negril to Ocho Rios. For a pickup there, write to contact@mapltours.com and we will send you a price, or remove it from your trip.")
     expect(db.tables.bookings ?? []).toHaveLength(0)
   })
 
@@ -732,7 +732,7 @@ describe('POST /api/checkout: tours priced by where the guest is staying (Nov 12
     expect(amount).toBe(255)
     const east = await post({ amount, items, customer: at('Sandals Ochi Beach Resort'), waiverAccepted: true })
     expect(east.status).toBe(400)
-    expect((await east.json()).error).toMatch(/not sold online from that pickup/)
+    expect((await east.json()).error).toBe("Rick's Cafe Cliff Diving & Sunset is booked online only for pickups from Negril to Montego Bay. For a pickup in Ocho Rios, write to contact@mapltours.com and we will send you a price, or remove it from your trip.")
     expect(db.tables.bookings ?? []).toHaveLength(0)
     expect(db.intents.size).toBe(0)
     const west = await post({ amount, items, customer: at('Sandals Negril Beach Resort'), waiverAccepted: true })
@@ -793,7 +793,7 @@ describe('POST /api/checkout: a tour priced per person by where the guest is sta
     expect((await noArea.json()).error).toMatch(/priced by where you are staying/)
     const outside = await post({ amount: priced('ocho_rios', 2), items: raft(2), customer: at('Spanish Court Hotel, Kingston'), waiverAccepted: true })
     expect(outside.status).toBe(400)
-    expect((await outside.json()).error).toMatch(/not sold online from that pickup\. Write to contact@mapltours\.com/)
+    expect((await outside.json()).error).toMatch(/is booked online only for pickups from Negril to Ocho Rios\. For a pickup there, write to contact@mapltours\.com and we will send you a price, or remove it from your trip\.$/)
     expect(db.tables.bookings ?? []).toHaveLength(0)
     expect(db.intents.size).toBe(0)
   })
