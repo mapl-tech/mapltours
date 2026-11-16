@@ -662,20 +662,23 @@ describe('the follow-ups: day 3 without the code, day 7 with it', () => {
     expect(claim.filters).toContainEqual(['eq', 'status', 'pending'])
   })
 
-  test('day 7: sent once with the code, 2 → 3, the saving and the new total checkout would charge', async () => {
+  test('day 7: sent once with the code, 2 → 3, the percentage (never the dollars) and the new total checkout would charge', async () => {
     state.rows = [day7()]
     await sweep()
     const [e] = followSends()
     expect(stepOf(e)).toBe('3')
-    expect(e.subject).toBe('$11.50 off Bamboo Rafting on the Martha Brae')
+    expect(e.subject).toBe('5% off Bamboo Rafting on the Martha Brae')
     expect(e.dedupe).toBe(`cart-reminder-3/${ID}`)
     const page = await html()
     expect(page).toContain('JAMAICA5')
-    expect(page).toContain('−$11.50')
+    expect(page).toContain('5% off')
+    // Owner, Nov 16 2026: "Do not show the discount amount, show the percentage".
+    expect(page).not.toContain('11.50')
+    expect(await text()).not.toContain('11.50')
     expect(page).toContain('$218.50')
-    // The figure the saving is taken from stays on the page.
+    // The price before the code stays on the page beside the total with it.
     expect(page).toContain('$230.00')
-    expect((await text()).toLowerCase()).toContain("here's $11.50 off your tour, vanessa.")
+    expect((await text()).toLowerCase()).toContain("here's 5% off your tour, vanessa.")
     expect(await text()).toContain('This is our last note about this trip.')
     const [claim] = touched(ID)
     expect(claim.patch).toEqual({ recovery_email_count: 3 })
@@ -714,11 +717,19 @@ describe('the follow-ups: day 3 without the code, day 7 with it', () => {
     }
   })
 
-  test('the saving is what checkout would take: 5%, never past the margin', async () => {
+  test('"5% off" only where the code takes the whole 5%: a cart whose margin caps it gets no day-7 email', async () => {
+    // 5% of $230 is $11.50; with $4 of margin checkout would take only $4,
+    // so "5% off" would promise more than the guest gets.
     state.rows = [day7({ booking_fee: 4 })]
+    const body = await sweep()
+    expect(followSends()).toHaveLength(0)
+    expect(body.skipped).toContain('MAPL-BBBBBBBB:follow_up_3_code_capped')
+    expect(state.updates).toHaveLength(0)
+    // At exactly the 5% the margin allows, it goes.
+    state.rows = [day7({ booking_fee: 11.5 })]
     await sweep()
-    expect(followSends()[0].subject).toBe('$4.00 off Bamboo Rafting on the Martha Brae')
-    expect(await html()).toContain('$226.00')
+    expect(followSends()[0].subject).toBe('5% off Bamboo Rafting on the Martha Brae')
+    expect(await html()).toContain('$218.50')
   })
 
   test('the flow stops when they book anything: this trip, another tour, or a ride', async () => {
@@ -815,9 +826,11 @@ describe('the follow-ups: day 3 without the code, day 7 with it', () => {
     }
     state.rows = [day7({ booking_type: 'transfer', total_paid: 199, booking_fee: 29, booking_items: [ride] })]
     await sweep()
-    expect(followSends()[0].subject).toBe('$9.95 off your airport ride')
+    expect(followSends()[0].subject).toBe('5% off your airport ride')
     const page = await html()
-    expect((await text()).toLowerCase()).toContain("here's $9.95 off your ride, vanessa.")
+    expect((await text()).toLowerCase()).toContain("here's 5% off your ride, vanessa.")
+    expect(await text()).not.toContain('9.95')
+    expect(await text()).toContain('$189.05')
     // The name once: the headline carries it, so the first line does not repeat it.
     expect((await text()).toLowerCase().match(/vanessa/g)).toHaveLength(1)
     expect(await text()).toContain('Your private airport ride is saved.')
@@ -841,7 +854,7 @@ describe('the follow-ups: day 3 without the code, day 7 with it', () => {
     const page = await html()
     expect(page).toContain('href="https://mapltours.com/checkout"')
     expect(await text()).toContain('On the phone or computer you started on')
-    expect(followSends()[0].subject).toBe('$11.50 off your Jamaica trip')
+    expect(followSends()[0].subject).toBe('5% off your Jamaica trip')
   })
 
   test('both are honest and on brand: no em dash, no urgency, nothing charged until they pay, a stop link', async () => {

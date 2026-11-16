@@ -2,7 +2,7 @@ import { describe, test, expect, vi, beforeEach } from 'vitest'
 import { NextRequest } from 'next/server'
 import {
   FOLLOW_UPS, FOLLOW_UP_WINDOW_HOURS, cartReminderSecret, cartStopUrl, couponBasis, followUpDue,
-  followUpLink, handoffFromBooking, signCartStop, stillBookable, verifyCartStop,
+  followUpLink, handoffFromBooking, signCartStop, stillBookable, verifyCartStop, takesFullPercent,
 } from '@/lib/cart-reminders'
 import { parseHandoff } from '@/lib/agent/booking-link'
 import { followUpPreheader, followUpSubject } from '@/emails/AbandonedCartFollowUp'
@@ -115,16 +115,32 @@ describe('couponBasis', () => {
 
 describe('the subject and preview', () => {
   const base = { currency: 'USD', anyDevice: true }
-  const code = { code: 'JAMAICA5', discount: 9.95, totalWithCode: 189.05 }
-  test('day 7 leads with the saving; day 3 with the trip, and never shows a code even if handed one', () => {
-    expect(followUpSubject({ ...base, step: 3, kind: 'transfer', coupon: code })).toBe('$9.95 off your airport ride')
+  const code = { code: 'JAMAICA5', percent: 5, totalWithCode: 189.05 }
+  test('day 7 leads with the percentage, never the dollars; day 3 with the trip, and never shows a code even if handed one', () => {
+    expect(followUpSubject({ ...base, step: 3, kind: 'transfer', coupon: code })).toBe('5% off your airport ride')
+    expect(followUpSubject({ ...base, step: 3, kind: 'tour', tourTitle: 'Bamboo Rafting on the Martha Brae', coupon: code })).toBe('5% off Bamboo Rafting on the Martha Brae')
+    expect(followUpSubject({ ...base, step: 3, kind: 'tour', tourTitle: null, coupon: { ...code, percent: 7.5 } })).toBe('7.5% off your Jamaica trip')
     expect(followUpSubject({ ...base, step: 2, kind: 'transfer', coupon: code })).toBe('Your airport ride is still saved')
     expect(followUpSubject({ ...base, step: 2, kind: 'tour', tourTitle: 'Bamboo Rafting on the Martha Brae', coupon: null })).toBe('Bamboo Rafting on the Martha Brae is still saved')
     expect(followUpSubject({ ...base, step: 2, kind: 'tour', tourTitle: null, coupon: null })).toBe('Your Jamaica trip is still saved')
     expect(followUpPreheader({ ...base, step: 3, kind: 'transfer', coupon: code }))
-      .toBe('JAMAICA5 takes $9.95 off. Your airport ride is saved, ready to finish on any phone or computer.')
+      .toBe('JAMAICA5 takes 5% off. Your airport ride is saved, ready to finish on any phone or computer.')
     expect(followUpPreheader({ ...base, step: 2, kind: 'transfer', coupon: code }))
       .toBe('Your airport ride is saved, ready to finish on any phone or computer.')
+  })
+})
+
+describe('takesFullPercent: "5% off" only where the code takes all of it', () => {
+  const ok = (discountCents: number, kind = 'percent', value: number | string = 5) => ({ row: { kind, value }, check: { discountCents } })
+  test('the whole percentage, to the cent; less (the margin cap, the floor) or another kind of code is not', () => {
+    expect(takesFullPercent(ok(995), { baseCents: 19900 })).toBe(true)
+    expect(takesFullPercent(ok(1150, 'percent', '5'), { baseCents: 23000 })).toBe(true)
+    expect(takesFullPercent(ok(400), { baseCents: 23000 })).toBe(false)
+    expect(takesFullPercent(ok(1149), { baseCents: 23000 })).toBe(false)
+    expect(takesFullPercent(ok(1000, 'fixed', 10), { baseCents: 23000 })).toBe(false)
+    expect(takesFullPercent(ok(0, 'percent', 0), { baseCents: 23000 })).toBe(false)
+    expect(takesFullPercent(null, { baseCents: 23000 })).toBe(false)
+    expect(takesFullPercent(ok(1150), null)).toBe(false)
   })
 })
 

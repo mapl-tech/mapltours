@@ -13,7 +13,7 @@ import AbandonedCartFollowUp, { followUpSubject, type FollowUpCoupon } from '@/e
 import { resolveCoupon } from '@/lib/coupon-lookup'
 import {
   FOLLOW_UPS, FOLLOW_UP_COUPON, FOLLOW_UP_LOOKBACK_DAYS, FOLLOW_UP_WINDOW_HOURS, type FollowUpStep,
-  cartReminderSecret, cartStopUrl, couponBasis, followUpLink, handoffFromBooking, stillBookable,
+  cartReminderSecret, cartStopUrl, couponBasis, followUpLink, handoffFromBooking, stillBookable, takesFullPercent,
 } from '@/lib/cart-reminders'
 
 /**
@@ -519,9 +519,13 @@ async function handle(request: NextRequest) {
         const basis = couponBasis(b)
         const r = basis ? await resolveCoupon(supabase, { code: FOLLOW_UP_COUPON, email, ...basis }) : null
         if (r?.kind === 'ok') {
-          coupon = { code: r.row.code, discount: r.check.discountCents / 100, totalWithCode: r.check.chargeCents / 100 }
+          coupon = { code: r.row.code, percent: Number(r.row.value), totalWithCode: r.check.chargeCents / 100 }
         }
         if (!coupon) { skip('no_code'); continue }
+        // The email names the code's percentage, not the dollars (owner, Nov
+        // 16 2026), so it goes only when the code takes that whole percentage
+        // off this cart: never "5% off" where MAPL's margin caps it at less.
+        if (!takesFullPercent(r?.kind === 'ok' ? r : null, basis)) { skip('code_capped'); continue }
       }
 
       const verdict = await intentVerdict(b, ref)

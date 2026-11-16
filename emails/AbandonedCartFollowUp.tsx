@@ -8,8 +8,7 @@ import { CANCELLATION_SUMMARY } from '@/lib/refund-pricing'
  * 3, seven days after it, with JAMAICA5 (lib/cart-reminders).
  *
  * Their order is the guest's: their trip first (where was I?), on step 3 the
- * saving shown against the total they actually saw, one button straight under
- * it, then the three worries that stop a booking answered in a line each, then
+ * code's percentage and the total with it, one button straight under it, then the three worries that stop a booking answered in a line each, then
  * a way to stop. Nothing is held or running out (there is no stock on a
  * private trip), so nothing says it is. The button opens checkout with the
  * trip filled in on any phone or computer when one link can carry it.
@@ -17,9 +16,20 @@ import { CANCELLATION_SUMMARY } from '@/lib/refund-pricing'
 
 export interface FollowUpCoupon {
   code: string
-  /** Exactly what the code takes off this cart, from the same rules as checkout. */
-  discount: number
+  /**
+   * The code's percentage, which is what the email names (owner, Nov 16
+   * 2026: "Do not show the discount amount, show the percentage"). The job
+   * sends the email only when the code takes exactly this much off this cart,
+   * so the figure is never more than the guest gets.
+   */
+  percent: number
+  /** What the guest pays with the code, from the same rules as checkout. */
   totalWithCode: number
+}
+
+/** "5%": the percentage as the email prints it. */
+export function pct(c: FollowUpCoupon): string {
+  return `${Number.isInteger(c.percent) ? c.percent : Number(c.percent.toFixed(2))}%`
 }
 
 export interface AbandonedCartFollowUpProps {
@@ -68,7 +78,7 @@ export function followUpSubject(p: Pick<AbandonedCartFollowUpProps, 'step' | 'ki
   const what = cartWhat(p.kind, p.tourTitle)
   const yours = p.kind === 'transfer' || !p.tourTitle ? `your ${what}` : what
   const code = codeOf(p)
-  if (code) return `${fmtMoney(code.discount, p.currency)} off ${yours}`
+  if (code) return `${pct(code)} off ${yours}`
   return p.kind === 'transfer' || !p.tourTitle ? `Your ${what} is still saved` : `${what} is still saved`
 }
 
@@ -77,7 +87,7 @@ export function followUpPreheader(p: Pick<AbandonedCartFollowUpProps, 'step' | '
   const saved = p.kind === 'transfer' || !p.tourTitle ? `Your ${what} is saved` : `${what} is saved`
   const where = p.anyDevice ? ', ready to finish on any phone or computer.' : ', ready to finish whenever you are.'
   const code = codeOf(p)
-  return code ? `${code.code} takes ${fmtMoney(code.discount, p.currency)} off. ${saved}${where}` : `${saved}${where}`
+  return code ? `${code.code} takes ${pct(code)} off. ${saved}${where}` : `${saved}${where}`
 }
 
 export default function AbandonedCartFollowUp(props: AbandonedCartFollowUpProps) {
@@ -88,7 +98,7 @@ export default function AbandonedCartFollowUp(props: AbandonedCartFollowUpProps)
 
   // Step 3 leads with the thank-you; step 2 with the trip itself.
   const headline = coupon
-    ? `Here's ${fmtMoney(coupon.discount, currency)} off your ${isRide ? 'ride' : tourTitle ? 'tour' : 'trip'}${name ? `, ${name}` : ''}.`
+    ? `Here's ${pct(coupon)} off your ${isRide ? 'ride' : tourTitle ? 'tour' : 'trip'}${name ? `, ${name}` : ''}.`
     : isRide
     ? arrives
       ? "Land, spot your name, and you're on your way."
@@ -135,7 +145,7 @@ export default function AbandonedCartFollowUp(props: AbandonedCartFollowUpProps)
         {lead} Nothing is charged until you pay.
       </Text>
 
-      {/* The trip, then the saving against the total they saw. */}
+      {/* The trip, then the code's percentage and the total with it. */}
       <Section style={s.card}>
         <Section style={s.cardHeader}>
           <Text style={s.cardHeaderText}>
@@ -170,7 +180,7 @@ export default function AbandonedCartFollowUp(props: AbandonedCartFollowUpProps)
               </Column>
               <Column style={{ verticalAlign: 'baseline', textAlign: 'right', whiteSpace: 'nowrap' }}>
                 <Text style={{ ...s.rowValue, color: GOLD_INK, fontWeight: 700 }}>
-                  {`\u2212${fmtMoney(coupon.discount, currency)}`}
+                  {`${pct(coupon)} off`}
                 </Text>
               </Column>
             </Row>

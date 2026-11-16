@@ -170,6 +170,24 @@ export function couponBasis(b: Row): { baseCents: number; marginCents: number; b
   return { baseCents, marginCents, bookingType: isTransfer ? 'transfer' : 'tour' }
 }
 
+/**
+ * Whether the code takes its whole percentage off this cart. The third email
+ * names the percentage, not the dollars (owner, Nov 16 2026: "Do not show the
+ * discount amount, show the percentage"), and checkout caps any code at
+ * MAPL's margin (lib/coupons), so on a cart where the cap bites the code
+ * gives less than it says. Such a cart gets no third email rather than an
+ * overstated one. A code that is not a percentage has no percentage to name.
+ */
+export function takesFullPercent(
+  r: { row: { kind: string; value: number | string }; check: { discountCents: number } } | null | undefined,
+  basis: { baseCents: number } | null | undefined,
+): boolean {
+  if (!r || !basis || r.row.kind !== 'percent') return false
+  const percent = Number(r.row.value)
+  if (!Number.isFinite(percent) || percent <= 0) return false
+  return r.check.discountCents === Math.round((basis.baseCents * percent) / 100)
+}
+
 /* ── The stop link ───────────────────────────────────────────────────── */
 
 const STOP_PREFIX = 'cart-reminders:v1:stop:'
