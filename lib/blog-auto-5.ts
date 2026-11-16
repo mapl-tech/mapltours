@@ -702,7 +702,7 @@ export const POSTS_5: BlogPost[] = [
           },
           {
             q: 'What can non-divers do while I dive?',
-            a: "Every region has snorkel boats, and in Montego Bay [a clear-kayak photoshoot](/experience/clear-kayak-drone-photoshoot) is an easy hour on the water. See [the full catalogue](/explore) for the rest.",
+            a: "Every region has snorkel boats, and in Montego Bay [a clear-kayak photoshoot](/experience/clear-kayak-drone-photoshoot) is a 30 to 35 minute shoot on the sea. See [the full catalogue](/explore) for the rest.",
           },
         ],
       },

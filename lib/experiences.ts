@@ -1012,16 +1012,17 @@ const CATALOG: CatalogEntry[] = [
     // paddle (his own page sells "Clear Kayak Drone Photoshoot"). The old
     // reef-tour URL redirects here (next.config.mjs). It was listed as a river
     // shoot until he said where and what on Nov 14 2026: "Photoshoot is done
-    // in the sea 25 or more edit pictures 3 videos with song of choice". He
-    // did not say near which town, how long it takes or when the files
-    // arrive. The listing keeps what it already had from his sheet (Montego
-    // Bay, one hour) and adds nothing about delivery; the Raft + Kayak
-    // package's "a few days later" is older copy he has not confirmed.
+    // in the sea 25 or more edit pictures 3 videos with song of choice". On
+    // Nov 15 2026 he said the rest: "Beach in Montego Bay no special beach",
+    // "Shoot take 30-35 minutes", "1-2 days time for pictures". The duration
+    // stays "1 hr" (his sheet's hour, which a 30 to 35 minute shoot with the
+    // set-up fits), because the daily 8-hour cap reads that number; the
+    // shoot's own length is in `about`.
     title: "Clear Kayak Drone Photoshoot",
     // Collin, Nov 12 2026: "This price is per person". The sheet's "$180 1-3"
     // for the kayak is per head ($160 each from 4), not a party rate.
     pricing: { mode: 'per_person', baseRate: 180, tierMax: 4, extraPerPerson: 160 },
-    duration: "1 hr on the water",
+    duration: "1 hr at the beach",
     rating: 0,
     reviews: 0,
     category: 'Water',
@@ -1032,7 +1033,7 @@ const CATALOG: CatalogEntry[] = [
     // A frame of its clip, turned on its side so the whole kayak fits 4:3.
     image: '/media/img/clear-kayak-lounge.jpg',
     video: VIDEOS.clearKayak,
-    about: "A photoshoot in a see-through kayak on the sea. You float while the drone shoots from above, so the pictures show you, the kayak and the water under it, and you go home with 25 or more edited photos and three videos set to a song you choose.",
+    about: "A photoshoot in a see-through kayak on the sea, off a beach in Montego Bay. The shoot itself takes 30 to 35 minutes: you float while the drone shoots from above, so the pictures show you, the kayak and the water under it. Within 1 to 2 days you have 25 or more edited photos and three videos set to a song you choose.",
     ages: "6 and up",
     fitness: "Under-12s share the kayak with an adult. Light. You sit or lie back in the kayak on calm water, so no kayaking experience is needed, and life vests are provided.",
     meetingPoint: "Hotel pickup",
@@ -1054,6 +1055,7 @@ const CATALOG: CatalogEntry[] = [
     ],
     additionalInfo: [
       "Morning slots usually have the calmest water and the softest light.",
+      "Your edited photos and videos arrive within 1 to 2 days of the shoot.",
       "Drones cannot fly in strong wind or heavy rain, so a shoot called off for weather is rescheduled free or refunded in full.",
       "Tell your guide if anyone in your party would rather not be filmed.",
     ],
@@ -1283,7 +1285,7 @@ const CATALOG: CatalogEntry[] = [
     // showed sit-on-top sea kayaks (7763506.jpg) until Oct 5 2026.
     image: '/media/img/clear-kayak-pair.jpg',
     video: VIDEOS.clearKayakPair,
-    about: "A raft down the river, then a photoshoot in a clear kayak on calm water with a drone overhead, so you go home with footage of your own day rather than stock. The edited clips and stills land by download link a few days later.",
+    about: "A raft down the river, then a photoshoot in a clear kayak on calm water with a drone overhead, so you go home with footage of your own day rather than stock. The edited photos and videos arrive within 1 to 2 days.",
     ages: "6 and up",
     fitness: "Under-12s raft and paddle with an adult. Light throughout. Seated on the raft, flat water in the kayak, and short walks at each entry point.",
     meetingPoint: "Hotel pickup",
@@ -1306,7 +1308,7 @@ const CATALOG: CatalogEntry[] = [
       "Small US cash for drinks and tips",
     ],
     additionalInfo: [
-      "Footage is delivered within about three days by download link.",
+      "Your edited photos and videos arrive within 1 to 2 days of the shoot.",
       "Drones cannot fly in strong wind or heavy rain. If the aerial half is grounded we reshoot it at no cost.",
       "Tell the operator if anyone in your party would rather not be filmed.",
     ],
