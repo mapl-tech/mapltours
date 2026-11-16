@@ -12,6 +12,7 @@ import {
   youngestChildAge,
   accessibilityNeed,
   hasBaby,
+  hasChild,
   minAgeOf,
   priceJumps,
   rateCardUnsettled,
@@ -162,6 +163,19 @@ describe('who is travelling', () => {
     }
   })
 
+  // Owner, Nov 16 2026: "Make sure to not send email to anyone with accessability or kids".
+  test('a child of any age is recognised, generously; adults and ordinary notes are not', () => {
+    for (const n of ['Please bring a child seat for our three year old', 'car seat for our 4-year-old', 'kids are 7 and 10 years old', 'stroller for our 2yo',
+      'toddler with us', 'travelling with our son', 'my daughter and I', 'two teens', 'our teenager', 'with my 15 year old', 'a 12yo', 'grandkids coming',
+      'my nephew', 'two nieces', 'the little ones', 'need a booster', 'stepdaughter joining', 'Kids: 2', 'baby on board', 'our 8 month old', 'children are excited']) {
+      expect(hasChild(n), n).toBe(true)
+    }
+    for (const n of [null, '', 'Late flight, please wait', 'Two carry-ons each', 'Celebrating our 25 years anniversary', 'my husband is 60 years old',
+      'Honeymoon!', 'Please call when you arrive', 'Season pass holder', 'personal note: we love Jamaica', 'Golf clubs x2']) {
+      expect(hasChild(n), String(n)).toBe(false)
+    }
+  })
+
   test('every tour has an age line the rules can read', () => {
     for (const e of experiences.filter((x) => x.kind === 'single')) {
       expect(minAgeOf(e.ages), e.title).not.toBeNull()
@@ -290,10 +304,18 @@ describe('who must not be mailed', () => {
     expect(upsellBlockedReason(booking(), ARRIVAL - UPSELL_MIN_LEAD_DAYS * DAY, ok)).toBeNull()
   })
 
-  test('no email for an accessibility need or a baby; a toddler still gets one', () => {
+  test('no email for an accessibility need, a baby or any child (owner, Nov 16 2026)', () => {
     expect(upsellBlockedReason(booking({ special_requests: 'Folding wheelchair' }), DUE, ok)).toBe('accessibility_need')
     expect(upsellBlockedReason(booking({ special_requests: 'Travelling with our 6 month old' }), DUE, ok)).toBe('baby_in_party')
-    expect(upsellBlockedReason(booking({ special_requests: 'Please bring a child seat for our three year old' }), DUE, ok)).toBeNull()
+    // Until Nov 16 a toddler or older child still got the email, with only the tours their age allows.
+    expect(upsellBlockedReason(booking({ special_requests: 'Please bring a child seat for our three year old' }), DUE, ok)).toBe('child_in_party')
+    expect(upsellBlockedReason(booking({ special_requests: 'Our two teens are coming' }), DUE, ok)).toBe('child_in_party')
+    expect(upsellBlockedReason(booking({ special_requests: 'Late flight, please wait' }), DUE, ok)).toBeNull()
+  })
+
+  test('no email for a party of one: every excursion needs 2 or more (Collin, Nov 14 2026)', () => {
+    expect(upsellBlockedReason(booking({}, { passengers: 1 }), DUE, ok)).toBe('solo_party')
+    expect(upsellBlockedReason(booking({}, { passengers: 2 }), DUE, ok)).toBeNull()
   })
 
   test('a party too big to book, nothing within reach', () => {

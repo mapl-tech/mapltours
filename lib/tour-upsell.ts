@@ -286,6 +286,25 @@ export function hasBaby(note: string | null | undefined): boolean {
 }
 
 /**
+ * The party includes a child of any age, so no tour email goes out (owner,
+ * Nov 16 2026: "Make sure to not send email to anyone with accessability or
+ * kids"; until then a toddler or older child still got one, with only the
+ * tours their age allows). A child is a baby (hasBaby), any stated age under
+ * 18, or the words kid, child, son, daughter, toddler, teen, minor, nephew,
+ * niece, a step- or grandchild, little one, a booster or a car or child seat.
+ * Matched generously on purpose, as accessibilityNeed is: a false match
+ * ("our son, 30") costs one email, a missed one mails a family the owner
+ * said not to. Only the guest's note can say: the ride checkout asks for a
+ * party size, not ages, so a family who wrote nothing still gets the email.
+ */
+export function hasChild(note: string | null | undefined): boolean {
+  if (!note) return false
+  if (hasBaby(note)) return true
+  if (statedAges(note).some((a) => a < 18)) return true
+  return /\b(?:kids?|kiddos?|child|children|sons?|daughters?|toddlers?|teens?|teenagers?|minors?|nephews?|nieces?|little ones?|step-?(?:sons?|daughters?|kids?|child(?:ren)?)|grand(?:child|children|kids?|sons?|daughters?)|boosters?|(?:car|child)[\s-]*seats?)\b/i.test(note)
+}
+
+/**
  * The note mentions an accessibility or care need (owner, Nov 10 2026: no
  * email to anyone with accessibility issues): a wheelchair, walker, cane or
  * other mobility aid, sight or hearing loss, a service animal, autism or
@@ -418,6 +437,8 @@ export type UpsellSkipReason =
   | 'party_too_big'
   | 'accessibility_need'
   | 'baby_in_party'
+  | 'child_in_party'
+  | 'solo_party'
   | 'nothing_nearby'
 
 /**
@@ -446,8 +467,13 @@ export function upsellBlockedReason(
   if (nowMs > arrival - UPSELL_MIN_LEAD_DAYS * MS_PER_DAY) return 'too_late'
 
   if (partySize(booking) > UPSELL_MAX_PARTY) return 'party_too_big'
+  // Collin, Nov 14 2026: every excursion needs 2 or more. Until the owner
+  // decides whether a solo guest is refused or pays for two, a party of one
+  // is offered nothing rather than tours at one guest's price.
+  if (partySize(booking) < 2) return 'solo_party'
   if (accessibilityNeed(booking.special_requests)) return 'accessibility_need'
   if (hasBaby(booking.special_requests)) return 'baby_in_party'
+  if (hasChild(booking.special_requests)) return 'child_in_party'
   if (opts.nearbyCount === 0) return 'nothing_nearby'
   return null
 }
