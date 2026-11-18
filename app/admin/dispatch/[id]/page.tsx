@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { createServiceClient } from '@/lib/supabase/service'
 import DispatchConsole from '@/components/admin/DispatchConsole'
 import { driverNotifyEmail } from '@/lib/email/send'
+import { DRIVER_COLS, type Driver } from '@/lib/drivers'
 
 /**
  * Transfer dispatch console (per booking). Server component: confirms the
@@ -65,11 +66,16 @@ export default async function DispatchPage({ params }: { params: { id: string } 
   }
 
   const stripeFee = await stripeFeeFor(booking.stripe_payment_id)
+  // The saved drivers for the dropdowns. Unreadable (say, before migration 041
+  // is applied) is null, and the console says so instead of failing the page.
+  const { data: driverRows, error: driversErr } = await svc.from('drivers').select(DRIVER_COLS).order('name', { ascending: true })
+  if (driversErr) console.error('[dispatch] saved drivers unreadable', driversErr.message)
+  const drivers = driversErr ? null : ((driverRows ?? []) as Driver[])
 
   return (
     <Shell>
       {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-      <DispatchConsole booking={booking as any} stripeFee={stripeFee} driverEmailConfigured={!!driverNotifyEmail()} />
+      <DispatchConsole booking={booking as any} stripeFee={stripeFee} driverEmailConfigured={!!driverNotifyEmail()} drivers={drivers} />
     </Shell>
   )
 }

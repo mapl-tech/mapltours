@@ -722,6 +722,24 @@ Rules, enforced in code:
 
 Tests: `tests/unit/tour-pause.spec.ts` (every gate above; each was broken on purpose on Nov 16 2026 and a test failed) and the paused-route block in `checkout-paths.spec.ts`.
 
+## Saved drivers and the driver-update email (Nov 18 2026)
+
+Owner, Nov 18 2026: "We have had a couple of situations where we have needed to send a new driver update email. Can you build a way to do that in the admin dashboard, the driver details should be stored somewhere and there should be a way to send a test email to the email address of our choice so selecting the driver should come from a dropdown", and then "the information on the email should be perfect". It replaces the hand-built updates sent on Nov 17 and Nov 18.
+
+Pieces: migration `041_drivers.sql` (table `drivers`, service role only), `lib/drivers.ts` (a driver's fields, cleaned once), `/admin/drivers` (`components/admin/DriverRoster.tsx`, add, edit, retire, bring back), `lib/driver-update.ts` (pure: what the email says and when it may go), `lib/driver-update-send.ts` (preview, test, send), `emails/DriverUpdate.tsx` (layout only), `app/api/admin/driver-update` and `app/api/admin/drivers` (admins only), and the "Driver update email" card on each dispatch page (`components/admin/DriverUpdateCard.tsx`). The Driver + vehicle card also has "Fill from a saved driver". Styles: `.adm-mail-frame` and `.adm-du` in `globals.css`.
+
+Rules, enforced in code:
+- **No fact is typed on the day.** The day, time, flight, places, party, driver, vehicle, plate and number come from the booking and the saved driver, worded once in `buildDriverUpdate` and read line by line in `tests/unit/driver-update.spec.ts`. The template only lays them out. Flight numbers are tidied ("aa1311" reads "AA 1311"), never completed: "521" stays "521".
+- **"This replaces the driver and vehicle we sent you earlier" only when it is true** (`toldBefore`): the day-of email for that ride, an earlier update, or the console's "Send confirmation to the customer" tick (its message names the driver); an arrival's details count for the ride back. Otherwise the email introduces the driver ("Your driver for your arrival today.").
+- **The day is said on the Jamaica calendar:** today, tomorrow, "on Wednesday, November 25" (named once, in the headline, and in the trip card), or tonight for a flight met after midnight.
+- **A send saves the driver on the booking first**, only while it is a paid transfer (a guarded update; zero rows means nothing is mailed), then emails the guest with operations, the driver inbox and that driver's own email (if saved) on BCC, under a Resend key of booking, ride and driver plus the message, so a double tap or a retry is delivered once. Then `dispatch.driver_update_<leg>_sent` and `_driver` are merged. The guest can be sent it while paid, with an email, until two hours after landing or until the hotel pickup time.
+- **A test** goes to the one address typed, "[Test]" before the subject, nobody copied, nothing written. It works for any ride the email can be written for, so wording can be checked after the fact. **A preview** renders the real email in the card and writes nothing.
+- **The booking has one driver for both rides** (its own `driver_*` columns). After an arrival update on a round trip, the ride back and its day-of email name the same driver until someone changes it; the confirm step says so. Per-ride drivers are not built.
+- **Drivers are retired, never deleted**, and two working drivers may not share a name (payouts and the console know a booking's driver by name; the unique index backs it). Editing a driver never rewrites a booking.
+- **Before migration 041 is applied** the dispatch page still loads; the card says the saved drivers could not be read.
+
+Tests: `driver-update.spec.ts` (every line, the day words under the Jamaica calendar, the copy rules, the guards, the field rules) and `driver-update-send.spec.ts` (the write-then-send order, refusals before anything happens, the test and preview write nothing, both routes refuse non-admins). Screens were walked at 390 and 1440 with made-up rows.
+
 ## Rules from the Nov 13 2026 audit
 
 - **One `<main>` per page, and it is `LayoutShell`'s** (`<main id="main-content">`, where the skip link lands). A page's own wrapper is a `<div>`; seven screens used to nest a second one (`tests/unit/one-main-landmark.spec.ts`).

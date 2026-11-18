@@ -21,6 +21,7 @@ const SECTIONS: { href: string; label: string; also?: string[] }[] = [
   { href: '/admin/coupons', label: 'Coupons' },
   { href: '/admin/gift-cards', label: 'Gift cards' },
   { href: '/admin/videos', label: 'Videos' },
+  { href: '/admin/drivers', label: 'Drivers' },
   { href: '/admin/driver', label: 'Driver portal' },
 ]
 

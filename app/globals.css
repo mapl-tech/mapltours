@@ -3744,6 +3744,17 @@ html:has(.adm-toast) { scroll-padding-bottom: 96px; }
 
 .adm-panel { padding: 16px; border-radius: var(--r-md); background: var(--adm-panel); border: 1px solid var(--adm-hairline); }
 .adm-panel > .adm-fieldset { margin-top: var(--adm-gap); }
+/* The driver-update email as the guest will see it (DriverUpdateCard): the
+   page's own HTML in a frame sized to its content, capped at a phone-to-desk
+   reading width. */
+.adm-mail-frame { display: block; width: 100%; max-width: 640px; height: 900px; border: 1px solid var(--adm-hairline); border-radius: var(--r-md); background: #F4F1EB; }
+/* The email beside the test and send controls from 1024px, which stay in view
+   while the email scrolls; one column on a phone, the controls under it. */
+.adm-du { display: grid; gap: 20px; margin-top: 14px; }
+@media (min-width: 1024px) {
+  .adm-du { grid-template-columns: minmax(0, 640px) minmax(260px, 400px); align-items: start; }
+  .adm-du-side { position: sticky; top: 16px; }
+}
 .adm-chips { display: flex; flex-wrap: wrap; gap: 8px; }
 .adm-chip {
   position: relative; display: inline-flex; align-items: center; justify-content: center;

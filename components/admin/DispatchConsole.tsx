@@ -13,6 +13,9 @@ import { flightLinks, flightDate, type FlightStatus } from '@/lib/flight'
 import Arrow from '@/components/ui/Arrow'
 import { stamp } from '@/lib/admin-format'
 import { useResultNote } from '@/components/admin/AdminUi'
+import DriverUpdateCard from '@/components/admin/DriverUpdateCard'
+import { bookingDriverColumns, driverOptionLabel, type Driver } from '@/lib/drivers'
+import { sentDriverKey, sentKey } from '@/lib/driver-update'
 
 const dm = 'var(--font-dm-sans)'
 const ink = 'var(--text-primary, #171614)'
@@ -67,7 +70,7 @@ function CopyBtn({ text, label }: { text: string; label: string }) {
   return <Btn onClick={copy}>{done ? '✓ Copied' : label}</Btn>
 }
 
-export default function DispatchConsole({ booking, stripeFee, driverEmailConfigured = true }: { booking: Bk; stripeFee: number | null; driverEmailConfigured?: boolean }) {
+export default function DispatchConsole({ booking, stripeFee, driverEmailConfigured = true, drivers = null }: { booking: Bk; stripeFee: number | null; driverEmailConfigured?: boolean; drivers?: Driver[] | null }) {
   const b0 = booking
   const [dispatch, setDispatch] = useState<Record<string, string>>((b0.dispatch as Record<string, string>) ?? {})
   const [driver, setDriver] = useState({
@@ -246,6 +249,24 @@ export default function DispatchConsole({ booking, stripeFee, driverEmailConfigu
       {/* Driver details */}
       <div style={{ marginTop: 14 }}>
         <Card title="Driver + vehicle">
+          {drivers && drivers.some((d) => d.active) && (
+            <label className="adm-dsp-field" style={{ display: 'block', marginBottom: 12, maxWidth: 520 }}>
+              <span className="adm-label">Fill from a saved driver</span>
+              <select
+                className="adm-input" value=""
+                onChange={(e) => {
+                  const d = drivers.find((x) => x.id === e.target.value)
+                  if (!d) return
+                  const c = bookingDriverColumns(d)
+                  setDriver({ name: c.driver_name, phone: c.driver_phone, vehicle: c.driver_vehicle, plate: c.driver_plate })
+                  setNote({ text: `${d.name}'s details are filled in. Save to keep them on the booking.` })
+                }}
+              >
+                <option value="">Choose a driver</option>
+                {drivers.filter((d) => d.active).map((d) => <option key={d.id} value={d.id}>{driverOptionLabel(d)}</option>)}
+              </select>
+            </label>
+          )}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 10 }}>
             {([['name', 'Driver name', 'name'], ['phone', 'Driver WhatsApp', 'tel'], ['vehicle', 'Vehicle make + model + colour', 'off'], ['plate', 'License plate', 'off']] as const).map(([k, lbl, ac]) => (
               <label key={k} className="adm-dsp-field">
@@ -263,6 +284,22 @@ export default function DispatchConsole({ booking, stripeFee, driverEmailConfigu
           <div style={{ marginTop: 12 }}>
             <Btn tone="solid" onClick={saveDriver} busy={savingDriver}>{savingDriver ? 'Saving…' : 'Save driver details'}</Btn>
           </div>
+        </Card>
+      </div>
+
+      {/* Driver update email */}
+      <div style={{ marginTop: 14 }}>
+        <Card title="Driver update email">
+          <DriverUpdateCard
+            booking={{ ...b0, dispatch }}
+            dispatch={dispatch}
+            drivers={drivers}
+            report={setNote}
+            onSent={(sentLeg, sentAt, d, c) => {
+              setDriver({ name: c.driver_name, phone: c.driver_phone, vehicle: c.driver_vehicle, plate: c.driver_plate })
+              setDispatch((x) => ({ ...x, [sentKey(sentLeg)]: sentAt, [sentDriverKey(sentLeg)]: d.name }))
+            }}
+          />
         </Card>
       </div>
 
