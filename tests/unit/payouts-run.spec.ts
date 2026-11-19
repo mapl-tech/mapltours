@@ -1,5 +1,5 @@
 import { describe, test, expect, vi } from 'vitest'
-import { DEFAULT_LIMITS, type PayoutBooking } from '@/lib/payouts/plan'
+import { DEFAULT_LIMITS, type PayoutBooking, type PayPart } from '@/lib/payouts/plan'
 import { chooseReference, referenceCandidates, runDriverPayouts, unmetRequirements, STALE_CLAIM_MS, type PayoutRunDeps, type PayoutReport } from '@/lib/payouts/run'
 import { payoutSummary } from '@/lib/payouts/notify'
 import { ambiguous, fakeWise, memStore, refused, ride, tour, type MemStore } from './payouts-fakes'
@@ -425,8 +425,8 @@ describe('references and requirements', () => {
 })
 
 describe("the driver's payment email", () => {
-  const mailer = (answer: (id: string, part: 'first' | 'second') => Promise<boolean> = async () => true) =>
-    vi.fn<(id: string, part: 'first' | 'second') => Promise<boolean>>(answer)
+  const mailer = (answer: (id: string, part: PayPart) => Promise<boolean> = async () => true) =>
+    vi.fn<(id: string, part: PayPart) => Promise<boolean>>(answer)
 
   test('once per ride half the payout paid, after the money moved and the stamp was written', async () => {
     const a = ride({ subtotal: 147 })
@@ -444,15 +444,14 @@ describe("the driver's payment email", () => {
     expect(order).toEqual(['funded:stamped', 'funded:stamped', 'funded:stamped'])
   })
 
-  test('a tour gets no email; the rides in the same payment do', async () => {
+  test('a tour in the same payment gets its own notice, once, beside the ride halves', async () => {
     const r1 = ride()
     const t = tour()
     const { deps } = setup([r1, t])
     const notifyPaid = mailer()
     const r = await runDriverPayouts(deps({ notifyPaid }))
     expect(only(r.payees).outcome).toBe('funded')
-    expect(notifyPaid.mock.calls.map(([id]) => id)).not.toContain(t.id)
-    expect(notifyPaid).toHaveBeenCalledTimes(2)
+    expect(notifyPaid.mock.calls.map(([id, part]) => `${id}:${part}`).sort()).toEqual([`${r1.id}:first`, `${r1.id}:second`, `${t.id}:tour`].sort())
   })
 
   test('a half someone ticked by hand while the run was paying is not emailed again', async () => {

@@ -7,7 +7,8 @@ import { readPayoutConfig, payoutsEnabled } from '@/lib/payouts/config'
 import { runDriverPayouts, payoutCounts, PayoutRunError } from '@/lib/payouts/run'
 import { supabasePayoutStore } from '@/lib/payouts/store'
 import { notifyPayoutRun } from '@/lib/payouts/notify'
-import { notifyDriverPaid } from '@/lib/email/driver-paid'
+import { notifyDriverPaid, notifyTourPaid } from '@/lib/email/driver-paid'
+import type { PayPart } from '@/lib/payouts/plan'
 import type { Bk } from '@/lib/dispatch'
 
 /**
@@ -63,12 +64,19 @@ async function handle(request: NextRequest) {
 
   const nowMs = Date.now()
   const svc = createServiceClient()
-  // The driver's "payment sent" email for a ride half the run has just paid
-  // and stamped: the console's own email and once-only claim, so a half is
-  // announced once whoever paid it. Only for a paid transfer, as the console.
-  const notifyPaid = async (bookingId: string, part: 'first' | 'second'): Promise<boolean> => {
+  // The "payment sent" email for a part the run has just paid and stamped.
+  // A ride half gets the console's own email and once-only claim, so it is
+  // announced once whoever paid it (only for a paid transfer, as the
+  // console); a tour gets the operator's tour notice (only a paid tour).
+  const tourPayee = config?.tourPayee ?? settings.tourPayee
+  const notifyPaid = async (bookingId: string, part: PayPart): Promise<boolean> => {
     const { data: b, error } = await svc.from('bookings').select('*, booking_items(*)').eq('id', bookingId).maybeSingle()
-    if (error || !b || b.booking_type !== 'transfer' || b.status !== 'paid') return false
+    if (error || !b || b.status !== 'paid') return false
+    if (part === 'tour') {
+      if (b.booking_type !== 'tour') return false
+      return notifyTourPaid(svc, b as Bk, tourPayee ?? '', { timeoutMs: 2500, idempotencyKey: `tour-paid/${bookingId}` })
+    }
+    if (b.booking_type !== 'transfer') return false
     const step = part === 'first' ? 'paid_first' : 'paid_second'
     return notifyDriverPaid(svc, b as Bk, step, part, { timeoutMs: 2500, idempotencyKey: `driver-paid/${bookingId}/${step}` })
   }

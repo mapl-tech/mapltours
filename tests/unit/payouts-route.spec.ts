@@ -36,6 +36,10 @@ vi.mock('@/lib/email/driver-paid', () => ({
     state.paidEmails.push(`${b.id}:${step}:${half}:${opts?.timeoutMs}:${opts?.idempotencyKey}`)
     return true
   },
+  notifyTourPaid: async (_svc: unknown, b: { id: string }, payee: string, opts?: { timeoutMs?: number; idempotencyKey?: string }) => {
+    state.paidEmails.push(`${b.id}:tour:${payee}:${opts?.timeoutMs}:${opts?.idempotencyKey}`)
+    return true
+  },
 }))
 vi.mock('@/lib/payouts/store', async (orig) => ({ ...(await orig<typeof import('@/lib/payouts/store')>()), supabasePayoutStore: () => state.store }))
 vi.mock('@/lib/wise/client', async (orig) => ({ ...(await orig<typeof import('@/lib/wise/client')>()), wiseClient: () => state.wise }))
@@ -51,7 +55,7 @@ vi.mock('@/lib/payouts/webhook', async (orig) => {
 
 import { GET, POST } from '@/app/api/payouts/route'
 import { POST as WEBHOOK } from '@/app/api/webhooks/wise/route'
-import { fakeWise, memStore, ride } from './payouts-fakes'
+import { fakeWise, memStore, ride, tour } from './payouts-fakes'
 
 const SECRET = 'cron-secret-for-tests'
 const NOW = Date.parse('2026-11-01T14:30:00Z')
@@ -138,6 +142,24 @@ describe('/api/payouts', () => {
     state.row = { booking_type: 'transfer', status: 'refunded' }
     const j = await (await POST(req('/api/payouts', bearer))).json()
     expect(j).toMatchObject({ mode: 'live', funded: 1 })
+    expect(state.paidEmails).toEqual([])
+  })
+
+  test('a paid tour gets the operator notice, named for WISE_TOUR_PAYEE, with a time limit and a key', async () => {
+    process.env.WISE_PAYOUTS_ENABLED = '1'
+    state.store = memStore([tour()], NOW)
+    state.row = { booking_type: 'tour', status: 'paid' }
+    const j = await (await POST(req('/api/payouts', bearer))).json()
+    expect(j).toMatchObject({ mode: 'live', funded: 1 })
+    const id = Array.from(state.store.dispatch.keys())[0]
+    expect(state.paidEmails).toEqual([`${id}:tour:Collin:2500:tour-paid/${id}`])
+  })
+
+  test('a tour part never sends the ride email, and a ride half never the tour notice', async () => {
+    process.env.WISE_PAYOUTS_ENABLED = '1'
+    state.store = memStore([tour()], NOW)
+    state.row = { booking_type: 'transfer', status: 'paid' } // the row read back is not a tour
+    await POST(req('/api/payouts', bearer))
     expect(state.paidEmails).toEqual([])
   })
 

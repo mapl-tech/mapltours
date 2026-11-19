@@ -1,6 +1,8 @@
 import { describe, test, expect, vi, beforeEach } from 'vitest'
+import type React from 'react'
+import { render } from '@react-email/components'
 import { moneyBlock, money, round2, type Bk } from '../../lib/dispatch'
-import { notifyDriverPaid } from '../../lib/email/driver-paid'
+import { notifyDriverPaid, notifyTourPaid, tourDayLabel } from '../../lib/email/driver-paid'
 
 /**
  * The driver's "payment sent" email (lib/email/driver-paid.ts), shared by the
@@ -92,5 +94,69 @@ describe('the payment email', () => {
     expect(await notifyDriverPaid(svc, booking({ trip_type: 'round_trip', arrival_at: '2026-11-21T15:00:00' }, 0), 'paid_first', 'first')).toBe(false)
     expect(svc.claims.size).toBe(0)
     expect(sent).toHaveLength(0)
+  })
+})
+
+describe('the tour payment email', () => {
+  const tourBooking = (subtotal = 300, items: Record<string, unknown>[] = [{ item_type: 'experience', title: 'Dunn\'s River Falls Climb', date: '2026-11-25', travelers: 2 }]): Bk => ({
+    id: '3dba7aff-0000-4000-8000-000000000000',
+    first_name: 'Ada',
+    last_name: 'Lovelace',
+    booking_type: 'tour',
+    subtotal,
+    total_paid: subtotal + 40, // the guest paid more than the operator is owed: the notice names what was sent
+    pickup: 'Riu Montego Bay (Montego Bay)',
+    booking_items: items,
+  })
+
+  test('the subtotal, the tour, its day and party, to the operator inbox with ops copied', async () => {
+    const svc = fakeSvc()
+    expect(await notifyTourPaid(svc, tourBooking(), 'Collin', { timeoutMs: 2500, idempotencyKey: 'tour-paid/x' })).toBe(true)
+    expect(sent).toHaveLength(1)
+    expect(sent[0]).toMatchObject({ to: 'driver@example.com', bcc: ['ops@example.com'], subject: '$300.00 sent · tour · MAPL-3DBA7AFF', timeoutMs: 2500, idempotencyKey: 'tour-paid/x' })
+    const text = await render(sent[0].react as React.ReactElement, { plainText: true })
+    for (const part of ['payment for the tour below', '$300.00 on the way, Collin.', 'MAPL-3DBA7AFF', '$300.00 USD', 'The whole tour booking', 'Ada Lovelace', "DUNN'S RIVER FALLS CLIMB", 'Wednesday, November 25, 2 guests', 'Riu Montego Bay (Montego Bay)', 'Respect, Collin.']) {
+      expect(text.toUpperCase()).toContain(part.toUpperCase())
+    }
+    expect(text).not.toMatch(/\u2014/) // no em dashes in the copy
+  })
+
+  test('once only, under its own claim', async () => {
+    const svc = fakeSvc()
+    expect(await notifyTourPaid(svc, tourBooking(), 'Collin')).toBe(true)
+    expect(await notifyTourPaid(svc, tourBooking(), 'Collin')).toBe(false)
+    expect(sent).toHaveLength(1)
+    expect(Array.from(svc.claims)).toEqual(['3dba7aff-0000-4000-8000-000000000000:paid_tour_notified'])
+  })
+
+  test('several tours on one booking are listed in day order', async () => {
+    const svc = fakeSvc()
+    await notifyTourPaid(svc, tourBooking(500, [
+      { item_type: 'experience', title: 'Rick\'s Cafe', date: '2026-11-28', travelers: 4 },
+      { item_type: 'experience', title: 'Bamboo Rafting', date: '2026-11-26', travelers: 1 },
+    ]), 'Collin')
+    const text = (await render(sent[0].react as React.ReactElement, { plainText: true })).toUpperCase()
+    expect(text).toContain('ALL 2 TOURS ON THIS BOOKING')
+    expect(text).toContain('PAYMENT FOR THE TOURS BELOW')
+    expect(text).toContain('THURSDAY, NOVEMBER 26, 1 GUEST')
+    expect(text).toContain('SATURDAY, NOVEMBER 28, 4 GUESTS')
+    expect(text.indexOf('BAMBOO RAFTING')).toBeLessThan(text.indexOf("RICK'S CAFE"))
+  })
+
+  test('no inbox, nothing owed or no tour on it: no claim, no email', async () => {
+    const svc = fakeSvc()
+    delete process.env.DRIVER_NOTIFY_EMAIL
+    expect(await notifyTourPaid(svc, tourBooking(), 'Collin')).toBe(false)
+    process.env.DRIVER_NOTIFY_EMAIL = 'driver@example.com'
+    expect(await notifyTourPaid(svc, tourBooking(0), 'Collin')).toBe(false)
+    expect(await notifyTourPaid(svc, tourBooking(300, []), 'Collin')).toBe(false)
+    expect(svc.claims.size).toBe(0)
+    expect(sent).toHaveLength(0)
+  })
+
+  test('a tour day is the calendar day it names, in any zone', () => {
+    expect(tourDayLabel('2026-11-25')).toBe('Wednesday, November 25')
+    expect(tourDayLabel('2026-12-31')).toBe('Thursday, December 31')
+    expect(tourDayLabel('')).toBe('day to be confirmed')
   })
 })

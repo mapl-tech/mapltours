@@ -33,7 +33,8 @@
  *      through merge_dispatch), so the dispatch console and the driver portal
  *      show it. Each ride half it stamps then gets the driver's "payment
  *      sent" email, the one the console's tick sends, under the same
- *      once-only claim (lib/email/driver-paid.ts). Tours get no email.
+ *      once-only claim, and each tour the operator's tour notice
+ *      (lib/email/driver-paid.ts).
  *      Wise's webhook (app/api/webhooks/wise) later marks it `sent`.
  *
  * When a step fails:
@@ -144,13 +145,13 @@ export interface PayoutRunDeps {
   clock?: () => number
   notify?: (report: PayoutReport) => Promise<void>
   /**
-   * The driver's "payment sent" email for one ride half the job has just
-   * stamped paid (lib/email/driver-paid.ts, the console's own email and
-   * once-only claim). True when it went. Called only after the money has left
-   * the balance and the stamp is written, never for a tour, and its failure
-   * never touches the payout's record.
+   * The "payment sent" email for one part the job has just stamped paid
+   * (lib/email/driver-paid.ts): for a ride half the console's own email and
+   * once-only claim, for a tour the operator's tour notice. True when it
+   * went. Called only after the money has left the balance and the stamp is
+   * written, and its failure never touches the payout's record.
    */
-  notifyPaid?: (bookingId: string, part: 'first' | 'second') => Promise<boolean>
+  notifyPaid?: (bookingId: string, part: PayPart) => Promise<boolean>
   /** Tests only: how long to wait for one payment email (PAID_EMAIL_WAIT_MS otherwise). */
   paidEmailWaitMs?: number
 }
@@ -541,13 +542,12 @@ async function recordFunded(
       unstamped++
     }
   }
-  // The driver's "payment sent" email, once per ride half this payout stamped.
-  // A half someone had already ticked is left alone (the tick sent its own),
-  // and nothing here can change what was recorded above.
+  // The "payment sent" email, once per part this payout stamped (a ride half
+  // to the driver, a tour to the operator). A part someone had already
+  // ticked is left alone, and nothing here can change what was recorded above.
   let unmailed = 0
   if (deps.notifyPaid) {
     for (const it of stamped) {
-      if (it.part !== 'first' && it.part !== 'second') continue
       let timer: ReturnType<typeof setTimeout> | undefined
       try {
         const went = await Promise.race([
@@ -565,7 +565,7 @@ async function recordFunded(
   const notes = [
     alreadyStamped.length ? 'the dispatch console already showed some of these trips as paid: check they were not paid twice' : '',
     unstamped ? `${unstamped} trip(s) could not be marked paid in the dispatch console; the payout itself is recorded` : '',
-    unmailed ? `the driver's payment email did not go for ${unmailed} trip(s); the payout itself is recorded` : '',
+    unmailed ? `the payment email did not go for ${unmailed} trip(s); the payout itself is recorded` : '',
   ].filter(Boolean)
   return { outcome: 'funded', detail: notes.join('; ') || null, alreadyStamped }
 }

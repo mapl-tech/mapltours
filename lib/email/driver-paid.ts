@@ -1,6 +1,7 @@
 import { firstLeg, moneyBlock, money, round2, bookingRef, jaDate, jaTime, type Bk } from '@/lib/dispatch'
 import { sendEmail, opsBcc, driverNotifyEmail } from '@/lib/email/send'
 import DriverPaid from '@/emails/DriverPaid'
+import TourPaid from '@/emails/TourPaid'
 
 /**
  * Email the driver that a payment was sent, with an atomic once-only claim.
@@ -87,6 +88,74 @@ export async function notifyDriverPaid(
   })
   if (!res?.ok) {
     console.error('[dispatch] driver payment email failed, claim held to prevent doubles', res?.error)
+    return false
+  }
+  return true
+}
+
+/** A tour day, "Wednesday, November 25", from the item's YYYY-MM-DD (a Jamaica calendar day; read at noon UTC so no zone moves it). */
+export function tourDayLabel(ymd: string): string {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(ymd ?? '')) return 'day to be confirmed'
+  return new Intl.DateTimeFormat('en-US', { timeZone: 'UTC', weekday: 'long', month: 'long', day: 'numeric' }).format(new Date(`${ymd}T12:00:00Z`))
+}
+
+/**
+ * Email the tour operator that a tour booking was paid: the payout job's
+ * counterpart of notifyDriverPaid, sent once a tour payout has funded and the
+ * booking is stamped `paid_tour`. Same inbox as the ride notice (the operator
+ * alert reaches Collin there), ops on BCC, the same kind of once-only claim
+ * (`paid_tour_notified`), never released after a send attempt.
+ *
+ * The amount is the booking's subtotal, which is what the payout job paid
+ * for a tour (lib/payouts/plan.ts tourPartOf).
+ */
+export async function notifyTourPaid(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  svc: any,
+  b: Bk,
+  payeeName: string,
+  opts?: { timeoutMs?: number; idempotencyKey?: string },
+): Promise<boolean> {
+  const to = driverNotifyEmail()
+  if (!to) {
+    console.warn('[payouts] tour paid but no operator email configured (DRIVER_NOTIFY_EMAIL)')
+    return false
+  }
+  const amount = round2(Number(b.subtotal ?? 0))
+  if (!(amount > 0)) {
+    console.warn('[payouts] tour payment email skipped, non-positive amount', { booking: b.id, amount })
+    return false
+  }
+  const items = ((b.booking_items ?? []) as { item_type?: string; title?: string; date?: string; travelers?: number }[])
+    .filter((i) => i.item_type !== 'transfer')
+    .sort((x, y) => String(x.date ?? '').localeCompare(String(y.date ?? '')))
+  if (items.length === 0) return false
+
+  const { data: claimed } = await svc.rpc('merge_dispatch', {
+    p_booking_id: b.id,
+    p_patch: { paid_tour_notified: new Date().toISOString() },
+    p_only_if_absent: 'paid_tour_notified',
+  })
+  if (!claimed || claimed.length === 0) return false
+
+  const res = await sendEmail({
+    to,
+    bcc: opsBcc(to),
+    subject: `${money(amount)} sent · tour · ${bookingRef(b.id)}`,
+    react: TourPaid({
+      payeeName: payeeName.trim() || 'there',
+      bookingRef: bookingRef(b.id),
+      guestName: `${b.first_name ?? ''} ${b.last_name ?? ''}`.trim() || 'Guest',
+      amount: money(amount),
+      tours: items.map((i) => ({ title: i.title || 'Tour', dayLabel: tourDayLabel(String(i.date ?? '')), guests: Number(i.travelers ?? 1) })),
+      pickup: typeof b.pickup === 'string' && b.pickup.trim() ? b.pickup.trim() : null,
+    }),
+    tags: [{ name: 'type', value: 'tour_paid' }],
+    ...(opts?.timeoutMs ? { timeoutMs: opts.timeoutMs } : {}),
+    ...(opts?.idempotencyKey ? { idempotencyKey: opts.idempotencyKey } : {}),
+  })
+  if (!res?.ok) {
+    console.error('[payouts] tour payment email failed, claim held to prevent doubles', res?.error)
     return false
   }
   return true
