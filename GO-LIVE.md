@@ -249,6 +249,89 @@ fails that deploy and leaves the live one in place. To undo a change, use
 "Restore the old rate" in the desk's history (it goes through the same
 review), or "Back to the default".
 
+## 10. Payouts by Wise, before each trip (built Nov 15 2026, changed Nov 18 2026, LIVE Nov 19 2026)
+
+The daily job (`app/api/payouts`, `netlify/functions/driver-payouts-cron.mjs`)
+pays, from the Wise US-dollar balance, every ride half and every tour whose
+send day has come: the second business day before its day, so the money is in
+the account before the driver or the operator works, as the console's "Pay
+driver ... before the pickup" steps do by hand today. How it decides and what
+it does when something fails: the headers of `lib/payouts/plan.ts` and
+`lib/payouts/run.ts`. It is inert until `WISE_PAYOUTS_ENABLED=1`: the cron does
+not even call the route, and the route only dry-runs.
+
+**Decisions before launch (the owner's):**
+- Collin's answers: his home address (Wise requires it for a US account), that
+  two business days ahead is early enough, whether rides his drivers drive are
+  paid to him (one payment) or to each driver, whether tours go to the same
+  account, and what his receiving account charges him per incoming payment and to withdraw.
+- A US$5 test payment by hand in Wise to his receiving account, and his word
+  that it arrived, before the job sends anything.
+- Fares still carry the Remitly cover and Stripe's 2% conversion
+  (`REMITLY_FLAT`, `REMITLY_FX`, `CARD_RATE` in `lib/airport-transfers.ts`, and
+  the copy in `lib/experiences.ts`). Stripe has paid out in US dollars since
+  Nov 18 2026; change them only on the owner's word.
+
+**Order:**
+1. **Rotate the token.** The one created Nov 15 2026 (named "MAPL Tours Jamaia"
+   in Wise) was shared in a chat. Delete it in Wise (API tokens), create a new
+   full-access one, and put it only in Netlify as `WISE_API_TOKEN` (and
+   `.env.local`).
+2. **Wise account.** No payment-approval rule on the business account (Wise
+   refuses API transfers when approvals are on). The USD balance is filled by
+   Stripe's USD payouts (since Nov 18 2026). Stripe holds each payment 3 days,
+   so a trip booked close to its day is paid before its own money arrives:
+   keep a cushion in the balance. A payment the balance cannot cover sends
+   nothing and emails the inbox.
+3. **Recipients.** Add Collin in Wise's own app (Recipients, Add recipient, US
+   dollars, a bank account in the United States: the routing and account
+   numbers of his US receiving account, checking, his name as that account
+   shows it, his home address), so his bank details never pass through our
+   code. `node scripts/wise-recipients.mjs` prints the ids. Set
+   `WISE_PAYOUT_RECIPIENTS` to the names exactly as bookings store them
+   (`driver_name`), every name that is paid to his account on his id:
+   `{"Collin": <id>}`, plus his drivers' names on the same id if he is paid for
+   their rides. A name not listed is reported, never paid. Set
+   `WISE_TOUR_PAYEE=Collin` for tours to be paid to him.
+4. **Migration 038.** `node --env-file=.env.local scripts/apply-migrations.mjs 038_driver_payouts.sql`,
+   then confirm:
+   ```sql
+   select table_name from information_schema.tables
+   where table_schema = 'public' and table_name in ('driver_payouts', 'driver_payout_items');
+   select routine_name from information_schema.routines
+   where routine_schema = 'public' and routine_name = 'claim_driver_payout';
+   ```
+   Two rows, then one. (Checked Nov 18 2026 in PGlite: applies twice cleanly; a
+   ride half and a tour in one claim; a claim is all or nothing; a part can sit
+   in one live item only; items must add up; only the service role may call it.)
+5. **The start day.** `PAYOUT_FROM=YYYY-MM-DD`, the first ride or tour day the
+   job pays. Nothing before it is ever paid; a live run will not start without
+   it. Choose the first day whose rides nobody has paid by hand, and make sure
+   every hand payment before then is ticked in the console.
+6. **Netlify env** (Functions scope): `WISE_API_TOKEN`, `WISE_PROFILE_ID=154050700`,
+   `WISE_PAYOUT_RECIPIENTS`, `WISE_TOUR_PAYEE`, `PAYOUT_FROM`, optionally
+   `WISE_BALANCE_ID`, `PAYOUT_LEAD_BUSINESS_DAYS` and the limits. Leave
+   `WISE_PAYOUTS_ENABLED` unset. Deploy.
+7. **Read a dry run** and compare it with the dispatch console, line by line:
+   `curl -H "Authorization: Bearer $CRON_SECRET" https://mapltours.com/api/payouts?dry=1`
+8. **Webhook.** `node scripts/wise-webhook-subscribe.mjs --yes`, or create it in
+   Wise's web settings if the API refuses the personal token: event
+   `transfers#state-change`, URL `https://mapltours.com/api/webhooks/wise`.
+9. **Switch on:** `WISE_PAYOUTS_ENABLED=1`, redeploy. The 14:30 UTC run each
+   day pays what is due. From then on, do not pay rides or tours by hand to an
+   account the job pays: the job stamps the console's pay steps itself, and a
+   hand stamp makes it skip that part (it then reports it as paid by hand).
+   A tour has no pay step in the console; paying one by hand would be paid
+   again.
+
+**Resolving a held payout** (`needs_review` or `returned`; the email names it):
+look at the transfer in Wise first. Then, for one that was in fact paid:
+`update driver_payouts set status = 'funded', resolved_at = now() where id = '<id>';`
+for one that was not:
+`update driver_payouts set status = 'failed', resolved_at = now() where id = '<id>'; update driver_payout_items set active = false where payout_id = '<id>';`
+(its trips are paid on the next run). For a `returned` payout, fix the details
+in Wise, then `update driver_payouts set resolved_at = now() where id = '<id>';`.
+
 ---
 
 ## Fast reference — env vars
@@ -277,6 +360,16 @@ review), or "Back to the default".
 | `TIKTOK_REDIRECT_URI` | server | must exactly match the URI registered with TikTok |
 | `NEXT_PUBLIC_TIKTOK_ENABLED` | client | `1` shows the Connect TikTok button on the profile page |
 | `NETLIFY_RATES_BUILD_HOOK` | server | build hook a tour-rate save calls to publish (§9); unset = saves wait for the next deploy |
+| `WISE_API_TOKEN` | server | Wise Business personal API token for driver payouts (§10); secret |
+| `WISE_PROFILE_ID` | server | Wise business profile id (MAPL TECH INC.: 154050700) |
+| `WISE_ENV` | server | `production` (default) or `sandbox` |
+| `WISE_PAYOUT_RECIPIENTS` | server | JSON, name as bookings store it to Wise recipient id; names on one id share a payment |
+| `WISE_TOUR_PAYEE` | server | the name tours are paid to (one of the names above); unset, tours are reported, never paid |
+| `PAYOUT_FROM` | server | required to pay: `YYYY-MM-DD`, the first ride or tour day the job pays |
+| `WISE_BALANCE_ID` | server | optional: the USD balance to pay from |
+| `WISE_PAYOUTS_ENABLED` | server | exactly `1` to pay; anything else keeps payouts off |
+| `PAYOUT_LEAD_BUSINESS_DAYS` | server | optional: business days before the trip a payment goes (default 2) |
+| `PAYOUT_MAX_PAYEE_USD` / `PAYOUT_MAX_RUN_USD` / `PAYOUT_MAX_FEE_USD` | server | optional limits (defaults 3000 / 6000 / 40) |
 
 Calendar sync setup (already done once, recorded here for rebuilds): Calendar
 API enabled on the `mapl-tours` Google Cloud project; the service account
