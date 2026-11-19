@@ -156,15 +156,36 @@ function partyRate(p: TourPricing, zone: TourZone | null | undefined): number {
   return Math.min(...zonesSold(p).map((z) => p.zoneRates?.[z] as number))
 }
 
-/** MAPL's margin on tours. */
-export const TOUR_MARGIN = 0.15
-/** Cover for paying the operator via Remitly from Canada: CAD 3.99 flat per
- *  send plus a ~2.1% FX spread, measured live 2026-08-15. Matches
- *  REMITLY_COVER in lib/airport-transfers. */
-export const TOUR_REMITLY_COVER = 0.05
-/** Card processing, matching lib/airport-transfers (verified against live charges). */
-const CARD_RATE = 0.057
-const CARD_FIXED = 0.22
+/**
+ * MAPL's profit on a tour, as a share of the operator's rate, after card fees
+ * and after paying the operator: 18.22% since Nov 19 2026 (owner: take the
+ * fees of the old payment route out of every tour price and keep MAPL's
+ * profit).
+ *
+ * Until then a tour carried a 15% margin and a 5% cover for paying the
+ * operator by Remitly, grossed up for card fees of 5.7% (2.9% + 0.8% for a
+ * foreign card + Stripe's 2% conversion to Canadian dollars). Remitly really
+ * took 1.78% plus about US$2.80 a payment, so MAPL kept 18.22% of the
+ * operator's rate less US$2.80. Stripe now settles in US dollars (no
+ * conversion) and Wise pays the operator for 0.30% (lib/payouts), so prices
+ * fall 2.6% to 3.6% and MAPL keeps 18.22% of the rate: never less than
+ * before, about US$2 to 2.80 more a booking. That flat Remitly fee is the one
+ * saving not passed on, because a per-person price must still multiply out
+ * (n guests never pay more than n times the price for one).
+ * tests/unit/tour-price-rule.spec.ts holds every tour, pickup area and party
+ * size of 1 to 12 to that.
+ */
+export const TOUR_MARGIN = 0.1822
+/** Paying the operator by Wise to a US receiving account: 0.30% of the payment. */
+export const TOUR_PAYOUT_RATE = 0.003
+/**
+ * Card processing on a US-dollar charge that Stripe settles in US dollars:
+ * 2.9% + 0.8% for a foreign card (measured on the live charges, which showed
+ * the 2% conversion as its own line), and a fixed fee taken as US$0.30 (it
+ * was C$0.30, about US$0.22, while the account settled in Canadian dollars).
+ */
+const CARD_RATE = 0.037
+const CARD_FIXED = 0.3
 
 /**
  * What MAPL owes the operator for a party of this size. `zone` matters only
@@ -187,12 +208,13 @@ export function tourOperatorCost(p: TourPricing, travelers: number, zone?: TourZ
 
 /**
  * All-in price the customer pays for a party of this size: operator cost plus
- * MAPL's margin, grossed up so card processing does not eat it. Rounded UP so
- * a booking can never come in under cost.
+ * MAPL's margin and the cost of paying the operator, grossed up so card
+ * processing does not eat it. Rounded UP so a booking can never come in under
+ * cost.
  */
 export function tourPrice(p: TourPricing, travelers: number, zone?: TourZone | null): number {
   const cost = tourOperatorCost(p, travelers, zone)
-  return Math.ceil((cost * (1 + TOUR_MARGIN + TOUR_REMITLY_COVER) + CARD_FIXED) / (1 - CARD_RATE))
+  return Math.ceil((cost * (1 + TOUR_MARGIN + TOUR_PAYOUT_RATE) + CARD_FIXED) / (1 - CARD_RATE))
 }
 
 /** The price for this party from every zone the tour is sold in, west to east. */

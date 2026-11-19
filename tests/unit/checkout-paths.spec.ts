@@ -726,10 +726,10 @@ describe('POST /api/checkout: tours priced by where the guest is staying (Nov 12
     expect(bookingRow((await res.json()).bookingId).pickup).toBe('Spanish Court Hotel, Kingston')
   })
 
-  it('sells Rick’s Cafe from the west only (owner, Nov 16 2026): refused from Ocho Rios before any row, sold from Negril at the old price', async () => {
+  it('sells Rick’s Cafe from the west only (owner, Nov 16 2026): refused from Ocho Rios before any row, sold from Negril at its own price', async () => {
     const items = [{ id: 14, title: 'x', destination: 'x', travelers: 4, date: DATE, price: 0 }]
     const amount = priceTourCart([{ id: 14, travelers: 4, date: DATE }], {}, { zone: 'negril' }).total
-    expect(amount).toBe(255)
+    expect(amount).toBe(247)
     const east = await post({ amount, items, customer: at('Sandals Ochi Beach Resort'), waiverAccepted: true })
     expect(east.status).toBe(400)
     expect((await east.json()).error).toBe("Rick's Cafe Cliff Diving & Sunset is booked online only for pickups from Negril to Montego Bay. For a pickup in Ocho Rios, write to contact@mapltours.com and we will send you a price, or remove it from your trip.")
@@ -737,7 +737,7 @@ describe('POST /api/checkout: tours priced by where the guest is staying (Nov 12
     expect(db.intents.size).toBe(0)
     const west = await post({ amount, items, customer: at('Sandals Negril Beach Resort'), waiverAccepted: true })
     expect(west.status).toBe(200)
-    expect(intentOf((await west.json()).bookingId).amount).toBe(cents(255))
+    expect(intentOf((await west.json()).bookingId).amount).toBe(cents(247))
   })
 })
 
@@ -750,26 +750,26 @@ describe('POST /api/checkout: a tour priced per person by where the guest is sta
     priceTourCart([{ id: 3, travelers, date: DATE }], {}, { zone }).total
   const at = (pickup: string, extra: Record<string, unknown> = {}) => ({ ...customer, pickup, ...extra })
 
-  it('charges every guest their own area’s rate: three from Negril is $573, and Collin is owed $450', async () => {
-    expect(priced('negril', 3)).toBe(573)
-    const res = await post({ amount: 573, items: raft(3), customer: at('Sandals Negril Beach Resort'), waiverAccepted: true })
+  it('charges every guest their own area’s rate: three from Negril is $555, and Collin is owed $450', async () => {
+    expect(priced('negril', 3)).toBe(555)
+    const res = await post({ amount: 555, items: raft(3), customer: at('Sandals Negril Beach Resort'), waiverAccepted: true })
     const data = await res.json()
     expect(res.status).toBe(200)
-    expect(intentOf(data.bookingId).amount).toBe(57300)
+    expect(intentOf(data.bookingId).amount).toBe(55500)
     const row = bookingRow(data.bookingId)
     expect(Number(row.subtotal)).toBe(450)
-    expect(Number(row.total_paid)).toBe(573)
-    expect(Number(row.subtotal) + Number(row.booking_fee)).toBe(573)
+    expect(Number(row.total_paid)).toBe(555)
+    expect(Number(row.subtotal) + Number(row.booking_fee)).toBe(555)
   })
 
-  it('a couple from Montego Bay pays $230, from Ocho Rios $255', async () => {
-    expect([priced('montego_bay', 2), priced('ocho_rios', 2)]).toEqual([230, 255])
-    const mobay = await post({ amount: 230, items: raft(2), customer: at('Sandals Royal Caribbean, Montego Bay'), waiverAccepted: true })
+  it('a couple from Montego Bay pays $222, from Ocho Rios $247', async () => {
+    expect([priced('montego_bay', 2), priced('ocho_rios', 2)]).toEqual([222, 247])
+    const mobay = await post({ amount: 222, items: raft(2), customer: at('Sandals Royal Caribbean, Montego Bay'), waiverAccepted: true })
     expect(mobay.status).toBe(200)
-    expect(intentOf((await mobay.json()).bookingId).amount).toBe(23000)
-    const ocho = await post({ amount: 255, items: raft(2), customer: at('Moon Palace Jamaica, Ocho Rios', { email: 'second@example.com' }), waiverAccepted: true })
+    expect(intentOf((await mobay.json()).bookingId).amount).toBe(22200)
+    const ocho = await post({ amount: 247, items: raft(2), customer: at('Moon Palace Jamaica, Ocho Rios', { email: 'second@example.com' }), waiverAccepted: true })
     expect(ocho.status).toBe(200)
-    expect(intentOf((await ocho.json()).bookingId).amount).toBe(25500)
+    expect(intentOf((await ocho.json()).bookingId).amount).toBe(24700)
   })
 
   it('refuses the old price: $128 for a party of three is a mismatch, and nothing is created', async () => {
@@ -808,16 +808,17 @@ describe('POST /api/checkout: the Rasta ATV Safari, the jet ski and parasailing,
   const at = (pickup: string, extra: Record<string, unknown> = {}) => ({ ...customer, pickup, ...extra })
 
   it.each([
-    [5, 1, 192, 150],
-    [5, 2, 382, 300],
-    [5, 4, 764, 600],
-    [5, 5, 892, 700],
-    [10, 2, 332, 260],
-    [10, 4, 662, 520],
-    [10, 5, 637, 500],
-    [11, 2, 306, 240],
-    [11, 4, 612, 480],
-    [11, 5, 573, 450],
+    // Guest prices since Nov 19 2026 (tour-price-rule.spec.ts); what Collin is owed is unchanged.
+    [5, 1, 185, 150],
+    [5, 2, 370, 300],
+    [5, 4, 739, 600],
+    [5, 5, 862, 700],
+    [10, 2, 321, 260],
+    [10, 4, 641, 520],
+    [10, 5, 616, 500],
+    [11, 2, 296, 240],
+    [11, 4, 592, 480],
+    [11, 5, 555, 450],
   ])('tour %i for %i guests is charged $%i, of which Collin is owed $%i', async (id, travelers, total, owed) => {
     expect(priceTourCart([{ id, travelers, date: DATE }], {}, {}).total).toBe(total)
     const res = await post({ amount: total, items: one(id, travelers), customer: at('Sandals Royal Caribbean, Montego Bay'), waiverAccepted: true })
@@ -843,12 +844,12 @@ describe('POST /api/checkout: the Rasta ATV Safari, the jet ski and parasailing,
   })
 
   it('is one price per guest wherever the pickup is: none of the three is priced by area', async () => {
-    const negril = await post({ amount: 382, items: one(5, 2), customer: at('Sandals Negril Beach Resort'), waiverAccepted: true })
+    const negril = await post({ amount: 370, items: one(5, 2), customer: at('Sandals Negril Beach Resort'), waiverAccepted: true })
     expect(negril.status).toBe(200)
-    expect(intentOf((await negril.json()).bookingId).amount).toBe(38200)
-    const kingston = await post({ amount: 306, items: one(11, 2), customer: at('Spanish Court Hotel, Kingston', { email: 'second@example.com' }), waiverAccepted: true })
+    expect(intentOf((await negril.json()).bookingId).amount).toBe(37000)
+    const kingston = await post({ amount: 296, items: one(11, 2), customer: at('Spanish Court Hotel, Kingston', { email: 'second@example.com' }), waiverAccepted: true })
     expect(kingston.status).toBe(200)
-    expect(intentOf((await kingston.json()).bookingId).amount).toBe(30600)
+    expect(intentOf((await kingston.json()).bookingId).amount).toBe(29600)
   })
 })
 
@@ -862,7 +863,7 @@ describe('POST /api/checkout: a paused tour (lib/tour-pause) is refused before a
   afterEach(() => { pause.ids = new Set() })
 
   it('alone, at its own price: 400, the reason, nothing created', async () => {
-    const res = await post({ amount: 382, items: one(5, 2), customer: { ...customer, pickup: 'Sandals Royal Caribbean, Montego Bay' }, waiverAccepted: true })
+    const res = await post({ amount: 370, items: one(5, 2), customer: { ...customer, pickup: 'Sandals Royal Caribbean, Montego Bay' }, waiverAccepted: true })
     expect(res.status).toBe(400)
     expect((await res.json()).error).toBe('Rasta Cultural ATV Safari is not taking bookings right now. Remove it from your trip to book the rest, or write to contact@mapltours.com.')
     expect(db.tables.bookings ?? []).toHaveLength(0)
@@ -871,18 +872,18 @@ describe('POST /api/checkout: a paused tour (lib/tour-pause) is refused before a
 
   it('beside a tour on sale: the whole cart is refused until it is removed, then the rest books', async () => {
     const mixed = [...one(10, 2), ...one(5, 2)]
-    const refused = await post({ amount: 332 + 382, items: mixed, customer: { ...customer, pickup: 'Sandals Royal Caribbean, Montego Bay' }, waiverAccepted: true })
+    const refused = await post({ amount: 321 + 370, items: mixed, customer: { ...customer, pickup: 'Sandals Royal Caribbean, Montego Bay' }, waiverAccepted: true })
     expect(refused.status).toBe(400)
     expect((await refused.json()).error).toMatch(/^Rasta Cultural ATV Safari is not taking bookings right now\./)
     expect(db.tables.bookings ?? []).toHaveLength(0)
     expect(db.intents.size).toBe(0)
-    const rest = await post({ amount: 332, items: one(10, 2), customer: { ...customer, pickup: 'Sandals Royal Caribbean, Montego Bay' }, waiverAccepted: true })
+    const rest = await post({ amount: 321, items: one(10, 2), customer: { ...customer, pickup: 'Sandals Royal Caribbean, Montego Bay' }, waiverAccepted: true })
     expect(rest.status).toBe(200)
-    expect(intentOf((await rest.json()).bookingId).amount).toBe(33200)
+    expect(intentOf((await rest.json()).bookingId).amount).toBe(32100)
   })
 
   it('the quiet save (no waiver field) is refused the same way', async () => {
-    const res = await post({ amount: 382, items: one(5, 2), customer: { ...customer, pickup: 'Sandals Royal Caribbean, Montego Bay' } })
+    const res = await post({ amount: 370, items: one(5, 2), customer: { ...customer, pickup: 'Sandals Royal Caribbean, Montego Bay' } })
     expect(res.status).toBe(400)
     expect(db.tables.bookings ?? []).toHaveLength(0)
     expect(db.intents.size).toBe(0)

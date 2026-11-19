@@ -267,10 +267,11 @@ not even call the route, and the route only dry-runs.
   account, and what his receiving account charges him per incoming payment and to withdraw.
 - A US$5 test payment by hand in Wise to his receiving account, and his word
   that it arrived, before the job sends anything.
-- Fares still carry the Remitly cover and Stripe's 2% conversion
-  (`REMITLY_FLAT`, `REMITLY_FX`, `CARD_RATE` in `lib/airport-transfers.ts`, and
-  the copy in `lib/experiences.ts`). Stripe has paid out in US dollars since
-  Nov 18 2026; change them only on the owner's word.
+- Ride fares still carry the Remitly cover and Stripe's 2% conversion
+  (`REMITLY_FLAT`, `REMITLY_FX`, `CARD_RATE` in `lib/airport-transfers.ts`).
+  Stripe has paid out in US dollars since Nov 18 2026; change them only on the
+  owner's word. Tour prices dropped both on Nov 19 2026, on his word, keeping
+  MAPL's profit (CLAUDE.md, "Tour prices without the old fees").
 
 **Order:**
 1. **Rotate the token.** The one created Nov 15 2026 (named "MAPL Tours Jamaia"

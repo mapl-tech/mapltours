@@ -268,12 +268,12 @@ describe('WebMCP tool set', () => {
     expect(from.priceForParty.priceIsFrom).toBe(true)
     expect(from.priceForParty.priceUsd).toBe(tourPrice(raft.pricing, 2, 'montego_bay'))
     expect(from.priceForParty.pricesByArea).toEqual([
-      { area: 'Negril', priceUsd: 382 }, { area: 'Lucea & Hanover', priceUsd: 255 }, { area: 'Montego Bay & Rose Hall', priceUsd: 230 },
-      { area: 'Falmouth & Trelawny', priceUsd: 255 }, { area: 'Runaway Bay & Discovery Bay', priceUsd: 255 }, { area: 'Ocho Rios', priceUsd: 255 },
+      { area: 'Negril', priceUsd: 370 }, { area: 'Lucea & Hanover', priceUsd: 247 }, { area: 'Montego Bay & Rose Hall', priceUsd: 222 },
+      { area: 'Falmouth & Trelawny', priceUsd: 247 }, { area: 'Runaway Bay & Discovery Bay', priceUsd: 247 }, { area: 'Ocho Rios', priceUsd: 247 },
     ])
     // A Negril hotel: that area's price for the party, and the words say it is per person.
     const negril = (await get.execute({ tour: getSlug(raft), guests: 2, pickup_hotel: 'Azul Beach Resort Negril' })) as R
-    expect(negril.priceForParty.priceUsd).toBe(382)
+    expect(negril.priceForParty.priceUsd).toBe(370)
     expect(negril.priceForParty.covers).toBe('total for 2 guests picked up in Negril; this tour is priced per person, by pickup area')
     // A group tour priced by area keeps its own words.
     const dunns = (await get.execute({ tour: 'dunns-river-falls-climb', guests: 2, pickup_hotel: 'Azul Beach Resort Negril' })) as R
@@ -390,10 +390,10 @@ describe('tours priced by where the traveller is staying (Nov 12 2026)', () => {
     const r = (await t.execute({ tour: 'dunns-river-falls-climb', guests: 2 })) as R
     vi.useRealTimers()
     expect(r.priceUnit).toBe('up to 4 people, priced by pickup area')
-    expect(r.priceForParty).toMatchObject({ guests: 2, priceUsd: 243, priceIsFrom: true })
+    expect(r.priceForParty).toMatchObject({ guests: 2, priceUsd: 235, priceIsFrom: true })
     expect(r.priceForParty.pricesByArea).toEqual([
-      { area: 'Negril', priceUsd: 510 }, { area: 'Lucea & Hanover', priceUsd: 382 }, { area: 'Montego Bay & Rose Hall', priceUsd: 357 },
-      { area: 'Falmouth & Trelawny', priceUsd: 293 }, { area: 'Runaway Bay & Discovery Bay', priceUsd: 281 }, { area: 'Ocho Rios', priceUsd: 243 },
+      { area: 'Negril', priceUsd: 493 }, { area: 'Lucea & Hanover', priceUsd: 370 }, { area: 'Montego Bay & Rose Hall', priceUsd: 345 },
+      { area: 'Falmouth & Trelawny', priceUsd: 284 }, { area: 'Runaway Bay & Discovery Bay', priceUsd: 272 }, { area: 'Ocho Rios', priceUsd: 235 },
     ])
   })
 
@@ -412,9 +412,9 @@ describe('tours priced by where the traveller is staying (Nov 12 2026)', () => {
     const { t } = tool('get_tour')
     const r = (await t.execute({ tour: 'ricks-cafe-cliff-diving-and-sunset', guests: 4, pickup_hotel: 'a villa in Ocho Rios' })) as R
     expect(r.priceForParty).toEqual({ guests: 4, pickupArea: 'Ocho Rios', bookableOnline: false, covers: SAY })
-    // From an area it is sold from, the price as before.
+    // From an area it is sold from, its price there.
     const west = (await t.execute({ tour: 'ricks-cafe-cliff-diving-and-sunset', guests: 4, pickup_hotel: 'a villa in Negril' })) as R
-    expect(west.priceForParty).toMatchObject({ pickupArea: 'Negril', priceUsd: 255 })
+    expect(west.priceForParty).toMatchObject({ pickupArea: 'Negril', priceUsd: 247 })
     const { t: start, a } = tool('start_tour_booking')
     expect(await start.execute({ tour: 'ricks-cafe-cliff-diving-and-sunset', guests: 4, date: '2026-12-10', pickup_hotel: 'a villa in Ocho Rios' })).toEqual({ error: SAY })
     expect(a.calls).toEqual([])
@@ -433,17 +433,17 @@ describe('tours priced by where the traveller is staying (Nov 12 2026)', () => {
     const { t } = tool('start_tour_booking', a)
     const r = (await t.execute({ tour: 'dunns-river-falls-climb', guests: 2, date: '2026-10-12', pickup_hotel: 'Iberostar Waves Rose Hall' })) as R
     expect(r.status).toBe('checkout_opened')
-    expect(r.priceForParty).toMatchObject({ pickupArea: 'Montego Bay & Rose Hall', priceUsd: 357 })
+    expect(r.priceForParty).toMatchObject({ pickupArea: 'Montego Bay & Rose Hall', priceUsd: 345 })
     expect(s()).toMatchObject({ pickup: 'Iberostar Waves Rose Hall', pickupArea: '', pickupZone: 'montego_bay' })
-    expect(s().subtotal()).toBe(357)
+    expect(s().subtotal()).toBe(345)
   })
 
   test('booking from a place no list knows: its area is chosen from the words, the one the quote used', async () => {
     const a = fakeActions({ addTour: (exp, guests, date, hotel) => addTourToCart(s, exp, guests, date, hotel) })
     const { t } = tool('start_tour_booking', a)
     const r = (await t.execute({ tour: 'dunns-river-falls-climb', guests: 2, date: '2026-10-12', pickup_hotel: 'Seaview villa in Negril' })) as R
-    expect(r.priceForParty).toMatchObject({ pickupArea: 'Negril', priceUsd: 510 })
+    expect(r.priceForParty).toMatchObject({ pickupArea: 'Negril', priceUsd: 493 })
     expect(s()).toMatchObject({ pickup: 'Seaview villa in Negril', pickupArea: 'negril', pickupZone: 'negril' })
-    expect(s().subtotal()).toBe(510)
+    expect(s().subtotal()).toBe(493)
   })
 })

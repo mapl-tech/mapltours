@@ -17,13 +17,24 @@ const line = (id: number, travelers: number, total: number) => {
 }
 
 describe('the tour confirmation never invents a per-person price', () => {
-  test('a flat group tour (rafting, 3 guests): the party and the total, no "each"', async () => {
-    const rafting = experiences.find((e) => e.id === 3)!
-    const total = tourPrice(rafting.pricing, 3)
-    const t = await text(BookingConfirmed({ ...base, totalPaid: total, items: [line(3, 3, total)] }))
+  test('a flat group tour (Nine Mile, 3 guests): the party and the total, no "each"', async () => {
+    const nineMile = experiences.find((e) => e.id === 15)!
+    expect(nineMile.pricing.mode).toBe('group')
+    const total = tourPrice(nineMile.pricing, 3)
+    const t = await text(BookingConfirmed({ ...base, totalPaid: total, items: [line(15, 3, total)] }))
     expect(t).toContain('3 travelers')
     expect(t).not.toMatch(/ each/)
     expect(t).toContain(`$${total.toFixed(2)}`)
+  })
+
+  test('a per-person tour that multiplies back (rafting from Montego Bay, 3 guests at $111): "each" is the real price', async () => {
+    const rafting = experiences.find((e) => e.id === 3)!
+    expect(rafting.pricing.mode).toBe('per_person')
+    const total = tourPrice(rafting.pricing, 3, 'montego_bay')
+    expect(total).toBe(333)
+    const t = await text(BookingConfirmed({ ...base, totalPaid: total, items: [line(3, 3, total)] }))
+    expect(t).toContain('3 travelers · $111.00 each')
+    expect(t).toContain('$333.00')
   })
 
   test('a tour priced by pickup area (Dunn River, 2 guests): no "each" even though it divides evenly', async () => {

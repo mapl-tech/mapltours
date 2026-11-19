@@ -408,6 +408,18 @@ Rules, enforced in code:
 
 Tests: `tests/unit/tour-zones.spec.ts` (every transfer hotel has a deliberate zone), `tour-rates.spec.ts`, `tour-rates-desk.spec.ts`, `tour-rate-impact.spec.ts`, `admin-tour-rates-route.spec.ts`, `collin-sheet.spec.ts` (every rate, as Collin gave it), and the zone cases in `checkout-paths.spec.ts` (group and per person, against the real route) and `webmcp-tools.spec.ts`.
 
+### Tour prices without the old fees (Nov 19 2026)
+
+Owner, Nov 19 2026, after Stripe began settling in US dollars (Nov 18) and Wise began paying Collin (0.30%): "do that everywhere", of "If you lowered tour prices by the 3.7% we discussed, you'd be back at about 14%, with the same dollars you kept before", and "Make it perfect, there can be no mistakes". Every tour price is `tourPrice` (`lib/experiences.ts`), so the change is one formula: the operator's rate times (1 + `TOUR_MARGIN` 0.1822 + `TOUR_PAYOUT_RATE` 0.003) plus US$0.30, over (1 - 0.037), rounded up. It replaced a 15% margin, a 5% Remitly cover and card fees of 5.7% (with Stripe's 2% conversion) over US$0.22. Collin's rates and the rate cards did not change; only what the guest pays did.
+
+- **MAPL keeps 18.22% of the operator's rate after card fees and the Wise payment:** what the old formula left it after Remitly's real cost (1.78% plus about US$2.80 a payment). So no tour got cheaper out of MAPL's pocket; on each booking MAPL keeps about US$2 to 2.80 more than before.
+- **Why not the exact old dollars (the owner was first shown a table that did that, e.g. Dunn's River for 2 from Montego Bay at $343):** passing on Remitly's flat US$2.80 per booking makes a per-person price stop multiplying ("$109 per person", two guests charged $220). Proportional pricing keeps n guests at no more than n times the price for one. The prices went 2.6% to 3.6% down instead of about 3.7% (Dunn's River for 2 from Montego Bay $357 to $345, the raft for two from there $230 to $222, Rick's Cafe $255 to $247).
+- **The card fee on a US-dollar charge is 3.7%** (2.9% plus 0.8% for a foreign card, as the live charges itemised it, the 2% conversion was a separate line) **and the fixed fee is taken as US$0.30** until the first charge settled in US dollars shows Stripe's real fixed fee; if it is lower, prices can come down by up to a dollar.
+- **Rides are unchanged:** `lib/airport-transfers.ts` still carries `REMITLY_FLAT`, `REMITLY_FX` and `CARD_RATE` 0.057. Changing them is the owner's call (offered Nov 19: a Negril round trip $199 to $187 at the same profit).
+- **Not changed, flagged to the owner:** the raft giveaway's contest rules (`app/giveaway/page.tsx`) still give the prize's value and the refund cap as US$128, the raft's price for a party of up to three before Nov 13; contest rules are legal text.
+
+Tests: `tests/unit/tour-price-rule.spec.ts` (every tour, paused ones included, every area it is sold from, parties of 1 to 12: cheaper than before, MAPL keeps at least what it kept, 18.22% of the rate, per-person totals never above n times one guest), and the guest prices pinned in `tour-rates`, `tour-rate-impact`, `collin-sheet`, `checkout-paths`, `webmcp-tools` and `booking-confirmed-per-person` (updated from the new rule, Collin's rates untouched).
+
 ### ProfileView
 - Hero banner: Jamaica-green gradient, avatar (80px, gold gradient circle), name "Alex Wanderlust", "Toronto - Member since 2024"
 - Stats row: Trips (3), Parishes (4), Experiences Saved — Syne gold numbers

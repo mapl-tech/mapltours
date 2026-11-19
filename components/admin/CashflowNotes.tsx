@@ -3,7 +3,7 @@ import {
   TRANSFER_MARGIN, REMITLY_FLAT, REMITLY_FX, CARD_RATE, CARD_FIXED, ROUND_TRIP_DISCOUNT,
 } from '@/lib/airport-transfers'
 import { REMITLY_FLAT_USD, REMITLY_FX as REMITLY_EST_FX } from '@/lib/dispatch'
-import { TOUR_MARGIN, TOUR_REMITLY_COVER } from '@/lib/experiences'
+import { TOUR_MARGIN, TOUR_PAYOUT_RATE } from '@/lib/experiences'
 import { money } from '@/lib/admin-format'
 
 /**
@@ -79,8 +79,9 @@ export default function CashflowNotes() {
             rate: Collin&rsquo;s {pct(ROUND_TRIP_DISCOUNT)} discount.
           </li>
           <li>
-            Tours are priced at the operator&rsquo;s rate plus a {pct(TOUR_MARGIN)} margin, a {pct(TOUR_REMITLY_COVER)} Remitly
-            cover and card processing.
+            Tours are priced at the operator&rsquo;s rate plus MAPL&rsquo;s {pct(TOUR_MARGIN)} and the {pct(TOUR_PAYOUT_RATE)} Wise
+            payment to the operator, grossed up for card processing on a US-dollar charge (since Nov 19 2026; until then a
+            15% margin, a 5% Remitly cover and Stripe&rsquo;s 2% conversion).
           </li>
           <li>
             Remitly (est.) is what sending each payout costs: about {money(REMITLY_FLAT_USD)} a send plus {pct(REMITLY_EST_FX)} on
