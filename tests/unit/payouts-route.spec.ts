@@ -119,11 +119,21 @@ describe('/api/payouts', () => {
     expect(JSON.stringify(j.plan)).not.toMatch(/first_name|last_name|email|phone/)
   })
 
-  test('switched on: pays, and tells the inbox', async () => {
+  test('switched on: pays, and the payment emails (which copy the inbox) are the only word of it', async () => {
     process.env.WISE_PAYOUTS_ENABLED = '1'
     const j = await (await POST(req('/api/payouts', bearer))).json()
     expect(j).toMatchObject({ mode: 'live', funded: 1, paid_usd: 147 })
     expect(state.wise.calls).toEqual(['recipient', 'quote', 'requirements', 'transfer', 'fund'])
+    expect(state.paidEmails).toHaveLength(2)
+    expect(state.notified).toBe(0)
+  })
+
+  test('switched on, not enough dollars: nothing paid, and the inbox is told', async () => {
+    process.env.WISE_PAYOUTS_ENABLED = '1'
+    state.wise.balance = 100
+    const j = await (await POST(req('/api/payouts', bearer))).json()
+    expect(j).toMatchObject({ mode: 'live', funded: 0, failed: 1 })
+    expect(state.paidEmails).toEqual([])
     expect(state.notified).toBe(1)
   })
 
@@ -143,6 +153,7 @@ describe('/api/payouts', () => {
     const j = await (await POST(req('/api/payouts', bearer))).json()
     expect(j).toMatchObject({ mode: 'live', funded: 1 })
     expect(state.paidEmails).toEqual([])
+    expect(state.notified).toBe(1) // no payment email went, so the inbox hears from the run
   })
 
   test('a paid tour gets the operator notice, named for WISE_TOUR_PAYEE, with a time limit and a key', async () => {

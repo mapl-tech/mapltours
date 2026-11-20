@@ -362,9 +362,16 @@ export async function runDriverPayouts(deps: PayoutRunDeps): Promise<PayoutRepor
     report.payees.push(await payPayee(deps, d, plan.payDay, base))
   }
 
+  // A payment that went cleanly is announced by its own "payment sent" email,
+  // which copies the operations inbox, so the run writes only when something
+  // needs a person (owner, Nov 20 2026: "I'm cced on the payout email to
+  // Collin so no need to send a seperate email"). Clean means funded, every
+  // part stamped by this payout and its email sent; without a mailer wired
+  // there is no such email, so the run still writes.
+  const clean = (d: PayeeReport) => d.outcome === 'funded' && !d.detail && d.alreadyStamped.length === 0 && !!deps.notifyPaid
   report.attention =
     live && (
-      report.payees.some((d) => d.outcome !== 'planned') ||
+      report.payees.some((d) => d.outcome !== 'planned' && !clean(d)) ||
       report.earlier.length > 0 ||
       report.holds.length > 0 ||
       report.refundHeld.length > 0

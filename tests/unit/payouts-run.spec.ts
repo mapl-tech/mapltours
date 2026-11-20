@@ -444,6 +444,40 @@ describe("the driver's payment email", () => {
     expect(order).toEqual(['funded:stamped', 'funded:stamped', 'funded:stamped'])
   })
 
+  test('a clean payment is announced by its payment emails only: no separate operations email', async () => {
+    const { notify, deps } = setup([ride({ driver: 'Collin' }), ride({ driver: 'Marcus Reid', subtotal: 168 })])
+    const r = await runDriverPayouts(deps({ notifyPaid: mailer() }))
+    expect(r.payees.map((d) => d.outcome)).toEqual(['funded', 'funded'])
+    expect(r.attention).toBe(false)
+    expect(notify).not.toHaveBeenCalled()
+  })
+
+  test('one payment clean and one not: the operations email goes, and names both', async () => {
+    const { wise, notify, deps } = setup([ride({ driver: 'Collin' }), ride({ driver: 'Someone New' })])
+    const r = await runDriverPayouts(deps({ notifyPaid: mailer() }))
+    expect(r.payees.map((d) => d.outcome).sort()).toEqual(['funded', 'no_recipient'])
+    expect(wise.transfers.size).toBe(1)
+    expect(notify).toHaveBeenCalledTimes(1)
+    const text = payoutSummary(r).lines.join('\n')
+    expect(text).toMatch(/Collin: US\$147\.00 for 2 trips, PAID/)
+    expect(text).toMatch(/Someone New: .*NOT PAID/)
+  })
+
+  test('a payment email that does not go: the operations email goes', async () => {
+    const { notify, deps } = setup([ride()])
+    const r = await runDriverPayouts(deps({ notifyPaid: mailer(async (_id, part) => part === 'first') }))
+    expect(only(r.payees)).toMatchObject({ outcome: 'funded', detail: expect.stringMatching(/payment email did not go for 1 trip/) })
+    expect(notify).toHaveBeenCalledTimes(1)
+  })
+
+  test('a refund holding a trip back: the operations email goes even when the rest paid cleanly', async () => {
+    const { notify, deps } = setup([ride(), ride({ refund_state: 'requested' })])
+    const r = await runDriverPayouts(deps({ notifyPaid: mailer() }))
+    expect(only(r.payees).outcome).toBe('funded')
+    expect(r.refundHeld).toHaveLength(1)
+    expect(notify).toHaveBeenCalledTimes(1)
+  })
+
   test('a tour in the same payment gets its own notice, once, beside the ride halves', async () => {
     const r1 = ride()
     const t = tour()

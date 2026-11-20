@@ -1,8 +1,11 @@
 /**
  * Payouts by Wise: what the operations inbox is told.
  *
- * After every live run that paid, failed, held or found anything, and after
- * any webhook that says money came back. Booking references and payee names
+ * After a live run with something for a person to look at (a payment that
+ * did not go, a hold, a refund holding a trip, an earlier payout, a trip
+ * already ticked, a stamp or payment email that failed; a clean payment is
+ * told by its own payment email, which copies this inbox), and after any
+ * webhook that says money came back. Booking references and payee names
  * only: never a guest's name, contact or flight, and never a bank detail.
  * Sent with the generic OpsAlert template to OPERATIONS_EMAIL.
  */
