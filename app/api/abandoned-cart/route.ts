@@ -13,7 +13,7 @@ import AbandonedCartFollowUp, { followUpSubject, type FollowUpCoupon } from '@/e
 import { resolveCoupon } from '@/lib/coupon-lookup'
 import {
   FOLLOW_UPS, FOLLOW_UP_COUPON, FOLLOW_UP_LOOKBACK_DAYS, FOLLOW_UP_WINDOW_HOURS, type FollowUpStep,
-  cartReminderSecret, cartStopUrl, couponBasis, followUpLink, handoffFromBooking, stillBookable, takesFullPercent,
+  cartReminderSecret, cartStopUrl, couponBasis, currentRideQuote, followUpLink, handoffFromBooking, quotedTotal, stillBookable, takesFullPercent,
 } from '@/lib/cart-reminders'
 
 /**
@@ -129,6 +129,8 @@ type Row = any
 /** The cart's lines as both reminders show them. */
 function emailItemsFor(b: Row): Array<{ title: string; sub: string; price: number }> {
   const isTransfer = b.booking_type === 'transfer'
+  // One plain ride is quoted at today's fare, the same figure as the total (lib/cart-reminders currentRideQuote).
+  const today = isTransfer ? currentRideQuote(b) : null
   return ((b.booking_items ?? []) as Row[]).map((i) => {
     if (isTransfer) {
       const trip = i.trip_type === 'round_trip' ? 'Round-trip' : 'One-way'
@@ -136,7 +138,7 @@ function emailItemsFor(b: Row): Array<{ title: string; sub: string; price: numbe
         // Says which way the ride goes: a one-way home is not a "transfer to" the hotel.
         title: transferTitle(i),
         sub: `Zone ${i.zone ?? ''} · ${trip} · ${plural(i.passengers ?? i.travelers ?? 1, 'passenger')}`.replace(' ·  · ', ' · '),
-        price: i.line_total != null ? Number(i.line_total) : Number(i.price_per_person),
+        price: today ? today.total : i.line_total != null ? Number(i.line_total) : Number(i.price_per_person),
       }
     }
     return {
@@ -413,7 +415,7 @@ async function handle(request: NextRequest) {
         firstName: guestNames({ full_name: b.first_name }).firstName,
         bookingRef: ref,
         currency,
-        total: Number(b.total_paid),
+        total: quotedTotal(b),
         ctaUrl,
         ctaLabel,
         kind: isTransfer ? 'transfer' : 'tour',
@@ -555,7 +557,7 @@ async function handle(request: NextRequest) {
         currency,
         kind: (isTransfer ? 'transfer' : 'tour') as 'transfer' | 'tour',
         items: emailItemsFor(b),
-        total: Number(b.total_paid),
+        total: quotedTotal(b),
         coupon,
         ctaUrl: link ?? (isTransfer ? `${siteBase}/transfers/checkout` : `${siteBase}/checkout`),
         ctaLabel: isTransfer ? 'Finish booking your ride' : tourTitle ? 'Finish booking your tour' : 'Finish planning your trip',

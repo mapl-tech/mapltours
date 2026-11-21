@@ -1234,7 +1234,8 @@ function AllExperiencesSection() {
   )
 }
 
-export default function FeedView() {
+/** `rideFrom`: the cheapest ride on the rate card (lib/airport-transfers cheapestFare), passed in by the server page. */
+export default function FeedView({ rideFrom }: { rideFrom: number }) {
   const { t, formatPrice } = useI18n()
   return (
     <div>
@@ -1338,7 +1339,7 @@ export default function FeedView() {
             fontFamily: 'var(--font-dm-sans)', fontSize: 14, fontWeight: 500,
             color: '#fff', marginTop: 16, textShadow: '0 1px 6px rgba(0,0,0,0.5)',
           }}>
-            From $22 · Flexible cancellation
+            From {formatPrice(rideFrom)} · Flexible cancellation
           </p>
         </div>
       </section>

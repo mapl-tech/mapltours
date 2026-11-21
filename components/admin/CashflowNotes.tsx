@@ -4,6 +4,7 @@ import {
 } from '@/lib/airport-transfers'
 import { REMITLY_FLAT_USD, REMITLY_FX as REMITLY_EST_FX } from '@/lib/dispatch'
 import { TOUR_MARGIN, TOUR_PAYOUT_RATE } from '@/lib/experiences'
+import { WISE_FEE_RATE } from '@/lib/payout-fees'
 import { money } from '@/lib/admin-format'
 
 /**
@@ -68,15 +69,17 @@ export default function CashflowNotes() {
         <summary>How these numbers are worked out</summary>
         <ul className="adm-cf-method-list">
           <li>
-            All figures are US dollars, the currency guests pay in. The Stripe account is Canadian and settles in Canadian
-            dollars, so each Stripe fee (processing plus conversion) is converted at that charge&rsquo;s own rate, and
-            Settled (CAD) is what Stripe paid out after its fees.
+            All figures are US dollars, the currency guests pay in. Until Nov 18 2026 the Stripe account settled in Canadian
+            dollars, so those charges&rsquo; Stripe fees (processing plus Stripe&rsquo;s 2% conversion) are converted at the
+            charge&rsquo;s own rate, and Settled shows the Canadian dollars Stripe paid out (C$). Since then it settles US-dollar
+            charges in US dollars (US$), with no conversion fee.
           </li>
           <li>
-            Rides are priced at the driver&rsquo;s rate plus a {pct(TRANSFER_MARGIN)} margin, the Remitly cost of paying the
-            driver ({money(REMITLY_FLAT)} a send plus {pct(REMITLY_FX)} on the amount) and card processing ({pct(CARD_RATE)} plus
-            {' '}{money(CARD_FIXED)}). A round trip is {Number((2 * (1 - ROUND_TRIP_DISCOUNT)).toFixed(2))} times the one-way
-            rate: Collin&rsquo;s {pct(ROUND_TRIP_DISCOUNT)} discount.
+            Rides are priced at the driver&rsquo;s rate plus a {pct(TRANSFER_MARGIN)} margin, a payout allowance of{' '}
+            {money(REMITLY_FLAT)} a send plus {pct(REMITLY_FX)} on the amount (what Remitly cost; Wise now costs less, and the
+            difference stays with MAPL) and card processing on a US-dollar charge ({pct(CARD_RATE)} plus {money(CARD_FIXED)}),
+            since Nov 21 2026; until then the card fee also carried Stripe&rsquo;s 2% conversion. A round trip is{' '}
+            {Number((2 * (1 - ROUND_TRIP_DISCOUNT)).toFixed(2))} times the one-way rate: Collin&rsquo;s {pct(ROUND_TRIP_DISCOUNT)} discount.
           </li>
           <li>
             Tours are priced at the operator&rsquo;s rate plus MAPL&rsquo;s {pct(TOUR_MARGIN)} and the {pct(TOUR_PAYOUT_RATE)} Wise
@@ -84,9 +87,10 @@ export default function CashflowNotes() {
             15% margin, a 5% Remitly cover and Stripe&rsquo;s 2% conversion).
           </li>
           <li>
-            Remitly (est.) is what sending each payout costs: about {money(REMITLY_FLAT_USD)} a send plus {pct(REMITLY_EST_FX)} on
-            the amount, and a round trip paid in two halves is two sends. So Net kept is profit after everything. One
-            weekly batch of payouts cuts this cost sharply.
+            Payout fees are what sending each payout costs, half by half for a round trip. Where Wise has paid it, it is
+            Wise&rsquo;s own fee on that payment, shared across the trips it carried. Where the payout job will pay it, it is
+            Wise&rsquo;s {pct(WISE_FEE_RATE)} (est.). Where it was paid by hand through Remitly before Wise, it is about{' '}
+            {money(REMITLY_FLAT_USD)} a send plus {pct(REMITLY_EST_FX)} on the amount (est.). So Net kept is profit after everything.
           </li>
           <li>
             Bookings paid before Aug 15 were priced under the old 10%-only model, which is why some show thin or negative

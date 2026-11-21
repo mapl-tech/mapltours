@@ -458,7 +458,8 @@ describe('the numbers and names come from the site', () => {
 
   test('p1: the round-trip ranges are the ones the live /transfers zone cards show, and the one-way line is the rate card’s cheapest fare', () => {
     // Read on mapltours.com/transfers, Sept 27 2026: Round-trip $39 to $92, $135, $114 to $167, $178 to $199, $199 to $285.
-    expect(ZONE_RANGES.map((r) => range(r.min, r.max))).toEqual(['$39 to $92', '$135', '$114 to $167', '$178 to $199', '$199 to $285'])
+    // Since Nov 21 2026 (Stripe's 2% conversion out of the ride fares), read on the live zone cards after that deploy:
+    expect(ZONE_RANGES.map((r) => range(r.min, r.max))).toEqual(['$38 to $91', '$133', '$112 to $164', '$174 to $195', '$195 to $279'])
     expect(ONE_WAY_MIN).toBe(Math.min(...DESTINATIONS.map((d) => getTransferPrice(d.id, 'one_way')!)))
     expect(ALL_MIN).toBe(Math.min(...DESTINATIONS.map((d) => getTransferPrice(d.id, 'round_trip')!)))
     expect(ALL_MAX).toBe(Math.max(...DESTINATIONS.map((d) => getTransferPrice(d.id, 'round_trip')!)))

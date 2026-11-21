@@ -1,5 +1,6 @@
 import type { BlogPost, BlogAuthor } from './blog'
 import { BLOG_IMAGES } from './blog-images'
+import { blogRideFrom } from './blog-prices'
 
 // One real byline; the named writers these used to be were invented.
 const mapl: BlogAuthor = { name: 'MAPL Tours Jamaica', role: 'Editorial', initials: 'MT' }
@@ -349,7 +350,7 @@ export const POSTS_2: BlogPost[] = [
       },
       {
         type: 'p',
-        text: "Ride-hailing apps do operate around Montego Bay, but they sit under a government ban that remains officially in force, and Sangster's own site lists only its two authorised taxi companies at the desk outside customs. Do not plan an arrival around one. For most first-time visitors the answer is a private driver booked before you fly, meeting you past customs with a name card. That is what we do: [our airport transfers](/transfers) are a flat price per vehicle for up to four people, $22 to a Montego Bay hotel and $111 to Negril or Ocho Rios, with the fare for all 199 properties listed before you book.",
+        text: `Ride-hailing apps do operate around Montego Bay, but they sit under a government ban that remains officially in force, and Sangster's own site lists only its two authorised taxi companies at the desk outside customs. Do not plan an arrival around one. For most first-time visitors the answer is a private driver booked before you fly, meeting you past customs with a name card. That is what we do: [our airport transfers](/transfers) are a flat price per vehicle for up to four people, from ${blogRideFrom('Montego Bay', 'one_way')} to a Montego Bay hotel and from ${blogRideFrom('Negril', 'one_way')} to Negril or Ocho Rios, with the fare for all 199 properties listed before you book.`,
       },
       {
         type: 'h2',

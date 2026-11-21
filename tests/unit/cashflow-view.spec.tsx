@@ -11,8 +11,8 @@ import CashflowView, { comparisonFor, inPeriod, monthTotals, niceTicks, previous
 
 const row = (i: number, date: string, gross: number, fee: number | null, payout: number, remit: number, extra: Partial<CashRow> = {}): CashRow => ({
   id: `${i}`, ref: `MAPL-${i}`, date, name: `Guest ${i}`, type: 'transfer', gross, giftFunded: 0, cashCollected: gross,
-  stripeFeeUsd: fee, supplierPayout: payout, remitlyEstUsd: remit, netUsd: Math.round((gross - (fee ?? 0) - payout - remit) * 100) / 100,
-  settledCad: fee == null ? null : 100, ...extra,
+  stripeFeeUsd: fee, supplierPayout: payout, payoutFeeUsd: remit, payoutFeeSource: 'remitly_est', netUsd: Math.round((gross - (fee ?? 0) - payout - remit) * 100) / 100,
+  settled: fee == null ? null : 100, settledCurrency: fee == null ? null : 'cad', ...extra,
 })
 
 describe('the owner’s calendar', () => {
@@ -68,9 +68,27 @@ describe('the sums', () => {
 
   test('net kept is collected less every cost, and a missing Stripe fee counts as none', () => {
     expect(summarize(rows)).toEqual({
-      count: 3, collected: 1070, giftFunded: 50, stripeFees: 53.46, supplierPayouts: 870, remitlyEst: 26.97, netKept: 119.57, settledCad: 200,
+      count: 3, collected: 1070, giftFunded: 50, stripeFees: 53.46, supplierPayouts: 870, payoutFees: 26.97, netKept: 119.57, settledCad: 200, settledUsd: null,
     })
     expect(summarize([]).settledCad).toBeNull()
+    expect(summarize([]).settledUsd).toBeNull()
+  })
+
+  test('Stripe settled in Canadian dollars until Nov 18 2026 and in US dollars since: each is summed in its own currency', () => {
+    const mixed = [
+      row(1, '2099-11-10T15:00:00Z', 199, 16.52, 162, 5.83, { settled: 284.47, settledCurrency: 'cad' }),
+      row(2, '2099-11-20T15:00:00Z', 195, 7.52, 162, 0.49, { settled: 187.48, settledCurrency: 'usd', payoutFeeSource: 'wise' }),
+    ]
+    const t = summarize(mixed)
+    expect([t.settledCad, t.settledUsd]).toEqual([284.47, 187.48])
+    const text = renderToStaticMarkup(<CashflowView rows={mixed} />).replace(/<[^>]+>/g, ' ').replace(/[ \t\n\r]+/g, ' ')
+    expect(text).toContain('Stripe settled C$284.47 and US$187.48 after its fees.')
+    expect(text).toContain('US$187.48')
+    expect(text).not.toContain('Settled (CAD)')
+    expect(text).toMatch(/Payout fees/)
+    expect(text).not.toMatch(/Remitly \(est\.\)/)
+    expect(text).toMatch(/−\$0\.49 Wise/)
+    expect(text).toMatch(/−\$5\.83 Remitly, est\./)
   })
 
   test('months run from the first to the last, an empty month as zero', () => {

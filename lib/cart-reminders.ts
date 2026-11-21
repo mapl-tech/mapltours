@@ -1,5 +1,5 @@
 import { createHmac, timingSafeEqual } from 'node:crypto'
-import { DESTINATIONS } from './airport-transfers'
+import { DESTINATIONS, driverCost, getTransferPrice } from './airport-transfers'
 import { bookingLink, parseHandoff, type Handoff } from './agent/booking-link'
 import { isExperienceDateBookable } from './booking-window'
 import { experiences, getSlug } from './experiences'
@@ -160,15 +160,43 @@ export function stillBookable(b: Row, link: string | null, now: number): boolean
 export function couponBasis(b: Row): { baseCents: number; marginCents: number; bookingType: 'tour' | 'transfer' } | null {
   if (b?.coupon_code) return null
   if (Number(b?.gift_card_amount ?? 0) > 0) return null
-  const baseCents = Math.round(Number(b?.total_paid) * 100)
-  if (!Number.isFinite(baseCents) || baseCents <= 0) return null
-  const fee = Number(b?.booking_fee ?? 0)
-  const reward = Number(b?.reward_discount ?? 0)
   const isTransfer = b.booking_type === 'transfer'
-  // The same margin the routes pass to resolveCoupon: the fee on a ride, the
-  // fee less any clip reward on a tour.
+  // A plain ride is quoted at today's fare (currentRideQuote), so the code
+  // comes off today's fare too, against today's margin.
+  const today = isTransfer ? currentRideQuote(b) : null
+  const baseCents = Math.round(Number(today ? today.total : b?.total_paid) * 100)
+  if (!Number.isFinite(baseCents) || baseCents <= 0) return null
+  const fee = today ? today.total - today.subtotal : Number(b?.booking_fee ?? 0)
+  const reward = Number(b?.reward_discount ?? 0)
+  // The same margin the routes pass to resolveCoupon: the fee on a ride
+  // (total less the driver's cost), the fee less any clip reward on a tour.
   const marginCents = Math.max(0, Math.round(((isTransfer ? fee : fee - reward) || 0) * 100))
   return { baseCents, marginCents, bookingType: isTransfer ? 'transfer' : 'tour' }
+}
+
+/**
+ * What a saved ride costs today, for a reminder to quote. On Nov 21 2026 the
+ * fares came down while carts left the day before still held the old price,
+ * and the email's link opens checkout at today's. Only where the saved total
+ * is the fare and nothing else: one ride, no code, no gift card. It is the
+ * trip the /book link rebuilds (handoffFromBooking), priced by the function
+ * checkout charges with, and the driver's cost as checkout stores it.
+ * Anything else (a tour, two rides, a code) keeps the total it was saved with.
+ */
+export function currentRideQuote(b: Row): { total: number; subtotal: number } | null {
+  if (b?.booking_type !== 'transfer') return null
+  if (b?.coupon_code || Number(b?.gift_card_amount ?? 0) > 0) return null
+  const h = handoffFromBooking(b)
+  if (!h || h.kind !== 'ride') return null
+  const total = getTransferPrice(h.destinationId, h.tripType, h.passengers)
+  const subtotal = driverCost(h.destinationId, h.tripType, h.passengers)
+  if (total == null || subtotal == null || !(total > 0)) return null
+  return { total, subtotal }
+}
+
+/** The total a reminder quotes: today's fare for one plain ride, otherwise the total the cart was saved with. */
+export function quotedTotal(b: Row): number {
+  return currentRideQuote(b)?.total ?? Number(b?.total_paid)
 }
 
 /**

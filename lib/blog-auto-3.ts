@@ -1,6 +1,6 @@
 import type { BlogPost, BlogAuthor } from './blog'
 import { BLOG_IMAGES } from './blog-images'
-import { blogPrice, blogUnit, blogFrom, blogShare, blogInArea } from './blog-prices'
+import { blogPrice, blogUnit, blogFrom, blogShare, blogInArea, blogRideFrom, blogRideRange, blogRideCheapest } from './blog-prices'
 
 // One real byline; the named writers these used to be were invented.
 const mapl: BlogAuthor = { name: 'MAPL Tours Jamaica', role: 'Editorial', initials: 'MT' }
@@ -95,7 +95,7 @@ export const POSTS_3: BlogPost[] = [
       },
       {
         type: 'p',
-        text: "A private transfer with MAPL Tours Jamaica is a flat fare per vehicle for up to four passengers: $22 to $51 one way to Montego Bay and Rose Hall, from $99 to Runaway Bay, and from $111 one way or $199 round trip to Negril or Ocho Rios. Your driver meets you inside arrivals with a name board; every resort's fare is on [the transfers page](/transfers).",
+        text: `A private transfer with MAPL Tours Jamaica is a flat fare per vehicle for up to four passengers: ${blogRideRange('A', 'one_way')} one way to Montego Bay and Rose Hall, from ${blogRideFrom('Runaway Bay', 'one_way')} to Runaway Bay, and from ${blogRideFrom('Negril', 'one_way')} one way or ${blogRideFrom('Negril', 'round_trip')} round trip to Negril or Ocho Rios. Your driver meets you inside arrivals with a name board; every resort's fare is on [the transfers page](/transfers).`,
       },
       { type: 'h2', text: 'What it costs to leave the resort for a day' },
       {
@@ -178,7 +178,7 @@ export const POSTS_3: BlogPost[] = [
           },
           {
             q: 'How far are the all-inclusive resorts from Montego Bay airport?',
-            a: "Montego Bay and Rose Hall are under 20 minutes from MBJ, Negril and Runaway Bay 75 to 90, Ocho Rios 90 to 120 minutes. A private [airport transfer](/transfers) is a flat fare per vehicle for up to four, from $22 one way.",
+            a: `Montego Bay and Rose Hall are under 20 minutes from MBJ, Negril and Runaway Bay 75 to 90, Ocho Rios 90 to 120 minutes. A private [airport transfer](/transfers) is a flat fare per vehicle for up to four, from ${blogRideCheapest('one_way')} one way.`,
           },
           {
             q: 'When is the cheapest time to stay at a Jamaica all-inclusive?',

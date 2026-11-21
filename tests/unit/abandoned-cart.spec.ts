@@ -1,6 +1,7 @@
 import { describe, test, expect, beforeAll, beforeEach, vi } from 'vitest'
 import type { ReactElement } from 'react'
 import { render } from '@react-email/render'
+import { getTransferPrice } from '@/lib/airport-transfers'
 
 /**
  * The abandoned-cart sweep's Stripe verification gate (audit 2026-08-22).
@@ -824,13 +825,20 @@ describe('the follow-ups: day 3 without the code, day 7 with it', () => {
       trip_type: 'round_trip', passengers: 1, arrival_at: `${land}:00+00:00`, arrival_flight: 'AA 1234',
       departure_at: `${out}:00+00:00`, departure_flight: 'AA 4321', line_total: 199, price_per_person: 199,
     }
+    // Saved at $199, before the Nov 21 2026 fares: the email quotes today's
+    // fare, and the code comes off today's fare (what the link's checkout charges).
+    const fare = getTransferPrice('samsara-cliff-negril', 'round_trip', 1)!
+    expect(fare).toBeLessThan(199)
     state.rows = [day7({ booking_type: 'transfer', total_paid: 199, booking_fee: 29, booking_items: [ride] })]
     await sweep()
     expect(followSends()[0].subject).toBe('5% off your airport ride')
     const page = await html()
     expect((await text()).toLowerCase()).toContain("here's 5% off your ride, vanessa.")
-    expect(await text()).not.toContain('9.95')
-    expect(await text()).toContain('$189.05')
+    expect(await text()).not.toContain((fare * 0.05).toFixed(2))
+    expect(await text()).toContain(`$${(fare * 0.95).toFixed(2)}`)
+    expect(await text()).toContain(`$${fare.toFixed(2)}`)
+    expect(await text()).not.toContain('$199.00')
+    expect(await text()).not.toContain('$189.05')
     // The name once: the headline carries it, so the first line does not repeat it.
     expect((await text()).toLowerCase().match(/vanessa/g)).toHaveLength(1)
     expect(await text()).toContain('Your private airport ride is saved.')
@@ -846,6 +854,30 @@ describe('the follow-ups: day 3 without the code, day 7 with it', () => {
     expect(home.toLowerCase()).toContain('your ride to the airport is still saved.')
     expect(home).toContain('Pickup timed to your flight.')
     expect(home).not.toContain('spot your name')
+  })
+
+  test('a ride saved before a fare change is quoted at today\'s fare; a cart with a code keeps the total it was saved with', async () => {
+    const out = new Date(Date.now() + 20 * DAY).toISOString().slice(0, 10) + 'T09:00'
+    const home = {
+      item_type: 'transfer', hotel: 'Samsara Cliff Resort, Negril', destination: 'Samsara Cliff Resort, Negril', zone: 'D',
+      trip_type: 'one_way', passengers: 2, arrival_at: null, arrival_flight: null,
+      departure_at: `${out}:00+00:00`, departure_flight: 'AA 4321', line_total: 111, price_per_person: 111,
+    }
+    const fare = getTransferPrice('samsara-cliff-negril', 'one_way', 2)!
+    expect(fare).toBe(109)
+    state.rows = [day3({ booking_type: 'transfer', total_paid: 111, booking_fee: 21, booking_items: [home] })]
+    await sweep()
+    expect(followSends()).toHaveLength(1)
+    expect(await text()).toContain('$109.00')
+    expect(await text()).not.toContain('$111.00')
+
+    // With a code on the cart the saved total is net of it, so it is quoted as saved.
+    state.rows = [day3({ booking_type: 'transfer', total_paid: 105.45, booking_fee: 21, coupon_code: 'JAMAICA5', coupon_discount: 5.55, booking_items: [{ ...home, line_total: 105.45 }] })]
+    state.sends = []; state.updates = []
+    await sweep()
+    expect(followSends()).toHaveLength(1)
+    expect(await text()).toContain('$105.45')
+    expect(await text()).not.toContain('$109.00')
   })
 
   test('several tours: the button opens checkout on the device they used, and says so', async () => {

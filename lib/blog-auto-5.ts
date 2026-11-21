@@ -1,6 +1,6 @@
 import type { BlogPost, BlogAuthor } from './blog'
 import { BLOG_IMAGES } from './blog-images'
-import { blogFrom, blogNotPerHead, blogInArea } from './blog-prices'
+import { blogFrom, blogNotPerHead, blogInArea, blogRideFrom } from './blog-prices'
 
 // One real byline; the named writers these used to be were invented.
 const mapl: BlogAuthor = { name: 'MAPL Tours Jamaica', role: 'Editorial', initials: 'MT' }
@@ -761,8 +761,8 @@ export const POSTS_5: BlogPost[] = [
       {
         type: 'list',
         items: [
-          "Montego Bay airport to Negril, $111 private with [MAPL Tours Jamaica](/transfers) or $199 round trip, $25 shared shuttle, 90 minutes",
-          "Montego Bay airport to Ocho Rios, $111 private or $199 round trip, $25 shared, 90 minutes",
+          `Montego Bay airport to Negril, from ${blogRideFrom('Negril', 'one_way')} private with [MAPL Tours Jamaica](/transfers) or ${blogRideFrom('Negril', 'round_trip')} round trip, US$25 shared shuttle, 90 minutes`,
+          `Montego Bay airport to Ocho Rios, from ${blogRideFrom('Ocho Rios', 'one_way')} private or ${blogRideFrom('Ocho Rios', 'round_trip')} round trip, US$25 shared, 90 minutes`,
           "Ocho Rios to Kingston, $120 private, 2 hours",
           "Kingston to Port Antonio, $120 private, 2.5 hours",
           "Negril to Treasure Beach, $150 private, 2.5 hours",

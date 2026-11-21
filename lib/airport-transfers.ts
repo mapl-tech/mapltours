@@ -451,8 +451,15 @@ export function getZoneForDestination(id: string): ZoneInfo | undefined {
 /** MAPL's margin on top of the driver's cost. */
 export const TRANSFER_MARGIN = 0.10
 /**
- * Cost of paying the driver via Remitly from Canada, charged the way it is
- * actually incurred rather than as a flat percentage.
+ * The payout allowance in every ride price: what paying the driver via
+ * Remitly from Canada cost, charged the way it was incurred rather than as a
+ * flat percentage.
+ *
+ * Since Nov 19 2026 drivers are paid by Wise (about 0.30%, lib/payouts),
+ * which costs less. The allowance stays in the price on the owner's word
+ * (Nov 21 2026: take Stripe's 2% conversion out of the fares and keep the
+ * profit margin), so the difference is MAPL's. Lowering it to Wise's real
+ * cost is the owner's call (offered Nov 19 and Nov 20 2026).
  *
  * Measured live 2026-08-15: CAD 3.99 FLAT per send plus a ~2.05% FX spread on
  * CAD to JMD. The flat half is the part a percentage cannot model. A single
@@ -472,13 +479,21 @@ export const REMITLY_FLAT = 2.91
 export const REMITLY_FX = 0.0205
 /**
  * Card processing, built INTO the displayed price so the customer sees a
- * single all-in number and the margin survives intact. Stripe on this account:
- * 2.9% + 0.8% (international card) + 2% (USD settled to CAD) + C$0.30 fixed.
- * Verified to the cent against live charges. If the account ever settles in
- * USD, drop CARD_RATE to 0.037 and prices fall accordingly.
+ * single all-in number and the margin survives intact. Since Nov 18 2026 the
+ * Stripe account settles US-dollar charges in US dollars, so nothing is
+ * converted: 2.9% + 0.8% (international card) + a fixed fee taken as US$0.30,
+ * the same as tours (lib/experiences.ts), until a charge settled in US
+ * dollars shows Stripe's real fixed fee.
+ *
+ * Until Nov 21 2026 this was 5.7% + US$0.22: the same 3.7%, Stripe's 2%
+ * conversion to Canadian dollars and C$0.30, verified to the cent against
+ * live charges (the last one, Nov 17: C$10.83 processing and C$5.69
+ * conversion on a US$199 ride). Owner, Nov 21 2026: remove the 2% conversion
+ * from ride prices and keep the profit margin. Nothing else in the formula
+ * moved, so MAPL keeps its 10% and the payout allowance on every ride.
  */
-export const CARD_RATE = 0.057
-export const CARD_FIXED = 0.22
+export const CARD_RATE = 0.037
+export const CARD_FIXED = 0.30
 
 /**
  * What the driver is paid for the whole trip: one direction, or both for a
@@ -532,12 +547,12 @@ export function driverCost(
 
 /**
  * The all-in price the customer pays: driver cost, plus MAPL's margin, plus
- * the real payout cost, all grossed up so card processing does not eat the
+ * the payout allowance, all grossed up so card processing does not eat the
  * margin. Rounded UP to the dollar so a booking can never come in under cost.
  *
  * `sends` is why this is not a single percentage: a round trip is paid to the
- * driver in two halves, so the flat Remitly fee is incurred twice regardless
- * of how small the fare is.
+ * driver in two halves, so the allowance carries Remitly's flat fee twice
+ * regardless of how small the fare is.
  */
 export function getTransferPrice(
   destinationId: string,
@@ -574,6 +589,15 @@ export function zoneFromPrice(
   const prices = DESTINATIONS.filter((d) => d.zone === zone)
     .map((d) => getTransferPrice(d.id, tripType))
     .filter((p): p is number => p !== null)
+  return prices.length ? Math.min(...prices) : 0
+}
+
+/** The cheapest fare on the whole rate card, for "from $X" lines that name no
+ *  place (the home hero, the /transfers description, the blog). Read from the
+ *  card so it can never be typed and left behind ($22 was, until Nov 21 2026). */
+export function cheapestFare(tripType: TransferTripType): number {
+  const prices = DESTINATIONS.map((d) => getTransferPrice(d.id, tripType))
+    .filter((p): p is number => p !== null && p > 0)
   return prices.length ? Math.min(...prices) : 0
 }
 

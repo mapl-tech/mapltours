@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react'
 import Segmented from '@/components/admin/Segmented'
 import Arrow from '@/components/ui/Arrow'
 import { money, OWNER_ZONE, plural, stamp } from '@/lib/admin-format'
+import type { FeeSource } from '@/lib/payout-fees'
 
 /**
  * The cash-flow dashboard's client half: what paid bookings brought in, what
@@ -37,10 +38,25 @@ export interface CashRow {
   cashCollected: number
   stripeFeeUsd: number | null
   supplierPayout: number
-  remitlyEstUsd: number
+  /** What sending the supplier's payouts cost (lib/payout-fees): Wise's fee, Wise's rate, or the Remitly estimate. */
+  payoutFeeUsd: number
+  payoutFeeSource: FeeSource | 'mixed' | null
   netUsd: number
-  settledCad: number | null
+  /** What Stripe paid out after its fees, in the currency it paid it in: CAD until Nov 18 2026, USD since. */
+  settled: number | null
+  settledCurrency: 'cad' | 'usd' | null
 }
+
+/** How a payout fee was arrived at, printed under the amount. */
+export const FEE_SOURCE_LABEL: Record<FeeSource | 'mixed', string> = {
+  wise: 'Wise',
+  wise_est: 'Wise, est.',
+  remitly_est: 'Remitly, est.',
+  mixed: 'Remitly and Wise',
+}
+
+/** "C$284.47", "US$191.34": a settlement in its own currency. */
+export const settledMoney = (n: number, currency: 'cad' | 'usd') => `${currency === 'cad' ? 'C' : 'US'}${money(n)}`
 
 export type Period = 'all' | 'this' | 'last' | '90'
 const PERIODS: { key: Period; label: string }[] = [
@@ -107,16 +123,21 @@ export function summarize(rows: CashRow[]) {
   const collected = sum(rows.map((r) => r.gross))
   const stripeFees = sum(rows.map((r) => r.stripeFeeUsd ?? 0))
   const supplierPayouts = sum(rows.map((r) => r.supplierPayout))
-  const remitlyEst = sum(rows.map((r) => r.remitlyEstUsd))
+  const payoutFees = sum(rows.map((r) => r.payoutFeeUsd))
+  const settledIn = (c: 'cad' | 'usd') => {
+    const mine = rows.filter((r) => r.settled != null && r.settledCurrency === c)
+    return mine.length ? sum(mine.map((r) => r.settled!)) : null
+  }
   return {
     count: rows.length,
     collected,
     giftFunded: sum(rows.map((r) => r.giftFunded)),
     stripeFees,
     supplierPayouts,
-    remitlyEst,
-    netKept: r2(collected - stripeFees - supplierPayouts - remitlyEst),
-    settledCad: rows.some((r) => r.settledCad != null) ? sum(rows.map((r) => r.settledCad ?? 0)) : null,
+    payoutFees,
+    netKept: r2(collected - stripeFees - supplierPayouts - payoutFees),
+    settledCad: settledIn('cad'),
+    settledUsd: settledIn('usd'),
   }
 }
 
@@ -218,7 +239,14 @@ function MonthChart({ months }: { months: { month: string; collected: number }[]
   )
 }
 
-export default function CashflowView({ rows }: { rows: CashRow[] }) {
+/** "C$284.47 and US$191.34": every currency Stripe paid these bookings out in, or null when none was found. */
+function settledList(t: { settledCad: number | null; settledUsd: number | null }): string | null {
+  const parts = [t.settledCad != null ? settledMoney(t.settledCad, 'cad') : null, t.settledUsd != null ? settledMoney(t.settledUsd, 'usd') : null]
+    .filter((x): x is string => !!x)
+  return parts.length ? parts.join(' and ') : null
+}
+
+export default function CashflowView({ rows, notice = null }: { rows: CashRow[]; notice?: string | null }) {
   const [period, setPeriod] = useState<Period>('all')
   const [limit, setLimit] = useState(PAGE)
   const nowMs = useMemo(() => Date.now(), [])
@@ -233,15 +261,17 @@ export default function CashflowView({ rows }: { rows: CashRow[] }) {
     { key: 'net', label: 'Net kept', value: t.netKept },
     { key: 'payout', label: 'Supplier payouts', value: t.supplierPayouts },
     { key: 'fee', label: 'Stripe fees', value: t.stripeFees },
-    { key: 'remit', label: 'Remitly (est.)', value: t.remitlyEst },
+    { key: 'remit', label: 'Payout fees', value: t.payoutFees },
   ]
   const drawn = parts.filter((p) => p.value > 0)
   const periodName = PERIODS.find((p) => p.key === period)!.label.toLowerCase()
+  const settled = settledList(t)
 
   return (
     <div className="adm">
       <h1 className="adm-h1">Cash flow</h1>
       <p className="adm-lead">What paid bookings brought in, what they cost, and what MAPL Tours Jamaica kept. Read-only.</p>
+      {notice && <p className="adm-note">{notice}</p>}
 
       <div className="adm-cf-filter">
         <Segmented label="Period" value={period} onChange={(p) => { setPeriod(p); setLimit(PAGE) }} options={PERIODS} grid />
@@ -261,16 +291,16 @@ export default function CashflowView({ rows }: { rows: CashRow[] }) {
         <p className="adm-cf-hero-sub">
           {t.count === 0
             ? 'No paid bookings in this period.'
-            : <>After Stripe fees, supplier payouts and Remitly, from {money(t.collected)} collected on {plural(t.count, 'paid booking')}.{t.settledCad != null ? <> Stripe settled C{money(t.settledCad)} after its fees.</> : null}</>}
+            : <>After Stripe fees, supplier payouts and payout fees, from {money(t.collected)} collected on {plural(t.count, 'paid booking')}.{settled ? <> Stripe settled {settled} after its fees.</> : null}</>}
         </p>
         {loss && <p className="adm-note adm-note--bad">Costs ran {money(-t.netKept)} past what was collected in this period.</p>}
       </section>
 
       <dl className="adm-tiles">
         <div className="adm-tile"><dt className="adm-kicker">Collected</dt><dd className="adm-tile-v">{money(t.collected)}</dd><dd className="adm-tile-sub">{t.giftFunded > 0 ? `incl. ${money(t.giftFunded)} by gift card` : 'what guests paid'}</dd></div>
-        <div className="adm-tile"><dt className="adm-kicker"><span className="adm-cf-sw adm-cf-sw--fee" aria-hidden="true" />Stripe fees</dt><dd className="adm-tile-v">{money(t.stripeFees)}</dd><dd className="adm-tile-sub">processing and conversion</dd></div>
+        <div className="adm-tile"><dt className="adm-kicker"><span className="adm-cf-sw adm-cf-sw--fee" aria-hidden="true" />Stripe fees</dt><dd className="adm-tile-v">{money(t.stripeFees)}</dd><dd className="adm-tile-sub">processing, and conversion until Nov 18</dd></div>
         <div className="adm-tile"><dt className="adm-kicker"><span className="adm-cf-sw adm-cf-sw--payout" aria-hidden="true" />Supplier payouts</dt><dd className="adm-tile-v">{money(t.supplierPayouts)}</dd><dd className="adm-tile-sub">drivers and tour operators</dd></div>
-        <div className="adm-tile"><dt className="adm-kicker"><span className="adm-cf-sw adm-cf-sw--remit" aria-hidden="true" />Remitly (est.)</dt><dd className="adm-tile-v">{money(t.remitlyEst)}</dd><dd className="adm-tile-sub">sending the payouts</dd></div>
+        <div className="adm-tile"><dt className="adm-kicker"><span className="adm-cf-sw adm-cf-sw--remit" aria-hidden="true" />Payout fees</dt><dd className="adm-tile-v">{money(t.payoutFees)}</dd><dd className="adm-tile-sub">sending the payouts, by Wise or Remitly</dd></div>
       </dl>
 
       {t.collected > 0 && (
@@ -323,9 +353,9 @@ export default function CashflowView({ rows }: { rows: CashRow[] }) {
                     <th scope="col" className="adm-num">Gross</th>
                     <th scope="col" className="adm-num"><span className="adm-cf-sw adm-cf-sw--fee" aria-hidden="true" />Stripe fees</th>
                     <th scope="col" className="adm-num"><span className="adm-cf-sw adm-cf-sw--payout" aria-hidden="true" />Supplier</th>
-                    <th scope="col" className="adm-num"><span className="adm-cf-sw adm-cf-sw--remit" aria-hidden="true" />Remitly (est.)</th>
+                    <th scope="col" className="adm-num"><span className="adm-cf-sw adm-cf-sw--remit" aria-hidden="true" />Payout fees</th>
                     <th scope="col" className="adm-num"><span className="adm-cf-sw adm-cf-sw--net" aria-hidden="true" />Net kept</th>
-                    <th scope="col" className="adm-num">Settled (CAD)</th>
+                    <th scope="col" className="adm-num">Settled</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -339,9 +369,11 @@ export default function CashflowView({ rows }: { rows: CashRow[] }) {
                       <td className="adm-num">{money(r.gross)}{r.giftFunded > 0 && <span className="adm-cf-ref">incl. {money(r.giftFunded)} gift card</span>}</td>
                       <td className="adm-num">{r.stripeFeeUsd != null ? money(-r.stripeFeeUsd) : <span className="adm-quiet">not found</span>}</td>
                       <td className="adm-num">{r.supplierPayout > 0 ? money(-r.supplierPayout) : <span className="adm-quiet">none</span>}</td>
-                      <td className="adm-num">{r.remitlyEstUsd > 0 ? money(-r.remitlyEstUsd) : <span className="adm-quiet">none</span>}</td>
+                      <td className="adm-num">{r.payoutFeeUsd > 0
+                        ? <>{money(-r.payoutFeeUsd)}{r.payoutFeeSource && <span className="adm-cf-ref">{FEE_SOURCE_LABEL[r.payoutFeeSource]}</span>}</>
+                        : <span className="adm-quiet">none</span>}</td>
                       <td className={r.netUsd < 0 ? 'adm-num adm-cf-net adm-cf-net--loss' : 'adm-num adm-cf-net'}>{money(r.netUsd)}</td>
-                      <td className="adm-num">{r.settledCad != null ? `C${money(r.settledCad)}` : <span className="adm-quiet">not found</span>}</td>
+                      <td className="adm-num">{r.settled != null && r.settledCurrency ? settledMoney(r.settled, r.settledCurrency) : <span className="adm-quiet">not found</span>}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -352,9 +384,9 @@ export default function CashflowView({ rows }: { rows: CashRow[] }) {
                     <td className="adm-num">{money(t.collected)}</td>
                     <td className="adm-num">{money(-t.stripeFees)}</td>
                     <td className="adm-num">{money(-t.supplierPayouts)}</td>
-                    <td className="adm-num">{money(-t.remitlyEst)}</td>
+                    <td className="adm-num">{money(-t.payoutFees)}</td>
                     <td className={loss ? 'adm-num adm-cf-net adm-cf-net--loss' : 'adm-num adm-cf-net'}>{money(t.netKept)}</td>
-                    <td className="adm-num">{t.settledCad != null ? `C${money(t.settledCad)}` : ''}</td>
+                    <td className="adm-num">{settled ?? ''}</td>
                   </tr>
                 </tfoot>
               </table>

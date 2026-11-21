@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import TransfersView from '@/components/transfers/TransfersView'
-import { ZONES, DESTINATIONS, getTransferPrice, zoneFromPrice, reopensAhead } from '@/lib/airport-transfers'
+import { ZONES, DESTINATIONS, getTransferPrice, zoneFromPrice, reopensAhead, cheapestFare } from '@/lib/airport-transfers'
 import { TRANSFER_FAQS } from '@/lib/airport-transfers-content'
 import { HERO } from '@/lib/images'
 
@@ -10,7 +10,7 @@ const PAGE_URL = `${SITE_URL}/transfers`
 export const metadata: Metadata = {
   title: 'Jamaica Airport Transfers from MBJ',
   description:
-    'Private transfers from Sangster (MBJ) to Negril, Ocho Rios, Falmouth and every resort. Flat rates from $22 per vehicle, meet-and-greet, flight tracking.',
+    `Private transfers from Sangster (MBJ) to Negril, Ocho Rios, Falmouth and every resort. Flat rates from $${cheapestFare('one_way')} per vehicle, meet-and-greet, flight tracking.`,
   keywords: [
     'Jamaica airport transfer',
     'Montego Bay airport transfer',

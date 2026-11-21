@@ -1,6 +1,6 @@
 import type { BlogPost, BlogAuthor } from './blog'
 import { BLOG_IMAGES } from './blog-images'
-import { blogFrom, blogNotPerHead } from './blog-prices'
+import { blogFrom, blogNotPerHead, blogRideFrom } from './blog-prices'
 
 // One real byline; the named writers these used to be were invented.
 const mapl: BlogAuthor = { name: 'MAPL Tours Jamaica', role: 'Editorial', initials: 'MT' }
@@ -236,7 +236,7 @@ export const POSTS_1: BlogPost[] = [
       { type: 'h2', text: "Private driver, the pick" },
       {
         type: 'p',
-        text: "For one to four people, a pre-booked private transfer is the clear winner. It takes 90 to 110 minutes, the driver meets you inside arrivals with a name board, and the car is yours: no haggling and no shared shuttle loop. [Our fare to Ocho Rios](/transfers) is $111 one-way or $199 round trip, flat per vehicle for up to four people, which is less than the $120 to $160 the airport desks quote. Book 24 hours ahead minimum.",
+        text: `For one to four people, a pre-booked private transfer is the clear winner. It takes 90 to 110 minutes, the driver meets you inside arrivals with a name board, and the car is yours: no haggling and no shared shuttle loop. [Our fare to Ocho Rios](/transfers) is from ${blogRideFrom('Ocho Rios', 'one_way')} one-way or ${blogRideFrom('Ocho Rios', 'round_trip')} round trip, flat per vehicle for up to four people, which is less than the US$120 to US$160 the airport desks quote. Book 24 hours ahead minimum.`,
       },
       {
         type: 'p',

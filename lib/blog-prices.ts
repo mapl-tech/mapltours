@@ -7,6 +7,7 @@
  */
 import { experiences, isZonePriced, tourPrice, zoneSells, type TourPricing } from './experiences'
 import type { TourZone } from './tour-zones'
+import { areaFromPrice, cheapestFare, zonePriceRange, type TransferTripType, type TransferZone } from './airport-transfers'
 
 const tour = (id: number) => {
   const e = experiences.find((x) => x.id === id)
@@ -108,4 +109,35 @@ export function blogNotPerHead(id: number): string {
 export function blogFrom(id: number): string {
   const e = tour(id)
   return `${isZonePriced(e.pricing) ? 'from ' : ''}$${tourPrice(e.pricing, 1)} ${blogUnit(id)}`
+}
+
+/*
+ * Ride fares as the posts quote them, read from the rate card with the same
+ * function checkout charges with. On Nov 21 2026 five posts still typed $22,
+ * $99, $111 and $199 the day Stripe's 2% conversion came out of the fares.
+ * A ride fare is one price for the vehicle for up to four people, so these
+ * read the fare for one to four. Ride rates live in code, not at the prices
+ * desk, so a hotel name that stops matching is a code change, and it fails
+ * the build here rather than print "$0".
+ */
+
+/** "$109": the cheapest fare to a hotel whose name carries the area ("Negril", "Ocho Rios"). */
+export function blogRideFrom(area: string, trip: TransferTripType): string {
+  const n = areaFromPrice(area, trip)
+  if (!(n > 0)) throw new Error(`A blog post quotes a ride to ${area}, and no hotel on the rate card is named for it`)
+  return `$${n}`
+}
+
+/** "$21 to $50": the fares to one zone's hotels, or "$74" when every hotel in it costs the same. */
+export function blogRideRange(zone: TransferZone, trip: TransferTripType): string {
+  const r = zonePriceRange(zone, trip)
+  if (!(r.min > 0)) throw new Error(`A blog post quotes rides to zone ${zone}, which has no hotels`)
+  return r.min === r.max ? `$${r.min}` : `$${r.min} to $${r.max}`
+}
+
+/** "$21": the cheapest fare on the whole rate card, for "from $21 one way". */
+export function blogRideCheapest(trip: TransferTripType): string {
+  const n = cheapestFare(trip)
+  if (!(n > 0)) throw new Error('A blog post quotes the cheapest ride, and the rate card is empty')
+  return `$${n}`
 }

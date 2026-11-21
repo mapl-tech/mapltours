@@ -46,10 +46,12 @@ describe('advertised "from" prices', () => {
     // Moved 2026-08-19 when the Remitly cost stopped being modelled as a flat
     // 5% and became what it is: CAD 3.99 per send plus FX, charged twice on a
     // round trip. Seven of the cheapest points had been selling below fully
-    // loaded cost.
+    // loaded cost. Moved again 2026-11-21, when Stripe's 2% conversion came
+    // out of the card fee (Negril and Ocho Rios $111 to $109; Rose Hall stays
+    // $39 by rounding).
     expect(areaFromPrice('Rose Hall', 'one_way')).toBe(39)
-    expect(areaFromPrice('Negril', 'one_way')).toBe(111)
-    expect(areaFromPrice('Ocho Rios', 'one_way')).toBe(111)
+    expect(areaFromPrice('Negril', 'one_way')).toBe(109)
+    expect(areaFromPrice('Ocho Rios', 'one_way')).toBe(109)
   })
 
   test('round-trip is dearer than one-way for every area', () => {
@@ -114,9 +116,10 @@ describe('Negril West End additions', () => {
     // $199 since the payout cost stopped being modelled as a flat 5% on
     // 2026-08-19. The enquirer was quoted the older figure, so honour $198 by
     // hand if they book; a dollar is not worth special-casing the rate table
-    // for, but it is worth someone knowing about.
-    expect(getTransferPrice('samsara-cliff-negril', 'round_trip')).toBe(199)
-    expect(getTransferPrice('samsara-cliff-negril', 'one_way')).toBe(111)
+    // for, but it is worth someone knowing about. $195 and $109 since
+    // 2026-11-21 (Stripe's 2% conversion out of the card fee), below both.
+    expect(getTransferPrice('samsara-cliff-negril', 'round_trip')).toBe(195)
+    expect(getTransferPrice('samsara-cliff-negril', 'one_way')).toBe(109)
   })
 
   test('a round trip still beats two one-ways', () => {
@@ -169,11 +172,14 @@ describe('no transfer sells below fully loaded cost', () => {
   // The payout fee is FLAT per send, and a round trip is two sends. Modelled
   // as a flat percentage it under-covered exactly the fares least able to
   // absorb it: a Deja Resort round trip took $34 against $34.53 of driver
-  // payout, Remitly and card fees. Measured 2026-08-15.
+  // payout, Remitly and card fees. Measured 2026-08-15. Drivers are paid by
+  // Wise since Nov 19 2026, which costs less, so this is the dearest way a
+  // ride could still be paid; the card fees are a US-dollar charge's since
+  // Nov 21 2026 (no 2% conversion).
   const REMITLY_FLAT = 2.91
   const REMITLY_FX = 0.0205
-  const CARD_RATE = 0.057
-  const CARD_FIXED = 0.22
+  const CARD_RATE = 0.037
+  const CARD_FIXED = 0.30
 
   test('every destination, both directions, nets a positive margin', () => {
     for (const d of DESTINATIONS) {
