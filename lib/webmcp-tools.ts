@@ -132,7 +132,8 @@ export interface TourCartLike {
  *
  * addItem() is silent by design: it evicts the other kind (a day is one
  * package or self-built single tours), evicts packages that overlap, and
- * refuses a tour too far from the day's others to drive between. An agent
+ * refuses a tour too far from the day's others to drive between, or one the
+ * day has no room for (eight hours, the drives between tours included). An agent
  * that is not told about those reports a checkout that does not contain what
  * the traveller asked for. The date and party size go on EVERY line because
  * checkout treats the cart as one day with one party and applies the first
@@ -155,7 +156,7 @@ export function addTourToCart(
     const kept = s.items.filter((i) => !evictedIds.has(i.id))
     const fit = fitTourToDay(exp, { items: kept, stops: s.stops })
     if (!fit.allowed) {
-      return { added: false, reason: fit.reason ?? `${exp.title} is too far from the tours already in the cart to fit the same day.` }
+      return { added: false, reason: fit.reason ?? `${exp.title} does not fit in the same day as the tours already in the cart.` }
     }
     s.addItem(exp)
     if (!getState().isInCart(exp.id)) return { added: false, reason: `${exp.title} could not be added to the day already in the cart.` }

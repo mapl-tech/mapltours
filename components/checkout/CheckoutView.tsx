@@ -9,6 +9,7 @@ import Image from 'next/image'
 import { ArrowLeft, Check, MapPin, Users, Calendar, Clock, Leaf, Lock, ShieldCheck, CalendarDays, ChevronDown } from 'lucide-react'
 import { earliestBookableExperienceDate } from '@/lib/booking-window'
 import { useCartStore, DAILY_HOUR_LIMIT, type CartItem } from '@/lib/cart'
+import { formatDayTime } from '@/lib/day-hours'
 import { tourPrice, perTravelerPrice, maxGroupSize, placeLabel } from '@/lib/experiences'
 import { getStoredAttribution } from '@/lib/attribution'
 import { trackBeginCheckout } from '@/lib/analytics'
@@ -1697,7 +1698,7 @@ function DailyLimitModal({ hoursByDate, onClose }: {
                     fontFamily: 'var(--font-dm-sans)', fontWeight: 700,
                     color: 'var(--coral, #FF5A36)',
                   }}>
-                    {hrs} / {DAILY_HOUR_LIMIT} hrs
+                    {formatDayTime(hrs * 60)} / {DAILY_HOUR_LIMIT} hrs
                   </span>
                 </div>
               )

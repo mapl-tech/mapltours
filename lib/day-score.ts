@@ -1,5 +1,6 @@
-import type { CartItem } from './cart'
-import { DAILY_HOUR_LIMIT, parseDurationHours } from './cart'
+import type { CartItem, FoodStop } from './cart'
+import { DAILY_HOUR_LIMIT, DAY_LIMIT_MIN, formatDayTime } from './day-hours'
+import { dayTime, daysOf, type DayTime } from './day-route'
 
 export type DayStage = 'empty' | 'starting' | 'flowing' | 'perfect' | 'over'
 
@@ -8,8 +9,10 @@ export interface DayScoreBreakdown {
   total: number
   stage: DayStage
   stageLabel: string
-  /** Busiest day's hours, the one we evaluate. */
+  /** Busiest day's hours (tours, food stops and the drives between), the one we evaluate. */
   hours: number
+  /** The same day in whole minutes, part by part (lib/day-route dayTime). */
+  time: DayTime
   /** ISO date of the day being evaluated, or null if cart is empty. */
   date: string | null
   variety:    { score: number; max: number; distinctCategories: number }
@@ -17,9 +20,9 @@ export interface DayScoreBreakdown {
   efficiency: { score: number; max: number; distinctDestinations: number }
   /** Encouraging, action-oriented hint shown under the bar. */
   nudge: string
-  /** True when the user is capped out at exactly 8hrs on a day. */
+  /** True when the day is full and well mixed: past 6 hours, within 8, scoring 95+. */
   isPerfect: boolean
-  /** True when the user is over 8hrs on any day. */
+  /** True when the busiest day runs past 8 hours, driving included. */
   isOver: boolean
 }
 
@@ -34,22 +37,25 @@ const VARIETY_MAX = 35
 const BALANCE_MAX = 40
 const EFFICIENCY_MAX = 25
 
+const NO_TIME: DayTime = { tours: 0, stops: 0, driving: 0, total: 0 }
+
 /**
  * Returns the "Day Builder" score for the busiest day in the cart plus a
  * human-readable stage label and upsell nudge. Pure function, no hooks,
  * so it can be called from selectors, components, and tests.
+ *
+ * The day is measured exactly as the cart's isDayOverLimit() gate measures it
+ * (lib/day-route dayTime: tours, free food stops and the driving between
+ * them), so the bar can never read 7 of 8 while checkout blocks the day.
  */
-export function computeDayScore(items: CartItem[], stopHours = 0): DayScoreBreakdown {
-  // `stopHours` is time the guest spends at free food stops. It is not sold by
-  // MAPL and never priced, but it fills the same day, so the bar here must
-  // agree with the cart's isDayOverLimit() gate — a bar reading 4/8 while
-  // checkout blocks at 6 is worse than no bar.
+export function computeDayScore(items: CartItem[], stops: FoodStop[] = []): DayScoreBreakdown {
   if (items.length === 0) {
     return {
       total: 0,
       stage: 'empty',
       stageLabel: 'Start building',
       hours: 0,
+      time: NO_TIME,
       date: null,
       variety: { score: 0, max: VARIETY_MAX, distinctCategories: 0 },
       balance: { score: 0, max: BALANCE_MAX },
@@ -60,26 +66,24 @@ export function computeDayScore(items: CartItem[], stopHours = 0): DayScoreBreak
     }
   }
 
-  // Group hours by date, find the busiest day, that's the one we score.
-  const byDate: Record<string, CartItem[]> = {}
-  for (const it of items) {
-    const key = it.date || 'unset'
-    ;(byDate[key] ||= []).push(it)
-  }
-  const [topDate, topItems] = Object.entries(byDate).reduce<[string, CartItem[]]>(
-    (best, curr) => {
-      const [, bestItems] = best
-      const bestHrs = bestItems.reduce((s, i) => s + parseDurationHours(i.duration), 0)
-      const currHrs = curr[1].reduce((s, i) => s + parseDurationHours(i.duration), 0)
-      return currHrs > bestHrs ? curr : best
-    },
-    [Object.keys(byDate)[0], byDate[Object.keys(byDate)[0]]]
-  )
+  // Each date with its tours and stops; the busiest day is the one we score.
+  let topDate = ''
+  let topItems: CartItem[] = []
+  let time = NO_TIME
+  daysOf(items, stops).forEach((day, date) => {
+    if (day.items.length === 0) return
+    const t = dayTime(day.items, day.stops)
+    if (!topItems.length || t.total > time.total) {
+      topDate = date
+      topItems = day.items
+      time = t
+    }
+  })
 
-  const hours = topItems.reduce((s, i) => s + parseDurationHours(i.duration), 0) + stopHours
+  const hours = time.total / 60
   const categories = new Set(topItems.map((i) => i.category))
   const destinations = new Set(topItems.map((i) => i.destination))
-  const isOver = hours > DAILY_HOUR_LIMIT
+  const isOver = time.total > DAY_LIMIT_MIN
 
   // ── Balance: peaks at 7–8 hrs, decays past 8 ─────────────────────────────
   let balance = 0
@@ -115,7 +119,7 @@ export function computeDayScore(items: CartItem[], stopHours = 0): DayScoreBreak
   const nudge = buildNudge({
     hours,
     isOver,
-    over: Math.max(0, hours - DAILY_HOUR_LIMIT),
+    over: Math.max(0, time.total - DAY_LIMIT_MIN) / 60,
     total,
     distinctCategories: categories.size,
     distinctDestinations: destinations.size,
@@ -127,6 +131,7 @@ export function computeDayScore(items: CartItem[], stopHours = 0): DayScoreBreak
     stage,
     stageLabel,
     hours,
+    time,
     date: topDate === 'unset' ? null : topDate,
     variety:    { score: variety, max: VARIETY_MAX, distinctCategories: categories.size },
     balance:    { score: balance, max: BALANCE_MAX },
@@ -156,10 +161,9 @@ function buildNudge({
   soleKind?: 'package' | 'tour' | null
 }): string {
   if (hours === 0) return 'Pick a tour to start your perfect day'
-  if (isOver) {
-    const hrStr = over === 1 ? 'hour' : 'hours'
-    return `Remove ${fmtHours(over)} ${hrStr} to get back on track`
-  }
+  // `over` and `remaining` are hours of a day counted in whole minutes, so
+  // they print as minutes: a day 35 minutes over says so, not "0.5 hours".
+  if (isOver) return `${formatDayTime(over * 60)} past ${DAILY_HOUR_LIMIT} hours: remove a tour or a food stop`
 
   const remaining = DAILY_HOUR_LIMIT - hours
 
@@ -172,30 +176,29 @@ function buildNudge({
     if (total >= 95) return 'You’ve built a perfect day ✨'
     if (distinctCategories < 3) return 'Your day is full, swap a tour for a different category to mix it up'
     if (distinctDestinations >= 4) return 'Your day is full, tours closer together would cut the driving'
-    return 'Your day is full: eight hours of tours'
+    return 'Your day is full: tours and the drives between them'
   }
 
   if (total >= 95) return 'You’ve built a perfect day ✨'
+
+  // From here on there is room for another tour, and how much room is what
+  // decides which tour can still go in (the 8-hour gate counts the drive to
+  // it), so every nudge starts with it.
+  const left = formatDayTime(remaining * 60)
 
   if (hours < 3.5) {
     // An invitation, not a verdict: a one-tour day is a fine thing to book,
     // and the old "Add 7 more to hit a great flow" (no unit) read as if it
     // were not good enough yet.
-    const unit = Math.round(remaining * 2) / 2 === 1 ? 'hour' : 'hours'
-    return `Room for ${fmtHours(remaining)} more ${unit} of tours in your day, or book it as it is`
+    return `Room for ${formatDayTime(remaining * 60)} more in your day, drives included, or book it as it is`
   }
   if (hours < 6) {
     // Usually variety is the limiting factor at 4–5 hrs with 1–2 tours
-    if (distinctCategories < 3) return 'Mix in a different category for more variety'
-    return `One more tour and you’ve got a perfect day`
+    if (distinctCategories < 3) return `${left} left: mix in a different category for more variety`
+    return `${left} left: one more tour and you’ve got a perfect day`
   }
   // 6–6.99 hrs, almost there
-  if (distinctCategories < 3) return 'One more tour in a fresh category completes your day'
-  if (distinctDestinations >= 4) return 'Consolidating nearby tours will boost your score'
-  return 'Add a short tour to complete your perfect day'
-}
-
-function fmtHours(h: number): string {
-  const rounded = Math.round(h * 2) / 2
-  return Number.isInteger(rounded) ? rounded.toString() : rounded.toFixed(1)
+  if (distinctCategories < 3) return `${left} left: one more tour in a fresh category completes your day`
+  if (distinctDestinations >= 4) return `${left} left: tours closer together would cut the driving`
+  return `${left} left: add a short tour to complete your perfect day`
 }

@@ -1,6 +1,8 @@
 'use client'
 
-import { DAILY_HOUR_LIMIT, parseDurationHours, stopHoursFor, useCartStore } from '@/lib/cart'
+import { DAILY_HOUR_LIMIT, useCartStore } from '@/lib/cart'
+import { formatDayTime } from '@/lib/day-hours'
+import { dayParts, type DayTime } from '@/lib/day-route'
 import { computeDayScore, type DayStage } from '@/lib/day-score'
 
 interface DayBuilderProps {
@@ -14,7 +16,10 @@ interface DayBuilderProps {
 /**
  * "Build Your Perfect Day", the evolution of the old 8-hour bar. Shows:
  *  • A stage label (Relaxed day → Great Flow → Perfect Day)
- *  • A gold→emerald→coral progress bar tracking hours / 8
+ *  • A gold→emerald→coral progress bar tracking the day / 8 hours, where the
+ *    day is the tours, the free food stops and the drives between them
+ *    (lib/day-route dayTime), exactly what the checkout gate counts
+ *  • What that time is made of, once it is more than the tours alone
  *  • An encouraging action-oriented nudge
  *
  * The 0-100 score and its variety/balance/efficiency bars were removed as
@@ -23,12 +28,20 @@ interface DayBuilderProps {
  * Exported as the default export so existing imports (e.g. `TripTimeBar`) keep
  * working, the filename stays `TripTimeBar.tsx` for non-breaking backwards compat.
  */
+/**
+ * Text for a day over its hours: the brick red DayFlow and the checkout
+ * dialog use (6.6:1 on the light page). The coral (#FF5A36) measured about
+ * 2.9:1 there and now only fills the bar.
+ */
+const OVER_TEXT = '#B3261E'
+
 export default function DayBuilder({ compact = false, hideHeading, style }: DayBuilderProps) {
   const items = useCartStore((s) => s.items)
   const stops = useCartStore((s) => s.stops)
-  const score = computeDayScore(items, stopHoursFor(items, stops.length))
+  const dayTimesByDate = useCartStore((s) => s.dayTimesByDate)
+  const score = computeDayScore(items, stops)
 
-  const { hours, stage, stageLabel, nudge, isOver, isPerfect } = score
+  const { hours, time, stage, stageLabel, nudge, isOver, isPerfect } = score
   const pct = Math.min(100, (hours / DAILY_HOUR_LIMIT) * 100)
   const over = Math.max(0, hours - DAILY_HOUR_LIMIT)
   const overflowPct = isOver ? Math.min(40, (over / DAILY_HOUR_LIMIT) * 100) : 0
@@ -36,7 +49,7 @@ export default function DayBuilder({ compact = false, hideHeading, style }: DayB
 
   // Build a per-day breakdown so multi-day carts show every day explicitly
   // (no more "is this number the sum or the max?" ambiguity).
-  const dayBuckets = buildDayBuckets(items)
+  const dayBuckets = buildDayBuckets(dayTimesByDate())
 
   return (
     <div style={{ width: '100%', ...style }}>
@@ -66,7 +79,8 @@ export default function DayBuilder({ compact = false, hideHeading, style }: DayB
                 fontSize: 12, fontWeight: 700,
                 fontFamily: 'var(--font-dm-sans)',
                 letterSpacing: '0.06em', textTransform: 'uppercase',
-                color: 'var(--gold, #FFB300)',
+                // Text, so --gold-text (8.2:1); --gold is a surface colour (3.3:1).
+                color: 'var(--gold-text, #5A4A16)',
                 whiteSpace: 'nowrap',
               }}>
                 ✨ Perfect
@@ -77,14 +91,14 @@ export default function DayBuilder({ compact = false, hideHeading, style }: DayB
             fontFamily: 'var(--font-dm-sans)',
             fontWeight: 800,
             fontSize: compact ? 13 : 15,
-            color: isOver ? 'var(--coral, #FF5A36)' : 'var(--text-primary, white)',
+            color: isOver ? OVER_TEXT : 'var(--text-primary, white)',
             letterSpacing: '-0.01em',
             whiteSpace: 'nowrap',
           }}>
             {dayBuckets.length > 1
               ? `${dayBuckets.length} days`
               : <>
-                  {fmtHours(hours)}
+                  {fmtDay(time.total)}
                   <span style={{
                     fontFamily: 'var(--font-dm-sans)',
                     fontWeight: 500,
@@ -100,6 +114,21 @@ export default function DayBuilder({ compact = false, hideHeading, style }: DayB
         </div>
       )}
 
+      {/* Where the heading is hidden (checkout's "Add more to your day"
+          names the block), the day's length still leads: it is the answer
+          the guest opened the block for. */}
+      {hideHeading && dayBuckets.length <= 1 && (
+        <p style={{
+          margin: '0 0 8px',
+          fontFamily: 'var(--font-dm-sans)',
+          fontSize: 16, fontWeight: 800, lineHeight: 1.3, letterSpacing: '-0.01em',
+          color: isOver ? OVER_TEXT : 'var(--text-primary, white)',
+        }}>
+          {fmtDay(time.total)}
+          <span style={{ fontWeight: 500, color: 'var(--text-tertiary, rgba(255,255,255,0.55))' }}> of {DAILY_HOUR_LIMIT} hrs</span>
+        </p>
+      )}
+
       {/* ── Track(s) ──
           Multi-day carts render one bar per day so there is never any
           ambiguity about which hours are being measured. Single-day carts
@@ -110,7 +139,7 @@ export default function DayBuilder({ compact = false, hideHeading, style }: DayB
             <DayRow
               key={d.dateKey}
               label={d.label ?? `Day ${i + 1}`}
-              hours={d.hours}
+              time={d.time}
               compact={compact}
             />
           ))}
@@ -122,7 +151,8 @@ export default function DayBuilder({ compact = false, hideHeading, style }: DayB
             aria-valuenow={Math.round(hours * 10) / 10}
             aria-valuemin={0}
             aria-valuemax={DAILY_HOUR_LIMIT}
-            aria-label="Day completion"
+            aria-valuetext={`${fmtDay(time.total)} of ${DAILY_HOUR_LIMIT} hours, drives included`}
+            aria-label="Length of your day"
             style={{
               position: 'relative',
               width: '100%',
@@ -188,6 +218,22 @@ export default function DayBuilder({ compact = false, hideHeading, style }: DayB
         </>
       )}
 
+      {/* What the day is made of, once it is more than the tours alone:
+          the drive between tours is the part a guest cannot see from the
+          tour pages, so it is named, with the free food stops, beside the
+          time at the tours. Single-day carts only; a multi-day cart's rows
+          carry their own. */}
+      {dayBuckets.length <= 1 && (time.driving > 0 || time.stops > 0) && (
+        <p style={{
+          marginTop: compact ? 8 : 12,
+          fontFamily: 'var(--font-dm-sans)',
+          fontSize: 12, lineHeight: 1.45,
+          color: 'var(--text-tertiary, rgba(255,255,255,0.55))',
+        }}>
+          {dayParts(time)}
+        </p>
+      )}
+
       {/* Nudge */}
       <p style={{
         marginTop: compact ? 8 : 14,
@@ -196,9 +242,9 @@ export default function DayBuilder({ compact = false, hideHeading, style }: DayB
         fontSize: compact ? 12 : 13,
         lineHeight: 1.45,
         color: isOver
-          ? 'var(--coral, #FF5A36)'
+          ? OVER_TEXT
           : isPerfect
-            ? 'var(--gold, #FFB300)'
+            ? 'var(--gold-text, #5A4A16)'
             : 'var(--text-secondary, rgba(255,255,255,0.65))',
         letterSpacing: '-0.005em',
       }}>
@@ -229,12 +275,11 @@ function colorForStage(stage: DayStage): string {
 }
 
 
-function fmtHours(h: number): string {
-  if (h === 0) return '0 hrs'
-  const rounded = Math.round(h * 2) / 2
-  const str = Number.isInteger(rounded) ? rounded.toString() : rounded.toFixed(1)
-  return `${str} ${rounded === 1 ? 'hr' : 'hrs'}`
+/** A day's length for the bar: "0 hrs" before anything is in it. */
+function fmtDay(minutes: number): string {
+  return minutes === 0 ? '0 hrs' : formatDayTime(minutes)
 }
+
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Multi-day rendering, groups cart items by date into ordered buckets.
@@ -244,20 +289,15 @@ function fmtHours(h: number): string {
 interface DayBucket {
   dateKey: string
   label: string | null
-  hours: number
+  time: DayTime
 }
 
-function buildDayBuckets(items: { date: string; duration: string }[]): DayBucket[] {
-  const map: Record<string, number> = {}
-  for (const it of items) {
-    const key = it.date || 'unset'
-    map[key] = (map[key] ?? 0) + parseDurationHours(it.duration)
-  }
-  return Object.entries(map)
+function buildDayBuckets(byDate: Record<string, DayTime>): DayBucket[] {
+  return Object.entries(byDate)
     .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
-    .map(([dateKey, hours]) => ({
+    .map(([dateKey, time]) => ({
       dateKey,
-      hours,
+      time,
       label: dateKey === 'unset'
         ? 'Unassigned'
         : new Date(dateKey + 'T12:00:00').toLocaleDateString('en-US', {
@@ -267,7 +307,8 @@ function buildDayBuckets(items: { date: string; duration: string }[]): DayBucket
 }
 
 /** Single-day progress row used inside the multi-day list. */
-function DayRow({ label, hours, compact }: { label: string; hours: number; compact: boolean }) {
+function DayRow({ label, time, compact }: { label: string; time: DayTime; compact: boolean }) {
+  const hours = time.total / 60
   const over = Math.max(0, hours - DAILY_HOUR_LIMIT)
   const isOver = over > 0
   const pct = Math.min(100, (hours / DAILY_HOUR_LIMIT) * 100)
@@ -296,10 +337,10 @@ function DayRow({ label, hours, compact }: { label: string; hours: number; compa
         <span style={{
           fontFamily: 'var(--font-dm-sans)', fontWeight: 700,
           fontSize: compact ? 12 : 13,
-          color: isOver ? 'var(--coral, #FF5A36)' : 'var(--text-primary, white)',
+          color: isOver ? OVER_TEXT : 'var(--text-primary, white)',
           whiteSpace: 'nowrap',
         }}>
-          {fmtHours(hours)}
+          {fmtDay(time.total)}
           <span style={{
             fontFamily: 'var(--font-dm-sans)',
             fontWeight: 500,
@@ -307,7 +348,7 @@ function DayRow({ label, hours, compact }: { label: string; hours: number; compa
             color: 'var(--text-tertiary, rgba(255,255,255,0.45))',
             marginLeft: 3,
           }}>
-            / {DAILY_HOUR_LIMIT}
+            / {DAILY_HOUR_LIMIT} hrs
           </span>
         </span>
       </div>
@@ -316,6 +357,7 @@ function DayRow({ label, hours, compact }: { label: string; hours: number; compa
         aria-valuenow={Math.round(hours * 10) / 10}
         aria-valuemin={0}
         aria-valuemax={DAILY_HOUR_LIMIT}
+        aria-valuetext={`${fmtDay(time.total)} of ${DAILY_HOUR_LIMIT} hours, drives included`}
         aria-label={label}
         style={{
           position: 'relative',

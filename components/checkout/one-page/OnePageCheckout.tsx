@@ -4,7 +4,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { ArrowLeft, Award, CalendarDays, Leaf, MapPin, Users } from 'lucide-react'
-import { useCartStore, DAILY_HOUR_LIMIT, parseDurationHours } from '@/lib/cart'
+import { useCartStore, DAILY_HOUR_LIMIT } from '@/lib/cart'
+import { DAY_LIMIT_MIN, formatDayTime } from '@/lib/day-hours'
 import { couponDiscountCents } from '@/lib/coupons'
 import { normalizeGiftCode } from '@/lib/gift-cards'
 import { priceTourCart } from '@/lib/checkout-pricing'
@@ -15,7 +16,7 @@ import { TOUR_ZONES, TOUR_ZONE_LABEL, isTourZone, type TourZone } from '@/lib/to
 import { earliestBookableExperienceDate } from '@/lib/booking-window'
 import { getStoredAttribution } from '@/lib/attribution'
 import { trackBeginCheckout, trackCheckoutStep, trackCheckoutMissing, type CheckoutStep } from '@/lib/analytics'
-import { planDay } from '@/lib/day-route'
+import { planDay, dayParts, dayTime, daysOf, type DayTime } from '@/lib/day-route'
 import { useAvailableReward } from '@/lib/tour-videos'
 import { useI18n } from '@/lib/i18n'
 import { useFocusTrap } from '@/lib/use-focus-trap'
@@ -96,7 +97,7 @@ const EMPTY_FORM: Form = { firstName: '', lastName: '', email: '', phone: '', sp
 
 export default function OnePageCheckout() {
   const hydrated = useHydrated(useCartStore)
-  const { items, stops, pickup, pickupArea, pickupZone, setPickup, setPickupArea, setPickupZone, setDropoff, updateDate, updateTravelers, removeItem, fee, isDayOverLimit, hoursByDate, pickupTime } = useCartStore()
+  const { items, stops, pickup, pickupArea, pickupZone, setPickup, setPickupArea, setPickupZone, setDropoff, updateDate, updateTravelers, removeItem, fee, isDayOverLimit, dayTimesByDate, pickupTime } = useCartStore()
   const { t, formatUsd } = useI18n()
 
   const [form, setForm] = useState<Form>(EMPTY_FORM)
@@ -811,14 +812,12 @@ export default function OnePageCheckout() {
       {legal === 'cancellation' && <LegalModal kind="terms" answer="cancellation" onClose={() => setLegal(null)} />}
       {limitOpen && (
         <DailyLimitModal
-          hoursByDate={hoursByDate()}
-          // The tours alone fit and only the free food stops tip the day over:
-          // say so, and show the stops, rather than ask for a tour to go.
-          stopsOnly={stops.length > 0 && Object.values(items.reduce<Record<string, number>>((m, i) => {
-            const k = i.date || 'unset'
-            m[k] = (m[k] ?? 0) + parseDurationHours(i.duration)
-            return m
-          }, {})).every((h) => h <= DAILY_HOUR_LIMIT)}
+          days={dayTimesByDate()}
+          // The tours and the drives between them fit, and only the free food
+          // stops tip the day over: say so, and show the stops, rather than
+          // ask for a tour to go.
+          stopsOnly={stops.length > 0 && Array.from(daysOf(items, []).values())
+            .every((day) => dayTime(day.items).total <= DAY_LIMIT_MIN)}
           onShowStops={() => {
             setLimitOpen(false)
             setDayOpen(true)
@@ -992,8 +991,8 @@ function OrderSummary(p: {
   )
 }
 
-function DailyLimitModal({ hoursByDate, stopsOnly = false, onShowStops, onClose }: { hoursByDate: Record<string, number>; stopsOnly?: boolean; onShowStops?: () => void; onClose: () => void }) {
-  const overDays = Object.entries(hoursByDate).filter(([, hrs]) => hrs > DAILY_HOUR_LIMIT).sort((a, b) => b[1] - a[1])
+function DailyLimitModal({ days, stopsOnly = false, onShowStops, onClose }: { days: Record<string, DayTime>; stopsOnly?: boolean; onShowStops?: () => void; onClose: () => void }) {
+  const overDays = Object.entries(days).filter(([, t]) => t.total > DAY_LIMIT_MIN).sort((a, b) => b[1].total - a[1].total)
   const panelRef = useRef<HTMLDivElement>(null)
   useFocusTrap(panelRef, onClose)
   return (
@@ -1004,15 +1003,18 @@ function DailyLimitModal({ hoursByDate, stopsOnly = false, onShowStops, onClose 
         <h3 style={{ fontFamily: FONT, fontWeight: 700, fontSize: 22, letterSpacing: '-0.02em', marginBottom: 8, lineHeight: 1.2 }}>{stopsOnly ? 'One food stop too many' : 'Let’s build two perfect days'}</h3>
         <p style={{ fontFamily: FONT, fontSize: 15, lineHeight: 1.55, color: 'var(--text-secondary)', marginBottom: 20 }}>
           {stopsOnly
-            ? `Your tours fit in the day, but the free food stops take it past ${DAILY_HOUR_LIMIT} hours. Remove a food stop to continue.`
-            : `A day tops out at ${DAILY_HOUR_LIMIT} hours so every experience lands with full energy, and one checkout books one day. Remove an experience to continue, then book the rest as a second day.`}
+            ? `Your tours and the drives between them fit in the day, but the free food stops take it past ${DAILY_HOUR_LIMIT} hours. Remove a food stop to continue.`
+            : `A day tops out at ${DAILY_HOUR_LIMIT} hours, drives between tours included, so every experience lands with full energy, and one checkout books one day. Remove an experience to continue, then book the rest as a second day.`}
         </p>
         {overDays.length > 0 && (
           <div style={{ padding: '14px 16px', borderRadius: 'var(--r-md)', background: 'var(--bg-warm)', border: '1px solid rgba(255,179,0,0.18)', marginBottom: 22 }}>
-            {overDays.map(([date, hrs]) => (
-              <div key={date} style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0', fontFamily: FONT, fontSize: 13 }}>
-                <span>{date === 'unset' ? 'Unassigned day' : formatDate(date)}</span>
-                <span style={{ fontWeight: 700, color: 'var(--coral, #FF5A36)' }}>{hrs} / {DAILY_HOUR_LIMIT} hrs</span>
+            {overDays.map(([date, t]) => (
+              <div key={date} style={{ padding: '4px 0', fontFamily: FONT, fontSize: 13 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12 }}>
+                  <span>{date === 'unset' ? 'Unassigned day' : formatDate(date)}</span>
+                  <span style={{ fontWeight: 700, color: '#B3261E', whiteSpace: 'nowrap' }}>{formatDayTime(t.total)} / {DAILY_HOUR_LIMIT} hrs</span>
+                </div>
+                <p style={{ margin: '2px 0 0', fontSize: 12, color: 'var(--text-tertiary)' }}>{dayParts(t)}</p>
               </div>
             ))}
           </div>

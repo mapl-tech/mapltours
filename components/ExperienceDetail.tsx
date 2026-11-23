@@ -288,8 +288,8 @@ function Reel({ exp, clip, isActive, near, ahead, advancesAtEnd, clipCount, mute
   // heading; off-screen reels keep <h2> so we never render multiple h1s.
   const TitleTag = isActive ? 'h1' : 'h2'
   const facts = reelFacts(exp.included)
-  // The phone line under "Book this instead" has one line of about 286px:
-  // how far this tour is from the day, and what booking it does.
+  // The phone line under "Book this instead": how far this tour is from the
+  // day, or that the day is full, and what booking it does.
   const shortReason = blocked ? swapReason(tourFit) : null
   // A tour's clips show its price row too, so the id carries the clip.
   const swapId = clip ? `swap-${slug}-${clip.video.id}` : `swap-${slug}`
@@ -1174,7 +1174,10 @@ function Reel({ exp, clip, isActive, near, ahead, advancesAtEnd, clipCount, mute
           <p id={swapId} className="reel-blocked-reason" style={{
             margin: '0 0 8px', fontSize: 13, lineHeight: '17px',
             color: 'var(--text-on-dark-2)', fontFamily: 'var(--font-dm-sans)',
-            whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+            // Wraps, never cut: at 320px the line is 216px wide. It sits
+            // above the price row, so a second line moves the text above it,
+            // never the button.
+            textWrap: 'pretty',
           }}>
             {shortReason}
           </p>

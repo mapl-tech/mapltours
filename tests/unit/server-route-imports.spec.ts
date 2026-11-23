@@ -20,14 +20,12 @@ import ts from 'typescript'
 const root = process.cwd()
 
 /**
- * Chains known to be harmless, with the reason. checkout imports only
- * DAILY_HOUR_LIMIT and parseDurationHours, both defined in lib/cart itself;
- * trackAddToCart is called only from reportAdd, inside the browser store's
- * addItem and swapDayFor actions.
+ * Chains known to be harmless, with the reason. None at present: the tour
+ * checkout used to reach lib/analytics through lib/cart for the hour cap, and
+ * since Nov 23 2026 reads the day's length from lib/day-hours and
+ * lib/day-route, which import no client module.
  */
-const ALLOWED = new Set([
-  'app/api/checkout/route.ts -> lib/cart.ts -> lib/analytics.ts',
-])
+const ALLOWED = new Set<string>([])
 
 const EXTENSIONS = ['.ts', '.tsx', '.js', '.jsx', '.mjs', '.cjs', '/index.ts', '/index.tsx', '/index.js', '/index.jsx']
 

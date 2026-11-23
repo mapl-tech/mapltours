@@ -1,4 +1,4 @@
-import { driveMinutes } from './day-route'
+import { minutesBetween, placePoint, stopPoint, tourPoint } from './drive-times'
 import { experiences, tourPrice, slugify, zoneSells, type Experience, type TourPricing } from './experiences'
 import { isTourPaused } from './tour-pause'
 import { zoneOfPickup } from './tour-zone-of'
@@ -49,7 +49,7 @@ export const UPSELL_SETTLE_DAYS = 3
 
 /**
  * Fallback reach when the tour has no door-to-door figure for the guest's
- * area: the day planner's one-way drive estimate.
+ * area: the routed one-way drive from the hotel (lib/drive-times).
  */
 export const UPSELL_MAX_DRIVE_MIN = 90
 
@@ -494,7 +494,7 @@ export interface UpsellPick {
   image: string
   /** Door-to-door hours for their area, or null when not published for it. */
   doorToDoor: DoorToDoor | null
-  /** The day planner's one-way drive estimate, used for ranking only and never printed. */
+  /** The routed one-way drive from the hotel (lib/drive-times), used for ranking only and never printed. */
   driveMinutes: number | null
   /** All-in total for THIS party, hotel pickup included. */
   total: number
@@ -506,7 +506,7 @@ export interface UpsellPick {
 /**
  * The tours worth proposing to someone staying at `hotel`, best fit first:
  * the shortest day out where the tour publishes a door-to-door time for the
- * guest's area, then the nearest by the day planner's estimate.
+ * guest's area, then the nearest by road from the hotel (lib/drive-times).
  *
  * Out: packages (they repeat the singles), anything longer than
  * UPSELL_MAX_DAY_HOURS door to door or beyond UPSELL_MAX_DRIVE_MIN when no
@@ -529,7 +529,7 @@ export function curateForStay(
   const youngest = opts.youngest ?? null
   return catalog
     .filter((e) => e.kind === 'single' && !isTourPaused(e.id))
-    .map((e) => ({ e, d2d: doorToDoorHours(e.fromHotel, area), mins: driveMinutes(hotel, e.destination) }))
+    .map((e) => ({ e, d2d: doorToDoorHours(e.fromHotel, area), mins: minutesBetween(placePoint(hotel), tourPoint(e)) }))
     .filter(({ d2d, mins }) => (d2d ? d2d.hi <= UPSELL_MAX_DAY_HOURS : mins !== null && mins <= UPSELL_MAX_DRIVE_MIN))
     .filter(({ e }) => {
       if (youngest === null) return true
@@ -585,7 +585,7 @@ export interface UpsellEat {
 export function curateEatForStay(hotel: string | null, catalog: Eat[] = EATS): UpsellEat | null {
   if (!hotel) return null
   const nearest = catalog
-    .map((e) => ({ e, mins: driveMinutes(hotel, e.town) }))
+    .map((e) => ({ e, mins: minutesBetween(placePoint(hotel), stopPoint(e)) }))
     .filter((r): r is { e: Eat; mins: number } => r.mins !== null && r.mins <= UPSELL_MAX_DRIVE_MIN)
     .sort((a, b) => a.mins - b.mins || a.e.name.localeCompare(b.e.name))[0]
   if (!nearest) return null

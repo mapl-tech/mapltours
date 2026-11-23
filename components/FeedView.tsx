@@ -9,6 +9,7 @@ import { useCartStore } from '@/lib/cart'
 import { addPackageToTrip } from '@/lib/add-to-trip'
 import { isKeyOrReaderClick } from '@/lib/press'
 import { fitCandidateStop, MAX_STOP_GAP_MIN } from '@/lib/day-route'
+import { DAILY_HOUR_LIMIT } from '@/lib/day-hours'
 import { useHydrated } from '@/lib/use-hydrated'
 import { CULTURE_IMAGE, HERO_VIDEO_540, HERO_VIDEO_720, HERO_VIDEO_1080, HERO_VIDEO_PHONE, HERO_POSTER_PHONE, HERO_POSTER } from '@/lib/images'
 import ExpCard from './ExpCard'
@@ -435,7 +436,9 @@ function FoodSection() {
                       // One line in the 310px card (274px of text at 13px): the longer
                       // "Nothing in your day comes within 30 min of it" left "it" alone on a second line.
                       ? `Over ${MAX_STOP_GAP_MIN} min from everything in your day`
-                      : fit.label}
+                      : fit.verdict === 'full'
+                        ? `No room left in your ${DAILY_HOUR_LIMIT}-hour day`
+                        : fit.label}
               </p>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                 {/* Three states, three different answers. Two of them are
@@ -474,7 +477,7 @@ function FoodSection() {
                       fontFamily: 'var(--font-dm-sans)',
                     }}
                   >
-                    {t('Off your route')}
+                    {fit.verdict === 'full' ? t('Day is full') : t('Off your route')}
                   </button>
                 ) : (
                 <button

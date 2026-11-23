@@ -86,7 +86,7 @@ describe('tour times', () => {
 
   test('the day builder counts hours of tours, and a one-item full day says so', () => {
     const line = (id: number) => ({ ...experiences.find((e) => e.id === id)!, travelers: 2, date: '2026-10-20' })
-    expect(computeDayScore([line(1)]).nudge).toBe('Room for 6 more hours of tours in your day, or book it as it is')
+    expect(computeDayScore([line(1)]).nudge).toBe('Room for 6 hrs more in your day, drives included, or book it as it is')
     expect(computeDayScore([line(18)]).nudge).toBe('This package fills your day')
     expect(computeDayScore([line(15)]).nudge).toBe('This tour fills your day')
   })

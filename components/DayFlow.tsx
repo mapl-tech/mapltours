@@ -1,10 +1,11 @@
 'use client'
 
 import { Car, Home, Utensils, Plus, X, ChevronUp, ChevronDown } from 'lucide-react'
-import { parseDurationHours, stopHoursFor, useCartStore } from '@/lib/cart'
+import { useCartStore } from '@/lib/cart'
 import { EATS } from '@/lib/eats'
 import { placeLabel } from '@/lib/experiences'
-import { planDay, fitCandidateStop, canMoveItem, dayAreas, roundFive, MAX_STOP_GAP_MIN } from '@/lib/day-route'
+import { planDay, fitCandidateStop, canMoveItem, dayAreas, driveTime, legNote, MAX_STOP_GAP_MIN } from '@/lib/day-route'
+import { DAILY_HOUR_LIMIT, STOP_HOURS, formatDayTime } from '@/lib/day-hours'
 import { placeShown } from '@/components/checkout/one-page/pickup-places'
 import { useState } from 'react'
 
@@ -26,7 +27,9 @@ import { useState } from 'react'
  * Deliberately no clock times. Start times depend on the driver, the road and
  * the day's other bookings, and printing "09:00 — Dunn's River" would be a
  * promise nobody made. Durations are shown instead, because those come from
- * the experience data and are true.
+ * the experience data and are true, and so are the drives between them,
+ * routed over OpenStreetMap's roads (lib/drive-times): the same minutes the
+ * day's eight hours are counted in.
  */
 
 const RAIL = 'rgba(23,22,20,0.14)'
@@ -89,9 +92,10 @@ export default function DayFlow({ compact = false }: { compact?: boolean }) {
     if (node.kind === 'experience') {
       const id = node.item.id
       const index = items.findIndex((i) => i.id === id)
-      // The drive in from the tour before it. This is rule 2 made visible:
-      // the day is a chain of tours near each other, and the only way to see
-      // whether it is, is to print the legs.
+      // The drive in from whatever comes before it in the route, a tour or a
+      // lunch: the legs printed down the list add up to the day's driving.
+      // A tour further than a day can stretch from the tour before it (rule
+      // 2) says so instead, in red.
       const leg = plan.legs.find((l) => l.toId === id)
       const up = index > 0 ? canMoveItem(ctx, id, -1) : { ok: false, reason: null }
       const down = index < items.length - 1 ? canMoveItem(ctx, id, 1) : { ok: false, reason: null }
@@ -101,11 +105,9 @@ export default function DayFlow({ compact = false }: { compact?: boolean }) {
         title: node.item.title,
         detail: placeLabel(node.item),
         meta: node.item.duration,
-        note: leg && leg.minutes !== null
-          ? leg.over
-            ? `About ${roundFive(leg.minutes)} min from ${leg.from}, further than a day should stretch`
-            : `About ${roundFive(leg.minutes)} min drive from ${leg.from}`
-          : undefined,
+        note: leg?.over && leg.minutes !== null
+          ? `About ${driveTime(leg.minutes)} from ${leg.from}, further than a day should stretch`
+          : legNote(node.legIn),
         warn: leg?.over ?? false,
         muted: !leg?.over,
         onRemove: () => removeItem(id),
@@ -129,18 +131,19 @@ export default function DayFlow({ compact = false }: { compact?: boolean }) {
       title: node.stop.name,
       detail: `${node.stop.town}, ${node.stop.parish}`,
       meta: '1–2 hrs · pay at the door',
-      note: stranded ? (node.fit.reason ?? 'Off your route') : node.fit.label,
+      // Like a tour, the drive in from the one before. A stop that opens the
+      // day has none to print, unless its place could not be found at all.
+      note: stranded
+        ? (node.fit.reason ?? 'Off your route')
+        : legNote(node.legIn) ?? (node.fit.verdict === 'unknown' ? node.fit.label : undefined),
       warn: stranded,
+      muted: !stranded,
       onRemove: () => removeStop(node.stop.name),
     }
   })
 
   nodes.unshift({ key: 'pickup', kind: 'pickup', title: 'Pickup', detail: where })
   nodes.push({ key: 'dropoff', kind: 'dropoff', title: 'Drop-off', detail: backTo })
-
-  const totalHours =
-    items.reduce((n, i) => n + parseDurationHours(i.duration), 0) +
-    stopHoursFor(items, stops.length)
 
   // Every eatery, judged in the slot the day would give it, closest first.
   // Sorting by that gap is most of the guidance: the top of the list is what
@@ -155,9 +158,9 @@ export default function DayFlow({ compact = false }: { compact?: boolean }) {
   return (
     <div style={{ width: '100%' }}>
       <p style={{
-        fontFamily: 'var(--font-dm-sans)', fontSize: 11, fontWeight: 700,
-        letterSpacing: '0.14em', textTransform: 'uppercase',
-        color: 'var(--text-tertiary)', marginBottom: canReorder ? 6 : 14,
+        fontFamily: 'var(--font-dm-sans)', fontSize: 12, fontWeight: 700,
+        letterSpacing: '0.12em', textTransform: 'uppercase',
+        color: 'var(--text-tertiary)', marginBottom: canReorder ? 8 : 16,
       }}>
         Your day, in order
       </p>
@@ -165,7 +168,7 @@ export default function DayFlow({ compact = false }: { compact?: boolean }) {
       {canReorder && (
         <p style={{
           fontFamily: 'var(--font-dm-sans)', fontSize: 12,
-          color: 'var(--text-tertiary)', margin: '0 0 14px', lineHeight: 1.45,
+          color: 'var(--text-tertiary)', margin: '0 0 16px', lineHeight: 1.45,
         }}>
           Use the arrows to change the order. A food stop travels with the tour
           it follows, and a move that would leave one stranded is greyed out.
@@ -178,7 +181,7 @@ export default function DayFlow({ compact = false }: { compact?: boolean }) {
         <div style={{
           display: 'flex', alignItems: 'flex-start', gap: 10,
           border: `1px solid ${WARN}`, background: 'rgba(179,38,30,0.06)',
-          borderRadius: 'var(--r-md)', padding: '10px 12px', marginBottom: 14,
+          borderRadius: 'var(--r-md)', padding: '12px', marginBottom: 16,
         }}>
           <p style={{
             fontFamily: 'var(--font-dm-sans)', fontSize: 12, lineHeight: 1.45,
@@ -200,7 +203,7 @@ export default function DayFlow({ compact = false }: { compact?: boolean }) {
 
       <ol style={{ listStyle: 'none', margin: 0, padding: 0 }}>
         {nodes.map((n, i) => (
-          <li key={n.key} style={{ display: 'flex', gap: 14, position: 'relative' }}>
+          <li key={n.key} style={{ display: 'flex', gap: 16, position: 'relative' }}>
             {/* Rail + marker */}
             <div style={{
               display: 'flex', flexDirection: 'column', alignItems: 'center',
@@ -208,7 +211,7 @@ export default function DayFlow({ compact = false }: { compact?: boolean }) {
             }}>
               <Marker kind={n.kind} warn={n.warn} />
               {i < nodes.length - 1 && (
-                <div style={{ width: 2, flex: 1, minHeight: compact ? 22 : 30, background: RAIL }} />
+                <div style={{ width: 2, flex: 1, minHeight: compact ? 24 : 32, background: RAIL }} />
               )}
             </div>
 
@@ -220,14 +223,14 @@ export default function DayFlow({ compact = false }: { compact?: boolean }) {
                 down with it. Out here they stay pinned to the top right
                 whatever the title does. */}
             <div style={{
-              paddingBottom: i < nodes.length - 1 ? (compact ? 14 : 20) : 0,
+              paddingBottom: i < nodes.length - 1 ? (compact ? 16 : 24) : 0,
               flex: 1, minWidth: 0, display: 'flex', gap: 8,
             }}>
             <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, flexWrap: 'wrap' }}>
+              <div style={{ display: 'flex', alignItems: 'baseline', columnGap: 8, rowGap: 2, flexWrap: 'wrap' }}>
                 <p style={{
                   fontFamily: 'var(--font-dm-sans)',
-                  fontSize: compact ? 13.5 : 15,
+                  fontSize: compact ? 14 : 15,
                   fontWeight: n.kind === 'experience' ? 700 : 600,
                   color: 'var(--text-primary)',
                   margin: 0,
@@ -236,7 +239,7 @@ export default function DayFlow({ compact = false }: { compact?: boolean }) {
                 </p>
                 {n.meta && (
                   <span style={{
-                    fontFamily: 'var(--font-dm-sans)', fontSize: 11.5,
+                    fontFamily: 'var(--font-dm-sans)', fontSize: 12,
                     color: 'var(--text-tertiary)',
                   }}>
                     {n.meta}
@@ -246,7 +249,7 @@ export default function DayFlow({ compact = false }: { compact?: boolean }) {
 
               {n.detail && (
                 <p style={{
-                  fontFamily: 'var(--font-dm-sans)', fontSize: 12.5,
+                  fontFamily: 'var(--font-dm-sans)', fontSize: 13,
                   color: 'var(--text-tertiary)', margin: '2px 0 0',
                 }}>
                   {n.detail}
@@ -254,9 +257,9 @@ export default function DayFlow({ compact = false }: { compact?: boolean }) {
               )}
               {n.note && (
                 <p style={{
-                  fontFamily: 'var(--font-dm-sans)', fontSize: 11.5,
+                  fontFamily: 'var(--font-dm-sans)', fontSize: 12,
                   color: n.warn ? WARN : n.muted ? 'var(--text-tertiary)' : 'var(--gold-text)',
-                  margin: '3px 0 0', lineHeight: 1.4,
+                  margin: '4px 0 0', lineHeight: 1.4,
                 }}>
                   {n.note}
                 </p>
@@ -329,9 +332,9 @@ export default function DayFlow({ compact = false }: { compact?: boolean }) {
                 lineHeight: 1.45,
               }}>
                 Closest to your {dayAreas(items)} day first, timed from whatever it
-                would sit beside. Add as many as the day fits, in a row if they are
-                near each other; anything more than {MAX_STOP_GAP_MIN} minutes off the route is
-                greyed out.
+                would sit beside. Each one adds about {formatDayTime(STOP_HOURS * 60)} to
+                your day. Anything more than {MAX_STOP_GAP_MIN} minutes off the route, or past
+                your {DAILY_HOUR_LIMIT} hours, is greyed out.
               </p>
               {choices.map(({ eat: e, fit }) => {
                 const added = isStopAdded(e.name)
@@ -366,10 +369,10 @@ export default function DayFlow({ compact = false }: { compact?: boolean }) {
                       color: blocked ? 'var(--text-tertiary)' : 'var(--gold-text)',
                       marginTop: 2,
                     }}>
-                      {!blocked
+                      {!blocked || fit.verdict === 'full'
                         ? fit.label
                         : fit.minutes && fit.neighbour
-                          ? `Off your route · about ${Math.max(5, Math.round(fit.minutes / 5) * 5)} min from ${fit.neighbour}`
+                          ? `Off your route · about ${driveTime(fit.minutes)} from ${fit.neighbour}`
                           : 'Off your route'}
                     </span>
                   </button>
@@ -381,14 +384,29 @@ export default function DayFlow({ compact = false }: { compact?: boolean }) {
       )}
 
       <p style={{
-        fontFamily: 'var(--font-dm-sans)', fontSize: 12,
-        color: 'var(--text-tertiary)', marginTop: 14,
+        fontFamily: 'var(--font-dm-sans)', fontSize: 12, lineHeight: 1.5,
+        color: 'var(--text-tertiary)', marginTop: 16,
         paddingTop: 12, borderTop: `1px solid ${RAIL}`,
       }}>
-        {totalHours > 0 && <>About {formatHours(totalHours)} at the stops, plus the drive to and from your hotel. </>}
-        Your driver handles everything between these stops, and times are confirmed
-        before the day. Food stops are free to add: you pay the restaurant
-        directly, at their price.
+        {/* The day's length is printed above (the bar's total); this says
+            what it leaves out, without a word that could read as a cost: the
+            hotel pickup is in every tour's price. */}
+        These hours leave out the drive from your hotel and back, which depends
+        on where you stay. Your driver handles everything in between and
+        confirms the times before the day. Food stops are free to add: you pay
+        the restaurant directly, at their price.{' '}
+        {/* The drive times are OpenStreetMap data (ODbL): credited where they
+            are printed, inline in the sentence so the link needs no target
+            of its own. */}
+        Drive times:{' '}
+        <a
+          href="https://www.openstreetmap.org/copyright"
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{ color: 'inherit', textDecoration: 'underline', textUnderlineOffset: 2 }}
+        >
+          © OpenStreetMap contributors<span className="visually-hidden"> (opens in a new tab)</span>
+        </a>.
       </p>
     </div>
   )
@@ -455,9 +473,4 @@ function Marker({ kind, warn }: { kind: Kind; warn?: boolean }) {
       <span style={{ width: 7, height: 7, borderRadius: '50%', background: '#fff' }} />
     </div>
   )
-}
-
-function formatHours(h: number): string {
-  const rounded = Math.round(h * 2) / 2
-  return rounded === 1 ? '1 hour' : `${rounded % 1 === 0 ? rounded : rounded.toFixed(1)} hours`
 }

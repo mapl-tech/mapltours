@@ -1,7 +1,8 @@
 import { tourPrice, experiences } from './experiences'
 import type { TourZone } from './tour-zones'
 import { trackAddToCart } from './analytics'
-import { bestInsertIndex, bestSlotForStop, canMoveItem, fitStopAfter, fitTourToDay, movedOrder } from './day-route'
+import { bestInsertIndex, bestSlotForStop, canMoveItem, dayTime, dayWithStop, daysOf, fitStopAfter, fitTourToDay, movedOrder, type DayTime } from './day-route'
+import { DAILY_HOUR_LIMIT, DAY_LIMIT_MIN } from './day-hours'
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { Experience } from './experiences'
@@ -35,46 +36,10 @@ export interface FoodStop {
   afterId: number | null
 }
 
-/**
- * Maximum tour hours allowed per single travel day. Beyond this, the user
- * must either remove experiences or move them to a different date.
- */
-/**
- * Time a free food stop takes out of the day.
- *
- * A stop costs MAPL nothing and the guest pays the venue directly, but it
- * absolutely costs the DAY — parking, sitting down, eating, getting back on
- * the road. Counting it as zero let a guest fill eight hours with tours and
- * then add three lunches, producing an itinerary no driver could actually run.
- *
- * Real stops run one to two hours; the midpoint is banked. Nobody is hurried
- * out of Scotchies at the sixty-minute mark, and budgeting the full two would
- * make a day with two stops look impossible when it usually is not.
- */
-export const STOP_HOURS = 1.5
-
-export const DAILY_HOUR_LIMIT = 8
-
-export function parseDurationHours(duration: string): number {
-  if (/full\s*day/i.test(duration)) return 8
-  if (/half\s*day/i.test(duration)) return 4
-  const match = duration.match(/([\d.]+)\s*hr/i)
-  return match ? parseFloat(match[1]) : 3
-}
-
-/**
- * The hours a day's free food stops add. A full day (a ready-made package or
- * Nine Mile, each "Full day") already has its meal break inside it, so the
- * first stop on such a day IS that lunch and adds nothing; every further stop
- * costs STOP_HOURS as on any day. Without this, one lunch on a full-day
- * package (8 hours) took the day to 9.5 and blocked Pay for a free stop.
- * Everything that totals a day calls this, so the bar, the day list and the
- * checkout gate agree. The server never counts stops at all.
- */
-export function stopHoursFor(items: { duration: string }[], stopCount: number): number {
-  const fullDay = items.some((i) => parseDurationHours(i.duration) >= DAILY_HOUR_LIMIT)
-  return Math.max(0, stopCount - (fullDay ? 1 : 0)) * STOP_HOURS
-}
+// How long a day is lives in lib/day-hours (no imports, so lib/day-route can
+// read it without a cycle through this file). Re-exported for the callers that
+// have always imported it from here.
+export { DAILY_HOUR_LIMIT, STOP_HOURS, parseDurationHours, stopHoursFor } from './day-hours'
 
 /** The day a swap replaced, kept so the guest can undo it. */
 export interface DaySnapshot {
@@ -110,11 +75,12 @@ interface CartStore {
   addItem: (exp: Experience) => void
   /**
    * Book this tour in place of the day in the cart. For a tour that cannot
-   * join the day (more than MAX_TOUR_GAP_MIN from every tour in it): the cart
-   * is ONE day, so the honest choice is this tour or that day, never a dead
-   * button. Keeps the day's date and party size, drops its food stops (named
-   * in droppedStops), and returns what it replaced for restoreDay. Null, and
-   * nothing changed, when the tour is already in the cart.
+   * join the day (more than MAX_TOUR_GAP_MIN from every tour in it, or no
+   * room left in its eight hours): the cart is ONE day, so the honest choice
+   * is this tour or that day, never a dead button. Keeps the day's date and
+   * party size, drops its food stops (named in droppedStops), and returns
+   * what it replaced for restoreDay. Null, and nothing changed, when the
+   * tour is already in the cart.
    */
   swapDayFor: (exp: Experience) => DaySnapshot | null
   /** Put back exactly the day a swap replaced. */
@@ -141,13 +107,18 @@ interface CartStore {
   subtotal: () => number
   fee: () => number
   grandTotal: () => number
-  /** Total tour hours per booking date, e.g. { '2026-05-01': 7, '2026-05-02': 4 }. */
+  /**
+   * How long each booking date is (lib/day-route dayTime): the tours, the
+   * food stops and the driving between them, in whole minutes.
+   */
+  dayTimesByDate: () => Record<string, DayTime>
+  /** The same in hours, e.g. { '2026-05-01': 7.25 }: what the 8-hour gate reads. */
   hoursByDate: () => Record<string, number>
-  /** The largest single day's tour-hours, the one that would hit the 8-hr cap. */
+  /** The longest single day in hours, the one that would hit the 8-hour cap. */
   maxDailyHours: () => number
-  /** True if any date exceeds DAILY_HOUR_LIMIT. */
+  /** True if any date runs past DAILY_HOUR_LIMIT, driving included. */
   isDayOverLimit: () => boolean
-  /** Hours still available on the *least loaded* day that has any items; 8 when cart is empty. */
+  /** Hours still free on the busiest day that has any items; 8 when the cart is empty. */
   remainingHoursToday: () => number
 }
 
@@ -232,6 +203,8 @@ export const useCartStore = create<CartStore>()(
           ? { afterId: stop.afterId, fit: fitStopAfter(stop, stop.afterId, ctx) }
           : bestSlotForStop(stop, ctx)
         if (!slot || !slot.fit.allowed) return state
+        // And the day has to have room for it, driving included (rule 4).
+        if (!dayWithStop(stop, slot.afterId, ctx).fits) return state
         return {
           stops: [...state.stops, { ...stop, afterId: slot.afterId }],
           droppedStops: [],
@@ -302,9 +275,10 @@ export const useCartStore = create<CartStore>()(
           travelers: kept[0]?.travelers ?? 1,
           date: kept[0]?.date || defaultDate(),
         }
-        // A day's tours have to be drivable between — see MAX_TOUR_GAP_MIN.
-        // Every surface that offers a tour asks fitTourToDay() first and says
-        // so on the button, and this is the floor under that.
+        // A day's tours have to be drivable between (MAX_TOUR_GAP_MIN), and
+        // the day, driving included, has to fit in eight hours. Every surface
+        // that offers a tour asks fitTourToDay() first and says so on the
+        // button, and this is the floor under that.
         if (!fitTourToDay(line, { items: kept, stops: get().stops }).allowed) return
         // Slot it where it adds the least driving rather than at the end. Tap
         // order has nothing to do with geography, and the day is read top to
@@ -426,44 +400,32 @@ export const useCartStore = create<CartStore>()(
 
       grandTotal: () => get().subtotal(),
 
-      hoursByDate: () => {
+      dayTimesByDate: () => {
         const { items, stops } = get()
-        const map: Record<string, number> = {}
-        for (const item of items) {
-          const key = item.date || 'unset'
-          map[key] = (map[key] ?? 0) + parseDurationHours(item.duration)
-        }
-        // Food stops have no date of their own — they belong to the day being
-        // built, which is now a single date per checkout. Charge them to the
-        // day that has experiences on it; with an empty cart they land on
-        // 'unset', which is the same bucket the UI already reads.
-        const extra = stopHoursFor(items, stops.length)
-        if (extra > 0) {
-          const dayKeys = Object.keys(map)
-          const key = dayKeys.length === 1 ? dayKeys[0] : (items[0]?.date || 'unset')
-          map[key] = (map[key] ?? 0) + extra
-        }
-        return map
+        const out: Record<string, DayTime> = {}
+        daysOf(items, stops).forEach((day, date) => { out[date] = dayTime(day.items, day.stops) })
+        return out
+      },
+
+      hoursByDate: () => {
+        const out: Record<string, number> = {}
+        for (const [date, t] of Object.entries(get().dayTimesByDate())) out[date] = t.total / 60
+        return out
       },
 
       maxDailyHours: () => {
-        const by = get().hoursByDate()
-        const values = Object.values(by)
-        return values.length ? Math.max(...values) : 0
+        const values = Object.values(get().dayTimesByDate()).map((t) => t.total)
+        return values.length ? Math.max(...values) / 60 : 0
       },
 
-      isDayOverLimit: () => {
-        const by = get().hoursByDate()
-        return Object.values(by).some((h) => h > DAILY_HOUR_LIMIT)
-      },
+      isDayOverLimit: () => Object.values(get().dayTimesByDate()).some((t) => t.total > DAY_LIMIT_MIN),
 
       remainingHoursToday: () => {
-        const by = get().hoursByDate()
-        const values = Object.values(by)
+        const values = Object.values(get().dayTimesByDate()).map((t) => t.total)
         if (values.length === 0) return DAILY_HOUR_LIMIT
-        // Use the busiest day as the reference, that's the one that will
-        // overflow next. Clamp at 0 when the cap is already met/exceeded.
-        return Math.max(0, DAILY_HOUR_LIMIT - Math.max(...values))
+        // The busiest day is the one that will overflow next. Clamp at 0 when
+        // the cap is already met or exceeded.
+        return Math.max(0, DAY_LIMIT_MIN - Math.max(...values)) / 60
       },
     }),
     {

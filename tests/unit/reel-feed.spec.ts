@@ -65,10 +65,15 @@ describe('tripDayLabel', () => {
 })
 
 describe('swapReason', () => {
-  test('says how far and what booking it does, in one short line', () => {
-    const line = swapReason({ minutes: 74, nearest: 'Negril' })
-    expect(line).toBe('75 min from Negril, so it replaces that day.')
-    expect(line.length).toBeLessThanOrEqual(46)
+  test('says how far and what booking it does', () => {
+    expect(swapReason({ minutes: 44, nearest: 'Negril' })).toBe('45 min from Negril, so it replaces that day.')
+  })
+  test('says a drive over an hour the way the day total says time', () => {
+    expect(swapReason({ minutes: 74, nearest: 'Negril' })).toBe('1 hr 15 min from Negril, so it replaces that day.')
+    expect(swapReason({ minutes: 193, nearest: "Dunn's River Falls" })).toBe("3 hrs 15 min from Dunn's River Falls, so it replaces that day.")
+  })
+  test('says the day is full when that is why', () => {
+    expect(swapReason({ minutes: 20, nearest: 'Ocho Rios', why: 'hours' })).toBe('Your day is full, so this replaces it.')
   })
   test('still explains itself without a drive time', () => {
     expect(swapReason({ minutes: null, nearest: null })).toMatch(/replaces/)

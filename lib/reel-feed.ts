@@ -2,7 +2,8 @@
  * Pure rules behind the tour reel (components/ExperienceDetail.tsx), kept
  * here so they can be tested without a browser.
  */
-import { driveMinutes, roundFive, type TourFit } from './day-route'
+import { driveTime, type TourFit } from './day-route'
+import { minutesBetween, tourPoint } from './drive-times'
 import { slugify, type Experience } from './experiences'
 
 /**
@@ -10,16 +11,17 @@ import { slugify, type Experience } from './experiences'
  * result, a tap on home), then the rest nearest-first from it. A visitor who
  * lands on Rick's Cafe swipes into the other Negril tours before Ocho Rios,
  * so the next reel is usually one that can join the same day instead of one
- * whose button can only replace it. Ties and tours with no drive time keep
- * catalogue order. Depends on nothing client-side, so the server renders the
- * same order the browser hydrates.
+ * whose button can only replace it. Distances are the day planner's routed
+ * drives between the tours' own sites (lib/drive-times). Ties and tours with
+ * no drive time keep catalogue order. Depends on nothing client-side, so the
+ * server renders the same order the browser hydrates.
  */
 export function orderFeed(list: Experience[], requestedSlug: string): Experience[] {
   const at = list.findIndex((e) => slugify(e.title) === requestedSlug)
   if (at < 0) return list
   const first = list[at]
   const rest = list
-    .map((e, i) => ({ e, i, minutes: i === at ? null : driveMinutes(first.destination, e.destination) }))
+    .map((e, i) => ({ e, i, minutes: i === at ? null : minutesBetween(tourPoint(first), tourPoint(e)) }))
     .filter((x) => x.i !== at)
     .sort((a, b) => {
       if (a.minutes === null && b.minutes === null) return a.i - b.i
@@ -55,11 +57,14 @@ export function tripDayLabel(date: string): string | null {
 }
 
 /**
- * The one line under "Book this instead" on a phone: why this tour cannot
- * join the day in the cart, and what booking it does. Short enough for one
- * line at 12px on a 320px screen (about 46 characters).
+ * The short line under "Book this instead" on a phone: why this tour cannot
+ * join the day in the cart, and what booking it does. It wraps rather than
+ * being cut: measured on Nov 23 2026, the reel gives it 216px at 320 wide and
+ * 286px at 390, and "1 hr 30 min from the Martha Brae, so it replaces that
+ * day." needs two lines on both.
  */
-export function swapReason(fit: Pick<TourFit, 'minutes' | 'nearest'>): string {
-  if (fit.minutes !== null && fit.nearest) return `${roundFive(fit.minutes)} min from ${fit.nearest}, so it replaces that day.`
+export function swapReason(fit: Pick<TourFit, 'minutes' | 'nearest'> & Partial<Pick<TourFit, 'why'>>): string {
+  if (fit.why === 'hours') return 'Your day is full, so this replaces it.'
+  if (fit.minutes !== null && fit.nearest) return `${driveTime(fit.minutes)} from ${fit.nearest}, so it replaces that day.`
   return 'It can’t share your day, so it replaces it.'
 }

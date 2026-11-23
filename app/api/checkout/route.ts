@@ -4,7 +4,8 @@ import crypto from 'crypto'
 import { createServiceClient } from '@/lib/supabase/service'
 import { createClient as createServerSupabase } from '@/lib/supabase/server'
 import { priceTourCart, assertAmountMatches, withCouponDiscount, PricingError } from '@/lib/checkout-pricing'
-import { parseDurationHours, DAILY_HOUR_LIMIT } from '@/lib/cart'
+import { DAILY_HOUR_LIMIT, DAY_LIMIT_MIN } from '@/lib/day-hours'
+import { dayTime, type TourLike } from '@/lib/day-route'
 import { isExperienceDateBookable, LEAD_TIME_MESSAGE } from '@/lib/booking-window'
 import { assertCheckoutSchema, SchemaNotReadyError } from '@/lib/checkout-schema'
 import { rateLimit, getIp } from '@/lib/rate-limit'
@@ -340,21 +341,23 @@ async function checkout(request: NextRequest) {
       )
     }
 
-    // Enforce the per-day hour cap at the boundary too. The cart UI blocks a
-    // day over DAILY_HOUR_LIMIT, but a direct POST could stack unlimited
-    // tours on one date — a day no guide can physically run. Food stops exist
-    // only client-side, so this sums experience durations alone: strictly
-    // laxer than the UI's own check, so it can never falsely reject a cart
-    // the UI allowed.
-    const hoursByDate: Record<string, number> = {}
+    // Enforce the day's length at the boundary too (lib/day-route dayTime):
+    // the time at each tour plus the drives between them, in the order the
+    // cart sent them, within DAILY_HOUR_LIMIT hours. The cart UI blocks a
+    // longer day, but a direct POST could stack unlimited tours on one date,
+    // a day no guide can physically run. Food stops exist only client-side,
+    // so this counts the tours and the drives between them alone, which is
+    // never more than the UI's own total for the same cart (a stop only adds
+    // time), so it can never refuse a cart the UI allowed.
+    const toursByDate = new Map<string, TourLike[]>()
     for (const l of pricing.lines) {
       const key = l.date || 'unset'
-      hoursByDate[key] = (hoursByDate[key] ?? 0) + parseDurationHours(l.experience.duration)
+      toursByDate.set(key, [...(toursByDate.get(key) ?? []), l.experience])
     }
-    if (Object.values(hoursByDate).some((h) => h > DAILY_HOUR_LIMIT)) {
+    if (Array.from(toursByDate.values()).some((day) => dayTime(day).total > DAY_LIMIT_MIN)) {
       return NextResponse.json(
         {
-          error: `That is more than ${DAILY_HOUR_LIMIT} hours of tours in one day. Please split the trip across separate days.`,
+          error: `That day runs past ${DAILY_HOUR_LIMIT} hours once the drives between the tours are counted. Please split the trip across separate days.`,
           requestId: reqId,
         },
         { status: 400 },

@@ -40,16 +40,28 @@ export async function fetchGasPrice(): Promise<{ usd: number; jmd: number }> {
   return { usd: GAS_PRICE_USD_PER_LITER, jmd: GAS_PRICE_JMD_PER_LITER }
 }
 
-// ── Location coordinates (approximate lat/lng for distance calc) ──
-const LOCATIONS: Record<string, { lat: number; lng: number }> = {
+// ── Location coordinates ──
+// Towns, hotels and ports by name. lib/day-route resolves a place name here
+// (getCoords, exact then by substring) and reads the drive between two points
+// from lib/drive-times.json, which is built from these coordinates
+// (scripts/build-drive-times.mts): moving one means building the table again.
+// Since Nov 23 2026 every hotel and port, and every town that was off its
+// road, sits on the OpenStreetMap feature of that name (the way or node id is
+// given where a point moved); the build refuses a point more than 600 m from
+// any road.
+export const LOCATIONS: Record<string, { lat: number; lng: number }> = {
   // Tour destinations
   'Negril':         { lat: 18.2683, lng: -78.3494 },
   'Blue Mountains': { lat: 18.1750, lng: -76.6000 },
   'Kingston':       { lat: 18.0179, lng: -76.8099 },
-  'Boston Bay':     { lat: 18.1858, lng: -76.2850 },
+  // Boston village, home of the jerk centres (node 7050484756); the old point
+  // was 7 km out to sea.
+  'Boston Bay':     { lat: 18.1546, lng: -76.3547 },
   'Ocho Rios':      { lat: 18.4075, lng: -77.1050 },
-  'Nine Mile':      { lat: 18.3500, lng: -77.2333 },
-  'Treasure Beach': { lat: 17.8833, lng: -77.7833 },
+  // The village and the Bob Marley Mausoleum (node 3201267866). The point
+  // here until Nov 2026 sat about 7 km north-east of it, off any road.
+  'Nine Mile':      { lat: 18.2977, lng: -77.2783 },
+  'Treasure Beach': { lat: 17.8804, lng: -77.7565 }, // node 7057107933
   'Port Antonio':   { lat: 18.1785, lng: -76.4497 },
   'Falmouth':       { lat: 18.4939, lng: -77.6556 },
   'Montego Bay':    { lat: 18.4762, lng: -77.9186 },
@@ -57,7 +69,7 @@ const LOCATIONS: Record<string, { lat: number; lng: number }> = {
   // park (Sandy Bay and Green Island both have one): Lucea, the parish town,
   // sits between them.
   'Hanover':        { lat: 18.4510, lng: -78.1736 },
-  'Manchioneal':    { lat: 18.1300, lng: -76.2700 },
+  'Manchioneal':    { lat: 18.0368, lng: -76.2800 }, // node 7050027753; was 10 km off
   'Port Royal':     { lat: 17.9361, lng: -76.8417 },
 
   // North-coast towns that carry no tour of their own but do carry food
@@ -69,43 +81,48 @@ const LOCATIONS: Record<string, { lat: number; lng: number }> = {
   'Discovery Bay':  { lat: 18.4667, lng: -77.4000 },
   'Runaway Bay':    { lat: 18.4600, lng: -77.3300 },
   "St. Ann's Bay":  { lat: 18.4353, lng: -77.2011 },
-  'Greenwood':      { lat: 18.4844, lng: -77.7614 },
+  // On the coast road (way 371371872); the old point was a kilometre inland.
+  'Greenwood':      { lat: 18.5083, lng: -77.7479 },
 
-  // Hotels & resorts, mapped to nearest major location
-  'Sandals Negril Beach Resort':        { lat: 18.2850, lng: -78.3550 },
-  'Sandals Royal Caribbean, Montego Bay': { lat: 18.4900, lng: -77.9250 },
-  'Sandals Ochi Beach Resort, Ocho Rios': { lat: 18.4100, lng: -77.1100 },
-  'Riu Negril':                           { lat: 18.2800, lng: -78.3500 },
-  'Riu Montego Bay':                      { lat: 18.4850, lng: -77.9100 },
-  'Hyatt Ziva Rose Hall, Montego Bay':    { lat: 18.5100, lng: -77.8500 },
-  'Hilton Rose Hall Resort, Montego Bay': { lat: 18.5090, lng: -77.8480 },
-  'Grand Palladium Jamaica, Lucea':       { lat: 18.4600, lng: -78.1700 },
-  // Sells as Montego Bay, stands at Coopers Pen, Falmouth (Trelawny).
-  'Royalton Blue Waters, Montego Bay':    { lat: 18.4890, lng: -77.6920 },
-  'Royalton Negril':                      { lat: 18.2780, lng: -78.3480 },
-  'Secrets Wild Orchid, Montego Bay':     { lat: 18.4490, lng: -77.9360 },
-  'Secrets St. James, Montego Bay':       { lat: 18.4480, lng: -77.9370 },
-  'Breathless Montego Bay':               { lat: 18.4495, lng: -77.9355 },
-  'Moon Palace Jamaica, Ocho Rios':       { lat: 18.4130, lng: -77.1000 },
-  'Jamaica Inn, Ocho Rios':               { lat: 18.4150, lng: -77.0800 },
-  'Strawberry Hill, Blue Mountains':      { lat: 18.1100, lng: -76.6500 },
-  'GoldenEye, Oracabessa':               { lat: 18.3980, lng: -76.9500 },
-  'Round Hill Hotel, Montego Bay':        { lat: 18.4600, lng: -78.0200 },
-  'Rockhouse Hotel, Negril':              { lat: 18.2550, lng: -78.3580 },
+  // Hotels & resorts, each at its own OpenStreetMap feature
+  'Sandals Negril Beach Resort':          { lat: 18.3359, lng: -78.3392 }, // way 310149342
+  'Sandals Royal Caribbean, Montego Bay': { lat: 18.5196, lng: -77.8801 }, // node 2078508129
+  'Sandals Ochi Beach Resort, Ocho Rios': { lat: 18.4118, lng: -77.0861 }, // way 369546812
+  'Riu Negril':                           { lat: 18.3548, lng: -78.3359 }, // way 373924879
+  'Riu Montego Bay':                      { lat: 18.5175, lng: -77.8814 }, // way 1425767080
+  'Hyatt Ziva Rose Hall, Montego Bay':    { lat: 18.5229, lng: -77.8333 }, // node 5181706622
+  'Hilton Rose Hall Resort, Montego Bay': { lat: 18.5217, lng: -77.8108 }, // way 373434062
+  'Grand Palladium Jamaica, Lucea':       { lat: 18.4578, lng: -78.1521 }, // way 1082303425
+  // Sells as Montego Bay, stands at Coopers Pen, Falmouth (Trelawny), beside
+  // Royalton White Sands. Not in OpenStreetMap: the Coopers Pen hamlet
+  // (node 7044483416). The old point was west of Falmouth, 8 km off.
+  'Royalton Blue Waters, Montego Bay':    { lat: 18.4830, lng: -77.6116 },
+  'Royalton Negril':                      { lat: 18.3415, lng: -78.3417 }, // way 626958816
+  // The Secrets pair and Breathless share the Montego Freeport peninsula.
+  'Secrets Wild Orchid, Montego Bay':     { lat: 18.4596, lng: -77.9499 }, // way 154325437
+  'Secrets St. James, Montego Bay':       { lat: 18.4603, lng: -77.9488 }, // way 154325315
+  'Breathless Montego Bay':               { lat: 18.4599, lng: -77.9467 }, // way 1008817993
+  'Moon Palace Jamaica, Ocho Rios':       { lat: 18.4122, lng: -77.1050 }, // way 180639471
+  'Jamaica Inn, Ocho Rios':               { lat: 18.4133, lng: -77.0785 }, // way 369026776
+  'Strawberry Hill, Blue Mountains':      { lat: 18.0523, lng: -76.7274 }, // node 3627924045, Irish Town
+  'GoldenEye, Oracabessa':                { lat: 18.4107, lng: -76.9445 }, // node 7058924571
+  // Not in OpenStreetMap: Round Hill Bluff, the peninsula it stands on (node 6983613817).
+  'Round Hill Hotel, Montego Bay':        { lat: 18.4614, lng: -78.0075 },
+  'Rockhouse Hotel, Negril':              { lat: 18.2655, lng: -78.3670 }, // way 374119306
   'The Cliff Hotel, Negril':              { lat: 18.2500, lng: -78.3600 },
-  'Geejam Hotel, Port Antonio':           { lat: 18.1900, lng: -76.4300 },
-  'Trident Hotel, Port Antonio':          { lat: 18.2000, lng: -76.4200 },
-  'Jakes Hotel, Treasure Beach':          { lat: 17.8860, lng: -77.7850 },
+  'Geejam Hotel, Port Antonio':           { lat: 18.1742, lng: -76.4072 }, // way 829768898
+  'Trident Hotel, Port Antonio':          { lat: 18.1840, lng: -76.4236 }, // way 369560770
+  'Jakes Hotel, Treasure Beach':          { lat: 17.8796, lng: -77.7632 }, // way 837822143
   'Spanish Court Hotel, Kingston':        { lat: 18.0120, lng: -76.7950 },
-  'Terra Nova All Suite Hotel, Kingston': { lat: 18.0130, lng: -76.7980 },
-  'Courtleigh Hotel, Kingston':           { lat: 18.0100, lng: -76.7900 },
+  'Terra Nova All Suite Hotel, Kingston': { lat: 18.0191, lng: -76.7926 }, // way 75603526
+  'Courtleigh Hotel, Kingston':           { lat: 18.0041, lng: -76.7874 }, // way 62029435
 
   // Airports & ports
-  'Norman Manley International Airport (KIN)': { lat: 17.9356, lng: -76.7875 },
-  'Sangster International Airport (MBJ)':      { lat: 18.5037, lng: -77.9133 },
+  'Norman Manley International Airport (KIN)': { lat: 17.9364, lng: -76.7798 }, // way 22888427
+  'Sangster International Airport (MBJ)':      { lat: 18.4987, lng: -77.9159 }, // way 161961565, the terminal
   'Kingston Cruise Terminal':                   { lat: 17.9700, lng: -76.7950 },
-  'Falmouth Cruise Port':                       { lat: 18.4950, lng: -77.6560 },
-  'Ocho Rios Cruise Port':                      { lat: 18.4080, lng: -77.1080 },
+  'Falmouth Cruise Port':                       { lat: 18.4947, lng: -77.6478 }, // node 10274572709
+  'Ocho Rios Cruise Port':                      { lat: 18.4090, lng: -77.1106 }, // way 374180178
 }
 
 /** Jamaica road correction factor (winding mountain & coastal roads). */
@@ -130,14 +147,24 @@ export function haversineKm(a: { lat: number; lng: number }, b: { lat: number; l
   return straightLineKm(a, b) * JAMAICA_ROAD_FACTOR
 }
 
-export function getCoords(location: string): { lat: number; lng: number } | null {
+/**
+ * The LOCATIONS name a place resolves to: itself when it is one, otherwise
+ * the first name it contains or is contained in ('Falmouth (Rock)' is
+ * Falmouth). Null when nothing matches.
+ */
+export function locationKey(location: string): string | null {
   // Exact match
-  if (LOCATIONS[location]) return LOCATIONS[location]
+  if (LOCATIONS[location]) return location
   // Fuzzy: check if any key is contained in the location string
   const key = Object.keys(LOCATIONS).find(k =>
     location.toLowerCase().includes(k.toLowerCase()) ||
     k.toLowerCase().includes(location.toLowerCase())
   )
+  return key ?? null
+}
+
+export function getCoords(location: string): { lat: number; lng: number } | null {
+  const key = locationKey(location)
   return key ? LOCATIONS[key] : null
 }
 
@@ -154,10 +181,9 @@ export function roadDistanceKm(from: string, to: string): number | null {
 
 /**
  * Great-circle km between two named places, before any road correction.
- * lib/day-route estimates drive TIME from this rather than from the corrected
- * figure: the 1.45x factor is tuned to make fuel estimates safe (it rounds
- * every leg up), and a distance that is deliberately pessimistic turns into a
- * drive time that wrongly refuses lunch twenty minutes up the coast.
+ * Drive TIMES do not come from here: lib/drive-times reads them from the
+ * routed table (OpenStreetMap roads), and falls back to the straight line
+ * only for a point the table was not built with.
  */
 export function directDistanceKm(from: string, to: string): number | null {
   const a = getCoords(from)

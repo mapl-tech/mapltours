@@ -434,7 +434,7 @@ export default memo(function MobileShort({
             {blocked && (
               <p id={`rail-swap-${exp.id}`} style={{
                 margin: '6px 0 0', fontSize: 12, lineHeight: '16px', color: 'rgba(255,255,255,0.82)',
-                fontFamily: 'var(--font-dm-sans)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+                fontFamily: 'var(--font-dm-sans)', textWrap: 'pretty',
               }}>
                 {swapReason(tourFit)}
               </p>

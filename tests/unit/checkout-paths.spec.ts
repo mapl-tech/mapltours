@@ -594,8 +594,36 @@ describe('POST /api/checkout: guest-facing refusals', () => {
     })
     const data = await res.json()
     expect(res.status).toBe(400)
-    expect(data.error).toBe('That is more than 8 hours of tours in one day. Please split the trip across separate days.')
+    expect(data.error).toBe('That day runs past 8 hours once the drives between the tours are counted. Please split the trip across separate days.')
     expect(data.error).not.toMatch(/—/)
+  })
+
+  // Dunn's River, the Blue Hole, the horseback stable and the tubing: 7.5
+  // hours at the tours, every one sold from Ocho Rios. Driven in that order
+  // the road between them adds 50 minutes (lib/drive-times); Dunn's River,
+  // the stable, the tubing, then the Blue Hole adds 30, exactly 8 hours.
+  const dayOf = (ids: number[]) => ids.map((id) => ({ id, travelers: 2, date: DATE }))
+  const send = (ids: number[]) => post({
+    amount: priceTourCart(dayOf(ids), {}, { zone: 'ocho_rios' }).total,
+    items: dayOf(ids).map((l) => ({ ...l, title: 'x', destination: 'x', price: 0 })),
+    customer, waiverAccepted: true,
+  })
+
+  it('refuses a day the drives between the tours take past 8 hours, and makes nothing', async () => {
+    const res = await send([1, 2, 8, 13])
+    const data = await res.json()
+    expect(res.status).toBe(400)
+    expect(data.error).toBe('That day runs past 8 hours once the drives between the tours are counted. Please split the trip across separate days.')
+    expect(db.tables.bookings ?? []).toHaveLength(0)
+    expect(db.intents.size).toBe(0)
+  })
+
+  it('takes the same tours in an order that fits in 8 hours', async () => {
+    const res = await send([1, 8, 13, 2])
+    const data = await res.json()
+    expect(res.status).toBe(200)
+    expect(data.clientSecret).toBeTruthy()
+    expect(db.tables.bookings ?? []).toHaveLength(1)
   })
 })
 
