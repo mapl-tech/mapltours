@@ -190,6 +190,8 @@ export interface FakeWise extends WiseApi {
   balance: number
   recipient: WiseRecipient
   requirements: WiseRequirementField[]
+  /** Wise's delivery estimate on every quote (an ISO instant), or null when it gives none. */
+  estimate: string | null
   /** Queued failures by step: each is used once, in order. */
   fail: Partial<Record<Step, (WiseApiError | 'reject-insufficient' | 'created-unconfirmed' | 'went-through-then-lost' | 'stale-waiting')[]>>
 }
@@ -209,6 +211,7 @@ export function fakeWise(): FakeWise {
     balance: 10_000,
     recipient: { id: 900001, currency: 'USD', type: 'aba', active: true, name: 'Collin Example' },
     requirements: [{ key: 'reference', required: false, minLength: null, maxLength: 35, validationRegexp: null, valuesAllowed: null }],
+    estimate: null,
     fail: {},
     async getRecipient(accountId) {
       w.calls.push('recipient')
@@ -238,6 +241,7 @@ export function fakeWise(): FakeWise {
           feeTotal: w.fee,
           sourceAmount: Math.round((input.targetAmount + w.fee) * 100) / 100,
           targetAmount: input.targetAmount,
+          estimatedDelivery: w.estimate,
         },
         expirationTime: null,
       }

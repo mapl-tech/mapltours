@@ -1,9 +1,11 @@
 /**
  * Daily at 14:30 UTC (09:30 in Jamaica): payouts by Wise (app/api/payouts/route.ts).
- * Built Nov 15 2026, changed Nov 18 2026 to pay before each trip, NOT LIVE.
+ * Built Nov 15 2026, changed Nov 18 2026 to pay before each trip, live since
+ * Nov 19 2026.
  *
- * Each run pays every ride half and tour whose send day has come (two
- * business days before its day by default), so it lands before the trip.
+ * Each run pays every ride half and tour whose send day has come (Wise's two
+ * business days before the day it should be in the account: the day before
+ * the trip, or the day of it when the banks are shut the day before).
  *
  * Inert until launch: unless WISE_PAYOUTS_ENABLED is exactly '1' this
  * function does not even call the route (a dry run is asked for by hand:

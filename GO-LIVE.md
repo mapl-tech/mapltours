@@ -253,9 +253,11 @@ review), or "Back to the default".
 
 The daily job (`app/api/payouts`, `netlify/functions/driver-payouts-cron.mjs`)
 pays, from the Wise US-dollar balance, every ride half and every tour whose
-send day has come: the second business day before its day, so the money is in
-the account before the driver or the operator works, as the console's "Pay
-driver ... before the pickup" steps do by hand today. How it decides and what
+send day has come, so the money is in the account the day before the trip (on
+the day when the banks are shut the day before; the Friday for a Sunday trip):
+Wise takes two business days, so it goes two business days before that day
+(owner, Nov 21 2026: "we want the transfer to arrive either the day of or day
+before"). How it decides and what
 it does when something fails: the headers of `lib/payouts/plan.ts` and
 `lib/payouts/run.ts`. It is inert until `WISE_PAYOUTS_ENABLED=1`: the cron does
 not even call the route, and the route only dry-runs.
@@ -311,7 +313,7 @@ not even call the route, and the route only dry-runs.
    every hand payment before then is ticked in the console.
 6. **Netlify env** (Functions scope): `WISE_API_TOKEN`, `WISE_PROFILE_ID=154050700`,
    `WISE_PAYOUT_RECIPIENTS`, `WISE_TOUR_PAYEE`, `PAYOUT_FROM`, optionally
-   `WISE_BALANCE_ID`, `PAYOUT_LEAD_BUSINESS_DAYS` and the limits. Leave
+   `WISE_BALANCE_ID`, `PAYOUT_TRANSIT_BUSINESS_DAYS` and the limits. Leave
    `WISE_PAYOUTS_ENABLED` unset. Deploy.
 7. **Read a dry run** and compare it with the dispatch console, line by line:
    `curl -H "Authorization: Bearer $CRON_SECRET" https://mapltours.com/api/payouts?dry=1`
@@ -369,7 +371,7 @@ in Wise, then `update driver_payouts set resolved_at = now() where id = '<id>';`
 | `PAYOUT_FROM` | server | required to pay: `YYYY-MM-DD`, the first ride or tour day the job pays |
 | `WISE_BALANCE_ID` | server | optional: the USD balance to pay from |
 | `WISE_PAYOUTS_ENABLED` | server | exactly `1` to pay; anything else keeps payouts off |
-| `PAYOUT_LEAD_BUSINESS_DAYS` | server | optional: business days before the trip a payment goes (default 2) |
+| `PAYOUT_TRANSIT_BUSINESS_DAYS` | server | optional: business days Wise takes to put a payment in the account (default 2); each part goes that many business days before the day it should arrive. The old `PAYOUT_LEAD_BUSINESS_DAYS` is refused if set |
 | `PAYOUT_MAX_PAYEE_USD` / `PAYOUT_MAX_RUN_USD` / `PAYOUT_MAX_FEE_USD` | server | optional limits (defaults 3000 / 6000 / 40) |
 
 Calendar sync setup (already done once, recorded here for rebuilds): Calendar

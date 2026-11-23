@@ -8,14 +8,16 @@ import {
   tourPartOf,
   type PlanInput,
 } from '@/lib/payouts/plan'
-import { addDays, isBusinessDay, isYmd, jamaicaDay, sendDayFor, usBankHolidays } from '@/lib/payouts/business-days'
+import { addDays, arrivalDayFor, isBusinessDay, isYmd, jamaicaDay, landingDayFor, nextBusinessDay, prevBusinessDay, sendDayFor, usBankHolidays } from '@/lib/payouts/business-days'
 import { parseRecipients, readPayoutConfig, payoutsEnabled } from '@/lib/payouts/config'
 import { ride, tour } from './payouts-fakes'
 
 /**
  * The payout planner: which parts (ride halves, tours) are owed, to which
- * Wise recipient, and on which day they are sent. Paid BEFORE the trip, two
- * business days ahead by default, by the Jamaica calendar.
+ * Wise recipient, and on which day they are sent. Paid BEFORE the trip, so
+ * the money is in the account the day before it (or on the day, when the
+ * banks are shut the day before), with Wise's two business days at the bank,
+ * by the Jamaica calendar.
  */
 
 // 09:30 in Jamaica on Tuesday Nov 17 2026.
@@ -59,15 +61,65 @@ describe('the banking calendar', () => {
     expect(isBusinessDay('2026-12-25')).toBe(false)
   })
 
-  test('the send day is the second business day before the trip', () => {
-    expect(sendDayFor('2026-11-19', 2)).toBe('2026-11-17') // Thursday trip: sent Tuesday, lands Wednesday
-    expect(sendDayFor('2026-11-23', 2)).toBe('2026-11-19') // Monday: sent the Thursday before
-    expect(sendDayFor('2026-11-21', 2)).toBe('2026-11-19') // Saturday
-    expect(sendDayFor('2026-11-22', 2)).toBe('2026-11-19') // Sunday
-    expect(sendDayFor('2026-11-27', 2)).toBe('2026-11-24') // the Friday after Thanksgiving
-    expect(sendDayFor('2026-12-28', 2)).toBe('2026-12-23') // the Monday after Christmas
-    expect(sendDayFor('2026-11-19', 1)).toBe('2026-11-18')
-    expect(sendDayFor('2026-11-19', 3)).toBe('2026-11-16')
+  test("Wise's two business days, as its estimates on the first real payouts said", () => {
+    expect(landingDayFor('2026-11-19', 2)).toBe('2026-11-23') // funded Thursday Nov 19: in the account Monday
+    expect(landingDayFor('2026-11-20', 2)).toBe('2026-11-24') // funded Friday: Tuesday
+    expect(landingDayFor('2026-11-21', 2)).toBe('2026-11-25') // quoted Saturday: Wednesday
+    expect(landingDayFor('2026-11-22', 2)).toBe('2026-11-25') // a Sunday run is a Monday one
+    expect(landingDayFor('2026-11-25', 2)).toBe('2026-11-30') // over Thanksgiving
+    expect(landingDayFor('2026-11-19', 0)).toBe('2026-11-19')
+    expect(nextBusinessDay('2026-11-25')).toBe('2026-11-27')
+    expect(prevBusinessDay('2026-11-27')).toBe('2026-11-25')
+    expect(prevBusinessDay('2026-11-23')).toBe('2026-11-20')
+  })
+
+  test('in the account the day before the trip; on the day when the banks are shut the day before (owner, Nov 21 2026)', () => {
+    // [trip day, the day it is in the account, the day it is sent]
+    const cases: [string, string, string][] = [
+      ['2026-11-17', '2026-11-16', '2026-11-12'], // Tuesday trip: in the account Monday, sent the Thursday before
+      ['2026-11-18', '2026-11-17', '2026-11-13'], // Wednesday: Tuesday, sent Friday
+      ['2026-11-19', '2026-11-18', '2026-11-16'], // Thursday: Wednesday, sent Monday
+      ['2026-11-20', '2026-11-19', '2026-11-17'], // Friday: Thursday, sent Tuesday
+      ['2026-11-21', '2026-11-20', '2026-11-18'], // Saturday: Friday, sent Wednesday
+      ['2026-11-22', '2026-11-20', '2026-11-18'], // Sunday: no bank day on the day or the day before, so the Friday
+      ['2026-11-23', '2026-11-23', '2026-11-19'], // Monday: on the day, sent Thursday
+      ['2026-11-26', '2026-11-25', '2026-11-23'], // Thanksgiving Day: the Wednesday, sent Monday
+      ['2026-11-27', '2026-11-27', '2026-11-24'], // the Friday after: the banks are shut on Thanksgiving, so on the day
+      ['2026-11-28', '2026-11-27', '2026-11-24'], // Saturday: Friday, sent Tuesday
+      ['2026-11-29', '2026-11-27', '2026-11-24'], // Sunday
+      ['2026-11-30', '2026-11-30', '2026-11-25'], // Monday: on the day, sent the day before Thanksgiving
+      ['2026-12-25', '2026-12-24', '2026-12-22'], // Christmas Day: Christmas Eve
+      ['2026-12-26', '2026-12-24', '2026-12-22'], // the Saturday after Christmas: Christmas Eve
+      ['2026-12-28', '2026-12-28', '2026-12-23'], // the Monday after: on the day
+      ['2027-01-02', '2026-12-31', '2026-12-29'], // the Saturday after New Year's Day: New Year's Eve
+      ['2027-01-04', '2027-01-04', '2026-12-30'], // Monday Jan 4: on the day
+      ['2027-01-18', '2027-01-15', '2027-01-13'], // Martin Luther King Jr. Day, a Monday holiday: the Friday
+      ['2027-01-19', '2027-01-19', '2027-01-14'], // the Tuesday after: on the day
+    ]
+    for (const [trip, arrives, sent] of cases) {
+      expect([trip, arrivalDayFor(trip), sendDayFor(trip, 2)]).toEqual([trip, arrives, sent])
+      expect([trip, landingDayFor(sent, 2)]).toEqual([trip, arrives])
+    }
+  })
+
+  test('every trip day for two years, at any transit: sent on a bank day, in the account on its day, never after the trip, never early when it could be later', () => {
+    for (let day = '2026-11-01'; day <= '2028-12-31'; day = addDays(day, 1)) {
+      const arrives = arrivalDayFor(day)
+      const shut = !isBusinessDay(addDays(day, -1)) && !isBusinessDay(day)
+      expect(isBusinessDay(arrives)).toBe(true)
+      expect(arrives <= day).toBe(true)
+      // The day before or the day itself whenever either is a bank day; otherwise the last bank day before.
+      if (shut) expect(arrives).toBe(prevBusinessDay(day))
+      else expect([addDays(day, -1), day]).toContain(arrives)
+      if (isBusinessDay(addDays(day, -1))) expect(arrives).toBe(addDays(day, -1))
+      for (const transit of [0, 1, 2, 3]) {
+        const sent = sendDayFor(day, transit)
+        expect(isBusinessDay(sent)).toBe(true)
+        expect(landingDayFor(sent, transit)).toBe(arrives)
+        // Sent a bank day later, it would arrive after its day: the send day is the latest that works.
+        expect(landingDayFor(nextBusinessDay(sent), transit) > arrives).toBe(true)
+      }
+    }
   })
 
   test('dates and the Jamaica day, whatever the server clock', () => {
@@ -83,31 +135,47 @@ describe('the banking calendar', () => {
 })
 
 describe('when a ride is paid', () => {
-  test('due on its send day: a Thursday ride on Tuesday, a Friday ride not yet', () => {
-    const thu = oneWay('2026-11-19')
+  test('due on its send day: a Friday ride on the Tuesday, in the account on the Thursday; a Saturday ride not yet', () => {
     const fri = oneWay('2026-11-20')
-    const p = plan({ bookings: [thu, fri] })
-    expect(keys(p)).toEqual([`${thu.id.slice(0, 8).toUpperCase().replace(/^/, 'MAPL-')}:first`])
+    const sat = oneWay('2026-11-21')
+    const p = plan({ bookings: [fri, sat] })
+    expect(keys(p)).toEqual([`${fri.id.slice(0, 8).toUpperCase().replace(/^/, 'MAPL-')}:first`])
     expect(p.payDay).toBe('2026-11-17')
-    expect(p.payees[0].lines[0]).toMatchObject({ serviceDay: '2026-11-19', sendDay: '2026-11-17', label: 'arrival', name: 'Collin' })
+    expect(p.landsDay).toBe('2026-11-19')
+    expect(p.payees[0].lines[0]).toMatchObject({ serviceDay: '2026-11-20', sendDay: '2026-11-17', label: 'arrival', name: 'Collin' })
     expect(p.skipped.not_due).toBe(1)
   })
 
-  test('the next morning, the Friday ride goes', () => {
-    const p = plan({ bookings: [oneWay('2026-11-20')], nowMs: Date.parse('2026-11-18T14:30:00Z') })
+  test('the next morning, the Saturday ride goes, in the account on the Friday', () => {
+    const p = plan({ bookings: [oneWay('2026-11-21')], nowMs: Date.parse('2026-11-18T14:30:00Z') })
     expect(p.payees[0].totalUsd).toBe(51)
+    expect(p.landsDay).toBe('2026-11-20')
   })
 
-  test('a weekend ride goes on the Thursday before', () => {
-    const sat = oneWay('2026-11-21')
-    expect(plan({ bookings: [sat], nowMs: Date.parse('2026-11-18T14:30:00Z') }).payees).toHaveLength(0)
-    expect(plan({ bookings: [sat], nowMs: Date.parse('2026-11-19T14:30:00Z') }).payees[0].totalUsd).toBe(51)
+  test('a weekend ride goes on the Wednesday before, so it is in the account on the Friday', () => {
+    for (const day of ['2026-11-21', '2026-11-22']) {
+      expect(plan({ bookings: [oneWay(day)] }).payees).toHaveLength(0)
+      const wed = plan({ bookings: [oneWay(day)], nowMs: Date.parse('2026-11-18T14:30:00Z') })
+      expect(wed.payees[0].totalUsd).toBe(51)
+      expect(wed.landsDay).toBe('2026-11-20')
+    }
+  })
+
+  test('a Monday ride goes on the Thursday before and is in the account on the Monday', () => {
+    const mon = oneWay('2026-11-23')
+    expect(plan({ bookings: [mon], nowMs: Date.parse('2026-11-18T14:30:00Z') }).payees).toHaveLength(0)
+    const thu = plan({ bookings: [mon], nowMs: Date.parse('2026-11-19T14:30:00Z') })
+    expect(thu.payees[0].lines[0]).toMatchObject({ serviceDay: '2026-11-23', sendDay: '2026-11-19' })
+    expect(thu.landsDay).toBe('2026-11-23')
   })
 
   test('a booking made after its send day is paid on the next run, even on the day of the ride', () => {
     const today = oneWay('2026-11-17')
     const yesterday = oneWay('2026-11-16')
-    expect(plan({ bookings: [today, yesterday] }).payees[0].lines).toHaveLength(2)
+    const p = plan({ bookings: [today, yesterday] })
+    expect(p.payees[0].lines).toHaveLength(2)
+    // The bank cannot get it there first: the run says when it arrives, after both trips.
+    expect(p.landsDay).toBe('2026-11-19')
   })
 
   test('a round trip pays each half by its own leg: the arrival now, the ride back later', () => {
@@ -119,16 +187,17 @@ describe('when a ride is paid', () => {
   })
 
   test('a leg\'s day is read from its Jamaica wall clock, never the server zone', () => {
-    const lateThu = oneWay('2026-11-19', { arrival: '2026-11-19T23:30:00+00:00' })
-    const earlyFri = oneWay('2026-11-20', { arrival: '2026-11-20T00:30:00+00:00' })
-    const p = plan({ bookings: [lateThu, earlyFri] })
-    expect(p.payees[0].lines.map((l) => l.bookingId)).toEqual([lateThu.id])
+    const lateFri = oneWay('2026-11-20', { arrival: '2026-11-20T23:30:00+00:00' })
+    const earlySat = oneWay('2026-11-21', { arrival: '2026-11-21T00:30:00+00:00' })
+    const p = plan({ bookings: [lateFri, earlySat] })
+    expect(p.payees[0].lines.map((l) => l.bookingId)).toEqual([lateFri.id])
   })
 
   test('the run\'s day is the Jamaica day: 23:30 in Jamaica on Monday is still Monday', () => {
-    const p = plan({ bookings: [oneWay('2026-11-19')], nowMs: Date.parse('2026-11-17T04:30:00Z') })
+    const p = plan({ bookings: [oneWay('2026-11-20')], nowMs: Date.parse('2026-11-17T04:30:00Z') })
     expect(p.payDay).toBe('2026-11-16')
     expect(p.payees).toHaveLength(0)
+    expect(plan({ bookings: [oneWay('2026-11-20')], nowMs: Date.parse('2026-11-17T05:00:00Z') }).payees).toHaveLength(1)
   })
 
   test('a one-way to the airport is labelled as one', () => {
@@ -136,9 +205,11 @@ describe('when a ride is paid', () => {
     expect(ridePartsOf(b)).toEqual([{ part: 'first', label: 'ride to the airport', amountUsd: 51, serviceDay: '2026-11-19' }])
   })
 
-  test('the lead can be set: one business day', () => {
-    const p = plan({ bookings: [oneWay('2026-11-19')], limits: { ...DEFAULT_LIMITS, leadBusinessDays: 1 } })
-    expect(p.payees).toHaveLength(0)
+  test("Wise's time at the bank can be set: one business day sends later, three sooner", () => {
+    expect(plan({ bookings: [oneWay('2026-11-20')], limits: { ...DEFAULT_LIMITS, transitBusinessDays: 1 } }).payees).toHaveLength(0)
+    const three = plan({ bookings: [oneWay('2026-11-21')], limits: { ...DEFAULT_LIMITS, transitBusinessDays: 3 } })
+    expect(three.payees[0].lines[0]).toMatchObject({ serviceDay: '2026-11-21', sendDay: '2026-11-17' })
+    expect(three.landsDay).toBe('2026-11-20')
   })
 })
 
@@ -214,7 +285,7 @@ describe('tours', () => {
     expect(tourPartOf(t)).toEqual({ part: 'tour', label: 'tour', amountUsd: 260, serviceDay: '2026-11-19' })
     const p = plan({ bookings: [t] })
     expect(p.payees[0]).toMatchObject({ payee: 'Collin', recipientId: 900001, totalUsd: 260, status: 'ready' })
-    expect(p.payees[0].lines[0]).toMatchObject({ part: 'tour', sendDay: '2026-11-17' })
+    expect(p.payees[0].lines[0]).toMatchObject({ part: 'tour', sendDay: '2026-11-16' })
   })
 
   test('a tour and the operator\'s own rides share one payment', () => {
@@ -291,7 +362,7 @@ describe('configuration', () => {
     const good = readPayoutConfig({ ...ok, PAYOUT_MAX_FEE_USD: '30', WISE_TOUR_PAYEE: 'collin' })
     expect(good.problems).toEqual([])
     expect(good.config).toMatchObject({ env: 'production', profileId: 154050700, balanceId: null, recipients: { Collin: 1 }, tourPayee: 'collin', fromDay: '2026-12-01' })
-    expect(good.config?.limits).toMatchObject({ maxFeeUsd: 30, leadBusinessDays: 2 })
+    expect(good.config?.limits).toMatchObject({ maxFeeUsd: 30, transitBusinessDays: 2 })
   })
 
   test('a start date is required to send, and must be a real date', () => {
@@ -302,12 +373,21 @@ describe('configuration', () => {
     expect(readPayoutConfig({ ...ok, PAYOUT_FROM: '2026-02-30' }).problems).toEqual(['PAYOUT_FROM is not a date (YYYY-MM-DD)'])
   })
 
-  test('the tour payee must be one of the recipients; the lead a whole number from 1 to 10', () => {
+  test("the tour payee must be one of the recipients; Wise's transit a whole number from 0 to 10", () => {
     expect(readPayoutConfig({ ...ok, WISE_TOUR_PAYEE: 'Someone' }).problems).toEqual(['WISE_TOUR_PAYEE is not one of the names in WISE_PAYOUT_RECIPIENTS'])
     expect(readPayoutConfig({ ...ok }).config?.tourPayee).toBeNull()
-    expect(readPayoutConfig({ ...ok, PAYOUT_LEAD_BUSINESS_DAYS: '3' }).config?.limits.leadBusinessDays).toBe(3)
-    for (const v of ['0', '1.5', '11', 'two']) {
-      expect(readPayoutConfig({ ...ok, PAYOUT_LEAD_BUSINESS_DAYS: v }).problems).toEqual(['PAYOUT_LEAD_BUSINESS_DAYS is not a whole number from 1 to 10'])
+    expect(readPayoutConfig({ ...ok }).config?.limits.transitBusinessDays).toBe(2)
+    expect(readPayoutConfig({ ...ok, PAYOUT_TRANSIT_BUSINESS_DAYS: '3' }).config?.limits.transitBusinessDays).toBe(3)
+    expect(readPayoutConfig({ ...ok, PAYOUT_TRANSIT_BUSINESS_DAYS: '0' }).config?.limits.transitBusinessDays).toBe(0)
+    for (const v of ['-1', '1.5', '11', 'two']) {
+      expect(readPayoutConfig({ ...ok, PAYOUT_TRANSIT_BUSINESS_DAYS: v }).problems).toEqual(['PAYOUT_TRANSIT_BUSINESS_DAYS is not a whole number from 0 to 10'])
     }
+  })
+
+  test('the old lead setting is refused, not quietly read with its old meaning', () => {
+    const r = readPayoutConfig({ ...ok, PAYOUT_LEAD_BUSINESS_DAYS: '2' })
+    expect(r.config).toBeNull()
+    expect(r.problems).toEqual(['PAYOUT_LEAD_BUSINESS_DAYS is no longer read: remove it (PAYOUT_TRANSIT_BUSINESS_DAYS is the business days Wise takes)'])
+    expect(readPayoutConfig({ ...ok, PAYOUT_LEAD_BUSINESS_DAYS: ' ' }).problems).toEqual([])
   })
 })

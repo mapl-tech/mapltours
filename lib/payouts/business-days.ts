@@ -1,13 +1,30 @@
 /**
  * Driver payouts by Wise: the banking calendar that decides when a payment
- * must leave so it lands before the ride or tour.
+ * must leave so it is in the account the day before the ride or tour.
  *
- * A Wise US-dollar bank transfer (ACH) lands the next business day (Wise's
- * own estimate on MAPL's profile, Nov 18 2026), and US banks move no money
- * on weekends or on the Federal Reserve's holidays. So a payment for a
- * service on day D goes out on the `lead`-th business day before D: with the
- * default 2, a Thursday ride is paid on Tuesday and lands on Wednesday, and a
- * Saturday, Sunday or Monday ride is paid on the Thursday before.
+ * The owner's rule (Nov 21 2026): "we want the transfer to arrive either the
+ * day of or day before". US banks move no money on weekends or on the
+ * Federal Reserve's holidays, so the day the money should be in the account
+ * (`arrivalDayFor`) is:
+ *  - the day before the trip, when the banks are open that day;
+ *  - otherwise the day of the trip, when they are open then (a Monday trip,
+ *    or the day after a holiday);
+ *  - otherwise the last bank day before the trip: the Friday for a Sunday
+ *    trip, when neither the day nor the day before is a bank day. Money is
+ *    never planned to arrive after the trip (Nov 18 2026: pay "before the
+ *    ride our tour").
+ *
+ * Wise needs `transit` business days (default 2) to put a US-dollar bank
+ * transfer into Collin's US account, counted from the first business day on
+ * or after it is funded. Wise's own delivery estimates on the first real
+ * payouts: funded Thursday Nov 19, in the account Monday Nov 23; funded
+ * Friday Nov 20, Tuesday Nov 24; quoted on Saturday Nov 21, Wednesday Nov 25.
+ * (The Nov 18 design counted one business day, which put the money for the
+ * Nov 21 and 22 weekend rides in the account on the Monday after them.) So a
+ * payment goes out `transit` business days before its arrival day: a Thursday
+ * trip is paid on the Monday and arrives on the Wednesday; a Saturday or
+ * Sunday trip is paid on the Wednesday and arrives on the Friday; a Monday
+ * trip is paid on the Thursday and arrives on the Monday.
  *
  * Dates are calendar dates, 'YYYY-MM-DD', with no time and no zone: the
  * Jamaica day of the ride or tour, and the Jamaica day of the run. Pure.
@@ -101,18 +118,50 @@ export function isBusinessDay(ymd: string): boolean {
   return !usBankHolidays(Number(ymd.slice(0, 4))).has(ymd)
 }
 
+/** The first business day after `ymd` (never `ymd` itself). */
+export function nextBusinessDay(ymd: string): string {
+  let day = addDays(ymd, 1)
+  // The longest run of days without a bank day is a weekend beside a holiday: 3 or 4 days.
+  for (let i = 0; i < 14 && !isBusinessDay(day); i++) day = addDays(day, 1)
+  return day
+}
+
+/** The last business day before `ymd` (never `ymd` itself). */
+export function prevBusinessDay(ymd: string): string {
+  let day = addDays(ymd, -1)
+  for (let i = 0; i < 14 && !isBusinessDay(day); i++) day = addDays(day, -1)
+  return day
+}
+
 /**
- * The day a payment for a service on `serviceDay` goes out: the `lead`-th
- * business day before it. A run on that day or later pays it.
+ * The day the money for a service on `serviceDay` should be in the account:
+ * the day before, else the day itself, else the last bank day before it.
  */
-export function sendDayFor(serviceDay: string, lead: number): string {
-  let day = serviceDay
-  let counted = 0
-  // A lead is a handful of days; 60 steps back is far more than any run of holidays and weekends.
-  for (let i = 0; i < 60 && counted < lead; i++) {
-    day = addDays(day, -1)
-    if (isBusinessDay(day)) counted++
-  }
+export function arrivalDayFor(serviceDay: string): string {
+  const before = addDays(serviceDay, -1)
+  if (isBusinessDay(before)) return before
+  if (isBusinessDay(serviceDay)) return serviceDay
+  return prevBusinessDay(serviceDay)
+}
+
+/**
+ * The day a payment funded on `payDay` is in the account: Wise starts on the
+ * first business day on or after it and takes `transit` business days.
+ */
+export function landingDayFor(payDay: string, transit: number): string {
+  let day = isBusinessDay(payDay) ? payDay : nextBusinessDay(payDay)
+  for (let i = 0; i < transit; i++) day = nextBusinessDay(day)
+  return day
+}
+
+/**
+ * The day a payment for a service on `serviceDay` goes out: `transit`
+ * business days before its arrival day, so that it lands on that day. A run
+ * on that day or later pays it (later lands later, never earlier).
+ */
+export function sendDayFor(serviceDay: string, transit: number): string {
+  let day = arrivalDayFor(serviceDay)
+  for (let i = 0; i < transit; i++) day = prevBusinessDay(day)
   return day
 }
 

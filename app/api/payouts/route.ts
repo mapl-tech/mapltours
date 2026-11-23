@@ -16,10 +16,11 @@ import type { Bk } from '@/lib/dispatch'
  * Built Nov 15 2026, changed Nov 18 2026 to pay before each trip.
  *
  * Pays, through Wise from the US-dollar balance, every ride half and every
- * tour whose send day has come: two business days before its day by default,
- * so the money lands before the driver or the operator works
- * (lib/payouts/plan.ts, lib/payouts/run.ts). Nothing with a day before
- * PAYOUT_FROM is ever paid.
+ * tour whose send day has come: Wise's two business days before the day the
+ * money should be in the account, which is the day before the trip (or the
+ * day of it when the banks are shut the day before), so the driver or the
+ * operator has it when they work (lib/payouts/business-days.ts, plan.ts,
+ * run.ts). Nothing with a day before PAYOUT_FROM is ever paid.
  *
  * THE SEND GATE: nothing is sent unless WISE_PAYOUTS_ENABLED is exactly '1'
  * and the Wise configuration is complete. Otherwise every run, the cron's

@@ -12,7 +12,10 @@
  *                           Unset: tours are reported, never paid.
  *   PAYOUT_FROM             required to send: 'YYYY-MM-DD', the first ride or tour day the job pays.
  *                           Nothing before it is ever paid (rides already paid by hand).
- *   PAYOUT_LEAD_BUSINESS_DAYS  optional, default 2: a part is sent this many business days before its day.
+ *   PAYOUT_TRANSIT_BUSINESS_DAYS  optional, default 2: the business days Wise takes to put a payment in
+ *                           the account. Each part is sent that many business days before the day it
+ *                           should arrive (the day before its trip; lib/payouts/business-days).
+ *                           PAYOUT_LEAD_BUSINESS_DAYS (until Nov 21 2026) is refused if set.
  *   WISE_PAYOUTS_ENABLED    exactly '1' to send. Anything else, or unset, keeps every run dry.
  *   PAYOUT_MAX_PAYEE_USD    optional limits (lib/payouts/plan DEFAULT_LIMITS)
  *   PAYOUT_MAX_RUN_USD
@@ -114,11 +117,16 @@ export function readPayoutConfig(env: Env = process.env): { config: PayoutConfig
     if (n == null) problems.push(`${name} is not a positive number`)
     else limits[field] = n
   }
-  const leadRaw = env.PAYOUT_LEAD_BUSINESS_DAYS
-  if (leadRaw != null && leadRaw.trim() !== '') {
-    const n = positiveInt(leadRaw)
-    if (n == null || n > 10) problems.push('PAYOUT_LEAD_BUSINESS_DAYS is not a whole number from 1 to 10')
-    else limits.leadBusinessDays = n
+  // Until Nov 21 2026 the lead was counted back from the trip day, which put weekend
+  // money in the account after the trip. A value left set would now mean something else.
+  if ((env.PAYOUT_LEAD_BUSINESS_DAYS ?? '').trim() !== '') {
+    problems.push('PAYOUT_LEAD_BUSINESS_DAYS is no longer read: remove it (PAYOUT_TRANSIT_BUSINESS_DAYS is the business days Wise takes)')
+  }
+  const transitRaw = (env.PAYOUT_TRANSIT_BUSINESS_DAYS ?? '').trim()
+  if (transitRaw !== '') {
+    const n = /^\d{1,2}$/.test(transitRaw) ? Number(transitRaw) : NaN
+    if (!(n >= 0 && n <= 10)) problems.push('PAYOUT_TRANSIT_BUSINESS_DAYS is not a whole number from 0 to 10')
+    else limits.transitBusinessDays = n
   }
 
   const settings: PayoutPlanSettings = { recipients, tourPayee, fromDay, limits }

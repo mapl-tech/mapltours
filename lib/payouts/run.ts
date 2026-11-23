@@ -2,8 +2,9 @@
  * Payouts by Wise: the run. Called daily by
  * netlify/functions/driver-payouts-cron.mjs through app/api/payouts; it pays
  * every ride half and tour whose send day has come (lib/payouts/plan.ts), so
- * the money lands before the service, as the console's "Pay driver ... before
- * the pickup" steps do by hand today.
+ * the money is in the account the day before the service (or on the day,
+ * when the banks are closed the day before), as the console's "Pay driver
+ * ... before the pickup" steps do by hand.
  *
  * NOT LIVE until WISE_PAYOUTS_ENABLED is exactly '1' (app/api/payouts). Until
  * then every run is a dry run: it reads and plans, and never calls Wise or
@@ -52,6 +53,7 @@
 
 import { randomUUID } from 'node:crypto'
 import { round2 } from '@/lib/dispatch'
+import { jamaicaDay } from './business-days'
 import { WiseApiError, type WiseApi, type WiseRequirementField, type WiseTransfer } from '@/lib/wise/client'
 import {
   planPayouts,
@@ -179,8 +181,24 @@ export interface PayeeReport {
   feeUsd: number | null
   transferId: number | null
   lines: ReportLine[]
+  /**
+   * The Jamaica day the money is in the account: Wise's own estimate when it
+   * quoted this payment, otherwise the banking calendar's for this run.
+   */
+  landsDay: string | null
   /** Parts whose dispatch already showed a payment when this one was stamped: possibly paid twice. */
   alreadyStamped: string[]
+}
+
+/**
+ * The trips a payment reaches the account only after: booked after its send
+ * day, sent late, or slower at the bank than the calendar. The operations
+ * inbox hears of every one (owner, Nov 21 2026: the transfer should "arrive
+ * either the day of or day before").
+ */
+export function arrivesAfter(d: Pick<PayeeReport, 'landsDay' | 'lines'>): ReportLine[] {
+  const lands = d.landsDay
+  return lands ? d.lines.filter((l) => l.serviceDay < lands) : []
 }
 
 export interface PayoutReport {
@@ -352,6 +370,7 @@ export async function runDriverPayouts(deps: PayoutRunDeps): Promise<PayoutRepor
       feeUsd: null,
       transferId: null,
       lines: d.lines.map((l) => ({ ref: l.ref, part: l.part, label: l.label, name: l.name, amountUsd: l.amountUsd, serviceDay: l.serviceDay })),
+      landsDay: plan.landsDay,
       alreadyStamped: [],
     }
     if (d.status !== 'ready' || !live) { report.payees.push(base); continue }
@@ -368,7 +387,8 @@ export async function runDriverPayouts(deps: PayoutRunDeps): Promise<PayoutRepor
   // Collin so no need to send a seperate email"). Clean means funded, every
   // part stamped by this payout and its email sent; without a mailer wired
   // there is no such email, so the run still writes.
-  const clean = (d: PayeeReport) => d.outcome === 'funded' && !d.detail && d.alreadyStamped.length === 0 && !!deps.notifyPaid
+  // A payment that reaches the account after its trip is not clean either.
+  const clean = (d: PayeeReport) => d.outcome === 'funded' && !d.detail && d.alreadyStamped.length === 0 && arrivesAfter(d).length === 0 && !!deps.notifyPaid
   report.attention =
     live && (
       report.payees.some((d) => d.outcome !== 'planned' && !clean(d)) ||
@@ -420,7 +440,9 @@ async function payPayee(deps: PayoutRunDeps, d: PayeePlan, payDay: string, base:
     const fee = round2(quote.option.feeTotal)
     if (!(fee >= 0) || fee > config.limits.maxFeeUsd) throw new Definite(`Wise's fee ${fmt(fee)} is over the ${fmt(config.limits.maxFeeUsd)} limit`)
     await store.update(payoutId, { wise_quote_id: quote.id, fee_usd: fee, source_amount_usd: round2(quote.option.sourceAmount) })
-    base = { ...base, feeUsd: fee }
+    // Wise's own word on when it is in the account beats the calendar's.
+    const eta = quote.option.estimatedDelivery
+    base = { ...base, feeUsd: fee, ...(eta ? { landsDay: jamaicaDay(Date.parse(eta)) } : {}) }
 
     // 4. Requirements: the reference that fits, and nothing else unmet.
     const candidates = referenceCandidates(d.lines)

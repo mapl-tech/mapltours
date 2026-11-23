@@ -61,7 +61,7 @@ const SECRET = 'cron-secret-for-tests'
 const NOW = Date.parse('2026-11-01T14:30:00Z')
 const bearer = { authorization: `Bearer ${SECRET}` }
 const req = (path = '/api/payouts', headers: Record<string, string> = {}) => new NextRequest(`https://mapltours.com${path}`, { headers })
-const ENV = ['CRON_SECRET', 'WISE_API_TOKEN', 'WISE_PROFILE_ID', 'WISE_ENV', 'WISE_PAYOUT_RECIPIENTS', 'WISE_PAYOUTS_ENABLED', 'WISE_BALANCE_ID', 'WISE_TOUR_PAYEE', 'PAYOUT_FROM', 'PAYOUT_LEAD_BUSINESS_DAYS']
+const ENV = ['CRON_SECRET', 'WISE_API_TOKEN', 'WISE_PROFILE_ID', 'WISE_ENV', 'WISE_PAYOUT_RECIPIENTS', 'WISE_PAYOUTS_ENABLED', 'WISE_BALANCE_ID', 'WISE_TOUR_PAYEE', 'PAYOUT_FROM', 'PAYOUT_LEAD_BUSINESS_DAYS', 'PAYOUT_TRANSIT_BUSINESS_DAYS']
 
 beforeEach(() => {
   vi.useFakeTimers({ now: NOW, toFake: ['Date'] })
@@ -121,11 +121,22 @@ describe('/api/payouts', () => {
 
   test('switched on: pays, and the payment emails (which copy the inbox) are the only word of it', async () => {
     process.env.WISE_PAYOUTS_ENABLED = '1'
+    // Both rides on Wednesday Nov 4: paid on Sunday Nov 1, in the account on the Wednesday.
+    state.store = memStore([ride({ subtotal: 147, arrival: '2026-11-04T10:00:00+00:00', departure: '2026-11-04T18:00:00+00:00' })], NOW)
     const j = await (await POST(req('/api/payouts', bearer))).json()
     expect(j).toMatchObject({ mode: 'live', funded: 1, paid_usd: 147 })
     expect(state.wise.calls).toEqual(['recipient', 'quote', 'requirements', 'transfer', 'fund'])
     expect(state.paidEmails).toHaveLength(2)
     expect(state.notified).toBe(0)
+  })
+
+  test('switched on: money that is in the account only after its trip is told to the inbox', async () => {
+    process.env.WISE_PAYOUTS_ENABLED = '1'
+    // The October rides are paid on Nov 1 and in the account on Nov 4, after both.
+    const j = await (await POST(req('/api/payouts', bearer))).json()
+    expect(j).toMatchObject({ mode: 'live', funded: 1, paid_usd: 147 })
+    expect(state.paidEmails).toHaveLength(2)
+    expect(state.notified).toBe(1)
   })
 
   test('switched on, not enough dollars: nothing paid, and the inbox is told', async () => {

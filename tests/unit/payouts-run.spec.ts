@@ -444,12 +444,66 @@ describe("the driver's payment email", () => {
     expect(order).toEqual(['funded:stamped', 'funded:stamped', 'funded:stamped'])
   })
 
+  // Both legs on Wednesday Nov 4: due on Sunday Nov 1, in the account by the Wednesday.
+  const nov4 = { arrival: '2026-11-04T10:00:00+00:00', departure: '2026-11-04T18:00:00+00:00' }
+
   test('a clean payment is announced by its payment emails only: no separate operations email', async () => {
-    const { notify, deps } = setup([ride({ driver: 'Collin' }), ride({ driver: 'Marcus Reid', subtotal: 168 })])
+    const { notify, deps } = setup([ride({ driver: 'Collin', ...nov4 }), ride({ driver: 'Marcus Reid', subtotal: 168, ...nov4 })])
     const r = await runDriverPayouts(deps({ notifyPaid: mailer() }))
     expect(r.payees.map((d) => d.outcome)).toEqual(['funded', 'funded'])
+    expect(r.payees.map((d) => d.landsDay)).toEqual(['2026-11-04', '2026-11-04'])
     expect(r.attention).toBe(false)
     expect(notify).not.toHaveBeenCalled()
+  })
+
+  test("Wise's own estimate is the day it is in the account, over the calendar's", async () => {
+    const { wise, notify, deps } = setup([ride(nov4)])
+    wise.estimate = '2026-11-03T18:00:00Z' // 13:00 in Jamaica on Tuesday
+    const r = await runDriverPayouts(deps({ notifyPaid: mailer() }))
+    expect(only(r.payees)).toMatchObject({ outcome: 'funded', landsDay: '2026-11-03' })
+    expect(notify).not.toHaveBeenCalled()
+  })
+
+  test("Wise's estimate is read as a Jamaica day: 03:00 UTC on Wednesday is still Tuesday night there", async () => {
+    const { wise, deps } = setup([ride(nov4)])
+    wise.estimate = '2026-11-04T03:00:00Z'
+    const r = await runDriverPayouts(deps({ notifyPaid: mailer() }))
+    expect(only(r.payees).landsDay).toBe('2026-11-03')
+  })
+
+  test('in the account after its trip: the operations email goes, says when it arrives, and marks the trip', async () => {
+    // Booked late (October rides paid on Nov 1): the calendar puts the money in the account on Wednesday Nov 4.
+    const late = ride({ trip: 'one_way', subtotal: 51, arrival: '2026-10-20T10:00:00+00:00', departure: null })
+    const { notify, deps } = setup([late, ride(nov4)])
+    const r = await runDriverPayouts(deps({ notifyPaid: mailer() }))
+    expect(only(r.payees)).toMatchObject({ outcome: 'funded', landsDay: '2026-11-04', detail: null })
+    expect(r.attention).toBe(true)
+    expect(notify).toHaveBeenCalledTimes(1)
+    const m = payoutSummary(r)
+    expect(m.title).toBe('Payouts on Sun, Nov 1 need a look')
+    expect(m.body).toMatch(/in the account only after the trip it pays for/)
+    expect(m.body).not.toMatch(/did not go/)
+    expect(m.lines[0]).toMatch(/Collin: US\$198\.00 for 3 trips, PAID .*, in the account by Wed, Nov 4$/)
+    const ref = `MAPL-${late.id.slice(0, 8).toUpperCase()}`
+    expect(m.lines.filter((l) => l.includes('AFTER this trip'))).toEqual([`    ${ref} arrival, Tue, Oct 20: US$51.00, in the account AFTER this trip`])
+  })
+
+  test('Wise slower than the calendar: its estimate after the trip is told too', async () => {
+    const { wise, notify, deps } = setup([ride(nov4)])
+    wise.estimate = '2026-11-05T18:00:00Z'
+    const r = await runDriverPayouts(deps({ notifyPaid: mailer() }))
+    expect(only(r.payees).landsDay).toBe('2026-11-05')
+    expect(notify).toHaveBeenCalledTimes(1)
+    expect(payoutSummary(r).lines.filter((l) => l.includes('AFTER this trip'))).toHaveLength(2)
+  })
+
+  test('a payment that did not go says nothing about when it arrives', async () => {
+    const { wise, deps } = setup([ride()])
+    wise.balance = 10
+    const r = await runDriverPayouts(deps({ notifyPaid: mailer() }))
+    expect(only(r.payees).outcome).toBe('failed')
+    const text = payoutSummary(r).lines.join('\n')
+    expect(text).not.toMatch(/in the account/)
   })
 
   test('one payment clean and one not: the operations email goes, and names both', async () => {

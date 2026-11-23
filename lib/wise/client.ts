@@ -64,6 +64,8 @@ export interface WiseQuoteOption {
   /** What leaves the balance: the amount sent plus the fee. */
   sourceAmount: number
   targetAmount: number
+  /** When Wise says the money is in the recipient's account if funded now (an ISO instant), or null. */
+  estimatedDelivery: string | null
 }
 
 export interface WiseQuote {
@@ -192,6 +194,10 @@ export function parseQuote(j: Record<string, unknown>): WiseQuote {
           feeTotal: num(fee.total),
           sourceAmount: num(match.sourceAmount),
           targetAmount: num(match.targetAmount),
+          estimatedDelivery: (() => {
+            const at = str(match.estimatedDelivery)
+            return at && Number.isFinite(Date.parse(at)) ? at : null
+          })(),
         }
       : null,
     expirationTime: str(j.expirationTime),

@@ -103,7 +103,17 @@ describe('parsing', () => {
         { payIn: 'BALANCE', payOut: 'SWIFT_OUR', disabled: true, disabledReason: { code: 'error.payInmethod.disabled', message: 'Sorry, you do not have USD in your account.' }, fee: { transferwise: 22.84, total: 22.84 }, sourceAmount: 463.84, targetAmount: 441 },
       ],
     })
-    expect(q.option).toEqual({ payIn: 'BALANCE', payOut: 'SWIFT_OUR', disabled: true, disabledReason: 'error.payInmethod.disabled', feeTotal: 22.84, sourceAmount: 463.84, targetAmount: 441 })
+    expect(q.option).toEqual({ payIn: 'BALANCE', payOut: 'SWIFT_OUR', disabled: true, disabledReason: 'error.payInmethod.disabled', feeTotal: 22.84, sourceAmount: 463.84, targetAmount: 441, estimatedDelivery: null })
+  })
+
+  test("the option carries Wise's delivery estimate, as a quote to Collin's account answered on Nov 21 2026", () => {
+    const quote = (estimatedDelivery: unknown) => parseQuote({
+      id: 'q2', status: 'PENDING', payOut: 'BANK_TRANSFER', preferredPayIn: 'BALANCE', targetAmount: 81, sourceCurrency: 'USD', targetCurrency: 'USD',
+      paymentOptions: [{ payIn: 'BALANCE', payOut: 'BANK_TRANSFER', disabled: false, fee: { total: 0.24 }, sourceAmount: 81.24, targetAmount: 81, estimatedDelivery, formattedEstimatedDelivery: 'by Wednesday 25 November', estimatedDeliveryDelays: [] }],
+    })
+    expect(quote('2026-11-25T18:00:00Z').option?.estimatedDelivery).toBe('2026-11-25T18:00:00Z')
+    expect(quote('by Wednesday').option?.estimatedDelivery).toBeNull()
+    expect(quote(undefined).option?.estimatedDelivery).toBeNull()
   })
 
   test('requirements flatten to fields', () => {

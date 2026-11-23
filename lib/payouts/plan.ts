@@ -4,11 +4,13 @@
  * the bookings, the ledger and "now", and does the sending.
  *
  * The owner's rule (Nov 18 2026, replacing the monthly plan of Nov 15): pay
- * as today, BEFORE the ride or the tour. Each part is sent on the
- * `leadBusinessDays`-th business day before its day (lib/payouts/business-days),
- * so a Wise US bank transfer, which lands the next business day, is in the
- * account before the service. A booking made after that day is paid on the
- * next run, still before the ride where the bank allows. Asked what to do for
+ * as today, BEFORE the ride or the tour; and (Nov 21 2026) "we want the
+ * transfer to arrive either the day of or day before". Each part is sent
+ * `transitBusinessDays` business days (Wise's time to the account, 2) before
+ * the bank day it should arrive (lib/payouts/business-days arrivalDayFor):
+ * the day before the trip, else the day of it, else the last bank day before.
+ * A booking made after its send day is paid on the next run, and arrives as
+ * soon as the bank allows (`landsDay`). Asked what to do for
  * a booking made close to the ride, while the guest may still cancel within
  * 48 hours for 80% back, he chose to pay before the ride as today: a payment
  * the guest's refund makes wrong is recovered by hand.
@@ -50,7 +52,7 @@
  */
 
 import { firstLeg, moneyBlock, round2, bookingRef } from '@/lib/dispatch'
-import { isYmd, jamaicaDay, sendDayFor } from './business-days'
+import { isYmd, jamaicaDay, landingDayFor, sendDayFor } from './business-days'
 
 export type PayPart = 'first' | 'second' | 'tour'
 
@@ -95,7 +97,7 @@ export interface PayoutLine {
   amountUsd: number
   /** The Jamaica day of the ride or the first tour, 'YYYY-MM-DD'. */
   serviceDay: string
-  /** The day it is sent from. */
+  /** The first day a run sends it: `transitBusinessDays` business days before it should arrive. */
   sendDay: string
 }
 
@@ -130,15 +132,15 @@ export interface PayoutLimits {
   maxRunUsd: number
   /** Wise's fee on one payout above this stops that payout. */
   maxFeeUsd: number
-  /** A part is sent this many business days before its day. */
-  leadBusinessDays: number
+  /** The business days Wise takes to put a payment in the account (2 to Collin's US account, Nov 2026). */
+  transitBusinessDays: number
 }
 
 export const DEFAULT_LIMITS: PayoutLimits = {
   maxPayeeUsd: 3000,
   maxRunUsd: 6000,
   maxFeeUsd: 40,
-  leadBusinessDays: 2,
+  transitBusinessDays: 2,
 }
 
 export interface PlanInput {
@@ -160,6 +162,8 @@ export interface PlanInput {
 export interface PayoutPlan {
   /** The Jamaica day of this run. */
   payDay: string
+  /** The day a payment funded in this run is in the account, by the banking calendar. */
+  landsDay: string
   fromDay: string | null
   payees: PayeePlan[]
   skipped: Record<SkipReason, number>
@@ -243,7 +247,7 @@ export function planPayouts(input: PlanInput): PayoutPlan {
     for (const p of isRide ? ridePartsOf(b) : [tourPartOf(b)]) {
       if (!p.serviceDay) { skipped.no_date++; continue }
       if (!fromDay || p.serviceDay < fromDay) { skipped.before_start++; continue }
-      const sendDay = sendDayFor(p.serviceDay, limits.leadBusinessDays)
+      const sendDay = sendDayFor(p.serviceDay, limits.transitBusinessDays)
       if (payDay < sendDay) { skipped.not_due++; continue }
       if (dispatch[PART_STAMP[p.part]]) { skipped.paid_by_hand++; continue }
       if (input.ledger.has(`${b.id}:${p.part}`)) { skipped.in_ledger++; continue }
@@ -288,7 +292,7 @@ export function planPayouts(input: PlanInput): PayoutPlan {
     }
   }
 
-  return { payDay, fromDay, payees, skipped, refundHeld }
+  return { payDay, landsDay: landingDayFor(payDay, limits.transitBusinessDays), fromDay, payees, skipped, refundHeld }
 }
 
 /** "Thu, Nov 19" for '2026-11-19'. */
