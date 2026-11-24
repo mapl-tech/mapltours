@@ -109,8 +109,28 @@ describe('intro copy', () => {
     const oneWay = getTransferPrice(d.id, 'one_way')
     const roundTrip = getTransferPrice(d.id, 'round_trip')
     expect(text).toContain(
-      `to ${d.name} in St. Ann, from $${oneWay} per vehicle one way and $${roundTrip} round trip. The fare is per vehicle`,
+      `to ${d.name} in St. Ann, from $${oneWay} per vehicle one way and $${roundTrip} round trip. The fare covers the whole vehicle for 1 to 4 guests`,
     )
+  })
+
+  // Nov 24 2026 (owner): 168 pages promised "we confirm it before you pay" (the guest pays at
+  // checkout), and every page said "per vehicle, not per person", true only up to 4 guests.
+  test('every page states the party-size rule the card charges, and makes no confirmation promise', () => {
+    for (const d of DESTINATIONS) {
+      const { text } = render(d.id)
+      expect(text, d.id).toContain('The fare covers the whole vehicle for 1 to 4 guests; the vehicle seats 7, and from 5 guests it is priced per person, never less than the fare for 4.')
+      expect(text, d.id).not.toMatch(/confirm it before you pay|not per person|standard zone rate/i)
+      for (const trip of ['one_way', 'round_trip'] as const) {
+        const p = (n: number) => getTransferPrice(d.id, trip, n)
+        // "whole vehicle for 1 to 4": one fare for every party up to 4.
+        for (const n of [2, 3, 4]) expect(p(n), `${d.id} ${trip} ${n}`).toBe(p(1))
+        // "never less than the fare for 4", and it does not fall as the party grows.
+        for (const n of [5, 6, 7]) {
+          expect(p(n)!, `${d.id} ${trip} ${n}`).toBeGreaterThanOrEqual(p(4)!)
+          expect(p(n)!, `${d.id} ${trip} ${n}`).toBeGreaterThanOrEqual(p(n - 1)!)
+        }
+      }
+    }
   })
 
   test('holds for every destination: no stray space before punctuation, no em dash', () => {

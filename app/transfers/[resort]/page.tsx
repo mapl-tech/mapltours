@@ -131,10 +131,12 @@ export default function ResortTransferPage({ params }: { params: { resort: strin
         <p className="mt-3 max-w-2xl text-base opacity-80">
           Private transfer from Sangster International (MBJ) to {dest.name} in {dest.parish}
           {oneWay ? <>, from <strong>${oneWay}</strong> per vehicle one way</> : null}
-          {roundTrip ? <> and <strong>${roundTrip}</strong> round trip</> : null}. The fare is per
-          vehicle, not per person, and it is locked at checkout. We track your flight, so a late
-          landing is still met at arrivals with a name sign.
-          {dest.estimated ? ' This route is priced on our standard zone rate; we confirm it before you pay.' : ''}
+          {roundTrip ? <> and <strong>${roundTrip}</strong> round trip</> : null}. The fare covers
+          the whole vehicle for 1 to 4 guests; the vehicle seats 7, and from 5 guests it is priced
+          per person, never less than the fare for 4. Your fare is locked at checkout. We track
+          your flight, so a late landing is still met at arrivals with a name sign.
+          {/* No "we confirm it before you pay" for an estimated rate (owner, Nov 24 2026): the guest
+              pays at checkout, and an estimate is the operator's to confirm in the admin, not the guest's. */}
           {reopensAhead(dest.reopens) ? ` Note: this resort reopens ${reopensAhead(dest.reopens)}.` : ''}
         </p>
 
