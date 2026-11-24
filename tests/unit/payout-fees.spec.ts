@@ -66,9 +66,11 @@ describe('a booking\'s payout fees', () => {
   test('a ride the job will pay is Wise\'s rate; one wholly before Wise is exactly what the page counted before', () => {
     const later = ride('c', { booking_items: [{ trip_type: 'round_trip', arrival_at: '2026-12-10T14:30:00Z', departure_at: '2026-12-15T12:30:00Z' }] })
     const f = payoutFees(later, new Map(), '2026-11-19')
-    // Each half is its own Wise payment, charged on its own (US$0.24 on US$81, Nov 20 2026).
-    expect(f.parts.map((p) => p.feeUsd)).toEqual([0.24, 0.24])
-    expect(f.feeUsd).toBe(0.48)
+    // Each half is its own Wise payment, charged on its own: nothing since Nov 23 2026, when the job
+    // began paying Collin's own Wise account (it was US$0.24 on US$81 to his Payoneer account, Nov 20).
+    expect(WISE_FEE_RATE).toBe(0)
+    expect(f.parts.map((p) => p.feeUsd)).toEqual([0, 0])
+    expect(f.feeUsd).toBe(0)
     expect(feeSourceOf(f.parts)).toBe('wise_est')
 
     const old = ride('d', { booking_items: [{ trip_type: 'round_trip', arrival_at: '2026-10-01T14:30:00Z', departure_at: '2026-10-08T12:30:00Z' }] })

@@ -448,35 +448,29 @@ export function getZoneForDestination(id: string): ZoneInfo | undefined {
   return d ? ZONES[d.zone] : undefined
 }
 
-/** MAPL's margin on top of the driver's cost. */
-export const TRANSFER_MARGIN = 0.10
 /**
- * The payout allowance in every ride price: what paying the driver via
- * Remitly from Canada cost, charged the way it was incurred rather than as a
- * flat percentage.
+ * MAPL's profit on a ride, as a share of the driver's rate, after card fees
+ * and after paying the driver: 15% since Nov 24 2026 (owner, asking whether
+ * MAPL made 15% on rides and tours: "reduce both to 15%", and in the question
+ * dialog "Exactly 15% on every ride").
  *
- * Since Nov 19 2026 drivers are paid by Wise (about 0.30%, lib/payouts),
- * which costs less. The allowance stays in the price on the owner's word
- * (Nov 21 2026: take Stripe's 2% conversion out of the fares and keep the
- * profit margin), so the difference is MAPL's. Lowering it to Wise's real
- * cost is the owner's call (offered Nov 19 and Nov 20 2026).
+ * Paying the driver costs nothing since Nov 23 2026: the payout job pays
+ * Collin's own Wise account, balance to balance, with no fee, and every
+ * driver's ride is paid to that account (lib/payouts). So a ride carries no
+ * payout allowance. If drivers are ever paid by a route that costs money
+ * again, the price has to carry that cost again.
  *
- * Measured live 2026-08-15: CAD 3.99 FLAT per send plus a ~2.05% FX spread on
- * CAD to JMD. The flat half is the part a percentage cannot model. A single
- * 5% cover works out at $7 on a $140 payout, which is generous, and at $0.75
- * on a $15 payout, which does not even reach the CAD 3.99. MAPL pays each
- * round trip in two halves, so the flat fee lands twice on the trips least
- * able to absorb it, and seven of the cheapest price points were selling
- * below fully loaded cost: a Deja Resort round trip took $34 and cost $34.53
- * once the payout and the card fee were paid.
- *
- * Splitting it into a flat component and a rate component moves most prices
- * by a dollar, makes sixteen of them a dollar CHEAPER, and lifts the short
- * Montego Bay hops by $3 to $5, which is the difference between a small
- * margin and a loss. Remeasure both numbers if the payout rail changes.
+ * Until Nov 24 a ride carried a 10% margin plus a payout allowance the size
+ * of what Remitly cost (US$2.91 a send plus 2.05%), which by then paid for
+ * nothing, so MAPL kept 13.7% to 34.4% of the driver's rate: the most on the
+ * short Montego Bay hops, the least on the long trips. An even 15% moved 1,726
+ * of the 2,786 fares down (by up to US$5), left 470 and moved 590 up (by up
+ * to US$4, long trips such as GoldenEye and Jakes); the owner chose that over
+ * keeping every fare at or below its old price.
+ * tests/unit/transfer-price-rule.spec.ts holds every hotel, trip and party
+ * size to the rule.
  */
-export const REMITLY_FLAT = 2.91
-export const REMITLY_FX = 0.0205
+export const TRANSFER_MARGIN = 0.15
 /**
  * Card processing, built INTO the displayed price so the customer sees a
  * single all-in number and the margin survives intact. Since Nov 18 2026 the
@@ -489,8 +483,10 @@ export const REMITLY_FX = 0.0205
  * conversion to Canadian dollars and C$0.30, verified to the cent against
  * live charges (the last one, Nov 17: C$10.83 processing and C$5.69
  * conversion on a US$199 ride). Owner, Nov 21 2026: remove the 2% conversion
- * from ride prices and keep the profit margin. Nothing else in the formula
- * moved, so MAPL keeps its 10% and the payout allowance on every ride.
+ * from ride prices and keep the profit margin.
+ *
+ * Confirmed on the first charge settled in US dollars (Nov 23 2026): US$7.52
+ * on US$195, exactly 3.7% plus US$0.30.
  */
 export const CARD_RATE = 0.037
 export const CARD_FIXED = 0.30
@@ -546,13 +542,10 @@ export function driverCost(
 }
 
 /**
- * The all-in price the customer pays: driver cost, plus MAPL's margin, plus
- * the payout allowance, all grossed up so card processing does not eat the
- * margin. Rounded UP to the dollar so a booking can never come in under cost.
- *
- * `sends` is why this is not a single percentage: a round trip is paid to the
- * driver in two halves, so the allowance carries Remitly's flat fee twice
- * regardless of how small the fare is.
+ * The all-in price the customer pays: driver cost plus MAPL's margin, grossed
+ * up so card processing does not eat the margin. Rounded UP to the dollar so a
+ * booking can never come in under cost. Paying the driver costs nothing (see
+ * TRANSFER_MARGIN), so nothing else is in it.
  */
 export function getTransferPrice(
   destinationId: string,
@@ -561,9 +554,7 @@ export function getTransferPrice(
 ): number | null {
   const cost = driverCost(destinationId, tripType, passengers)
   if (cost === null) return null
-  const sends = tripType === 'round_trip' ? 2 : 1
-  const payout = cost * (1 + TRANSFER_MARGIN + REMITLY_FX) + sends * REMITLY_FLAT
-  return Math.ceil((payout + CARD_FIXED) / (1 - CARD_RATE))
+  return Math.ceil((cost * (1 + TRANSFER_MARGIN) + CARD_FIXED) / (1 - CARD_RATE))
 }
 
 /** Cheapest and dearest all-in price in a zone. Prices are set per resort, so

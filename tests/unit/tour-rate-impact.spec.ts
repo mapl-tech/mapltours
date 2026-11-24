@@ -19,8 +19,8 @@ const ALL = Array.from({ length: 12 }, (_, i) => i + 1)
 describe('guestPriceAt', () => {
   test('a tour priced by area: the zone’s price where it is sold, nothing anywhere else', () => {
     const d = card(DUNNS)
-    expect(guestPriceAt(d, 2, 'negril')).toBe(493) // ($400 x 1.1852 + $0.30) / 0.963, rounded up
-    expect(guestPriceAt(d, 2, 'ocho_rios')).toBe(235)
+    expect(guestPriceAt(d, 2, 'negril')).toBe(478) // ($400 x 1.15 + $0.30) / 0.963, rounded up
+    expect(guestPriceAt(d, 2, 'ocho_rios')).toBe(228)
     expect(guestPriceAt(d, 2, null)).toBeNull() // checkout refuses it without a sold zone: never the "from"
     delete d.pricing.zoneRates!.lucea
     expect(guestPriceAt(d, 2, 'lucea')).toBeNull()

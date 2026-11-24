@@ -371,7 +371,7 @@ in Wise, then `update driver_payouts set resolved_at = now() where id = '<id>';`
 | `PAYOUT_FROM` | server | required to pay: `YYYY-MM-DD`, the first ride or tour day the job pays |
 | `WISE_BALANCE_ID` | server | optional: the USD balance to pay from |
 | `WISE_PAYOUTS_ENABLED` | server | exactly `1` to pay; anything else keeps payouts off |
-| `PAYOUT_TRANSIT_BUSINESS_DAYS` | server | optional: business days Wise takes to put a payment in the account (default 2); each part goes that many business days before the day it should arrive. The old `PAYOUT_LEAD_BUSINESS_DAYS` is refused if set |
+| `PAYOUT_TRANSIT_BUSINESS_DAYS` | server | optional: business days Wise takes to put a payment in the account (default 2); each part goes that many business days before the day it should arrive. Production is 0 since Nov 23 2026: payments to Collin's own Wise account land in seconds. The old `PAYOUT_LEAD_BUSINESS_DAYS` is refused if set |
 | `PAYOUT_MAX_PAYEE_USD` / `PAYOUT_MAX_RUN_USD` / `PAYOUT_MAX_FEE_USD` | server | optional limits (defaults 3000 / 6000 / 40) |
 
 Calendar sync setup (already done once, recorded here for rebuilds): Calendar

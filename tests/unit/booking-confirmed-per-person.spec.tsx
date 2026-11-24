@@ -27,14 +27,14 @@ describe('the tour confirmation never invents a per-person price', () => {
     expect(t).toContain(`$${total.toFixed(2)}`)
   })
 
-  test('a per-person tour that multiplies back (rafting from Montego Bay, 3 guests at $111): "each" is the real price', async () => {
+  test('a per-person tour that multiplies back (rafting from Montego Bay, 2 guests at $108): "each" is the real price', async () => {
     const rafting = experiences.find((e) => e.id === 3)!
     expect(rafting.pricing.mode).toBe('per_person')
-    const total = tourPrice(rafting.pricing, 3, 'montego_bay')
-    expect(total).toBe(333)
-    const t = await text(BookingConfirmed({ ...base, totalPaid: total, items: [line(3, 3, total)] }))
-    expect(t).toContain('3 travelers · $111.00 each')
-    expect(t).toContain('$333.00')
+    const total = tourPrice(rafting.pricing, 2, 'montego_bay')
+    expect(total).toBe(216)
+    const t = await text(BookingConfirmed({ ...base, totalPaid: total, items: [line(3, 2, total)] }))
+    expect(t).toContain('2 travelers · $108.00 each')
+    expect(t).toContain('$216.00')
   })
 
   test('a tour priced by pickup area (Dunn River, 2 guests): no "each" even though it divides evenly', async () => {

@@ -864,11 +864,11 @@ describe('the follow-ups: day 3 without the code, day 7 with it', () => {
       departure_at: `${out}:00+00:00`, departure_flight: 'AA 4321', line_total: 111, price_per_person: 111,
     }
     const fare = getTransferPrice('samsara-cliff-negril', 'one_way', 2)!
-    expect(fare).toBe(109)
+    expect(fare).toBe(108)
     state.rows = [day3({ booking_type: 'transfer', total_paid: 111, booking_fee: 21, booking_items: [home] })]
     await sweep()
     expect(followSends()).toHaveLength(1)
-    expect(await text()).toContain('$109.00')
+    expect(await text()).toContain('$108.00')
     expect(await text()).not.toContain('$111.00')
 
     // With a code on the cart the saved total is net of it, so it is quoted as saved.
@@ -877,7 +877,7 @@ describe('the follow-ups: day 3 without the code, day 7 with it', () => {
     await sweep()
     expect(followSends()).toHaveLength(1)
     expect(await text()).toContain('$105.45')
-    expect(await text()).not.toContain('$109.00')
+    expect(await text()).not.toContain('$108.00')
   })
 
   test('several tours: the button opens checkout on the device they used, and says so', async () => {

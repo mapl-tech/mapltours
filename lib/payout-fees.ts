@@ -20,8 +20,15 @@ import { REMITLY_FLAT_USD, REMITLY_FX, round2 } from './dispatch'
  *    sends, exactly as the page always counted it.
  */
 
-/** Wise's fee on a US-dollar bank payment, as the live payouts were charged it (Nov 19 and 20 2026: US$0.49 on US$162, US$0.24 on US$81). */
-export const WISE_FEE_RATE = 0.003
+/**
+ * Wise's fee on a payment the job sends: none since Nov 23 2026, when it began
+ * paying Collin's own Wise account (balance to balance; the first, US$81 on
+ * Nov 24, was charged US$0). The bank route to his Payoneer account before it
+ * cost 0.30% (US$0.49 on US$162, US$0.24 on US$81, Nov 19 and 20), and those
+ * payments keep the fee Wise reported. Used only for a payment Wise has not
+ * reported a fee for and for parts the job has yet to send.
+ */
+export const WISE_FEE_RATE = 0
 
 export interface WisePayout { id: string; amountUsd: number; feeUsd: number | null }
 export interface WiseItem { payoutId: string; bookingId: string; part: PayPart; amountUsd: number }

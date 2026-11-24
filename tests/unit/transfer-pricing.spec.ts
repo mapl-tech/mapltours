@@ -47,11 +47,12 @@ describe('advertised "from" prices', () => {
     // 5% and became what it is: CAD 3.99 per send plus FX, charged twice on a
     // round trip. Seven of the cheapest points had been selling below fully
     // loaded cost. Moved again 2026-11-21, when Stripe's 2% conversion came
-    // out of the card fee (Negril and Ocho Rios $111 to $109; Rose Hall stays
-    // $39 by rounding).
-    expect(areaFromPrice('Rose Hall', 'one_way')).toBe(39)
-    expect(areaFromPrice('Negril', 'one_way')).toBe(109)
-    expect(areaFromPrice('Ocho Rios', 'one_way')).toBe(109)
+    // out of the card fee (Negril and Ocho Rios $111 to $109; Rose Hall stayed
+    // $39 by rounding), and 2026-11-24, when a ride became an even 15% with no
+    // payout allowance (Negril and Ocho Rios $108, Rose Hall $37).
+    expect(areaFromPrice('Rose Hall', 'one_way')).toBe(37)
+    expect(areaFromPrice('Negril', 'one_way')).toBe(108)
+    expect(areaFromPrice('Ocho Rios', 'one_way')).toBe(108)
   })
 
   test('round-trip is dearer than one-way for every area', () => {
@@ -117,9 +118,10 @@ describe('Negril West End additions', () => {
     // 2026-08-19. The enquirer was quoted the older figure, so honour $198 by
     // hand if they book; a dollar is not worth special-casing the rate table
     // for, but it is worth someone knowing about. $195 and $109 since
-    // 2026-11-21 (Stripe's 2% conversion out of the card fee), below both.
-    expect(getTransferPrice('samsara-cliff-negril', 'round_trip')).toBe(195)
-    expect(getTransferPrice('samsara-cliff-negril', 'one_way')).toBe(109)
+    // 2026-11-21 (Stripe's 2% conversion out of the card fee), $194 and $108
+    // since 2026-11-24 (an even 15%), below both.
+    expect(getTransferPrice('samsara-cliff-negril', 'round_trip')).toBe(194)
+    expect(getTransferPrice('samsara-cliff-negril', 'one_way')).toBe(108)
   })
 
   test('a round trip still beats two one-ways', () => {
@@ -169,15 +171,15 @@ describe('unlisted-hotel sentinel cannot produce a price', () => {
 })
 
 describe('no transfer sells below fully loaded cost', () => {
-  // The payout fee is FLAT per send, and a round trip is two sends. Modelled
-  // as a flat percentage it under-covered exactly the fares least able to
-  // absorb it: a Deja Resort round trip took $34 against $34.53 of driver
-  // payout, Remitly and card fees. Measured 2026-08-15. Drivers are paid by
-  // Wise since Nov 19 2026, which costs less, so this is the dearest way a
-  // ride could still be paid; the card fees are a US-dollar charge's since
-  // Nov 21 2026 (no 2% conversion).
-  const REMITLY_FLAT = 2.91
-  const REMITLY_FX = 0.0205
+  // Fully loaded: the driver's rate, the card fee on a US-dollar charge (no
+  // 2% conversion since Nov 21 2026) and the cost of paying the driver, which
+  // is nothing since Nov 23 2026 (the payout job pays Collin's own Wise
+  // account, balance to balance). Until Nov 24 the price also carried a
+  // payout allowance the size of Remitly's cost (US$2.91 a send plus 2.05%,
+  // measured 2026-08-15), and this test paid every ride that way. Since the
+  // allowance came out, a ride paid by HAND through Remitly costs more than
+  // its price carries on the cheapest fares (28 of 2,786; at worst US$1.89,
+  // a Deja Resort round trip for one), so hand payments are the exception.
   const CARD_RATE = 0.037
   const CARD_FIXED = 0.30
 
@@ -188,10 +190,8 @@ describe('no transfer sells below fully loaded cost', () => {
         const cost = driverCost(d.id, tripType)
         expect(price).not.toBeNull()
         expect(cost).not.toBeNull()
-        const sends = tripType === 'round_trip' ? 2 : 1
-        const payout = cost! + sends * REMITLY_FLAT + cost! * REMITLY_FX
         const card = price! * CARD_RATE + CARD_FIXED
-        const net = price! - payout - card
+        const net = price! - cost! - card
         expect(net, `${d.id} ${tripType} nets ${net.toFixed(2)}`).toBeGreaterThan(0)
       }
     }

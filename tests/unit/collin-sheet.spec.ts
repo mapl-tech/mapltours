@@ -155,11 +155,11 @@ describe("the catalogue agrees with Collin's sheet", () => {
 
   describe('the Rasta ATV Safari, the jet ski and parasailing, per person (Collin, Nov 14 2026)', () => {
     // [the sheet's first rate, its "4-more" rate, what a party of 1 to 6 pays on the site]
-    // Guest prices since Nov 19 2026 (tour-price-rule.spec.ts); Collin's rates are unchanged.
+    // Guest prices since Nov 24 2026 (tour-price-rule.spec.ts); Collin's rates are unchanged.
     const THREE: Record<number, { first: number; bigger: number; pays: number[] }> = {
-      5: { first: 150, bigger: 140, pays: [185, 370, 555, 739, 862, 1035] },
-      10: { first: 130, bigger: 100, pays: [161, 321, 481, 641, 616, 739] },
-      11: { first: 120, bigger: 90, pays: [148, 296, 444, 592, 555, 665] },
+      5: { first: 150, bigger: 140, pays: [180, 359, 538, 717, 837, 1004] },
+      10: { first: 130, bigger: 100, pays: [156, 311, 467, 622, 598, 717] },
+      11: { first: 120, bigger: 90, pays: [144, 287, 431, 574, 538, 646] },
     }
 
     it.each(Object.entries(THREE))('tour %s: every guest pays, and the price for each party size is pinned', (id, sheet) => {

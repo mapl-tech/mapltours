@@ -458,8 +458,9 @@ describe('the numbers and names come from the site', () => {
 
   test('p1: the round-trip ranges are the ones the live /transfers zone cards show, and the one-way line is the rate card’s cheapest fare', () => {
     // Read on mapltours.com/transfers, Sept 27 2026: Round-trip $39 to $92, $135, $114 to $167, $178 to $199, $199 to $285.
-    // Since Nov 21 2026 (Stripe's 2% conversion out of the ride fares), read on the live zone cards after that deploy:
-    expect(ZONE_RANGES.map((r) => range(r.min, r.max))).toEqual(['$38 to $91', '$133', '$112 to $164', '$174 to $195', '$195 to $279'])
+    // Nov 21 2026 (Stripe's 2% conversion out of the ride fares): $38 to $91, $133, $112 to $164, $174 to $195, $195 to $279.
+    // Since Nov 24 2026 (an even 15% on every ride, no payout allowance):
+    expect(ZONE_RANGES.map((r) => range(r.min, r.max))).toEqual(['$33 to $87', '$130', '$108 to $162', '$173 to $194', '$194 to $280'])
     expect(ONE_WAY_MIN).toBe(Math.min(...DESTINATIONS.map((d) => getTransferPrice(d.id, 'one_way')!)))
     expect(ALL_MIN).toBe(Math.min(...DESTINATIONS.map((d) => getTransferPrice(d.id, 'round_trip')!)))
     expect(ALL_MAX).toBe(Math.max(...DESTINATIONS.map((d) => getTransferPrice(d.id, 'round_trip')!)))
@@ -814,8 +815,13 @@ describe('every ride fare leads with the round trip (owner, Sept 27 2026: "it sh
         const ow = getTransferPrice(d.id, 'one_way', n)!
         const rt = getTransferPrice(d.id, 'round_trip', n)!
         const saving = 1 - rt / (2 * ow)
-        // Measured Sept 27 2026: 8.9% to 11.8%. Within 2 points of 10% is "about 10%".
-        expect(Math.abs(saving - 0.1), `${d.id} x${n}: $${rt} against 2 x $${ow}`).toBeLessThanOrEqual(0.02)
+        // Measured Sept 27 2026: 8.9% to 11.8%. Since Nov 24 2026 (an even 15%, no payout
+        // allowance): 9.7% to 13.2%. The 22 fares over 12% are the cheapest Montego Bay
+        // ones, where the card's fixed fee is paid once on a round trip and twice on two
+        // one-ways. So "about 10% less" never oversells: no fare saves under 8%, and none
+        // saves so much more that the line would hide the deal.
+        expect(saving, `${d.id} x${n}: $${rt} against 2 x $${ow}`).toBeGreaterThanOrEqual(0.08)
+        expect(saving, `${d.id} x${n}: $${rt} against 2 x $${ow}`).toBeLessThanOrEqual(0.14)
       }
     }
   })

@@ -1,9 +1,9 @@
 import {
   estimatedRateDestinations, driverCost, getTransferPrice,
-  TRANSFER_MARGIN, REMITLY_FLAT, REMITLY_FX, CARD_RATE, CARD_FIXED, ROUND_TRIP_DISCOUNT,
+  TRANSFER_MARGIN, CARD_RATE, CARD_FIXED, ROUND_TRIP_DISCOUNT,
 } from '@/lib/airport-transfers'
 import { REMITLY_FLAT_USD, REMITLY_FX as REMITLY_EST_FX } from '@/lib/dispatch'
-import { TOUR_MARGIN, TOUR_PAYOUT_RATE } from '@/lib/experiences'
+import { TOUR_MARGIN } from '@/lib/experiences'
 import { WISE_FEE_RATE } from '@/lib/payout-fees'
 import { money } from '@/lib/admin-format'
 
@@ -75,22 +75,26 @@ export default function CashflowNotes() {
             charges in US dollars (US$), with no conversion fee.
           </li>
           <li>
-            Rides are priced at the driver&rsquo;s rate plus a {pct(TRANSFER_MARGIN)} margin, a payout allowance of{' '}
-            {money(REMITLY_FLAT)} a send plus {pct(REMITLY_FX)} on the amount (what Remitly cost; Wise now costs less, and the
-            difference stays with MAPL) and card processing on a US-dollar charge ({pct(CARD_RATE)} plus {money(CARD_FIXED)}),
-            since Nov 21 2026; until then the card fee also carried Stripe&rsquo;s 2% conversion. A round trip is{' '}
-            {Number((2 * (1 - ROUND_TRIP_DISCOUNT)).toFixed(2))} times the one-way rate: Collin&rsquo;s {pct(ROUND_TRIP_DISCOUNT)} discount.
+            Rides are priced at the driver&rsquo;s rate plus MAPL&rsquo;s {pct(TRANSFER_MARGIN)}, grossed up for card processing
+            on a US-dollar charge ({pct(CARD_RATE)} plus {money(CARD_FIXED)}), since Nov 24 2026. Paying the driver costs nothing
+            (Wise pays Collin&rsquo;s own Wise account), so a fare carries no payout allowance. From Nov 21 to Nov 24 a fare carried
+            a 10% margin plus a payout allowance of $2.91 a send and 2.05% (what Remitly cost); until Nov 21 the card fee also
+            carried Stripe&rsquo;s 2% conversion. A round trip is {Number((2 * (1 - ROUND_TRIP_DISCOUNT)).toFixed(2))} times the
+            one-way rate: Collin&rsquo;s {pct(ROUND_TRIP_DISCOUNT)} discount.
           </li>
           <li>
-            Tours are priced at the operator&rsquo;s rate plus MAPL&rsquo;s {pct(TOUR_MARGIN)} and the {pct(TOUR_PAYOUT_RATE)} Wise
-            payment to the operator, grossed up for card processing on a US-dollar charge (since Nov 19 2026; until then a
-            15% margin, a 5% Remitly cover and Stripe&rsquo;s 2% conversion).
+            Tours are priced at the operator&rsquo;s rate plus MAPL&rsquo;s {pct(TOUR_MARGIN)}, grossed up for card processing on a
+            US-dollar charge, since Nov 24 2026 (from Nov 19 to Nov 24, 18.22% plus 0.3% for the Wise payment; before that a 15%
+            margin, a 5% Remitly cover and Stripe&rsquo;s 2% conversion).
           </li>
           <li>
             Payout fees are what sending each payout costs, half by half for a round trip. Where Wise has paid it, it is
-            Wise&rsquo;s own fee on that payment, shared across the trips it carried. Where the payout job will pay it, it is
-            Wise&rsquo;s {pct(WISE_FEE_RATE)} (est.). Where it was paid by hand through Remitly before Wise, it is about{' '}
-            {money(REMITLY_FLAT_USD)} a send plus {pct(REMITLY_EST_FX)} on the amount (est.). So Net kept is profit after everything.
+            Wise&rsquo;s own fee on that payment, shared across the trips it carried
+            {WISE_FEE_RATE === 0
+              ? <>. Where the payout job will pay it, it is nothing: Wise pays Collin&rsquo;s own Wise account for free (since Nov 23 2026).</>
+              : <>. Where the payout job will pay it, it is Wise&rsquo;s {pct(WISE_FEE_RATE)} (est.).</>}{' '}
+            Where it was paid by hand through Remitly before Wise, it is about {money(REMITLY_FLAT_USD)} a send plus{' '}
+            {pct(REMITLY_EST_FX)} on the amount (est.). So Net kept is profit after everything.
           </li>
           <li>
             Bookings paid before Aug 15 were priced under the old 10%-only model, which is why some show thin or negative

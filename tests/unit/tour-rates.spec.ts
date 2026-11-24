@@ -251,24 +251,24 @@ describe('pricing by pickup area', () => {
     for (const z of ['trelawny', 'runaway_bay', 'ocho_rios'] as const) expect(zoneSells(tour(RICKS).pricing, z), z).toBe(false)
   })
 
-  test('the guest price from each zone, worked by hand: (rate x 1.1852 + $0.30) / 0.963, rounded up', () => {
+  test('the guest price from each zone, worked by hand: (rate x 1.15 + $0.30) / 0.963, rounded up', () => {
     expect(zonePrices(dunns, 4)).toEqual([
-      { zone: 'negril', price: 493 }, { zone: 'lucea', price: 370 }, { zone: 'montego_bay', price: 345 },
-      { zone: 'trelawny', price: 284 }, { zone: 'runaway_bay', price: 272 }, { zone: 'ocho_rios', price: 235 },
+      { zone: 'negril', price: 478 }, { zone: 'lucea', price: 359 }, { zone: 'montego_bay', price: 335 },
+      { zone: 'trelawny', price: 275 }, { zone: 'runaway_bay', price: 264 }, { zone: 'ocho_rios', price: 228 },
     ])
     // Each guest past four adds $50 to Collin's rate.
     expect(tourOperatorCost(dunns, 6, 'ocho_rios')).toBe(290)
-    expect(tourPrice(dunns, 6, 'ocho_rios')).toBe(358)
+    expect(tourPrice(dunns, 6, 'ocho_rios')).toBe(347)
     // The day with both falls: $30 more for every guest.
     expect(tourOperatorCost(both, 2, 'ocho_rios')).toBe(250)
-    expect(tourPrice(both, 2, 'ocho_rios')).toBe(308)
+    expect(tourPrice(both, 2, 'ocho_rios')).toBe(299)
     expect(tourOperatorCost(both, 5, 'negril')).toBe(400 + 150 + 50)
   })
 
   test('without a zone, the price is the cheapest zone’s: a "from", never sold as such', () => {
-    expect(tourPrice(dunns, 2)).toBe(235)
-    expect(tour(DUNNS).price).toBe(235)
-    expect(tour(BOTH).price).toBe(272)
+    expect(tourPrice(dunns, 2)).toBe(228)
+    expect(tour(DUNNS).price).toBe(228)
+    expect(tour(BOTH).price).toBe(264)
   })
 
   test('labels: a flat rate covers the group; a price every guest adds to is for one', () => {
@@ -302,44 +302,44 @@ describe('pricing per person by pickup area', () => {
     expect(isPerPersonByArea(tour(7).pricing)).toBe(false)
   })
 
-  test('the guest price from each zone, worked by hand: (rate x guests x 1.1852 + $0.30) / 0.963, rounded up', () => {
+  test('the guest price from each zone, worked by hand: (rate x guests x 1.15 + $0.30) / 0.963, rounded up', () => {
     expect(zonePrices(raft, 1)).toEqual([
-      { zone: 'negril', price: 185 }, { zone: 'lucea', price: 124 }, { zone: 'montego_bay', price: 112 },
-      { zone: 'trelawny', price: 124 }, { zone: 'runaway_bay', price: 124 }, { zone: 'ocho_rios', price: 124 },
+      { zone: 'negril', price: 180 }, { zone: 'lucea', price: 120 }, { zone: 'montego_bay', price: 108 },
+      { zone: 'trelawny', price: 120 }, { zone: 'runaway_bay', price: 120 }, { zone: 'ocho_rios', price: 120 },
     ])
     // A couple: $180 to Collin from Montego Bay, $200 from Ocho Rios, $300 from Negril.
-    expect(tourPrice(raft, 2, 'montego_bay')).toBe(222)
-    expect(tourPrice(raft, 2, 'ocho_rios')).toBe(247)
-    expect(tourPrice(raft, 2, 'negril')).toBe(370)
+    expect(tourPrice(raft, 2, 'montego_bay')).toBe(216)
+    expect(tourPrice(raft, 2, 'ocho_rios')).toBe(240)
+    expect(tourPrice(raft, 2, 'negril')).toBe(359)
     // It was $128 for a party of up to 3, whoever they were: $270 to Collin for three from Montego Bay.
-    expect(tourPrice(raft, 3, 'montego_bay')).toBe(333)
-    expect(tourPrice(raft, 5, 'montego_bay')).toBe(555)
-    // No price ever falls short of what Collin is owed plus the margin.
-    for (const z of zonesSold(raft)) for (let n = 1; n <= 12; n++) expect(tourPrice(raft, n, z)).toBeGreaterThan(tourOperatorCost(raft, n, z) * 1.2)
+    expect(tourPrice(raft, 3, 'montego_bay')).toBe(323)
+    expect(tourPrice(raft, 5, 'montego_bay')).toBe(538)
+    // No price ever falls short of what Collin is owed plus MAPL's 15%, after the card fee.
+    for (const z of zonesSold(raft)) for (let n = 1; n <= 12; n++) expect(tourPrice(raft, n, z) * (1 - 0.037) - 0.3).toBeGreaterThanOrEqual(tourOperatorCost(raft, n, z) * 1.15 - 1e-9)
   })
 
   test('without a zone, the price is the cheapest zone’s per person: a "from"', () => {
-    expect(tour(RAFT).price).toBe(112)
-    expect(tourPrice(raft, 2)).toBe(222)
-    expect(tour(8).price).toBe(124)
+    expect(tour(RAFT).price).toBe(108)
+    expect(tourPrice(raft, 2)).toBe(216)
+    expect(tour(8).price).toBe(120)
     expect(zoneSells(raft, null)).toBe(false)
   })
 
   test('labels: per person, and a per-head figure only when it multiplies back', () => {
     expect(priceUnitLabel(raft)).toBe('per person')
-    // $222 for two from Montego Bay is $111 each, a dollar under the $112 for one (the card's fixed fee is shared).
-    expect(perTravelerPrice(raft, 2, 'montego_bay')).toBe(111)
-    // $247 for two from Ocho Rios is not a whole number each.
-    expect(perTravelerPrice(raft, 2, 'ocho_rios')).toBeNull()
+    // $216 for two from Montego Bay is $108 each, the same as for one.
+    expect(perTravelerPrice(raft, 2, 'montego_bay')).toBe(108)
+    // $359 for two from Negril is not a whole number each.
+    expect(perTravelerPrice(raft, 2, 'negril')).toBeNull()
   })
 
   test('checkout charges the guest’s own area, and refuses without one', () => {
     const line = [{ id: RAFT, travelers: 2, date: '2027-06-15' }]
     const p = priceTourCart(line, {}, { zone: 'negril' })
-    expect(p.total).toBe(370)
+    expect(p.total).toBe(359)
     expect(p.subtotal).toBe(300)
     expect(p.lines[0].zone).toBe('negril')
-    expect(priceTourCart(line, {}, { zone: 'montego_bay' }).total).toBe(222)
+    expect(priceTourCart(line, {}, { zone: 'montego_bay' }).total).toBe(216)
     expect(() => priceTourCart(line, {}, {})).toThrow(PricingError)
     try { priceTourCart(line, {}, {}) } catch (e) { expect((e as PricingError).code).toBe('pickup_area') }
   })
@@ -350,7 +350,7 @@ describe('priceTourCart: a tour priced by area is never quietly priced', () => {
 
   test('priced from the zone it is given, and the line says which', () => {
     const p = priceTourCart(line(DUNNS), {}, { zone: 'negril' })
-    expect(p.total).toBe(493)
+    expect(p.total).toBe(478)
     expect(p.lines[0].zone).toBe('negril')
     expect(p.subtotal).toBe(400)
     expect(priceTourCart(line(NINE_MILE), {}, {}).lines[0].zone).toBeNull()
@@ -422,25 +422,25 @@ describe('ZonePriceList: every area’s exact price on the tour page', () => {
     const html = renderToStaticMarkup(ZonePriceList({ exp: tour(DUNNS), formatPrice: usd }))
     const text = html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').replace(/&amp;/g, '&')
     expect(text).toContain('For up to 4 people, by where we pick you up')
-    expect(text).toContain('Negril $493 Lucea & Hanover $370 Montego Bay & Rose Hall $345 Falmouth & Trelawny $284 Runaway Bay & Discovery Bay $272 Ocho Rios $235')
+    expect(text).toContain('Negril $478 Lucea & Hanover $359 Montego Bay & Rose Hall $335 Falmouth & Trelawny $275 Runaway Bay & Discovery Bay $264 Ocho Rios $228')
     expect(text).toContain('Each guest over 4 adds to the price.')
     expect(html.match(/<dt/g)).toHaveLength(6)
   })
   test('the day with both falls is shown for two', () => {
     const text = renderToStaticMarkup(ZonePriceList({ exp: tour(BOTH), formatPrice: usd })).replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ')
     expect(text).toContain('For 2 people, by where we pick you up')
-    expect(text).toContain('Ocho Rios $308')
+    expect(text).toContain('Ocho Rios $299')
   })
   test('a tour priced per person shows one guest’s price from each area, and no line about extra guests', () => {
     const text = renderToStaticMarkup(ZonePriceList({ exp: tour(RAFT), formatPrice: usd })).replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').replace(/&amp;/g, '&')
     expect(text).toContain('Per person, by where we pick you up')
-    expect(text).toContain('Negril $185 Lucea & Hanover $124 Montego Bay & Rose Hall $112 Falmouth & Trelawny $124 Runaway Bay & Discovery Bay $124 Ocho Rios $124')
+    expect(text).toContain('Negril $180 Lucea & Hanover $120 Montego Bay & Rose Hall $108 Falmouth & Trelawny $120 Runaway Bay & Discovery Bay $120 Ocho Rios $120')
     expect(text).not.toContain('adds to the price')
     expect(text).toContain('Staying somewhere else? Write to us for a price. Checkout shows your exact total.')
   })
   test('a tour not booked from every area says which areas, before the guest reaches checkout', () => {
     const text = renderToStaticMarkup(ZonePriceList({ exp: tour(RICKS), formatPrice: usd })).replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').replace(/&amp;/g, '&')
-    expect(text).toContain('Negril $247 Lucea & Hanover $247 Montego Bay & Rose Hall $247')
+    expect(text).toContain('Negril $240 Lucea & Hanover $240 Montego Bay & Rose Hall $240')
     expect(text).toContain('Not booked online from Falmouth, Runaway Bay or Ocho Rios. Staying there or anywhere else? Write to us for a price. Checkout shows your exact total.')
   })
   test('nothing at all for a tour with one price everywhere', () => {
