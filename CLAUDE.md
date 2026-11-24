@@ -466,6 +466,26 @@ Owner, Nov 23 2026: asked for a free distance API for tour distances, then "Do i
 
 Tests: `drive-times.spec.ts` (table integrity, sites, venues, no leg faster than a straight line at 130 km/h), `day-route.spec.ts` (rules 1 to 4, printed legs sum to the driving, server never stricter), `day-hours.spec.ts` (score, store and gate agree to the minute), `checkout-paths.spec.ts` (the real route refuses 8 hrs 20 min and takes the same tours at 8 hrs), `reel-feed.spec.ts`.
 
+### Hotel pages Google can find (Nov 24 2026)
+
+Search Console (the service account is a Full user on `https://mapltours.com/`) showed Google had never crawled one of the 199 `/transfers/<hotel>` pages. Nothing linked to them (the rate card's hotel names are buttons that fill the quote card), and Google had last read the sitemap on April 30. Owner, Nov 24 2026, in the question dialog: "Fix all three".
+
+- **/transfers links every hotel page** (`components/transfers/HotelDirectory.tsx`). TransfersView renders it only when `hotelDirectory` is set, and only `app/transfers/page.tsx` sets it, so a hotel page does not list the other 198.
+  - Layout: five closed `<details>` (the rate card's areas). Links run A to Z with "Other hotel or villa" last.
+  - `prefetch={false}`: an open area shows up to 58 links.
+  - Styles: the `.xfer-hotels` block in `globals.css`. On phones it needs `order: 9`, because `.xfer-page` reorders its sections and an unordered one jumps above the quote card.
+- **The sitemap dates only blog posts**, from their `updatedAt` or `publishedAt`. Every other entry has no lastmod.
+  - It used to be the build time, so each deploy claimed 290 changed pages, and Google ignores a lastmod that is always "now".
+  - Do not put `new Date()` back.
+
+Tests: `tests/unit/hotel-directory.spec.tsx` checks:
+- one link per hotel page;
+- every sitemap hotel URL is linked;
+- the areas are closed;
+- the sort order;
+- only /transfers asks for the list;
+- lastmod appears only on blog posts.
+
 ### ProfileView
 - Hero banner: Jamaica-green gradient, avatar (80px, gold gradient circle), name "Alex Wanderlust", "Toronto - Member since 2024"
 - Stats row: Trips (3), Parishes (4), Experiences Saved — Syne gold numbers

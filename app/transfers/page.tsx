@@ -263,7 +263,7 @@ export default function TransfersPage() {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbs) }}
       />
-      <TransfersView />
+      <TransfersView hotelDirectory />
     </>
   )
 }

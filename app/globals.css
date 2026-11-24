@@ -2825,6 +2825,106 @@ a.pf-stat:hover { background: var(--surface); }
   .fare-panel:not(.is-all) .fare-row:nth-child(n + 9) { display: none; }
 }
 
+/* ── Every hotel page, by area (components/transfers/HotelDirectory) ──
+   Below the rate card on /transfers: one closed <details> per area, opening
+   to plain links that read down each column, the way a directory reads. Rows
+   are 44px for a thumb; the type follows the page's white sections. */
+.xfer-hotels { padding: 72px 0; background: #fff; border-top: 1px solid var(--border); }
+.xfer-hotels-kicker {
+  margin: 0;
+  font-family: var(--font-dm-sans);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--gold-text);
+}
+.xfer-hotels .xfer-section-h2 { margin-top: 8px; }
+.xfer-hotels-intro {
+  margin: 12px 0 0;
+  max-width: 560px;
+  font-family: var(--font-dm-sans);
+  font-size: 16px;
+  line-height: 1.55;
+  color: var(--text-secondary);
+}
+.xfer-hotels-groups { display: flex; flex-direction: column; gap: 12px; margin-top: 32px; }
+.xfer-hotels-group {
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  background: var(--bg-warm);
+}
+.xfer-hotels-group[open] { background: #fff; border-color: var(--border-strong); }
+.xfer-hotels-group summary {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 56px;
+  padding: 14px 22px;
+  cursor: pointer;
+  list-style: none;
+  font-family: var(--font-dm-sans);
+}
+.xfer-hotels-group summary::-webkit-details-marker { display: none; }
+.xfer-hotels-group summary::after {
+  content: '+';
+  /* Empty alternative text: the sign is drawn, never read ("plus" after every
+     area). A browser without the syntax drops this line and keeps the one above. */
+  content: '+' / '';
+  margin-left: auto;
+  font-size: 22px;
+  font-weight: 400;
+  line-height: 1;
+  color: var(--text-tertiary);
+  transition: transform 0.2s ease;
+}
+.xfer-hotels-group[open] summary::after { transform: rotate(45deg); color: var(--gold-text); }
+.xfer-hotels-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  column-gap: 12px;
+  row-gap: 2px;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.xfer-hotels-area { font-size: 16px; font-weight: 700; color: var(--text-primary); }
+.xfer-hotels-count { font-size: 14px; color: var(--text-tertiary); white-space: nowrap; }
+.xfer-hotels-list {
+  list-style: none;
+  margin: 0;
+  padding: 0 22px 14px;
+  columns: 1;
+  column-gap: 32px;
+}
+.xfer-hotels-list li { break-inside: avoid; }
+.xfer-hotels-list a {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 6px 0;
+  font-family: var(--font-dm-sans);
+  font-size: 15px;
+  line-height: 1.35;
+  color: var(--text-primary);
+  text-decoration: underline;
+  text-decoration-color: rgba(23, 22, 20, 0.35);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+}
+.xfer-hotels-list a:hover { text-decoration-color: currentColor; }
+@media (min-width: 600px) { .xfer-hotels-list { columns: 2; } }
+@media (min-width: 1024px) { .xfer-hotels-list { columns: 3; } }
+@media (max-width: 900px) {
+  /* .xfer-page is a flex column on phones with every section ordered
+     (TransfersView); unordered, this list would jump above the quote card. */
+  .xfer-page > .xfer-hotels { order: 9; }
+  .xfer-hotels { padding: 56px 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .xfer-hotels-group summary::after { transition: none; }
+}
+
 /* Contact page social tiles: the same four glyphs as the footer. */
 .contact-social svg { width: 20px; height: 20px; display: block; }
 .contact-social:hover, .contact-social:focus-visible { color: var(--text-primary); background: #fff; box-shadow: 0 0 0 1px var(--border); }

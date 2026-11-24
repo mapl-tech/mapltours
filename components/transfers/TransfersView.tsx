@@ -36,6 +36,7 @@ import { useI18n } from '@/lib/i18n'
 import { HERO, DESTINATIONS as DESTINATION_IMAGES } from '@/lib/images'
 import PlacePicker, { AIRPORT_ID, type PlaceOffer } from './PlacePicker'
 import FareTables from './FareTables'
+import HotelDirectory from './HotelDirectory'
 import Arrow, { RouteText } from '@/components/ui/Arrow'
 import {
   TRANSFER_REVIEWS as REVIEWS,
@@ -119,7 +120,11 @@ function priceRangeLabel(zone: TransferZone, tripType: TransferTripType): string
  * query string, so a Google Ads final URL can be a real page rather than a
  * redirect. Both guard on getDestination, so an unknown id simply does nothing.
  */
-export default function TransfersView({ initialDestinationId }: { initialDestinationId?: string } = {}) {
+export default function TransfersView({ initialDestinationId, hotelDirectory = false }: {
+  initialDestinationId?: string
+  /** /transfers lists every hotel page under the rate card; the hotel pages themselves do not. */
+  hotelDirectory?: boolean
+} = {}) {
   const router = useRouter()
   const addQuote = useTransfersCart((s) => s.addQuote)
   // Two formatters on purpose. formatPrice converts by a hardcoded rate and
@@ -1216,6 +1221,9 @@ export default function TransfersView({ initialDestinationId }: { initialDestina
 
       {/* ───────────── EVERY FARE, per hotel ───────────── */}
       <FareTables onPick={selectRoute} />
+
+      {/* ───────────── EVERY HOTEL PAGE, as links (/transfers only) ───────────── */}
+      {hotelDirectory && <HotelDirectory />}
 
       {/* ───────────── FINAL CTA ───────────── */}
       <section className="xfer-final-cta">

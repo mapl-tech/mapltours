@@ -3,32 +3,38 @@ import { experiences, slugify } from '@/lib/experiences'
 import { BLOG_POSTS } from '@/lib/blog'
 import { DESTINATIONS } from '@/lib/airport-transfers'
 
+/**
+ * lastmod is given only where it is a real date: a blog post's own
+ * updatedAt (or publishedAt). Every other page used to say it had changed at
+ * the moment of the build, so each deploy told Google that 290 pages were new,
+ * and Google learns to ignore a lastmod that is always "now" (Search Console,
+ * Nov 24 2026). Leaving it out is the honest answer for a page that has no
+ * date of its own; Google then schedules those crawls itself.
+ */
 export default function sitemap(): MetadataRoute.Sitemap {
   const baseUrl = 'https://mapltours.com'
-  const now = new Date()
 
   const staticPages = [
-    { url: baseUrl, lastModified: now, changeFrequency: 'weekly' as const, priority: 1.0 },
-    { url: `${baseUrl}/explore`, lastModified: now, changeFrequency: 'weekly' as const, priority: 0.9 },
-    { url: `${baseUrl}/transfers`, lastModified: now, changeFrequency: 'weekly' as const, priority: 0.85 },
-    { url: `${baseUrl}/blog`, lastModified: now, changeFrequency: 'weekly' as const, priority: 0.8 },
-    { url: `${baseUrl}/about`, lastModified: now, changeFrequency: 'monthly' as const, priority: 0.7 },
-    { url: `${baseUrl}/contact`, lastModified: now, changeFrequency: 'monthly' as const, priority: 0.6 },
-    { url: `${baseUrl}/help`, lastModified: now, changeFrequency: 'monthly' as const, priority: 0.6 },
-    { url: `${baseUrl}/gifts`, lastModified: now, changeFrequency: 'monthly' as const, priority: 0.6 },
-    { url: `${baseUrl}/safety`, lastModified: now, changeFrequency: 'monthly' as const, priority: 0.5 },
-    { url: `${baseUrl}/accessibility`, lastModified: now, changeFrequency: 'monthly' as const, priority: 0.5 },
-    { url: `${baseUrl}/careers`, lastModified: now, changeFrequency: 'monthly' as const, priority: 0.5 },
-    { url: `${baseUrl}/partner`, lastModified: now, changeFrequency: 'monthly' as const, priority: 0.6 },
-    { url: `${baseUrl}/connect`, lastModified: now, changeFrequency: 'monthly' as const, priority: 0.6 },
-    { url: `${baseUrl}/press`, lastModified: now, changeFrequency: 'monthly' as const, priority: 0.5 },
-    { url: `${baseUrl}/terms`, lastModified: now, changeFrequency: 'yearly' as const, priority: 0.3 },
-    { url: `${baseUrl}/privacy`, lastModified: now, changeFrequency: 'yearly' as const, priority: 0.3 },
+    { url: baseUrl, changeFrequency: 'weekly' as const, priority: 1.0 },
+    { url: `${baseUrl}/explore`, changeFrequency: 'weekly' as const, priority: 0.9 },
+    { url: `${baseUrl}/transfers`, changeFrequency: 'weekly' as const, priority: 0.85 },
+    { url: `${baseUrl}/blog`, changeFrequency: 'weekly' as const, priority: 0.8 },
+    { url: `${baseUrl}/about`, changeFrequency: 'monthly' as const, priority: 0.7 },
+    { url: `${baseUrl}/contact`, changeFrequency: 'monthly' as const, priority: 0.6 },
+    { url: `${baseUrl}/help`, changeFrequency: 'monthly' as const, priority: 0.6 },
+    { url: `${baseUrl}/gifts`, changeFrequency: 'monthly' as const, priority: 0.6 },
+    { url: `${baseUrl}/safety`, changeFrequency: 'monthly' as const, priority: 0.5 },
+    { url: `${baseUrl}/accessibility`, changeFrequency: 'monthly' as const, priority: 0.5 },
+    { url: `${baseUrl}/careers`, changeFrequency: 'monthly' as const, priority: 0.5 },
+    { url: `${baseUrl}/partner`, changeFrequency: 'monthly' as const, priority: 0.6 },
+    { url: `${baseUrl}/connect`, changeFrequency: 'monthly' as const, priority: 0.6 },
+    { url: `${baseUrl}/press`, changeFrequency: 'monthly' as const, priority: 0.5 },
+    { url: `${baseUrl}/terms`, changeFrequency: 'yearly' as const, priority: 0.3 },
+    { url: `${baseUrl}/privacy`, changeFrequency: 'yearly' as const, priority: 0.3 },
   ]
 
   const experiencePages = experiences.map((exp) => ({
     url: `${baseUrl}/experience/${slugify(exp.title)}`,
-    lastModified: now,
     changeFrequency: 'weekly' as const,
     priority: 0.8,
   }))
@@ -44,10 +50,10 @@ export default function sitemap(): MetadataRoute.Sitemap {
   // campaigns land on, so they need to be crawlable in their own right rather
   // than living only behind the picker on /transfers. Canonical form is the
   // lower-case id; the ads' title-cased spelling resolves to the same page and
-  // canonicalises here.
+  // canonicalises here. /transfers links every one of them (HotelDirectory),
+  // so the sitemap is not their only way in.
   const transferPages = DESTINATIONS.map((d) => ({
     url: `${baseUrl}/transfers/${d.id}`,
-    lastModified: now,
     changeFrequency: 'monthly' as const,
     priority: 0.7,
   }))
