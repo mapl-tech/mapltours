@@ -94,11 +94,47 @@ export interface PayoutLine {
   label: string
   /** The name the part is owed to: the booking's driver, or the tour payee. */
   name: string
+  /** What this payment sends for the part: the part's amount less anything already sent for it (prepaidFor). */
   amountUsd: number
   /** The Jamaica day of the ride or the first tour, 'YYYY-MM-DD'. */
   serviceDay: string
   /** The first day a run sends it: `transitBusinessDays` business days before it should arrive. */
   sendDay: string
+  /** Sent earlier for this part outside the job, already taken off amountUsd. */
+  prepaidUsd?: number
+  /** What that earlier money was, for the payment email. */
+  prepaidNote?: string | null
+}
+
+/**
+ * Money already sent for a ride half outside the job, recorded in the
+ * booking's dispatch map as `paid_first_prepaid_usd` / `paid_second_prepaid_usd`
+ * (a number of dollars and cents), with an optional `..._prepaid_note` saying
+ * what it was.
+ *
+ * Owner, Nov 24 2026: "make sure the $1 is remove from his next payment", the
+ * US$1 test sent to Collin's new Wise account that morning. The job pays the
+ * half less it. A half is paid once (one live ledger item), so the money comes
+ * off once. A value that is not a positive number of cents is `invalid` and
+ * holds the payee: the job never guesses at money. Tours take no prepaid
+ * amount (their email states the subtotal), so one recorded on a tour is
+ * invalid too, never silently ignored.
+ */
+export interface Prepaid {
+  usd: number
+  note: string | null
+  invalid: boolean
+}
+
+export function prepaidFor(dispatch: Record<string, unknown> | null | undefined, part: PayPart): Prepaid {
+  const stamp = PART_STAMP[part]
+  const raw = dispatch?.[`${stamp}_prepaid_usd`]
+  const noteRaw = dispatch?.[`${stamp}_prepaid_note`]
+  const note = typeof noteRaw === 'string' && noteRaw.trim() ? noteRaw.trim().slice(0, 200) : null
+  if (raw === undefined || raw === null) return { usd: 0, note: null, invalid: false }
+  const cents = typeof raw === 'number' ? raw * 100 : NaN
+  const ok = part !== 'tour' && Number.isFinite(cents) && cents >= 1 && Math.abs(Math.round(cents) - cents) < 1e-6
+  return ok ? { usd: Math.round(cents) / 100, note, invalid: false } : { usd: 0, note, invalid: true }
 }
 
 export type PayeeStatus = 'ready' | 'held' | 'no_recipient'
@@ -226,7 +262,7 @@ export function planPayouts(input: PlanInput): PayoutPlan {
   const refundHeld: string[] = []
   const recipientByKey = new Map(Object.entries(input.recipients).map(([name, id]) => [key(name), id]))
   const tourPayee = input.tourPayee?.trim() || null
-  const groups = new Map<string, { recipientId: number | null; names: string[]; lines: PayoutLine[] }>()
+  const groups = new Map<string, { recipientId: number | null; names: string[]; lines: PayoutLine[]; problems: string[] }>()
 
   for (const b of input.bookings) {
     const isRide = b.booking_type === 'transfer'
@@ -252,12 +288,20 @@ export function planPayouts(input: PlanInput): PayoutPlan {
       if (dispatch[PART_STAMP[p.part]]) { skipped.paid_by_hand++; continue }
       if (input.ledger.has(`${b.id}:${p.part}`)) { skipped.in_ledger++; continue }
       if (!(p.amountUsd > 0)) { skipped.zero_amount++; continue }
+      // Anything already sent for this half comes off it; all of it sent means it is paid.
+      const pre = prepaidFor(dispatch, p.part)
+      if (!pre.invalid && pre.usd >= round2(p.amountUsd)) { skipped.paid_by_hand++; continue }
       const recipientId = name === NO_TOUR_PAYEE ? null : recipientByKey.get(key(name)) ?? null
       // Names on one recipient share a payout; a name with none is reported on its own.
       const gk = recipientId != null ? `r:${recipientId}` : `n:${key(name)}`
-      const g = groups.get(gk) ?? { recipientId, names: [], lines: [] }
+      const g = groups.get(gk) ?? { recipientId, names: [], lines: [], problems: [] }
       if (!g.names.some((n) => key(n) === key(name))) g.names.push(name)
-      g.lines.push({ bookingId: b.id, ref, part: p.part, label: p.label, name, amountUsd: round2(p.amountUsd), serviceDay: p.serviceDay, sendDay })
+      g.lines.push({
+        bookingId: b.id, ref, part: p.part, label: p.label, name,
+        amountUsd: round2(p.amountUsd - pre.usd), serviceDay: p.serviceDay, sendDay,
+        ...(pre.usd > 0 ? { prepaidUsd: pre.usd, prepaidNote: pre.note } : {}),
+      })
+      if (pre.invalid) g.problems.push(`${ref} ${p.label}: the amount recorded as already sent for it (${PART_STAMP[p.part]}_prepaid_usd) is not a usable number of dollars and cents`)
       groups.set(gk, g)
     }
   }
@@ -275,6 +319,9 @@ export function planPayouts(input: PlanInput): PayoutPlan {
       } else if (input.holds.has(g.recipientId)) {
         status = 'held'
         reasons.push(input.holds.get(g.recipientId) as string)
+      } else if (g.problems.length) {
+        status = 'held'
+        reasons.push(...g.problems)
       } else if (totalUsd > limits.maxPayeeUsd) {
         status = 'held'
         reasons.push(`US$${totalUsd.toFixed(2)} is over the US$${limits.maxPayeeUsd.toFixed(2)} limit for one payee`)

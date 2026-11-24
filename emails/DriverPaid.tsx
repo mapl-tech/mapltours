@@ -20,6 +20,12 @@ export interface DriverPaidProps {
   half: 'first' | 'second' | 'full'
   /** USD amount of THIS payment. */
   amount: string
+  /**
+   * Money already sent for this half outside the job, and what it was, e.g.
+   * "$1.00 USD, the test payment to your new Wise account on Nov 24". Shown
+   * only when there is some, so the amount sent never looks short.
+   */
+  sentEarlier?: string
   /** USD total the driver receives for the whole booking. */
   totalForTrip: string
   /** e.g. "MBJ Airport → Azul Beach Resort Negril" */
@@ -39,7 +45,7 @@ function Row({ label, value }: { label: string; value: string }) {
 }
 
 export default function DriverPaid(props: DriverPaidProps) {
-  const { driverName, bookingRef, guestName, half, amount, totalForTrip, tripLabel, whenLabel, passengers } = props
+  const { driverName, bookingRef, guestName, half, amount, sentEarlier, totalForTrip, tripLabel, whenLabel, passengers } = props
   const halfLabel = half === 'full' ? 'Payment in full' : half === 'first' ? 'First half' : 'Second half'
 
   return (
@@ -64,6 +70,7 @@ export default function DriverPaid(props: DriverPaidProps) {
         </Section>
         <Section style={s.cardBody}>
           <Row label="Amount sent" value={`${amount} USD`} />
+          {sentEarlier && <Row label="Sent earlier for this ride" value={sentEarlier} />}
           <Row label="Covers" value={halfLabel === 'Payment in full' ? 'The whole trip' : `${halfLabel} of ${totalForTrip} USD total`} />
           <Row label="Guest" value={guestName} />
           <Row label="Trip" value={tripLabel} />

@@ -86,6 +86,29 @@ describe('the payment email', () => {
     expect(sent[1]).not.toHaveProperty('idempotencyKey')
   })
 
+  test('money already sent for the half: the email names what this payment sent, and what came before', async () => {
+    const svc = fakeSvc()
+    const b = { ...roundTrip, dispatch: { paid_second_prepaid_usd: 1, paid_second_prepaid_note: 'the test payment to your new Wise account on Nov 24' } } as Bk
+    expect(await notifyDriverPaid(svc, b, 'paid_second', 'second')).toBe(true)
+    expect(String(sent[0].subject)).toBe('$80.00 sent · second half · MAPL-8A1B01C5')
+    const html = await render(sent[0].react as React.ReactElement)
+    expect(html).toContain('$80.00 USD')
+    expect(html).toContain('Sent earlier for this ride')
+    expect(html).toContain('$1.00 USD, the test payment to your new Wise account on Nov 24')
+    // The other half and a booking with nothing recorded read as before.
+    expect(await notifyDriverPaid(svc, b, 'paid_first', 'first')).toBe(true)
+    expect(String(sent[1].subject)).toBe('$81.00 sent · first half · MAPL-8A1B01C5')
+    expect(await render(sent[1].react as React.ReactElement)).not.toContain('Sent earlier')
+  })
+
+  test('an unreadable earlier amount: no claim, no email (the job holds that payment too)', async () => {
+    const svc = fakeSvc()
+    const b = { ...roundTrip, dispatch: { paid_second_prepaid_usd: '1' } } as Bk
+    expect(await notifyDriverPaid(svc, b, 'paid_second', 'second')).toBe(false)
+    expect(svc.claims.size).toBe(0)
+    expect(sent).toHaveLength(0)
+  })
+
   test('no driver inbox, or nothing owed: no claim, no email', async () => {
     const svc = fakeSvc()
     delete process.env.DRIVER_NOTIFY_EMAIL

@@ -4,6 +4,7 @@ import {
   NO_TOUR_PAYEE,
   dayLabel,
   planPayouts,
+  prepaidFor,
   ridePartsOf,
   tourPartOf,
   type PlanInput,
@@ -389,5 +390,50 @@ describe('configuration', () => {
     expect(r.config).toBeNull()
     expect(r.problems).toEqual(['PAYOUT_LEAD_BUSINESS_DAYS is no longer read: remove it (PAYOUT_TRANSIT_BUSINESS_DAYS is the business days Wise takes)'])
     expect(readPayoutConfig({ ...ok, PAYOUT_LEAD_BUSINESS_DAYS: ' ' }).problems).toEqual([])
+  })
+})
+
+describe('money already sent for a ride half (owner, Nov 24 2026: the US$1 test to a new account)', () => {
+  const late = Date.parse('2026-11-30T14:30:00Z')
+  const rt = (dispatch: Record<string, unknown>) => ride({ subtotal: 216, arrival: at('2026-11-25'), departure: at('2026-11-28', '09:00'), dispatch })
+
+  test('comes off that half, and the payment is the rest', () => {
+    const b = rt({ paid_second_prepaid_usd: 1, paid_second_prepaid_note: 'the test payment to your new Wise account on Nov 24' })
+    const p = plan({ bookings: [b], nowMs: late })
+    expect(p.payees[0].lines.map((l) => [l.part, l.amountUsd, l.prepaidUsd ?? 0])).toEqual([['first', 108, 0], ['second', 107, 1]])
+    expect(p.payees[0].lines[1].prepaidNote).toBe('the test payment to your new Wise account on Nov 24')
+    expect(p.payees[0].totalUsd).toBe(215)
+    expect(p.payees[0].status).toBe('ready')
+  })
+
+  test('once: after that half is paid, nothing comes off any other part', () => {
+    const b = rt({ paid_second_prepaid_usd: 1 })
+    const other = rt({})
+    const p = plan({ bookings: [b, other], nowMs: late, ledger: new Set([`${b.id}:second`]) })
+    expect(p.payees[0].lines.map((l) => l.amountUsd)).toEqual([108, 108, 108])
+    expect(p.payees[0].totalUsd).toBe(324)
+  })
+
+  test('all of it already sent: the half counts as paid and is never sent', () => {
+    const p = plan({ bookings: [rt({ paid_second_prepaid_usd: 108 })], nowMs: late })
+    expect(p.payees[0].lines.map((l) => l.part)).toEqual(['first'])
+    expect(p.skipped.paid_by_hand).toBe(1)
+  })
+
+  test('an amount that is not dollars and cents holds the payment instead of guessing; so does one on a tour', () => {
+    for (const bad of ['1', -1, 0, 0.005, Number.NaN, {}]) {
+      const p = plan({ bookings: [rt({ paid_second_prepaid_usd: bad })], nowMs: late })
+      expect(p.payees[0].status, String(bad)).toBe('held')
+      expect(p.payees[0].reasons.join(' '), String(bad)).toMatch(/paid_second_prepaid_usd/)
+    }
+    const p = plan({ bookings: [tour({ dates: ['2026-11-28'], dispatch: { paid_tour_prepaid_usd: 1 } })], nowMs: late })
+    expect(p.payees[0].status).toBe('held')
+  })
+
+  test('cents are read exactly, and nothing recorded means nothing comes off', () => {
+    expect(prepaidFor({ paid_first_prepaid_usd: 0.1 + 0.2 }, 'first')).toEqual({ usd: 0.3, note: null, invalid: false })
+    expect(prepaidFor({ paid_first_prepaid_usd: 1.005 }, 'first').invalid).toBe(true)
+    expect(prepaidFor({}, 'first')).toEqual({ usd: 0, note: null, invalid: false })
+    expect(prepaidFor(null, 'second')).toEqual({ usd: 0, note: null, invalid: false })
   })
 })

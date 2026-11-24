@@ -1,5 +1,6 @@
 import { firstLeg, moneyBlock, money, round2, bookingRef, jaDate, jaTime, type Bk } from '@/lib/dispatch'
 import { sendEmail, opsBcc, driverNotifyEmail } from '@/lib/email/send'
+import { prepaidFor } from '@/lib/payouts/plan'
 import DriverPaid from '@/emails/DriverPaid'
 import TourPaid from '@/emails/TourPaid'
 
@@ -43,7 +44,14 @@ export async function notifyDriverPaid(
   // BEFORE the claim, so a fixed subtotal can still notify later.
   const firstAmount = m.driverPerLeg
   const secondAmount = round2(m.driverTotal - m.driverPerLeg)
-  const thisAmount = half === 'second' ? secondAmount : firstAmount
+  // Money already sent for this half outside the job (lib/payouts/plan.ts
+  // prepaidFor): this payment is the rest, exactly as the payout job paid it.
+  const pre = prepaidFor((b as { dispatch?: Record<string, unknown> | null }).dispatch, half)
+  if (pre.invalid) {
+    console.warn('[dispatch] pay-step email skipped, unreadable prepaid amount', { booking: b.id, half })
+    return false
+  }
+  const thisAmount = round2((half === 'second' ? secondAmount : firstAmount) - pre.usd)
   if (!(thisAmount > 0)) {
     console.warn('[dispatch] pay-step email skipped, non-positive amount', { booking: b.id, half, thisAmount })
     return false
@@ -77,6 +85,7 @@ export async function notifyDriverPaid(
       guestName,
       half: effectiveHalf,
       amount: money(thisAmount),
+      ...(pre.usd > 0 ? { sentEarlier: `${money(pre.usd)} USD${pre.note ? `, ${pre.note}` : ''}` } : {}),
       totalForTrip: money(m.driverTotal),
       tripLabel: isArrivalLeg ? `MBJ Airport → ${l.hotel}` : `${l.hotel} → MBJ Airport`,
       whenLabel: at ? `${jaDate(at)}, ${jaTime(at)}` : 'time to be confirmed',
