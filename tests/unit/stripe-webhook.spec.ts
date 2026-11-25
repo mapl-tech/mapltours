@@ -549,3 +549,38 @@ describe('stripe webhook: charge.refunded', () => {
     expect(state.calendarRemoved).toEqual([BOOKING_ID])
   })
 })
+
+// The default driver a new paid ride is given is the saved driver as saved now
+// (lib/default-driver, Nov 25 2026): a fleet manager can change their van or
+// number in the driver portal, and the constant would carry the old one.
+describe('stripe webhook: the default driver', () => {
+  it('stamps the saved default driver with the details saved now', async () => {
+    seedBooking({ booking_type: 'transfer' })
+    db.tables.drivers = [
+      { id: 'd1', name: 'Collin', whatsapp: '+1 876 555 0177', vehicle: 'Toyota Voxy', colour: 'white', plate: 'PX 0001', active: true },
+      { id: 'd2', name: 'Collin', whatsapp: '+1 876 555 0178', vehicle: 'Toyota Hiace', colour: 'grey', plate: 'PX 0002', active: false },
+    ]
+    const res = await POST(delivery('payment_intent.succeeded', intent('pi_current')))
+    expect(res.status).toBe(200)
+    expect(booking()).toMatchObject({ status: 'paid', driver_name: 'Collin', driver_phone: '+1 876 555 0177', driver_vehicle: 'Toyota Voxy, white', driver_plate: 'PX 0001' })
+  })
+
+  it('stamps the constant when no single working driver of that name can be read', async () => {
+    const { DEFAULT_DRIVER } = await import('@/lib/dispatch')
+    seedBooking({ booking_type: 'transfer' })
+    db.tables.drivers = []
+    const res = await POST(delivery('payment_intent.succeeded', intent('pi_current')))
+    expect(res.status).toBe(200)
+    expect(booking()).toMatchObject({ status: 'paid', ...DEFAULT_DRIVER })
+  })
+
+  it('never stamps a tour, and never overwrites a driver already on the booking', async () => {
+    seedBooking({ booking_type: 'transfer', driver_name: 'Ann Lee', driver_phone: '+1 876 555 0101' })
+    db.tables.drivers = [{ id: 'd1', name: 'Collin', whatsapp: '+1 876 555 0177', vehicle: 'Toyota Voxy', colour: 'white', plate: 'PX 0001', active: true }]
+    await POST(delivery('payment_intent.succeeded', intent('pi_current')))
+    expect(booking()).toMatchObject({ status: 'paid', driver_name: 'Ann Lee', driver_phone: '+1 876 555 0101' })
+    seedBooking()
+    await POST(delivery('payment_intent.succeeded', intent('pi_current')))
+    expect(booking()).toMatchObject({ status: 'paid', driver_name: null, driver_phone: null })
+  })
+})

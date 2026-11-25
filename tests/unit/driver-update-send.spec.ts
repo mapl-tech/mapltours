@@ -37,9 +37,15 @@ function builder(table: string) {
   const filters: Array<[string, unknown]> = []
   let op: 'select' | 'update' | 'insert' = 'select'
   let values: Record<string, unknown> = {}
+  let list = false
   const q: Record<string, unknown> = {}
   q.select = () => q
   q.order = () => q
+  q.limit = () => q
+  q.or = () => q
+  q.gte = () => q
+  // A list of bookings by driver name (the retire check, lib/driver-edit-server): none ahead here.
+  q.ilike = () => { list = true; return q }
   q.eq = (k: string, v: unknown) => { filters.push([k, v]); return q }
   q.update = (v: Record<string, unknown>) => { op = 'update'; values = v; return q }
   q.insert = (v: Record<string, unknown>) => { op = 'insert'; values = v; return q }
@@ -54,6 +60,7 @@ function builder(table: string) {
       return st.insertError ? { data: null, error: st.insertError } : { data: { id: 'new-id', ...values }, error: null }
     }
     st.reads.push(table)
+    if (list) return { data: [], error: null }
     if (table === 'admins') return { data: st.admin ? { user_id: 'admin-1' } : null, error: null }
     if (table === 'bookings') return { data: st.booking, error: null }
     if (table === 'drivers') return { data: st.driver, error: null }
@@ -259,9 +266,13 @@ describe('the routes', () => {
     expect(clash.status).toBe(409)
     expect(await clash.json()).toMatchObject({ field: 'email', error: 'Another working driver already signs in with that email.' })
     st.insertError = null
+    // A change of details or role goes through the review (plan, then commit; tests/unit/driver-edit-route.spec.ts
+    // has the whole flow, the role included). A request without it, from a page older than the review, saves nothing.
+    const writes = st.writes.length
     const demote = await drivers('PATCH', { id: '11111111-1111-4111-8111-111111111111', name: 'Lee Grant', whatsapp: '+1 876 555-0102', vehicle: 'Toyota Noah', colour: 'white', plate: 'PK 0002', role: 'driver' })
-    expect(demote.status).toBe(200)
-    expect(st.writes.at(-1)!.values).toMatchObject({ role: 'driver' })
+    expect(demote.status).toBe(409)
+    expect(await demote.json()).toMatchObject({ code: 'reload', error: 'This page is out of date. Reload it, then make the change again. Nothing was saved.' })
+    expect(st.writes.length).toBe(writes)
   })
 
   test('retiring keeps the driver, only switched off', async () => {

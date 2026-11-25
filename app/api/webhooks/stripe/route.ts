@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import Stripe from 'stripe'
 import { createServiceClient } from '@/lib/supabase/service'
-import { DEFAULT_DRIVER } from '@/lib/dispatch'
+import { defaultDriverColumns } from '@/lib/default-driver'
 import { reportServerPurchase } from '@/lib/ga4-server'
 import { reportMetaPurchase } from '@/lib/meta-capi'
 import { syncBookingToCalendar, removeBookingFromCalendar } from '@/lib/google-calendar'
@@ -370,9 +370,11 @@ async function handlePaymentSucceeded(pi: Stripe.PaymentIntent) {
       // succeeded, so a failure here is logged for the console rather than
       // failing the webhook; the dispatch console shows the missing driver.
       if (booking.booking_type === 'transfer' && !booking.driver_name && !booking.driver_phone) {
+        // The default driver's details as saved now (lib/default-driver), the constant if they cannot be read.
+        const defaults = await defaultDriverColumns(supabase)
         const { error: driverErr } = await supabase
           .from('bookings')
-          .update(DEFAULT_DRIVER)
+          .update(defaults)
           .eq('id', booking.id)
           .is('driver_name', null)
           .is('driver_phone', null)
@@ -380,7 +382,7 @@ async function handlePaymentSucceeded(pi: Stripe.PaymentIntent) {
         if (driverErr) {
           console.warn('[stripe-webhook] default driver assign failed', { booking_id: booking.id, error: driverErr.message })
         } else {
-          Object.assign(booking, DEFAULT_DRIVER)
+          Object.assign(booking, defaults)
         }
       }
     }

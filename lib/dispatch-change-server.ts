@@ -56,7 +56,7 @@ export interface Answer {
 }
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
-const BOOKING_COLS = 'id, status, booking_type, email, first_name, last_name, phone, pickup, dropoff, pickup_time, driver_name, driver_phone, driver_vehicle, driver_plate, dispatch, booking_items(*)'
+export const BOOKING_COLS = 'id, status, booking_type, email, first_name, last_name, phone, pickup, dropoff, pickup_time, driver_name, driver_phone, driver_vehicle, driver_plate, dispatch, booking_items(*)'
 
 /** How long an email outcome may stay open before the sweep tells the office. */
 export const PENDING_ALERT_MIN = 10
@@ -189,7 +189,7 @@ function opsInbox(): string[] {
   return (process.env.OPERATIONS_EMAIL ?? 'contact@mapltours.com').split(',').map((e) => e.trim()).filter((e) => e.includes('@'))
 }
 
-async function tellOffice(subject: string, title: string, body: string, lines: string[], dedupe: string): Promise<boolean> {
+export async function tellOffice(subject: string, title: string, body: string, lines: string[], dedupe: string): Promise<boolean> {
   const to = opsInbox()
   if (!to.length) return false
   try {
@@ -208,9 +208,17 @@ async function tellOffice(subject: string, title: string, body: string, lines: s
   }
 }
 
-/** What changed, in one line for the office. */
+/**
+ * What changed, in one line for the office. A driver change reads the plan's
+ * own before and after (the log row's columns), never the booking: the sweep
+ * reads the booking after the change, which would print the new driver twice.
+ */
 function changeLine(plan: ChangePlan, b: Bk, driverAfter: ShownDriver | null): string {
-  if (plan.kind === 'driver') return `Driver: ${driverLine(shownDriverOf(b))}, now ${driverLine(driverAfter)}`
+  if (plan.kind === 'driver') {
+    const was = shownDriverOf({ ...b, ...(plan.before as Partial<Bk>) } as Bk)
+    const now = plan.after?.driver_name ? shownDriverOf({ ...b, ...(plan.after as Partial<Bk>) } as Bk) : driverAfter
+    return `Driver: ${driverLine(was)}, now ${driverLine(now)}`
+  }
   if (plan.kind === 'time') {
     const was = plan.before.at as string
     const now = plan.after.at as string
@@ -260,14 +268,31 @@ async function alertPayeeUnset(ctx: { b: Bk; actor: { label: string }; changeId:
 
 /* ── Saving ── */
 
-async function recordOutcome(svc: Svc, changeId: string, outcome: GuestOutcome, detail: string | null) {
+export async function recordOutcome(svc: Svc, changeId: string, outcome: GuestOutcome, detail: string | null) {
   const { error } = await svc.from('dispatch_changes').update({ guest_email: outcome, guest_email_detail: detail ? detail.slice(0, 500) : null }).eq('id', changeId)
   if (error) console.error('[dispatch-change] outcome not recorded', { changeId, outcome, error: error.message })
 }
 
+/**
+ * Is a driver change an edit of the same saved driver's details (a new van, a
+ * new number, a new spelling) rather than another driver? The edit's log row
+ * names the driver's id on both sides; an older row, the same name.
+ */
+export function isDetailsEdit(before: Record<string, unknown> | null | undefined, after: Record<string, unknown> | null | undefined): boolean {
+  if (!before || !after) return false
+  if (before.driver_id || after.driver_id) return !!before.driver_id && before.driver_id === after.driver_id
+  return !!before.driver_name && before.driver_name === after.driver_name
+}
+
 /** Email the guest about the rides in `legs`, for a saved change. Each ride its own email, as the console sends them. */
 async function emailGuest(svc: Svc, b: Bk, plan: ChangePlan, legs: Leg[], driverId: string, changeId: string, nowMs: number): Promise<{ ok: boolean; error?: string }> {
-  const about = plan.kind === 'time' ? { kind: 'time' as const, fromAt: plan.before.at as string } : { kind: 'driver' as const }
+  // A new time; the same driver with new details (a saved driver's edit, lib/driver-edit-server, whose log
+  // row names the driver's id on both sides, a rename included); or a new driver.
+  const about = plan.kind === 'time'
+    ? { kind: 'time' as const, fromAt: plan.before.at as string }
+    : isDetailsEdit(plan.before, plan.after)
+      ? { kind: 'details' as const, before: { driver_name: plan.before.driver_name ?? null, driver_phone: plan.before.driver_phone ?? null, driver_vehicle: plan.before.driver_vehicle ?? null, driver_plate: plan.before.driver_plate ?? null } }
+      : { kind: 'driver' as const }
   const results = await Promise.all(legs.map((leg) =>
     sendDriverUpdate(svc, b.id, leg, driverId, nowMs, { about, key: `dispatch-change/${changeId}/${leg}`, timeoutMs: 4000 })))
   const failed = results.find((r) => !r.ok) as { ok: false; error: string } | undefined
@@ -545,7 +570,8 @@ export async function lastChanges(svc: Svc, bookingIds: string[]): Promise<Recor
     for (const r of data ?? []) {
       if (out[r.booking_id]) continue
       let text: string
-      if (r.kind === 'driver') text = `Driver changed to ${firstWord(String(r.after?.driver_name ?? 'a new driver'))}`
+      if (r.kind === 'driver' && isDetailsEdit(r.before, r.after)) text = `${firstWord(String(r.after.driver_name))}'s details changed`
+      else if (r.kind === 'driver') text = `Driver changed to ${firstWord(String(r.after?.driver_name ?? 'a new driver'))}`
       else if (r.kind === 'time') text = `${r.leg === 'arrival' ? 'Landing time' : 'Hotel pickup'} moved to ${clockWords(String(r.after?.at))}${String(r.after?.at).slice(0, 10) !== String(r.before?.at).slice(0, 10) ? ` on ${rideDayLong(String(r.after?.at))}` : ''}`
       else text = `Tour pickup set to ${r.after?.pickup_time}`
       out[r.booking_id] = {

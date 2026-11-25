@@ -68,6 +68,12 @@ function q(table: string) {
   api.eq = (k: string, v: unknown) => { filters.push((r) => r[k] === v); return api }
   api.gt = (k: string, v: unknown) => { filters.push((r) => String(r[k]) > String(v)); return api }
   api.lt = (k: string, v: unknown) => { filters.push((r) => String(r[k]) < String(v)); return api }
+  // A filter on an embedded table ("booking_items.date") keeps the rows with any such item, as !inner does.
+  api.gte = (k: string, v: unknown) => {
+    const [t, c] = k.split('.')
+    filters.push(c ? (r) => ((r[t] as Row[]) ?? []).some((i) => String(i[c] ?? '') >= String(v)) : (r) => String(r[k]) >= String(v))
+    return api
+  }
   api.in = (k: string, vs: unknown[]) => { filters.push((r) => vs.includes(r[k])); return api }
   api.ilike = (k: string, v: string) => { const re = new RegExp(`^${v.replace(/[.*+?^${}()|[\]]/g, '\\$&').replace(/%/g, '.*')}$`, 'i'); filters.push((r) => re.test(String(r[k] ?? ''))); return api }
   api.or = () => api

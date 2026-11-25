@@ -126,3 +126,56 @@ describe('with no role, the portal as it always was', () => {
     expect(page(html)).toContain('Pay is your agreed rate per trip')
   })
 })
+
+/**
+ * The Drivers tab (Nov 25 2026): every working driver can be changed, the
+ * fleet manager's own row included, with the name and sign-in email locked
+ * there; a fleet manager is never retired from the portal. The admin preview
+ * shows this same tab, as the fleet manager sees it.
+ */
+describe('the Drivers tab', () => {
+  const people = [
+    { id: 'd1', name: 'Devon Brown', whatsapp: '+1 876 555 0100', vehicle: 'Toyota Hiace', colour: 'silver', plate: 'PJ 1234', email: 'devon@example.com', active: true, role: 'driver' as const },
+    { id: 'd2', name: 'Lee Grant', whatsapp: '+1 876 555 0102', vehicle: 'Toyota Noah', colour: 'white', plate: 'PK 0002', email: 'lee@example.com', active: true, role: 'fleet_manager' as const },
+    { id: 'd3', name: 'Sam Hill', whatsapp: '+1 876 555 0103', vehicle: 'Toyota Voxy', colour: 'grey', plate: 'PS 0003', email: null, active: false, role: 'driver' as const },
+  ]
+
+  test('Edit on every working driver, the fleet manager included; Retire and Bring back only for a regular driver', async () => {
+    const { default: DriversPanel } = await import('../../components/driver/fleet/DriversPanel')
+    const html = renderToStaticMarkup(<DriversPanel drivers={people} selfId="d2" />)
+    expect(html).toContain('aria-label="Edit Devon Brown"')
+    expect(html).toContain('aria-label="Edit Lee Grant"')
+    expect(html).toContain('aria-label="Retire Devon Brown"')
+    expect(html).not.toContain('aria-label="Retire Lee Grant"')
+    expect(html).toContain('aria-label="Bring back Sam Hill"')
+    expect(html).not.toContain('aria-label="Edit Sam Hill"')
+    // Lee's own row is marked.
+    expect(page(html)).toMatch(/Lee Grant Fleet manager You/)
+  })
+
+  test("the fleet manager's own form: name and sign-in email read only, with why; the rest open, and a review before saving", async () => {
+    const { DriverForm } = await import('../../components/driver/fleet/DriversPanel')
+    const html = renderToStaticMarkup(<DriverForm target={people[1]} returnTo={null} onClose={() => {}} onAdded={() => {}} onEdited={() => {}} />)
+    const input = (label: string) => html.match(new RegExp(`<input[^>]*id="[^"]*-${label}"[^>]*>`))?.[0] ?? ''
+    expect(input('name')).toContain('readonly=""')
+    expect(input('name')).toContain('value="Lee Grant"')
+    expect(input('email')).toContain('readonly=""')
+    for (const k of ['whatsapp', 'vehicle', 'colour', 'plate']) expect(input(k)).not.toContain("readonly")
+    const t = page(html)
+    expect(t).toContain('Payments are matched by this name, so only MAPL Tours Jamaica changes it.')
+    expect(t).toContain('The address you sign in with, so only MAPL Tours Jamaica changes it.')
+    expect(t).toContain('Change Lee Grant')
+    expect(t).toContain('Review changes')
+    expect(t).toContain('Nothing is saved or sent until you confirm on the next screen.')
+    expect(t).toMatch(/Change Check/)
+    // A regular driver's form has nothing locked.
+    const devon = renderToStaticMarkup(<DriverForm target={people[0]} returnTo={null} onClose={() => {}} onAdded={() => {}} onEdited={() => {}} />)
+    expect(devon).not.toContain("readonly")
+  })
+
+  test('the admin preview says it is exactly what the fleet manager sees', () => {
+    const html = renderToStaticMarkup(<DriverDashboard trips={[roundTrip(true)]} tours={[tour]} driverLabel="Lee" adminPreview role="fleet_manager" drivers={people} changes={{}} selfDriverId="d2" />)
+    expect(page(html)).toContain('Admin preview: exactly what Lee sees as fleet manager, with the same controls and no customer totals, fees or margin.')
+    expect(html).toContain('id="tab-drivers"')
+  })
+})

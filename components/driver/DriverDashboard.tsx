@@ -734,7 +734,7 @@ export default function DriverDashboard({
           background: 'rgba(122,90,8,0.10)', border: '1px solid rgba(122,90,8,0.30)', color: amber,
         }}>
           {isFleet
-            ? 'Admin preview of the fleet manager\'s view: no customer totals, no fees, no margin. Changes saved here are real: they are saved, emailed and logged as from MAPL Tours Jamaica.'
+            ? `Admin preview: exactly what ${driverLabel} sees as fleet manager, with the same controls and no customer totals, fees or margin. Changes saved here are real: they are saved, emailed and logged as from MAPL Tours Jamaica.`
             : role === 'driver'
               ? `Admin preview. This is exactly what ${driverLabel} sees: only the rides and tours given to ${driverLabel}, and no pay.`
               : `Admin preview. This is exactly what ${driverLabel} sees: no customer totals, no fees, no margin.`}

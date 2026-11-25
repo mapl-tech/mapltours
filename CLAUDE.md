@@ -845,7 +845,7 @@ Rules, enforced in code:
 - **A send saves the driver on the booking first**, only while it is a paid transfer (a guarded update; zero rows means nothing is mailed), then emails the guest with operations, the driver inbox and that driver's own email (if saved) on BCC, under a Resend key of booking, ride and driver plus the message, so a double tap or a retry is delivered once. Then `dispatch.driver_update_<leg>_sent` and `_driver` are merged. The guest can be sent it while paid, with an email, until two hours after landing or until the hotel pickup time.
 - **A test** goes to the one address typed, "[Test]" before the subject, nobody copied, nothing written. It works for any ride the email can be written for, so wording can be checked after the fact. **A preview** renders the real email in the card and writes nothing.
 - **The booking has one driver for both rides** (its own `driver_*` columns). After an arrival update on a round trip, the ride back and its day-of email name the same driver until someone changes it; the confirm step says so. Per-ride drivers are not built.
-- **Drivers are retired, never deleted**, and two working drivers may not share a name (payouts and the console know a booking's driver by name; the unique index backs it). Editing a driver never rewrites a booking.
+- **Drivers are retired, never deleted**, and two working drivers may not share a name (payouts and the console know a booking's driver by name; the unique index backs it). Since Nov 25 2026 editing a driver moves the rides still ahead that carry the old details, after a review, and no past booking (see "Editing a saved driver").
 - **Before migration 041 is applied** the dispatch page still loads; the card says the saved drivers could not be read.
 
 Tests: `driver-update.spec.ts` (every line, the day words under the Jamaica calendar, the copy rules, the guards, the field rules) and `driver-update-send.spec.ts` (the write-then-send order, refusals before anything happens, the test and preview write nothing, both routes refuse non-admins). Screens were walked at 390 and 1440 with made-up rows.
@@ -937,7 +937,7 @@ Rules, enforced in code:
   - A regular driver loads only the rides and tours whose booking names them (`bookingIsTheirs`: exact, any case), with no pay and no change log; the server never sends them more.
 - **Who may change what.**
   - Only a fleet manager or an admin may call the change route.
-  - A fleet manager adds only regular drivers, and cannot edit, retire or rename any fleet manager. Only `/admin/drivers` makes a fleet manager: its role selector (and its email field, which is also the sign-in address).
+  - A fleet manager adds only regular drivers, and never renames, retires or changes the sign-in email or role of a fleet manager (since Nov 25 2026 a fleet manager's WhatsApp number, vehicle, colour and plate can be changed in the portal, see "Editing a saved driver"). Only `/admin/drivers` makes a fleet manager: its role selector (and its email field, which is also the sign-in address).
   - Retiring a driver is confirmed first.
 - **Every change is confirmed before it is saved.**
   - `plan` writes nothing. `commit` saves only if the plan it works out at that moment has the same key (`planKey`: the change and what each ride's guest is told). Otherwise it answers 409 with the new plan.
@@ -965,6 +965,41 @@ Tests:
 - 27 deliberate breakages were each caught on Nov 25 2026.
 - The migration was checked in PGlite (65 checks).
 - Sentinel 90 after review, with both gates clear at 320/360/390/768.
+
+## Editing a saved driver (Nov 25 2026)
+
+Owner, Nov 25 2026: "have the fleet manager be able to enter the vehicle information for drivers as well. So make him able to edit driver details. Make sure it is perfect. There can be no mistake." Then: "When I look at the driver portal in the admin page, I need to see the same settings that a Fleet Manager would have."
+
+Pieces:
+- Migration `044_driver_edits.sql`: `apply_driver_edit`, which saves the driver and the rides that carry them in one transaction (service role only).
+- `lib/driver-edit.ts` (pure: who may change what, what changed, which bookings carry the old details, what is still ahead), `lib/driver-edit-words.ts` (every word of the review), `lib/driver-edit-server.ts` (plan, commit, the retire check).
+- `components/driver/fleet/EditReview.tsx` (the review's hook and steps), used by the Drivers tab (`DriversPanel`) and the admin Drivers page (`DriverRoster`). Styles: the `.fm` block (`.fm-edits`, `.fm-ride-sub`, `.fm-input[readonly]`).
+- `lib/default-driver.ts`: the driver stamped on a new paid ride.
+
+Rules, enforced in code:
+- **A booking keeps its own copy of its driver's details, and every email reads that copy.** So a change to the name, WhatsApp number, vehicle, colour or plate moves every paid ride still ahead that carries exactly the old details: an arrival until two hours after landing, a pickup until its time, a tour from its day. Past rides keep what their guests were told. A ride naming the driver with other details (typed by hand) is left alone, and the review counts it. The sign-in email and the role move no ride.
+- **Who may change what.**
+  - A fleet manager may change every detail of a regular driver.
+  - A fleet manager may change a fleet manager's WhatsApp, vehicle, colour and plate, their own included. Never the name (payouts match by name) nor the sign-in email (they would lock themselves out), and never a role.
+  - An admin may change everything, at `/admin/drivers`.
+  - The portal's route treats an admin as a fleet manager, so `/admin/driver` shows and does exactly what the fleet manager's portal does: their name on it, their own row marked "You", the same Edit buttons and the same locks.
+- **Reviewed before saved**, as a ride change is. `plan` writes nothing. `commit` saves only under the same plan key. A request without a mode (a page older than the review) is refused with "reload".
+- **`apply_driver_edit` re-checks inside one transaction**: the driver as shown (`changed`), the other drivers' names and emails (`duplicate`), and each booking (paid, still carrying the old details). A ride that changed meanwhile keeps its details and is reported.
+- **When the guest hears**, ride by ride, by `legPlan`:
+  - automatic: the day-of email will carry the new details;
+  - the second question, when the day-of email already went or cannot go in time. "Save and email" sends the driver-update email's new-details variant (`about: details`: "Your driver today: updated details", each change said once), keyed `dispatch-change/<change id>/<leg>`. "Save without emailing" tells the office;
+  - tours: no email, since tour guests are not told their driver.
+  - An outcome not yet settled stays `pending` for the sweep.
+- **The log names the driver's id on both sides** (`driver_id` in `before` and `after`). So an edit, a rename included, reads "X's details changed" on the cards, and any follow-up email is the new-details one (`isDetailsEdit`).
+- **A driver with rides still ahead is not retired** (both routes). The refusal names each ride, soonest first.
+- **New paid rides get the default driver as saved** (`defaultDriverColumns`). The webhook and both checkouts read the working driver named `DEFAULT_DRIVER.driver_name` and stamp those details. On any doubt (no row, two rows, an error, no answer in 1.5 s) they stamp the constant, as before. The constant alone would have gone stale after an edit.
+
+Tests:
+- `driver-edit.spec.ts`: the rules, every sentence of the review, the new-details email.
+- `driver-edit-route.spec.ts`: both routes over an in-memory database with 044's rules: every outcome, the races, the sweep, the locks, the retire check.
+- `default-driver.spec.ts`, the default-driver block in `stripe-webhook.spec.ts`, and `driver-dashboard-roles.spec.tsx` (the Drivers tab, the locked form, the preview banner).
+- The migration was checked in PGlite (29 checks).
+- Walked in Chromium and WebKit at 320 to 1440 with made-up rows. Sentinel 87, with both gates clear (measured).
 
 ## Rules from the Nov 13 2026 audit
 

@@ -5,28 +5,38 @@ import { getDriverAccess, DRIVER_ROLE_COLS } from '@/lib/driver-access-server'
 import { isFleetManager, type DriverAccess } from '@/lib/driver-access'
 import { parseDriverFields } from '@/lib/drivers'
 import { payeeKnown } from '@/lib/dispatch-change-server'
+import { commitEdit, planEdit, retireBlock } from '@/lib/driver-edit-server'
 import { rateLimit } from '@/lib/rate-limit'
 import { sendEmail } from '@/lib/email/send'
 import OpsAlert from '@/emails/OpsAlert'
 
 /**
  * The saved drivers, for a fleet manager in the driver portal (Nov 24 2026:
- * "Fleet Manager: Can ... create new drivers"). The same rules as the admin
- * desk (lib/drivers parseDriverFields), with three limits:
+ * "Fleet Manager: Can ... create new drivers"; Nov 25 2026: "have the fleet
+ * manager be able to enter the vehicle information for drivers as well. So
+ * make him able to edit driver details"). The same field rules as the admin
+ * desk (lib/drivers parseDriverFields), with these limits:
  *
  *   - a driver added here is always a regular driver: only MAPL Tours
  *     Jamaica makes someone a fleet manager (/admin/drivers);
- *   - a fleet manager's own row, and any other fleet manager's, is not
- *     editable here (a rename would stop their payouts matching, a new
- *     address would lock them out);
- *   - the email is the address the driver signs in to the portal with.
+ *   - a fleet manager's WhatsApp number, vehicle, colour and plate can be
+ *     changed here (their own included), never their name (the payout job
+ *     pays by name) nor their sign-in email (they would lock themselves
+ *     out), and a fleet manager is never retired here;
+ *   - a driver with rides still ahead is not retired until each ride has
+ *     another driver.
  *
- * A new name, or a renamed driver, is told to the office when payouts run
- * and the name is not on WISE_PAYOUT_RECIPIENTS: the payout job pays by name.
+ * A change of details goes through the same confirm-first steps as a ride
+ * change (lib/driver-edit-server): `plan` says what saving does, including
+ * every ride still ahead that carries the old details and when its guest
+ * hears; `commit` saves the driver and those rides together and emails or
+ * tells the office as chosen. A new name not on WISE_PAYOUT_RECIPIENTS is
+ * told to the office.
  *
  *   GET                                   every driver, working ones first
  *   POST  { name, whatsapp, vehicle, colour, plate, email? }   add one
- *   PATCH { id, ...the same fields }      change one
+ *   PATCH { id, mode: 'plan', ...the same fields }
+ *   PATCH { id, mode: 'commit', ...the same fields, planKey, notify?: 'send' | 'skip' }
  *   PATCH { id, action: 'retire' | 'restore' }
  */
 
@@ -60,11 +70,11 @@ function duplicateMessage(err: { message?: string; details?: string } | null, na
   return { field: 'name', message: `${name} is already on the list. Edit that driver instead, or retire them first.` }
 }
 
-async function tellOfficeAboutName(actorLabel: string, name: string, what: 'added' | 'renamed', oldName?: string) {
+async function tellOfficeAboutName(actorLabel: string, name: string, what: 'added' | 'restored') {
   if (payeeKnown(name) !== false) return
   const to = (process.env.OPERATIONS_EMAIL ?? 'contact@mapltours.com').split(',').map((e) => e.trim()).filter((e) => e.includes('@'))
   if (!to.length) return
-  const lead = what === 'added' ? `${actorLabel} added a driver, ${name}, in the driver portal.` : `${actorLabel} renamed ${oldName} to ${name} in the driver portal.`
+  const lead = what === 'added' ? `${actorLabel} added a driver, ${name}, in the driver portal.` : `${actorLabel} brought ${name} back onto the drivers list in the driver portal.`
   try {
     await sendEmail({
       to,
@@ -116,37 +126,45 @@ export async function PATCH(req: Request) {
   if (!g.ok) return g.res
   const body = (await req.json().catch(() => null)) as Record<string, unknown> | null
   const id = typeof body?.id === 'string' ? body.id : ''
-  if (!UUID.test(id)) return NextResponse.json({ ok: false, message: 'Invalid request.' }, { status: 400 })
+  if (!body || !UUID.test(id)) return NextResponse.json({ ok: false, message: 'Invalid request.' }, { status: 400 })
+
+  // A change of details: reviewed first, then saved with the rides that carry them.
+  if (body.action !== 'retire' && body.action !== 'restore') {
+    if (body.mode !== 'plan' && body.mode !== 'commit') {
+      // A page from before the review step: nothing is saved without it.
+      return NextResponse.json({ ok: false, code: 'reload', message: 'This page is out of date. Reload it, then make the change again. Nothing was saved.' }, { status: 409 })
+    }
+    const now = Date.now()
+    const answer = body.mode === 'plan'
+      ? await planEdit(g.svc, 'fleet_manager', body, now)
+      : await commitEdit(g.svc, { email: g.access.email, label: g.access.label }, 'fleet_manager', body, now)
+    return NextResponse.json(answer.json, { status: answer.status })
+  }
 
   const { data: current, error: readErr } = await g.svc.from('drivers').select(DRIVER_ROLE_COLS).eq('id', id).maybeSingle()
   if (readErr) return NextResponse.json({ ok: false, message: 'The driver could not be read. Try again.' }, { status: 500 })
   if (!current) return NextResponse.json({ ok: false, message: 'That driver is not on the list.' }, { status: 404 })
   if (current.role === 'fleet_manager') {
-    return NextResponse.json({ ok: false, message: 'A fleet manager is changed by MAPL Tours Jamaica. Write to contact@mapltours.com.' }, { status: 403 })
+    return NextResponse.json({ ok: false, message: 'Only MAPL Tours Jamaica retires a fleet manager. Write to contact@mapltours.com.' }, { status: 403 })
   }
-
-  let update: Record<string, unknown>
-  if (body?.action === 'retire' || body?.action === 'restore') {
-    update = { active: body.action === 'restore' }
-  } else {
-    const parsed = parseDriverFields(body!)
-    if (!parsed.ok) return NextResponse.json({ ok: false, message: parsed.error, field: parsed.field }, { status: 400 })
-    update = { ...parsed.fields }
+  if (body.action === 'retire' && current.active) {
+    const blocked = await retireBlock(g.svc, current.name, Date.now())
+    if (blocked) return NextResponse.json(blocked.json, { status: blocked.status })
   }
-  update.updated_at = new Date().toISOString()
 
   // Only a regular driver's row, matched again in the write itself.
-  const { data, error } = await g.svc.from('drivers').update(update).eq('id', id).eq('role', 'driver').select(DRIVER_ROLE_COLS).maybeSingle()
+  const { data, error } = await g.svc.from('drivers')
+    .update({ active: body.action === 'restore', updated_at: new Date().toISOString() })
+    .eq('id', id).eq('role', 'driver').select(DRIVER_ROLE_COLS).maybeSingle()
   if (error) {
     if (error.code === '23505') {
-      const dup = duplicateMessage(error, String(update.name ?? current.name))
-      return NextResponse.json({ ok: false, message: body?.action === 'restore' ? `A working driver already has ${current.name}'s ${dup.field === 'email' ? 'email' : 'name'}.` : dup.message, field: dup.field }, { status: 409 })
+      const dup = duplicateMessage(error, current.name)
+      return NextResponse.json({ ok: false, message: `A working driver already has ${current.name}'s ${dup.field === 'email' ? 'email' : 'name'}.`, field: dup.field }, { status: 409 })
     }
     console.error('[driver-roster] update failed', error.message)
     return NextResponse.json({ ok: false, message: 'The change was not saved. Try again.' }, { status: 500 })
   }
   if (!data) return NextResponse.json({ ok: false, message: 'That driver is not on the list.' }, { status: 404 })
-  if (typeof update.name === 'string' && update.name !== current.name) await tellOfficeAboutName(g.access.label, update.name, 'renamed', current.name)
-  if (body?.action === 'restore') await tellOfficeAboutName(g.access.label, current.name, 'added')
+  if (body.action === 'restore') await tellOfficeAboutName(g.access.label, current.name, 'restored')
   return NextResponse.json({ ok: true, driver: data })
 }

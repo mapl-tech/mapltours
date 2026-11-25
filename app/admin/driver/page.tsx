@@ -12,10 +12,11 @@ import DriverDashboard from '@/components/driver/DriverDashboard'
 /**
  * Admin preview of the driver portal: renders EXACTLY the same data and
  * component the portal does (lib/driver-portal-data), wrapped in an admin
- * gate. By default the fleet manager's view, as Collin sees it, with its
- * controls working (a change saved here is real, and is logged as from MAPL
- * Tours Jamaica). `?as=<driver id>` shows what that regular driver sees,
- * read-only.
+ * gate. By default the fleet manager's view, as Collin sees it, with every
+ * control his has, the Drivers tab's edits included (a change saved here is
+ * real, and is logged as from MAPL Tours Jamaica; the routes treat an admin
+ * as a fleet manager, so the same limits apply). `?as=<driver id>` shows
+ * what that regular driver sees, read-only.
  */
 
 export const dynamic = 'force-dynamic'
@@ -64,6 +65,10 @@ export default async function AdminDriverPreviewPage({ searchParams }: { searchP
   const roster = ((rows ?? []) as unknown as (Driver & { role?: string })[])
   const asId = typeof searchParams?.as === 'string' ? searchParams.as : ''
   const as = roster.find((d) => d.id === asId && d.active && d.role !== 'fleet_manager') ?? null
+  // The fleet manager's view is shown as the fleet manager sees it (owner, Nov 25 2026: "When I look at
+  // the driver portal in the admin page, I need to see the same settings that a Fleet Manager would
+  // have"): their name on it, their own row marked, and every control theirs has.
+  const fm = roster.find((d) => d.active && d.role === 'fleet_manager') ?? null
   const data = await loadPortal(svc, as ? { role: 'driver', driver: as } : { role: 'fleet_manager', driver: null })
 
   const allow = driverAllowlist()
@@ -91,13 +96,14 @@ export default async function AdminDriverPreviewPage({ searchParams }: { searchP
       <DriverDashboard
         trips={data.trips}
         tours={data.tours}
-        driverLabel={as ? firstWord(as.name) : 'Collin'}
+        driverLabel={as ? firstWord(as.name) : fm ? firstWord(fm.name) : 'Collin'}
         adminPreview
         role={as ? 'driver' : 'fleet_manager'}
         showPay={!as}
         drivers={data.drivers}
         changes={data.changes}
         incomplete={data.incomplete}
+        selfDriverId={as ? as.id : fm?.id ?? null}
       />
     </Shell>
   )

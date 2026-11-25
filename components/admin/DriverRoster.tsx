@@ -1,7 +1,9 @@
 'use client'
 
-import { useEffect, useId, useState } from 'react'
+import { useEffect, useId, useRef, useState } from 'react'
 import { useResultNote } from '@/components/admin/AdminUi'
+import Sheet from '@/components/driver/fleet/Sheet'
+import { EditReviewSteps, useEditReview } from '@/components/driver/fleet/EditReview'
 import { parseDriverFields, vehicleInWords, type Driver, type DriverFields } from '@/lib/drivers'
 
 /**
@@ -10,6 +12,11 @@ import { parseDriverFields, vehicleInWords, type Driver, type DriverFields } fro
  * booking still names who drove it). The same rules as the server
  * (lib/drivers.ts parseDriverFields) check a form before it is sent, so a
  * mistake is said at the field, in words.
+ *
+ * A change of details is reviewed before it is saved (Nov 25 2026, the same
+ * review as the driver portal's, components/driver/fleet/EditReview): the
+ * rides still ahead that carry the old details move with it, and the review
+ * says when each guest hears. A driver with rides still ahead is not retired.
  */
 
 /** A saved driver as this page reads it, with the role (migration 043). */
@@ -28,20 +35,32 @@ const FIELDS: { k: keyof DriverFields; label: string; help: string; auto?: strin
   { k: 'email', label: 'Driver email (optional)', help: 'The Google address the driver signs in to the driver portal with. It also gets a copy of each driver update sent with this driver.', mode: 'email', auto: 'off', placeholder: 'None' },
 ]
 
-function DriverForm({ initial, submitLabel, busy, onSubmit, onCancel }: {
+type FormError = { error: string; field?: keyof DriverFields | 'role' }
+
+function DriverForm({ initial, submitLabel, busy, busyLabel = 'Saving…', onSubmit, onCancel, external }: {
   initial: Draft; submitLabel: string; busy: boolean
-  onSubmit: (d: Draft) => Promise<{ error?: string; field?: keyof DriverFields | 'role' } | null>
+  /** What the button says while busy: "Saving…" for an add, "Checking…" while a change is being checked. */
+  busyLabel?: string
+  onSubmit: (d: Draft, submitter: HTMLElement | null) => Promise<FormError | null>
   onCancel?: () => void
+  /** A refusal that came after the form was sent (a clash found while saving), shown at its field. */
+  external?: FormError | null
 }) {
   const id = useId()
   const [d, setD] = useState<Draft>(initial)
-  const [err, setErr] = useState<{ error: string; field?: keyof DriverFields | 'role' } | null>(null)
+  const [err, setErr] = useState<FormError | null>(null)
+  useEffect(() => {
+    if (!external) return
+    setErr(external)
+    if (external.field) document.getElementById(`${id}-${external.field}`)?.focus()
+  }, [external, id])
   async function submit(e: React.FormEvent) {
     e.preventDefault()
     if (busy) return
     const parsed = parseDriverFields(d)
     if (!parsed.ok) { setErr({ error: parsed.error, field: parsed.field }); document.getElementById(`${id}-${parsed.field}`)?.focus(); return }
-    const res = await onSubmit(d)
+    const submitter = (e.nativeEvent as SubmitEvent).submitter ?? null
+    const res = await onSubmit(d, submitter instanceof HTMLElement ? submitter : null)
     if (res?.error) { setErr({ error: res.error, field: res.field }); if (res.field) document.getElementById(`${id}-${res.field}`)?.focus() }
     else setErr(null)
   }
@@ -77,7 +96,7 @@ function DriverForm({ initial, submitLabel, busy, onSubmit, onCancel }: {
       </div>
       {err && <p id={`${id}-err`} role="alert" className="adm-error" style={{ marginTop: 12 }}>{err.error}</p>}
       <div className="adm-actions" style={{ marginTop: 16 }}>
-        <button type="submit" className="adm-btn adm-btn--primary" aria-disabled={busy || undefined} aria-busy={busy || undefined}>{busy ? 'Saving…' : submitLabel}</button>
+        <button type="submit" className="adm-btn adm-btn--primary" aria-disabled={busy || undefined} aria-busy={busy || undefined}>{busy ? busyLabel : submitLabel}</button>
         {onCancel && <button type="button" className="adm-btn" onClick={onCancel}>Cancel</button>}
       </div>
     </form>
@@ -90,7 +109,25 @@ export default function DriverRoster() {
   const [adding, setAdding] = useState(false)
   const [editing, setEditing] = useState<string | null>(null)
   const [busy, setBusy] = useState<string | null>(null)
+  const [formError, setFormError] = useState<FormError | null>(null)
+  const [opener, setOpener] = useState<HTMLElement | null>(null)
   const { setNote, keepClear, toast } = useResultNote()
+  const sheetTitle = useId()
+  const review = useEditReview('/api/admin/drivers', {
+    onSaved: () => { void load() },
+    onFieldError: (field, message) => setFormError({ error: message, field: (FIELDS.some((f) => f.k === field) || field === 'role') ? field as FormError['field'] : undefined }),
+  })
+  const reviewing = useRef<RosterDriver | null>(null)
+  /** The review sheet closes: after a save, the form closes too and the page says what happened. */
+  function closeReview() {
+    if (review.step === 'saving') return
+    const done = review.step === 'done' ? review.result : null
+    review.reset()
+    if (done) {
+      setEditing(null)
+      setNote(done.tone === 'ok' ? { text: done.text } : { text: done.text, bad: true })
+    }
+  }
 
   async function load() {
     const r = await fetch('/api/admin/drivers', { cache: 'no-store' }).catch(() => null)
@@ -106,7 +143,12 @@ export default function DriverRoster() {
     const r = await fetch('/api/admin/drivers', { method, headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) }).catch(() => null)
     const j = r ? await r.json().catch(() => null) : null
     setBusy(null)
-    if (!r?.ok || !j?.driver) return { error: j?.error ?? 'That did not save. Check the connection and try again.', field: j?.field }
+    if (!r?.ok || !j?.driver) {
+      // Retiring a driver with rides ahead: the refusal names each ride, to give to another driver first.
+      const rides = Array.isArray(j?.rides) ? (j.rides as { ref: string; guest: string; when: string | null }[]) : []
+      const list = rides.map((x) => `${x.ref} (${x.guest}${x.when ? `, ${x.when}` : ''})`).join(', ')
+      return { error: `${j?.error ?? 'That did not save. Check the connection and try again.'}${list ? ` ${list}.` : ''}`, field: j?.field }
+    }
     setDrivers((list) => {
       const rest = (list ?? []).filter((d) => d.id !== j.driver.id)
       return [...rest, j.driver].sort((a, b) => Number(b.active) - Number(a.active) || a.name.localeCompare(b.name))
@@ -133,7 +175,7 @@ export default function DriverRoster() {
             <>
               <p className="adm-meta">{vehicleInWords(d)} · plate {d.plate} · WhatsApp {d.whatsapp}{d.email ? ` · signs in to the portal with ${d.email}` : ' · no portal sign-in'}</p>
               <div className="adm-actions" style={{ marginTop: 12 }}>
-                {d.active && <button type="button" className="adm-btn adm-btn--sm" onClick={() => setEditing(d.id)}>Edit</button>}
+                {d.active && <button type="button" className="adm-btn adm-btn--sm" onClick={() => { setFormError(null); setEditing(d.id) }}>Edit</button>}
                 <button
                   type="button" className="adm-btn adm-btn--sm" aria-busy={busy === d.id || undefined}
                   onClick={async () => {
@@ -149,16 +191,23 @@ export default function DriverRoster() {
           {isEditing && (
             <div style={{ marginTop: 12 }}>
               <DriverForm
-                initial={draftOf(d)} submitLabel="Save changes" busy={busy === d.id}
-                onCancel={() => setEditing(null)}
-                onSubmit={async (draft) => {
-                  const res = await save('PATCH', { id: d.id, ...draft }, d.id)
-                  if (res.error) return res
-                  setEditing(null)
-                  setNote({ text: `${draft.name.trim()} saved. Bookings already sent keep the details they were given.` })
-                  return null
+                initial={draftOf(d)} submitLabel="Review changes" busy={review.pending} busyLabel="Checking…"
+                external={formError}
+                onCancel={() => { setEditing(null); setFormError(null) }}
+                onSubmit={async (draft, submitter) => {
+                  const parsed = parseDriverFields(draft)
+                  if (!parsed.ok) return { error: parsed.error, field: parsed.field }
+                  const was = draftOf(d)
+                  const same = (Object.keys(parsed.fields) as (keyof DriverFields)[]).every((k) => (parsed.fields[k] ?? '') === (d[k] ?? '')) && draft.role === was.role
+                  if (same) return { error: 'Nothing has changed yet. Change a detail, or cancel.' }
+                  setFormError(null)
+                  setOpener(submitter)
+                  reviewing.current = d
+                  const r = await review.start({ id: d.id, ...parsed.fields, role: draft.role })
+                  return r.ok ? null : { error: r.message, field: (r.field as FormError['field']) ?? undefined }
                 }}
               />
+              <p className="adm-help" style={{ marginTop: 8 }}>Nothing is saved until you check what changes on the next screen.</p>
             </div>
           )}
         </div>
@@ -174,7 +223,7 @@ export default function DriverRoster() {
       </div>
       <p className="adm-lead">
         The drivers the dispatch console offers. Choosing one on a booking copies these details onto it and can email the guest.
-        Changing a driver here does not change bookings that already have them.
+        Changing a driver&apos;s details also changes the rides still ahead that carry them, once you have checked what changes; past rides keep what their guests were told.
       </p>
 
       {adding && (
@@ -206,6 +255,15 @@ export default function DriverRoster() {
           <ol className="adm-list" aria-label="Retired drivers">{retired.map(item)}</ol>
         </>
       )}
+      <Sheet open={!!review.step} onClose={closeReview} labelledBy={sheetTitle} busy={review.pending || review.step === 'saving'} returnTo={opener}>
+        <div className="fm-sheet-head">
+          <p className="fm-eyebrow">Drivers{reviewing.current ? ` · ${reviewing.current.name}` : ''}</p>
+          {review.step !== 'saving' && review.step !== 'done' && (
+            <button type="button" className="fm-x" onClick={closeReview} aria-label="Close without saving"><span aria-hidden="true">×</span></button>
+          )}
+        </div>
+        <EditReviewSteps review={review} titleId={sheetTitle} onBack={() => review.reset()} onClose={closeReview} />
+      </Sheet>
       {toast}
     </div>
   )

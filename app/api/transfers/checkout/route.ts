@@ -21,7 +21,7 @@ import { resolveCoupon } from '@/lib/coupon-lookup'
 import { consumeCoupon } from '@/lib/coupon-redemption'
 import { maybeSendTravelerConfirmation, maybeSendOperatorAlert } from '@/lib/email/booking'
 import { rateLimit, getIp } from '@/lib/rate-limit'
-import { DEFAULT_DRIVER } from '@/lib/dispatch'
+import { defaultDriverColumns } from '@/lib/default-driver'
 import { sanitizeAttribution } from '@/lib/attribution'
 import { addSettledBookingToOpsCalendar } from '@/lib/ops-calendar'
 import { hashTransferCart as hashCart } from '@/lib/transfer-cart-hash'
@@ -907,15 +907,17 @@ async function checkout(request: NextRequest) {
       // board shows an unassigned ride. Same null-and-paid predicates as the
       // webhook, so a real assignment is never overwritten.
       if (paidBooking && !paidBooking.driver_name && !paidBooking.driver_phone) {
+        // The default driver's details as saved now (lib/default-driver), the constant if they cannot be read.
+        const defaults = await defaultDriverColumns(supabase)
         const { error: drvErr } = await supabase
           .from('bookings')
-          .update(DEFAULT_DRIVER)
+          .update(defaults)
           .eq('id', bookingId!)
           .is('driver_name', null)
           .is('driver_phone', null)
           .eq('status', 'paid')
         if (drvErr) console.warn('[transfers-checkout]', reqId, 'default driver assign failed', drvErr.message)
-        else Object.assign(paidBooking, DEFAULT_DRIVER)
+        else Object.assign(paidBooking, defaults)
       }
 
       if (paidBooking) {

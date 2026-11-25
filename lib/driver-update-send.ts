@@ -79,9 +79,10 @@ export async function testDriverUpdate(svc: Svc, bookingId: string, leg: Leg, dr
 
 /**
  * `opts` (Nov 24 2026, the driver portal, lib/dispatch-change-server):
- *   about  what the email is about: a new driver (the default) or a new time
- *          for the driver already on the booking; a new-time email is refused
- *          unless the booking carries exactly this saved driver, so the driver
+ *   about  what the email is about: a new driver (the default), a new time
+ *          for the driver already on the booking, or that driver's new details
+ *          (Nov 25 2026); a new-time or new-details email is refused unless
+ *          the booking carries exactly this saved driver, so the driver
  *          columns written in step 1 never change anything.
  *   key    the Resend key's name (the message fingerprint is still added), so
  *          one saved change is emailed once however often it is retried.
@@ -101,7 +102,10 @@ export async function sendDriverUpdate(
   const { b, d } = got
   const problem = guestSendProblem(b, leg, d, nowMs)
   if (problem) return { ok: false, status: 409, error: problem }
-  if (opts.about?.kind === 'time' && !bookingHasDriver(b, d)) {
+  // A new time, or the same driver's new details (a saved driver's edit,
+  // lib/driver-edit-server): the booking must already carry exactly this saved
+  // driver, so step 1 below never changes who drives.
+  if ((opts.about?.kind === 'time' || opts.about?.kind === 'details') && !bookingHasDriver(b, d)) {
     return { ok: false, status: 409, error: 'The driver on this ride is not the saved driver, so the email cannot be written. Choose the driver again first.' }
   }
   // Read before this send stamps anything.

@@ -156,7 +156,11 @@ export function clockWords(iso: string): string {
  * driver portal: a fleet manager moved the ride after the guest's day-of email
  * had gone, or too late for one). `fromAt` is the time the guest was given.
  */
-export type UpdateAbout = { kind: 'driver' } | { kind: 'time'; fromAt: string }
+export type UpdateAbout =
+  | { kind: 'driver' }
+  | { kind: 'time'; fromAt: string }
+  /** The same driver with new details (a new van, a new number): `before` is what the booking carried. */
+  | { kind: 'details'; before: { driver_name: string | null; driver_phone: string | null; driver_vehicle: string | null; driver_plate: string | null } }
 
 export interface DriverUpdateEmail {
   subject: string
@@ -178,6 +182,7 @@ export function buildDriverUpdate(
   about: UpdateAbout = { kind: 'driver' },
 ): DriverUpdateEmail {
   if (about.kind === 'time') return buildTimeUpdate(b, leg, driver, nowMs, about.fromAt)
+  if (about.kind === 'details') return buildDetailsUpdate(b, leg, driver, nowMs, about.before)
   const l = firstLeg(b)!
   const at = legAt(b, leg)!
   const ref = bookingRef(b.id)
@@ -305,6 +310,49 @@ function buildTimeUpdate(b: Bk, leg: Leg, driver: Driver, nowMs: number, fromAt:
       lead,
       // The places, the flight and the party come from the base email unchanged.
       tripRows,
+    },
+  }
+}
+
+/**
+ * The new-details email (Nov 25 2026): the same driver, whose details changed
+ * after the guest was given them (a fleet manager changed the van, the plate
+ * or the number in the driver portal). Led by what changed, each change said
+ * once; the driver card and the trip card carry everything as it now stands.
+ */
+function buildDetailsUpdate(
+  b: Bk,
+  leg: Leg,
+  driver: Driver,
+  nowMs: number,
+  before: { driver_name: string | null; driver_phone: string | null; driver_vehicle: string | null; driver_plate: string | null },
+): DriverUpdateEmail {
+  const base = buildDriverUpdate(b, leg, driver, nowMs, true, { kind: 'driver' })
+  const ref = bookingRef(b.id)
+  const when = whenWords(legAt(b, leg)!, nowMs)
+  const isArrival = leg === 'arrival'
+  const first = driverFirstName(driver)
+  const now = { vehicle: bookingVehicle(driver), plate: driver.plate, phone: driver.whatsapp, name: driver.name }
+  const vehicleMoved = (before.driver_vehicle ?? '') !== now.vehicle || (before.driver_plate ?? '') !== now.plate
+  const phoneMoved = (before.driver_phone ?? '') !== now.phone
+  const nameMoved = (before.driver_name ?? '') !== now.name && !!before.driver_name
+
+  const said: string[] = []
+  if (nameMoved) said.push(`We had your driver's name as ${before.driver_name}. It is ${driver.name}.`)
+  if (vehicleMoved) said.push(`${driver.name} now drives ${aVehicle(driver)}, plate ${driver.plate}.`)
+  if (phoneMoved) said.push(`${first}'s WhatsApp number is now ${driver.whatsapp}.`)
+  said.push('Everything else about your ride stays the same.')
+
+  return {
+    subject: isArrival
+      ? `Your driver ${when.inline}: updated details (${ref})`
+      : `Your ride to the airport ${when.inline}: updated driver details (${ref})`,
+    props: {
+      ...base.props,
+      preheader: `${driver.name}, ${vehicleInWords(driver)}, plate ${driver.plate}, WhatsApp ${driver.whatsapp} · ${ref}`,
+      eyebrow: when.eyebrow ? `${when.eyebrow} · Driver details` : 'Driver details',
+      headline: `Updated details for your driver ${when.inline}.`,
+      lead: said.join(' '),
     },
   }
 }

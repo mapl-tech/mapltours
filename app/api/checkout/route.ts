@@ -9,7 +9,7 @@ import { dayTime, type TourLike } from '@/lib/day-route'
 import { isExperienceDateBookable, LEAD_TIME_MESSAGE } from '@/lib/booking-window'
 import { assertCheckoutSchema, SchemaNotReadyError } from '@/lib/checkout-schema'
 import { rateLimit, getIp } from '@/lib/rate-limit'
-import { DEFAULT_DRIVER } from '@/lib/dispatch'
+import { defaultDriverColumns } from '@/lib/default-driver'
 import { sanitizeAttribution } from '@/lib/attribution'
 import { claimGiftCard, releaseGiftClaim, settleGiftClaim } from '@/lib/gift-redemption'
 import { replaceBookingItems } from '@/lib/booking-items'
@@ -1197,15 +1197,17 @@ async function checkout(request: NextRequest) {
       // the same null-and-paid predicates, or a transfer paid entirely by gift
       // card reaches dispatch with no driver.
       if (paidBooking && paidBooking.booking_type === 'transfer' && !paidBooking.driver_name && !paidBooking.driver_phone) {
+        // The default driver's details as saved now (lib/default-driver), the constant if they cannot be read.
+        const defaults = await defaultDriverColumns(supabase)
         const { error: drvErr } = await supabase
           .from('bookings')
-          .update(DEFAULT_DRIVER)
+          .update(defaults)
           .eq('id', bookingId!)
           .is('driver_name', null)
           .is('driver_phone', null)
           .eq('status', 'paid')
         if (drvErr) console.warn('[checkout]', reqId, 'default driver assign failed', drvErr.message)
-        else Object.assign(paidBooking, DEFAULT_DRIVER)
+        else Object.assign(paidBooking, defaults)
       }
 
       if (paidBooking) {

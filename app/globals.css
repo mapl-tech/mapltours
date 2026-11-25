@@ -4788,6 +4788,23 @@ select.fm-input {
 .fm-diff-new { background: #F2F8F4; }
 .fm-diff-new dd { color: var(--fm-ink); font-weight: 700; }
 .fm-block { display: flex; flex-direction: column; gap: var(--fm-gap); }
+/* A saved driver's new details (EditReview): each changed detail is its own Now/New pair under its name. */
+.fm-edits { margin: 0; display: flex; flex-direction: column; gap: var(--fm-s2); }
+.fm-edit { display: flex; flex-direction: column; gap: var(--fm-s1); }
+.fm-edit > dd { margin: 0; }
+p.fm-diff-row { margin: 0; }
+.fm-diff-tag { font-size: var(--fm-fs-xs); font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--fm-faint); }
+.fm-diff-val { font-size: var(--fm-fs-base); line-height: 1.45; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.fm-diff-was .fm-diff-val { color: var(--fm-soft); text-decoration: line-through; text-decoration-color: rgba(87, 83, 76, 0.55); }
+.fm-diff-new .fm-diff-val { color: var(--fm-ink); font-weight: 700; }
+.fm-ride-sub { margin: 2px 0 0; font-size: var(--fm-fs-md); line-height: 1.45; color: var(--fm-soft); }
+/* A detail only MAPL Tours Jamaica changes: read, never typed into. */
+.fm-input[readonly] { background: var(--fm-paper); border-color: var(--fm-line); color: var(--fm-soft); cursor: default; }
+.fm-lock { display: inline-block; vertical-align: -2px; margin-right: 6px; }
+/* A step change is seen as well as announced (focus moves to its heading): the new step fades in. */
+.fm-sheet .fm-step { animation: fmFade 0.16s ease; }
+/* On an admin page the review sheet's buttons take the admin's pill shape. */
+.adm .fm-sheet .fm-btn { border-radius: 9999px; }
 .fm-rides { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--fm-s1); }
 .fm-ride, .fm-callout { display: grid; grid-template-columns: 20px 1fr; gap: var(--fm-gap); align-items: start; margin: 0; padding: var(--fm-gap) var(--fm-s2); border: 1px solid; border-radius: 12px; font-size: var(--fm-fs-md); line-height: 1.5; color: var(--fm-ink); }
 :is(.fm-ride, .fm-callout) > svg { margin-top: 2px; }
@@ -4820,6 +4837,8 @@ select.fm-input {
 .fm-person-main { min-width: 0; }
 .fm-person-name { margin: 0; display: flex; align-items: center; gap: var(--fm-s1); flex-wrap: wrap; font-size: var(--fm-fs-lg); font-weight: 800; letter-spacing: -0.01em; }
 .fm-person-meta { margin: 4px 0 0; font-size: var(--fm-fs-sm); line-height: 1.45; color: var(--fm-soft); overflow-wrap: anywhere; }
+/* A driver's WhatsApp link is a 44px target without moving the card: the box grows 10px each way, the margins take it back. */
+.fm-person-meta .fm-link { min-height: 44px; margin-block: -10px; }
 .fm-person-acts { grid-column: 1 / -1; display: flex; gap: var(--fm-s1); flex-wrap: wrap; }
 .fm-person-acts .fm-btn { flex: 1 1 120px; }
 .fm-badge { padding: 2px 8px; border-radius: 999px; background: var(--fm-ink); color: #fff; font-size: var(--fm-fs-xs); font-weight: 700; letter-spacing: 0.02em; }
@@ -4836,7 +4855,7 @@ select.fm-input {
   .fm-person-acts .fm-btn { flex: 0 0 auto; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .fm-sheet[open], .fm-sheet[open]::backdrop { animation: none; }
+  .fm-sheet[open], .fm-sheet[open]::backdrop, .fm-sheet .fm-step { animation: none; }
   .fm-sheet, .fm-sheet::backdrop { transition: none; }
   .fm-btn, .fm-chev { transition: none; }
   .fm-spinner { animation-duration: 2.4s; }

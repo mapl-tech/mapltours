@@ -3,6 +3,7 @@ import { createClient as createServerSupabase } from '@/lib/supabase/server'
 import { createServiceClient } from '@/lib/supabase/service'
 import { parseDriverFields } from '@/lib/drivers'
 import { DRIVER_ROLE_COLS } from '@/lib/driver-access-server'
+import { commitEdit, planEdit, retireBlock } from '@/lib/driver-edit-server'
 
 /**
  * The saved drivers (table `drivers`, migration 041). Admins only, checked
@@ -10,8 +11,14 @@ import { DRIVER_ROLE_COLS } from '@/lib/driver-access-server'
  *
  *   GET                                   every driver, working ones first
  *   POST  { name, whatsapp, vehicle, colour, plate, email?, role? }   add one
- *   PATCH { id, ...the same fields }      change one
+ *   PATCH { id, mode: 'plan', ...the same fields }
+ *   PATCH { id, mode: 'commit', ...the same fields, planKey, notify?: 'send' | 'skip' }
  *   PATCH { id, action: 'retire' | 'restore' }
+ *
+ * A change of details is reviewed before it is saved (Nov 25 2026,
+ * lib/driver-edit-server), as in the driver portal: every ride still ahead
+ * that carries the old details moves with the driver, and its guest hears as
+ * the review said. A driver with rides still ahead is not retired.
  *
  * role (Nov 25 2026, migration 043): 'driver' or 'fleet_manager'. Only here
  * is anyone made a fleet manager; the driver portal adds regular drivers only
@@ -19,9 +26,10 @@ import { DRIVER_ROLE_COLS } from '@/lib/driver-access-server'
  * to the portal with (lib/driver-access), so two working drivers may not share
  * one either.
  *
- * A change here never rewrites a booking: a booking keeps the details it was
- * given (its own driver_* columns), so what a guest was told stays on record.
- * Two working drivers may not share a name (payouts and the console know a
+ * A booking keeps its own copy of its driver's details (driver_* columns):
+ * an edit moves only the rides still ahead that carry the old details, so
+ * past rides keep what their guests were told. Two working drivers may not
+ * share a name (payouts and the console know a
  * booking's driver by name); the database's unique index backs that up.
  */
 
@@ -39,8 +47,12 @@ async function requireAdmin() {
   const svc = createServiceClient()
   const { data: adminRow } = await svc.from('admins').select('user_id').eq('user_id', user.id).maybeSingle()
   if (!adminRow) return { error: NextResponse.json({ error: 'forbidden' }, { status: 403 }) }
-  return { svc }
+  return { svc, actor: { email: (user.email ?? '').toLowerCase(), label: 'MAPL Tours Jamaica' } }
 }
+
+/** The edit answers say `message`; this desk reads `error` too. */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const deskJson = (json: Record<string, any>) => (json.ok ? json : { ...json, error: json.message })
 
 const nameTaken = (name: string) => `${name} is already on the list. Edit that driver instead, or retire them first.`
 /** Which unique rule a 23505 broke: the working name, or the sign-in email. */
@@ -83,21 +95,33 @@ export async function PATCH(req: Request) {
   if (gate.error) return gate.error
   const body = await req.json().catch(() => null) as Record<string, unknown> | null
   const id = typeof body?.id === 'string' ? body.id : ''
-  if (!UUID.test(id)) return NextResponse.json({ error: 'bad driver id' }, { status: 400 })
+  if (!body || !UUID.test(id)) return NextResponse.json({ error: 'bad driver id' }, { status: 400 })
 
-  let update: Record<string, unknown>
-  if (body?.action === 'retire' || body?.action === 'restore') {
-    update = { active: body.action === 'restore' }
-  } else {
-    const parsed = parseDriverFields(body!)
-    if (!parsed.ok) return NextResponse.json({ error: parsed.error, field: parsed.field }, { status: 400 })
-    const role = roleOf(body!)
-    if (!role.ok) return NextResponse.json({ error: 'Choose a role: driver or fleet manager.', field: 'role' }, { status: 400 })
-    update = { ...parsed.fields, ...(role.role ? { role: role.role } : {}) }
+  // A change of details: reviewed first, then saved with the rides that carry them.
+  if (body.action !== 'retire' && body.action !== 'restore') {
+    if (body.mode !== 'plan' && body.mode !== 'commit') {
+      return NextResponse.json({ ok: false, code: 'reload', error: 'This page is out of date. Reload it, then make the change again. Nothing was saved.' }, { status: 409 })
+    }
+    const now = Date.now()
+    const answer = body.mode === 'plan'
+      ? await planEdit(gate.svc!, 'admin', body, now)
+      : await commitEdit(gate.svc!, gate.actor!, 'admin', body, now)
+    return NextResponse.json(deskJson(answer.json), { status: answer.status })
   }
-  update.updated_at = new Date().toISOString()
 
-  const { data, error } = await gate.svc!.from('drivers').update(update).eq('id', id).select(DRIVER_ROLE_COLS).maybeSingle()
+  if (body.action === 'retire') {
+    const { data: current, error: readErr } = await gate.svc!.from('drivers').select('name, active').eq('id', id).maybeSingle()
+    if (readErr) return NextResponse.json({ error: readErr.message }, { status: 500 })
+    if (!current) return NextResponse.json({ error: 'Driver not found.' }, { status: 404 })
+    if (current.active) {
+      const blocked = await retireBlock(gate.svc!, current.name, Date.now())
+      if (blocked) return NextResponse.json(deskJson(blocked.json), { status: blocked.status })
+    }
+  }
+
+  const { data, error } = await gate.svc!.from('drivers')
+    .update({ active: body.action === 'restore', updated_at: new Date().toISOString() })
+    .eq('id', id).select(DRIVER_ROLE_COLS).maybeSingle()
   if (error) {
     if (error.code === DUPLICATE && emailClash(error)) return NextResponse.json({ error: EMAIL_TAKEN, field: 'email' }, { status: 409 })
     if (error.code === DUPLICATE) return NextResponse.json({ error: 'Another working driver already has that name.', field: 'name' }, { status: 409 })
