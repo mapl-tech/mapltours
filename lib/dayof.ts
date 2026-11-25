@@ -1,4 +1,6 @@
 import { sendEmail, opsBcc } from '@/lib/email/send'
+import { sendToParty } from '@/lib/travel-party-server'
+import { bookerName } from '@/lib/travel-party'
 import TransferDayOf from '@/emails/TransferDayOf'
 import { firstLeg, bookingRef, jaDate, jaTime, legInstantMs, type Bk } from '@/lib/dispatch'
 export { legInstantMs }
@@ -260,29 +262,31 @@ export async function sendDayOf(
     return { ...base, ok: false, skipped: reason }
   }
 
+  const subject = isArrival
+    ? `${dayLabel}: your MAPL Tours Jamaica driver at Montego Bay (${ref})`
+    : `${dayLabel}: your ride to the airport (${ref})`
+  const dayOfProps = {
+    bookingRef: ref,
+    firstName: b.first_name,
+    leg,
+    whenLabel: `${jaDate(at)}, ${jaTime(at)}`,
+    dayLabel,
+    pickupLabel: isArrival ? AIRPORT : l.hotel,
+    dropoffLabel: isArrival ? l.hotel : AIRPORT,
+    flight: (isArrival ? l.arrivalFlight : l.departureFlight) ?? null,
+    passengers: l.passengers,
+    driverName: b.driver_name ?? null,
+    driverPhone: b.driver_phone ?? null,
+    driverVehicle: b.driver_vehicle ?? null,
+    driverPlate: b.driver_plate ?? null,
+    supportEmail: SUPPORT_EMAIL,
+  }
   const res = await sendEmail({
     to: b.email,
     // Operations and the driver hold exactly what the guest holds.
     bcc: opsBcc(b.email),
-    subject: isArrival
-      ? `${dayLabel}: your MAPL Tours Jamaica driver at Montego Bay (${ref})`
-      : `${dayLabel}: your ride to the airport (${ref})`,
-    react: TransferDayOf({
-      bookingRef: ref,
-      firstName: b.first_name,
-      leg,
-      whenLabel: `${jaDate(at)}, ${jaTime(at)}`,
-      dayLabel,
-      pickupLabel: isArrival ? AIRPORT : l.hotel,
-      dropoffLabel: isArrival ? l.hotel : AIRPORT,
-      flight: (isArrival ? l.arrivalFlight : l.departureFlight) ?? null,
-      passengers: l.passengers,
-      driverName: b.driver_name ?? null,
-      driverPhone: b.driver_phone ?? null,
-      driverVehicle: b.driver_vehicle ?? null,
-      driverPlate: b.driver_plate ?? null,
-      supportEmail: SUPPORT_EMAIL,
-    }),
+    subject,
+    react: TransferDayOf(dayOfProps),
     tags: [{ name: 'type', value: 'transfer_dayof' }],
   })
 
@@ -293,6 +297,15 @@ export async function sendDayOf(
     const released = await undoClaim({}, RESEND)
     return { ...base, ok: false, error: released ? sendError : `${sendError}; ${NOT_RELEASED}` }
   }
+
+  // The travel party (lib/travel-party-server): each person their own copy,
+  // only now that the guest's went, keyed to this claim so a resend sends
+  // again and a retry does not. Best effort: never changes this result.
+  await sendToParty(svc, b.id, 'dayof', (m) => ({
+    subject,
+    react: TransferDayOf({ ...dayOfProps, firstName: null, party: { addedBy: bookerName(b.first_name), stopUrl: m.stopUrl } }),
+    key: `travel-party/dayof/${b.id}/${leg}/${claimedAt}/${m.id}`,
+  }))
 
   return { ...base, ok: true, sentTo: b.email }
 }

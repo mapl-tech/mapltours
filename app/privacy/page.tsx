@@ -48,6 +48,7 @@ export default function PrivacyPage() {
         <ul style={{ marginTop: 12, paddingLeft: 20, display: 'flex', flexDirection: 'column', gap: 8 }}>
           <li>Process and confirm your bookings, including sharing the relevant details with the driver or operator delivering your trip.</li>
           <li>Send transactional emails (booking confirmations, transfer details, contact form replies).</li>
+          <li>If you add your travel party&rsquo;s email addresses, we send each of them that trip&rsquo;s details and, the day after it ends, one request to review it. Nothing else: we never add them to a mailing list or use them for advertising.</li>
           <li>Send trip tips by email, about twice a month, only if you tick the trip tips box when you ask for your code (it starts unticked for everyone) or you tap the link asking for them. We record that choice in HubSpot, send the tips through Resend, and every tips email has a one-tap unsubscribe.</li>
           <li>Record in HubSpot that you are a customer when you book: the booking type (tour or transfer), when you booked and your total. If you get trip tips, we also let Resend know you booked, and the tips change: instead of the general ones, we send a few about your own trip, using your first name and your booking&rsquo;s dates, flights, hotel or pickup place, party size and tours, until the trip ends.</li>
           <li>Provide customer support and respond to your questions.</li>

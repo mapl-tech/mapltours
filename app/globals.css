@@ -34,6 +34,7 @@
   --gold-text:      #5A4A16;  /* Gold for TEXT on a light surface. AAA (7:1+) on white, on --bg-warm and on --surface; measured 8.66 / 8.23 / 7.73. Never use --gold or --gold-warm for text: they are 3.3:1 and fail AA. */
   --emerald:        #12563A;  /* AAA on white, warm and surface: 8.69 / 8.25 / 7.76 */
   --emerald-dim:    rgba(29, 122, 80, 0.07);
+  --danger:         #b00020;  /* Error text and an invalid field's edge on a light surface, the checkout's red: 7.33:1 on white. */
 
   /* Text */
   --text-primary:   #171614;
@@ -2923,6 +2924,242 @@ a.pf-stat:hover { background: var(--surface); }
 }
 @media (prefers-reduced-motion: reduce) {
   .xfer-hotels-group summary::after { transition: none; }
+}
+
+/* ── Travel party card (components/checkout/TravelPartyCard) ──
+   On the confirmation pages and /travel-party. The confirmation page's card
+   shape (white, hairline gold top, and the 14px 24px uppercase head every
+   card there has); one field and one button, then the people added. Spacing
+   on the --sp scale. The layout follows the card's own width (a container
+   query), so it is the same in any column. Type on the --fs scale; inputs
+   16px and 48px tall, every control 44px or more and 8px apart, every text
+   colour 7:1 or more. */
+.tp-card {
+  /* Colours with no site token, each measured on its ground. */
+  --tp-field-edge:  #857F75;  /* the field's border: 3.97:1 on white, 3.77:1 on --bg-warm (WCAG 1.4.11 needs 3:1) */
+  --tp-placeholder: #6E6A62;  /* 5.11:1 on --bg-warm */
+  --tp-sent-bg:     #E7F2EC;  /* under --emerald: 7.57:1 */
+  --tp-waiting-bg:  #FBF1DC;  /* under --gold-text: 7.72:1 */
+  container: tp-card / inline-size;
+  position: relative;
+  margin-bottom: var(--sp-4);
+  overflow: hidden;
+  text-align: left;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: var(--r-xl);
+  box-shadow: var(--shadow-sm);
+}
+.tp-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--gold) 50%, transparent);
+  opacity: 0.5;
+}
+/* Focus scrolled into view stops below the fixed header, never under it
+   (WCAG 2.4.11): Shift+Tab up a long list used to park a button beneath it. */
+.tp-card :is(input, button, [tabindex]) { scroll-margin-top: calc(var(--nav-h) + var(--sp-4)); }
+/* 14px: the head of every card on the confirmation page, so the cards line up. */
+.tp-head { padding: 14px var(--sp-5); border-bottom: 1px solid var(--border); }
+.tp-title {
+  margin: 0;
+  font-family: var(--font-dm-sans);
+  font-size: var(--fs-label);
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+}
+.tp-body { padding: var(--sp-4) var(--sp-5) var(--sp-5); }
+.tp-ask {
+  margin: 0 0 var(--sp-1);
+  font-family: var(--font-dm-sans);
+  font-size: var(--fs-h4);
+  font-weight: 600;
+  line-height: 1.3;
+  letter-spacing: -0.01em;
+  color: var(--text-primary);
+}
+.tp-lead, .tp-note {
+  /* About 66 characters a line at 17px, measured (DM Sans runs about 8px a character). */
+  max-width: 33rem;
+  /* No word left alone on the last line, where the browser can. */
+  text-wrap: pretty;
+  margin: 0 0 var(--sp-4);
+  font-family: var(--font-dm-sans);
+  font-size: var(--fs-body-xl);
+  line-height: 1.55;
+  color: var(--text-secondary);
+}
+.tp-note { margin: 0; }
+.tp-form { display: flex; flex-wrap: wrap; align-items: flex-end; gap: var(--sp-2); }
+.tp-field { display: flex; flex-direction: column; gap: var(--sp-1); flex: 1 1 240px; min-width: 0; }
+.tp-label { font-family: var(--font-dm-sans); font-size: var(--fs-body); font-weight: 600; line-height: 1.3; color: var(--text-primary); }
+/* The promise under the label: 4px below it, 8px above the field. */
+.tp-hint { margin: 0; max-width: 33rem; font-family: var(--font-dm-sans); font-size: var(--fs-body); line-height: 1.45; color: var(--text-tertiary); text-wrap: pretty; }
+.tp-input {
+  width: 100%;
+  height: 48px;
+  margin-top: var(--sp-1);
+  /* 14px: the site's field inset (.field-input). */
+  padding: 0 14px;
+  font-family: var(--font-dm-sans);
+  /* 16px, not a token: a phone zooms into any field set smaller. */
+  font-size: 16px;
+  color: var(--text-primary);
+  /* Recessed like the checkout's fields (.field-input), white once typing,
+     with an edge strong enough to find (3:1 on both grounds). */
+  background: var(--bg-warm);
+  border: 1px solid var(--tp-field-edge);
+  border-radius: var(--r-md);
+  transition: border-color var(--dur-fast) var(--ease-out), background-color var(--dur-fast) var(--ease-out);
+}
+.tp-input:focus { background: #fff; border-color: var(--accent); }
+.tp-input::placeholder { color: var(--tp-placeholder); }
+.tp-input[aria-invalid='true'] { border-color: var(--danger); }
+.tp-input[aria-disabled='true'] { background: var(--surface); cursor: not-allowed; }
+.tp-send.btn-primary { height: 48px; padding: 0 var(--sp-5); font-size: var(--fs-body-lg); font-weight: 600; flex: 0 0 auto; }
+/* Waiting on another request: inactive, but it keeps focus and its look.
+   A full party: inactive and faded, still reachable by Tab. */
+.tp-send.btn-primary[aria-disabled='true'] { cursor: not-allowed; }
+.tp-send.btn-primary[data-full] { opacity: 0.55; }
+.tp-send.btn-primary[data-busy] { cursor: progress; }
+.tp-error { margin: var(--sp-2) 0 0; font-family: var(--font-dm-sans); font-size: var(--fs-body); font-weight: 600; line-height: 1.45; color: var(--danger); }
+.tp-meta { margin: var(--sp-3) 0 0; font-family: var(--font-dm-sans); font-size: var(--fs-body); line-height: 1.45; color: var(--text-tertiary); }
+/* The result sits under the button it answers, not after the list. */
+.tp-status { margin: var(--sp-2) 0 0; font-family: var(--font-dm-sans); font-size: var(--fs-body); font-weight: 600; line-height: 1.45; color: var(--emerald); }
+.tp-status:empty { margin: 0; }
+.tp-status--warn { color: var(--gold-text); }
+.tp-status--error { color: var(--danger); }
+/* One grid for the whole list, its rows on its columns (subgrid): the
+   statuses start on one line and the buttons end on one, like a table. */
+.tp-list {
+  list-style: none;
+  margin: var(--sp-4) 0 0;
+  padding: 0;
+  border-top: 1px solid var(--border);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  column-gap: var(--sp-3);
+}
+.tp-row {
+  grid-column: 1 / -1;
+  display: grid;
+  /* Where subgrid is missing, each row keeps these columns on its own. */
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  grid-template-columns: subgrid;
+  column-gap: var(--sp-3);
+  align-items: center;
+  /* 44px buttons and 8px above and below; a row without buttons is as tall. */
+  min-height: 60px;
+  padding: var(--sp-2) 0;
+  border-bottom: 1px solid var(--border);
+}
+.tp-email {
+  grid-column: 1;
+  min-width: 0;
+  font-family: var(--font-dm-sans);
+  font-size: var(--fs-body-lg);
+  font-weight: 600;
+  line-height: 1.35;
+  color: var(--text-primary);
+  overflow-wrap: anywhere;
+}
+.tp-chip {
+  grid-column: 2;
+  justify-self: start;
+  display: inline-flex;
+  align-items: center;
+  height: 28px;
+  padding: 0 var(--sp-3);
+  border-radius: 9999px;
+  font-family: var(--font-dm-sans);
+  font-size: var(--fs-body-sm);
+  font-weight: 700;
+  white-space: nowrap;
+}
+.tp-chip--sent { background: var(--tp-sent-bg); color: var(--emerald); }
+.tp-chip--waiting { background: var(--tp-waiting-bg); color: var(--gold-text); }
+.tp-chip--stopped { background: var(--surface); color: var(--text-tertiary); }
+.tp-actions { grid-column: 3; justify-self: end; display: inline-flex; gap: var(--sp-2); }
+.tp-act {
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0 var(--sp-2);
+  font-family: var(--font-dm-sans);
+  font-size: var(--fs-body);
+  font-weight: 600;
+  color: var(--text-primary);
+  background: none;
+  border: 0;
+  border-radius: var(--r-md);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+  transition: background-color var(--dur-fast) var(--ease-out);
+}
+.tp-act:hover:not([aria-disabled='true']) { background: var(--bg-warm); }
+.tp-act[aria-disabled='true'] { opacity: 0.55; cursor: not-allowed; }
+.tp-act[data-busy] { opacity: 1; cursor: progress; }
+/* A row just added arrives, so the eye finds it in a long list; a result or
+   a refusal fades in where it appears. Opacity and transform only. */
+@keyframes tpRowIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes tpFadeIn { from { opacity: 0; } to { opacity: 1; } }
+@media (prefers-reduced-motion: no-preference) {
+  .tp-row--new { animation: tpRowIn var(--dur-base) var(--ease-out) both; }
+  .tp-status:not(:empty), .tp-error { animation: tpFadeIn var(--dur-fast) var(--ease-out) both; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tp-input, .tp-act { transition: none; }
+}
+/* /travel-party: the trip, so the booker knows which one this is. */
+.tp-trip { list-style: none; margin: 0 0 var(--sp-5); padding: 0; display: flex; flex-direction: column; gap: var(--sp-2); }
+.tp-trip li {
+  position: relative;
+  padding-left: var(--sp-4);
+  font-family: var(--font-dm-sans);
+  font-size: var(--fs-body-lg);
+  font-weight: 600;
+  line-height: 1.45;
+  color: var(--text-primary);
+}
+.tp-trip li::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0.6em;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--gold);
+}
+/* A narrow card (a phone, or a narrow column): the button under the field at
+   full width, and every row alike, the address on its own line with its status
+   and buttons under it. 16px above and 4px below look even, because the 44px
+   buttons carry about 13px of their own space under the text. */
+@container tp-card (max-width: 37.5rem) {
+  .tp-send.btn-primary { width: 100%; }
+  .tp-list { display: block; }
+  .tp-row { display: flex; flex-wrap: wrap; gap: var(--sp-1) var(--sp-3); padding: var(--sp-4) 0 var(--sp-1); }
+  .tp-email { flex-basis: 100%; }
+  .tp-actions { margin-left: auto; }
+  /* So a status and two buttons share one line from 360px up (still 44px tall, 8px apart). */
+  .tp-act { padding: 0 var(--sp-1); }
+}
+@supports not (container-type: inline-size) {
+  @media (max-width: 640px) {
+    .tp-send.btn-primary { width: 100%; }
+    .tp-list { display: block; }
+    .tp-row { display: flex; flex-wrap: wrap; gap: var(--sp-1) var(--sp-3); padding: var(--sp-4) 0 var(--sp-1); }
+    .tp-email { flex-basis: 100%; }
+    .tp-actions { margin-left: auto; }
+    .tp-act { padding: 0 var(--sp-1); }
+  }
 }
 
 /* Contact page social tiles: the same four glyphs as the footer. */

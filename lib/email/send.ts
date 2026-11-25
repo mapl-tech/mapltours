@@ -203,6 +203,92 @@ export async function sendEmail({
   }
 }
 
+/** One email of a batch: its own recipient, words and headers. */
+export interface BatchEmailInput {
+  to: string
+  subject: string
+  react: React.ReactElement
+  tags?: { name: string; value: string }[]
+  headers?: Record<string, string>
+}
+
+export interface SendEmailBatchResult {
+  /** True when the request was answered; each email's own outcome is in `results`. */
+  ok: boolean
+  /** One per input email, in the same order. */
+  results: SendEmailResult[]
+  error?: string
+}
+
+/**
+ * Several separate emails in ONE Resend request (the batch endpoint, up to
+ * 100 a call): each its own recipient and content, so nobody sees anyone
+ * else's address, while the request counts once against Resend's 10 a
+ * second. Same From, Reply-To, plain-text alternative, timeout and logging as
+ * sendEmail. Validation is permissive: one refused address does not hold back
+ * the others. The one idempotency key covers the whole request, so a repeat
+ * of the same batch inside Resend's 24 hours is delivered once.
+ */
+export async function sendEmailBatch(
+  emails: BatchEmailInput[],
+  { idempotencyKey, timeoutMs }: { idempotencyKey: string; timeoutMs?: number },
+): Promise<SendEmailBatchResult> {
+  const failAll = (error: string): SendEmailBatchResult => ({ ok: false, error, results: emails.map(() => ({ ok: false, error })) })
+  if (emails.length === 0) return { ok: true, results: [] }
+  if (emails.length > 100) return failAll('a batch holds at most 100 emails')
+  if (!resend) {
+    console.warn('[email] RESEND_API_KEY not set, would have sent a batch of', emails.length)
+    return failAll('RESEND_API_KEY missing')
+  }
+
+  const from = normalizeAddress(process.env.EMAIL_FROM, FROM_FALLBACK, 'EMAIL_FROM')
+  const replyTo = normalizeAddress(process.env.EMAIL_SUPPORT, REPLY_TO_FALLBACK, 'EMAIL_SUPPORT')
+
+  try {
+    const payload = await Promise.all(emails.map(async (e) => ({
+      from,
+      to: e.to,
+      subject: e.subject,
+      html: await render(e.react),
+      text: await render(e.react, { plainText: true }),
+      replyTo,
+      ...(e.headers && Object.keys(e.headers).length ? { headers: e.headers } : {}),
+      ...(e.tags?.length ? { tags: e.tags } : {}),
+    })))
+    const sending = resend.batch.send(payload, { idempotencyKey, batchValidation: 'permissive' })
+
+    let timer: ReturnType<typeof setTimeout> | undefined
+    const outcome = timeoutMs && timeoutMs > 0
+      ? await Promise.race([
+          sending,
+          new Promise<typeof TIMED_OUT>((resolve) => { timer = setTimeout(() => resolve(TIMED_OUT), timeoutMs) }),
+        ]).finally(() => clearTimeout(timer))
+      : await sending
+    if (outcome === TIMED_OUT) {
+      // It may still land; a repeat carries the same key, so it cannot deliver twice.
+      sending.catch(() => {})
+      console.error('[email] batch timed out', { count: emails.length, timeoutMs })
+      return failAll('timeout')
+    }
+    const { data, error } = outcome
+    if (error || !data) {
+      console.error('[email] batch failed', { count: emails.length, error })
+      return failAll(error?.message ?? 'no answer')
+    }
+    // Permissive: refused emails are listed by index; the rest went, ids in order.
+    const refused = new Map((data.errors ?? []).map((x) => [x.index, x.message]))
+    const ids = (data.data ?? []).map((x) => x.id)
+    let next = 0
+    const results = emails.map((_, i): SendEmailResult => (refused.has(i) ? { ok: false, error: refused.get(i) } : { ok: true, id: ids[next++] }))
+    if (refused.size) console.error('[email] batch refused some emails', { count: emails.length, refused: refused.size })
+    return { ok: true, results }
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : 'unknown error'
+    console.error('[email] batch render/send threw', { count: emails.length, err: msg })
+    return failAll(msg)
+  }
+}
+
 const list = (v: string | undefined): string[] =>
   (v ?? '').split(',').map((e) => e.trim()).filter((e) => e.includes('@'))
 

@@ -11,6 +11,7 @@ import BookingConfirmed from '@/emails/BookingConfirmed'
 import OperatorBookingAlert from '@/emails/OperatorBookingAlert'
 import TransferConfirmed from '@/emails/TransferConfirmed'
 import TransferOperatorAlert from '@/emails/TransferOperatorAlert'
+import { travelPartyUrl } from '@/lib/travel-party-server'
 
 /**
  * Confirmation + operations email for a paid booking.
@@ -164,6 +165,8 @@ export async function maybeSendTravelerConfirmation(
         subject: `Transfer confirmed, your Jamaica airport ride (${bookingRef})`,
         react: TransferConfirmed({
           bookingRef,
+          // The booker's own link to add their travel party (lib/travel-party-server).
+          travelPartyUrl: travelPartyUrl(booking.id),
           firstName: booking.first_name,
           lastName: booking.last_name,
           email: booking.email,
@@ -207,6 +210,8 @@ export async function maybeSendTravelerConfirmation(
         subject: `Booking confirmed, your Jamaica trip with MAPL Tours Jamaica (${bookingRef})`,
         react: BookingConfirmed({
           bookingRef,
+          // The booker's own link to add their travel party (lib/travel-party-server).
+          travelPartyUrl: travelPartyUrl(booking.id),
           firstName: booking.first_name,
           lastName: booking.last_name,
           email: booking.email,

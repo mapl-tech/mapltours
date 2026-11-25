@@ -850,6 +850,71 @@ Rules, enforced in code:
 
 Tests: `driver-update.spec.ts` (every line, the day words under the Jamaica calendar, the copy rules, the guards, the field rules) and `driver-update-send.spec.ts` (the write-then-send order, refusals before anything happens, the test and preview write nothing, both routes refuse non-admins). Screens were walked at 390 and 1440 with made-up rows.
 
+**A new saved driver needs a line in `WISE_PAYOUT_RECIPIENTS`** (Netlify, then a redeploy, since functions read env at deploy). The payout job knows a booking's driver by name, and a name missing from the map is held and reported, never paid (Nov 24 2026).
+
+## Travel party: each traveller gets their own copy (Nov 24 2026)
+
+Owner, Nov 24 2026: guests should be able to add the emails of the people they travel with, each getting their own email (never CC). The owner's choices:
+- In the question dialog: "After payment", "Confirmation + driver details", and the Privacy Policy sentence "Add it".
+- Then: "build it, make it perfect. There can be no mistakes in the booking flow, money flow or webhooks."
+- Later the same day, reversing "only the booker gets review requests": "Make sure the party members also receive review emails as well. Make the wording perfect."
+
+Pieces:
+- Migration `042_booking_party.sql`: table `booking_party`, RPC `booking_party_add`.
+- `lib/travel-party.ts`: pure; the cap, the copy, and the party versions of the emails.
+- `lib/travel-party-server.ts`: links, the signed stop link, reads, add/remove/stop, and every party send.
+- `app/api/travel-party`: POST adds, or resends when the copy has not gone; DELETE removes.
+- `app/api/travel-party/stop`: GET is an inert page; POST and one-click stop.
+- `app/travel-party/page.tsx` and `components/checkout/TravelPartyCard.tsx` (styles: the `.tp-*` block).
+- Emails: `emails/TravelPartyTrip.tsx` and `emails/TravelPartyCancelled.tsx`, plus a `party` prop on `TransferDayOf` and `DriverUpdate`, and a "Traveling with others?" card (`travelPartyUrl`) in `TransferConfirmed` and `BookingConfirmed`.
+
+Rules, enforced in code:
+- **After payment, never in checkout.**
+  - Where the card shows:
+    - on both confirmation pages for a paid booking (a pending one explains and shows no form);
+    - on /travel-party, from the confirmation email's link. Its `trip_proof` goes into the `mapl_trip` cookie, kept only on that path (`keepsBookingProof`).
+  - The money path is untouched. Checkout, the Stripe objects and the webhook's money logic did not change; the webhook only passes the link to the confirmation email.
+- **Only the booker adds, by the confirmation's own proof** (`canSeeConfirmation`: the browser that booked or its signed-in owner).
+  - A missing booking and someone else's booking get the same 403; an unpaid booking gets 409.
+  - The limit is 30 requests a minute per IP. The route never writes to `bookings`.
+- **The database decides who is on the list.**
+  - `booking_party_add` locks the booking row, refuses an unpaid booking and the booker's own address, and caps the list at the party size (1 to 12, `partyCap`). It brings back a removed person and never re-adds one who stopped.
+  - RLS is on, and only the service role can read or call it.
+- **Each person gets their own copy, best effort, after the booker's.** Five emails can go to a party member:
+  - the trip (no prices, no payment, no booker contact);
+  - the day-of driver email;
+  - a driver update;
+  - the cancellation notice;
+  - the review request, the day after the trip: the booker's letter without a first name, sent only on the daily run (`sendReviewRequest`) and only once the booker's own request went. An operator's forced resend is for the booker alone. The review job's deadline is 4.5 s (`REVIEW_DEADLINE_MS`), which leaves room for a send in flight plus its party's copies inside Netlify's 10 s.
+
+  Each copy has these properties:
+  - It goes only after the booker's own email succeeded, and never throws, delays or changes it.
+  - It is its own email to one person, never a CC or BCC. A BCC would save nothing (Resend counts every BCC recipient as an email), could not carry each person's stop link, and reads as bulk mail.
+  - The party's copies go in ONE Resend batch request (`sendEmailBatch`, permissive, so one refused address does not hold back the rest). Resend allows 10 requests a second, and a party of up to 12 sent one request each right after the booker's could have had copies refused. The batch's idempotency key is built from the per-person keys (`travel-party/...`), so a repeat for the same people is delivered once.
+  - Each copy has a 2.5 s limit, a stop link and `List-Unsubscribe`. A copy on adding someone is one person and one request (`sendPartyConfirmation`, keyed per row).
+  - The stop link is an HMAC under `travel-party:v1:stop:`, keyed by CART_REMINDER_SECRET, else MENTIONS_SECRET, else TRIP_TIPS_SECRET.
+
+  On a party member's arrival copy, the sign shows the booker's name.
+- **Nothing else reaches them.** No trip tips, cart reminders, tour upsell, HubSpot, Meta or GA4: those read only `bookings.email`. `travel-party-senders.spec.ts` allowlists every file that touches `booking_party`.
+- **Every promise names the review request.** The footer on every party email reads "...so we email you about this trip, and once after it to ask for a review. We use your address for nothing else." (`partyFooter`). The card hint, both confirmation email cards and the Privacy Policy sentence say the same; change them together.
+- **A missing table degrades quietly.** If 042 were absent, the reads log and return nothing: the confirmation page and every sender carry on, and only an add fails ("That did not save"). Go live in order anyway: apply 042, check `information_schema`, then deploy.
+- **The card** (Sentinel 90, mobile and WCAG 2.2 AA gates clear, Nov 24 2026):
+  - One field and one button, with the promise under the label.
+  - A refusal is announced once: an alert only when focus is already in the field.
+  - Busy buttons keep focus (aria-disabled). Focus never falls to the page after a change. A full party keeps the field reachable (readOnly plus aria-disabled).
+  - Rows sit on a subgrid; a container query at 37.5rem stacks them.
+  - Addresses break only before the domain, and focusables clear the fixed header (`scroll-margin-top`).
+  - Preview it with made-up rows at a temporary `app/zz-*` page and an `/api/travel-party` answered by the test script; never commit the page.
+- **The Privacy Policy** carries the approved sentence; change the two together.
+
+Tests:
+- `travel-party.spec.ts`: rules and emails.
+- `travel-party-server.spec.ts`.
+- `travel-party-routes.spec.ts`: API, stop and middleware.
+- `travel-party-senders.spec.ts`: send order and exclusions, the review path included.
+- `email-send-batch.spec.ts`: one request, separate recipients, no CC or BCC, refusals mapped to the right person, timeouts. A real two-email batch to contact@ was read back from Resend on Nov 24 2026 (delivered, CC and BCC empty).
+- The migration was checked in PGlite (29 checks), and the card was measured in Chromium at 320 to 1440 and WebKit at 360 and 390 (47 results).
+
 ## Rules from the Nov 13 2026 audit
 
 - **One `<main>` per page, and it is `LayoutShell`'s** (`<main id="main-content">`, where the skip link lands). A page's own wrapper is a `<div>`; seven screens used to nest a second one (`tests/unit/one-main-landmark.spec.ts`).

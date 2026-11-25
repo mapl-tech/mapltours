@@ -2,7 +2,9 @@ import 'server-only'
 import { createServiceClient } from '@/lib/supabase/service'
 import { sendEmail } from '@/lib/email/send'
 import { bookingRef } from '@/lib/dispatch'
-import ReviewRequest from '@/emails/ReviewRequest'
+import ReviewRequest, { type ReviewRequestProps } from '@/emails/ReviewRequest'
+import { sendToParty } from '@/lib/travel-party-server'
+import { bookerName } from '@/lib/travel-party'
 import {
   reviewRequestBlockedReason,
   describeForReview,
@@ -23,6 +25,12 @@ import {
  * this key can never erase keys a concurrent writer is setting (day-of stamps,
  * refund timestamps, console step ticks).
  *
+ * The travel party (lib/travel-party-server): once the guest's request has
+ * gone, each person the guest added gets their own copy (owner, Nov 24 2026).
+ * Only then, and only on the daily run: the claim above makes it once per
+ * booking, and an operator's forced resend is for the guest who lost theirs.
+ * Best effort: a party copy that fails never changes the guest's result.
+ *
  * SAFETY: strictly additive. Reads bookings, writes only the one
  * `dispatch.review_request_sent` key. No money column, booking status, Stripe
  * call or webhook is touched on this path.
@@ -40,6 +48,8 @@ export interface ReviewRequestResult {
   sentTo?: string
   skipped?: ReviewSkipReason | 'claimed_elsewhere'
   error?: string
+  /** The travel party's copies, when the guest's went on the daily run. */
+  party?: { sent: number; failed: number }
 }
 
 export async function sendReviewRequest(
@@ -70,6 +80,16 @@ export async function sendReviewRequest(
     return { ...base, ok: false, skipped: 'claimed_elsewhere' }
   }
 
+  const letter: ReviewRequestProps = {
+    bookingRef: bookingRef(booking.id),
+    firstName: booking.first_name ?? null,
+    isTransfer,
+    legs,
+    tripLabel,
+    tripDates,
+    reviewUrl: TRIPADVISOR_REVIEW_URL,
+    supportEmail: SUPPORT_EMAIL,
+  }
   const res = await sendEmail({
     to: booking.email as string,
     // Subject names the trip and asks a question. The previous line ("We
@@ -80,16 +100,7 @@ export async function sendReviewRequest(
           ? `How was the ride, ${booking.first_name.trim()}?`
           : 'How was the ride?')
       : `How was ${tripLabel}?`,
-    react: ReviewRequest({
-      bookingRef: bookingRef(booking.id),
-      firstName: booking.first_name ?? null,
-      isTransfer,
-      legs,
-      tripLabel,
-      tripDates,
-      reviewUrl: TRIPADVISOR_REVIEW_URL,
-      supportEmail: SUPPORT_EMAIL,
-    }),
+    react: ReviewRequest(letter),
     tags: [{ name: 'type', value: 'review_request' }],
   })
 
@@ -100,7 +111,19 @@ export async function sendReviewRequest(
     return { ...base, ok: false, error: res?.error ?? 'send failed' }
   }
 
-  return { ...base, ok: true, sentTo: booking.email as string }
+  // Each person the guest added: their own copy, no first name (we have
+  // none), the booker named in the footer with a stop link. Keyed per person,
+  // so a retry inside Resend's window is delivered once.
+  let party: ReviewRequestResult['party']
+  if (!opts.force) {
+    party = await sendToParty(svc, booking.id, 'review', (m) => ({
+      subject: isTransfer ? 'How was the ride?' : `How was ${tripLabel}?`,
+      react: ReviewRequest({ ...letter, firstName: null, party: { addedBy: bookerName(booking.first_name), stopUrl: m.stopUrl } }),
+      key: `travel-party/review/${booking.id}/${m.id}`,
+    }))
+  }
+
+  return { ...base, ok: true, sentTo: booking.email as string, ...(party ? { party } : {}) }
 }
 
 /** Columns the eligibility rules and the email both need. */

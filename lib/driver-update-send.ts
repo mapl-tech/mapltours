@@ -4,6 +4,8 @@ import DriverUpdate from '@/emails/DriverUpdate'
 import { DRIVER_COLS, VALID_EMAIL, bookingDriverColumns, type Driver } from '@/lib/drivers'
 import { buildDriverUpdate, buildProblem, guestSendProblem, sentDriverKey, sentKey, toldBefore, type Leg } from '@/lib/driver-update'
 import type { Bk } from '@/lib/dispatch'
+import { sendToParty } from '@/lib/travel-party-server'
+import { bookerName, driverUpdateForParty } from '@/lib/travel-party'
 
 /**
  * Preview, test and send the driver-update email (lib/driver-update.ts says
@@ -113,6 +115,15 @@ export async function sendDriverUpdate(svc: Svc, bookingId: string, leg: Leg, dr
   if (!res.ok) {
     return { ok: false, status: 502, error: `${d.name} is saved on the booking, but the email did not send (${res.error ?? 'no answer'}). Send again: the guest gets it once.` }
   }
+
+  // The travel party (lib/travel-party-server): each person their own copy,
+  // after the guest's went, the sign at arrivals naming the booker. Keyed like
+  // the guest's, so a double tap sends once. Best effort: never changes this.
+  await sendToParty(svc, b.id, 'driver_update', (m) => ({
+    subject,
+    react: DriverUpdate(driverUpdateForParty(props, bookerName(b.first_name), m.stopUrl)),
+    key: `travel-party/driver-update/${b.id}/${leg}/${d.id}/${m.id}`,
+  }))
 
   // 3) The record of it, merged atomically beside the other dispatch keys.
   const sentAt = new Date(nowMs).toISOString()

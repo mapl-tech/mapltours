@@ -8,6 +8,7 @@ import OperatorRefundApproval from '@/emails/OperatorRefundApproval'
 import RefundDeclined from '@/emails/RefundDeclined'
 import { earliestServiceStart } from '@/lib/booking-window'
 import { transferTitle } from '@/lib/transfer-legs'
+import { sendPartyCancellation } from '@/lib/travel-party-server'
 
 /**
  * Cancellation notifications, shared by BOTH refund paths:
@@ -213,6 +214,10 @@ export async function sendCancellationEmails(
       })
       if (res.ok) {
         result.customer = 'sent'
+        // The travel party (lib/travel-party-server): anyone sent the trip is
+        // told it is off, the trip only, no money. Best effort, after the
+        // guest's receipt went; never changes this result.
+        await sendPartyCancellation(supabase, bookingId)
       } else {
         await releaseEmailChannel(supabase, bookingId, CUSTOMER_CHANNEL)
         result.customer = 'failed'

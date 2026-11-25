@@ -1,5 +1,6 @@
 import { Heading, Text, Section, Link } from '@react-email/components'
 import { MaplLayout, maplStyles as s } from './_Layout'
+import { partyFooter, signName } from '../lib/travel-party'
 
 /**
  * Sent to the guest on the DAY of a transfer, once the driver is assigned.
@@ -34,6 +35,12 @@ export interface TransferDayOfProps {
   driverVehicle: string | null
   driverPlate: string | null
   supportEmail: string
+  /**
+   * Set for a travel party member's copy (lib/travel-party): no first-name
+   * greeting, the sign shows the booker's name, and it ends with why it came
+   * and a link to stop these emails.
+   */
+  party?: { addedBy: string | null; stopUrl: string }
 }
 
 /** Numbered steps as a real list: the order carries meaning, so it is marked
@@ -60,8 +67,10 @@ export default function TransferDayOf(props: TransferDayOfProps) {
   const {
     bookingRef, firstName, leg, whenLabel, dayLabel, pickupLabel, dropoffLabel,
     flight, passengers, driverName, driverPhone, driverVehicle, driverPlate,
-    supportEmail,
+    supportEmail, party,
   } = props
+  // On a party member's copy the sign shows the booker's name, not theirs.
+  const sign = party ? signName(party.addedBy) : 'your name'
   // Name the driver where we have it; never assume a pronoun for them.
   const driver = driverName?.trim() || 'Your driver'
   // "Collin, your driver will be waiting" when named; plain otherwise.
@@ -77,13 +86,15 @@ export default function TransferDayOf(props: TransferDayOfProps) {
     <MaplLayout preheader={`${dayLabel}: your driver, ${whenLabel} · ${bookingRef}`}>
       <Text style={s.eyebrow}>{dayLabel} · {isArrival ? 'Airport pickup' : 'Departure pickup'}</Text>
       <Heading as="h1" style={s.hero} className="mapl-h1">
-        {isArrival
-          ? (isToday ? `Welcome to Jamaica, ${name}.` : `See you tomorrow, ${name}.`)
-          : `Safe travels, ${name}.`}
+        {party
+          ? (isArrival ? (isToday ? 'Welcome to Jamaica.' : 'See you tomorrow.') : 'Safe travels.')
+          : isArrival
+            ? (isToday ? `Welcome to Jamaica, ${name}.` : `See you tomorrow, ${name}.`)
+            : `Safe travels, ${name}.`}
       </Heading>
       <Text style={s.heroLead}>
         {isArrival
-          ? `${driverIntro} will be waiting just outside the arrivals hall with a MAPL Tours Jamaica sign showing your name. Take your time through immigration and baggage${flight ? ': we watch your flight, so your driver already knows if it lands early or late' : ', your driver will be there'}.`
+          ? `${driverIntro} will be waiting just outside the arrivals hall with a MAPL Tours Jamaica sign showing ${sign}. Take your time through immigration and baggage${flight ? ': we watch your flight, so your driver already knows if it lands early or late' : ', your driver will be there'}.`
           : `${driverName?.trim() ? `${driverName.trim()}, your driver,` : 'Your driver'} will be waiting outside your hotel ${isToday ? 'today' : 'tomorrow'} at the time below, ready to take you back to Sangster International for your flight.`}
       </Text>
 
@@ -141,7 +152,7 @@ export default function TransferDayOf(props: TransferDayOfProps) {
                     ? <>Clear immigration and collect your bags. No rush, we are tracking the flight.</>
                     : <>Clear immigration and collect your bags. No rush.</>,
                   <>Walk out through customs, past the public hall, and step outside.</>,
-                  <>Turn right: your driver is in front of the sixth car rental office, holding a <strong>MAPL Tours Jamaica</strong> sign with your name on it.</>,
+                  <>Turn right: your driver is in front of the sixth car rental office, holding a <strong>MAPL Tours Jamaica</strong> sign with {sign} on it.</>,
                   <>If you do not see it within a few minutes, message {driver} on WhatsApp above, or reply to this email and we will call the driver for you.</>,
                 ]
               : [
@@ -160,6 +171,12 @@ export default function TransferDayOf(props: TransferDayOfProps) {
         Anything at all, reply to this email or write to {supportEmail} and a
         person will answer. Booking reference {bookingRef}.
       </Text>
+      {party && (
+        <Text style={s.note}>
+          {partyFooter(party.addedBy)}{' '}
+          <Link href={party.stopUrl} style={{ color: '#1a1a1a', textDecoration: 'underline' }}>Stop these emails</Link>
+        </Text>
+      )}
     </MaplLayout>
   )
 }

@@ -1,11 +1,11 @@
 import { type NextRequest, NextResponse } from 'next/server'
 import { updateSession } from '@/lib/supabase/middleware'
 import { withoutSecretParams } from '@/lib/tracker-gate'
-import { PROOF_COOKIE, addProof, clientSecretFor, keepsPaymentProof, proofCookie } from '@/lib/confirm-proof'
+import { PROOF_COOKIE, addProof, bookingProofShape, clientSecretFor, keepsBookingProof, keepsPaymentProof, proofCookie } from '@/lib/confirm-proof'
 
 // Routes that need auth session refresh
-// (/transfers/confirm shows a signed-in guest their own ride, so it needs a live session too)
-const AUTH_ROUTES = ['/profile', '/saved', '/checkout', '/transfers/confirm', '/login', '/auth', '/driver']
+// (/transfers/confirm and /travel-party show a signed-in guest their own booking, so they need a live session too)
+const AUTH_ROUTES = ['/profile', '/saved', '/checkout', '/transfers/confirm', '/travel-party', '/login', '/auth', '/driver']
 
 export async function middleware(request: NextRequest) {
   const path = request.nextUrl.pathname
@@ -27,9 +27,14 @@ export async function middleware(request: NextRequest) {
           request.nextUrl.searchParams.get('payment_intent'),
         )
       : null
-    if (secret) {
-      const held = request.cookies.get(PROOF_COOKIE)?.value
-      res.cookies.set(proofCookie(addProof(held, secret), request.nextUrl.protocol === 'https:'))
+    // The travel party link in a booker's confirmation email carries their
+    // booking proof; kept the same way, on that page only (lib/confirm-proof).
+    const tripProof = keepsBookingProof(path) ? bookingProofShape(request.nextUrl.searchParams.get('trip_proof')) : null
+    if (secret || tripProof) {
+      let held = request.cookies.get(PROOF_COOKIE)?.value
+      if (secret) held = addProof(held, secret)
+      if (tripProof) held = addProof(held, tripProof)
+      res.cookies.set(proofCookie(held ?? '', request.nextUrl.protocol === 'https:'))
     }
     return res
   }

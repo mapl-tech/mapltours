@@ -28,6 +28,12 @@ export interface TransferConfirmedProps {
   currency: string
   paidAt?: string | null
   specialRequests?: string | null
+  /**
+   * The booker's link to add their travel party (lib/travel-party-server
+   * travelPartyUrl). Only the booker's copy carries it; without it the
+   * section is not shown.
+   */
+  travelPartyUrl?: string | null
   transfers: Array<{
     destination: string
     zone: string
@@ -106,6 +112,7 @@ export default function TransferConfirmed(props: TransferConfirmedProps) {
     currency,
     paidAt,
     specialRequests,
+    travelPartyUrl,
     transfers,
   } = props
   const name = firstName?.trim() || 'there'
@@ -350,6 +357,28 @@ export default function TransferConfirmed(props: TransferConfirmedProps) {
           </Text>
         </Section>
       </Section>
+      {/* The travel party (owner, Nov 24 2026): the booker can send each
+          person their own copy, from any device. */}
+      {travelPartyUrl && (
+        <Section style={s.card}>
+          <Section style={s.cardHeader}>
+            <Heading as="h2" style={s.cardHeaderText}>Traveling with others?</Heading>
+          </Section>
+          <Section style={s.cardBody}>
+            <Text className="mapl-body" style={{ ...s.body, margin: 0 }}>
+              Add their email addresses and each person gets their own copy of
+              these trip details, plus the driver&apos;s name, plate and WhatsApp
+              before pickup. After the trip, each gets one request for a review.
+              We use their addresses for nothing else.
+            </Text>
+            <Section style={{ ...s.ctaWrap, margin: '14px 0 0' }}>
+              <Link href={travelPartyUrl} className="mapl-cta-block" style={{ ...s.ctaGhost, padding: '13px 29px' }}>
+                Add your travel party
+              </Link>
+            </Section>
+          </Section>
+        </Section>
+      )}
       {/* The guests' Facebook group (owner, Oct 11 2026): after the last card,
           a quiet ghost button (44px tall) under one line, so the booking
           details stay the point of this email. */}

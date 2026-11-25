@@ -293,10 +293,12 @@ export function describeForReview(booking: ReviewableBooking): ReviewSubject {
  * (audit 2026-08-22).
  *
  * The batch is sized so a full batch of worst-case sends still fits inside
- * the deadline, and the deadline leaves ~3 s for a send already in flight.
+ * the deadline, and the deadline leaves ~3 s for a send already in flight
+ * plus 2.5 s for its travel party's copies, which go right after a guest's
+ * (lib/email/review-request.ts; PARTY_SEND_TIMEOUT_MS): 4.5 + 3 + 2.5 = 10.
  */
 export const REVIEW_SEND_BATCH = 12
-export const REVIEW_DEADLINE_MS = 7_000
+export const REVIEW_DEADLINE_MS = 4_500
 
 /** True when this run must stop sending and leave the rest for tomorrow. */
 export function reviewRunOverBudget(sendsAttempted: number, elapsedMs: number): boolean {

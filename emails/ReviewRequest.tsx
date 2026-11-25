@@ -10,6 +10,7 @@ import {
 } from '@react-email/components'
 import { MaplLayout, maplStyles as s } from './_Layout'
 import type { TransferLegs } from '../lib/review-request'
+import { partyFooter } from '../lib/travel-party'
 
 export interface ReviewRequestProps {
   bookingRef: string
@@ -26,6 +27,12 @@ export interface ReviewRequestProps {
   /** Tripadvisor write-a-review deep link. */
   reviewUrl: string
   supportEmail: string
+  /**
+   * A travel party member's copy (lib/travel-party): the same letter, sent to
+   * someone the booker added, so no first name (we have none), and it ends
+   * with why it came and a link to stop these emails.
+   */
+  party?: { addedBy: string | null; stopUrl: string }
 }
 
 /* The words a ride is told in, by which way it ran. "To and from", "got home"
@@ -132,6 +139,7 @@ export default function ReviewRequest({
   tripDates,
   reviewUrl,
   supportEmail,
+  party,
 }: ReviewRequestProps) {
   const name = firstName?.trim()
 
@@ -239,6 +247,12 @@ export default function ReviewRequest({
       <Text style={s.footnote}>
         {`You get this once, the day after your ${after}. We will not chase you about it.`}
       </Text>
+      {party && (
+        <Text style={s.footnote}>
+          {partyFooter(party.addedBy)}{' '}
+          <Link href={party.stopUrl} style={inlineLink}>Stop these emails</Link>
+        </Text>
+      )}
     </MaplLayout>
   )
 }

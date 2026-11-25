@@ -40,6 +40,8 @@ export interface DriverUpdateProps {
   stepsTitle: string
   steps: StepPart[][]
   notes: string[]
+  /** Set only on a travel party member's copy: the closing line and the stop link. */
+  party?: { footer: string; stopUrl: string }
 }
 
 const stepList: React.CSSProperties = { margin: 0, paddingLeft: 20, color: '#57534C', fontSize: 14, lineHeight: 1.6 }
@@ -96,6 +98,13 @@ export default function DriverUpdate(p: DriverUpdateProps) {
       </Section>
 
       {p.notes.map((n) => <Text key={n} style={s.note}>{n}</Text>)}
+      {/* A travel party member's copy (lib/travel-party driverUpdateForParty): why it came, and how to stop these. */}
+      {p.party && (
+        <Text style={s.note}>
+          {p.party.footer}{' '}
+          <Link href={p.party.stopUrl} style={{ color: '#1a1a1a', textDecoration: 'underline' }}>Stop these emails</Link>
+        </Text>
+      )}
     </MaplLayout>
   )
 }

@@ -71,6 +71,26 @@ export function keepsPaymentProof(pathname: string): boolean {
 }
 
 /**
+ * The booker's travel party page (lib/travel-party). The link to it in the
+ * booker's confirmation email carries a booking proof (`trip_proof`), which
+ * the middleware keeps in this cookie and drops from the address, exactly as
+ * it does a returning payment's client secret.
+ */
+export function keepsBookingProof(pathname: string): boolean {
+  return pathname.toLowerCase().replace(/\/+$/, '') === '/travel-party'
+}
+
+/**
+ * A booking proof in the shape lib/confirm-proof-server mints
+ * (`b_<32 hex>_<32 url-safe>`), or null. Only the shape is checked here (the
+ * edge has no signing key); the page checks the signature before it shows
+ * anything, so a made-up proof shows nothing.
+ */
+export function bookingProofShape(value: string | null | undefined): string | null {
+  return typeof value === 'string' && /^b_[0-9a-f]{32}_[A-Za-z0-9_-]{32}$/.test(value) ? value : null
+}
+
+/**
  * The cookie itself. HttpOnly, so no tag or script can read it; Lax, so it
  * arrives when the guest opens the link from an email or comes back from a
  * bank page; Secure wherever the site is served over https.

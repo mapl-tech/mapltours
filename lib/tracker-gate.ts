@@ -22,8 +22,10 @@ export function isTrackedHost(hostname: string): boolean {
  * (the pixel's `dl`, GA's page_location, Hotjar's recording), so the
  * middleware drops them before the page exists. payment_intent and
  * redirect_status stay: the confirm pages read them, on a reload too.
+ * `trip_proof` is the booking proof in the booker's travel party link
+ * (lib/travel-party-server), dropped the same way wherever it appears.
  */
-export const SECRET_RETURN_PARAMS = ['payment_intent_client_secret', 'setup_intent_client_secret'] as const
+export const SECRET_RETURN_PARAMS = ['payment_intent_client_secret', 'setup_intent_client_secret', 'trip_proof'] as const
 
 /** The URL without Stripe's secrets, or null when it carries none. Never throws. */
 export function withoutSecretParams(href: string): URL | null {

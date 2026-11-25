@@ -6,6 +6,8 @@ import ConfirmClient from './ConfirmClient'
 import ClaimAccountCard from '@/components/ClaimAccountCard'
 import PrivateConfirmation from '@/components/checkout/PrivateConfirmation'
 import { canSeeConfirmation } from '@/lib/confirm-proof-server'
+import { partyForConfirmation, type ConfirmParty } from '@/lib/travel-party-server'
+import TravelPartyCard from '@/components/checkout/TravelPartyCard'
 import Arrow from '@/components/ui/Arrow'
 
 export const dynamic = 'force-dynamic'
@@ -53,6 +55,8 @@ interface ConfirmData {
   totalPaid: number | null
   currency: string
   transfers: ConfirmedTransfer[]
+  /** The booker's travel party card (lib/travel-party), or null when it is not shown. */
+  party: ConfirmParty | null
 }
 
 function emptyData(): ConfirmData {
@@ -73,6 +77,7 @@ function emptyData(): ConfirmData {
     totalPaid: null,
     currency: 'USD',
     transfers: [],
+    party: null,
   }
 }
 
@@ -116,7 +121,7 @@ async function resolveConfirm(
   let { data: booking } = await supabase
     .from('bookings')
     .select(
-      'id, email, user_id, first_name, last_name, phone, country, special_requests, subtotal, booking_fee, coupon_code, coupon_discount, total_paid, currency, paid_at, booking_type',
+      'id, email, user_id, first_name, last_name, phone, country, special_requests, subtotal, booking_fee, coupon_code, coupon_discount, total_paid, currency, paid_at, booking_type, status',
     )
     .eq('stripe_payment_id', piId)
     .eq('booking_type', 'transfer')
@@ -127,7 +132,7 @@ async function resolveConfirm(
     const { data: byMeta } = await supabase
       .from('bookings')
       .select(
-        'id, email, user_id, first_name, last_name, phone, country, special_requests, subtotal, booking_fee, coupon_code, coupon_discount, total_paid, currency, paid_at, booking_type',
+        'id, email, user_id, first_name, last_name, phone, country, special_requests, subtotal, booking_fee, coupon_code, coupon_discount, total_paid, currency, paid_at, booking_type, status',
       )
       .eq('id', pi.metadata.booking_id)
       .eq('booking_type', 'transfer')
@@ -159,6 +164,9 @@ async function resolveConfirm(
   const customerName = booking
     ? (booking.first_name ?? '').trim() || null
     : null
+  const party = booking
+    ? await partyForConfirmation(supabase, { id: booking.id, email: booking.email ?? null, user_id: booking.user_id ?? null, status: booking.status ?? null }, (items ?? []).map((i) => ({ item_type: 'transfer', passengers: i.passengers ?? null, travelers: null })))
+    : null
 
   return {
     status,
@@ -187,6 +195,7 @@ async function resolveConfirm(
       departureAt: i.departure_at,
       departureFlight: i.departure_flight,
     })),
+    party,
   }
 }
 
@@ -244,6 +253,11 @@ async function resolveConfirmFromBooking(bookingId: string): Promise<ConfirmData
       departureAt: i.departure_at as string | null,
       departureFlight: i.departure_flight as string | null,
     })),
+    party: await partyForConfirmation(
+      supabase,
+      { id: booking.id, email: booking.email ?? null, user_id: booking.user_id ?? null, status: booking.status ?? null },
+      (items ?? []).map((i) => ({ item_type: 'transfer', passengers: (i.passengers as number | null) ?? null, travelers: null })),
+    ),
   }
 }
 
@@ -500,6 +514,17 @@ function Success({ data }: { data: ConfirmData }) {
             </div>
           ))}
         </Card>
+      )}
+
+      {/* The travel party (owner, Nov 24 2026): optional, after the trip it shares. */}
+      {data.party && (
+        <TravelPartyCard
+          bookingId={data.party.bookingId}
+          cap={data.party.cap}
+          initial={data.party.members}
+          kind="transfer"
+          pending={data.party.pending}
+        />
       )}
 
       {/* Customer */}
