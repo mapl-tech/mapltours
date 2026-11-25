@@ -937,7 +937,7 @@ Rules, enforced in code:
   - A regular driver loads only the rides and tours whose booking names them (`bookingIsTheirs`: exact, any case), with no pay and no change log; the server never sends them more.
 - **Who may change what.**
   - Only a fleet manager or an admin may call the change route.
-  - A fleet manager adds only regular drivers, and cannot edit, retire or rename any fleet manager. Only `/admin/drivers` makes a fleet manager.
+  - A fleet manager adds only regular drivers, and cannot edit, retire or rename any fleet manager. Only `/admin/drivers` makes a fleet manager: its role selector (and its email field, which is also the sign-in address).
   - Retiring a driver is confirmed first.
 - **Every change is confirmed before it is saved.**
   - `plan` writes nothing. `commit` saves only if the plan it works out at that moment has the same key (`planKey`: the change and what each ride's guest is told). Otherwise it answers 409 with the new plan.

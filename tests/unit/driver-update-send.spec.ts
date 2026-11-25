@@ -237,7 +237,7 @@ describe('the routes', () => {
   test('the drivers route saves a tidy driver, refuses a bad one at its field, and a duplicate name', async () => {
     const ok = await drivers('POST', { name: ' Devon  Brown', whatsapp: '+1 876 555-0100', vehicle: 'Toyota Hiace', colour: 'Silver', plate: 'ps 0000' })
     expect(ok.status).toBe(200)
-    expect(st.inserts[0].values).toEqual({ name: 'Devon Brown', whatsapp: '+1 876 555-0100', vehicle: 'Toyota Hiace', colour: 'silver', plate: 'PS 0000', email: null, active: true })
+    expect(st.inserts[0].values).toEqual({ name: 'Devon Brown', whatsapp: '+1 876 555-0100', vehicle: 'Toyota Hiace', colour: 'silver', plate: 'PS 0000', email: null, role: 'driver', active: true })
     const bad = await drivers('POST', { name: 'Devon Brown', whatsapp: '555 0100', vehicle: 'Toyota Hiace', colour: 'silver', plate: 'PS 0000' })
     expect(bad.status).toBe(400)
     expect((await bad.json()).field).toBe('whatsapp')
@@ -245,6 +245,23 @@ describe('the routes', () => {
     const dup = await drivers('POST', { name: 'Devon Brown', whatsapp: '+1 876 555-0100', vehicle: 'Toyota Hiace', colour: 'silver', plate: 'PS 0000' })
     expect(dup.status).toBe(409)
     expect((await dup.json()).error).toMatch(/already on the list/)
+  })
+
+  test('the drivers route sets a role (only here is anyone made a fleet manager) and names an email clash', async () => {
+    const fm = await drivers('POST', { name: 'Lee Grant', whatsapp: '+1 876 555-0102', vehicle: 'Toyota Noah', colour: 'white', plate: 'PK 0002', email: 'lee@example.com', role: 'fleet_manager' })
+    expect(fm.status).toBe(200)
+    expect(st.inserts.at(-1)!.values).toMatchObject({ name: 'Lee Grant', email: 'lee@example.com', role: 'fleet_manager' })
+    const badRole = await drivers('POST', { name: 'Lee Grant', whatsapp: '+1 876 555-0102', vehicle: 'Toyota Noah', colour: 'white', plate: 'PK 0002', role: 'owner' })
+    expect(badRole.status).toBe(400)
+    expect((await badRole.json()).field).toBe('role')
+    st.insertError = { code: '23505', message: 'duplicate key value violates unique constraint "drivers_active_email_once"' }
+    const clash = await drivers('POST', { name: 'Ann Lee', whatsapp: '+1 876 555-0101', vehicle: 'Toyota Noah', colour: 'black', plate: 'PK 0001', email: 'lee@example.com' })
+    expect(clash.status).toBe(409)
+    expect(await clash.json()).toMatchObject({ field: 'email', error: 'Another working driver already signs in with that email.' })
+    st.insertError = null
+    const demote = await drivers('PATCH', { id: '11111111-1111-4111-8111-111111111111', name: 'Lee Grant', whatsapp: '+1 876 555-0102', vehicle: 'Toyota Noah', colour: 'white', plate: 'PK 0002', role: 'driver' })
+    expect(demote.status).toBe(200)
+    expect(st.writes.at(-1)!.values).toMatchObject({ role: 'driver' })
   })
 
   test('retiring keeps the driver, only switched off', async () => {

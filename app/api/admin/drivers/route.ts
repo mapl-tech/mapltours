@@ -1,16 +1,23 @@
 import { NextResponse } from 'next/server'
 import { createClient as createServerSupabase } from '@/lib/supabase/server'
 import { createServiceClient } from '@/lib/supabase/service'
-import { DRIVER_COLS, parseDriverFields } from '@/lib/drivers'
+import { parseDriverFields } from '@/lib/drivers'
+import { DRIVER_ROLE_COLS } from '@/lib/driver-access-server'
 
 /**
  * The saved drivers (table `drivers`, migration 041). Admins only, checked
  * before the service-role client is touched, as every admin desk.
  *
  *   GET                                   every driver, working ones first
- *   POST  { name, whatsapp, vehicle, colour, plate, email? }   add one
+ *   POST  { name, whatsapp, vehicle, colour, plate, email?, role? }   add one
  *   PATCH { id, ...the same fields }      change one
  *   PATCH { id, action: 'retire' | 'restore' }
+ *
+ * role (Nov 25 2026, migration 043): 'driver' or 'fleet_manager'. Only here
+ * is anyone made a fleet manager; the driver portal adds regular drivers only
+ * (app/api/driver/drivers). The email is also the address the driver signs in
+ * to the portal with (lib/driver-access), so two working drivers may not share
+ * one either.
  *
  * A change here never rewrites a booking: a booking keeps the details it was
  * given (its own driver_* columns), so what a guest was told stays on record.
@@ -36,11 +43,19 @@ async function requireAdmin() {
 }
 
 const nameTaken = (name: string) => `${name} is already on the list. Edit that driver instead, or retire them first.`
+/** Which unique rule a 23505 broke: the working name, or the sign-in email. */
+const emailClash = (err: { message?: string; details?: string } | null) => /email/i.test(`${err?.message ?? ''} ${err?.details ?? ''}`)
+const EMAIL_TAKEN = 'Another working driver already signs in with that email.'
+/** The role in a request: absent keeps the default (or the row's), anything but the two roles is refused. */
+function roleOf(body: Record<string, unknown>): { ok: true; role?: 'driver' | 'fleet_manager' } | { ok: false } {
+  if (body.role === undefined) return { ok: true }
+  return body.role === 'driver' || body.role === 'fleet_manager' ? { ok: true, role: body.role } : { ok: false }
+}
 
 export async function GET() {
   const gate = await requireAdmin()
   if (gate.error) return gate.error
-  const { data, error } = await gate.svc!.from('drivers').select(DRIVER_COLS).order('active', { ascending: false }).order('name', { ascending: true })
+  const { data, error } = await gate.svc!.from('drivers').select(DRIVER_ROLE_COLS).order('active', { ascending: false }).order('name', { ascending: true })
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   return NextResponse.json({ drivers: data ?? [] })
 }
@@ -52,8 +67,11 @@ export async function POST(req: Request) {
   if (!body) return NextResponse.json({ error: 'Invalid request' }, { status: 400 })
   const parsed = parseDriverFields(body)
   if (!parsed.ok) return NextResponse.json({ error: parsed.error, field: parsed.field }, { status: 400 })
-  const { data, error } = await gate.svc!.from('drivers').insert({ ...parsed.fields, active: true }).select(DRIVER_COLS).single()
+  const role = roleOf(body)
+  if (!role.ok) return NextResponse.json({ error: 'Choose a role: driver or fleet manager.', field: 'role' }, { status: 400 })
+  const { data, error } = await gate.svc!.from('drivers').insert({ ...parsed.fields, role: role.role ?? 'driver', active: true }).select(DRIVER_ROLE_COLS).single()
   if (error) {
+    if (error.code === DUPLICATE && emailClash(error)) return NextResponse.json({ error: EMAIL_TAKEN, field: 'email' }, { status: 409 })
     if (error.code === DUPLICATE) return NextResponse.json({ error: nameTaken(parsed.fields.name), field: 'name' }, { status: 409 })
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
@@ -73,12 +91,15 @@ export async function PATCH(req: Request) {
   } else {
     const parsed = parseDriverFields(body!)
     if (!parsed.ok) return NextResponse.json({ error: parsed.error, field: parsed.field }, { status: 400 })
-    update = { ...parsed.fields }
+    const role = roleOf(body!)
+    if (!role.ok) return NextResponse.json({ error: 'Choose a role: driver or fleet manager.', field: 'role' }, { status: 400 })
+    update = { ...parsed.fields, ...(role.role ? { role: role.role } : {}) }
   }
   update.updated_at = new Date().toISOString()
 
-  const { data, error } = await gate.svc!.from('drivers').update(update).eq('id', id).select(DRIVER_COLS).maybeSingle()
+  const { data, error } = await gate.svc!.from('drivers').update(update).eq('id', id).select(DRIVER_ROLE_COLS).maybeSingle()
   if (error) {
+    if (error.code === DUPLICATE && emailClash(error)) return NextResponse.json({ error: EMAIL_TAKEN, field: 'email' }, { status: 409 })
     if (error.code === DUPLICATE) return NextResponse.json({ error: 'Another working driver already has that name.', field: 'name' }, { status: 409 })
     return NextResponse.json({ error: error.message }, { status: 500 })
   }

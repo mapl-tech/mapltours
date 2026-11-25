@@ -12,9 +12,12 @@ import { parseDriverFields, vehicleInWords, type Driver, type DriverFields } fro
  * mistake is said at the field, in words.
  */
 
-type Draft = Record<keyof DriverFields, string>
-const EMPTY: Draft = { name: '', whatsapp: '', vehicle: '', colour: '', plate: '', email: '' }
-const draftOf = (d: Driver): Draft => ({ name: d.name, whatsapp: d.whatsapp, vehicle: d.vehicle, colour: d.colour, plate: d.plate, email: d.email ?? '' })
+/** A saved driver as this page reads it, with the role (migration 043). */
+type RosterDriver = Driver & { role?: 'driver' | 'fleet_manager' | null }
+type Role = 'driver' | 'fleet_manager'
+type Draft = Record<keyof DriverFields, string> & { role: Role }
+const EMPTY: Draft = { name: '', whatsapp: '', vehicle: '', colour: '', plate: '', email: '', role: 'driver' }
+const draftOf = (d: RosterDriver): Draft => ({ name: d.name, whatsapp: d.whatsapp, vehicle: d.vehicle, colour: d.colour, plate: d.plate, email: d.email ?? '', role: d.role === 'fleet_manager' ? 'fleet_manager' : 'driver' })
 
 const FIELDS: { k: keyof DriverFields; label: string; help: string; auto?: string; mode?: 'tel' | 'email'; placeholder: string }[] = [
   { k: 'name', label: 'Name', help: 'As the guest should read it.', auto: 'off', placeholder: 'First and last name' },
@@ -22,17 +25,17 @@ const FIELDS: { k: keyof DriverFields; label: string; help: string; auto?: strin
   { k: 'vehicle', label: 'Make and model', help: 'No colour here.', auto: 'off', placeholder: 'Toyota Hiace' },
   { k: 'colour', label: 'Colour', help: 'In words, as it reads in a sentence.', auto: 'off', placeholder: 'silver' },
   { k: 'plate', label: 'License plate', help: 'As it reads on the vehicle.', auto: 'off', placeholder: 'PJ 1234' },
-  { k: 'email', label: 'Driver email (optional)', help: 'Gets a copy of each driver update sent with this driver.', mode: 'email', auto: 'off', placeholder: 'None' },
+  { k: 'email', label: 'Driver email (optional)', help: 'The Google address the driver signs in to the driver portal with. It also gets a copy of each driver update sent with this driver.', mode: 'email', auto: 'off', placeholder: 'None' },
 ]
 
 function DriverForm({ initial, submitLabel, busy, onSubmit, onCancel }: {
   initial: Draft; submitLabel: string; busy: boolean
-  onSubmit: (d: Draft) => Promise<{ error?: string; field?: keyof DriverFields } | null>
+  onSubmit: (d: Draft) => Promise<{ error?: string; field?: keyof DriverFields | 'role' } | null>
   onCancel?: () => void
 }) {
   const id = useId()
   const [d, setD] = useState<Draft>(initial)
-  const [err, setErr] = useState<{ error: string; field?: keyof DriverFields } | null>(null)
+  const [err, setErr] = useState<{ error: string; field?: keyof DriverFields | 'role' } | null>(null)
   async function submit(e: React.FormEvent) {
     e.preventDefault()
     if (busy) return
@@ -58,6 +61,19 @@ function DriverForm({ initial, submitLabel, busy, onSubmit, onCancel }: {
             <p id={`${id}-${f.k}-h`} className="adm-help">{f.help}</p>
           </div>
         ))}
+        <div className="adm-cp-field">
+          <label className="adm-label" htmlFor={`${id}-role`}>Role in the driver portal</label>
+          <select
+            id={`${id}-role`} className="adm-input" value={d.role}
+            aria-invalid={err?.field === 'role' || undefined}
+            aria-describedby={`${id}-role-h${err?.field === 'role' ? ` ${id}-err` : ''}`}
+            onChange={(e) => setD((x) => ({ ...x, role: e.target.value === 'fleet_manager' ? 'fleet_manager' : 'driver' }))}
+          >
+            <option value="driver">Driver</option>
+            <option value="fleet_manager">Fleet manager</option>
+          </select>
+          <p id={`${id}-role-h`} className="adm-help">A driver sees only the rides and tours given to them. A fleet manager sees every ride and tour, changes drivers and times, and adds drivers.</p>
+        </div>
       </div>
       {err && <p id={`${id}-err`} role="alert" className="adm-error" style={{ marginTop: 12 }}>{err.error}</p>}
       <div className="adm-actions" style={{ marginTop: 16 }}>
@@ -69,7 +85,7 @@ function DriverForm({ initial, submitLabel, busy, onSubmit, onCancel }: {
 }
 
 export default function DriverRoster() {
-  const [drivers, setDrivers] = useState<Driver[] | null>(null)
+  const [drivers, setDrivers] = useState<RosterDriver[] | null>(null)
   const [loadError, setLoadError] = useState<string | null>(null)
   const [adding, setAdding] = useState(false)
   const [editing, setEditing] = useState<string | null>(null)
@@ -95,7 +111,7 @@ export default function DriverRoster() {
       const rest = (list ?? []).filter((d) => d.id !== j.driver.id)
       return [...rest, j.driver].sort((a, b) => Number(b.active) - Number(a.active) || a.name.localeCompare(b.name))
     })
-    return { driver: j.driver as Driver }
+    return { driver: j.driver as RosterDriver }
   }
 
   const working = (drivers ?? []).filter((d) => d.active)
@@ -103,18 +119,19 @@ export default function DriverRoster() {
 
   // A plain function, not a component: a component declared in here would be
   // a new type on every render, and the open edit form would lose its typing.
-  function item(d: Driver) {
+  function item(d: RosterDriver) {
     const isEditing = editing === d.id
     return (
       <li key={d.id} className="adm-card">
         <div className="adm-card-in">
           <div className="adm-cp-head" style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'baseline', justifyContent: 'space-between', gap: 8 }}>
             <h2 className="adm-h3">{d.name}</h2>
+            {d.role === 'fleet_manager' && <span className="adm-badge">Fleet manager</span>}
             {!d.active && <span className="adm-badge adm-badge--plain">Retired</span>}
           </div>
           {!isEditing && (
             <>
-              <p className="adm-meta">{vehicleInWords(d)} · plate {d.plate} · WhatsApp {d.whatsapp}{d.email ? ` · copies to ${d.email}` : ''}</p>
+              <p className="adm-meta">{vehicleInWords(d)} · plate {d.plate} · WhatsApp {d.whatsapp}{d.email ? ` · signs in to the portal with ${d.email}` : ' · no portal sign-in'}</p>
               <div className="adm-actions" style={{ marginTop: 12 }}>
                 {d.active && <button type="button" className="adm-btn adm-btn--sm" onClick={() => setEditing(d.id)}>Edit</button>}
                 <button
