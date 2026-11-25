@@ -138,6 +138,26 @@ export function guestSendProblem(b: Bk, leg: Leg, driver: Driver | null, nowMs: 
   return null
 }
 
+/**
+ * "12:00 noon" and "12:00 midnight" where a bare "12:00 PM" or "12:00 AM" is
+ * easy to misread; any other time as the site writes it ("3:30 PM"). Used by
+ * the new-time email, where the time is the news.
+ */
+export function clockWords(iso: string): string {
+  const t = jaTime(iso)
+  if (t === '12:00 PM') return '12:00 noon'
+  if (t === '12:00 AM') return '12:00 midnight'
+  return t
+}
+
+/**
+ * What the email is about. A new driver (the default, the copy the owner
+ * approved on Nov 18), or a new time for the same driver (Nov 24 2026, the
+ * driver portal: a fleet manager moved the ride after the guest's day-of email
+ * had gone, or too late for one). `fromAt` is the time the guest was given.
+ */
+export type UpdateAbout = { kind: 'driver' } | { kind: 'time'; fromAt: string }
+
 export interface DriverUpdateEmail {
   subject: string
   props: DriverUpdateProps
@@ -149,7 +169,15 @@ export interface DriverUpdateEmail {
  * `told` is whether the guest had a driver for this ride before this email
  * (toldBefore), read before any stamp this send adds.
  */
-export function buildDriverUpdate(b: Bk, leg: Leg, driver: Driver, nowMs: number, told: boolean = toldBefore(b, leg)): DriverUpdateEmail {
+export function buildDriverUpdate(
+  b: Bk,
+  leg: Leg,
+  driver: Driver,
+  nowMs: number,
+  told: boolean = toldBefore(b, leg),
+  about: UpdateAbout = { kind: 'driver' },
+): DriverUpdateEmail {
+  if (about.kind === 'time') return buildTimeUpdate(b, leg, driver, nowMs, about.fromAt)
   const l = firstLeg(b)!
   const at = legAt(b, leg)!
   const ref = bookingRef(b.id)
@@ -229,6 +257,54 @@ export function buildDriverUpdate(b: Bk, leg: Leg, driver: Driver, nowMs: number
       stepsTitle: isArrival ? 'When you land' : 'Before you go',
       steps,
       notes,
+    },
+  }
+}
+
+/**
+ * The new-time email: the same layout, driver card, trip card and steps as a
+ * driver update, led by the new time. Every fact is read from the booking as
+ * it now stands and from the saved driver; `fromAt` is the time it replaces.
+ * The driver is unchanged, so "everything else stays the same" is true here
+ * (it is not said when the day moved too: then the day is news as well).
+ */
+function buildTimeUpdate(b: Bk, leg: Leg, driver: Driver, nowMs: number, fromAt: string): DriverUpdateEmail {
+  const base = buildDriverUpdate(b, leg, driver, nowMs, true, { kind: 'driver' })
+  const at = legAt(b, leg)!
+  const ref = bookingRef(b.id)
+  const when = whenWords(at, nowMs)
+  const isArrival = leg === 'arrival'
+  const clock = clockWords(at)
+  const sameDay = fromAt.slice(0, 10) === at.slice(0, 10)
+  const was = sameDay ? clockWords(fromAt) : `${clockWords(fromAt)} on ${legDay(fromAt)}`
+  const rest = sameDay ? ' Everything else about your ride stays the same.' : ''
+  const whenRow = `${legDay(at)}, ${clock} Jamaica time`
+
+  const subject = isArrival
+    ? `Your arrival ${when.inline}: we will meet your flight at ${clock} (${ref})`
+    : `New pickup time ${when.inline}: ${clock} (${ref})`
+  const headline = isArrival
+    ? `We will meet your flight at ${clock} ${when.inline}.`
+    : `Your new pickup time: ${clock} ${when.inline}.`
+  const lead = isArrival
+    ? `We now have your flight landing at ${clock}, not ${was}. ${driver.name} will be waiting just outside the arrivals hall with a MAPL Tours Jamaica sign showing your name.${rest}`
+    : `${driver.name} will now pick you up at your hotel at ${clock}, not ${was}, in ${aVehicle(driver)}, and take you to Sangster International Airport for your flight.${rest}`
+
+  const tripRows = base.props.tripRows.map((r) =>
+    r.label === 'Flight lands' || r.label === 'Hotel pickup' ? { ...r, value: whenRow } : r)
+
+  return {
+    subject,
+    props: {
+      ...base.props,
+      preheader: isArrival
+        ? `${driver.name} will meet your flight at ${clock} ${when.inline} · ${ref}`
+        : `Your pickup ${when.inline} is now at ${clock}, with ${driver.name} · ${ref}`,
+      eyebrow: when.eyebrow ? `${when.eyebrow} · ${isArrival ? 'Arrival update' : 'New pickup time'}` : (isArrival ? 'Arrival update' : 'New pickup time'),
+      headline,
+      lead,
+      // The places, the flight and the party come from the base email unchanged.
+      tripRows,
     },
   }
 }

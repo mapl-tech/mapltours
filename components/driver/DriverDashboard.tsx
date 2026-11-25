@@ -1,8 +1,23 @@
 'use client'
 
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { PlaneLanding, PlaneTakeoff, MapPin, CalendarPlus, Phone, MessageCircle, Radar, ChevronRight } from 'lucide-react'
+import { PlaneLanding, PlaneTakeoff, MapPin, CalendarPlus, Phone, MessageCircle, Radar, ChevronRight, Clock, UserRoundPen, Mail } from 'lucide-react'
 import type { DriverTrip, DriverTour } from '@/lib/driver'
+import type { LastChange } from '@/lib/dispatch-change-server'
+import type { PortalDriver } from '@/lib/driver-portal-data'
+import dynamic from 'next/dynamic'
+import type { ChangeRequest } from '@/components/driver/fleet/ChangeDialog'
+
+// A fleet manager's dialog and drivers panel load only for a fleet manager:
+// a regular driver's phone never downloads them. The fleet view starts the
+// download as soon as it shows (below), so the first tap is not kept waiting.
+const loadChangeDialog = () => import('@/components/driver/fleet/ChangeDialog')
+const loadDriversPanel = () => import('@/components/driver/fleet/DriversPanel')
+const ChangeDialog = dynamic(loadChangeDialog, { ssr: false })
+const DriversPanel = dynamic(loadDriversPanel, {
+  ssr: false,
+  loading: () => <p role="status" style={{ fontSize: 14, color: '#57534C', margin: 0 }}>Loading the drivers…</p>,
+})
 import { jaDate, jaTime, gcalLink, waLink, legInstantMs, MIN_PICKUP_LEAD_MIN } from '@/lib/dispatch'
 import { flightLinks, flightDate, type FlightStatus } from '@/lib/flight'
 import Arrow from '@/components/ui/Arrow'
@@ -12,8 +27,14 @@ import { scheduleFromDriver } from '@/lib/trip-schedule'
 /**
  * Driver portal view. Renders ONLY DriverTrip data (built server-side by
  * lib/driver.ts), so the customer's total, fees, and MAPL's margin are never
- * in this component's props or the page payload. Read-only: the driver taps
- * out to WhatsApp / phone / maps / calendar; nothing here writes.
+ * in this component's props or the page payload.
+ *
+ * By role (Nov 24 2026, lib/driver-access): a regular driver reads the rides
+ * and tours given to them, with no pay (`showPay` false, and the server sends
+ * none), and taps out to WhatsApp, phone, maps and the calendar. A fleet
+ * manager also changes who drives, a ride's time and a tour's pickup time
+ * (components/driver/fleet: every change is confirmed before it is saved) and
+ * keeps the drivers. With no role given it is the portal as it always was.
  */
 
 const dm = 'var(--font-dm-sans)'
@@ -86,19 +107,22 @@ function countdown(iso: string): string {
 }
 
 /** Pill link/button: 48px tall for touch, full label. */
-function Act({ href, onClick, children, tone = 'outline', grow }: {
-  href?: string; onClick?: () => void; children: React.ReactNode
-  tone?: 'outline' | 'wa' | 'solid'; grow?: boolean
+function Act({ href, onClick, children, tone = 'outline', grow, wide }: {
+  href?: string; onClick?: (e: React.MouseEvent<HTMLButtonElement>) => void; children: React.ReactNode
+  /** 'edit': a fleet manager's change, set apart from the links beside it by a warm ground. */
+  tone?: 'outline' | 'wa' | 'solid' | 'edit'; grow?: boolean
+  /** A row of its own (a fleet manager's change buttons, whose labels are longer). */
+  wide?: boolean
 }) {
   const style: React.CSSProperties = {
     display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8,
     minHeight: 48, padding: '0 16px', borderRadius: 12, cursor: 'pointer',
     fontFamily: dm, fontSize: 14, fontWeight: 600, textDecoration: 'none',
     transition: 'transform 0.12s ease, background 0.15s ease, filter 0.15s ease',
-    flexGrow: grow ? 1 : 0, flexBasis: grow ? 0 : 'auto', textAlign: 'center',
+    flexGrow: grow || wide ? 1 : 0, flexBasis: wide ? '100%' : grow ? 0 : 'auto', textAlign: 'center',
     // #0B6459 keeps the WhatsApp identity while giving white text 5.9:1 (AA).
-    border: tone === 'wa' ? '1px solid #09564D' : tone === 'solid' ? `1px solid ${ink}` : border,
-    background: tone === 'wa' ? '#0B6459' : tone === 'solid' ? ink : '#fff',
+    border: tone === 'wa' ? '1px solid #09564D' : tone === 'solid' ? `1px solid ${ink}` : tone === 'edit' ? '1px solid #D9C793' : border,
+    background: tone === 'wa' ? '#0B6459' : tone === 'solid' ? ink : tone === 'edit' ? '#FBF6E7' : '#fff',
     color: tone === 'wa' || tone === 'solid' ? '#fff' : ink,
   }
   // A phone number opens the dialer in place: sent to a new tab, a tel: link
@@ -253,9 +277,85 @@ function Leg({ role, from, to, dateIso, flightRaw, extra, actions }: {
   )
 }
 
+/* ── Fleet manager pieces (Nov 24 2026) ── */
+
+/** What a card needs to offer a fleet manager's changes. Absent: the card is read-only. */
+export interface FleetCard {
+  lastChange: LastChange | null
+  /** Open a change; the element is the button, for focus to return to. */
+  onChange: (req: ChangeRequest, opener: HTMLElement) => void
+}
+
+/** When a change was saved, on Jamaica's clock: "Nov 24, 4:12 PM" (a real instant, as paidStamp). */
+function changeStamp(iso: string): string {
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return ''
+  return d.toLocaleString('en-US', { timeZone: 'America/Jamaica', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })
+}
+
+/** Is a leg still ahead: an arrival until two hours after landing (lib/dispatch-change legIsAhead), a pickup until its time. */
+function legAhead(iso: string | null, role: 'arrival' | 'departure'): boolean {
+  if (!iso) return false
+  return Date.now() < legInstantMs(iso) + (role === 'arrival' ? 2 * 3600_000 : 0)
+}
+
+/** "8:30 AM" or "12:00 noon" from a tour's "HH:MM". */
+function tourClock(t: string): string {
+  const v = new Date(`2000-01-01T${t}:00Z`).toLocaleTimeString('en-US', { timeZone: 'UTC', hour: 'numeric', minute: '2-digit' })
+  return v === '12:00 PM' ? '12:00 noon' : v === '12:00 AM' ? '12:00 midnight' : v
+}
+
+/** The Driver section a fleet manager sees on a ride or a tour: who drives, the last change, and the button to change it. */
+function DriverSection({ id, bookingRef, guest, driver, fleet, isTour, canChange }: {
+  id: string; bookingRef: string; guest: string; driver: DriverTrip['driver'] | undefined
+  fleet: FleetCard; isTour: boolean; canChange: boolean
+}) {
+  const last = fleet.lastChange
+  const first = guest.split(' ')[0] || 'the guest'
+  return (
+    <div>
+      <h3 style={eyebrow}>Driver</h3>
+      <p style={{ fontSize: 17, fontWeight: 700, margin: '6px 0 0', letterSpacing: '-0.01em' }}>{driver?.name ?? 'No driver yet'}</p>
+      {driver && (driver.vehicle || driver.plate) && (
+        <p style={{ fontSize: 14, color: soft, margin: '3px 0 0', ...tnum }}>{[driver.vehicle, driver.plate].filter(Boolean).join(' · ')}</p>
+      )}
+      {last && (
+        <p style={{ fontSize: 13, color: faint, margin: '8px 0 0', lineHeight: 1.5 }}>
+          Last change: {last.text} · {last.by} · {changeStamp(last.at)}
+        </p>
+      )}
+      {last?.open && (
+        <div style={{ marginTop: 10, padding: '10px 13px', background: '#FBF6E7', border: '1px solid #EBDFC0', borderRadius: 10 }}>
+          <p style={{ fontSize: 14, color: ink, margin: 0, lineHeight: 1.5 }}>
+            <strong style={{ color: amber }}>Not emailed yet.</strong> {first} has not been told about this change by email.
+          </p>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 10 }}>
+            <Act grow onClick={(e) => fleet.onChange({ mode: 'followup', changeId: last.changeId, ref: bookingRef, guest: first, text: last.text }, e.currentTarget)}>
+              <Mail size={16} aria-hidden="true" />Email {first} or not
+            </Act>
+          </div>
+        </div>
+      )}
+      {canChange && (
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 12 }}>
+          <Act grow tone="edit" onClick={(e) => fleet.onChange({ mode: 'change', kind: 'driver', bookingId: id, ref: bookingRef, guest: first, current: driver?.name ?? null, isTour }, e.currentTarget)}>
+            <UserRoundPen size={16} aria-hidden="true" />{driver ? 'Change driver' : 'Assign driver'}
+          </Act>
+        </div>
+      )}
+    </div>
+  )
+}
+
 /* ── One trip card ── */
 
-export function TripCard({ t, open, onToggle }: { t: DriverTrip; open: boolean; onToggle: () => void }) {
+export function TripCard({ t, open, onToggle, showPay = true, fleet }: {
+  t: DriverTrip; open: boolean; onToggle: () => void
+  /** False for a regular driver: no pay anywhere on the card (the server sends none). */
+  showPay?: boolean
+  /** A fleet manager's controls; absent, the card is read-only. */
+  fleet?: FleetCard
+}) {
   const ref = useScrollOnOpen(open)
   const isRT = t.tripType === 'round_trip'
   // A hotel-to-airport one-way has a departure and no arrival: the card must
@@ -263,11 +363,13 @@ export function TripCard({ t, open, onToggle }: { t: DriverTrip; open: boolean; 
   // return, or the ride's only leg.
   const departureOnly = !t.arrivalAt && !!t.departureAt
   const hasDepartureLeg = isRT || departureOnly
+  // A pickup time a fleet manager set is no longer "the time the guest requested".
+  const depSetBy = fleet?.lastChange?.kind === 'time' && fleet.lastChange.leg === 'departure' ? fleet.lastChange.by : null
   const arrCal = t.arrivalAt ? gcalLink({
     title: `MAPL Tours Jamaica pickup: ${t.guestName} (${t.ref})`,
     startIso: t.arrivalAt, durationMin: 60,
     location: `${t.airport}, Montego Bay`,
-    details: `Drop-off: ${t.hotel}. Passengers: ${t.passengers}. Guest: ${t.guestPhone ?? ''}. Your pay: ${money(t.payoutLegs[0].amount)}${isRT ? ' (leg 1 of 2)' : ''}.`,
+    details: `Drop-off: ${t.hotel}. Passengers: ${t.passengers}. Guest: ${t.guestPhone ?? ''}.${showPay && t.payoutLegs[0] ? ` Your pay: ${money(t.payoutLegs[0].amount)}${isRT ? ' (leg 1 of 2)' : ''}.` : ''}`,
   }) : null
   const depCal = t.departureAt && hasDepartureLeg ? gcalLink({
     title: `MAPL Tours Jamaica departure pickup: ${t.guestName} (${t.ref})`,
@@ -275,12 +377,12 @@ export function TripCard({ t, open, onToggle }: { t: DriverTrip; open: boolean; 
     location: t.hotel,
     // A one-way has a single payout leg, paid once in full; only a round trip's
     // return is "leg 2 of 2" and reads the second payout.
-    details: `Drop at ${t.airport}. Hotel pickup ${jaTime(t.departureAt)} Jamaica time (time the guest requested)${t.departureFlight ? `, flight ${t.departureFlight}` : ''}. Your pay: ${money(isRT ? (t.payoutLegs[1]?.amount ?? 0) : t.payoutLegs[0].amount)}${isRT ? ' (leg 2 of 2)' : ''}.`,
+    details: `Drop at ${t.airport}. Hotel pickup ${jaTime(t.departureAt)} Jamaica time (${depSetBy ? `time set by ${depSetBy}` : 'time the guest requested'})${t.departureFlight ? `, flight ${t.departureFlight}` : ''}.${showPay && t.payoutLegs[0] ? ` Your pay: ${money(isRT ? (t.payoutLegs[1]?.amount ?? 0) : t.payoutLegs[0].amount)}${isRT ? ' (leg 2 of 2)' : ''}.` : ''}`,
   }) : null
   const mapsHotel = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(t.hotel + ', Jamaica')}`
 
   return (
-    <article ref={ref} aria-label={`Trip ${t.ref}`} style={{ background: '#fff', border, borderLeft: `4px solid ${t.fullyPaid ? green : goldWarm}`, borderRadius: 16, overflow: 'hidden', boxShadow: '0 1px 2px rgba(23,22,20,0.04), 0 6px 22px rgba(23,22,20,0.05)', scrollMarginTop: 74 }}>
+    <article ref={ref} aria-label={`Trip ${t.ref}`} style={{ background: '#fff', border, borderLeft: `4px solid ${showPay && t.fullyPaid ? green : goldWarm}`, borderRadius: 16, overflow: 'hidden', boxShadow: '0 1px 2px rgba(23,22,20,0.04), 0 6px 22px rgba(23,22,20,0.05)', scrollMarginTop: 74 }}>
       {/* Clickable summary header (collapsed view), admin-bookings style.
           It is the same box it always was, with two repairs for screen
           readers. The heading used to sit INSIDE the role=button element,
@@ -299,19 +401,19 @@ export function TripCard({ t, open, onToggle }: { t: DriverTrip; open: boolean; 
         aria-expanded={open}
         aria-controls={open ? `trip-${t.id}-panel` : undefined}
         aria-label={`${t.ref}, ${t.guestName}`}
-        aria-describedby={`trip-${t.id}-kind trip-${t.id}-pay trip-${t.id}-sum`}
+        aria-describedby={showPay ? `trip-${t.id}-kind trip-${t.id}-pay trip-${t.id}-sum` : `trip-${t.id}-kind trip-${t.id}-sum`}
         className="drv-act"
         onClick={onToggle}
         onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onToggle() } }}
         style={{ ...headBox, borderBottom: open ? borderSoft : undefined }}
       >
-        <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap' }}>
-          <span style={{ display: 'flex', alignItems: 'baseline', gap: 10, flexWrap: 'wrap' }}>
+        <span style={{ display: 'flex', alignItems: showPay ? 'center' : 'flex-start', justifyContent: 'space-between', gap: 10, flexWrap: showPay ? 'wrap' : 'nowrap' }}>
+          <span style={{ display: 'flex', alignItems: 'baseline', gap: 10, flexWrap: 'wrap', ...(showPay ? {} : { minWidth: 0 }) }}>
             <span style={{ display: 'block', fontWeight: 800, fontSize: 16, letterSpacing: '0.01em', margin: 0, ...tnum }}>{t.ref}</span>
             <span id={`trip-${t.id}-kind`} style={{ fontSize: 13, color: soft, fontWeight: 500 }}>{isRT ? 'Round trip' : 'One-way'} · {t.passengers} passenger{t.passengers === 1 ? '' : 's'}</span>
           </span>
           <span style={{ display: 'inline-flex', alignItems: 'center', gap: 12 }}>
-            <PayChip id={`trip-${t.id}-pay`} paid={t.fullyPaid} label={t.fullyPaid ? 'Paid in full' : 'Pay pending'} />
+            {showPay && <PayChip id={`trip-${t.id}-pay`} paid={t.fullyPaid} label={t.fullyPaid ? 'Paid in full' : 'Pay pending'} />}
             <ChevronRight size={20} strokeWidth={2.25} aria-hidden style={{ flexShrink: 0, transform: open ? 'rotate(90deg)' : 'none', transition: 'transform 0.15s ease', color: faint }} />
           </span>
         </span>
@@ -339,10 +441,12 @@ export function TripCard({ t, open, onToggle }: { t: DriverTrip; open: boolean; 
               </span>
             )}
           </span>
-          <span style={{ whiteSpace: 'nowrap' }}>
-            <span style={{ fontSize: 12, fontWeight: 600, color: faint }}>You get </span>
-            <span style={{ fontSize: 15, fontWeight: 800, color: green, ...tnum }}>{money(t.payoutTotal)} <span style={{ fontSize: 12, fontWeight: 700 }}>USD</span></span>
-          </span>
+          {showPay && (
+            <span style={{ whiteSpace: 'nowrap' }}>
+              <span style={{ fontSize: 12, fontWeight: 600, color: faint }}>You get </span>
+              <span style={{ fontSize: 15, fontWeight: 800, color: green, ...tnum }}>{money(t.payoutTotal)} <span style={{ fontSize: 12, fontWeight: 700 }}>USD</span></span>
+            </span>
+          )}
         </span>
       </span>
       </h2>
@@ -371,6 +475,15 @@ export function TripCard({ t, open, onToggle }: { t: DriverTrip; open: boolean; 
           )}
         </div>
 
+        {fleet && (
+          <div style={{ paddingTop: 16, borderTop: borderSoft }}>
+            <DriverSection
+              id={t.id} bookingRef={t.ref} guest={t.guestName} driver={t.driver} fleet={fleet} isTour={false}
+              canChange={legAhead(t.arrivalAt, 'arrival') || (hasDepartureLeg && legAhead(t.departureAt, 'departure'))}
+            />
+          </div>
+        )}
+
         {/* Legs as a timeline */}
         <div style={{ paddingTop: 16, borderTop: borderSoft, display: 'flex', flexDirection: 'column', gap: 18 }}>
           {!departureOnly && (
@@ -379,6 +492,11 @@ export function TripCard({ t, open, onToggle }: { t: DriverTrip; open: boolean; 
               actions={<>
                 <Act grow href={mapsHotel}><MapPin size={16} aria-hidden="true" />Map to hotel</Act>
                 {arrCal && <Act grow href={arrCal}><CalendarPlus size={16} aria-hidden="true" />Calendar</Act>}
+                {fleet && t.arrivalAt && legAhead(t.arrivalAt, 'arrival') && (
+                  <Act wide tone="edit" onClick={(e) => fleet.onChange({ mode: 'change', kind: 'time', bookingId: t.id, ref: t.ref, guest: t.guestName.split(' ')[0] || 'the guest', leg: 'arrival', current: t.arrivalAt as string, flight: t.arrivalFlight }, e.currentTarget)}>
+                    <Clock size={16} aria-hidden="true" />Change landing time
+                  </Act>
+                )}
               </>}
             />
           )}
@@ -387,19 +505,25 @@ export function TripCard({ t, open, onToggle }: { t: DriverTrip; open: boolean; 
               role="departure" from={t.hotel} to={t.airport} dateIso={t.departureAt} flightRaw={t.departureFlight}
               extra={
                 <p style={{ fontSize: 13, color: amber, fontWeight: 700, margin: '5px 0 0' }}>
-                  This is the pickup time the guest requested.
+                  {depSetBy ? `This pickup time was set by ${depSetBy}.` : 'This is the pickup time the guest requested.'}
                 </p>
               }
               actions={<>
                 {/* The arrival leg carries the hotel map; a ride with no arrival needs it here. */}
                 {departureOnly && <Act grow href={mapsHotel}><MapPin size={16} aria-hidden="true" />Map to hotel</Act>}
                 {depCal && <Act grow href={depCal}><CalendarPlus size={16} aria-hidden="true" />Calendar</Act>}
+                {fleet && legAhead(t.departureAt, 'departure') && (
+                  <Act wide tone="edit" onClick={(e) => fleet.onChange({ mode: 'change', kind: 'time', bookingId: t.id, ref: t.ref, guest: t.guestName.split(' ')[0] || 'the guest', leg: 'departure', current: t.departureAt as string, flight: t.departureFlight }, e.currentTarget)}>
+                    <Clock size={16} aria-hidden="true" />Change pickup time
+                  </Act>
+                )}
               </>}
             />
           )}
         </div>
 
         {/* Pay panel */}
+        {showPay && (
         <div style={{ background: '#F7F4EC', border: borderSoft, borderRadius: 14, padding: '14px 16px' }}>
           <h3 style={eyebrow}>Your pay</h3>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 9, marginTop: 10 }}>
@@ -420,6 +544,7 @@ export function TripCard({ t, open, onToggle }: { t: DriverTrip; open: boolean; 
             </div>
           </div>
         </div>
+        )}
       </div>
       )}
     </article>
@@ -435,8 +560,18 @@ function tourDate(d: string | null): string {
   } catch { return d }
 }
 
-export function TourCard({ t, open, onToggle }: { t: DriverTour; open: boolean; onToggle: () => void }) {
+export function TourCard({ t, open, onToggle, mode, fleet }: {
+  t: DriverTour; open: boolean; onToggle: () => void
+  /** 'driver': a regular driver given this tour; 'fleet': a fleet manager; absent: as it always was. */
+  mode?: 'driver' | 'fleet'
+  fleet?: FleetCard
+}) {
   const ref = useScrollOnOpen(open)
+  const first = t.guestName.split(' ')[0] || 'the guest'
+  const days = t.items.map((i) => i.date).filter(Boolean).sort() as string[]
+  const lastDay = days.length ? days[days.length - 1] : null
+  // Still to come (the Jamaica calendar day of the last tour day, or later).
+  const ahead = !lastDay || lastDay >= new Date(Date.now() - 5 * 3600_000).toISOString().slice(0, 10)
   return (
     <article ref={ref} aria-label={`Tour booking ${t.ref}`} style={{ background: '#fff', border, borderLeft: `4px solid ${goldWarm}`, borderRadius: 16, overflow: 'hidden', boxShadow: '0 1px 2px rgba(23,22,20,0.04), 0 6px 22px rgba(23,22,20,0.05)', scrollMarginTop: 74 }}>
       {/* The heading holds the button, named by the ref and the guest, as on the trip card. */}
@@ -502,7 +637,29 @@ export function TourCard({ t, open, onToggle }: { t: DriverTour; open: boolean; 
               </div>
             ))}
           </div>
-          <p style={{ fontSize: 12, color: faint, margin: 0 }}>Tour bookings are for your awareness; MAPL will contact you if a ride is needed.</p>
+          {mode && (
+            <div style={{ paddingTop: 14, borderTop: borderSoft }}>
+              <h3 style={eyebrow}>Pickup</h3>
+              <p style={{ fontSize: 17, fontWeight: 700, margin: '6px 0 0', letterSpacing: '-0.01em', ...tnum }}>
+                {t.pickupTime ? `${tourClock(t.pickupTime)} Jamaica time` : 'Pickup time not set'}
+              </p>
+              <p style={{ fontSize: 14, color: soft, margin: '3px 0 0' }}>{t.pickup ?? 'No pickup place on the booking'}</p>
+              {mode === 'fleet' && fleet && ahead && (
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 12 }}>
+                  <Act grow tone="edit" onClick={(e) => fleet.onChange({ mode: 'change', kind: 'tour_time', bookingId: t.id, ref: t.ref, guest: first, current: t.pickupTime ?? null, day: t.firstDate }, e.currentTarget)}>
+                    <Clock size={16} aria-hidden="true" />{t.pickupTime ? 'Change pickup time' : 'Set pickup time'}
+                  </Act>
+                </div>
+              )}
+            </div>
+          )}
+          {mode === 'fleet' && fleet && (
+            <div style={{ paddingTop: 14, borderTop: borderSoft }}>
+              <DriverSection id={t.id} bookingRef={t.ref} guest={t.guestName} driver={t.driver ?? null} fleet={fleet} isTour canChange={ahead} />
+            </div>
+          )}
+          {!mode && <p style={{ fontSize: 12, color: faint, margin: 0 }}>Tour bookings are for your awareness; MAPL will contact you if a ride is needed.</p>}
+          {mode === 'driver' && <p style={{ fontSize: 12, color: faint, margin: 0 }}>You are the driver for this tour.</p>}
         </div>
       )}
     </article>
@@ -527,17 +684,42 @@ function nextPickup(trips: DriverTrip[]): { t: DriverTrip; iso: string; role: 'a
   return best
 }
 
-export default function DriverDashboard({ trips, tours = [], driverLabel, adminPreview }: {
+export default function DriverDashboard({
+  trips, tours = [], driverLabel, adminPreview, role, showPay = true, drivers = null, changes = null, incomplete = false, selfDriverId = null,
+}: {
   trips: DriverTrip[]
   tours?: DriverTour[]
   driverLabel: string
   adminPreview?: boolean
+  /** Who is looking (lib/driver-access). Absent: the read-only portal as it always was. */
+  role?: 'driver' | 'fleet_manager'
+  /** False for a regular driver: no pay anywhere (the server sends none). */
+  showPay?: boolean
+  /** Fleet managers: the saved drivers, to assign and to keep. */
+  drivers?: PortalDriver[] | null
+  /** Fleet managers: the newest change on each booking. */
+  changes?: Record<string, LastChange> | null
+  /** A read failed: the lists may be missing rides. */
+  incomplete?: boolean
+  /** The signed-in driver's own saved row, if any. */
+  selfDriverId?: string | null
 }) {
+  const isFleet = role === 'fleet_manager'
+  const [request, setRequest] = useState<ChangeRequest | null>(null)
+  const [opener, setOpener] = useState<HTMLElement | null>(null)
+  useEffect(() => {
+    if (!isFleet) return
+    void loadChangeDialog().catch(() => {})
+    void loadDriversPanel().catch(() => {})
+  }, [isFleet])
+  const fleetFor = (id: string): FleetCard | undefined => isFleet
+    ? { lastChange: changes?.[id] ?? null, onChange: (req, el) => { setOpener(el); setRequest(req) } }
+    : undefined
   const owedTotal = trips.reduce((s, t) => s + t.payoutTotal, 0)
   const paidTotal = trips.reduce((s, t) => s + t.payoutLegs.filter((p) => p.paid).reduce((x, p) => x + p.amount, 0), 0)
   const pendingTotal = Math.round((owedTotal - paidTotal) * 100) / 100
   const next = nextPickup(trips)
-  const [tab, setTab] = useState<'transfers' | 'tours'>('transfers')
+  const [tab, setTab] = useState<'transfers' | 'tours' | 'drivers'>('transfers')
   // Accordion: exactly one reservation card open at a time.
   const [openId, setOpenId] = useState<string | null>(null)
   const toggle = (id: string) => setOpenId((o) => (o === id ? null : id))
@@ -551,14 +733,26 @@ export default function DriverDashboard({ trips, tours = [], driverLabel, adminP
           margin: '0 0 14px', padding: '10px 14px', borderRadius: 10, fontSize: 13, fontWeight: 600,
           background: 'rgba(122,90,8,0.10)', border: '1px solid rgba(122,90,8,0.30)', color: amber,
         }}>
-          Admin preview. This is exactly what {driverLabel} sees: no customer totals, no fees, no margin.
+          {isFleet
+            ? 'Admin preview of the fleet manager\'s view: no customer totals, no fees, no margin. Changes saved here are real: they are saved, emailed and logged as from MAPL Tours Jamaica.'
+            : role === 'driver'
+              ? `Admin preview. This is exactly what ${driverLabel} sees: only the rides and tours given to ${driverLabel}, and no pay.`
+              : `Admin preview. This is exactly what ${driverLabel} sees: no customer totals, no fees, no margin.`}
+        </p>
+      )}
+      {incomplete && (
+        <p role="status" style={{
+          margin: '0 0 14px', padding: '10px 14px', borderRadius: 10, fontSize: 13, fontWeight: 600,
+          background: '#FCEDEA', border: '1px solid rgba(176,28,12,0.25)', color: red,
+        }}>
+          Some rides could not be loaded just now, so this list may be missing some. Reload the page in a minute.
         </p>
       )}
 
       <header style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
         <div>
           <h1 style={{ fontWeight: 800, fontSize: 'clamp(24px, 4.5vw, 30px)', letterSpacing: '-0.025em', margin: 0 }}>Your trips</h1>
-          <p style={{ fontSize: 14, color: soft, margin: '5px 0 0' }}>{driverLabel} · MAPL Tours Jamaica</p>
+          <p style={{ fontSize: 14, color: soft, margin: '5px 0 0' }}>{driverLabel}{isFleet ? ' · Fleet manager' : ''} · MAPL Tours Jamaica</p>
         </div>
       </header>
 
@@ -596,6 +790,7 @@ export default function DriverDashboard({ trips, tours = [], driverLabel, adminP
       )}
 
       {/* Pay summary: the glanceable answer to "what am I owed?" */}
+      {showPay && (
       <section aria-label="Pay summary" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 10, marginTop: 14 }}>
         {[
           { k: 'Trips', v: String(trips.length), c: ink, bg: '#fff', bd: border },
@@ -608,6 +803,7 @@ export default function DriverDashboard({ trips, tours = [], driverLabel, adminP
           </div>
         ))}
       </section>
+      )}
 
       {/* The month at a glance: every day with a drive or a tour. A day's
           trips open their card below (owner, Nov 13 2026: a calendar for the
@@ -621,8 +817,8 @@ export default function DriverDashboard({ trips, tours = [], driverLabel, adminP
       </div>
 
       {/* Transfers | Tours tabs, transfers first and default */}
-      <div role="tablist" aria-label="Booking type" style={{ display: 'flex', gap: 8, marginTop: 20, background: '#fff', border, borderRadius: 9999, padding: 5, width: 'fit-content', maxWidth: '100%' }}>
-        {([['transfers', `Transfers`, trips.length], ['tours', 'Tours', tours.length]] as const).map(([key, label, count]) => (
+      <div role="tablist" aria-label={isFleet ? 'Section' : 'Booking type'} style={{ display: 'flex', gap: isFleet ? 4 : 8, marginTop: 20, background: '#fff', border, borderRadius: 9999, padding: 5, width: 'fit-content', maxWidth: '100%', ...(isFleet ? { overflowX: 'auto' as const, scrollbarWidth: 'none' as const } : {}) }}>
+        {([['transfers', `Transfers`, trips.length], ['tours', 'Tours', tours.length], ...(isFleet && drivers ? [['drivers', 'Drivers', drivers.filter((d) => d.active).length] as const] : [])] as const).map(([key, label, count]) => (
           <button
             key={key}
             id={`tab-${key}`}
@@ -632,7 +828,7 @@ export default function DriverDashboard({ trips, tours = [], driverLabel, adminP
             className="drv-act"
             onClick={() => setTab(key)}
             style={{
-              minHeight: 42, padding: '0 18px', borderRadius: 9999, border: 'none', cursor: 'pointer',
+              minHeight: 42, padding: isFleet ? '0 12px' : '0 18px', borderRadius: 9999, border: 'none', cursor: 'pointer', ...(isFleet ? { flexShrink: 0 } : {}),
               fontFamily: dm, fontSize: 14, fontWeight: 700,
               background: tab === key ? ink : 'transparent',
               color: tab === key ? '#fff' : soft,
@@ -640,7 +836,7 @@ export default function DriverDashboard({ trips, tours = [], driverLabel, adminP
             }}
           >
             {label}
-            <span style={{
+            <span className={isFleet ? 'fm-tab-count' : undefined} style={{
               fontSize: 12, fontWeight: 700, minWidth: 22, height: 22, padding: '0 6px', borderRadius: 9999,
               display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
               background: tab === key ? 'rgba(255,255,255,0.18)' : '#F1ECE3',
@@ -655,27 +851,42 @@ export default function DriverDashboard({ trips, tours = [], driverLabel, adminP
         <section id="panel-transfers" role="tabpanel" aria-labelledby="tab-transfers" style={{ display: 'flex', flexDirection: 'column', gap: 14, marginTop: 16 }}>
           {trips.length === 0 && (
             <div style={{ background: '#fff', border, borderRadius: 18, padding: '32px 20px', textAlign: 'center' }}>
-              <p style={{ fontSize: 16, fontWeight: 700, margin: 0 }}>No transfers assigned yet</p>
-              <p style={{ fontSize: 14, color: soft, margin: '6px 0 0' }}>New bookings from MAPL Tours Jamaica will appear here.</p>
+              <p style={{ fontSize: 16, fontWeight: 700, margin: 0 }}>{role === 'driver' ? 'No rides given to you yet' : 'No transfers assigned yet'}</p>
+              <p style={{ fontSize: 14, color: soft, margin: '6px 0 0' }}>{role === 'driver' ? 'When a ride is given to you, it appears here.' : 'New bookings from MAPL Tours Jamaica will appear here.'}</p>
             </div>
           )}
-          {trips.map((t) => <TripCard key={t.id} t={t} open={openId === t.id} onToggle={() => toggle(t.id)} />)}
+          {trips.map((t) => <TripCard key={t.id} t={t} open={openId === t.id} onToggle={() => toggle(t.id)} showPay={showPay} fleet={fleetFor(t.id)} />)}
         </section>
-      ) : (
+      ) : tab === 'tours' ? (
         <section id="panel-tours" role="tabpanel" aria-labelledby="tab-tours" style={{ display: 'flex', flexDirection: 'column', gap: 14, marginTop: 16 }}>
           {tours.length === 0 && (
             <div style={{ background: '#fff', border, borderRadius: 18, padding: '32px 20px', textAlign: 'center' }}>
-              <p style={{ fontSize: 16, fontWeight: 700, margin: 0 }}>No tour bookings yet</p>
-              <p style={{ fontSize: 14, color: soft, margin: '6px 0 0' }}>Paid tour bookings will appear here so you can plan ahead.</p>
+              <p style={{ fontSize: 16, fontWeight: 700, margin: 0 }}>{role === 'driver' ? 'No tours given to you yet' : 'No tour bookings yet'}</p>
+              <p style={{ fontSize: 14, color: soft, margin: '6px 0 0' }}>{role === 'driver' ? 'When a tour is given to you, it appears here.' : 'Paid tour bookings will appear here so you can plan ahead.'}</p>
             </div>
           )}
-          {tours.map((t) => <TourCard key={t.id} t={t} open={openId === t.id} onToggle={() => toggle(t.id)} />)}
+          {tours.map((t) => <TourCard key={t.id} t={t} open={openId === t.id} onToggle={() => toggle(t.id)} mode={isFleet ? 'fleet' : role === 'driver' ? 'driver' : undefined} fleet={fleetFor(t.id)} />)}
+        </section>
+      ) : (
+        <section id="panel-drivers" role="tabpanel" aria-labelledby="tab-drivers" style={{ marginTop: 16 }}>
+          <DriversPanel drivers={drivers ?? []} selfId={selfDriverId} />
         </section>
       )}
 
       <p style={{ fontSize: 12, color: faint, lineHeight: 1.6, marginTop: 24 }}>
-        Times are Jamaica time. Pay is your agreed rate per trip; round trips are paid in two halves, one before each leg. Questions: contact@mapltours.com.
+        {showPay
+          ? 'Times are Jamaica time. Pay is your agreed rate per trip; round trips are paid in two halves, one before each leg. Questions: contact@mapltours.com.'
+          : 'Times are Jamaica time. Questions about a ride: ask your fleet manager, or write to contact@mapltours.com.'}
       </p>
+
+      {isFleet && (
+        <ChangeDialog
+          request={request}
+          drivers={drivers ?? []}
+          returnTo={opener}
+          onClose={() => setRequest(null)}
+        />
+      )}
 
       <style jsx global>{`
         .drv-act:focus-visible {

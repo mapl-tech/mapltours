@@ -2,13 +2,20 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { createServiceClient } from '@/lib/supabase/service'
-import { driverAllowlist, driverTrip, driverTour, isAllowedDriver, nextActionAt, type DriverTrip, type DriverTour, transferLegWindow } from '@/lib/driver'
+import { driverAllowlist } from '@/lib/driver'
+import { getDriverAccess, DRIVER_ROLE_COLS } from '@/lib/driver-access-server'
+import { loadPortal } from '@/lib/driver-portal-data'
+import { firstWord } from '@/lib/dispatch-change-words'
+import type { Driver } from '@/lib/drivers'
 import DriverDashboard from '@/components/driver/DriverDashboard'
 
 /**
- * Admin preview of the driver portal: renders EXACTLY the same DriverTrip
- * data and component the driver sees, wrapped in an admin gate, so the
- * operator can verify what Collin sees at any time. Read-only.
+ * Admin preview of the driver portal: renders EXACTLY the same data and
+ * component the portal does (lib/driver-portal-data), wrapped in an admin
+ * gate. By default the fleet manager's view, as Collin sees it, with its
+ * controls working (a change saved here is real, and is logged as from MAPL
+ * Tours Jamaica). `?as=<driver id>` shows what that regular driver sees,
+ * read-only.
  */
 
 export const dynamic = 'force-dynamic'
@@ -29,7 +36,7 @@ function Shell({ children }: { children: React.ReactNode }) {
   )
 }
 
-export default async function AdminDriverPreviewPage() {
+export default async function AdminDriverPreviewPage({ searchParams }: { searchParams?: { as?: string } }) {
   const session = createClient()
   const { data: { user } } = await session.auth.getUser()
   if (!user) {
@@ -41,7 +48,8 @@ export default async function AdminDriverPreviewPage() {
     // A driver who lands on the admin preview by mistake belongs in his own
     // portal; send him there instead of a dead end. (Observed: Collins hit
     // this page 6x from Kingston on launch day.)
-    if (isAllowedDriver(user.email)) redirect('/driver')
+    const gate = await getDriverAccess()
+    if (gate.ok) redirect('/driver')
     return (
       <Shell>
         <h1 style={{ fontWeight: 700, fontSize: 22 }}>Not authorised</h1>
@@ -51,45 +59,12 @@ export default async function AdminDriverPreviewPage() {
     )
   }
 
-  // Bounded by LEG TIME, not row age: newest-100-by-created_at let history
-  // crowd upcoming pickups off the list once the table outgrew the cap. One
-  // inner-join query, so no id list to overflow a URL; ordered so the 500 cap
-  // is a deterministic page rather than an arbitrary sample; error LOGGED,
-  // because an outage that renders as "no upcoming trips" strands a driver.
-  // 45 days back, because the list is also the payout ledger: a past leg
-  // stays here until its payout is marked paid, and a one-day window hid
-  // unpaid rides from both the driver and the operator. 500 rows because
-  // created_at ASC pages from the OLDEST booking in the window; at 200, a
-  // long payout backlog could push the newest-booked pickups off the end.
-  const { orFilter } = transferLegWindow(Date.now(), { backDays: 45 })
-  const { data: bookings, error: bookingsErr } = await svc
-    .from('bookings')
-    .select('id, first_name, last_name, phone, subtotal, special_requests, dispatch, booking_items!inner(*)')
-    .eq('status', 'paid')
-    .eq('booking_type', 'transfer')
-    .or(orFilter, { referencedTable: 'booking_items' })
-    .order('created_at', { ascending: true })
-    .limit(500)
-  if (bookingsErr) console.error('[driver-portal] window query failed', bookingsErr)
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const trips = ((bookings ?? []) as any[])
-    .map(driverTrip)
-    .filter((t): t is DriverTrip => t !== null)
-    .sort((a, b) => nextActionAt(a) - nextActionAt(b))
-
-  const { data: tourRows } = await svc
-    .from('bookings')
-    .select('id, first_name, last_name, phone, special_requests, booking_items(title, destination, date, travelers)')
-    .eq('status', 'paid')
-    .eq('booking_type', 'tour')
-    .order('created_at', { ascending: false })
-    .limit(100)
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const tours = ((tourRows ?? []) as any[])
-    .map(driverTour)
-    .filter((t): t is DriverTour => t !== null)
-    .sort((a, b) => (a.firstDate ?? '9999').localeCompare(b.firstDate ?? '9999'))
+  // Which view: the fleet manager's (default), or one regular driver's.
+  const { data: rows } = await svc.from('drivers').select(DRIVER_ROLE_COLS).order('active', { ascending: false }).order('name', { ascending: true })
+  const roster = ((rows ?? []) as unknown as (Driver & { role?: string })[])
+  const asId = typeof searchParams?.as === 'string' ? searchParams.as : ''
+  const as = roster.find((d) => d.id === asId && d.active && d.role !== 'fleet_manager') ?? null
+  const data = await loadPortal(svc, as ? { role: 'driver', driver: as } : { role: 'fleet_manager', driver: null })
 
   const allow = driverAllowlist()
   return (
@@ -106,7 +81,24 @@ export default async function AdminDriverPreviewPage() {
           </div>
         </div>
       </div>
-      <DriverDashboard trips={trips} tours={tours} driverLabel="your driver" adminPreview />
+      <nav aria-label="Preview as" style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', margin: '0 0 16px', fontSize: 14 }}>
+        <span style={{ color: soft, fontWeight: 600 }}>Preview as:</span>
+        <Link href="/admin/driver" aria-current={!as ? 'page' : undefined} style={{ minHeight: 44, display: 'inline-flex', alignItems: 'center', padding: '0 14px', borderRadius: 9999, border: '1px solid #E7E1D6', background: !as ? ink : '#fff', color: !as ? '#fff' : ink, fontWeight: 600, textDecoration: 'none' }}>Fleet manager</Link>
+        {roster.filter((d) => d.active && d.role !== 'fleet_manager').map((d) => (
+          <Link key={d.id} href={`/admin/driver?as=${d.id}`} aria-current={as?.id === d.id ? 'page' : undefined} style={{ minHeight: 44, display: 'inline-flex', alignItems: 'center', padding: '0 14px', borderRadius: 9999, border: '1px solid #E7E1D6', background: as?.id === d.id ? ink : '#fff', color: as?.id === d.id ? '#fff' : ink, fontWeight: 600, textDecoration: 'none' }}>{d.name}</Link>
+        ))}
+      </nav>
+      <DriverDashboard
+        trips={data.trips}
+        tours={data.tours}
+        driverLabel={as ? firstWord(as.name) : 'Collin'}
+        adminPreview
+        role={as ? 'driver' : 'fleet_manager'}
+        showPay={!as}
+        drivers={data.drivers}
+        changes={data.changes}
+        incomplete={data.incomplete}
+      />
     </Shell>
   )
 }

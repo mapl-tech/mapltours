@@ -915,6 +915,57 @@ Tests:
 - `email-send-batch.spec.ts`: one request, separate recipients, no CC or BCC, refusals mapped to the right person, timeouts. A real two-email batch to contact@ was read back from Resend on Nov 24 2026 (delivered, CC and BCC empty).
 - The migration was checked in PGlite (29 checks), and the card was measured in Chromium at 320 to 1440 and WebKit at 360 and 390 (47 results).
 
+## Driver roles: fleet manager and driver (Nov 25 2026)
+
+Owner, Nov 24 2026: "Implement role-based permissions for drivers, with two roles ... Regular Drivers: Have access to their assigned rides and tours. Fleet Manager: Can assign and reassign drivers to rides and tours, as well as update pickup times and create new drivers. Collin should be a Fleet Manager." And: "Whenever a driver assignment or pickup time is updated, display a confirmation prompt asking the user to confirm the change before it is saved. It should also contain details about when the system will email the customer, if change happens within the time that the customer would have received the email, send the email after a second confirmation popup. If a change happens and the email is chosen not to be sent, email me an alert." Then "There can be no mistakes to the booking flow, money flow, or webhooks" and "Push when you are sure everything is perfect."
+
+Pieces:
+- Migration `043_driver_roles.sql`: `drivers.role` ('driver' | 'fleet_manager'), one working driver per sign-in `email`, the `dispatch_changes` log, and `apply_dispatch_change`, the only way the portal writes a change.
+- `lib/driver-access.ts` (pure: who opens the portal, as what) and `lib/driver-access-server.ts` (session, rows, admins).
+- `lib/driver-portal-data.ts`: what each role loads, filtered on the server.
+- `lib/dispatch-change.ts` (pure: what the guest hears), `lib/dispatch-change-words.ts` (every word of the dialogs), `lib/dispatch-change-server.ts` (plan, commit, follow-up, calendar, sweep).
+- `app/api/driver/change` (fleet managers and admins), `app/api/driver/drivers` (the roster for fleet managers), `app/api/driver/change/sweep` with `netlify/functions/dispatch-change-sweep-cron.mjs` (every 15 minutes).
+- `components/driver/fleet/` (`Sheet`, `ChangeDialog`, `DriversPanel`), loaded only for a fleet manager. Styles: the `.fm` block in `globals.css`.
+- `lib/dayof-rules.ts`: the day-of timing rules, pure, re-exported by `lib/dayof.ts`.
+
+Rules, enforced in code:
+- **Who sees what.**
+  - A working saved driver whose `email` is the confirmed sign-in address gets that row's role.
+  - A retired one gets nothing, even if the address is on the allowlist.
+  - With no row, `DRIVER_ALLOWED_EMAILS` still opens the portal, as a fleet manager.
+  - Admins see the fleet manager's view at `/admin/driver`, and `?as=<driver id>` shows a regular driver's.
+  - A regular driver loads only the rides and tours whose booking names them (`bookingIsTheirs`: exact, any case), with no pay and no change log; the server never sends them more.
+- **Who may change what.**
+  - Only a fleet manager or an admin may call the change route.
+  - A fleet manager adds only regular drivers, and cannot edit, retire or rename any fleet manager. Only `/admin/drivers` makes a fleet manager.
+  - Retiring a driver is confirmed first.
+- **Every change is confirmed before it is saved.**
+  - `plan` writes nothing. `commit` saves only if the plan it works out at that moment has the same key (`planKey`: the change and what each ride's guest is told). Otherwise it answers 409 with the new plan.
+  - `apply_dispatch_change` locks the booking, refuses one that is not paid, refuses when the booking no longer holds what the person was shown, and keeps a round trip's arrival before its ride back. It writes the driver columns, a ride's time (and the item's `date` when it mirrors that ride's day), or a tour's `pickup_time`, plus the log row.
+  - It never touches money columns, status, Stripe or the webhook.
+- **When the guest hears** (`legPlan`). The day-of email is written at send time from the booking as it is then, so for each ride the change touches:
+  - `automatic`: the day-of email has not gone and the hourly job will send it before the ride (a hotel pickup with at least `DEPARTURE_NOTICE_MIN`, 60 minutes, to spare). Nothing else is sent.
+  - `decide`: the day-of email already went with the old details, or cannot go in time. The second step asks: "Save and email {guest}" sends the driver-update email (for a new time, its new-time variant), or "Save without emailing" emails the office (`OPERATIONS_EMAIL`).
+  - `unreachable`: no email address. The office is told.
+  - `no_driver`: nothing goes until a driver is assigned.
+  - Tours: no email tells a tour guest their driver or pickup time, so a tour change has no email and no second step. The dialog says to tell the guest directly.
+- **The email can always be written before it is promised.** A send is checked (`guestSendProblem`, and a saved driver on the booking) before anything is saved. A new-time email is refused for a driver who is not saved.
+- **Nothing is left unsaid.** An outcome is recorded as settled only once the office has been told whatever it must be told; until then it stays `pending` with its reason. Every 15 minutes the sweep tells the office about any change older than 10 minutes that is still pending: nobody answered, the alert failed, or the function ran out of time.
+- **The day-of email going out as a change is saved is caught.** The commit reads the stamps back. A day-of email claimed before the save may carry the old details, so the person is asked again (follow-up mode).
+- **`sendDayOf` re-reads the booking after winning its claim** and writes the email from it. A ride moved to another day, left with no driver, or already past has its claim released for the run that should send it.
+- **Payouts match drivers by name.** A new or renamed driver, or a ride given to a driver not on `WISE_PAYOUT_RECIPIENTS` while payouts run, is told to the office, and the dialog says the ride's payment waits. Assigning a tour's driver changes nothing about who is paid (tours pay `WISE_TOUR_PAYEE`).
+- **The ops calendar moves with a new time** (`updateBookingInCalendar`: PUT by derived id, insert if missing). It is best effort and can be retried from the dialog.
+- **The regular driver's and the old views are pixel-identical to the pre-change portal.** With no role, `DriverDashboard` is the portal as it was: 40 screenshots in Chromium and WebKit, 320 to 1440, closed, open, focused, hovered and pressed, byte-identical. The driver portal's frozen design rule still holds for everything outside `components/driver/fleet` and the fleet controls.
+
+Tests:
+- `dispatch-change.spec.ts`: every pickup hour against `isDue`, each outcome, the plan key, the checks.
+- `dispatch-change-words.spec.ts`: every sentence, the new-time emails, house rules.
+- `driver-change-route.spec.ts`: an in-memory database with the migration's rules; every path, the race, the sweep, the roster.
+- `driver-access.spec.ts`, `driver-portal-data.spec.ts`, `driver-dashboard-roles.spec.tsx`, and the fresh-read cases in `dayof-send.spec.ts`.
+- 27 deliberate breakages were each caught on Nov 25 2026.
+- The migration was checked in PGlite (65 checks).
+- Sentinel 90 after review, with both gates clear at 320/360/390/768.
+
 ## Rules from the Nov 13 2026 audit
 
 - **One `<main>` per page, and it is `LayoutShell`'s** (`<main id="main-content">`, where the skip link lands). A page's own wrapper is a `<div>`; seven screens used to nest a second one (`tests/unit/one-main-landmark.spec.ts`).

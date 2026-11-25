@@ -1,8 +1,8 @@
 import { render } from '@react-email/render'
 import { sendEmail, opsBcc } from '@/lib/email/send'
 import DriverUpdate from '@/emails/DriverUpdate'
-import { DRIVER_COLS, VALID_EMAIL, bookingDriverColumns, type Driver } from '@/lib/drivers'
-import { buildDriverUpdate, buildProblem, guestSendProblem, sentDriverKey, sentKey, toldBefore, type Leg } from '@/lib/driver-update'
+import { DRIVER_COLS, VALID_EMAIL, bookingDriverColumns, bookingHasDriver, type Driver } from '@/lib/drivers'
+import { buildDriverUpdate, buildProblem, guestSendProblem, sentDriverKey, sentKey, toldBefore, type Leg, type UpdateAbout } from '@/lib/driver-update'
 import type { Bk } from '@/lib/dispatch'
 import { sendToParty } from '@/lib/travel-party-server'
 import { bookerName, driverUpdateForParty } from '@/lib/travel-party'
@@ -77,12 +77,33 @@ export async function testDriverUpdate(svc: Svc, bookingId: string, leg: Leg, dr
   return { ok: true, sentTo: address }
 }
 
-export async function sendDriverUpdate(svc: Svc, bookingId: string, leg: Leg, driverId: string, nowMs: number): Promise<Outcome> {
+/**
+ * `opts` (Nov 24 2026, the driver portal, lib/dispatch-change-server):
+ *   about  what the email is about: a new driver (the default) or a new time
+ *          for the driver already on the booking; a new-time email is refused
+ *          unless the booking carries exactly this saved driver, so the driver
+ *          columns written in step 1 never change anything.
+ *   key    the Resend key's name (the message fingerprint is still added), so
+ *          one saved change is emailed once however often it is retried.
+ *   timeoutMs  a shorter wait for the guest's email, where the caller has
+ *          more to do inside the function's time.
+ */
+export async function sendDriverUpdate(
+  svc: Svc,
+  bookingId: string,
+  leg: Leg,
+  driverId: string,
+  nowMs: number,
+  opts: { about?: UpdateAbout; key?: string; timeoutMs?: number } = {},
+): Promise<Outcome> {
   const got = await load(svc, bookingId, driverId)
   if ('ok' in got) return got
   const { b, d } = got
   const problem = guestSendProblem(b, leg, d, nowMs)
   if (problem) return { ok: false, status: 409, error: problem }
+  if (opts.about?.kind === 'time' && !bookingHasDriver(b, d)) {
+    return { ok: false, status: 409, error: 'The driver on this ride is not the saved driver, so the email cannot be written. Choose the driver again first.' }
+  }
   // Read before this send stamps anything.
   const told = toldBefore(b, leg)
 
@@ -101,7 +122,7 @@ export async function sendDriverUpdate(svc: Svc, bookingId: string, leg: Leg, dr
   if (!rows || rows.length !== 1) return { ok: false, status: 409, error: 'This booking is no longer paid. Nothing was saved or sent.' }
 
   // 2) The email, from the booking as it now stands.
-  const { subject, props } = buildDriverUpdate({ ...b, ...cols }, leg, d, nowMs, told)
+  const { subject, props } = buildDriverUpdate({ ...b, ...cols }, leg, d, nowMs, told, opts.about)
   const res = await sendEmail({
     to: b.email,
     // Operations, the driver inbox (DRIVER_NOTIFY_EMAIL) and this driver hold what the guest holds.
@@ -109,8 +130,8 @@ export async function sendDriverUpdate(svc: Svc, bookingId: string, leg: Leg, dr
     subject,
     react: DriverUpdate(props),
     tags: [{ name: 'type', value: 'driver_update' }],
-    dedupe: `driver-update/${b.id}/${leg}/${d.id}`,
-    timeoutMs: SEND_TIMEOUT_MS,
+    dedupe: opts.key ?? `driver-update/${b.id}/${leg}/${d.id}`,
+    timeoutMs: opts.timeoutMs ?? SEND_TIMEOUT_MS,
   })
   if (!res.ok) {
     return { ok: false, status: 502, error: `${d.name} is saved on the booking, but the email did not send (${res.error ?? 'no answer'}). Send again: the guest gets it once.` }
@@ -122,7 +143,7 @@ export async function sendDriverUpdate(svc: Svc, bookingId: string, leg: Leg, dr
   await sendToParty(svc, b.id, 'driver_update', (m) => ({
     subject,
     react: DriverUpdate(driverUpdateForParty(props, bookerName(b.first_name), m.stopUrl)),
-    key: `travel-party/driver-update/${b.id}/${leg}/${d.id}/${m.id}`,
+    key: opts.key ? `travel-party/${opts.key}/${m.id}` : `travel-party/driver-update/${b.id}/${leg}/${d.id}/${m.id}`,
   }))
 
   // 3) The record of it, merged atomically beside the other dispatch keys.

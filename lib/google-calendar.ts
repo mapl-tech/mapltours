@@ -265,6 +265,53 @@ export async function syncBookingToCalendar(
 }
 
 /**
+ * Rewrite a paid booking's events from the booking as it now stands (Nov 24
+ * 2026: the driver portal moves a ride's time or sets a tour's pickup time).
+ * Each event is replaced in place by its derived id (PUT); one that was never
+ * created is inserted. Best effort, like the sync: a failure is logged and
+ * reported, and never undoes the change it follows. Call it only for a paid
+ * booking: a PUT would bring back an event a refund cancelled.
+ */
+export async function updateBookingInCalendar(
+  booking: CalendarBooking,
+  items: CalendarBookingItem[],
+): Promise<{ ok: boolean; reason?: string }> {
+  try {
+    const cfg = config()
+    if (!cfg) return { ok: false, reason: 'not configured' }
+    const events = calendarEventsForBooking(booking, items)
+    if (events.length === 0) return { ok: true }
+    const token = await accessToken(cfg.email, cfg.key)
+    const base = `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(cfg.calendarId)}/events`
+    for (const event of events) {
+      let res = await fetch(`${base}/${event.id}`, {
+        method: 'PUT',
+        headers: { authorization: `Bearer ${token}`, 'content-type': 'application/json' },
+        body: JSON.stringify(event),
+        signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+      })
+      if (res.status === 404) {
+        res = await fetch(base, {
+          method: 'POST',
+          headers: { authorization: `Bearer ${token}`, 'content-type': 'application/json' },
+          body: JSON.stringify(event),
+          signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+        })
+      }
+      if (!res.ok) {
+        const body = await res.text()
+        console.warn('[google-calendar] event update failed', { booking: booking.id, event: event.id, status: res.status, body: body.slice(0, 200) })
+        return { ok: false, reason: `update ${res.status}` }
+      }
+    }
+    return { ok: true }
+  } catch (e) {
+    console.warn('[google-calendar] update failed', { booking: booking.id, error: e instanceof Error ? e.message : String(e) })
+    return { ok: false, reason: 'exception' }
+  }
+}
+
+/**
  * Remove a refunded booking's events. The refund handler has no items in
  * hand, so this sweeps the first MAX_EVENT_SLOTS derived ids; deletes of
  * ids that were never created answer 404/410, which is success here.

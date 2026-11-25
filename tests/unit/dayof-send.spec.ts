@@ -72,7 +72,7 @@ function booking(over: Row = {}): Row {
  * from the row handed to sendDayOf; that split is the stale-snapshot race.
  */
 function fakeSvc(
-  db: { status: string | null; readError?: string; failRelease?: number; throwRelease?: boolean; rpcCalls?: number },
+  db: { status: string | null; readError?: string; failRelease?: number; throwRelease?: boolean; rpcCalls?: number; fresh?: Row },
   row: Row,
 ) {
   const dispatch = (row.dispatch ?? {}) as Record<string, unknown>
@@ -105,7 +105,7 @@ function fakeSvc(
             maybeSingle: async () =>
               db.readError
                 ? { data: null, error: { message: db.readError } }
-                : { data: db.status === null ? null : { status: db.status }, error: null },
+                : { data: db.status === null ? null : { ...(db.fresh ?? {}), status: db.status }, error: null },
           }),
         }),
       }
@@ -372,5 +372,96 @@ describe('a release that fails', () => {
     const row = booking({ dispatch: { [stampKey('arrival')]: earlier } })
     const res = await run(fakeSvc({ status: 'paid', failRelease: 2 }, row), row, { force: true })
     expect(res.error).toMatch(/NOT released/)
+  })
+})
+
+/**
+ * The email is written from the booking as it is at send time (Nov 24 2026).
+ * A fleet manager can change the driver or the time from the driver portal
+ * while an hourly run is working through its list; the run's snapshot would
+ * otherwise reach the guest as the details that change replaced.
+ */
+describe('a change saved while the run was working', () => {
+  /** The email as the guest reads it (the plain-text alternative). */
+  const text = async () => {
+    const { render } = await import('@react-email/render')
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return render((sendEmailMock.mock.calls[0][0] as any).react, { plainText: true })
+  }
+
+  test('a new driver: the email names the driver on the booking now, not the snapshot', async () => {
+    const row = booking()
+    const fresh = { driver_name: 'Devon Brown', driver_phone: '+1 876 555 0101', driver_vehicle: 'Toyota Hiace, silver', driver_plate: 'PJ 1234' }
+    const res = await send(fakeSvc({ status: 'paid', fresh }, row), row)
+    expect(res.ok).toBe(true)
+    const t = await text()
+    for (const fact of ['Devon Brown', '+1 876 555 0101', 'Toyota Hiace, silver', 'PJ 1234']) expect(t).toContain(fact)
+    for (const old of ['Collins', 'Toyota Coaster', 'PP1234']) expect(t).not.toContain(old)
+  })
+
+  test('a new time the same day: the email gives the new time', async () => {
+    const row = booking()
+    const moved = legIso(8)
+    const items = [{ ...(row.booking_items as Row[])[0], arrival_at: moved }]
+    const res = await send(fakeSvc({ status: 'paid', fresh: { booking_items: items } }, row), row)
+    expect(res.ok).toBe(true)
+    const t = await text()
+    const { jaTime } = await import('../../lib/dispatch')
+    expect(jaTime(moved)).not.toBe(jaTime(legIso(6)))
+    expect(t).toContain(jaTime(moved))
+    expect(t).not.toContain(jaTime(legIso(6)))
+  })
+
+  test('a ride moved to next week: nothing is sent, and the claim is released for the run that should send it', async () => {
+    const row = booking()
+    const items = [{ ...(row.booking_items as Row[])[0], arrival_at: legIso(24 * 7) }]
+    const res = await send(fakeSvc({ status: 'paid', fresh: { booking_items: items } }, row), row)
+    expect(res.ok).toBe(false)
+    expect(res.skipped).toMatch(/not until .*read again at send time.*claim released/)
+    expect(sendEmailMock).not.toHaveBeenCalled()
+    expect(stamps(row)[stampKey('arrival')]).toBeUndefined()
+  })
+
+  test('the driver taken off the ride: nothing is sent, the claim is released', async () => {
+    const row = booking()
+    const res = await send(fakeSvc({ status: 'paid', fresh: { driver_name: null, driver_phone: null } }, row), row)
+    expect(res.ok).toBe(false)
+    expect(res.skipped).toMatch(/driver not assigned yet/)
+    expect(sendEmailMock).not.toHaveBeenCalled()
+    expect(stamps(row)[stampKey('arrival')]).toBeUndefined()
+  })
+
+  test('a ride whose time has just passed: nothing is sent, the claim is released', async () => {
+    const row = booking()
+    const items = [{ ...(row.booking_items as Row[])[0], arrival_at: legIso(-1) }]
+    const res = await send(fakeSvc({ status: 'paid', fresh: { booking_items: items } }, row), row)
+    expect(res.ok).toBe(false)
+    expect(res.skipped).toMatch(/pickup time has passed/)
+    expect(stamps(row)[stampKey('arrival')]).toBeUndefined()
+  })
+
+  test('a forced resend that finds the ride moved away keeps the earlier real send on record', async () => {
+    const earlier = '2026-08-21T12:00:00.000Z'
+    const row = booking({ dispatch: { [stampKey('arrival')]: earlier } })
+    const items = [{ ...(row.booking_items as Row[])[0], arrival_at: legIso(24 * 7) }]
+    const res = await send(fakeSvc({ status: 'paid', fresh: { booking_items: items } }, row), row, { force: true })
+    expect(res.ok).toBe(false)
+    expect(sendEmailMock).not.toHaveBeenCalled()
+    expect(stamps(row)[stampKey('arrival')]).toBe(earlier)
+  })
+
+  test('a read that brings no ride items keeps the snapshot ride (never an empty email)', async () => {
+    const row = booking()
+    const res = await send(fakeSvc({ status: 'paid', fresh: { booking_items: [] } }, row), row)
+    expect(res.ok).toBe(true)
+    expect(await text()).toContain('Azul Beach Resort Negril')
+  })
+
+  test('a new email address on the booking: the email goes there', async () => {
+    const row = booking()
+    const res = await send(fakeSvc({ status: 'paid', fresh: { email: 'new@example.com' } }, row), row)
+    expect(res.ok).toBe(true)
+    expect(res.sentTo).toBe('new@example.com')
+    expect((sendEmailMock.mock.calls[0][0] as { to: string }).to).toBe('new@example.com')
   })
 })

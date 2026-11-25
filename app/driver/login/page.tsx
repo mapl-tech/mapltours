@@ -28,7 +28,14 @@ export default function DriverLoginPage() {
 
 function DriverLoginContent() {
   const searchParams = useSearchParams()
-  const notAllowed = searchParams.get('error') === 'not_allowed'
+  const error = searchParams.get('error')
+  const notAllowed = error === 'not_allowed'
+  // From lib/driver-access (Nov 25 2026): a retired driver, or an access check that could not be made.
+  const message = error === 'retired'
+    ? 'Your driver access has been turned off. If that is a mistake, ask your fleet manager or write to contact@mapltours.com.'
+    : error === 'unavailable'
+      ? 'The portal could not check your access just now. Wait a minute, then sign in again.'
+      : null
 
   async function signIn() {
     await createClient().auth.signInWithOAuth({
@@ -67,6 +74,15 @@ function DriverLoginContent() {
             <p style={{ fontSize: 14, color: soft, margin: '8px 0 0', lineHeight: 1.55 }}>
               Your trips, guests, flight tracking and pay, all in one place.
             </p>
+
+            {message && (
+              <p role="alert" style={{
+                fontSize: 13, lineHeight: 1.5, margin: '18px 0 0', padding: '11px 14px', borderRadius: 10,
+                background: '#FCEDEA', border: '1px solid rgba(176,28,12,0.25)', color: '#B01C0C',
+              }}>
+                {message}
+              </p>
+            )}
 
             {notAllowed && (
               <p role="alert" style={{

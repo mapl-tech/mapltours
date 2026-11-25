@@ -3,6 +3,7 @@ import { sendToParty } from '@/lib/travel-party-server'
 import { bookerName } from '@/lib/travel-party'
 import TransferDayOf from '@/emails/TransferDayOf'
 import { firstLeg, bookingRef, jaDate, jaTime, legInstantMs, type Bk } from '@/lib/dispatch'
+import { isDue, jaHour, jaDateKey, stampKey, withheldKey } from '@/lib/dayof-rules'
 export { legInstantMs }
 
 /**
@@ -23,39 +24,9 @@ export const SUPPORT_EMAIL = 'contact@mapltours.com'
 
 export type Leg = 'arrival' | 'departure'
 
-/** Jamaica is UTC-5 all year. It has never observed daylight saving. */
-const JA_OFFSET_MIN = -300
-
-/** Hour of the day in Jamaica, 0-23, for a real instant. */
-export function jaHour(nowMs: number): number {
-  return new Date(nowMs + JA_OFFSET_MIN * 60_000).getUTCHours()
-}
-
-/** The Jamaica calendar date (YYYY-MM-DD) of a real instant. */
-export function jaDateKey(nowMs: number): string {
-  return new Date(nowMs + JA_OFFSET_MIN * 60_000).toISOString().slice(0, 10)
-}
-
-/**
- * Is this leg's day-of email due right now?
- *
- * Two ways to qualify, so a dawn pickup is not emailed while the guest sleeps:
- *   • within 13 hours of the pickup, which reaches a 7 AM airport run at 6 PM
- *     the evening before, while they can still act on it; or
- *   • the same Jamaica calendar day, once it is 5 AM there.
- *
- * Never after the fact: once the pickup time passes, the email is only noise,
- * and the guest is already in the car.
- */
-export function isDue(legIso: string, nowMs: number): boolean {
-  const at = legInstantMs(legIso)
-  const hoursAway = (at - nowMs) / 3_600_000
-  if (hoursAway <= 0) return false
-  if (hoursAway <= 13) return true
-  return jaDateKey(at) === jaDateKey(nowMs) && jaHour(nowMs) >= 5
-}
-
-export const stampKey = (leg: Leg) => (leg === 'arrival' ? 'dayof_arrival_sent' : 'dayof_departure_sent')
+// The timing rules are pure, in lib/dayof-rules, so the driver portal's change
+// rules (lib/dispatch-change) read the same ones this job sends by.
+export { isDue, jaHour, jaDateKey, stampKey, withheldKey }
 
 /**
  * Pause before the one retry of a claim release. The re-read that fails in a
@@ -64,9 +35,10 @@ export const stampKey = (leg: Leg) => (leg === 'arrival' ? 'dayof_arrival_sent' 
  */
 export const RELEASE_RETRY_MS = 500
 
-/**
- * Where a withheld send is recorded: a claim that was won, then not sent
- * because the booking had stopped being paid. Deliberately NOT the sent key.
+/*
+ * withheldKey (lib/dayof-rules) is where a withheld send is recorded: a claim
+ * that was won, then not sent because the booking had stopped being paid.
+ * Deliberately NOT the sent key.
  * Everything that reports "sent" reads only `dayof_*_sent`: the dispatch
  * console's "✓ Day-of email sent" button and lib/dispatch autoStepDone's
  * driver_reconfirmed / departure_reminded ticks ("day-of email BCCed to the
@@ -74,7 +46,6 @@ export const RELEASE_RETRY_MS = 500
  * nothing gates on this key, since the status checks already block every
  * later send to a booking that is not paid.
  */
-export const withheldKey = (leg: Leg) => (leg === 'arrival' ? 'dayof_arrival_withheld' : 'dayof_departure_withheld')
 
 /**
  * Why this booking+leg cannot be mailed, or null if it can.
@@ -84,14 +55,16 @@ export const withheldKey = (leg: Leg) => (leg === 'arrival' ? 'dayof_arrival_wit
  * says "being confirmed" in both fields is worse than none at all. The manual
  * console can still force a send once an operator has eyes on it.
  */
-export function blockedReason(b: Bk, leg: Leg): string | null {
+export function blockedReason(b: Bk, leg: Leg, opts: { ignoreStamp?: boolean } = {}): string | null {
   if (b.status !== 'paid') return 'booking is not paid'
   if (!b.email) return 'booking has no email'
   const l = firstLeg(b)
   if (!l) return 'booking has no transfer leg'
   const at = leg === 'arrival' ? l.arrivalAt : l.departureAt
   if (!at) return `no ${leg} time on this booking`
-  if ((b.dispatch ?? {})[stampKey(leg)]) return 'already sent'
+  // ignoreStamp: the re-check sendDayOf makes once it holds the claim (the
+  // stamp it just wrote would otherwise answer 'already sent').
+  if (!opts.ignoreStamp && (b.dispatch ?? {})[stampKey(leg)]) return 'already sent'
   if (!b.driver_name || !b.driver_phone) return 'driver not assigned yet'
   // Temporal gate, shared by the cron and the manual button. Without it an
   // operator on a booking weeks out could fire a day-of email that claims the
@@ -158,11 +131,6 @@ export async function sendDayOf(
   const isArrival = leg === 'arrival'
   const ref = bookingRef(b.id)
   const key = stampKey(leg)
-  // A dawn pickup is mailed the evening before, so say which day it is rather
-  // than asserting "today" and being wrong for exactly the guests who are up
-  // earliest. Compared in Jamaica dates, the only calendar that matters here.
-  const dayLabel: 'Today' | 'Tomorrow' =
-    jaDateKey(legInstantMs(at)) === jaDateKey(Date.now()) ? 'Today' : 'Tomorrow'
   const claimedAt = new Date().toISOString()
   // Read before claiming: a forced claim overwrites it.
   const prior = (b.dispatch ?? {})[key]
@@ -223,9 +191,16 @@ export async function sendDayOf(
   // the claim is won, and send only on a fresh 'paid'. This is the same
   // read-to-write race lib/email/claim.ts closes with requireStatus;
   // merge_dispatch itself has no status predicate. (Audit 2026-08-22.)
+  //
+  // The same read also brings the driver and the ride as they are NOW, and the
+  // email is written from those (Nov 24 2026). A fleet manager can change who
+  // drives or when from the driver portal (lib/dispatch-change); a change that
+  // lands while this run is working through its list would otherwise reach the
+  // guest as the details it replaced. Anything this read leaves out keeps the
+  // snapshot's value.
   const { data: fresh, error: freshErr } = await svc
     .from('bookings')
-    .select('status')
+    .select('status, email, first_name, driver_name, driver_phone, driver_vehicle, driver_plate, booking_items(*)')
     .eq('id', b.id)
     .maybeSingle()
 
@@ -262,29 +237,55 @@ export async function sendDayOf(
     return { ...base, ok: false, skipped: reason }
   }
 
+  // The booking as it is now: the fresh read over the snapshot. Checked again
+  // as the job would check it (the stamp aside: this attempt holds it), so a
+  // ride moved to another day, or left with no driver, is released for the
+  // run that should send it rather than mailed with the wrong words.
+  const cur: Bk = { ...b }
+  for (const [k, v] of Object.entries(fresh as Record<string, unknown>)) {
+    if (v === undefined) continue
+    if (k === 'booking_items' && !(Array.isArray(v) && v.length)) continue
+    cur[k] = v
+  }
+  const nowBlocked = blockedReason(cur, leg, { ignoreStamp: true })
+  if (nowBlocked) {
+    const released = await undoClaim({}, RESEND)
+    const reason = `${nowBlocked} (read again at send time)`
+    if (!released) return { ...base, ok: false, error: `${reason}; ${NOT_RELEASED}` }
+    console.warn('[dayof] claim won but the booking changed; released', { bookingId: b.id, leg, reason })
+    return { ...base, ok: false, skipped: `${reason}; claim released` }
+  }
+  const cl = firstLeg(cur)!
+  const cat = (isArrival ? cl.arrivalAt : cl.departureAt)!
+  // A dawn pickup is mailed the evening before, so say which day it is rather
+  // than asserting "today" and being wrong for exactly the guests who are up
+  // earliest. Compared in Jamaica dates, the only calendar that matters here.
+  const curDay: 'Today' | 'Tomorrow' =
+    jaDateKey(legInstantMs(cat)) === jaDateKey(Date.now()) ? 'Today' : 'Tomorrow'
+
   const subject = isArrival
-    ? `${dayLabel}: your MAPL Tours Jamaica driver at Montego Bay (${ref})`
-    : `${dayLabel}: your ride to the airport (${ref})`
+    ? `${curDay}: your MAPL Tours Jamaica driver at Montego Bay (${ref})`
+    : `${curDay}: your ride to the airport (${ref})`
   const dayOfProps = {
     bookingRef: ref,
-    firstName: b.first_name,
+    firstName: cur.first_name,
     leg,
-    whenLabel: `${jaDate(at)}, ${jaTime(at)}`,
-    dayLabel,
-    pickupLabel: isArrival ? AIRPORT : l.hotel,
-    dropoffLabel: isArrival ? l.hotel : AIRPORT,
-    flight: (isArrival ? l.arrivalFlight : l.departureFlight) ?? null,
-    passengers: l.passengers,
-    driverName: b.driver_name ?? null,
-    driverPhone: b.driver_phone ?? null,
-    driverVehicle: b.driver_vehicle ?? null,
-    driverPlate: b.driver_plate ?? null,
+    whenLabel: `${jaDate(cat)}, ${jaTime(cat)}`,
+    dayLabel: curDay,
+    pickupLabel: isArrival ? AIRPORT : cl.hotel,
+    dropoffLabel: isArrival ? cl.hotel : AIRPORT,
+    flight: (isArrival ? cl.arrivalFlight : cl.departureFlight) ?? null,
+    passengers: cl.passengers,
+    driverName: cur.driver_name ?? null,
+    driverPhone: cur.driver_phone ?? null,
+    driverVehicle: cur.driver_vehicle ?? null,
+    driverPlate: cur.driver_plate ?? null,
     supportEmail: SUPPORT_EMAIL,
   }
   const res = await sendEmail({
-    to: b.email,
+    to: cur.email,
     // Operations and the driver hold exactly what the guest holds.
-    bcc: opsBcc(b.email),
+    bcc: opsBcc(cur.email),
     subject,
     react: TransferDayOf(dayOfProps),
     tags: [{ name: 'type', value: 'transfer_dayof' }],
@@ -303,9 +304,9 @@ export async function sendDayOf(
   // again and a retry does not. Best effort: never changes this result.
   await sendToParty(svc, b.id, 'dayof', (m) => ({
     subject,
-    react: TransferDayOf({ ...dayOfProps, firstName: null, party: { addedBy: bookerName(b.first_name), stopUrl: m.stopUrl } }),
+    react: TransferDayOf({ ...dayOfProps, firstName: null, party: { addedBy: bookerName(cur.first_name), stopUrl: m.stopUrl } }),
     key: `travel-party/dayof/${b.id}/${leg}/${claimedAt}/${m.id}`,
   }))
 
-  return { ...base, ok: true, sentTo: b.email }
+  return { ...base, ok: true, sentTo: cur.email }
 }

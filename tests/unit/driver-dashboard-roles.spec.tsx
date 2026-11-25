@@ -1,0 +1,128 @@
+import { describe, test, expect, vi } from 'vitest'
+import { renderToStaticMarkup } from 'react-dom/server'
+
+vi.mock('next/navigation', () => ({ useRouter: () => ({ refresh: () => {} }) }))
+
+import DriverDashboard, { TripCard, TourCard } from '../../components/driver/DriverDashboard'
+import { driverTrip, type DriverTour } from '../../lib/driver'
+
+/**
+ * The driver portal by role (Nov 24 2026). A regular driver reads the rides
+ * given to them with no pay anywhere and nothing to change; a fleet manager
+ * gets every change, each opening the confirm-first dialog; with no role the
+ * portal is as it always was (tests/unit/driver-dashboard-legs.spec.tsx pins
+ * that view word for word). Made-up guests and drivers.
+ */
+
+const booking = (item: Record<string, unknown>, over: Record<string, unknown> = {}) => ({
+  id: '1a2b3c4d-0000-0000-0000-000000000000',
+  first_name: 'Ada', last_name: 'Lovelace', phone: '+1 555 0100',
+  subtotal: 100, special_requests: null, dispatch: { paid_first: '2099-10-10T12:00:00Z' },
+  driver_name: 'Devon Brown', driver_vehicle: 'Toyota Hiace, silver', driver_plate: 'PJ 1234',
+  booking_items: [{ item_type: 'transfer', hotel: 'Riu Negril', passengers: 2, ...item }],
+  ...over,
+})
+const roundTrip = (withPay: boolean) => driverTrip(booking({
+  trip_type: 'round_trip',
+  arrival_at: '2099-10-11T21:05:00+00:00', arrival_flight: 'VS0165',
+  departure_at: '2099-10-18T14:30:00+00:00', departure_flight: 'VS0166',
+}), { withPay })!
+const tour: DriverTour = {
+  id: 't-1', ref: 'MAPL-TOUR0001', guestName: 'Grace Hopper', guestPhone: null, specialRequests: null, firstDate: '2099-10-12',
+  items: [{ title: 'River rafting', destination: 'Martha Brae', date: '2099-10-12', travelers: 2 }],
+  pickup: 'Riu Negril', pickupTime: '08:30', driver: { name: 'Devon Brown', vehicle: 'silver Toyota Hiace', plate: 'PJ 1234' },
+}
+const page = (html: string) => html.replace(/<[^>]+>/g, ' ').replace(/&#x27;/g, "'").replace(/&amp;/g, '&').replace(/\s+/g, ' ')
+const fleet = { lastChange: null, onChange: () => {} }
+
+describe('a regular driver', () => {
+  const html = renderToStaticMarkup(<DriverDashboard trips={[roundTrip(false)]} tours={[tour]} driverLabel="Devon" role="driver" showPay={false} />)
+  const open = renderToStaticMarkup(<TripCard t={roundTrip(false)} open onToggle={() => {}} showPay={false} />)
+
+  test('never reads pay: no amounts, no paid chips, no pay summary, no pay in the calendar links', () => {
+    for (const h of [html, open]) {
+      const t = page(h)
+      expect(t).not.toMatch(/\$\d|You get|Pay pending|Paid in full|Your pay|Paid to you|Pending \(USD\)/)
+      const links = Array.from(h.matchAll(/href="(https:\/\/calendar\.google\.com\/[^"]*)"/g)).map((m) => new URL(m[1].replace(/&amp;/g, '&')).searchParams.get('details') ?? '')
+      for (const d of links) expect(d).not.toMatch(/pay|\$/i)
+    }
+    expect(html).not.toContain('aria-label="Pay summary"')
+  })
+
+  test('has nothing to change, and no Drivers tab', () => {
+    for (const h of [html, open]) expect(page(h)).not.toMatch(/Change driver|Assign driver|Change pickup time|Change landing time|Set pickup time|Add a driver/)
+    expect(html).not.toContain('id="tab-drivers"')
+    expect(html).not.toContain('<dialog')
+  })
+
+  test('the card header names no pay, and its description points only at what is there', () => {
+    const closed = renderToStaticMarkup(<TripCard t={roundTrip(false)} open={false} onToggle={() => {}} showPay={false} />)
+    expect(closed).toContain('aria-describedby="trip-1a2b3c4d-0000-0000-0000-000000000000-kind trip-1a2b3c4d-0000-0000-0000-000000000000-sum"')
+    expect(closed).not.toContain('-pay"')
+  })
+
+  test("the footer sends questions to the fleet manager; a tour shows its pickup and that they drive it", () => {
+    expect(page(html)).toContain('Questions about a ride: ask your fleet manager, or write to contact@mapltours.com.')
+    const t = page(renderToStaticMarkup(<TourCard t={tour} open onToggle={() => {}} mode="driver" />))
+    expect(t).toContain('8:30 AM Jamaica time')
+    expect(t).toContain('Riu Negril')
+    expect(t).toContain('You are the driver for this tour.')
+    expect(t).not.toMatch(/Change|Set pickup time/)
+  })
+})
+
+describe('a fleet manager', () => {
+  const card = page(renderToStaticMarkup(<TripCard t={roundTrip(true)} open onToggle={() => {}} fleet={fleet} />))
+
+  test('sees the driver and can change the driver and each ride still ahead', () => {
+    expect(card).toContain('Driver Devon Brown silver Toyota Hiace · PJ 1234')
+    expect(card).toContain('Change driver')
+    expect(card).toContain('Change landing time')
+    expect(card).toContain('Change pickup time')
+    // Pay is still theirs to see.
+    expect(card).toContain('You get paid for this trip')
+  })
+
+  test('a ride that is over offers no change to its time; a booking with no driver offers Assign', () => {
+    const past = driverTrip(booking({ trip_type: 'one_way', arrival_at: '2001-10-11T21:05:00+00:00' }, { driver_name: null, driver_vehicle: null, driver_plate: null }))!
+    const t = page(renderToStaticMarkup(<TripCard t={past} open onToggle={() => {}} fleet={fleet} />))
+    expect(t).toContain('No driver yet')
+    expect(t).not.toMatch(/Change landing time|Assign driver|Change driver/)
+    const ahead = driverTrip(booking({ trip_type: 'one_way', arrival_at: '2099-10-11T21:05:00+00:00' }, { driver_name: null, driver_vehicle: null, driver_plate: null }))!
+    expect(page(renderToStaticMarkup(<TripCard t={ahead} open onToggle={() => {}} fleet={fleet} />))).toContain('Assign driver')
+  })
+
+  test('the last change is shown with who and when, and a change not yet emailed says so', () => {
+    const last = { kind: 'time' as const, leg: 'departure' as const, text: 'Hotel pickup moved to 12:00 noon', by: 'Lee Grant', at: '2026-11-24T21:12:00Z', open: true, changeId: 'c1' }
+    const t = page(renderToStaticMarkup(<TripCard t={roundTrip(true)} open onToggle={() => {}} fleet={{ ...fleet, lastChange: last }} />))
+    expect(t).toContain('Last change: Hotel pickup moved to 12:00 noon · Lee Grant · Nov 24, 4:12 PM')
+    expect(t).toContain('Not emailed yet. Ada has not been told about this change by email.')
+    expect(t).toContain('Email Ada or not')
+    // A pickup a fleet manager set is no longer called the guest's request.
+    expect(t).toContain('This pickup time was set by Lee Grant.')
+    expect(t).not.toContain('This is the pickup time the guest requested.')
+  })
+
+  test('a tour: pickup time and driver, each changeable', () => {
+    const t = page(renderToStaticMarkup(<TourCard t={{ ...tour, pickupTime: null }} open onToggle={() => {}} mode="fleet" fleet={fleet} />))
+    expect(t).toContain('Pickup time not set')
+    expect(t).toContain('Set pickup time')
+    expect(t).toContain('Change driver')
+  })
+
+  test('the dashboard says the role and has the Drivers tab', () => {
+    const html = renderToStaticMarkup(<DriverDashboard trips={[roundTrip(true)]} tours={[tour]} driverLabel="Lee" role="fleet_manager" drivers={[{ id: 'd1', name: 'Devon Brown', whatsapp: '+1 876 555 0100', vehicle: 'Toyota Hiace', colour: 'silver', plate: 'PJ 1234', email: null, active: true, role: 'driver' }]} changes={{}} />)
+    expect(page(html)).toContain('Lee · Fleet manager · MAPL Tours Jamaica')
+    expect(html).toContain('id="tab-drivers"')
+    expect(html).toContain('aria-label="Pay summary"')
+  })
+})
+
+describe('with no role, the portal as it always was', () => {
+  test('no controls, no dialog, the old footer', () => {
+    const html = renderToStaticMarkup(<DriverDashboard trips={[roundTrip(true)]} driverLabel="Collin" />)
+    expect(page(html)).not.toMatch(/Change driver|Fleet manager|Drivers/)
+    expect(html).not.toContain('<dialog')
+    expect(page(html)).toContain('Pay is your agreed rate per trip')
+  })
+})
