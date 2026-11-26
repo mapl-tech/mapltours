@@ -13,7 +13,9 @@
 // PREFIX below was already allowed while the page itself was not.
 // /driver is the driver portal: its own login sends `redirect=/driver`, and
 // without it the driver signed in and landed on a guest's /profile.
-const ALLOWED_EXACT = ['/', '/profile', '/saved', '/explore', '/checkout', '/transfers', '/driver']
+// /referrals is the referral page: its sign-in (and an email sign-in started
+// from it) sends `redirect=/referrals`, for the same reason.
+const ALLOWED_EXACT = ['/', '/profile', '/saved', '/explore', '/checkout', '/transfers', '/driver', '/referrals']
 // Namespaces a redirect may land in. Covers the engagement loop
 // (/experience/<slug> after liking/commenting), the post-payment confirm
 // pages, and the admin moderation queue, none of which are static and so

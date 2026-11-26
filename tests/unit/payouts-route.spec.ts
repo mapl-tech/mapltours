@@ -42,6 +42,8 @@ vi.mock('@/lib/email/driver-paid', () => ({
   },
 }))
 vi.mock('@/lib/payouts/store', async (orig) => ({ ...(await orig<typeof import('@/lib/payouts/store')>()), supabasePayoutStore: () => state.store }))
+// Not a driver payout and not a referral payout either (the referral path: tests/unit/referral-webhook.spec.ts).
+vi.mock('@/lib/referrals/payout-store', () => ({ referralEventStore: () => ({ findByTransfer: async () => null, update: async () => {}, voidItems: async () => {}, items: async () => [], stamp: async () => true, unstamp: async () => {} }) }))
 vi.mock('@/lib/wise/client', async (orig) => ({ ...(await orig<typeof import('@/lib/wise/client')>()), wiseClient: () => state.wise }))
 vi.mock('@/lib/payouts/notify', async (orig) => ({
   ...(await orig<typeof import('@/lib/payouts/notify')>()),

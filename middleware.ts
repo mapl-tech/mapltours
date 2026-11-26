@@ -5,7 +5,7 @@ import { PROOF_COOKIE, addProof, bookingProofShape, clientSecretFor, keepsBookin
 
 // Routes that need auth session refresh
 // (/transfers/confirm and /travel-party show a signed-in guest their own booking, so they need a live session too)
-const AUTH_ROUTES = ['/profile', '/saved', '/checkout', '/transfers/confirm', '/travel-party', '/login', '/auth', '/driver']
+const AUTH_ROUTES = ['/profile', '/saved', '/checkout', '/transfers/confirm', '/travel-party', '/login', '/auth', '/driver', '/referrals']
 
 export async function middleware(request: NextRequest) {
   const path = request.nextUrl.pathname

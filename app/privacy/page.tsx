@@ -15,7 +15,7 @@ export default function PrivacyPage() {
   return (
     <EditorialPage slug="privacy" label="Legal" title="Privacy Policy">
       <Section title="Last updated">
-        <p>This Privacy Policy was last updated on November 14, 2026.</p>
+        <p>This Privacy Policy was last updated on November 26, 2026.</p>
       </Section>
 
       <Section title="Our commitment">
@@ -40,6 +40,7 @@ export default function PrivacyPage() {
           <li><strong>How you found us</strong>, the website, ad or email link that first and most recently brought you here, and the general kind of browser you booked with (for example, Chrome on Linux, never its version or your device), which we save with your booking.</li>
           <li><strong>Requests from AI assistants</strong>, the trip details an assistant sends through our connector (mapltours.com/mcp) when you ask it to price or book a ride or tour: the hotel or tour, dates, flight numbers and party size. We use them only to answer that request and prepare your booking link. When you ask your assistant to pay for a ride for you, it also sends your name, email and phone and a one-time payment token from your wallet, and we keep them with that booking like any other; Stripe processes the payment, and your card number never reaches us. Our logs record which tool was used, never what you asked, and nothing is kept unless you book.</li>
           <li><strong>Communication</strong>, anything you send us through the contact form or email.</li>
+          <li><strong>Referral partners</strong>, if we invite you to refer guests: your name, email address and business name, the codes you make, and the bookings made with them. The bank details you give for your payouts go straight to Wise, our payment provider; we keep only the account holder&rsquo;s name, the last four digits, and whether it is a personal or business account.</li>
           <li><strong>Photographs and video</strong>, images and recordings captured during experiences and transfers, which may include you. See the photography section of our <a href="/terms" style={{ color: 'var(--text-primary)', textDecoration: 'underline' }}>Terms of Service</a> for how these are used.</li>
         </ul>
       </Section>
@@ -65,7 +66,9 @@ export default function PrivacyPage() {
         </p>
         <ul style={{ marginTop: 12, paddingLeft: 20, display: 'flex', flexDirection: 'column', gap: 8 }}>
           <li><strong>Our partner drivers and operators</strong>, receive your name, traveler count, date, contact phone, and any special requests so they can host you.</li>
+          <li><strong>Referral partners</strong>, if you book with a partner&rsquo;s code, that partner sees the tour or ride, its dates, the code and what you paid, so they can see what they earned; never your name, email address, phone number, hotel or flights.</li>
           <li><strong>Stripe</strong>, payment processing.</li>
+          <li><strong>Wise</strong>, sends our referral partners their payouts. It receives the bank details a partner enters and the amount of each payout.</li>
           <li><strong>Resend</strong>, transactional email delivery.</li>
           <li><strong>Supabase</strong>, secure database hosting (Frankfurt region).</li>
           <li><strong>Google</strong>, a private Google Calendar our operations team uses to schedule your trip. When a booking is paid, we add it there with your name, phone number, hotel or pickup place, party size, trip date and times, and, for airport transfers, your flight numbers.</li>

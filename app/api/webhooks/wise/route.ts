@@ -4,6 +4,7 @@ import { NO_STORE_HEADERS } from '@/lib/no-store'
 import { supabasePayoutStore } from '@/lib/payouts/store'
 import { applyTransferState, parseTransferStateEvent, verifyWiseSignature, WISE_WEBHOOK_KEYS } from '@/lib/payouts/webhook'
 import { sendOpsMessage } from '@/lib/payouts/notify'
+import { referralEventStore } from '@/lib/referrals/payout-store'
 
 /**
  * Wise webhook: `transfers#state-change` for the driver payouts
@@ -39,14 +40,21 @@ export async function POST(request: NextRequest) {
 
   try {
     const nowIso = new Date().toISOString()
-    const result = await applyTransferState(supabasePayoutStore(createServiceClient(), Date.now()), ev, nowIso)
+    const svc = createServiceClient()
+    let result = await applyTransferState(supabasePayoutStore(svc, Date.now()), ev, nowIso)
+    // Not a driver payout: perhaps a referral payout (lib/referrals, migration 045), the same states.
+    let kind: 'Driver payout' | 'Referral payout' = 'Driver payout'
+    if (result.outcome === 'ignored') {
+      result = await applyTransferState(referralEventStore(svc), ev, nowIso)
+      kind = 'Referral payout'
+    }
     if (result.tell) {
       await sendOpsMessage(
-        { subject: 'Driver payout: Wise has news', title: 'Driver payout: Wise has news', body: result.tell, lines: [`Transfer ${ev.transferId}: ${ev.state} at ${ev.occurredAt ?? nowIso}`] },
-        `driver-payouts/webhook/${ev.transferId}/${ev.state}`,
+        { subject: `${kind}: Wise has news`, title: `${kind}: Wise has news`, body: result.tell, lines: [`Transfer ${ev.transferId}: ${ev.state} at ${ev.occurredAt ?? nowIso}`] },
+        `${kind === 'Driver payout' ? 'driver-payouts' : 'referral-payouts'}/webhook/${ev.transferId}/${ev.state}`,
       ).catch(() => false)
     }
-    console.log('[wise-webhook]', JSON.stringify({ transfer: ev.transferId, state: ev.state, outcome: result.outcome }))
+    console.log('[wise-webhook]', JSON.stringify({ transfer: ev.transferId, state: ev.state, outcome: result.outcome, kind: result.outcome === 'ignored' ? null : kind }))
     return answer(200, { ok: true, outcome: result.outcome })
   } catch (err) {
     console.error('[wise-webhook] not applied; Wise will retry', err instanceof Error ? err.message : 'error')

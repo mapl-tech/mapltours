@@ -17,6 +17,20 @@ export function isTrackedHost(hostname: string): boolean {
 }
 
 /**
+ * Pages that never carry the tags (Nov 26 2026): /referrals, where a referrer
+ * types their Wise account and routing numbers, and the admin's view of the
+ * referrers. Hotjar records the page and the Meta pixel's automatic matching
+ * reads form fields, so neither may ever run there. A visitor who arrives
+ * from a page that loaded them gets the page loaded again, without them,
+ * before anything is typed (components/Trackers).
+ */
+export const NO_TRACKER_PATHS = /^\/(referrals|admin\/referrals)(\/|$)/
+
+export function trackersAllowedOn(pathname: string | null | undefined): boolean {
+  return !NO_TRACKER_PATHS.test(String(pathname ?? ''))
+}
+
+/**
  * Stripe appends these to a redirect return (Cash App Pay, Klarna, a bank
  * page). A client secret is a secret, and every tag reports the page address
  * (the pixel's `dl`, GA's page_location, Hotjar's recording), so the

@@ -20,6 +20,7 @@ const SECTIONS: { href: string; label: string; also?: string[] }[] = [
   { href: '/admin/tour-rates', label: 'Tour prices' },
   { href: '/admin/coupons', label: 'Coupons' },
   { href: '/admin/gift-cards', label: 'Gift cards' },
+  { href: '/admin/referrals', label: 'Referrals' },
   { href: '/admin/videos', label: 'Videos' },
   { href: '/admin/drivers', label: 'Drivers' },
   { href: '/admin/driver', label: 'Driver portal' },

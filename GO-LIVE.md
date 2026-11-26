@@ -337,6 +337,69 @@ in Wise, then `update driver_payouts set resolved_at = now() where id = '<id>';`
 
 ---
 
+## 11. Referral program (`/referrals`, `/admin/referrals`, migration 045; deployed Nov 26 2026, payouts off)
+
+Partners (villa managers, guesthouses) are invited by email from the admin
+desk, sign in at `/referrals`, make up to 7 codes (5% off for their guests),
+and are paid their rate (3%) of what each guest paid, every Monday, into their
+own Wise US-dollar account. How it works and what it refuses: CLAUDE.md,
+"Referral program". Migration 045 was applied and the program deployed on
+Nov 26 2026; payouts stay off until `REFERRAL_PAYOUTS_ENABLED=1`.
+
+**Decisions before launch (the owner's; both approved Nov 26 2026, "Approve as written"):**
+- Approve the referral terms: `lib/referrals/terms.ts`, shown on the page
+  before a partner sets up, and accepted as version `TERMS_VERSION`. Bump the
+  version if the words change after anyone has accepted them.
+- Approve the Privacy Policy wording (in the Nov 26 2026 report). The privacy
+  page changes only on the owner's word, in the same release that switches the
+  program on.
+
+**Order:**
+1. **Rotate the Wise token** if §10 has not yet: the referral routes use the
+   same `WISE_API_TOKEN`, and setting up a partner creates a Wise recipient
+   with it.
+2. **Migration 045** (done Nov 26 2026, checked as below). `node --env-file=.env.local scripts/apply-migrations.mjs 045_referrals.sql`,
+   then confirm:
+   ```sql
+   select table_name from information_schema.tables where table_schema = 'public'
+     and table_name in ('referrers', 'referral_earnings', 'referral_payouts', 'referral_payout_items', 'referral_events');
+   select column_name from information_schema.columns where table_schema = 'public' and table_name = 'coupons'
+     and column_name in ('referrer_id', 'referral_hold', 'retired_at');
+   select routine_name from information_schema.routines where routine_schema = 'public'
+     and routine_name in ('referral_earning_from_redemption', 'accept_referral_terms', 'create_referral_code', 'set_referral_code_status',
+       'set_referrer_status', 'save_referrer_payout_account', 'set_referral_earning_void', 'claim_referral_payout');
+   select tgname from pg_trigger where tgname = 'coupon_redemptions_referral_earning';
+   ```
+   Five rows, three, eight, one. (Checked Nov 26 2026 in PGlite 0.2.17: applies
+   twice cleanly, 95 checks of its rules.)
+3. **Deploy** (done Nov 26 2026) the main site with `REFERRAL_PAYOUTS_ENABLED` unset. Nothing
+   changes for guests: a referral code is an ordinary coupon to both checkouts.
+4. **Read the invitation.** On `/admin/referrals`, Invite someone, Preview the
+   email, then Send a test to contact@mapltours.com. A test writes nothing.
+5. **The first partner.** Invite them; they sign in, agree to the terms, add
+   their Wise account and make a code. Their Wise account is the first real use
+   of `POST /v1/accounts` (and of switching a recipient off): check the new
+   recipient in Wise, Recipients, and that the page shows the account's last
+   four digits.
+6. **Read a dry run** once a commission is payable:
+   `curl -H "Authorization: Bearer $CRON_SECRET" "https://mapltours.com/api/referrals/payouts?dry=1"`
+7. **Switch on:** `REFERRAL_PAYOUTS_ENABLED=1`, redeploy (functions read env
+   at deploy). The 14:45 UTC run each day pays on Mondays and catches up a
+   missed Monday the next day. Keep enough US dollars in the Wise balance for a
+   Monday: a payout the balance cannot cover sends nothing and says so.
+
+**Resolving a held referral payout** is done on the desk, not in SQL: open the
+referrer, Payouts, "I have checked it in Wise", then It was paid or It was not
+paid. The answer is checked with Wise before it is saved; a transfer still
+waiting for our money is cancelled first. A payout whose money came back is
+marked resolved once the partner has fixed their account on their page.
+
+**Stripe's payouts to Wise:** keep Stripe's daily schedule. Each charge
+becomes payable three days after it is made (Stripe's delay for this account),
+and daily is the fastest it can reach Wise.
+
+---
+
 ## Fast reference — env vars
 
 | Var | Scope | Purpose |
@@ -373,6 +436,8 @@ in Wise, then `update driver_payouts set resolved_at = now() where id = '<id>';`
 | `WISE_PAYOUTS_ENABLED` | server | exactly `1` to pay; anything else keeps payouts off |
 | `PAYOUT_TRANSIT_BUSINESS_DAYS` | server | optional: business days Wise takes to put a payment in the account (default 2); each part goes that many business days before the day it should arrive. Production is 0 since Nov 23 2026: payments to Collin's own Wise account land in seconds. The old `PAYOUT_LEAD_BUSINESS_DAYS` is refused if set |
 | `PAYOUT_MAX_PAYEE_USD` / `PAYOUT_MAX_RUN_USD` / `PAYOUT_MAX_FEE_USD` | server | optional limits (defaults 3000 / 6000 / 40) |
+| `REFERRAL_PAYOUTS_ENABLED` | server | exactly `1` to pay referral commissions (§11); anything else, the daily cron does nothing and the route only plans |
+| `REFERRAL_MAX_PAYEE_USD` / `REFERRAL_MAX_RUN_USD` | server | optional referral payout limits (defaults 1500 / 3000) |
 
 Calendar sync setup (already done once, recorded here for rebuilds): Calendar
 API enabled on the `mapl-tours` Google Cloud project; the service account

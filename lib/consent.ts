@@ -138,7 +138,7 @@ export function decide(input: { optedOut: boolean; stored: StoredConsent | null;
  * who has not answered is simply not tracked there, and is asked on the next
  * page that is none of these.
  */
-export const NO_CONSENT_PROMPT_PATHS = /^\/(checkout|transfers\/checkout|transfers\/confirm|book|gifts|login|auth|admin|driver)(\/|$)/
+export const NO_CONSENT_PROMPT_PATHS = /^\/(checkout|transfers\/checkout|transfers\/confirm|book|gifts|login|auth|admin|driver|referrals)(\/|$)/
 
 export function consentPromptAllowedOn(pathname: string | null | undefined): boolean {
   return !NO_CONSENT_PROMPT_PATHS.test(String(pathname ?? ''))

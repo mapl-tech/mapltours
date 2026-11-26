@@ -45,18 +45,26 @@ export async function GET(req: Request) {
   const q = (url.searchParams.get('q') ?? '').trim()
   const status = (url.searchParams.get('status') ?? '').trim()
 
-  let query = svc.from('coupons').select(COLS).order('created_at', { ascending: false }).limit(200)
-  if (status === 'active' || status === 'paused' || status === 'void') query = query.eq('status', status)
-  if (q) {
-    const code = normalizeCouponCode(q)
-    // A comma or bracket is structural inside or(...); % and _ are wildcards.
-    // Stripped, not escaped: none of them belongs in a code or email search.
-    const pattern = `%${q.replace(/[%_,()\\]/g, '')}%`
-    query = code
-      ? query.or(`code.eq.${code},email.ilike.${pattern},note.ilike.${pattern}`)
-      : query.or(`email.ilike.${pattern},note.ilike.${pattern}`)
+  // Referral codes (migration 045) are managed on /admin/referrals, never here:
+  // their rules are the program's, so this desk neither lists nor edits them.
+  const build = (excludeReferral: boolean) => {
+    let query = svc.from('coupons').select(COLS).order('created_at', { ascending: false }).limit(200)
+    if (excludeReferral) query = query.is('referrer_id', null)
+    if (status === 'active' || status === 'paused' || status === 'void') query = query.eq('status', status)
+    if (q) {
+      const code = normalizeCouponCode(q)
+      // A comma or bracket is structural inside or(...); % and _ are wildcards.
+      // Stripped, not escaped: none of them belongs in a code or email search.
+      const pattern = `%${q.replace(/[%_,()\\]/g, '')}%`
+      query = code
+        ? query.or(`code.eq.${code},email.ilike.${pattern},note.ilike.${pattern}`)
+        : query.or(`email.ilike.${pattern},note.ilike.${pattern}`)
+    }
+    return query
   }
-  const { data: coupons, error } = await query
+  let { data: coupons, error } = await build(true)
+  // Before migration 045 there is no referrer_id, and so no referral code to leave out.
+  if (error && /referrer_id/.test(error.message ?? '')) ({ data: coupons, error } = await build(false))
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
   const ids = (coupons ?? []).map((c) => c.id)
@@ -122,13 +130,17 @@ export async function PATCH(req: Request) {
     if (!parsed.ok) return NextResponse.json({ error: parsed.error }, { status: 400 })
     const emailRaw = typeof b.email === 'string' ? normalizeEmail(b.email) : ''
     if (emailRaw && !EMAIL_RE.test(emailRaw)) return NextResponse.json({ error: 'That email address does not look right.' }, { status: 400 })
-    const { data, error } = await svc
-      .from('coupons')
-      .update({ ...parsed.fields, email: emailRaw || null, updated_at: new Date().toISOString() })
-      .eq('id', id)
-      .neq('status', 'void')
-      .select(COLS)
-      .maybeSingle<CouponRow>()
+    const update = (excludeReferral: boolean) => {
+      let u = svc
+        .from('coupons')
+        .update({ ...parsed.fields, email: emailRaw || null, updated_at: new Date().toISOString() })
+        .eq('id', id)
+        .neq('status', 'void')
+      if (excludeReferral) u = u.is('referrer_id', null)
+      return u.select(COLS).maybeSingle<CouponRow>()
+    }
+    let { data, error } = await update(true)
+    if (error && /referrer_id/.test(error.message ?? '')) ({ data, error } = await update(false))
     if (error) return NextResponse.json({ error: error.message }, { status: 500 })
     if (!data) return NextResponse.json({ error: 'That coupon is void or does not exist.' }, { status: 404 })
     return NextResponse.json({ ok: true, coupon: data })
@@ -139,9 +151,14 @@ export async function PATCH(req: Request) {
 
   // Conditional and idempotent: a void is final, a pause/resume only moves
   // between the two live states.
-  let q = svc.from('coupons').update({ status: next, updated_at: new Date().toISOString() }).eq('id', id)
-  q = next === 'void' ? q.neq('status', 'void') : q.in('status', ['active', 'paused']).neq('status', next)
-  const { data, error } = await q.select('id, status').maybeSingle()
+  const move = (excludeReferral: boolean) => {
+    let q = svc.from('coupons').update({ status: next, updated_at: new Date().toISOString() }).eq('id', id)
+    q = next === 'void' ? q.neq('status', 'void') : q.in('status', ['active', 'paused']).neq('status', next)
+    if (excludeReferral) q = q.is('referrer_id', null)
+    return q.select('id, status').maybeSingle()
+  }
+  let { data, error } = await move(true)
+  if (error && /referrer_id/.test(error.message ?? '')) ({ data, error } = await move(false))
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   return NextResponse.json({ ok: true, changed: !!data })
 }

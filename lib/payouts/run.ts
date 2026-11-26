@@ -285,10 +285,12 @@ export function unmetRequirements(fields: WiseRequirementField[]): string[] {
 }
 
 /** Transfer states that mean the money has left the balance. */
-const MONEY_MOVED = new Set(['processing', 'funds_converted', 'outgoing_payment_sent', 'bounced_back', 'incoming_payment_initiated'])
+export const MONEY_MOVED = new Set(['processing', 'funds_converted', 'outgoing_payment_sent', 'bounced_back', 'incoming_payment_initiated'])
 
-class Definite extends Error {}
-class Unknown extends Error {}
+/** A step Wise refused before any money moved (exported for lib/referrals/payout-run, which pays the same way). */
+export class Definite extends Error {}
+/** A step whose outcome is unknown: never treated as nothing happened. */
+export class Unknown extends Error {}
 
 const fmt = (n: number) => `US$${n.toFixed(2)}`
 
@@ -635,7 +637,7 @@ async function resumeCreated(deps: PayoutRunDeps, p: PayoutRow): Promise<{ outco
 }
 
 /** A Wise call whose refusal ends this payout cleanly; an unknown outcome is not a refusal. */
-async function definite<T>(fn: () => Promise<T>): Promise<T> {
+export async function definite<T>(fn: () => Promise<T>): Promise<T> {
   try {
     return await fn()
   } catch (err) {
@@ -646,7 +648,7 @@ async function definite<T>(fn: () => Promise<T>): Promise<T> {
 }
 
 /** For the transfer only: one retry with the same idempotency key when the answer was lost. */
-async function retryOnce(fn: () => Promise<WiseTransfer>): Promise<WiseTransfer> {
+export async function retryOnce(fn: () => Promise<WiseTransfer>): Promise<WiseTransfer> {
   try {
     return await fn()
   } catch (err) {
@@ -660,7 +662,7 @@ async function retryOnce(fn: () => Promise<WiseTransfer>): Promise<WiseTransfer>
   }
 }
 
-async function cancelSafely(wise: WiseApi, transferId: number): Promise<boolean> {
+export async function cancelSafely(wise: WiseApi, transferId: number): Promise<boolean> {
   try {
     const t = await wise.cancelTransfer(transferId)
     return t.status === 'cancelled'

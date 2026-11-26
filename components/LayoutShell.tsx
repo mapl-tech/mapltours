@@ -44,10 +44,11 @@ export default function LayoutShell({ children }: { children: React.ReactNode })
   // Safari would sometimes settle mid-scroll: chrome pushed off the top,
   // a black void under the reel. The route closes back to /explore, so
   // the nav was never reachable there anyway.
-  const hideNav = pathname === '/login' || pathname.startsWith('/admin') || pathname.startsWith('/driver') || pathname.startsWith('/experience')
+  // /referrals is a partner's tool with its own bar (components/referrals), not a shop.
+  const hideNav = pathname === '/login' || pathname.startsWith('/admin') || pathname.startsWith('/driver') || pathname.startsWith('/experience') || pathname.startsWith('/referrals')
   // WebMCP tools exist only where a traveller can shop: not on the login
   // screen, the admin area or the driver portal. The /experience reel is a shop.
-  const hideTools = pathname === '/login' || pathname.startsWith('/admin') || pathname.startsWith('/driver')
+  const hideTools = pathname === '/login' || pathname.startsWith('/admin') || pathname.startsWith('/driver') || pathname.startsWith('/referrals')
 
   // Both stores use skipHydration so SSR and the first client paint render
   // identical (empty cart / USD) HTML. Load the persisted state once, after

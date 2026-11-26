@@ -1001,6 +1001,75 @@ Tests:
 - The migration was checked in PGlite (29 checks).
 - Walked in Chromium and WebKit at 320 to 1440 with made-up rows. Sentinel 87, with both gates clear (measured).
 
+## Referral program (Nov 26 2026; payouts off)
+
+Owner, Nov 26 2026: "The admin can add an email account that initiates and invitation. when the user signs in with their gmail, they go to their referral page, on the ferral page they can create there coupon code and create different coupons, max 7, the coupons should give 5% off and give the referrer a certain amount ... The refer login should have it's own slug ... a way to see payouts and usage for every coupon ... a way to manage the referrer and see payouts on the admin page. Payout will be done through Wise so we will need the referrers to have a USD wise account ... there can be no mistakes", then "make sure everything is secure as well". In the question dialog: "3% of what guest pays", "mapltours.com/referrals", and "Draft both, I approve" (the referral terms and the Privacy Policy wording).
+
+**Status:**
+- **Approved** by the owner in the question dialog on Nov 26 2026: the terms (`lib/referrals/terms.ts`, `TERMS_VERSION` 2026-11-26) "Approve as written", the Privacy Policy wording "Approve as written" (three lines, pinned in `privacy-processors.spec.tsx`; the policy is dated November 26, 2026), and "Yes, apply and deploy".
+- **Migration 045** was applied to production on Nov 26 2026 and checked in information_schema: 5 tables, 3 coupon columns, 8 functions, the trigger enabled, RLS on, no grants to anon or authenticated, functions executable by the service role only.
+- **Deployed** the same day with payouts off: `REFERRAL_PAYOUTS_ENABLED` stays unset until the first partner is set up and a dry run is read (GO-LIVE.md section 11).
+
+Pieces:
+- Migration `045_referrals.sql`: tables `referrers`, `referral_earnings`, `referral_payouts`, `referral_payout_items`, `referral_events`; `coupons.referrer_id`, `referral_hold`, `retired_at`; trigger `coupon_redemptions_referral_earning`; functions `accept_referral_terms`, `create_referral_code`, `set_referral_code_status`, `set_referrer_status`, `save_referrer_payout_account`, `set_referral_earning_void`, `claim_referral_payout`. RLS on, service role only.
+- `lib/referrals/`: `rules.ts` (pure: codes, commission, pay days, statuses), `access.ts`, `payout-account.ts` and `wise-address.json` (Wise's address rules for 229 countries), `ledger.ts` (both pages' views), `server.ts`, `payout-server.ts` (saving the Wise account), `payout-run.ts` and `payout-store.ts` (the Monday run), `resolve.ts` (a payout that needs a look), `emails.ts`, `terms.ts`, `wise-env.ts`.
+- Routes: `app/api/referrals` (the referrer's page), `app/api/referrals/payout-account`, `app/api/referrals/payouts` (the run, `CRON_SECRET`), `app/api/admin/referrals`; `netlify/functions/referral-payouts-cron.mjs` (daily 14:45 UTC, 09:45 in Jamaica). The Wise webhook falls back to referral payouts when a transfer is not a driver payout.
+- Pages: `/referrals` (`components/referrals/ReferralApp.tsx`, `PayoutAccountForm.tsx`), `/referrals/login`, `/admin/referrals` (`components/admin/ReferralDesk.tsx`). Styles: the `.ref-*` block in `globals.css`, kept before the cookie block (`consent-wiring.spec.ts` reads from there to the end of the file). Emails: `emails/ReferralInvite.tsx`, `ReferralPayoutAccount.tsx`, `ReferralPaid.tsx`.
+
+Rules, enforced in code:
+- **A code is a coupon.** Each referral code is a `coupons` row with `referrer_id` (5% off), so both checkouts price it and the Stripe webhook redeems it as it does JAMAICA5: neither checkout route nor the webhook changed. The Coupons desk leaves referral codes out.
+- **The database writes the earning** when it writes the redemption (AFTER INSERT on `coupon_redemptions`), with the rate frozen at that moment, and never fails the redemption. A paid booking whose earning is missing is recorded by the next run ("recorded late").
+- **What a referrer earns:** their rate (3% unless the admin changes it, at most 10%) of what the guest paid, never more than MAPL keeps on that booking after the card fee (3.7% plus US$0.30), in `commissionFor`. A figure that cannot be read earns nothing. Negril round trip for two at 3%: the guest pays US$184.30, the referrer earns US$5.53, MAPL keeps US$9.65 (US$24.52 without a code). MAPL keeps more than nothing on all 2,786 ride fares.
+- **When it is paid:**
+  - Payable from the later of the Jamaica day after the trip's last day and 48 hours after booking (the free-cancellation window).
+  - Paid by the first Monday run (09:45 Jamaica) on or after that day. The cron runs daily, so a missed Monday is caught up the next day.
+  - Under US$1 waits for the next payout.
+  - Held, with the reason, when the referrer:
+    - is paused, removed or not set up;
+    - has no Wise account, or changed it in the last 72 hours;
+    - has a payout that needs a look or came back.
+  - Also held: a booking whose guest asked for a refund.
+  - Limits of US$1,500 a referrer and US$3,000 a run (`REFERRAL_MAX_PAYEE_USD`, `REFERRAL_MAX_RUN_USD`) hold the rest for a person.
+- **Only the referrer's own Wise US-dollar account.** Setup checks the routing checksum and Wise's address rules, then creates a Wise recipient from the details typed (`POST /v1/accounts`). It keeps the recipient only if a quote to it goes balance to balance for nothing (payOut `BALANCE`, fee 0). Any other account is refused and switched off at Wise. The payout run checks the same before every transfer. Wise names the account type "Aba" in the 2026Q4 API and "aba" in v1, so it is compared without case: a strict match would have refused every real account (found against the owner's two recipients on Nov 26 2026, quotes only).
+- **Bank details are never kept or logged.** Only the recipient id, holder name, last four digits and legal type are stored. A Wise refusal is mapped to the form's fields by path name only, and the page never echoes an account number. Saving needs a sign-in within the last 60 minutes and the last four digits the page showed, so a stale tab cannot overwrite a newer account. Limits: 10 tries an hour per IP, 5 per referrer.
+- **Who gets in:**
+  - A confirmed sign-in address (Google or email) matching one live `referrers` row. Anyone else sees a refusal naming the address they used.
+  - `/referrals` is in `AUTH_ROUTES` and noindex.
+  - Neither `/referrals` nor `/admin/referrals` loads trackers or the cookie question. A page that already loaded them reloads without them.
+  - Every change must come from the site's own page, as JSON (`sameSiteRequest`).
+- **Codes:**
+  - 4 to 16 letters and digits.
+  - Never starting MAPL (issued coupons and gift cards use it), no misleading words (FREE, REFUND, ...), and no number from 6 to 100 at the end (it reads as the discount).
+  - Unique across all coupons.
+  - At most 7 not retired (paused ones count). Retiring is for good.
+- **What a referrer sees of a guest:** the tour or ride, its dates, the code and what the guest paid. Never a name, email, phone, hotel, flight or booking reference.
+- **The admin desk** can:
+  - invite (Preview, a test to one address marked [Test], a real one with ops on BCC), and send an invitation again;
+  - pause, resume or remove a referrer, and change a rate (for bookings paid from then on);
+  - hold, release or retire a code;
+  - not count a booking (the referrer reads the reason), or count it again;
+  - resolve a payout.
+- **Resolving a payout that needs a look:** the admin says what Wise shows, and Wise is asked before anything is saved (`lib/referrals/resolve.ts`):
+  - "It was paid" keeps its commissions paid and sends the payout email once.
+  - "It was not paid" first cancels a transfer still waiting for our money, then frees the commissions for the next run.
+  - An answer Wise contradicts is refused.
+  - A payout whose money came back is resolved once the referrer's account is fixed.
+- **The run** pays one transfer per referrer with the driver payouts' own steps from `lib/payouts/run.ts`: claim, quote, requirements, a transfer with `customerTransactionId`, then fund once with read-back. Wise's `payment.exists` counts as funded. An unknown outcome is `needs_review` and holds that referrer. Off until `REFERRAL_PAYOUTS_ENABLED` is exactly `1`; until then the cron does not call the route. `?dry=1` always only plans.
+- **Times on the admin desk are built from Intl parts.** Safari joins a date and a time with "at", so `toLocaleString` made Safari's text differ from the server's HTML, a hydration error on every load.
+
+Not decided or not built (the owner's):
+- a share link or QR card per code (it would pre-fill the code at checkout);
+- spotting a referrer's own bookings (the admin not-counts them by hand);
+- getting back a commission already paid on a booking refunded later (the desk marks it "Paid, then refunded").
+
+Tests:
+- Specs: `referral-rules`, `referral-access`, `referral-payout-account`, `referral-payout-account-server`, `referral-ledger`, `referral-payout-run`, `referral-resolve`, `referral-webhook`, `referral-terms-emails`, `consent-wiring`, `payouts-route`.
+- `referral-routes` runs the page routes and the admin desk over an in-memory database, the resolve flow against a fake Wise.
+- 36 deliberate breakages were each caught (Nov 26 2026).
+- Migration 045 was checked in PGlite 0.2.17 (95 checks; 0.3.x fails on plpgsql exception blocks).
+- Measured in Chromium and WebKit from 320 to 1440: mobile and keyboard gates clear, axe 0 violations in 36 runs.
+- Sentinel: 88 for the referrer page, 87 for the admin desk.
+
 ## Rules from the Nov 13 2026 audit
 
 - **One `<main>` per page, and it is `LayoutShell`'s** (`<main id="main-content">`, where the skip link lands). A page's own wrapper is a `<div>`; seven screens used to nest a second one (`tests/unit/one-main-landmark.spec.ts`).

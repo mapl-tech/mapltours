@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { usePathname } from 'next/navigation'
 import Script from 'next/script'
-import { isTrackedHost } from '@/lib/tracker-gate'
+import { isTrackedHost, trackersAllowedOn } from '@/lib/tracker-gate'
 import { META_PIXEL_ID } from '@/lib/meta-match'
 import { isPaymentInFlight } from '@/lib/payment-lock'
 import {
@@ -128,7 +128,8 @@ export default function Trackers() {
     opener.current = null
   }, [pathname])
 
-  const allowed = tracked && decision === 'allow'
+  // Never on a page that carries no tags at all (lib/tracker-gate: where referrers type bank details).
+  const allowed = tracked && decision === 'allow' && trackersAllowedOn(pathname)
 
   // A tag cannot be taken off a page that has it. When the answer stops being
   // yes (here, in another tab, on the bio page, or because it lapsed), switch
@@ -146,7 +147,7 @@ export default function Trackers() {
     if (!tagsMounted.current || decision === 'wait') return
     tagsStopped.current = true
     setTagsRunning(false)
-    if (consentPromptAllowedOn(pathname) && !isPaymentInFlight()) window.location.reload()
+    if ((consentPromptAllowedOn(pathname) || !trackersAllowedOn(pathname)) && !isPaymentInFlight()) window.location.reload()
   }, [allowed, decision, pathname])
 
   // The Meta Pixel's base code fires PageView once on load. In an SPA the

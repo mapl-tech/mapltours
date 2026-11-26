@@ -44,13 +44,13 @@ describe('privacy policy processor list', () => {
   })
 
   test('keeps the existing processors', () => {
-    for (const name of ['Stripe', 'Resend', 'Supabase', 'Google Analytics & Hotjar']) {
+    for (const name of ['Stripe', 'Wise', 'Resend', 'Supabase', 'Google Analytics & Hotjar']) {
       expect(sharing).toContain(name)
     }
   })
 
   test('keeps the last-updated line on or after the change', () => {
-    expect(text(html)).toContain('This Privacy Policy was last updated on November 14, 2026.')
+    expect(text(html)).toContain('This Privacy Policy was last updated on November 26, 2026.')
   })
 
   test('names Google Ads, whose tag the site loads beside the analytics tools (owner, Nov 14 2026)', () => {
@@ -146,5 +146,13 @@ describe('privacy policy on trip tips', () => {
     // TripFacts: firstName, hotel (a ride's hotel, or a tour's pickup), arrival/departure (dates, times, flights), tours, passengers.
     for (const field of ['first name', 'dates', 'flights', 'hotel or pickup place', 'party size', 'tours']) expect(uses).toContain(field)
     expect(uses).not.toMatch(/welcome tips stop/)
+  })
+
+  test('the referral program, as the owner approved it on Nov 26 2026: what partners give us, what they see of a guest, and Wise', () => {
+    const all = text(html)
+    expect(all).toContain('Referral partners, if we invite you to refer guests: your name, email address and business name, the codes you make, and the bookings made with them.')
+    expect(all).toContain('we keep only the account holder’s name, the last four digits, and whether it is a personal or business account.')
+    expect(sharing).toContain('Referral partners, if you book with a partner’s code, that partner sees the tour or ride, its dates, the code and what you paid, so they can see what they earned; never your name, email address, phone number, hotel or flights.')
+    expect(sharing).toContain('Wise, sends our referral partners their payouts. It receives the bank details a partner enters and the amount of each payout.')
   })
 })

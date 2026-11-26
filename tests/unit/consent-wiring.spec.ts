@@ -16,7 +16,7 @@ const src = (p: string) => readFileSync(resolve(process.cwd(), p), 'utf8')
 
 describe('where the question is put', () => {
   test('never where a guest pays or signs in, on the handoff into a checkout, or in the staff tools', () => {
-    for (const p of ['/checkout', '/checkout/confirm', '/transfers/checkout', '/transfers/confirm', '/book', '/gifts', '/login', '/login/reset', '/auth/callback', '/admin', '/admin/bookings', '/driver', '/driver/login']) {
+    for (const p of ['/checkout', '/checkout/confirm', '/transfers/checkout', '/transfers/confirm', '/book', '/gifts', '/login', '/login/reset', '/auth/callback', '/admin', '/admin/bookings', '/driver', '/driver/login', '/referrals', '/referrals/login']) {
       expect(consentPromptAllowedOn(p), p).toBe(false)
     }
   })
@@ -80,7 +80,9 @@ describe('the tags wait for the answer', () => {
     // another tab or on the bio page, or a yes that lapsed), but never where a guest pays or signs in and never
     // while a payment is going through; leaving such a page is when it happens instead.
     expect(trackers).toContain('if (!tagsMounted.current || decision === \'wait\') return')
-    expect(trackers).toContain('if (consentPromptAllowedOn(pathname) && !isPaymentInFlight()) window.location.reload()')
+    // ...and (Nov 26 2026) on arriving with the tags at a page that may never carry them (lib/tracker-gate NO_TRACKER_PATHS: /referrals).
+    expect(trackers).toContain('if ((consentPromptAllowedOn(pathname) || !trackersAllowedOn(pathname)) && !isPaymentInFlight()) window.location.reload()')
+    expect(trackers).toContain("const allowed = tracked && decision === 'allow' && trackersAllowedOn(pathname)")
     expect(trackers).toContain('}, [allowed, decision, pathname])')
     expect((trackers.match(/window\.location\.reload\(\)/g) ?? []).length).toBe(1)
     expect(trackers).toContain("import { isPaymentInFlight } from '@/lib/payment-lock'")

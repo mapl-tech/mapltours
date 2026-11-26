@@ -38,10 +38,25 @@ export class WiseApiError extends Error {
     readonly code: string | null,
     /** true when the request may still have taken effect. */
     readonly ambiguous: boolean,
+    /**
+     * The fields Wise named in a refusal (errors[].path, e.g. "abartn" or
+     * "address.postCode"), so a form can point at them. Never the values.
+     */
+    readonly paths: string[] = [],
   ) {
     super(message)
     this.name = 'WiseApiError'
   }
+}
+
+/** The fields a refusal names, from Wise's errors[].path. Values (errors[].arguments) are never read. */
+function errorPaths(body: unknown): string[] {
+  if (!body || typeof body !== 'object') return []
+  const errs = (body as Record<string, unknown>).errors
+  if (!Array.isArray(errs)) return []
+  return errs
+    .map((e) => (e && typeof e === 'object' ? (e as Record<string, unknown>).path : null))
+    .filter((p): p is string => typeof p === 'string' && /^[A-Za-z.[\]0-9_]{1,60}$/.test(p))
 }
 
 export interface WiseRecipient {
@@ -132,6 +147,24 @@ export interface WiseApi {
   fundFromBalance(profileId: number, transferId: number, balanceId?: number | null): Promise<WiseFunding>
   getTransfer(transferId: number): Promise<WiseTransfer>
   cancelTransfer(transferId: number): Promise<WiseTransfer>
+}
+
+/**
+ * Recipients a referrer adds from /referrals (lib/referrals/payout-server):
+ * create one from the details they typed, and switch off the one it
+ * replaces. Kept apart from WiseApi so the payout run's own fakes and calls
+ * are untouched.
+ */
+export interface WiseRecipientApi {
+  /**
+   * POST /v1/accounts, the call MAPL's own recipients were created with (Nov
+   * 2026). Answers only the id, currency, type, state and holder name
+   * (parseRecipient): Wise echoes the full account number back, and it is
+   * never kept. A refusal carries the fields Wise named (WiseApiError.paths).
+   */
+  createRecipient(body: Record<string, unknown>): Promise<WiseRecipient>
+  /** DELETE /2026Q4/accounts/{id}: the recipient becomes inactive (Wise cannot reactivate one). */
+  deactivateRecipient(accountId: number): Promise<void>
 }
 
 export interface WiseClientOptions {
@@ -242,13 +275,13 @@ export function parseRequirements(j: unknown): WiseRequirementField[] {
   return out
 }
 
-export function wiseClient(opts: WiseClientOptions): WiseApi {
+export function wiseClient(opts: WiseClientOptions): WiseApi & WiseRecipientApi {
   const host = WISE_HOSTS[opts.env]
   const doFetch = opts.fetch ?? fetch
   const timeoutMs = opts.timeoutMs ?? 8000
   const v = WISE_API_VERSION
 
-  async function call(method: 'GET' | 'POST' | 'PUT', path: string, body?: unknown): Promise<unknown> {
+  async function call(method: 'GET' | 'POST' | 'PUT' | 'DELETE', path: string, body?: unknown): Promise<unknown> {
     let res: Response
     try {
       res = await doFetch(`${host}${path}`, {
@@ -277,6 +310,7 @@ export function wiseClient(opts: WiseClientOptions): WiseApi {
         res.status,
         code,
         ambiguous,
+        errorPaths(parsed),
       )
     }
     return parsed
@@ -335,6 +369,12 @@ export function wiseClient(opts: WiseClientOptions): WiseApi {
     },
     async cancelTransfer(transferId) {
       return parseTransfer((await call('PUT', `/${v}/transfers/${transferId}/cancel`)) as Record<string, unknown>)
+    },
+    async createRecipient(body) {
+      return parseRecipient((await call('POST', '/v1/accounts', body)) as Record<string, unknown>)
+    },
+    async deactivateRecipient(accountId) {
+      await call('DELETE', `/${v}/accounts/${accountId}`)
     },
   }
 }
