@@ -94,9 +94,9 @@ describe('the plan', () => {
 
   test('under US$1 waits; over the limits waits for a person', () => {
     const tiny = rowsWith({ bookings: [booking(B1, { total_paid: 18.05, subtotal: 15.65 })], earnings: [earning('e1', B1)] })
-    expect(planReferralPayouts(tiny, [], MONDAY).payees[0]).toMatchObject({ status: 'held', reason: expect.stringMatching(/under US\$1/) })
-    expect(planReferralPayouts(rowsWith(), [], MONDAY, { maxReferrerUsd: 10, maxRunUsd: 3000 }).payees[0].reason).toMatch(/limit for one referrer/)
-    expect(planReferralPayouts(rowsWith(), [], MONDAY, { maxReferrerUsd: 1500, maxRunUsd: 10 }).payees[0].reason).toMatch(/run would pass/)
+    expect(planReferralPayouts(tiny, [], MONDAY).payees[0]).toMatchObject({ status: 'held', reason: expect.stringMatching(/under US\$1/), needsPerson: false })
+    expect(planReferralPayouts(rowsWith(), [], MONDAY, { maxReferrerUsd: 10, maxRunUsd: 3000 }).payees[0]).toMatchObject({ reason: expect.stringMatching(/limit for one referrer/), needsPerson: true })
+    expect(planReferralPayouts(rowsWith(), [], MONDAY, { maxReferrerUsd: 1500, maxRunUsd: 10 }).payees[0]).toMatchObject({ reason: expect.stringMatching(/run would pass/), needsPerson: true })
   })
 
   test('an earning already in a live payout is not planned again', () => {
@@ -181,6 +181,30 @@ const run = (o: Partial<Parameters<typeof runReferralPayouts>[0]> = {}) => runRe
 })
 
 describe('the run', () => {
+  test('a routine hold never emails the office (the run plans every day); a limit does', async () => {
+    const routine: Array<Partial<ReferrerRow>> = [
+      { status: 'paused' },
+      { wise_recipient_id: null, payout_last4: null, payout_holder: null, payout_legal_type: null },
+      { payout_hold_until: '2026-12-08T00:00:00Z' },
+    ]
+    for (const r of routine) {
+      rows = rowsWith({ referrers: [referrer(r)] })
+      opsReports = 0
+      const rep = await run()
+      expect(rep.payees[0].outcome).toBe('held')
+      expect(opsReports).toBe(0)
+    }
+    rows = rowsWith({ bookings: [booking(B1, { total_paid: 18.05, subtotal: 15.65 })], earnings: [earning('e1', B1)] })
+    opsReports = 0
+    expect((await run()).payees[0].outcome).toBe('held')
+    expect(opsReports).toBe(0)
+    rows = rowsWith()
+    opsReports = 0
+    expect((await run({ config: { ...config, limits: { maxReferrerUsd: 10, maxRunUsd: 3000 } } })).payees[0]).toMatchObject({ outcome: 'held', needsPerson: true })
+    expect(opsReports).toBe(1)
+    expect(wiseCalls).toEqual([])
+  })
+
   test('a clean payout: claimed, quoted balance to balance for nothing, transferred, funded, emailed; the office not bothered', async () => {
     const r = await run()
     expect(r.payees).toEqual([expect.objectContaining({ outcome: 'funded', amountCents: 1508, trips: 2, transferId: 777, emailed: true, detail: null })])

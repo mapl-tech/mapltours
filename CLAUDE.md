@@ -1001,14 +1001,15 @@ Tests:
 - The migration was checked in PGlite (29 checks).
 - Walked in Chromium and WebKit at 320 to 1440 with made-up rows. Sentinel 87, with both gates clear (measured).
 
-## Referral program (Nov 26 2026; payouts off)
+## Referral program (Nov 26 2026; LIVE, payouts on)
 
 Owner, Nov 26 2026: "The admin can add an email account that initiates and invitation. when the user signs in with their gmail, they go to their referral page, on the ferral page they can create there coupon code and create different coupons, max 7, the coupons should give 5% off and give the referrer a certain amount ... The refer login should have it's own slug ... a way to see payouts and usage for every coupon ... a way to manage the referrer and see payouts on the admin page. Payout will be done through Wise so we will need the referrers to have a USD wise account ... there can be no mistakes", then "make sure everything is secure as well". In the question dialog: "3% of what guest pays", "mapltours.com/referrals", and "Draft both, I approve" (the referral terms and the Privacy Policy wording).
 
 **Status:**
 - **Approved** by the owner in the question dialog on Nov 26 2026: the terms (`lib/referrals/terms.ts`, `TERMS_VERSION` 2026-11-26) "Approve as written", the Privacy Policy wording "Approve as written" (three lines, pinned in `privacy-processors.spec.tsx`; the policy is dated November 26, 2026), and "Yes, apply and deploy".
 - **Migration 045** was applied to production on Nov 26 2026 and checked in information_schema: 5 tables, 3 coupon columns, 8 functions, the trigger enabled, RLS on, no grants to anon or authenticated, functions executable by the service role only.
-- **Deployed** the same day with payouts off: `REFERRAL_PAYOUTS_ENABLED` stays unset until the first partner is set up and a dry run is read (GO-LIVE.md section 11).
+- **Deployed** the same day (abd4182).
+- **Payouts switched on** the same evening, on the owner's word ("turn them on"): `REFERRAL_PAYOUTS_ENABLED=1` on Netlify, production context only, like `WISE_PAYOUTS_ENABLED`, so a deploy preview never pays. The dry run just before planned nothing (no partners yet).
 
 Pieces:
 - Migration `045_referrals.sql`: tables `referrers`, `referral_earnings`, `referral_payouts`, `referral_payout_items`, `referral_events`; `coupons.referrer_id`, `referral_hold`, `retired_at`; trigger `coupon_redemptions_referral_earning`; functions `accept_referral_terms`, `create_referral_code`, `set_referral_code_status`, `set_referrer_status`, `save_referrer_payout_account`, `set_referral_earning_void`, `claim_referral_payout`. RLS on, service role only.
@@ -1054,7 +1055,15 @@ Rules, enforced in code:
   - "It was not paid" first cancels a transfer still waiting for our money, then frees the commissions for the next run.
   - An answer Wise contradicts is refused.
   - A payout whose money came back is resolved once the referrer's account is fixed.
-- **The run** pays one transfer per referrer with the driver payouts' own steps from `lib/payouts/run.ts`: claim, quote, requirements, a transfer with `customerTransactionId`, then fund once with read-back. Wise's `payment.exists` counts as funded. An unknown outcome is `needs_review` and holds that referrer. Off until `REFERRAL_PAYOUTS_ENABLED` is exactly `1`; until then the cron does not call the route. `?dry=1` always only plans.
+- **The run** pays one transfer per referrer with the driver payouts' own steps from `lib/payouts/run.ts`: claim, quote, requirements, a transfer with `customerTransactionId`, then fund once with read-back. Wise's `payment.exists` counts as funded. An unknown outcome is `needs_review` and holds that referrer. Off unless `REFERRAL_PAYOUTS_ENABLED` is exactly `1`; otherwise the cron does not call the route. `?dry=1` always only plans.
+- **The office is emailed only when something needs a person:**
+  - a payout that failed or needs a look;
+  - an earlier payout that changed;
+  - a commission recorded late;
+  - a payout email that did not go;
+  - a hold only a person can lift: the US$1,500 or US$3,000 limit (`needsPerson`).
+  
+  Routine holds never email: under US$1, a new account's 72 hours, no account yet, a paused partner, or an earlier problem already told. The run plans every day, so they would arrive daily. Each payout email to a partner copies the office.
 - **Times on the admin desk are built from Intl parts.** Safari joins a date and a time with "at", so `toLocaleString` made Safari's text differ from the server's HTML, a hydration error on every load.
 
 Not decided or not built (the owner's):

@@ -72,6 +72,13 @@ export interface ReferralPayeePlan {
   totalCents: number
   status: 'ready' | 'held'
   reason: string | null
+  /**
+   * A hold only a person can lift: a limit (one referrer, or the run). Every other hold is routine and clears
+   * itself (under US$1, a new account's 72 hours, no account yet, a paused referrer) or was told to the office
+   * when it began (an earlier payout that needs a look or came back), so it never emails the office again: the run
+   * plans every day, and a routine hold would otherwise mail the same news daily.
+   */
+  needsPerson: boolean
 }
 
 export interface ReferralPlan {
@@ -105,16 +112,18 @@ export function planReferralPayouts(rows: LedgerRows, open: ReferralPayoutRow[],
       .map((e) => ({ earningId: e.id, bookingId: e.bookingId, amountCents: e.commissionCents, what: e.what, days: e.days, code: e.code, guestPaidCents: e.guestPaidCents }))
     const totalCents = lines.reduce((s, l) => s + l.amountCents, 0)
     const hold = Number(Date.parse(String(r.payout_hold_until ?? '')))
-    const reason =
+    const routine =
       r.status === 'paused' ? 'the referrer is paused'
       : r.status === 'invited' ? 'the referrer has not accepted the terms'
       : !r.wise_recipient_id || !r.payout_last4 ? 'no payout account yet'
       : Number.isFinite(hold) && hold > nowMs ? `a new payout account is waiting until ${new Date(hold).toISOString().slice(0, 16).replace('T', ' ')} UTC`
       : holdFor(open, r.id)
-      ?? (totalCents < MIN_PAYOUT_USD * 100 ? `under ${usd(MIN_PAYOUT_USD * 100)}, it waits for the next payout`
+      ?? (totalCents < MIN_PAYOUT_USD * 100 ? `under ${usd(MIN_PAYOUT_USD * 100)}, it waits for the next payout` : null)
+    const limit = routine ? null
       : totalCents > limits.maxReferrerUsd * 100 ? `over the ${usd(limits.maxReferrerUsd * 100)} limit for one referrer: a person should check it`
       : runCents + totalCents > limits.maxRunUsd * 100 ? `the run would pass its ${usd(limits.maxRunUsd * 100)} limit: the rest waits for a person`
-      : null)
+      : null
+    const reason = routine ?? limit
     if (!reason) runCents += totalCents
     payees.push({
       referrerId: r.id,
@@ -125,6 +134,7 @@ export function planReferralPayouts(rows: LedgerRows, open: ReferralPayoutRow[],
       totalCents,
       status: reason ? 'held' : 'ready',
       reason,
+      needsPerson: !!limit,
     })
   }
   return { payDay, payees }
@@ -179,6 +189,8 @@ export interface ReferralPayeeReport {
   detail: string | null
   transferId: number | null
   emailed: boolean | null
+  /** For a hold: only a limit is worth an email (ReferralPayeePlan.needsPerson). */
+  needsPerson?: boolean
 }
 
 export interface ReferralRunReport {
@@ -257,7 +269,7 @@ export async function runReferralPayouts(deps: ReferralRunDeps): Promise<Referra
   for (const d of plan.payees) {
     const base: ReferralPayeeReport = {
       payee: d.payee, referrerId: d.referrerId, amountCents: d.totalCents, trips: d.lines.length,
-      outcome: d.status === 'ready' ? 'planned' : 'held', detail: d.reason, transferId: null, emailed: null,
+      outcome: d.status === 'ready' ? 'planned' : 'held', detail: d.reason, transferId: null, emailed: null, needsPerson: d.needsPerson,
     }
     if (d.status !== 'ready' || !live) { report.payees.push(base); continue }
     if (clock() - startedAt > budgetMs) {
@@ -268,7 +280,7 @@ export async function runReferralPayouts(deps: ReferralRunDeps): Promise<Referra
   }
 
   report.attention = live && (
-    report.payees.some((d) => d.outcome !== 'planned' && !(d.outcome === 'funded' && d.emailed && !d.detail)) ||
+    report.payees.some((d) => d.outcome === 'held' ? !!d.needsPerson : d.outcome !== 'planned' && !(d.outcome === 'funded' && d.emailed && !d.detail)) ||
     report.earlier.length > 0 ||
     report.recordedLate > 0
   )

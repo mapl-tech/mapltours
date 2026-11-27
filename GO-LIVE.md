@@ -337,14 +337,15 @@ in Wise, then `update driver_payouts set resolved_at = now() where id = '<id>';`
 
 ---
 
-## 11. Referral program (`/referrals`, `/admin/referrals`, migration 045; deployed Nov 26 2026, payouts off)
+## 11. Referral program (`/referrals`, `/admin/referrals`, migration 045; deployed Nov 26 2026, payouts on the same day)
 
 Partners (villa managers, guesthouses) are invited by email from the admin
 desk, sign in at `/referrals`, make up to 7 codes (5% off for their guests),
 and are paid their rate (3%) of what each guest paid, every Monday, into their
 own Wise US-dollar account. How it works and what it refuses: CLAUDE.md,
 "Referral program". Migration 045 was applied and the program deployed on
-Nov 26 2026; payouts stay off until `REFERRAL_PAYOUTS_ENABLED=1`.
+Nov 26 2026, and payouts were switched on the same day on the owner's word
+(`REFERRAL_PAYOUTS_ENABLED=1`, production context only).
 
 **Decisions before launch (the owner's; both approved Nov 26 2026, "Approve as written"):**
 - Approve the referral terms: `lib/referrals/terms.ts`, shown on the page
@@ -381,9 +382,9 @@ Nov 26 2026; payouts stay off until `REFERRAL_PAYOUTS_ENABLED=1`.
    of `POST /v1/accounts` (and of switching a recipient off): check the new
    recipient in Wise, Recipients, and that the page shows the account's last
    four digits.
-6. **Read a dry run** once a commission is payable:
+6. **Read a dry run** before the first Monday a partner is paid (payouts are on, so that Monday pays by itself):
    `curl -H "Authorization: Bearer $CRON_SECRET" "https://mapltours.com/api/referrals/payouts?dry=1"`
-7. **Switch on:** `REFERRAL_PAYOUTS_ENABLED=1`, redeploy (functions read env
+7. **Switch on** (done Nov 26 2026, before any partner existed; the dry run planned nothing): `REFERRAL_PAYOUTS_ENABLED=1` in the production context only, redeploy (functions read env
    at deploy). The 14:45 UTC run each day pays on Mondays and catches up a
    missed Monday the next day. Keep enough US dollars in the Wise balance for a
    Monday: a payout the balance cannot cover sends nothing and says so.
@@ -436,7 +437,7 @@ and daily is the fastest it can reach Wise.
 | `WISE_PAYOUTS_ENABLED` | server | exactly `1` to pay; anything else keeps payouts off |
 | `PAYOUT_TRANSIT_BUSINESS_DAYS` | server | optional: business days Wise takes to put a payment in the account (default 2); each part goes that many business days before the day it should arrive. Production is 0 since Nov 23 2026: payments to Collin's own Wise account land in seconds. The old `PAYOUT_LEAD_BUSINESS_DAYS` is refused if set |
 | `PAYOUT_MAX_PAYEE_USD` / `PAYOUT_MAX_RUN_USD` / `PAYOUT_MAX_FEE_USD` | server | optional limits (defaults 3000 / 6000 / 40) |
-| `REFERRAL_PAYOUTS_ENABLED` | server | exactly `1` to pay referral commissions (§11); anything else, the daily cron does nothing and the route only plans |
+| `REFERRAL_PAYOUTS_ENABLED` | server | exactly `1` to pay referral commissions (§11), production context only; anything else, the daily cron does nothing and the route only plans. On since Nov 26 2026 |
 | `REFERRAL_MAX_PAYEE_USD` / `REFERRAL_MAX_RUN_USD` | server | optional referral payout limits (defaults 1500 / 3000) |
 
 Calendar sync setup (already done once, recorded here for rebuilds): Calendar
