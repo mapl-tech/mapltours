@@ -129,6 +129,38 @@ describe('POST /api/transfers/checkout with a coupon', () => {
     expect(Number(booking.total_paid)).toBeCloseTo((grossCents - discount) / 100, 2)
   })
 
+  // A partner's code as create_referral_code (migration 045) writes it: checkout never reads source or referrer_id.
+  const referralCode = () => ({ ...shared(), id: 'c_ref', code: 'CHARELA5', uses: 0, uses_per_email: null, starts_at: '2026-11-26T00:00:00Z', source: 'referral', referrer_id: 'r1' })
+
+  it('takes a partner\'s referral code like any 5% code: the fare net of it, the driver\'s rate untouched, usable again by the same guest', async () => {
+    state.coupon = referralCode()
+    const res = await post({ amount: gross, items: [item], customer, couponCode: 'charela5' })
+    expect(res.status).toBe(200)
+    const discount = couponDiscountCents('percent', 5, grossCents)
+    expect(state.intents[0].amount).toBe(grossCents - discount)
+    expect((state.intents[0].metadata as Record<string, string>).coupon_code).toBe('CHARELA5')
+    const booking = state.inserts.find((i) => i.table === 'bookings')!.row
+    expect(Number(booking.subtotal)).toBeCloseTo(cost, 2)
+    expect(booking.coupon_code).toBe('CHARELA5')
+    expect(Number(booking.total_paid)).toBeCloseTo((grossCents - discount) / 100, 2)
+
+    state.emailUses = 2
+    state.intents.length = 0; state.inserts.length = 0
+    expect((await post({ amount: gross, items: [item], customer, couponCode: 'CHARELA5' })).status).toBe(200)
+  })
+
+  it('refuses a partner\'s code that is paused, held or retired, before any intent or row exists', async () => {
+    for (const status of ['paused', 'void']) {
+      state.coupon = { ...referralCode(), status }
+      state.intents.length = 0; state.inserts.length = 0
+      const res = await post({ amount: gross, items: [item], customer, couponCode: 'CHARELA5' })
+      expect(res.status).toBe(400)
+      expect((await res.json()).couponCode).toBe(true)
+      expect(state.intents).toHaveLength(0)
+      expect(state.inserts).toHaveLength(0)
+    }
+  })
+
   it('keeps the amount contract: the client claims the pre-coupon fare', async () => {
     state.coupon = shared()
     const discount = couponDiscountCents('percent', 5, grossCents)

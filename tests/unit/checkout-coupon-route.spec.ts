@@ -181,6 +181,44 @@ describe('POST /api/checkout with a coupon', () => {
     expect(Number(booking.subtotal)).toBeCloseTo(pricing.subtotal, 2)
   })
 
+  // A partner's code, exactly as create_referral_code (migration 045) writes the row: 5% on tours and rides, no limits,
+  // plus source and referrer_id, which checkout never reads. It must price like any 5% code.
+  const referralCode = () => ({ id: 'c_ref', code: 'CHARELA5', kind: 'percent', value: 5, applies_to: 'both', email: null, max_uses: null, uses: 0, uses_per_email: null, min_total: null, starts_at: '2026-11-26T00:00:00Z', expires_at: null, status: 'active', source: 'referral', referrer_id: 'r1' })
+
+  it('prices a partner\'s referral code like any 5% code, records it on the booking, and lets the same guest use it again', async () => {
+    state.coupon = referralCode()
+    const res = await post({ amount: pricing.total, items, customer, waiverAccepted, couponCode: 'charela5' })
+    const data = await res.json()
+    expect(res.status).toBe(200)
+    const discount = couponDiscountCents('percent', 5, baseCents)
+    expect(state.intents[0].amount).toBe(baseCents - discount)
+    expect((state.intents[0].metadata as Record<string, string>).coupon_id).toBe('c_ref')
+    expect((state.intents[0].metadata as Record<string, string>).coupon_code).toBe('CHARELA5')
+    expect(data.couponDiscount).toBeCloseTo(discount / 100, 2)
+    const booking = state.inserts.find((i) => i.table === 'bookings')!.row
+    expect(booking.coupon_code).toBe('CHARELA5')
+    expect(Number(booking.subtotal)).toBeCloseTo(pricing.subtotal, 2) // the operator's share, as without a code
+    expect(Number(booking.total_paid)).toBeCloseTo((baseCents - discount) / 100, 2)
+
+    state.emailUses = 3 // no per-address limit on a partner's code
+    state.intents.length = 0; state.inserts.length = 0
+    const again = await post({ amount: pricing.total, items, customer, waiverAccepted, couponCode: 'CHARELA5' })
+    expect(again.status).toBe(200)
+    expect(state.intents[0].amount).toBe(baseCents - discount)
+  })
+
+  it('refuses a partner\'s code that is paused, held by MAPL, or retired, before any intent or row exists', async () => {
+    for (const status of ['paused', 'void']) {
+      state.coupon = { ...referralCode(), status, referral_hold: status === 'paused' }
+      state.intents.length = 0; state.inserts.length = 0
+      const res = await post({ amount: pricing.total, items, customer, waiverAccepted, couponCode: 'CHARELA5' })
+      expect(res.status).toBe(400)
+      expect((await res.json()).couponCode).toBe(true)
+      expect(state.intents).toHaveLength(0)
+      expect(state.inserts).toHaveLength(0)
+    }
+  })
+
   it('leaves a cart without a code exactly as before', async () => {
     const res = await post({ amount: pricing.total, items, customer, waiverAccepted })
     const data = await res.json()
