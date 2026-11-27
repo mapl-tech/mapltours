@@ -1,4 +1,4 @@
-import { describe, test, expect, vi, beforeEach } from 'vitest'
+import { describe, test, expect, vi, beforeEach, afterEach } from 'vitest'
 import type { ReactElement } from 'react'
 import { render } from '@react-email/render'
 import BookingCancelled from '../../emails/BookingCancelled'
@@ -19,7 +19,9 @@ import { sendCancellationEmails, cancellationSubject } from '../../lib/email/can
 
 const state = vi.hoisted(() => ({
   row: null as Record<string, unknown> | null,
-  emails: [] as Array<{ to: unknown; subject: string; react: unknown }>,
+  emails: [] as Array<{ to: unknown; subject: string; react: unknown; bcc?: unknown; cc?: unknown }>,
+  /** Make the office's own stand-down alert fail. */
+  failOps: false,
 }))
 
 vi.mock('@/lib/supabase/service', () => ({
@@ -42,12 +44,18 @@ vi.mock('@/lib/supabase/service', () => ({
   }),
 }))
 
-vi.mock('@/lib/email/send', () => ({
-  sendEmail: async (args: { to: unknown; subject: string; react: unknown }) => {
-    state.emails.push(args)
-    return { ok: true, id: 'em_1' }
-  },
-}))
+// The real recipient rules (operatorAlertRecipients); only the send itself is faked.
+vi.mock('@/lib/email/send', async (importOriginal) => {
+  const mod = await importOriginal<typeof import('@/lib/email/send')>()
+  return {
+    ...mod,
+    sendEmail: async (args: { to: unknown; subject: string; react: unknown; bcc?: unknown }) => {
+      state.emails.push(args)
+      if (state.failOps && args.subject.endsWith('· stand down')) return { ok: false, error: 'refused' }
+      return { ok: true, id: 'em_1' }
+    },
+  }
+})
 
 
 const text = async (el: ReactElement) =>
@@ -247,5 +255,107 @@ describe('a Dashboard refund of a booking a gift card part-funded', () => {
     expect(t).toContain('Administration charge (20%)')
     expect(t).toMatch(/Refunded to your card\s+\$80\.00/)
     expect(t).not.toContain('gift card')
+  })
+})
+
+/**
+ * The driver is told a trip is off, as he is told when it is booked (owner, Nov 27 2026: "send it to Collin too",
+ * "make sure he is bcced not cced", and his copy without the money). The office's alert is unchanged; a second copy
+ * of the stand-down, without the Money section, goes to the office with the driver inbox in BCC.
+ */
+describe('the driver\'s blind copy of the stand-down', () => {
+  const env = { ...process.env }
+  const row = () => ({
+    id: 'c0ffee00-1111-4222-8333-444444444444', email: 'andre@example.com', first_name: 'Andre',
+    last_name: 'Brown', phone: '+1 876 555 0101', currency: 'usd', booking_type: 'transfer',
+    total_paid: 150, refund_amount: 120, admin_charge: 30,
+    refund_quoted_cash: 120, refund_quoted_gift: 0, gift_card_amount: 0,
+    cancellation_email_sent_at: null, ops_cancellation_email_sent_at: null, booking_items: [],
+  })
+  beforeEach(() => {
+    state.emails = []
+    state.failOps = false
+    process.env.OPERATIONS_EMAIL = 'ops@example.com'
+    process.env.DRIVER_NOTIFY_EMAIL = 'collin@example.com'
+    delete process.env.DRIVER_ALLOWED_EMAILS
+  })
+  afterEach(() => { process.env = { ...env } })
+
+  const office = () => state.emails.find((e) => e.subject.endsWith('· stand down'))!
+  const copy = () => state.emails.find((e) => e.subject.endsWith("· driver's copy"))
+
+  test('the office gets its alert as before, money included and nobody copied', async () => {
+    state.row = row()
+    const res = await sendCancellationEmails(state.row.id as string, { source: 'self-serve' })
+    expect(res.ops).toBe('sent')
+    expect(office().to).toEqual(['ops@example.com'])
+    expect(office().bcc).toBeUndefined()
+    const t = await text(office().react as ReactElement)
+    expect(t).toContain('Administration charge retained')
+    expect(t).toContain('$120.00')
+  })
+
+  test('the driver is in BCC only, never To or CC, on a copy without the money', async () => {
+    state.row = row()
+    const res = await sendCancellationEmails(state.row.id as string, { source: 'self-serve' })
+    expect(res.driver).toBe('sent')
+    const c = copy()!
+    expect(c.subject).toBe("CANCELLED: MAPL-C0FFEE00 · Andre Brown · stand down · driver's copy")
+    expect(c.to).toEqual(['ops@example.com'])
+    expect(c.bcc).toEqual(['collin@example.com'])
+    for (const e of state.emails) {
+      expect(JSON.stringify(e.to)).not.toContain('collin@example.com')
+      expect(e.cc).toBeUndefined()
+    }
+    const t = await text(c.react as ReactElement)
+    expect(t).toContain('Stand down')
+    expect(t).toContain('Reference MAPL-C0FFEE00')
+    for (const money of ['Money', 'Administration charge', 'Originally paid', 'Refunded to traveler', '$120.00', '$150.00', '$30.00', 'not all margin']) {
+      expect(t).not.toContain(money)
+    }
+  })
+
+  test('no copy when there is no single driver inbox, or the driver is already on the office list', async () => {
+    delete process.env.DRIVER_NOTIFY_EMAIL
+    process.env.DRIVER_ALLOWED_EMAILS = 'a@example.com,b@example.com'
+    state.row = row()
+    expect((await sendCancellationEmails(state.row.id as string, {})).driver).toBe('skipped')
+    expect(copy()).toBeUndefined()
+
+    state.emails = []
+    process.env.DRIVER_NOTIFY_EMAIL = 'collin@example.com'
+    process.env.OPERATIONS_EMAIL = 'ops@example.com, Collin@example.com'
+    state.row = row()
+    expect((await sendCancellationEmails(state.row.id as string, {})).driver).toBe('skipped')
+    expect(copy()).toBeUndefined()
+  })
+
+  test('nothing goes to the driver when the office alert itself failed (it is retried with it)', async () => {
+    state.failOps = true
+    state.row = row()
+    const res = await sendCancellationEmails(state.row.id as string, {})
+    expect(res.ops).toBe('failed')
+    expect(res.driver).toBeUndefined()
+    expect(copy()).toBeUndefined()
+  })
+})
+
+describe('the stand-down date', () => {
+  test('a trip day prints as that day in any server time zone (it printed the day before west of UTC)', async () => {
+    const { default: OperatorCancellationAlert } = await import('../../emails/OperatorCancellationAlert')
+    const tz = process.env.TZ
+    try {
+      for (const zone of ['UTC', 'America/Toronto', 'America/Jamaica', 'Asia/Tokyo']) {
+        process.env.TZ = zone
+        const t = await text(OperatorCancellationAlert({
+          bookingRef: 'MAPL-C0FFEE00', customerName: 'Andre Brown', customerEmail: null, customerPhone: null,
+          totalPaid: 194, refundAmount: 194, adminCharge: 0, currency: 'USD', isTransfer: true, showMoney: false,
+          items: [{ title: 'Sangster (MBJ) to Sandals Negril, round trip', destination: 'Negril', date: '2026-12-15', travelers: 2 }],
+        }) as ReactElement)
+        expect(t, zone).toContain('Tue, Dec 15, 2026')
+      }
+    } finally {
+      process.env.TZ = tz
+    }
   })
 })

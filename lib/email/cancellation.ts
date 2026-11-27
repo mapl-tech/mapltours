@@ -1,5 +1,5 @@
 import { createServiceClient } from '@/lib/supabase/service'
-import { sendEmail } from '@/lib/email/send'
+import { sendEmail, operatorAlertRecipients } from '@/lib/email/send'
 import { claimEmailChannel, releaseEmailChannel } from '@/lib/email/claim'
 import BookingCancelled from '@/emails/BookingCancelled'
 import OperatorCancellationAlert from '@/emails/OperatorCancellationAlert'
@@ -111,6 +111,8 @@ export function cancellationSubject(p: {
 export interface CancellationEmailResult {
   customer: 'sent' | 'skipped' | 'failed'
   ops: 'sent' | 'skipped' | 'failed'
+  /** Cancellations only: the driver's blind copy of the stand-down, without the money (after the office's alert). */
+  driver?: 'sent' | 'skipped' | 'failed'
 }
 
 /**
@@ -249,6 +251,42 @@ export async function sendCancellationEmails(
       })
       if (res.ok) {
         result.ops = 'sent'
+        // The driver who runs the trip is told it is off, as he is told when it is booked (owner, Nov 27 2026:
+        // "send it to Collin too", "make sure he is bcced not cced", and his copy without the money). The driver
+        // inbox is the one the new-booking alert reaches (operatorAlertRecipients: DRIVER_NOTIFY_EMAIL, or a lone
+        // allowlisted driver). The copy goes to the office with the driver in BCC, never To or CC, and without the
+        // Money section. Only after the office's alert went, so the office claim makes it once (and a Resend key);
+        // it never throws and never changes what the office or the guest were sent.
+        result.driver = 'skipped'
+        try {
+          const office = new Set(opsRecipients.map((e) => e.trim().toLowerCase()))
+          const guest = String(booking.email ?? '').trim().toLowerCase()
+          const driver = operatorAlertRecipients([]).filter((e) => !office.has(e) && e !== guest)
+          if (driver.length) {
+            const copy = await sendEmail({
+              to: opsRecipients,
+              bcc: driver,
+              subject: `CANCELLED: ${bookingRef} · ${customerName} · stand down · driver's copy`,
+              react: OperatorCancellationAlert({
+                bookingRef,
+                customerName,
+                customerEmail: booking.email ?? null,
+                customerPhone: booking.phone ?? null,
+                totalPaid, refundAmount, adminCharge, currency, isTransfer,
+                source: opts.source ?? 'self-serve',
+                showMoney: false,
+                items,
+              }),
+              tags: [{ name: 'type', value: 'driver-cancellation' }],
+              idempotencyKey: `cancel-driver-copy/${bookingId}`,
+              timeoutMs: 3500,
+            })
+            result.driver = copy.ok ? 'sent' : 'failed'
+            if (!copy.ok) console.error('[cancellation-email] driver copy failed', bookingId)
+          }
+        } catch {
+          result.driver = 'failed'
+        }
       } else {
         await releaseEmailChannel(supabase, bookingId, OPS_CHANNEL)
         result.ops = 'failed'

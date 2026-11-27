@@ -13,6 +13,11 @@ export interface OperatorCancellationAlertProps {
   isTransfer?: boolean
   /** Set when the refund came from the Stripe Dashboard rather than the app. */
   source?: 'self-serve' | 'dashboard'
+  /**
+   * False for the driver's blind copy (owner, Nov 27 2026): the stand-down without the Money section, because
+   * what the guest paid, the charge MAPL keeps and the refund are the office's, as on the new-booking alert.
+   */
+  showMoney?: boolean
   items: Array<{
     title: string
     destination: string
@@ -25,10 +30,11 @@ function fmtMoney(n: number, currency: string): string {
   return `${currency === 'USD' ? '$' : `${currency} `}${Math.abs(n).toFixed(2)}`
 }
 
+/** A trip day (YYYY-MM-DD) read as that calendar day, whatever zone the server runs in. */
 function fmtDate(iso: string): string {
   try {
     return new Date(iso).toLocaleDateString('en-US', {
-      weekday: 'short', month: 'short', day: 'numeric', year: 'numeric',
+      weekday: 'short', month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC',
     })
   } catch {
     return iso
@@ -53,13 +59,14 @@ export default function OperatorCancellationAlert({
   currency,
   isTransfer = false,
   source = 'self-serve',
+  showMoney = true,
   items,
 }: OperatorCancellationAlertProps) {
   const dates = items.map((i) => i.date).filter(Boolean).sort()
 
   return (
     <MaplLayout
-      preheader={`CANCELLED · ${bookingRef} · ${fmtMoney(refundAmount, currency)} refunded · stand down ${dates.length || 'the'} date${dates.length === 1 ? '' : 's'}`}
+      preheader={`CANCELLED · ${bookingRef} · ${showMoney ? `${fmtMoney(refundAmount, currency)} refunded · ` : ''}stand down ${dates.length || 'the'} date${dates.length === 1 ? '' : 's'}`}
     >
       <Text style={{ ...s.eyebrow, color: '#B42318' }}>Cancelled &middot; action required</Text>
 
@@ -106,6 +113,7 @@ export default function OperatorCancellationAlert({
         </Section>
       </Section>
 
+      {showMoney && (<>
       <Section style={s.card} className="mapl-card">
         <Section style={s.cardHeader}>
           <Text style={s.cardHeaderText}>Money</Text>
@@ -130,6 +138,8 @@ export default function OperatorCancellationAlert({
         Stripe keeps its original processing fee on refunds, so the retained
         administration charge is not all margin. Reference {bookingRef}.
       </Text>
+      </>)}
+      {!showMoney && <Text style={s.note}>Reference {bookingRef}.</Text>}
     </MaplLayout>
   )
 }
