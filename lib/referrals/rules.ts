@@ -53,7 +53,8 @@ export const PAYOUT_ACCOUNT_HOLD_HOURS = 72
 /** Changing where the money goes needs a sign-in no older than this. */
 export const REAUTH_MAX_AGE_MINUTES = 60
 /** The terms a referrer accepts at setup. A new version asks them again. */
-export const TERMS_VERSION = '2026-11-26'
+// 2026-11-27: creators must say they earn a commission when they share a code (owner, Nov 27 2026).
+export const TERMS_VERSION = '2026-11-27'
 
 /* ── Codes ───────────────────────────────────────────────────────────── */
 

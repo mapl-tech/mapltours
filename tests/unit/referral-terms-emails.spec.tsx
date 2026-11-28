@@ -6,7 +6,7 @@ import ReferralInvite from '@/emails/ReferralInvite'
 import ReferralPayoutAccount from '@/emails/ReferralPayoutAccount'
 import ReferralPaid from '@/emails/ReferralPaid'
 import { CANCELLATION_WINDOW_HOURS } from '@/lib/refund-pricing'
-import { MAX_LIVE_CODES, MIN_PAYOUT_USD, PAYOUT_ACCOUNT_HOLD_HOURS, REFERRAL_DISCOUNT_PERCENT } from '@/lib/referrals/rules'
+import { MAX_LIVE_CODES, MIN_PAYOUT_USD, PAYOUT_ACCOUNT_HOLD_HOURS, REFERRAL_DISCOUNT_PERCENT, TERMS_VERSION } from '@/lib/referrals/rules'
 
 /**
  * The referral terms (a draft for the owner's approval) and the three
@@ -33,6 +33,11 @@ describe('the terms', () => {
     expect(all).toContain(`${PAYOUT_ACCOUNT_HOLD_HOURS / 24} days after it is added`)
     expect(all).toContain('every Monday')
     expect(referralTerms(2.5).map((s) => s.body).join(' ')).toContain('You earn 2.5% of what the guest pays')
+  })
+  test('a creator must say they earn from the code (owner, Nov 27 2026), and the version moved with the words', () => {
+    const sharing = t.find((s) => s.title === 'Sharing your codes')!.body
+    expect(sharing).toContain('When you share your code in a post, a story or a video, say clearly that you earn a commission, for example with #ad or "I earn a commission when you book with my code".')
+    expect(TERMS_VERSION).toBe('2026-11-27')
   })
   test('it promises what the code keeps, and says where bank details go', () => {
     expect(all).toMatch(/cancelled or refunded earns nothing/)

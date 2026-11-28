@@ -37,7 +37,7 @@ export function referralTerms(percent: number | string): TermsSection[] {
     },
     {
       title: 'Sharing your codes',
-      body: 'Share them with your own guests, contacts and followers. Please do not post them on coupon or deal websites, send them in messages people did not ask for, or run ads that use the MAPL Tours Jamaica name.',
+      body: 'Share them with your own guests, contacts and followers. When you share your code in a post, a story or a video, say clearly that you earn a commission, for example with #ad or "I earn a commission when you book with my code". Please do not post them on coupon or deal websites, send them in messages people did not ask for, or run ads that use the MAPL Tours Jamaica name.',
     },
     {
       title: 'If something goes wrong',

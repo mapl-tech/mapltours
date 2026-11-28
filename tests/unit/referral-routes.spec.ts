@@ -123,13 +123,14 @@ import { GET as REF_GET, POST as REF_POST } from '@/app/api/referrals/route'
 import { POST as ACCOUNT_POST } from '@/app/api/referrals/payout-account/route'
 import { GET as ADMIN_GET, POST as ADMIN_POST, PATCH as ADMIN_PATCH } from '@/app/api/admin/referrals/route'
 import { NextRequest } from 'next/server'
+import { TERMS_VERSION } from '@/lib/referrals/rules'
 
 const SITE = 'https://mapltours.com'
 const req = (path: string, method: string, body?: unknown, headers: Record<string, string> = { origin: SITE, 'content-type': 'application/json' }) =>
   new NextRequest(`${SITE}${path}`, { method, headers, body: body === undefined ? undefined : JSON.stringify(body) })
 const json = async (r: Response) => ({ status: r.status, body: await r.json() })
 
-const ann = { id: 'r1', email: 'ann@example.com', name: 'Ann Lee', business: null, status: 'active', commission_percent: 3, user_id: 'u1', invited_at: '2026-11-01T00:00:00Z', invite_sent_at: null, invite_sends: 1, terms_version: '2026-11-26', terms_accepted_at: '2026-11-01T01:00:00Z', wise_recipient_id: null, payout_holder: null, payout_last4: null, payout_legal_type: null, payout_added_at: null, payout_hold_until: null, created_at: '2026-11-01T00:00:00Z', updated_at: '2026-11-01T00:00:00Z' }
+const ann = { id: 'r1', email: 'ann@example.com', name: 'Ann Lee', business: null, status: 'active', commission_percent: 3, user_id: 'u1', invited_at: '2026-11-01T00:00:00Z', invite_sent_at: null, invite_sends: 1, terms_version: TERMS_VERSION, terms_accepted_at: '2026-11-01T01:00:00Z', wise_recipient_id: null, payout_holder: null, payout_last4: null, payout_legal_type: null, payout_added_at: null, payout_hold_until: null, created_at: '2026-11-01T00:00:00Z', updated_at: '2026-11-01T00:00:00Z' }
 const devon = { ...ann, id: 'r2', email: 'devon@example.com', name: 'Devon Brown' }
 const signIn = (email: string, o: Record<string, unknown> = {}) => { db.user = { id: 'u1', email, email_confirmed_at: '2026-11-01T00:00:00Z', last_sign_in_at: new Date().toISOString(), ...o } }
 
